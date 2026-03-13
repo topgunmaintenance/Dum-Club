@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Wallet adapter overrides */
+.wallet-adapter-button {
+  border-radius: 12px !important;
+  background: #7c3aed !important;
+}
+.wallet-adapter-button:hover {
+  background: #6d28d9 !important;
+}
+.dum-wallet-btn:hover {
+  border: 1px solid rgba(0, 255, 178, 0.35) !important;
+  color: #00ffb2 !important;
+  background: rgba(0, 255, 178, 0.06) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 178, 0.22) !important;
+}
+
+.dum-wallet-btn {
+  background: none !important;
+  border: 1px solid #2a2a2a !important;
+  color: #e8e8e8 !important;
+  border-radius: 14px !important;
+  height: 52px !important;
+  min-width: 190px !important;
+  font-family: "Space Mono", monospace !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 13px 20px !important;
+}
+
+.dum-wallet-btn:hover {
+  border: 1px solid rgba(0, 255, 178, 0.35) !important;
+  color: #00ffb2 !important;
+  background: rgba(0, 255, 178, 0.06) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 178, 0.22) !important;
+}

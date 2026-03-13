@@ -1,0 +1,59 @@
+
+services:
+  # ─── Frontend ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  # ─── Backend ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - OLLAMA_HOST=http://ollama:11434
+      - PIPER_BIN=/usr/local/bin/piper
+    depends_on:
+      - ollama
+    volumes:
+      - ./backend:/app
+      - model_cache:/root/.cache
+
+  # ─── Ollama (local LLM) ──────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+  # ─── Piper TTS ───────────────────────────────────────────────
+  piper:
+    build:
+      context: ./scripts/piper
+      dockerfile: Dockerfile
+    ports:
+      - "5500:5500"
+    volumes:
+      - piper_voices:/voices
+
+volumes:
+  ollama_models:
+  piper_voices:
+  model_cache:

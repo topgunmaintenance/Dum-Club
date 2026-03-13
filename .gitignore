@@ -1,0 +1,12 @@
+.env
+.env.local
+__pycache__/
+*.pyc
+.next/
+node_modules/
+.cache/
+*.onnx
+voices/
+dist/
+build/
+.DS_Store
