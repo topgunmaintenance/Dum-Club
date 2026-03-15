@@ -10,3 +10,6 @@ voices/
 dist/
 build/
 .DS_Store
+keys/
+keys/*.json
+token-creator.json
