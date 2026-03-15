@@ -1,4 +1,3 @@
-
 services:
   # ─── Frontend ────────────────────────────────────────────────
   frontend:
@@ -11,6 +10,9 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - DUM_MINT_ADDRESS=${DUM_MINT_ADDRESS}
+      - TREASURY_WALLET=${TREASURY_WALLET}
+      - TREASURY_TOKEN_ACCOUNT=${TREASURY_TOKEN_ACCOUNT}
     depends_on:
       - backend
     volumes:
@@ -23,6 +25,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: dumclub-backend
     ports:
       - "8000:8000"
     environment:
@@ -30,12 +33,17 @@ services:
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - OLLAMA_HOST=http://ollama:11434
       - PIPER_BIN=/usr/local/bin/piper
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - TOKEN_CREATOR_KEYPAIR=${TOKEN_CREATOR_KEYPAIR}
+      - DUM_MINT_ADDRESS=${DUM_MINT_ADDRESS}
+      - TREASURY_WALLET=${TREASURY_WALLET}
+      - TREASURY_TOKEN_ACCOUNT=${TREASURY_TOKEN_ACCOUNT}
     depends_on:
       - ollama
     volumes:
       - ./backend:/app
+      - ./:/workspace
       - model_cache:/root/.cache
-
   # ─── Ollama (local LLM) ──────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
@@ -43,6 +51,7 @@ services:
       - "11434:11434"
     volumes:
       - ollama_models:/root/.ollama
+
   # ─── Piper TTS ───────────────────────────────────────────────
   piper:
     build:

@@ -12,7 +12,9 @@ from api.routes import (
     projects,
     memories,
     generate_app,
-    refine_project
+    refine_project,
+    token,
+    project_tokens,
 )
 
 from db.supabase import init_supabase
@@ -44,18 +46,23 @@ app.add_middleware(
 )
 
 
-app.include_router(users.router,      prefix="/api/users",      tags=["Users"])
-app.include_router(vault.router,      prefix="/api/vault",      tags=["Vault"])
-app.include_router(content.router,    prefix="/api/content",    tags=["Content"])
-app.include_router(chat.router,       prefix="/api/chat",       tags=["Chat"])
+# Core API Routes
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(vault.router, prefix="/api/vault", tags=["Vault"])
+app.include_router(content.router, prefix="/api/content", tags=["Content"])
+app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(transcribe.router, prefix="/api/transcribe", tags=["Transcription"])
-app.include_router(speech.router,     prefix="/api/speech",     tags=["Speech"])
-app.include_router(projects.router,   prefix="/api/projects",   tags=["Projects"])
-app.include_router(memories.router,   prefix="/api/memories",   tags=["Memories"])
-app.include_router(generate_app.router, prefix="/api/generate-app", tags=["AI Generator"])
+app.include_router(speech.router, prefix="/api/speech", tags=["Speech"])
+app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(memories.router, prefix="/api/memories", tags=["Memories"])
+app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
 
-# NEW ROUTE
+# AI Generator Routes
+app.include_router(generate_app.router, prefix="/api/generate-app", tags=["AI Generator"])
 app.include_router(refine_project.router, prefix="/api/refine-project", tags=["AI Refiner"])
+
+# Token Creation (NO PREFIX so route stays clean)
+app.include_router(token.router, tags=["Token"])
 
 
 @app.get("/health")

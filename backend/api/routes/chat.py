@@ -1,14 +1,17 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
 import ollama
 import os
+import requests
 
 router = APIRouter()
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+
 _client = ollama.Client(host=OLLAMA_HOST)
 
 
@@ -18,31 +21,241 @@ class ChatRequest(BaseModel):
     stream: bool = False
 
 
-@router.post("/")
-async def chat(req: ChatRequest):
-    memories_text = ""
-    result = None
+class ProjectGatedChatRequest(BaseModel):
+    message: str
+    project_id: str
+    wallet_address: str | None = None
+    session_id: str | None = None
+    stream: bool = False
 
-    if req.project_id:
-        client = get_client()
-        result = (
-            client.table("memories")
-            .select("content_text")
-            .eq("project_id", req.project_id)
-            .execute()
+
+def load_project_memories(project_id: str) -> tuple[str, int]:
+    client = get_client()
+    result = (
+        client.table("memories")
+        .select("content_text")
+        .eq("project_id", project_id)
+        .execute()
+    )
+
+    if result.data:
+        memories_text = "\n".join(
+            [m.get("content_text", "") for m in result.data if m.get("content_text")]
         )
-        if result.data:
-            memories_text = "\n".join([m["content_text"] for m in result.data])
+        return memories_text, len(result.data)
+
+    return "", 0
+
+
+def build_system_prompt(project: dict, memories_text: str) -> str:
+    title = (
+        project.get("title")
+        or project.get("name")
+        or project.get("project_name")
+        or "Untitled Project"
+    )
+    description = (
+        project.get("description")
+        or project.get("summary")
+        or ""
+    )
+    template_type = project.get("template_type") or project.get("category") or ""
+    refined_prompt = (
+        project.get("refined_prompt")
+        or project.get("prompt")
+        or project.get("idea")
+        or project.get("original_prompt")
+        or ""
+    )
+
+    base = f"""You are the AI assistant for a specific DUM Club project.
+
+PROJECT NAME:
+{title}
+
+PROJECT DESCRIPTION:
+{description}
+
+PROJECT TYPE:
+{template_type}
+
+PROJECT PROMPT:
+{refined_prompt}
+
+Rules:
+Rules:
+- Answer as the assistant for this specific project, not for DUM Club generally.
+- If the user asks what the project does, explain this project in plain English.
+- Do not describe DUM Club overall unless the user explicitly asks about DUM Club itself.
+- Use the saved project memories if they are relevant.
+- If information is missing, say so clearly instead of making things up.
+- Keep answers clear, useful, and grounded in the project context.
+- When the user asks what they asked before, answer directly using the recent chat history.
+- Do not say this is the beginning of the conversation if prior chat history is present.
+- If prior chat exists, refer to it plainly and briefly.
+
+
+"""
 
     if memories_text:
-        system = f"""You are an AI assistant representing a person based only on their saved memories.
-Use these memories to answer naturally and clearly.
-If the answer is not in the memories, say you do not know.
+        base += f"\nPROJECT MEMORIES:\n{memories_text}\n"
 
-MEMORIES:
-{memories_text}"""
+    return base
+
+
+def wallet_holds_project_token(wallet_address: str, mint_address: str) -> bool:
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTokenAccountsByOwner",
+            "params": [
+                wallet_address,
+                {"mint": mint_address},
+                {"encoding": "jsonParsed"}
+            ]
+        }
+
+        response = requests.post(SOLANA_RPC_URL, json=payload, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+
+        accounts = data.get("result", {}).get("value", [])
+        for account in accounts:
+            parsed = (
+                account.get("account", {})
+                .get("data", {})
+                .get("parsed", {})
+                .get("info", {})
+            )
+            token_amount = parsed.get("tokenAmount", {})
+            amount = token_amount.get("uiAmount", 0)
+
+            if amount and amount > 0:
+                return True
+
+        return False
+    except Exception:
+        return False
+
+
+def get_usage_record(project_id: str, wallet_address: str | None, session_id: str | None):
+    client = get_client()
+
+    query = client.table("project_ai_usage").select("*").eq("project_id", project_id)
+
+    if wallet_address:
+        query = query.eq("wallet_address", wallet_address)
+    elif session_id:
+        query = query.eq("session_id", session_id)
     else:
-        system = "You are a helpful AI assistant for DUM Club, a Solana-native AI app builder."
+        return None
+
+    result = query.execute()
+    return result.data[0] if result.data else None
+
+
+def increment_usage(project_id: str, wallet_address: str | None, session_id: str | None):
+    client = get_client()
+
+    existing = get_usage_record(project_id, wallet_address, session_id)
+
+    if existing:
+        updated_count = int(existing.get("question_count", 0)) + 1
+        (
+            client.table("project_ai_usage")
+            .update({
+                "question_count": updated_count,
+                "updated_at": "now()"
+            })
+            .eq("id", existing["id"])
+            .execute()
+        )
+        return updated_count
+
+    insert_payload = {
+        "project_id": project_id,
+        "wallet_address": wallet_address,
+        "session_id": session_id,
+        "question_count": 1,
+    }
+
+    client.table("project_ai_usage").insert(insert_payload).execute()
+    return 1
+
+
+def load_chat_history(
+    project_id: str,
+    wallet_address: str | None,
+    session_id: str | None,
+    limit: int = 10,
+):
+    client = get_client()
+
+    query = (
+        client.table("project_chat_messages")
+        .select("role, content, created_at")
+        .eq("project_id", project_id)
+        .order("created_at", desc=False)
+        .limit(limit)
+    )
+
+    if wallet_address:
+        query = query.eq("wallet_address", wallet_address)
+    elif session_id:
+        query = query.eq("session_id", session_id)
+    else:
+        return []
+
+    result = query.execute()
+
+    return [
+        {"role": row["role"], "content": row["content"]}
+        for row in (result.data or [])
+        if row.get("role") in {"user", "assistant"} and row.get("content")
+    ]
+
+
+def save_chat_message(
+    project_id: str,
+    role: str,
+    content: str,
+    wallet_address: str | None,
+    session_id: str | None,
+):
+    client = get_client()
+
+    payload = {
+        "project_id": project_id,
+        "role": role,
+        "content": content,
+        "wallet_address": wallet_address,
+        "session_id": session_id,
+    }
+
+    client.table("project_chat_messages").insert(payload).execute()
+
+
+@router.post("/")
+async def chat(req: ChatRequest):
+    client = get_client()
+    memories_text = ""
+    memories_used = 0
+    project = {}
+
+    if req.project_id:
+        project_res = (
+            client.table("projects")
+            .select("*")
+            .eq("id", req.project_id)
+            .single()
+            .execute()
+        )
+        project = project_res.data or {}
+
+        memories_text, memories_used = load_project_memories(req.project_id)
+
+    system = build_system_prompt(project, memories_text)
 
     messages = [
         {"role": "system", "content": system},
@@ -64,5 +277,106 @@ MEMORIES:
     return {
         "answer": response["message"]["content"],
         "project_id": req.project_id,
-        "memories_used": len(result.data) if result and result.data else 0,
+        "memories_used": memories_used,
+    }
+
+
+@router.post("/project-gated")
+async def project_gated_chat(
+    req: ProjectGatedChatRequest,
+    x_session_id: str | None = Header(default=None)
+):
+    client = get_client()
+
+    project_res = (
+        client.table("projects")
+        .select("*")
+        .eq("id", req.project_id)
+        .single()
+        .execute()
+    )
+
+    project = project_res.data
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    token_mint = project.get("token_mint_address")
+    free_limit = int(project.get("ai_free_question_limit") or 3)
+    holder_unlimited = bool(project.get("holder_ai_unlimited", True))
+
+    session_id = req.session_id or x_session_id or f"anon:{req.project_id}"
+    wallet_address = req.wallet_address
+
+    is_holder = False
+    if wallet_address and token_mint:
+        is_holder = wallet_holds_project_token(wallet_address, token_mint)
+
+    usage_record = get_usage_record(req.project_id, wallet_address, session_id)
+    used_count = int(usage_record.get("question_count", 0)) if usage_record else 0
+
+    if not (is_holder and holder_unlimited):
+        if used_count >= free_limit:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "message": "Free AI limit reached. Hold this project's token to unlock unlimited AI access.",
+                    "is_holder": False,
+                    "free_limit": free_limit,
+                    "used_count": used_count,
+                    "free_questions_left": 0,
+                    "token_required": True,
+                    "token_mint_address": token_mint,
+                }
+            )
+
+    memories_text, memories_used = load_project_memories(req.project_id)
+    system = build_system_prompt(project, memories_text)
+    history = load_chat_history(req.project_id, wallet_address, session_id, limit=10)
+
+    messages = [{"role": "system", "content": system}]
+    messages.extend(history)
+    messages.append({"role": "user", "content": req.message})
+
+    if req.stream:
+        def event_stream():
+            stream = _client.chat(model=OLLAMA_MODEL, messages=messages, stream=True)
+            collected = ""
+
+            for chunk in stream:
+                token = chunk["message"]["content"]
+                collected += token
+                yield f"data: {token}\n\n"
+
+            save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
+            save_chat_message(req.project_id, "assistant", collected, wallet_address, session_id)
+
+            increment_usage(req.project_id, wallet_address, session_id)
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+    response = _client.chat(model=OLLAMA_MODEL, messages=messages)
+    answer = response["message"]["content"]
+
+    save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
+    save_chat_message(req.project_id, "assistant", answer, wallet_address, session_id)
+
+    new_count = used_count if (is_holder and holder_unlimited) else increment_usage(
+        req.project_id, wallet_address, session_id
+    )
+
+    free_questions_left = max(0, free_limit - new_count)
+
+    return {
+        "answer": answer,
+        "project_id": req.project_id,
+        "memories_used": memories_used,
+        "is_holder": is_holder,
+        "free_limit": free_limit,
+        "used_count": used_count if (is_holder and holder_unlimited) else new_count,
+        "free_questions_left": 999999 if (is_holder and holder_unlimited) else free_questions_left,
+        "holder_unlimited": holder_unlimited,
+        "token_required": bool(token_mint),
+        "token_mint_address": token_mint,
     }

@@ -16,16 +16,42 @@ type Project = {
   title?: string;
   description?: string;
   status?: string;
+  review_status?: string;
   template_type?: string;
   prompt?: string;
   token_utility?: string;
-  ai_output?: {
-    title?: string;
-    description?: string;
-    template_type?: string;
-    token_utility?: string;
-    [key: string]: any;
-  } | null;
+  token_name?: string | null;
+  token_symbol?: string | null;
+  token_supply?: number | null;
+  token_decimals?: number | null;
+  token_status?: string | null;
+  token_mint_address?: string | null;
+  token_created_at?: string | null;
+  ai_free_question_limit?: number | null;
+  holder_ai_unlimited?: boolean | null;
+  ai_output?:
+    | {
+        title?: string;
+        description?: string;
+        template_type?: string;
+        token_utility?: string;
+        [key: string]: any;
+      }
+    | string
+    | null;
+};
+
+type GatedChatResponse = {
+  answer: string;
+  project_id: string;
+  memories_used: number;
+  is_holder: boolean;
+  free_limit: number;
+  used_count: number;
+  free_questions_left: number;
+  holder_unlimited: boolean;
+  token_required: boolean;
+  token_mint_address?: string | null;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -85,6 +111,71 @@ function makeDefaultTokenSymbol(project: Project | null) {
   return base || "DUM";
 }
 
+function getOrCreateSessionId(projectId: string) {
+  const key = `dumclub_project_chat_session_${projectId}`;
+  const existing = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+
+  if (existing) return existing;
+
+  const newId = `session-${projectId}-${Date.now()}`;
+  localStorage.setItem(key, newId);
+  return newId;
+}
+
+function shortMint(value?: string | null) {
+  if (!value) return "-";
+  if (value.length <= 12) return value;
+  return `${value.slice(0, 6)}...${value.slice(-6)}`;
+}
+
+function formatTokenStatus(status?: string) {
+  if (!status) return "-";
+
+  switch (status) {
+    case "draft":
+      return "Draft";
+    case "mint_created":
+      return "Mint Created";
+    case "tokens_minted":
+      return "Tokens Minted";
+    case "liquidity_added":
+      return "Liquidity Added";
+    case "trading_live":
+      return "Trading Live";
+    default:
+      return status.replace(/_/g, " ");
+  }
+}
+
+function getTokenStageIndex(status?: string) {
+  switch (status) {
+    case "draft":
+      return 0;
+    case "mint_created":
+      return 1;
+    case "tokens_minted":
+      return 2;
+    case "liquidity_added":
+      return 3;
+    case "trading_live":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+function parseAiOutput(aiOutput: Project["ai_output"]) {
+  if (!aiOutput) return null;
+
+  if (typeof aiOutput === "object") return aiOutput;
+
+  try {
+    return JSON.parse(aiOutput);
+  } catch {
+    return null;
+  }
+}
+
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -97,22 +188,52 @@ export default function ProjectPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("No response yet.");
-  const [refinePrompt, setRefinePrompt] = useState("");
 
   const [tokenName, setTokenName] = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenSupply, setTokenSupply] = useState("1000000");
+  const [tokenMeta, setTokenMeta] = useState({
+    name: "",
+    symbol: "",
+    supply: "",
+    decimals: "",
+    status: "",
+    mint_address: "",
+  });
 
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(false);
-  const [loadingRefine, setLoadingRefine] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+
+  const [chatMeta, setChatMeta] = useState<{
+    is_holder: boolean;
+    free_limit: number;
+    used_count: number;
+    free_questions_left: number;
+    holder_unlimited: boolean;
+    token_required: boolean;
+    token_mint_address?: string | null;
+    locked: boolean;
+    lock_message: string;
+  }>({
+    is_holder: false,
+    free_limit: 3,
+    used_count: 0,
+    free_questions_left: 3,
+    holder_unlimited: true,
+    token_required: false,
+    token_mint_address: null,
+    locked: false,
+    lock_message: "",
+  });
 
   async function loadProject() {
     if (!id) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/projects/${id}`);
+      const res = await fetch(`${API_BASE}/api/projects/${id}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to load project");
 
       const data = await res.json();
@@ -120,20 +241,63 @@ export default function ProjectPage() {
 
       setProject(projectData);
 
-      const resolvedName =
-        projectData?.title ||
-        projectData?.name ||
-        "Untitled Project";
+      const resolvedName = projectData?.title || projectData?.name || "Untitled Project";
 
       setProjectName(resolvedName);
-      setProjectStatus(projectData?.status || "draft");
-      setTokenName(makeDefaultTokenName(projectData));
-      setTokenSymbol(makeDefaultTokenSymbol(projectData));
+      setProjectStatus(projectData?.review_status || "draft");
+
+      setTokenName(projectData?.token_name || makeDefaultTokenName(projectData));
+      setTokenSymbol(projectData?.token_symbol || makeDefaultTokenSymbol(projectData));
+      setTokenSupply(projectData?.token_supply ? String(projectData.token_supply) : "1000000");
+
+      setChatMeta((prev) => ({
+        ...prev,
+        free_limit: Number(projectData?.ai_free_question_limit || 3),
+        free_questions_left: Number(projectData?.ai_free_question_limit || 3),
+        holder_unlimited: Boolean(
+          projectData?.holder_ai_unlimited === undefined ? true : projectData?.holder_ai_unlimited
+        ),
+        token_required: Boolean(projectData?.token_mint_address),
+        token_mint_address: projectData?.token_mint_address || null,
+      }));
     } catch (err) {
       console.error(err);
       setProject(null);
       setProjectName("Untitled Project");
       setProjectStatus("draft");
+    }
+  }
+
+  async function loadTokenMetadata() {
+    if (!id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/token-metadata`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Failed to load token metadata");
+
+      const data = await res.json();
+
+      setTokenMeta({
+        name: data.name || "",
+        symbol: data.symbol || "",
+        supply: data.supply != null ? String(data.supply) : "",
+        decimals: data.decimals != null ? String(data.decimals) : "",
+        status: data.status || "",
+        mint_address: data.mint_address || "",
+      });
+    } catch (err) {
+      console.error(err);
+      setTokenMeta({
+        name: "",
+        symbol: "",
+        supply: "",
+        decimals: "",
+        status: "",
+        mint_address: "",
+      });
     }
   }
 
@@ -187,27 +351,70 @@ export default function ProjectPage() {
   async function askAI(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!question.trim()) return;
+    if (!question.trim() || !id) return;
+
+    const currentQuestion = question.trim();
+    const sessionId = getOrCreateSessionId(id);
 
     try {
       setLoadingAsk(true);
       setResponse("Thinking...");
 
-      const res = await fetch(`${API_BASE}/api/chat/`, {
+      const res = await fetch(`${API_BASE}/api/chat/project-gated`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           project_id: id,
-          message: question.trim(),
+          message: currentQuestion,
+          session_id: sessionId,
         }),
       });
 
+      if (res.status === 403) {
+        const errorData = await res.json();
+        const detail = errorData?.detail || {};
+
+        setChatMeta((prev) => ({
+          ...prev,
+          is_holder: Boolean(detail?.is_holder),
+          free_limit: Number(detail?.free_limit || prev.free_limit || 3),
+          used_count: Number(detail?.used_count || prev.used_count || 0),
+          free_questions_left: Number(detail?.free_questions_left || 0),
+          token_required: Boolean(detail?.token_required),
+          token_mint_address: detail?.token_mint_address || prev.token_mint_address,
+          locked: true,
+          lock_message:
+            detail?.message ||
+            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access.",
+        }));
+
+        setResponse(
+          detail?.message ||
+            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access."
+        );
+        return;
+      }
+
       if (!res.ok) throw new Error("Failed to ask AI");
 
-      const data = await res.json();
-      setResponse(data.response || data.answer || "No response returned.");
+      const data: GatedChatResponse = await res.json();
+
+      setResponse(data.answer || "No response returned.");
+      setQuestion("");
+
+      setChatMeta({
+        is_holder: Boolean(data.is_holder),
+        free_limit: Number(data.free_limit || 3),
+        used_count: Number(data.used_count || 0),
+        free_questions_left: Number(data.free_questions_left || 0),
+        holder_unlimited: Boolean(data.holder_unlimited),
+        token_required: Boolean(data.token_required),
+        token_mint_address: data.token_mint_address || null,
+        locked: false,
+        lock_message: "",
+      });
     } catch (err) {
       console.error(err);
       setResponse("Failed to get AI response.");
@@ -216,81 +423,7 @@ export default function ProjectPage() {
     }
   }
 
-  async function refineProject(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!id || !refinePrompt.trim()) return;
-
-    try {
-      setLoadingRefine(true);
-
-      const res = await fetch(`${API_BASE}/api/refine-project`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          project_id: id,
-          prompt: refinePrompt.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to refine project");
-      }
-
-      const data = await res.json();
-
-      setProject((prev) =>
-        prev
-          ? {
-              ...prev,
-              description: data.updated_description,
-            }
-          : prev
-      );
-
-      setRefinePrompt("");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to refine project");
-    } finally {
-      setLoadingRefine(false);
-    }
-  }
-
-  async function updateProjectStatus(nextStatus: "draft" | "live") {
-    if (!id) return;
-
-    try {
-      setLoadingStatus(true);
-
-      const res = await fetch(`${API_BASE}/api/projects/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: nextStatus,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to update project status");
-      }
-
-      await loadProject();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update project status");
-    } finally {
-      setLoadingStatus(false);
-    }
-  }
-
-  function handleLaunchToken(e: React.FormEvent) {
+  async function submitReview(e: React.FormEvent) {
     e.preventDefault();
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !tokenSupply.trim()) {
@@ -298,20 +431,139 @@ export default function ProjectPage() {
       return;
     }
 
-    alert(
-      `Token launch stub ready.\n\nProject: ${projectName}\nToken Name: ${tokenName}\nToken Symbol: ${tokenSymbol}\nSupply: ${tokenSupply}\n\nNext step: connect this to real Solana mint logic.`
-    );
+    try {
+      setLoadingAction(true);
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/submit-review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          user_id: "demo-user",
+        },
+        body: JSON.stringify({
+          token_name: tokenName.trim(),
+          token_symbol: tokenSymbol.trim().toUpperCase(),
+          token_supply: Number(tokenSupply),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to submit review");
+      }
+
+      await loadProject();
+      await loadTokenMetadata();
+      alert("Project submitted for review.");
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to submit review");
+    } finally {
+      setLoadingAction(false);
+    }
+  }
+
+  async function approveProject() {
+    try {
+      setLoadingAction(true);
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/approve`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to approve project");
+      }
+
+      await loadProject();
+      await loadTokenMetadata();
+      alert("Project approved.");
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to approve project");
+    } finally {
+      setLoadingAction(false);
+    }
+  }
+
+  async function rejectProject() {
+    try {
+      setLoadingAction(true);
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reason: "Rejected from project detail page",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to reject project");
+      }
+
+      await loadProject();
+      await loadTokenMetadata();
+      alert("Project rejected.");
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to reject project");
+    } finally {
+      setLoadingAction(false);
+    }
+  }
+
+  async function createToken() {
+    try {
+      setLoadingAction(true);
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/create-token`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to create token");
+      }
+
+      await loadProject();
+      await loadTokenMetadata();
+      alert(`Token created: ${data.mint}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to create token");
+    } finally {
+      setLoadingAction(false);
+    }
   }
 
   useEffect(() => {
     loadProject();
     loadMemories();
+    loadTokenMetadata();
   }, [id]);
 
-  const isLive = projectStatus === "live";
+  const reviewStatus = projectStatus || "draft";
+  const isSubmitted = reviewStatus === "submitted";
+  const isApproved = reviewStatus === "approved";
+  const isTokenLive = reviewStatus === "token_live";
+  const isRejected = reviewStatus === "rejected";
+
   const emoji = useMemo(() => getProjectEmoji(project), [project]);
   const category = useMemo(() => getCategory(project), [project]);
   const accent = useMemo(() => getAccent(project), [project]);
+  const parsedAiOutput = useMemo(() => parseAiOutput(project?.ai_output), [project?.ai_output]);
+
+  const tokenStage = getTokenStageIndex(tokenMeta.status || project?.token_status || "draft");
+  const tokenStages = ["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"];
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
@@ -354,12 +606,18 @@ export default function ProjectPage() {
 
                   <span
                     className={`border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
-                      isLive
+                      isTokenLive
                         ? "border-emerald-400/30 text-emerald-300"
+                        : isApproved
+                        ? "border-yellow-400/30 text-yellow-300"
+                        : isSubmitted
+                        ? "border-blue-400/30 text-blue-300"
+                        : isRejected
+                        ? "border-red-400/30 text-red-300"
                         : "border-zinc-700 text-zinc-300"
                     }`}
                   >
-                    {projectStatus}
+                    {isTokenLive ? "TOKEN LIVE" : reviewStatus}
                   </span>
                 </div>
 
@@ -371,25 +629,45 @@ export default function ProjectPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {isLive ? (
+              {isSubmitted && (
+                <>
+                  <button
+                    type="button"
+                    disabled={loadingAction}
+                    onClick={approveProject}
+                    className="px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                    style={{ background: accent }}
+                  >
+                    {loadingAction ? "Working..." : "Approve"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={loadingAction}
+                    onClick={rejectProject}
+                    className="border border-zinc-700 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {loadingAction ? "Working..." : "Reject"}
+                  </button>
+                </>
+              )}
+
+              {isApproved && !project?.token_mint_address && (
                 <button
                   type="button"
-                  disabled={loadingStatus}
-                  onClick={() => updateProjectStatus("draft")}
-                  className="border border-zinc-700 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
-                >
-                  {loadingStatus ? "Updating..." : "Move to Draft"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={loadingStatus}
-                  onClick={() => updateProjectStatus("live")}
+                  disabled={loadingAction}
+                  onClick={createToken}
                   className="px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
                   style={{ background: accent }}
                 >
-                  {loadingStatus ? "Publishing..." : "Publish Project"}
+                  {loadingAction ? "Minting..." : "Create Token"}
                 </button>
+              )}
+
+              {isTokenLive && (
+                <div className="border border-emerald-400/30 px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-emerald-300">
+                  TOKEN LIVE
+                </div>
               )}
             </div>
           </div>
@@ -397,172 +675,209 @@ export default function ProjectPage() {
 
         <div className="mb-8 grid gap-0 border border-zinc-900 md:grid-cols-4">
           <div className="border-b border-zinc-900 p-6 md:border-b-0 md:border-r">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Project ID
-            </div>
-            <div className="text-sm break-all text-zinc-300">{id}</div>
+            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Project ID</div>
+            <div className="break-all text-sm text-zinc-300">{id}</div>
           </div>
 
           <div className="border-b border-zinc-900 p-6 md:border-b-0 md:border-r">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Category
-            </div>
+            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Category</div>
             <div className="text-2xl font-semibold text-white">{category}</div>
           </div>
 
           <div className="border-b border-zinc-900 p-6 md:border-b-0 md:border-r">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Status
-            </div>
-            <div className="text-2xl font-semibold text-white">{projectStatus}</div>
+            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Status</div>
+            <div className="text-2xl font-semibold text-white">{isTokenLive ? "TOKEN LIVE" : reviewStatus}</div>
           </div>
 
           <div className="p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Memory Count
-            </div>
+            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Memory Count</div>
             <div className="text-2xl font-semibold text-white">{memories.length}</div>
           </div>
         </div>
 
         <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">
-            AI Blueprint
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Token Status</div>
+
+          <div className="mb-8 grid gap-3 md:grid-cols-5">
+            {tokenStages.map((stage, index) => {
+              const isCompleted = index <= tokenStage;
+              const isCurrent = index === tokenStage;
+
+              return (
+                <div
+                  key={stage}
+                  className={`border p-4 text-center ${
+                    isCompleted ? "border-emerald-400/40 bg-emerald-400/10" : "border-zinc-800 bg-black"
+                  }`}
+                >
+                  <div
+                    className={`text-[11px] uppercase tracking-[0.22em] ${
+                      isCurrent
+                        ? "text-emerald-300"
+                        : isCompleted
+                        ? "text-zinc-200"
+                        : "text-zinc-600"
+                    }`}
+                  >
+                    {stage}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Name</div>
+              <div className="mt-2 break-words text-lg text-white">
+                {tokenMeta.name || project?.token_name || "-"}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Symbol</div>
+              <div className="mt-2 break-words text-lg text-white">
+                {tokenMeta.symbol || project?.token_symbol || "-"}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Supply</div>
+              <div className="mt-2 break-words text-lg text-white">
+                {tokenMeta.supply || project?.token_supply || "-"}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Decimals</div>
+              <div className="mt-2 break-words text-lg text-white">
+                {tokenMeta.decimals || project?.token_decimals || "-"}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Status</div>
+              <div className="mt-2 break-words text-lg text-white">
+                {formatTokenStatus(tokenMeta.status || project?.token_status || "")}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Created At</div>
+              <div className="mt-2 break-words text-sm text-white">{project?.token_created_at || "-"}</div>
+            </div>
+          </div>
+
+          <div className="mt-6 border border-zinc-800 bg-black p-4">
+            <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Mint Address</div>
+            <div className="mt-2 break-all text-sm text-white">
+              {tokenMeta.mint_address || project?.token_mint_address || "-"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Blueprint</div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
-              <h2 className="font-mono text-2xl font-bold text-white">
-                Original Prompt
-              </h2>
-              <p className="mt-3 text-zinc-400">
-                {project?.prompt || "No prompt saved yet."}
-              </p>
+              <h2 className="font-mono text-2xl font-bold text-white">Original Prompt</h2>
+              <p className="mt-3 text-zinc-400">{project?.prompt || "No prompt saved yet."}</p>
             </div>
 
             <div>
-              <h2 className="font-mono text-2xl font-bold text-white">
-                Token Utility
-              </h2>
+              <h2 className="font-mono text-2xl font-bold text-white">Token Utility</h2>
               <p className="mt-3 text-zinc-400">
-                {project?.token_utility ||
-                  project?.ai_output?.token_utility ||
-                  "No token utility generated yet."}
+                {parsedAiOutput?.token_utility || project?.token_utility || "No token utility available yet."}
               </p>
             </div>
           </div>
 
-          <div className="mt-8">
-            <h2 className="font-mono text-2xl font-bold text-white">
-              Full AI Output
-            </h2>
+          <div className="mt-8 grid gap-6 lg:grid-cols-3">
+            <div className="border border-zinc-800 bg-black p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Description</div>
+              <p className="mt-3 text-zinc-300">
+                {parsedAiOutput?.description ||
+                  project?.description ||
+                  "No AI-generated description available yet."}
+              </p>
+            </div>
 
-            <div className="mt-4 overflow-x-auto border border-zinc-800 bg-black p-4 text-sm text-zinc-300">
-              <pre className="whitespace-pre-wrap break-words">
-                {project?.ai_output
-                  ? JSON.stringify(project.ai_output, null, 2)
-                  : "No AI blueprint saved yet."}
-              </pre>
+            <div className="border border-zinc-800 bg-black p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Utility</div>
+              <p className="mt-3 text-zinc-300">
+                {parsedAiOutput?.token_utility || project?.token_utility || "No token utility available yet."}
+              </p>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Template Type</div>
+              <p className="mt-3 text-zinc-300">
+                {parsedAiOutput?.template_type ||
+                  project?.template_type ||
+                  "No template type available yet."}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">
-            AI Refiner
+        {(reviewStatus === "draft" || reviewStatus === "pending") && (
+          <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Pipeline</div>
+
+            <h2 className="font-mono text-3xl font-bold text-white">Submit for Review</h2>
+
+            <p className="mt-3 max-w-3xl text-zinc-500">
+              Prepare this project for DUM Club review. Once submitted, it can be approved and then
+              minted into a live Solana token.
+            </p>
+
+            <form onSubmit={submitReview} className="mt-6 grid gap-4 md:grid-cols-3">
+              <input
+                value={tokenName}
+                onChange={(e) => setTokenName(e.target.value)}
+                placeholder="Token Name"
+                className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+              />
+
+              <input
+                value={tokenSymbol}
+                onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+                placeholder="Symbol"
+                maxLength={6}
+                className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+              />
+
+              <input
+                value={tokenSupply}
+                onChange={(e) => setTokenSupply(e.target.value)}
+                placeholder="Total Supply"
+                className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+              />
+
+              <div className="flex flex-wrap gap-3 md:col-span-3">
+                <button
+                  type="submit"
+                  disabled={loadingAction}
+                  className="px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                  style={{ background: accent }}
+                >
+                  {loadingAction ? "Submitting..." : "Submit Review"}
+                </button>
+              </div>
+            </form>
           </div>
-
-          <h2 className="font-mono text-3xl font-bold text-white">
-            Refine Project
-          </h2>
-
-          <p className="mt-3 max-w-3xl text-zinc-500">
-            Tell the AI how to improve this project. You can make it more viral,
-            more useful, more monetizable, or more aligned with Solana users.
-          </p>
-
-          <form onSubmit={refineProject} className="mt-6 space-y-4">
-            <textarea
-              value={refinePrompt}
-              onChange={(e) => setRefinePrompt(e.target.value)}
-              placeholder="Example: Make this more viral, community-driven, and better for Solana creators."
-              rows={5}
-              className="w-full border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-            />
-
-            <button
-              type="submit"
-              disabled={loadingRefine || !refinePrompt.trim()}
-              className="w-full px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-              style={{ background: accent }}
-            >
-              {loadingRefine ? "Refining..." : "Refine with AI"}
-            </button>
-          </form>
-        </div>
-
-        <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">
-            Token Launcher
-          </div>
-
-          <h2 className="font-mono text-3xl font-bold text-white">
-            Launch Token
-          </h2>
-
-          <p className="mt-3 max-w-3xl text-zinc-500">
-            Prepare this project for token launch. This is the next step toward
-            turning DUM Club into a launchpad for AI-powered Solana apps.
-          </p>
-
-          <form onSubmit={handleLaunchToken} className="mt-6 grid gap-4 md:grid-cols-3">
-            <input
-              value={tokenName}
-              onChange={(e) => setTokenName(e.target.value)}
-              placeholder="Token Name"
-              className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-            />
-
-            <input
-              value={tokenSymbol}
-              onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
-              placeholder="Symbol"
-              maxLength={10}
-              className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-            />
-
-            <input
-              value={tokenSupply}
-              onChange={(e) => setTokenSupply(e.target.value)}
-              placeholder="Total Supply"
-              className="border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-            />
-
-            <div className="md:col-span-3">
-              <button
-                type="submit"
-                className="w-full px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90"
-                style={{ background: accent }}
-              >
-                Launch Token
-              </button>
-            </div>
-          </form>
-        </div>
+        )}
 
         <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Project Memory
-            </div>
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
-            <h2 className="font-mono text-3xl font-bold text-white">
-              Add Memory
-            </h2>
+            <h2 className="font-mono text-3xl font-bold text-white">Add Memory</h2>
 
             <p className="mt-3 max-w-2xl text-zinc-500">
-              Paste a memory, note, creator post, transcript, or product insight
-              so your AI can use it later.
+              Paste a memory, note, creator post, transcript, or product insight so your AI can use it
+              later.
             </p>
 
             <form onSubmit={saveMemory} className="mt-6 space-y-4">
@@ -585,19 +900,14 @@ export default function ProjectPage() {
             </form>
 
             <div className="mt-10">
-              <h3 className="font-mono text-2xl font-bold text-white">
-                Saved Memories ({memories.length})
-              </h3>
+              <h3 className="font-mono text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
 
               {memories.length === 0 ? (
                 <p className="mt-4 text-zinc-400">No memories saved yet.</p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {memories.map((memory) => (
-                    <div
-                      key={memory.id}
-                      className="border border-zinc-800 bg-black p-4 text-zinc-300"
-                    >
+                    <div key={memory.id} className="border border-zinc-800 bg-black p-4 text-zinc-300">
                       {memory.content_text || memory.content || "Empty memory"}
                     </div>
                   ))}
@@ -607,18 +917,44 @@ export default function ProjectPage() {
           </div>
 
           <div className="border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              AI Workspace
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
+
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <span className="border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+                {chatMeta.is_holder ? "Holder" : "Non-holder"}
+              </span>
+
+              <span
+                className={`border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
+                  chatMeta.locked ? "border-red-400/30 text-red-300" : "border-zinc-700 text-zinc-300"
+                }`}
+              >
+                {chatMeta.is_holder && chatMeta.holder_unlimited
+                  ? "Unlimited AI"
+                  : chatMeta.free_questions_left > 0
+                  ? `${chatMeta.free_questions_left} FREE QUESTION${
+                      chatMeta.free_questions_left === 1 ? "" : "S"
+                    }`
+                  : "SUPPORT TO UNLOCK"}
+              </span>
+
+              <span className="border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+                Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
+              </span>
             </div>
 
-            <h2 className="font-mono text-3xl font-bold text-white">
-              Ask AI
-            </h2>
+            <h2 className="font-mono text-3xl font-bold text-white">Ask AI</h2>
 
             <p className="mt-3 text-zinc-500">
-              Ask questions about this project’s memory and use the AI as a
-              co-founder for planning, writing, and direction.
+              Each project includes 3 free AI questions. Support this project by holding its token to
+              unlock unlimited AI access.
             </p>
+
+            {chatMeta.locked && (
+              <div className="mt-5 border border-red-400/30 bg-red-950/20 p-4 text-sm text-red-200">
+                {chatMeta.lock_message}
+              </div>
+            )}
 
             <form onSubmit={askAI} className="mt-6 space-y-4">
               <textarea
@@ -626,24 +962,23 @@ export default function ProjectPage() {
                 onChange={(e) => setQuestion(e.target.value)}
                 placeholder={`Ask something about ${projectName}...`}
                 rows={5}
-                className="w-full border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                disabled={loadingAsk || chatMeta.locked}
+                className="w-full border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
               />
 
               <button
                 type="submit"
-                disabled={loadingAsk}
+                disabled={loadingAsk || chatMeta.locked || !question.trim()}
                 className="w-full border border-zinc-800 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
               >
-                {loadingAsk ? "Asking..." : "Ask AI"}
+                {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
               </button>
             </form>
 
             <div className="mt-10">
-              <h3 className="font-mono text-2xl font-bold text-white">
-                AI Response
-              </h3>
+              <h3 className="font-mono text-2xl font-bold text-white">AI Response</h3>
 
-              <div className="mt-4 min-h-[220px] border border-zinc-800 bg-black p-4 text-zinc-300 whitespace-pre-wrap">
+              <div className="mt-4 min-h-[220px] whitespace-pre-wrap border border-zinc-800 bg-black p-4 text-zinc-300">
                 {response}
               </div>
             </div>

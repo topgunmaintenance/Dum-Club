@@ -1,0 +1,5 @@
+import os
+
+DUM_MINT_ADDRESS = os.getenv("DUM_MINT_ADDRESS", "")
+TREASURY_WALLET = os.getenv("TREASURY_WALLET", "")
+TREASURY_TOKEN_ACCOUNT = os.getenv("TREASURY_TOKEN_ACCOUNT", "")

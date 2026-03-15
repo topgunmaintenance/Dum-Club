@@ -5,18 +5,30 @@ from db.supabase import get_client
 
 router = APIRouter()
 
+
+# -----------------------------
+# Request Models
+# -----------------------------
+
 class SubmitReviewRequest(BaseModel):
     token_name: str = Field(min_length=3, max_length=32)
     token_symbol: str = Field(min_length=3, max_length=6)
     token_supply: int = Field(gt=0, le=21_000_000)
 
 
+class RejectProjectRequest(BaseModel):
+    reason: str | None = None
+
+
+# -----------------------------
+# Submit Project For Review
+# -----------------------------
+
 @router.post("/{project_id}/submit-review")
 async def submit_review(
     project_id: str,
     body: SubmitReviewRequest,
-user_id: str = Header(default="demo-user", convert_underscores=False)
-
+    user_id: str = Header(default="demo-user", convert_underscores=False)
 ):
     supabase = get_client()
 
@@ -37,6 +49,7 @@ user_id: str = Header(default="demo-user", convert_underscores=False)
         .single()
         .execute()
     )
+
     project = project_res.data
 
     if not project:
@@ -45,6 +58,7 @@ user_id: str = Header(default="demo-user", convert_underscores=False)
     if project.get("owner_id") != user_id:
         raise HTTPException(status_code=403, detail="Not project owner")
 
+    # Ensure symbol uniqueness
     symbol_res = (
         supabase.table("projects")
         .select("id")
@@ -72,6 +86,11 @@ user_id: str = Header(default="demo-user", convert_underscores=False)
         "status": "success",
         "project": update_res.data[0] if update_res.data else None
     }
+
+
+# -----------------------------
+# Approve Project
+# -----------------------------
 
 @router.post("/{project_id}/approve")
 async def approve_project(project_id: str):
@@ -103,9 +122,9 @@ async def approve_project(project_id: str):
     }
 
 
-class RejectProjectRequest(BaseModel):
-    reason: str | None = None
-
+# -----------------------------
+# Reject Project
+# -----------------------------
 
 @router.post("/{project_id}/reject")
 async def reject_project(project_id: str, body: RejectProjectRequest):
@@ -136,3 +155,46 @@ async def reject_project(project_id: str, body: RejectProjectRequest):
         "reason": body.reason,
         "project": update_res.data[0] if update_res.data else None
     }
+
+
+# -----------------------------
+# Get Project by ID
+# -----------------------------
+
+@router.get("/{project_id}")
+async def get_project(project_id: str):
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("*")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    project = project_res.data
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project
+
+
+# -----------------------------
+# List Projects
+# -----------------------------
+
+@router.get("/")
+async def list_projects():
+    supabase = get_client()
+
+    res = (
+        supabase.table("projects")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+
+    return res.data

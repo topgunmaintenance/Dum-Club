@@ -2,13 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for audio + Piper
+# System deps for audio + Piper + Node.js
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     wget \
     curl \
+    gnupg \
     build-essential \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Piper TTS binary
@@ -21,6 +24,7 @@ RUN wget -q https://github.com/rhasspy/piper/releases/latest/download/piper_linu
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && pip install --no-cache-dir -r requirements.txt
 
+# Copy backend code
 COPY . .
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
