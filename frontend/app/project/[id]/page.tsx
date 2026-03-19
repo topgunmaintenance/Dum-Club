@@ -100,7 +100,7 @@ function makeDefaultTokenName(project: Project | null) {
 }
 
 function makeDefaultTokenSymbol(project: Project | null) {
-  const base = (project?.title || project?.name || "DUM")
+  const base = (project?.title || project?.name || "")
     .replace(/[^a-zA-Z0-9 ]/g, "")
     .split(" ")
     .filter(Boolean)
@@ -108,7 +108,7 @@ function makeDefaultTokenSymbol(project: Project | null) {
     .join("")
     .slice(0, 6);
 
-  return base || "DUM";
+  return base || "";
 }
 
 function getOrCreateSessionId(projectId: string) {
@@ -661,7 +661,7 @@ export default function ProjectPage() {
                   style={{ background: accent }}
                 >
                   {loadingAction ? "Minting..." : "Create Token"}
-                </button>
+                  </button>
               )}
 
               {isTokenLive && (

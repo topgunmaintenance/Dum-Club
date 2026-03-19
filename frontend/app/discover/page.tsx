@@ -49,7 +49,7 @@ function getCategory(project: Project) {
 }
 
 function getTicker(project: Project) {
-  const raw = (project.title || project.name || "DUM")
+  const raw = (project.title || project.name || "")
     .replace(/[^a-zA-Z0-9 ]/g, "")
     .split(" ")
     .filter(Boolean)
@@ -57,7 +57,7 @@ function getTicker(project: Project) {
     .join("")
     .slice(0, 6);
 
-  return raw || "DUM";
+  return raw || "";
 }
 
 function getProjectLabel(project?: Project) {

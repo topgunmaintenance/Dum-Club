@@ -33,17 +33,27 @@ services:
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - OLLAMA_HOST=http://ollama:11434
       - PIPER_BIN=/usr/local/bin/piper
+
+      # ─── Solana Config ─────────────────────
       - SOLANA_RPC_URL=${SOLANA_RPC_URL}
       - TOKEN_CREATOR_KEYPAIR=${TOKEN_CREATOR_KEYPAIR}
+
+      # ─── Existing Treasury (keep) ──────────
       - DUM_MINT_ADDRESS=${DUM_MINT_ADDRESS}
       - TREASURY_WALLET=${TREASURY_WALLET}
       - TREASURY_TOKEN_ACCOUNT=${TREASURY_TOKEN_ACCOUNT}
+
+      # ─── NEW: Token Mint Distribution ──────
+      - PROJECT_TREASURY_WALLET=${PROJECT_TREASURY_WALLET}
+      - DUM_TREASURY_WALLET=${DUM_TREASURY_WALLET}
+
     depends_on:
       - ollama
     volumes:
       - ./backend:/app
       - ./:/workspace
       - model_cache:/root/.cache
+
   # ─── Ollama (local LLM) ──────────────────────────────────────
   ollama:
     image: ollama/ollama:latest

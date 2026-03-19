@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException
-import requests
 import os
+import requests
 from db.supabase import get_client
 
 router = APIRouter()
 
 SOLANA_RPC_URL = os.getenv(
     "SOLANA_RPC_URL",
-    "https://api.mainnet-beta.solana.com"
+    "https://api.mainnet-beta.solana.com",
 )
 
 
@@ -55,7 +55,9 @@ def get_project_token_metadata(project_id: str):
         or "Unknown Token"
     )
 
-    token_symbol = project.get("token_symbol") or "DUM"
+    token_symbol = project.get("token_symbol") or ""
+    db_supply = project.get("token_supply")
+    db_decimals = project.get("token_decimals")
 
     # -----------------------------
     # STATUS 1 — PROJECT DRAFT
@@ -65,8 +67,8 @@ def get_project_token_metadata(project_id: str):
             "mint_address": None,
             "name": token_name,
             "symbol": token_symbol,
-            "supply": None,
-            "decimals": None,
+            "supply": db_supply,
+            "decimals": db_decimals,
             "status": "draft",
         }
 
@@ -75,12 +77,12 @@ def get_project_token_metadata(project_id: str):
     # -----------------------------
     token_supply = rpc_call("getTokenSupply", [mint_address])
 
-    decimals = None
-    supply = None
+    decimals = db_decimals
+    supply = db_supply
 
     if token_supply and token_supply.get("value"):
-        decimals = token_supply["value"].get("decimals")
-        supply = token_supply["value"].get("uiAmount")
+        decimals = token_supply["value"].get("decimals", db_decimals)
+        supply = token_supply["value"].get("uiAmount", db_supply)
 
     # -----------------------------
     # TOKEN LIFECYCLE STATUS ENGINE
@@ -90,10 +92,8 @@ def get_project_token_metadata(project_id: str):
 
     if supply is None:
         status = "mint_created"
-
     elif supply == 0:
         status = "mint_created"
-
     else:
         status = "tokens_minted"
 
