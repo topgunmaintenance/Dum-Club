@@ -15,6 +15,7 @@ from api.routes import (
     refine_project,
     token,
     project_tokens,
+    market,
 )
 
 from db.supabase import init_supabase
@@ -38,7 +39,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://dumclub.io"
+        "https://dumclub.io",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -56,6 +57,7 @@ app.include_router(speech.router, prefix="/api/speech", tags=["Speech"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(memories.router, prefix="/api/memories", tags=["Memories"])
 app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
+app.include_router(market.router, tags=["Market"])
 
 # AI Generator Routes
 app.include_router(generate_app.router, prefix="/api/generate-app", tags=["AI Generator"])
