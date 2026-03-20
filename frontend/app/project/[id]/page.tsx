@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import {
   LineChart,
   Line,
@@ -18,7 +19,7 @@ type Memory = {
   content?: string;
 };
 
-type Project = { 
+type Project = {
   id: string;
   wallet_address?: string | null;
   name?: string;
@@ -110,6 +111,7 @@ function getProjectEmoji(project: Project | null) {
   if (source.includes("music") || source.includes("beat")) return "🎵";
   if (source.includes("crypto") || source.includes("signal")) return "📈";
   if (source.includes("clean")) return "🧹";
+  if (source.includes("tasty") || source.includes("meal") || source.includes("food")) return "🍽️";
 
   return "🚀";
 }
@@ -123,6 +125,9 @@ function getCategory(project: Project | null) {
   if (source.includes("music") || source.includes("beat")) return "Music";
   if (source.includes("crypto") || source.includes("signal")) return "Finance";
   if (source.includes("clean")) return "Business";
+  if (source.includes("tasty") || source.includes("meal") || source.includes("food") || source.includes("cook")) {
+    return "AI Meal Planning";
+  }
 
   return "AI Project";
 }
@@ -136,6 +141,9 @@ function getAccent(project: Project | null) {
   if (source.includes("music") || source.includes("beat")) return "#F472B6";
   if (source.includes("crypto") || source.includes("signal")) return "#38BDF8";
   if (source.includes("clean")) return "#A78BFA";
+  if (source.includes("tasty") || source.includes("meal") || source.includes("food") || source.includes("cook")) {
+    return "#00FFB2";
+  }
 
   return "#00FFB2";
 }
@@ -246,6 +254,7 @@ function formatDateTime(value?: string | null) {
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
+  const { publicKey, connected } = useWallet();
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("Untitled Project");
@@ -271,6 +280,8 @@ export default function ProjectPage() {
   const [market, setMarket] = useState<MarketState | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [userWallet, setUserWallet] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState("");
   const [loadingTrade, setLoadingTrade] = useState(false);
   const [tradeMessage, setTradeMessage] = useState("");
@@ -316,7 +327,6 @@ export default function ProjectPage() {
       setProject(projectData);
 
       const resolvedName = projectData?.title || projectData?.name || "Untitled Project";
-
       setProjectName(resolvedName);
       setProjectStatus(projectData?.review_status || "draft");
 
@@ -442,65 +452,100 @@ export default function ProjectPage() {
     await Promise.all([loadMarket(), loadTrades(), loadCandles()]);
   }
 
-async function executeTrade(side: "buy" | "sell") {
-  if (!id || !tradeAmount.trim()) return;
+  async function loadWalletBalance() {
+    if (!id) return;
 
-  const numericAmount = Number(tradeAmount);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    setTradeMessage("Enter a valid amount.");
-    return;
+    const wallet = userWallet?.trim();
+    if (!wallet || wallet.length < 8) {
+      setWalletBalance(0);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/balance/${wallet}`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Failed to load wallet balance");
+
+      const data = await res.json();
+      setWalletBalance(Number(data?.balance || 0));
+    } catch (err) {
+      console.error(err);
+      setWalletBalance(0);
+    }
   }
 
-  const wallet = project?.wallet_address?.trim();
-  if (!wallet || wallet.length < 8) {
-    setTradeMessage("Wallet not found for this project.");
-    return;
-  }
+  async function executeTrade(side: "buy" | "sell") {
+    if (!id || !tradeAmount.trim()) return;
 
-  try {
-    setLoadingTrade(true);
-    setTradeMessage("");
+    const numericAmount = Number(tradeAmount);
 
-    const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        side,
-        amount: numericAmount,
-        wallet,
-      }),
-    });
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setTradeMessage("Enter a valid amount.");
+      return;
+    }
 
-    const data = await res.json();
+    if (side === "sell" && numericAmount > walletBalance) {
+      setTradeMessage(
+        `Insufficient balance. You only have ${formatNumber(walletBalance, 2)} ${
+          project?.token_symbol || tokenMeta.symbol || "TOKENS"
+        }.`
+      );
+      return;
+    }
 
-    if (!res.ok) {
-      const detail =
-        typeof data?.detail === "string"
-          ? data.detail
-          : Array.isArray(data?.detail)
+    const wallet = userWallet?.trim();
+    if (!wallet || wallet.length < 8) {
+      setTradeMessage("Connected wallet not found.");
+      return;
+    }
+
+    try {
+      setLoadingTrade(true);
+      setTradeMessage("");
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          side,
+          amount: numericAmount,
+          wallet,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const detail =
+          typeof data?.detail === "string"
+            ? data.detail
+            : Array.isArray(data?.detail)
             ? data.detail.map((d: any) => d?.msg || JSON.stringify(d)).join(", ")
             : JSON.stringify(data);
 
-      throw new Error(detail || `Failed to ${side}`);
+        throw new Error(detail || `Failed to ${side}`);
+      }
+
+      setTradeMessage(
+        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
+          project?.token_symbol || tokenMeta.symbol || "TOKENS"
+        }`
+      );
+
+      setTradeAmount("");
+      await refreshMarketData();
+      await loadWalletBalance();
+    } catch (err: any) {
+      console.error(err);
+      setTradeMessage(err?.message || `Failed to ${side}`);
+    } finally {
+      setLoadingTrade(false);
     }
-
-    setTradeMessage(
-      `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
-        project?.token_symbol || tokenMeta.symbol || "TOKENS"
-      }`
-    );
-
-    setTradeAmount("");
-    await refreshMarketData();
-  } catch (err: any) {
-    console.error(err);
-    setTradeMessage(err?.message || `Failed to ${side}`);
-  } finally {
-    setLoadingTrade(false);
   }
-}
 
   async function saveMemory(e: React.FormEvent) {
     e.preventDefault();
@@ -739,6 +784,15 @@ async function executeTrade(side: "buy" | "sell") {
   }, [id]);
 
   useEffect(() => {
+    if (!connected || !publicKey) {
+      setUserWallet(null);
+      return;
+    }
+
+    setUserWallet(publicKey.toBase58());
+  }, [connected, publicKey]);
+
+  useEffect(() => {
     if (!id) return;
 
     const interval = setInterval(() => {
@@ -747,6 +801,15 @@ async function executeTrade(side: "buy" | "sell") {
 
     return () => clearInterval(interval);
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !userWallet) {
+      setWalletBalance(0);
+      return;
+    }
+
+    loadWalletBalance();
+  }, [id, userWallet]);
 
   const reviewStatus = projectStatus || "draft";
   const isSubmitted = reviewStatus === "submitted";
@@ -762,14 +825,13 @@ async function executeTrade(side: "buy" | "sell") {
   const tokenStage = getTokenStageIndex(tokenMeta.status || project?.token_status || "draft");
   const tokenStages = ["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"];
   const latestCandle = candles.length ? candles[candles.length - 1] : null;
-
   const chartData = candles.map((c) => ({
     time: new Date(c.bucket_time).toLocaleTimeString(),
     price: c.close,
   }));
+  const positionValue = walletBalance * Number(market?.price || 0);
 
   return (
-
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-7xl">
         <Link
@@ -931,24 +993,23 @@ async function executeTrade(side: "buy" | "sell") {
                   Price Chart
                 </div>
 
-      <div style={{ width: "100%", height: 250 }}>
-        <ResponsiveContainer>
-          <LineChart data={chartData}>
-            <XAxis dataKey="time" stroke="#666" />
-            <YAxis stroke="#666" />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="#00FFB2"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-
+                <div style={{ width: "100%", height: 250 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={chartData}>
+                      <XAxis dataKey="time" stroke="#666" />
+                      <YAxis stroke="#666" />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        stroke="#00FFB2"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
               <div className="border border-zinc-800 bg-black p-5">
                 <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Latest Candle</div>
@@ -1027,10 +1088,6 @@ async function executeTrade(side: "buy" | "sell") {
 
               <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
 
-              <p className="mt-3 text-zinc-500">
-                Execute internal project token trades and refresh the live market state instantly.
-              </p>
-
               <div className="mt-6 space-y-4">
                 <div>
                   <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
@@ -1094,17 +1151,45 @@ async function executeTrade(side: "buy" | "sell") {
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Quick Snapshot</div>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Connected Wallet</span>
+                    <span className="font-mono text-zinc-300">{shortMint(userWallet)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Your Balance</span>
+                    <span className="font-mono text-zinc-300">
+                      {formatNumber(walletBalance, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Available to Sell</span>
+                    <span className="font-mono text-zinc-300">
+                      {formatNumber(walletBalance, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Position Value</span>
+                    <span className="font-mono text-zinc-300">
+                      ${formatNumber(positionValue, 4)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
                     <span className="text-zinc-500">Symbol</span>
                     <span className="font-mono text-zinc-300">
                       {project?.token_symbol || tokenMeta.symbol || "-"}
                     </span>
                   </div>
+
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-zinc-500">Supply</span>
                     <span className="font-mono text-zinc-300">
                       {tokenMeta.supply || project?.token_supply || "-"}
                     </span>
                   </div>
+
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-zinc-500">Mint</span>
                     <span className="font-mono text-zinc-300">
@@ -1121,31 +1206,33 @@ async function executeTrade(side: "buy" | "sell") {
           <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Token Status</div>
 
           <div className="mb-8 grid gap-3 md:grid-cols-5">
-            {tokenStages.map((stage, index) => {
-              const isCompleted = index <= tokenStage;
-              const isCurrent = index === tokenStage;
+            {["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"].map(
+              (stage, index) => {
+                const isCompleted = index <= tokenStage;
+                const isCurrent = index === tokenStage;
 
-              return (
-                <div
-                  key={stage}
-                  className={`border p-4 text-center ${
-                    isCompleted ? "border-emerald-400/40 bg-emerald-400/10" : "border-zinc-800 bg-black"
-                  }`}
-                >
+                return (
                   <div
-                    className={`text-[11px] uppercase tracking-[0.22em] ${
-                      isCurrent
-                        ? "text-emerald-300"
-                        : isCompleted
-                        ? "text-zinc-200"
-                        : "text-zinc-600"
+                    key={stage}
+                    className={`border p-4 text-center ${
+                      isCompleted ? "border-emerald-400/40 bg-emerald-400/10" : "border-zinc-800 bg-black"
                     }`}
                   >
-                    {stage}
+                    <div
+                      className={`text-[11px] uppercase tracking-[0.22em] ${
+                        isCurrent
+                          ? "text-emerald-300"
+                          : isCompleted
+                          ? "text-zinc-200"
+                          : "text-zinc-600"
+                      }`}
+                    >
+                      {stage}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
