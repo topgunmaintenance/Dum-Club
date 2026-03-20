@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 type Memory = {
   id: string;
@@ -755,7 +763,13 @@ async function executeTrade(side: "buy" | "sell") {
   const tokenStages = ["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"];
   const latestCandle = candles.length ? candles[candles.length - 1] : null;
 
+  const chartData = candles.map((c) => ({
+    time: new Date(c.bucket_time).toLocaleTimeString(),
+    price: c.close,
+  }));
+
   return (
+
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-7xl">
         <Link
@@ -911,6 +925,30 @@ async function executeTrade(side: "buy" | "sell") {
                   <div className="text-sm text-zinc-300">{formatDateTime(market?.last_trade_at)}</div>
                 </div>
               </div>
+
+              <div className="border border-zinc-800 bg-black p-5">
+                <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Price Chart
+                </div>
+
+      <div style={{ width: "100%", height: 250 }}>
+        <ResponsiveContainer>
+          <LineChart data={chartData}>
+            <XAxis dataKey="time" stroke="#666" />
+            <YAxis stroke="#666" />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="price"
+              stroke="#00FFB2"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+
 
               <div className="border border-zinc-800 bg-black p-5">
                 <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Latest Candle</div>
