@@ -1,13 +1,19 @@
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
 from db.supabase import get_client
-from datetime import datetime, timezone
 
 router = APIRouter()
 
 PROJECT_FEE_BPS = 150  # 1.50%
 DUM_FEE_BPS = 50       # 0.50%
 TOTAL_FEE_BPS = PROJECT_FEE_BPS + DUM_FEE_BPS
+
+DEFAULT_START_PRICE = Decimal("0.001")
+MIN_PRICE = Decimal("0.000001")
 
 
 class TradeRequest(BaseModel):
@@ -16,10 +22,55 @@ class TradeRequest(BaseModel):
     wallet: str = Field(min_length=8)
 
 
-@router.get("/api/projects/{project_id}/market")
-async def get_project_market(project_id: str):
-    supabase = get_client()
+def _to_decimal(value) -> Decimal:
+    try:
+        return Decimal(str(value or 0))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal("0")
 
+
+def _decimal_to_float(value: Decimal, places: int | None = None) -> float:
+    if places is not None:
+        quant = Decimal("1." + ("0" * places))
+        value = value.quantize(quant)
+    return float(value)
+
+
+def _get_project_supply(project: dict) -> Decimal:
+    return _to_decimal(project.get("token_supply") or project.get("supply") or 0)
+
+
+def _get_wallet_balance(supabase, project_id: str, wallet: str) -> Decimal:
+    balance_res = (
+        supabase.table("project_balances")
+        .select("balance")
+        .eq("project_id", project_id)
+        .eq("wallet_address", wallet)
+        .limit(1)
+        .execute()
+    )
+
+    row = balance_res.data[0] if balance_res.data else None
+    balance = _to_decimal(row.get("balance")) if row else Decimal("0")
+    return max(balance, Decimal("0"))
+
+
+def _get_total_circulating(supabase, project_id: str) -> Decimal:
+    balances_res = (
+        supabase.table("project_balances")
+        .select("balance")
+        .eq("project_id", project_id)
+        .execute()
+    )
+
+    total = Decimal("0")
+    for row in (balances_res.data or []):
+        total += _to_decimal(row.get("balance"))
+
+    return max(total, Decimal("0"))
+
+
+def _get_market_row(supabase, project_id: str) -> dict:
     market_res = (
         supabase.table("project_market_state")
         .select("*")
@@ -28,18 +79,49 @@ async def get_project_market(project_id: str):
         .execute()
     )
 
-    market = market_res.data[0] if market_res.data else None
+    if market_res.data:
+        return market_res.data[0]
 
-    if not market:
-        return {
-            "project_id": project_id,
-            "price": 0.001,
-            "market_cap": 0,
-            "volume_24h": 0,
-            "last_trade_at": None,
-        }
+    return {
+        "project_id": project_id,
+        "price": float(DEFAULT_START_PRICE),
+        "market_cap": 0,
+        "circulating_supply": 0,
+        "max_supply": 0,
+        "volume_24h": 0,
+        "last_trade_at": None,
+    }
 
-    return market
+
+@router.get("/api/projects/{project_id}/market")
+async def get_project_market(project_id: str):
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, token_supply")
+        .eq("id", project_id)
+        .limit(1)
+        .execute()
+    )
+
+    project = project_res.data[0] if project_res.data else None
+    max_supply = _get_project_supply(project or {})
+
+    market = _get_market_row(supabase, project_id)
+    price = _to_decimal(market.get("price") or DEFAULT_START_PRICE)
+    circulating = _get_total_circulating(supabase, project_id)
+    market_cap = price * circulating
+
+    return {
+        "project_id": project_id,
+        "price": _decimal_to_float(price, 8),
+        "market_cap": _decimal_to_float(market_cap, 4),
+        "circulating_supply": _decimal_to_float(circulating, 6),
+        "max_supply": _decimal_to_float(max_supply, 6),
+        "volume_24h": float(market.get("volume_24h") or 0),
+        "last_trade_at": market.get("last_trade_at"),
+    }
 
 
 @router.get("/api/projects/{project_id}/trades")
@@ -61,22 +143,12 @@ async def get_project_trades(project_id: str):
 @router.get("/api/projects/{project_id}/balance/{wallet}")
 async def get_project_balance(project_id: str, wallet: str):
     supabase = get_client()
-
-    balance_res = (
-        supabase.table("project_balances")
-        .select("*")
-        .eq("project_id", project_id)
-        .eq("wallet_address", wallet)
-        .limit(1)
-        .execute()
-    )
-
-    balance_row = balance_res.data[0] if balance_res.data else None
+    balance = _get_wallet_balance(supabase, project_id, wallet)
 
     return {
         "project_id": project_id,
         "wallet": wallet,
-        "balance": float(balance_row["balance"]) if balance_row else 0.0,
+        "balance": _decimal_to_float(balance, 6),
     }
 
 
@@ -97,81 +169,83 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         raise HTTPException(status_code=404, detail="Project not found")
 
     token_symbol = project.get("token_symbol")
-    token_supply = project.get("token_supply") or 0
+    max_supply = _get_project_supply(project)
 
     if not token_symbol:
         raise HTTPException(status_code=400, detail="Project token symbol is missing")
+
+    if max_supply <= 0:
+        raise HTTPException(status_code=400, detail="Project supply is not configured")
 
     wallet = body.wallet.strip()
     if not wallet:
         raise HTTPException(status_code=400, detail="Wallet is required")
 
-    market_res = (
-        supabase.table("project_market_state")
-        .select("*")
-        .eq("project_id", project_id)
-        .limit(1)
-        .execute()
-    )
-
-    market = market_res.data[0] if market_res.data else {
-        "project_id": project_id,
-        "price": 0.001,
-        "market_cap": 0,
-        "volume_24h": 0,
-        "last_trade_at": None,
-    }
-
-    current_price = float(market.get("price") or 0.001)
-    amount = float(body.amount)
     side = body.side.lower()
+    amount = _to_decimal(body.amount)
 
-    balance_res = (
-        supabase.table("project_balances")
-        .select("*")
-        .eq("project_id", project_id)
-        .eq("wallet_address", wallet)
-        .limit(1)
-        .execute()
-    )
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero")
 
-    balance_row = balance_res.data[0] if balance_res.data else None
-    current_balance = float(balance_row["balance"]) if balance_row else 0.0
+    market = _get_market_row(supabase, project_id)
+    current_price = _to_decimal(market.get("price") or DEFAULT_START_PRICE)
+    if current_price <= 0:
+        current_price = DEFAULT_START_PRICE
 
-    if side == "sell" and current_balance < amount:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Insufficient balance. Wallet holds {current_balance:.6f} {token_symbol}."
-        )
-
-    gross_value = current_price * amount
-    total_fee = gross_value * (TOTAL_FEE_BPS / 10_000)
-    project_fee = gross_value * (PROJECT_FEE_BPS / 10_000)
-    dum_fee = gross_value * (DUM_FEE_BPS / 10_000)
-    net_value = gross_value - total_fee
-
-    price_impact = 0.0025 * (amount / 1000.0)
+    current_balance = _get_wallet_balance(supabase, project_id, wallet)
+    circulating = _get_total_circulating(supabase, project_id)
+    remaining_supply = max_supply - circulating
 
     if side == "buy":
-        new_price = current_price * (1 + price_impact)
-        new_balance = current_balance + amount
-    else:
-        new_price = max(0.000001, current_price * (1 - price_impact))
-        new_balance = current_balance - amount
+        if remaining_supply <= 0:
+            raise HTTPException(status_code=400, detail="Sold out")
 
-    market_cap = new_price * float(token_supply or 0)
+        if amount > remaining_supply:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Trade exceeds remaining supply. Remaining: {remaining_supply}"
+            )
+    elif side == "sell":
+        if current_balance < amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient balance. Wallet holds {current_balance:.6f} {token_symbol}."
+            )
+
+    gross_value = current_price * amount
+    total_fee = gross_value * Decimal(TOTAL_FEE_BPS) / Decimal("10000")
+    project_fee = gross_value * Decimal(PROJECT_FEE_BPS) / Decimal("10000")
+    dum_fee = gross_value * Decimal(DUM_FEE_BPS) / Decimal("10000")
+    net_value = gross_value - total_fee
+
+    price_impact = Decimal("0.0025") * (amount / Decimal("1000"))
+
+    if side == "buy":
+        new_price = current_price * (Decimal("1") + price_impact)
+        new_balance = current_balance + amount
+        new_circulating = circulating + amount
+    else:
+        new_price = current_price * (Decimal("1") - price_impact)
+        if new_price < MIN_PRICE:
+            new_price = MIN_PRICE
+        new_balance = current_balance - amount
+        new_circulating = circulating - amount
+        if new_circulating < 0:
+            new_circulating = Decimal("0")
+
+    market_cap = new_price * new_circulating
     now = datetime.now(timezone.utc).isoformat()
 
     trade_insert = {
         "project_id": project_id,
         "token_symbol": token_symbol,
         "side": side,
-        "amount": round(amount, 6),
-        "price": round(current_price, 8),
-        "gross_value": round(gross_value, 6),
-        "net_value": round(net_value, 6),
-        "project_fee": round(project_fee, 6),
-        "dum_fee": round(dum_fee, 6),
+        "amount": _decimal_to_float(amount, 6),
+        "price": _decimal_to_float(current_price, 8),
+        "gross_value": _decimal_to_float(gross_value, 6),
+        "net_value": _decimal_to_float(net_value, 6),
+        "project_fee": _decimal_to_float(project_fee, 6),
+        "dum_fee": _decimal_to_float(dum_fee, 6),
         "created_at": now,
         "source": wallet,
     }
@@ -180,9 +254,11 @@ async def create_project_trade(project_id: str, body: TradeRequest):
 
     market_upsert = {
         "project_id": project_id,
-        "price": round(new_price, 8),
-        "market_cap": round(market_cap, 4),
-        "volume_24h": round(float(market.get("volume_24h") or 0) + gross_value, 6),
+        "price": _decimal_to_float(new_price, 8),
+        "market_cap": _decimal_to_float(market_cap, 4),
+        "circulating_supply": _decimal_to_float(new_circulating, 6),
+        "max_supply": _decimal_to_float(max_supply, 6),
+        "volume_24h": round(float(market.get("volume_24h") or 0) + float(gross_value), 6),
         "last_trade_at": now,
         "updated_at": now,
     }
@@ -196,7 +272,7 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "wallet_address": wallet,
         "project_id": project_id,
         "token_symbol": token_symbol,
-        "balance": round(new_balance, 6),
+        "balance": _decimal_to_float(new_balance, 6),
         "updated_at": now,
     }
 
@@ -221,35 +297,43 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         candle_insert = {
             "project_id": project_id,
             "bucket_time": candle_time,
-            "open": round(current_price, 8),
-            "high": round(max(current_price, new_price), 8),
-            "low": round(min(current_price, new_price), 8),
-            "close": round(new_price, 8),
-            "volume": round(gross_value, 6),
+            "open": _decimal_to_float(current_price, 8),
+            "high": _decimal_to_float(max(current_price, new_price), 8),
+            "low": _decimal_to_float(min(current_price, new_price), 8),
+            "close": _decimal_to_float(new_price, 8),
+            "volume": _decimal_to_float(gross_value, 6),
         }
         supabase.table("project_candles").insert(candle_insert).execute()
     else:
         candle_update = {
-            "high": round(max(float(existing_candle["high"]), new_price), 8),
-            "low": round(min(float(existing_candle["low"]), new_price), 8),
-            "close": round(new_price, 8),
-            "volume": round(float(existing_candle["volume"]) + gross_value, 6),
+            "high": _decimal_to_float(
+                max(_to_decimal(existing_candle.get("high")), new_price), 8
+            ),
+            "low": _decimal_to_float(
+                min(_to_decimal(existing_candle.get("low")), new_price), 8
+            ),
+            "close": _decimal_to_float(new_price, 8),
+            "volume": round(float(existing_candle.get("volume") or 0) + float(gross_value), 6),
         }
-        supabase.table("project_candles").update(candle_update).eq("id", existing_candle["id"]).execute()
+        supabase.table("project_candles").update(candle_update).eq(
+            "id", existing_candle["id"]
+        ).execute()
 
     return {
         "status": "success",
         "trade": trade_res.data[0] if trade_res.data else trade_insert,
         "market": {
             "project_id": project_id,
-            "price": round(new_price, 8),
-            "market_cap": round(market_cap, 4),
+            "price": _decimal_to_float(new_price, 8),
+            "market_cap": _decimal_to_float(market_cap, 4),
+            "circulating_supply": _decimal_to_float(new_circulating, 6),
+            "max_supply": _decimal_to_float(max_supply, 6),
             "volume_24h": market_upsert["volume_24h"],
             "last_trade_at": now,
         },
         "balance": {
             "wallet": wallet,
-            "balance": round(new_balance, 6),
+            "balance": _decimal_to_float(new_balance, 6),
         },
     }
 
