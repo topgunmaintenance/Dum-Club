@@ -1,9 +1,8 @@
 # 🚀 DUM Club — Tokenized Human Economy
 
-DUM Club is a Solana-powered platform where **people, services, and projects become tradable assets**.
+DUM Club is a Solana-powered platform where **people, services, and projects become tradable assets.**
 
-Instead of just hiring a service…  
-you can **buy, sell, and hold it like a token**.
+Buy a service. Sell it later. Hold it like a stock.
 
 ---
 
@@ -18,38 +17,50 @@ you can **buy, sell, and hold it like a token**.
 
 ---
 
+## 🔄 How It Works
+
+1. Create a project (service, product, or idea)  
+2. Launch a token tied to that project  
+3. Users buy into it early  
+4. Price moves based on demand  
+5. Tokens unlock real utility or can be sold  
+
+👉 It’s like stocks — but for real-world value
+
+---
+
 ## ⚙️ Core Features
 
 ### 🟢 Tokenized Projects
 Create a project and launch a token tied to:
-- services
-- products
-- AI tools
-- ideas
+- services  
+- products  
+- AI tools  
+- ideas  
 
 ### 📈 Live Market
 Each project has:
-- real-time price
-- market cap
-- volume
-- trade history
+- real-time price  
+- market cap  
+- volume  
+- trade history  
 
 ### 💸 Buy / Sell
 Users can:
-- buy into a project early
-- sell later
-- hold for utility access
+- buy into a project early  
+- sell later  
+- hold for utility access  
 
 ### 🧠 AI + Memory Layer
 Projects can:
-- store knowledge (memories)
-- power AI responses
-- create token-gated intelligence
+- store knowledge (memories)  
+- power AI responses  
+- create token-gated intelligence  
 
 ### 🔐 Wallet-Based Identity
-- Phantom / Solflare / Backpack login
-- no email required
-- on-chain aligned system
+- Phantom / Solflare / Backpack login  
+- no email required  
+- on-chain aligned system  
 
 ---
 
