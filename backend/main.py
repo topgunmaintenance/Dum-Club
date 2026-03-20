@@ -34,16 +34,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://dumclub.io",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://dum.club",   # ← your real domain (corrected)
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+
 )
 
 

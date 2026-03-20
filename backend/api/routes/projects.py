@@ -58,7 +58,6 @@ async def submit_review(
     if project.get("owner_id") != user_id:
         raise HTTPException(status_code=403, detail="Not project owner")
 
-    # Ensure symbol uniqueness
     symbol_res = (
         supabase.table("projects")
         .select("id")
@@ -158,6 +157,44 @@ async def reject_project(project_id: str, body: RejectProjectRequest):
 
 
 # -----------------------------
+# List Public Projects
+# -----------------------------
+
+@router.get("/public")
+async def list_public_projects():
+    supabase = get_client()
+
+    res = (
+        supabase.table("projects")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+
+    return res.data
+
+
+# -----------------------------
+# List Projects
+# -----------------------------
+
+@router.get("/")
+async def list_projects():
+    supabase = get_client()
+
+    res = (
+        supabase.table("projects")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+
+    return res.data
+
+
+# -----------------------------
 # Get Project by ID
 # -----------------------------
 
@@ -179,22 +216,3 @@ async def get_project(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
-
-
-# -----------------------------
-# List Projects
-# -----------------------------
-
-@router.get("/")
-async def list_projects():
-    supabase = get_client()
-
-    res = (
-        supabase.table("projects")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(50)
-        .execute()
-    )
-
-    return res.data

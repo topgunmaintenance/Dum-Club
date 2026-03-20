@@ -54,6 +54,42 @@ type GatedChatResponse = {
   token_mint_address?: string | null;
 };
 
+type MarketState = {
+  id?: number;
+  project_id: string;
+  price: number;
+  market_cap: number;
+  volume_24h: number;
+  last_trade_at?: string | null;
+  updated_at?: string | null;
+};
+
+type Trade = {
+  id: number;
+  project_id: string;
+  token_symbol?: string;
+  side: "buy" | "sell";
+  amount: number;
+  price: number;
+  gross_value: number;
+  net_value: number;
+  project_fee: number;
+  dum_fee: number;
+  source?: string;
+  created_at?: string;
+};
+
+type Candle = {
+  id: number;
+  project_id: string;
+  bucket_time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function getProjectEmoji(project: Project | null) {
@@ -176,6 +212,28 @@ function parseAiOutput(aiOutput: Project["ai_output"]) {
   }
 }
 
+function formatNumber(value?: number | string | null, digits = 2) {
+  const num = Number(value ?? 0);
+  if (!Number.isFinite(num)) return "0";
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
+  });
+}
+
+function formatPrice(value?: number | string | null) {
+  const num = Number(value ?? 0);
+  if (!Number.isFinite(num)) return "0.000000";
+  return num.toFixed(6);
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -200,6 +258,13 @@ export default function ProjectPage() {
     status: "",
     mint_address: "",
   });
+
+  const [market, setMarket] = useState<MarketState | null>(null);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [tradeAmount, setTradeAmount] = useState("");
+  const [loadingTrade, setLoadingTrade] = useState(false);
+  const [tradeMessage, setTradeMessage] = useState("");
 
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
@@ -313,6 +378,103 @@ export default function ProjectPage() {
     } catch (err) {
       console.error(err);
       setMemories([]);
+    }
+  }
+
+  async function loadMarket() {
+    if (!id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/market`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to load market");
+      const data = await res.json();
+      setMarket(data);
+    } catch (err) {
+      console.error(err);
+      setMarket(null);
+    }
+  }
+
+  async function loadTrades() {
+    if (!id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/trades`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to load trades");
+      const data = await res.json();
+      setTrades(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setTrades([]);
+    }
+  }
+
+  async function loadCandles() {
+    if (!id) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/candles`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to load candles");
+      const data = await res.json();
+      setCandles(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setCandles([]);
+    }
+  }
+
+  async function refreshMarketData() {
+    await Promise.all([loadMarket(), loadTrades(), loadCandles()]);
+  }
+
+  async function executeTrade(side: "buy" | "sell") {
+    if (!id || !tradeAmount.trim()) return;
+
+    const numericAmount = Number(tradeAmount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setTradeMessage("Enter a valid amount.");
+      return;
+    }
+
+    try {
+      setLoadingTrade(true);
+      setTradeMessage("");
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          side,
+          amount: numericAmount,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.detail || `Failed to ${side}`);
+      }
+
+      setTradeMessage(
+        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
+          project?.token_symbol || tokenMeta.symbol || "TOKENS"
+        }`
+      );
+      setTradeAmount("");
+      await refreshMarketData();
+    } catch (err: any) {
+      console.error(err);
+      setTradeMessage(err?.message || `Failed to ${side}`);
+    } finally {
+      setLoadingTrade(false);
     }
   }
 
@@ -549,6 +711,17 @@ export default function ProjectPage() {
     loadProject();
     loadMemories();
     loadTokenMetadata();
+    refreshMarketData();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const interval = setInterval(() => {
+      refreshMarketData();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   const reviewStatus = projectStatus || "draft";
@@ -564,6 +737,7 @@ export default function ProjectPage() {
 
   const tokenStage = getTokenStageIndex(tokenMeta.status || project?.token_status || "draft");
   const tokenStages = ["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"];
+  const latestCandle = candles.length ? candles[candles.length - 1] : null;
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
@@ -661,7 +835,7 @@ export default function ProjectPage() {
                   style={{ background: accent }}
                 >
                   {loadingAction ? "Minting..." : "Create Token"}
-                  </button>
+                </button>
               )}
 
               {isTokenLive && (
@@ -692,6 +866,200 @@ export default function ProjectPage() {
           <div className="p-6">
             <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Memory Count</div>
             <div className="text-2xl font-semibold text-white">{memories.length}</div>
+          </div>
+        </div>
+
+        <div className="mb-8 border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Market Terminal</div>
+
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-6">
+              <div className="grid gap-0 border border-zinc-800 md:grid-cols-4">
+                <div className="border-b border-zinc-800 p-5 md:border-b-0 md:border-r">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Price</div>
+                  <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
+                </div>
+
+                <div className="border-b border-zinc-800 p-5 md:border-b-0 md:border-r">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Market Cap</div>
+                  <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
+                </div>
+
+                <div className="border-b border-zinc-800 p-5 md:border-b-0 md:border-r">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">24h Volume</div>
+                  <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
+                </div>
+
+                <div className="p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Last Trade</div>
+                  <div className="text-sm text-zinc-300">{formatDateTime(market?.last_trade_at)}</div>
+                </div>
+              </div>
+
+              <div className="border border-zinc-800 bg-black p-5">
+                <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Latest Candle</div>
+
+                <div className="grid gap-4 sm:grid-cols-5">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Open</div>
+                    <div className="mt-2 font-mono text-white">{formatPrice(latestCandle?.open)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">High</div>
+                    <div className="mt-2 font-mono text-white">{formatPrice(latestCandle?.high)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Low</div>
+                    <div className="mt-2 font-mono text-white">{formatPrice(latestCandle?.low)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Close</div>
+                    <div className="mt-2 font-mono text-white">{formatPrice(latestCandle?.close)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Volume</div>
+                    <div className="mt-2 font-mono text-white">{formatNumber(latestCandle?.volume, 4)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-zinc-500">
+                  Candle Bucket: {latestCandle?.bucket_time ? formatDateTime(latestCandle.bucket_time) : "-"}
+                </div>
+              </div>
+
+              <div className="border border-zinc-800 bg-black p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Recent Trades</div>
+                  <button
+                    type="button"
+                    onClick={refreshMarketData}
+                    className="border border-zinc-700 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-zinc-300 transition hover:bg-zinc-900"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {trades.length === 0 ? (
+                  <div className="text-sm text-zinc-500">No trades yet.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {trades.slice(0, 8).map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="grid gap-3 border border-zinc-800 bg-zinc-950 p-4 text-sm md:grid-cols-[90px_1fr_1fr_1fr_1.5fr]"
+                      >
+                        <div
+                          className={`font-mono uppercase tracking-[0.15em] ${
+                            trade.side === "buy" ? "text-emerald-300" : "text-red-300"
+                          }`}
+                        >
+                          {trade.side}
+                        </div>
+                        <div className="text-zinc-300">
+                          {formatNumber(trade.amount, 2)} {trade.token_symbol || ""}
+                        </div>
+                        <div className="font-mono text-zinc-300">${formatPrice(trade.price)}</div>
+                        <div className="font-mono text-zinc-300">${formatNumber(trade.gross_value, 6)}</div>
+                        <div className="text-zinc-500">{formatDateTime(trade.created_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 bg-black p-5">
+              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Trade Panel</div>
+
+              <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
+
+              <p className="mt-3 text-zinc-500">
+                Execute internal project token trades and refresh the live market state instantly.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                <div>
+                  <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+                    Token Amount
+                  </label>
+                  <input
+                    value={tradeAmount}
+                    onChange={(e) => setTradeAmount(e.target.value)}
+                    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+                    className="w-full border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                    type="number"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={loadingTrade}
+                    onClick={() => executeTrade("buy")}
+                    className="px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                    style={{ background: accent }}
+                  >
+                    {loadingTrade ? "Working..." : "Buy"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={loadingTrade}
+                    onClick={() => executeTrade("sell")}
+                    className="border border-zinc-700 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {loadingTrade ? "Working..." : "Sell"}
+                  </button>
+                </div>
+
+                {tradeMessage && (
+                  <div className="border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                    {tradeMessage}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 grid gap-4 border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
+                  <span className="font-mono text-zinc-300">1.50%</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Fee</span>
+                  <span className="font-mono text-zinc-300">0.50%</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Total Fee</span>
+                  <span className="font-mono text-white">2.00%</span>
+                </div>
+              </div>
+
+              <div className="mt-8 border border-zinc-800 bg-zinc-950 p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Quick Snapshot</div>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Symbol</span>
+                    <span className="font-mono text-zinc-300">
+                      {project?.token_symbol || tokenMeta.symbol || "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Supply</span>
+                    <span className="font-mono text-zinc-300">
+                      {tokenMeta.supply || project?.token_supply || "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-500">Mint</span>
+                    <span className="font-mono text-zinc-300">
+                      {shortMint(tokenMeta.mint_address || project?.token_mint_address)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
