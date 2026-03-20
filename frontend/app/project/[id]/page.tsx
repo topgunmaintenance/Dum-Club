@@ -10,8 +10,9 @@ type Memory = {
   content?: string;
 };
 
-type Project = {
+type Project = { 
   id: string;
+  wallet_address?: string | null;
   name?: string;
   title?: string;
   description?: string;
@@ -433,50 +434,65 @@ export default function ProjectPage() {
     await Promise.all([loadMarket(), loadTrades(), loadCandles()]);
   }
 
-  async function executeTrade(side: "buy" | "sell") {
-    if (!id || !tradeAmount.trim()) return;
+async function executeTrade(side: "buy" | "sell") {
+  if (!id || !tradeAmount.trim()) return;
 
-    const numericAmount = Number(tradeAmount);
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setTradeMessage("Enter a valid amount.");
-      return;
-    }
-
-    try {
-      setLoadingTrade(true);
-      setTradeMessage("");
-
-      const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          side,
-          amount: numericAmount,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.detail || `Failed to ${side}`);
-      }
-
-      setTradeMessage(
-        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
-          project?.token_symbol || tokenMeta.symbol || "TOKENS"
-        }`
-      );
-      setTradeAmount("");
-      await refreshMarketData();
-    } catch (err: any) {
-      console.error(err);
-      setTradeMessage(err?.message || `Failed to ${side}`);
-    } finally {
-      setLoadingTrade(false);
-    }
+  const numericAmount = Number(tradeAmount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    setTradeMessage("Enter a valid amount.");
+    return;
   }
+
+  const wallet = project?.wallet_address?.trim();
+  if (!wallet || wallet.length < 8) {
+    setTradeMessage("Wallet not found for this project.");
+    return;
+  }
+
+  try {
+    setLoadingTrade(true);
+    setTradeMessage("");
+
+    const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        side,
+        amount: numericAmount,
+        wallet,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const detail =
+        typeof data?.detail === "string"
+          ? data.detail
+          : Array.isArray(data?.detail)
+            ? data.detail.map((d: any) => d?.msg || JSON.stringify(d)).join(", ")
+            : JSON.stringify(data);
+
+      throw new Error(detail || `Failed to ${side}`);
+    }
+
+    setTradeMessage(
+      `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
+        project?.token_symbol || tokenMeta.symbol || "TOKENS"
+      }`
+    );
+
+    setTradeAmount("");
+    await refreshMarketData();
+  } catch (err: any) {
+    console.error(err);
+    setTradeMessage(err?.message || `Failed to ${side}`);
+  } finally {
+    setLoadingTrade(false);
+  }
+}
 
   async function saveMemory(e: React.FormEvent) {
     e.preventDefault();
