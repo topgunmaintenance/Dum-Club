@@ -83,35 +83,35 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadProjects() {
-    try {
-      setLoading(true);
-      setError("");
+async function loadProjects() {
+  try {
+    setLoading(true);
+    setError("");
 
-      const res = await fetch(`${API_BASE}/api/projects/`, {
-        cache: "no-store",
-      });
+    const res = await fetch(`${API_BASE}/api/projects/public`, {
+      cache: "no-store",
+    });
 
-      if (!res.ok) {
-        throw new Error(`Failed to load projects: ${res.status}`);
-      }
-
-      const data = await res.json();
-      const allProjects = Array.isArray(data?.projects) ? data.projects : [];
-
-      const liveProjects = allProjects.filter(
-        (project: Project) => project?.status === "live"
-      );
-
-      setProjects(liveProjects);
-    } catch (err) {
-      console.error("DISCOVER LOAD ERROR:", err);
-      setError("Failed to load public projects.");
-      setProjects([]);
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      throw new Error(`Failed to load projects: ${res.status}`);
     }
+
+    const data = await res.json();
+    const publicProjects = Array.isArray(data?.projects)
+      ? data.projects
+      : Array.isArray(data)
+      ? data
+      : [];
+
+    setProjects(publicProjects);
+  } catch (err) {
+    console.error("DISCOVER LOAD ERROR:", err);
+    setError("Failed to load public projects.");
+    setProjects([]);
+  } finally {
+    setLoading(false);
   }
+}
 
   useEffect(() => {
     loadProjects();

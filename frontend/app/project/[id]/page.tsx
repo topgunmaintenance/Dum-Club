@@ -65,6 +65,7 @@ type GatedChatResponse = {
   token_mint_address?: string | null;
 };
 
+
 type MarketState = {
   id?: number;
   project_id: string;
@@ -123,7 +124,6 @@ function getProjectEmoji(project: Project | null) {
 
   return "🚀";
 }
-
 function getCategory(project: Project | null) {
   const source = `${project?.title || project?.name || ""} ${project?.template_type || ""}`.toLowerCase();
 
@@ -133,8 +133,13 @@ function getCategory(project: Project | null) {
   if (source.includes("music") || source.includes("beat")) return "Music";
   if (source.includes("crypto") || source.includes("signal")) return "Finance";
   if (source.includes("clean")) return "Business";
-  if (source.includes("tasty") || source.includes("meal") || source.includes("food") || source.includes("cook")) {
-    return "AI Meal Planning";
+  if (
+    source.includes("tasty") ||
+    source.includes("meal") ||
+    source.includes("food") ||
+    source.includes("cook")
+  ) {
+    return "Food";
   }
 
   return "AI Project";
@@ -149,7 +154,12 @@ function getAccent(project: Project | null) {
   if (source.includes("music") || source.includes("beat")) return "#F472B6";
   if (source.includes("crypto") || source.includes("signal")) return "#38BDF8";
   if (source.includes("clean")) return "#A78BFA";
-  if (source.includes("tasty") || source.includes("meal") || source.includes("food") || source.includes("cook")) {
+  if (
+    source.includes("tasty") ||
+    source.includes("meal") ||
+    source.includes("food") ||
+    source.includes("cook")
+  ) {
     return "#00FFB2";
   }
 
@@ -380,6 +390,7 @@ export default function ProjectPage() {
     locked: false,
     lock_message: "",
   });
+const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUpperCase();
 
   async function loadProject() {
     if (!id) return;
@@ -966,14 +977,14 @@ const chartData = useMemo(() => {
       ? "text-yellow-300 border-yellow-400/30 bg-yellow-950/20"
       : "text-emerald-300 border-emerald-400/30 bg-emerald-950/20";
 
-  const heroUtility =
-    parsedAiOutput?.token_utility ||
-    project?.token_utility ||
-    `Hold ${project?.token_symbol || tokenMeta.symbol || "this token"} to unlock deeper project access and utility inside DUM Club.`;
-
-  const uniqueTradeSources = useMemo(() => {
-    const keys = new Set<string>();
-    for (const trade of trades) {
+const heroUtility =
+  parsedAiOutput?.token_utility ||
+  project?.token_utility ||
+  `Hold ${project?.token_symbol || tokenMeta.symbol || "this token"} to unlock deeper project access and utility inside DUM Club.`;
+ 
+ const uniqueTradeSources = useMemo(() => {
+   const keys = new Set<string>();
+   for (const trade of trades) {
       if (trade.source) keys.add(trade.source);
       else keys.add(`trade-${trade.id}`);
     }
@@ -983,206 +994,91 @@ const chartData = useMemo(() => {
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
 
-  return (
-    <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
-      <div className="mx-auto max-w-7xl">
-        <Link
-          href="/discover"
-          className="mb-8 inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
-        >
-          ← Back to Feed
-        </Link>
+return (
+  <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
+    <div className="mx-auto max-w-7xl">
+      <Link
+        href="/discover"
+        className="mb-8 inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
+      >
+        ← Back to Feed
+      </Link>
 
-        <div
-          className="mb-8 rounded-3xl border border-zinc-900 bg-black p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
-          style={{
-            borderTop: `3px solid ${accent}`,
-            boxShadow: `0 0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
-          }}
-        >
-          <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
-            <div className="flex gap-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-4xl shadow-inner">
-                {emoji}
-              </div>
-
-              <div className="max-w-4xl">
-                <div className="mb-3 text-xs uppercase tracking-[0.35em] text-zinc-600">
-                  Project Profile
-                </div>
-
-                <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
-                  {projectName}
-                </h1>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
-                  <span
-                    className="rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em]"
-                    style={{ borderColor: accent, color: accent }}
-                  >
-                    {category}
-                  </span>
-
-                  <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
-                    {project?.template_type || "ai_project"}
-                  </span>
-
-                  <span
-                    className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
-                      isTokenLive
-                        ? "border-emerald-400/30 text-emerald-300"
-                        : isApproved
-                        ? "border-yellow-400/30 text-yellow-300"
-                        : isSubmitted
-                        ? "border-blue-400/30 text-blue-300"
-                        : isRejected
-                        ? "border-red-400/30 text-red-300"
-                        : "border-zinc-700 text-zinc-300"
-                    }`}
-                  >
-                    {isTokenLive ? "TOKEN LIVE" : reviewStatus}
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-emerald-300">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" />
-                    Market Active
-                  </span>
-                </div>
-
-                <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">
-                  {project?.description ||
-                    "This project is live inside DUM Club and ready to be expanded with memory, AI, and discovery."}
-                </p>
-
-                <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">
-                    Utility Signal
-                  </div>
-                  <p className="text-sm leading-7 text-zinc-300">
-                    {heroUtility}
-                  </p>
-                </div>
-
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-600">Price</div>
-                    <div className="mt-2 font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-600">Market Cap</div>
-                    <div className="mt-2 font-mono text-2xl text-white">{formatCurrencyCompact(market?.market_cap, 2)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-600">Range Change</div>
-                    <div className={`mt-2 font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-                      {formatPercent(rangeChangePct, 2)}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-zinc-600">Activity</div>
-                    <div className="mt-2 font-mono text-2xl text-white">{trades.length}</div>
-                    <div className="mt-1 text-xs text-zinc-500">Recent trades</div>
-                  </div>
-                </div>
-              </div>
+      <div
+        className="mb-8 rounded-3xl border border-zinc-900 bg-black p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
+        style={{
+          borderTop: `3px solid ${accent}`,
+          boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
+        }}
+      >
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex gap-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-4xl shadow-inner">
+              {emoji}
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              {isSubmitted && (
-                <>
-                  <button
-                    type="button"
-                    disabled={loadingAction}
-                    onClick={approveProject}
-                    className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                    style={{ background: accent }}
-                  >
-                    {loadingAction ? "Working..." : "Approve"}
-                  </button>
+            <div className="max-w-4xl">
+              <div className="mb-3 text-xs uppercase tracking-[0.35em] text-zinc-600">
+                Project Profile
+              </div>
 
-                  <button
-                    type="button"
-                    disabled={loadingAction}
-                    onClick={rejectProject}
-                    className="rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
-                  >
-                    {loadingAction ? "Working..." : "Reject"}
-                  </button>
-                </>
-              )}
+              <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
+                {projectName}
+              </h1>
 
-              {isApproved && !project?.token_mint_address && (
-                <button
-                  type="button"
-                  disabled={loadingAction}
-                  onClick={createToken}
-                  className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                  style={{ background: accent }}
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+                <span
+                  className="rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em]"
+                  style={{ borderColor: accent, color: accent }}
                 >
-                  {loadingAction ? "Minting..." : "Create Token"}
-                </button>
-              )}
-
-              {isTokenLive && (
-                <div className="rounded-2xl border border-emerald-400/30 px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-emerald-300">
-                  TOKEN LIVE
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8 grid gap-4 md:grid-cols-4">
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Project ID</div>
-            <div className="break-all text-sm text-zinc-300">{id}</div>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Category</div>
-            <div className="text-2xl font-semibold text-white">{category}</div>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Status</div>
-            <div className="text-2xl font-semibold text-white">{isTokenLive ? "TOKEN LIVE" : reviewStatus}</div>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">Memory Count</div>
-            <div className="text-2xl font-semibold text-white">{memories.length}</div>
-          </div>
-        </div>
-
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">Market Terminal</div>
-              <div className="mt-2 flex items-center gap-3">
-                <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-                  {formatPercent(rangeChangePct, 2)}
+                  {category}
                 </span>
-                <span className="text-sm text-zinc-500">selected range</span>
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              {(["1H", "1D", "1W", "1M", "ALL"] as ChartRange[]).map((range) => (
-                <button
-                  key={range}
-                  type="button"
-                  onClick={() => setChartRange(range)}
-                  className={`rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
-                    chartRange === range
-                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                      : "border-zinc-800 bg-black text-zinc-400 hover:bg-zinc-900"
-                  }`}
-                >
-                  {range}
-                </button>
-              ))}
+          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
+              Memory Count
+            </div>
+            <div className="text-2xl font-semibold text-white">
+              {memories.length}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+              Live Market
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                {formatPercent(rangeChangePct, 2)}
+              </span>
+              <span className="text-sm text-zinc-500">selected range</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(["1H", "1D", "1W", "1M", "ALL"] as ChartRange[]).map((range) => (
+              <button
+                key={range}
+                type="button"
+                onClick={() => setChartRange(range)}
+                className={`rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
+                  chartRange === range
+                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                    : "border-zinc-800 bg-black text-zinc-400 hover:bg-zinc-900"
+                }`}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+        </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
             <div className="space-y-6">
@@ -1735,6 +1631,7 @@ const chartData = useMemo(() => {
               later.
             </p>
 
+            {publicKey ? (
             <form onSubmit={saveMemory} className="mt-6 space-y-4">
               <textarea
                 value={memoryText}
@@ -1753,6 +1650,11 @@ const chartData = useMemo(() => {
                 {loadingMemory ? "Saving..." : "Save Memory"}
               </button>
             </form>
+             ) : (
+             <div className="mt-6 rounded-2xl border border-zinc-800 bg-black/40 p-5 text-sm text-zinc-500">
+             Connect your wallet to add a project memory.
+             </div>
+             )}
 
             <div className="mt-10">
               <h3 className="font-mono text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
@@ -1852,3 +1754,4 @@ const chartData = useMemo(() => {
     </div>
   );
 }
+
