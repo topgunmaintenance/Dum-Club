@@ -1,24 +1,152 @@
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, Field
+from typing import Optional, Literal
+from datetime import datetime, timezone
 import re
+import secrets
+
 from db.supabase import get_client
 
 router = APIRouter()
 
+# -----------------------------
+# Types / Enums
+# -----------------------------
+
+ProjectCategory = Literal["service", "product", "ai", "other"]
+UtilityType = Literal["service_hours", "discount", "product_redemption", "access"]
 
 # -----------------------------
 # Request Models
 # -----------------------------
 
+class ProjectCreateRequest(BaseModel):
+    wallet_address: Optional[str] = None
+    name: str = Field(min_length=2, max_length=100)
+    title: Optional[str] = Field(default=None, max_length=100)
+    description: str = Field(min_length=5, max_length=2000)
+    category: ProjectCategory
+    token_symbol: str = Field(min_length=2, max_length=10)
+    token_supply: int = Field(gt=0, le=21_000_000)
+    utility_type: UtilityType
+    utility_value: str = Field(min_length=1, max_length=255)
+
+
 class SubmitReviewRequest(BaseModel):
-    token_name: str = Field(min_length=3, max_length=32)
-    token_symbol: str = Field(min_length=3, max_length=6)
+    token_name: str = Field(min_length=2, max_length=100)
+    token_symbol: str = Field(min_length=2, max_length=10)
     token_supply: int = Field(gt=0, le=21_000_000)
 
 
 class RejectProjectRequest(BaseModel):
     reason: str | None = None
 
+
+class ApproveProjectRequest(BaseModel):
+    starting_price: float = Field(default=0.001, gt=0)
+    market_cap: float = Field(default=0, ge=0)
+
+
+class RedemptionRequest(BaseModel):
+    wallet: str = Field(min_length=8)
+    amount: float = Field(gt=0)
+
+# -----------------------------
+# Helpers
+# -----------------------------
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def generate_claim_code(prefix: str = "DUM") -> str:
+    return f"{prefix}-{secrets.token_hex(4).upper()}"
+
+
+def validate_token_symbol(token_symbol: str) -> str:
+    token_symbol = token_symbol.strip().upper()
+
+    if not re.fullmatch(r"[A-Z0-9]{2,10}", token_symbol):
+        raise HTTPException(
+            status_code=400,
+            detail="Token symbol must be 2-10 uppercase letters or numbers"
+        )
+
+    return token_symbol
+
+# -----------------------------
+# Create Project
+# -----------------------------
+
+@router.post("/")
+async def create_project(
+    body: ProjectCreateRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False)
+):
+    supabase = get_client()
+
+    token_symbol = validate_token_symbol(body.token_symbol)
+
+    symbol_res = (
+        supabase.table("projects")
+        .select("id")
+        .eq("token_symbol", token_symbol)
+        .execute()
+    )
+
+    if symbol_res.data:
+        raise HTTPException(status_code=400, detail="Token symbol already exists")
+
+    created_at = now_iso()
+    title = body.title.strip() if body.title else body.name.strip()
+
+    project_insert = {
+        "owner_id": user_id,
+        "wallet_address": body.wallet_address,
+        "name": body.name.strip(),
+        "title": title,
+        "description": body.description.strip(),
+        "category": body.category,
+        "status": "under_review",
+        "review_status": "pending",
+        "template_type": body.category,
+        "token_name": title,
+        "token_symbol": token_symbol,
+        "token_supply": body.token_supply,
+        "token_decimals": 0,
+        "token_status": "pending",
+        "token_utility": body.utility_value.strip(),
+        "created_at": created_at,
+    }
+
+    project_res = supabase.table("projects").insert(project_insert).execute()
+
+    if not project_res.data:
+        raise HTTPException(status_code=500, detail="Failed to create project")
+
+    project = project_res.data[0]
+    project_id = project["id"]
+
+    token_config_insert = {
+        "project_id": project_id,
+        "symbol": token_symbol,
+        "supply": body.token_supply,
+        "decimals": 0,
+        "utility_type": body.utility_type,
+        "utility_value": body.utility_value.strip(),
+        "created_at": created_at,
+    }
+
+    try:
+        supabase.table("token_config").insert(token_config_insert).execute()
+    except Exception:
+        pass
+
+    return {
+        "status": "success",
+        "message": "Project created and submitted for review",
+        "project": project,
+    }
 
 # -----------------------------
 # Submit Project For Review
@@ -33,27 +161,21 @@ async def submit_review(
     supabase = get_client()
 
     token_name = body.token_name.strip()
-    token_symbol = body.token_symbol.strip().upper()
+    token_symbol = validate_token_symbol(body.token_symbol)
     token_supply = body.token_supply
-
-    if not re.fullmatch(r"[A-Z]{3,6}", token_symbol):
-        raise HTTPException(
-            status_code=400,
-            detail="Token symbol must be 3-6 uppercase letters"
-        )
 
     project_res = (
         supabase.table("projects")
         .select("*")
         .eq("id", project_id)
-        .single()
+        .limit(1)
         .execute()
     )
 
-    project = project_res.data
-
-    if not project:
+    if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
 
     if project.get("owner_id") != user_id:
         raise HTTPException(status_code=403, detail="Not project owner")
@@ -75,7 +197,9 @@ async def submit_review(
             "token_name": token_name,
             "token_symbol": token_symbol,
             "token_supply": token_supply,
-            "review_status": "submitted"
+            "review_status": "submitted",
+            "status": "under_review",
+            "token_status": "pending",
         })
         .eq("id", project_id)
         .execute()
@@ -86,40 +210,92 @@ async def submit_review(
         "project": update_res.data[0] if update_res.data else None
     }
 
-
 # -----------------------------
-# Approve Project
+# Approve Project + Go Live
 # -----------------------------
 
 @router.post("/{project_id}/approve")
-async def approve_project(project_id: str):
+async def approve_project(project_id: str, body: ApproveProjectRequest):
     supabase = get_client()
 
-    project_res = (
-        supabase.table("projects")
-        .select("*")
-        .eq("id", project_id)
-        .single()
-        .execute()
-    )
+    try:
+        project_res = (
+            supabase.table("projects")
+            .select("*")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
 
-    project = project_res.data
+        print("APPROVE project_res:", project_res.data)
 
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        if not project_res.data:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    update_res = (
-        supabase.table("projects")
-        .update({"review_status": "approved"})
-        .eq("id", project_id)
-        .execute()
-    )
+        project = project_res.data[0]
 
-    return {
-        "status": "success",
-        "project": update_res.data[0] if update_res.data else None
-    }
+        update_res = (
+            supabase.table("projects")
+            .update({
+                "review_status": "approved",
+                "status": "live",
+                "token_status": "active",
+            })
+            .eq("id", project_id)
+            .execute()
+        )
 
+        print("APPROVE update_res:", update_res.data)
+
+        if not update_res.data:
+            raise HTTPException(status_code=500, detail="Failed to approve project update")
+
+        market_payload = {
+            "project_id": project_id,
+            "price": body.starting_price,
+            "market_cap": body.market_cap,
+            "volume_24h": 0,
+            "last_trade_at": None,
+            "updated_at": now_iso(),
+        }
+
+        existing_market = (
+            supabase.table("project_market_state")
+            .select("*")
+            .eq("project_id", project_id)
+            .limit(1)
+            .execute()
+        )
+
+        print("APPROVE existing_market:", existing_market.data)
+
+        if existing_market.data:
+            market_res = (
+                supabase.table("project_market_state")
+                .update(market_payload)
+                .eq("project_id", project_id)
+                .execute()
+            )
+        else:
+            market_res = (
+                supabase.table("project_market_state")
+                .insert(market_payload)
+                .execute()
+            )
+
+        print("APPROVE market_res:", market_res.data)
+
+        return {
+            "status": "success",
+            "message": "Project approved and trading is now live",
+            "project": update_res.data[0]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("APPROVE ERROR:", repr(e))
+        raise HTTPException(status_code=500, detail=f"approve_project failed: {str(e)}")
 
 # -----------------------------
 # Reject Project
@@ -131,20 +307,22 @@ async def reject_project(project_id: str, body: RejectProjectRequest):
 
     project_res = (
         supabase.table("projects")
-        .select("*")
+        .select("id")
         .eq("id", project_id)
-        .single()
+        .limit(1)
         .execute()
     )
 
-    project = project_res.data
-
-    if not project:
+    if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
     update_res = (
         supabase.table("projects")
-        .update({"review_status": "rejected"})
+        .update({
+            "review_status": "rejected",
+            "status": "draft",
+            "token_status": "rejected",
+        })
         .eq("id", project_id)
         .execute()
     )
@@ -155,6 +333,97 @@ async def reject_project(project_id: str, body: RejectProjectRequest):
         "project": update_res.data[0] if update_res.data else None
     }
 
+# -----------------------------
+# Get Token Config
+# -----------------------------
+
+@router.get("/{project_id}/token-config")
+async def get_token_config(project_id: str):
+    supabase = get_client()
+
+    res = (
+        supabase.table("token_config")
+        .select("*")
+        .eq("project_id", project_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not res.data:
+        return {
+            "project_id": project_id,
+            "symbol": None,
+            "supply": None,
+            "utility_type": None,
+            "utility_value": None,
+        }
+
+    return res.data[0]
+
+# -----------------------------
+# Redeem Token
+# -----------------------------
+
+@router.post("/{project_id}/redeem")
+async def redeem_project_token(project_id: str, body: RedemptionRequest):
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("*")
+        .eq("id", project_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+
+    if project.get("status") != "live":
+        raise HTTPException(status_code=400, detail="Project is not live for redemption")
+
+    claim_code = generate_claim_code(project.get("token_symbol", "DUM"))
+
+    redemption_insert = {
+        "project_id": project_id,
+        "wallet": body.wallet,
+        "amount": body.amount,
+        "code": claim_code,
+        "status": "pending",
+        "created_at": now_iso(),
+    }
+
+    redemption_res = supabase.table("redemptions").insert(redemption_insert).execute()
+
+    if not redemption_res.data:
+        raise HTTPException(status_code=500, detail="Failed to create redemption")
+
+    return {
+        "status": "success",
+        "message": "Redemption created",
+        "code": claim_code,
+        "redemption": redemption_res.data[0],
+    }
+
+# -----------------------------
+# List Redemptions
+# -----------------------------
+
+@router.get("/{project_id}/redemptions")
+async def list_redemptions(project_id: str):
+    supabase = get_client()
+
+    res = (
+        supabase.table("redemptions")
+        .select("*")
+        .eq("project_id", project_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return res.data or []
 
 # -----------------------------
 # List Public Projects
@@ -172,8 +441,7 @@ async def list_public_projects():
         .execute()
     )
 
-    return res.data
-
+    return res.data or []
 
 # -----------------------------
 # List Projects
@@ -191,8 +459,7 @@ async def list_projects():
         .execute()
     )
 
-    return res.data
-
+    return res.data or []
 
 # -----------------------------
 # Get Project by ID
@@ -206,13 +473,11 @@ async def get_project(project_id: str):
         supabase.table("projects")
         .select("*")
         .eq("id", project_id)
-        .single()
+        .limit(1)
         .execute()
     )
 
-    project = project_res.data
-
-    if not project:
+    if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    return project
+    return project_res.data[0]

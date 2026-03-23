@@ -46,7 +46,11 @@ export default function ChatPage() {
       const res = await fetch(`${API}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: input, stream: true }),
+        body: JSON.stringify({
+          message: input,
+          project_id: null,
+          stream: true,
+        }),
       });
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();

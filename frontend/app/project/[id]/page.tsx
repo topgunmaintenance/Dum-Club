@@ -93,6 +93,16 @@ type Trade = {
   created_at?: string;
 };
 
+type Redemption = {
+  id: number;
+  project_id: string;
+  wallet: string;
+  amount: number;
+  code: string;
+  status: string;
+  created_at?: string;
+};
+
 type Candle = {
   id: number;
   project_id: string;
@@ -211,6 +221,7 @@ function formatTokenStatus(status?: string) {
       return "Tokens Minted";
     case "liquidity_added":
       return "Liquidity Added";
+    case "live":
     case "trading_live":
       return "Trading Live";
     default:
@@ -225,9 +236,10 @@ function getTokenStageIndex(status?: string) {
     case "mint_created":
       return 1;
     case "tokens_minted":
-      return 2;
+      return 2; 
     case "liquidity_added":
       return 3;
+    case "live":
     case "trading_live":
       return 4;
     default:
@@ -364,6 +376,11 @@ export default function ProjectPage() {
   const [loadingTrade, setLoadingTrade] = useState(false);
   const [tradeMessage, setTradeMessage] = useState("");
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeemStatus, setRedeemStatus] = useState("");
+  const [loadingRedeem, setLoadingRedeem] = useState(false);
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
 
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
@@ -527,7 +544,25 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
       setCandles([]);
     }
   }
-
+  
+  async function loadRedemptions() {
+    if (!id) return;
+  
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/redemptions`, {
+        cache: "no-store",
+      });
+  
+      if (!res.ok) throw new Error("Failed to load redemptions");
+  
+      const data = await res.json();
+      setRedemptions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setRedemptions([]);
+    }
+  }
+  
   async function refreshMarketData() {
     await Promise.all([loadMarket(), loadTrades(), loadCandles()]);
   }
@@ -624,6 +659,67 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
       setTradeMessage(err?.message || `Failed to ${side}`);
     } finally {
       setLoadingTrade(false);
+    }
+  }
+
+  async function handleRedeem() {
+    if (!id) return;
+  
+    const numericAmount = Number(redeemAmount);
+  
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setRedeemStatus("Enter a valid amount to redeem.");
+      return;
+    }
+  
+    if (numericAmount > walletBalance) {
+      setRedeemStatus(
+        `Insufficient balance. You only have ${formatNumber(walletBalance, 2)} ${
+          project?.token_symbol || tokenMeta.symbol || "TOKENS"
+        }.`
+      );
+      return;
+    }
+  
+    try {
+      setLoadingRedeem(true);
+      setRedeemStatus("");
+      setRedeemCode("");
+  
+      const wallet = userWallet?.trim() || "demo-wallet";
+  
+      const res = await fetch(`${API_BASE}/api/projects/${id}/redeem`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          wallet,
+          amount: numericAmount,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(data?.detail || "Failed to redeem token");
+      }
+  
+      setRedeemCode(data.code || "");
+      setRedeemStatus(
+        `Redeemed ${formatNumber(numericAmount, 2)} ${
+          project?.token_symbol || tokenMeta.symbol || "TOKENS"
+        } successfully.`
+      );
+      setRedeemAmount("");
+  
+      await loadRedemptions();
+      await loadWalletBalance();
+    } catch (err: any) {
+      console.error(err);
+      setRedeemStatus(err?.message || "Failed to redeem token");
+    } finally {
+      setLoadingRedeem(false);
     }
   }
 
@@ -861,6 +957,7 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     loadMemories();
     loadTokenMetadata();
     refreshMarketData();
+    loadRedemptions();
   }, [id]);
 
   useEffect(() => {
@@ -1271,7 +1368,97 @@ return (
                   </div>
                 )}
               </div>
+              <div className="mt-8 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+  <div className="flex items-center justify-between gap-4">
+    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
+    <span className="font-mono text-zinc-300">1.50%</span>
+  </div>
+  <div className="flex items-center justify-between gap-4">
+    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Fee</span>
+    <span className="font-mono text-zinc-300">0.50%</span>
+  </div>
+  <div className="flex items-center justify-between gap-4">
+    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Total Fee</span>
+    <span className="font-mono text-white">2.00%</span>
+  </div>
+</div>
+<div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+  <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+    Redeem Token
+  </div>
 
+  <div className="mb-3 text-sm text-zinc-400">
+    Turn your token into real project utility.
+  </div>
+
+  <input
+    value={redeemAmount}
+    onChange={(e) => setRedeemAmount(e.target.value)}
+    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+    className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+    type="number"
+    min="0"
+    step="any"
+  />
+
+  <button
+    type="button"
+    onClick={handleRedeem}
+    disabled={loadingRedeem}
+    className="mt-3 w-full rounded-xl bg-green-500 py-2 font-semibold text-black disabled:opacity-50"
+  >
+    {loadingRedeem ? "Redeeming..." : "Redeem"}
+  </button>
+
+  {redeemStatus && (
+    <div className="mt-3 rounded-xl border border-zinc-800 bg-black p-3 text-sm text-zinc-300">
+      {redeemStatus}
+    </div>
+  )}
+
+  {redeemCode && (
+    <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3">
+      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300">
+        Claim Code
+      </div>
+      <div className="mt-1 font-mono text-white">{redeemCode}</div>
+    </div>
+  )}
+
+  <div className="mt-4 border-t border-zinc-800 pt-4">
+    <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+      Redemption History
+    </div>
+
+    {redemptions.length === 0 ? (
+      <div className="text-sm text-zinc-500">No redemptions yet.</div>
+    ) : (
+      <div className="space-y-2">
+        {redemptions.slice(0, 5).map((item) => (
+          <div
+            key={item.id}
+            className="rounded-xl border border-zinc-800 bg-black p-3"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-mono text-sm text-white">{item.code}</div>
+              <div className="text-xs uppercase tracking-[0.15em] text-zinc-500">
+                {item.status}
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3 text-sm text-zinc-400">
+              <div>
+                {formatNumber(item.amount, 2)}{" "}
+                {project?.token_symbol || tokenMeta.symbol || "TOKENS"}
+              </div>
+              <div>{formatDateTime(item.created_at)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
               <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
                 <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-zinc-600">Trade Preview</div>
 
