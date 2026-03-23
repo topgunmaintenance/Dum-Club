@@ -238,7 +238,7 @@ async function loadProjects() {
                           className="mt-1 font-mono text-xs uppercase tracking-[0.16em]"
                           style={{ color: accent }}
                         >
-                          {project.status || "live"}
+                          Publication · {project.status || "live"}
                         </div>
                       </div>
                     </div>

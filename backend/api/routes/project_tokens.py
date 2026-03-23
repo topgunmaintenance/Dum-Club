@@ -5,6 +5,9 @@ from db.supabase import get_client
 
 router = APIRouter()
 
+# Align API responses with TOKEN_LIFECYCLE in token.py (legacy DB values).
+_TOKEN_STATUS_DISPLAY = {"active": "draft", "pending": "draft"}
+
 SOLANA_RPC_URL = os.getenv(
     "SOLANA_RPC_URL",
     "https://api.mainnet-beta.solana.com",
@@ -47,6 +50,8 @@ def get_project_token_metadata(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
 
     mint_address = project.get("token_mint_address")
+    raw_ts = (project.get("token_status") or "").strip() or "draft"
+    project_token_status = _TOKEN_STATUS_DISPLAY.get(raw_ts, raw_ts)
 
     token_name = (
         project.get("token_name")
@@ -69,7 +74,7 @@ def get_project_token_metadata(project_id: str):
             "symbol": token_symbol,
             "supply": db_supply,
             "decimals": db_decimals,
-            "status": "draft",
+            "status": project_token_status,
         }
 
     # -----------------------------
@@ -90,12 +95,8 @@ def get_project_token_metadata(project_id: str):
     # draft -> mint_created -> tokens_minted
     # liquidity_added and trading_live will be added later
 
-    if supply is None:
-        status = "mint_created"
-    elif supply == 0:
-        status = "mint_created"
-    else:
-        status = "tokens_minted"
+    derived_status = "tokens_minted" if supply else "mint_created"
+    status = project_token_status or derived_status
 
     return {
         "mint_address": mint_address,

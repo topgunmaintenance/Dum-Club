@@ -9,6 +9,12 @@ from db.supabase import get_client
 
 router = APIRouter()
 
+# Projects table semantics (avoid mixing these in routes or UI):
+# - review_status — internal workflow (pending → submitted → approved | rejected).
+# - status          — public publication / discover visibility: stays draft until the
+#                     token pipeline reaches trading_live, then advance-token-status sets live.
+# - token_status    — on-chain launch lifecycle (draft → … → trading_live), not UI synonyms like "active".
+
 # -----------------------------
 # Types / Enums
 # -----------------------------
@@ -107,14 +113,14 @@ async def create_project(
         "title": title,
         "description": body.description.strip(),
         "category": body.category,
-        "status": "under_review",
+        "status": "draft",
         "review_status": "pending",
         "template_type": body.category,
         "token_name": title,
         "token_symbol": token_symbol,
         "token_supply": body.token_supply,
         "token_decimals": 0,
-        "token_status": "pending",
+        "token_status": "draft",
         "token_utility": body.utility_value.strip(),
         "created_at": created_at,
     }
@@ -198,8 +204,8 @@ async def submit_review(
             "token_symbol": token_symbol,
             "token_supply": token_supply,
             "review_status": "submitted",
-            "status": "under_review",
-            "token_status": "pending",
+            "status": "draft",
+            "token_status": "draft",
         })
         .eq("id", project_id)
         .execute()
@@ -238,8 +244,9 @@ async def approve_project(project_id: str, body: ApproveProjectRequest):
             supabase.table("projects")
             .update({
                 "review_status": "approved",
-                "status": "live",
-                "token_status": "active",
+                # Stay off "live" until token reaches trading_live (see advance-token-status).
+                "status": "draft",
+                "token_status": "draft",
             })
             .eq("id", project_id)
             .execute()
@@ -287,7 +294,7 @@ async def approve_project(project_id: str, body: ApproveProjectRequest):
 
         return {
             "status": "success",
-            "message": "Project approved and trading is now live",
+            "message": "Project approved; complete the token launch pipeline to go live.",
             "project": update_res.data[0]
         }
 
@@ -296,6 +303,28 @@ async def approve_project(project_id: str, body: ApproveProjectRequest):
     except Exception as e:
         print("APPROVE ERROR:", repr(e))
         raise HTTPException(status_code=500, detail=f"approve_project failed: {str(e)}")
+
+# -----------------------------
+# Review Queue
+# -----------------------------
+
+class ReviewDecision(BaseModel):
+    decision: str  # "approved" or "rejected"
+
+@router.get("/review-queue")
+async def get_review_queue():
+    supabase = get_client()
+
+    res = (
+        supabase.table("projects")
+        .select("*")
+        .eq("review_status", "submitted")
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return res.data or []
+
 
 # -----------------------------
 # Reject Project
@@ -320,7 +349,7 @@ async def reject_project(project_id: str, body: RejectProjectRequest):
         supabase.table("projects")
         .update({
             "review_status": "rejected",
-            "status": "draft",
+            "status": "rejected",
             "token_status": "rejected",
         })
         .eq("id", project_id)
@@ -436,6 +465,8 @@ async def list_public_projects():
     res = (
         supabase.table("projects")
         .select("*")
+        .eq("review_status", "approved")
+        .eq("status", "live")
         .order("created_at", desc=True)
         .limit(50)
         .execute()

@@ -9,6 +9,15 @@ router = APIRouter()
 
 PROJECT_TREASURY_WALLET = os.getenv("PROJECT_TREASURY_WALLET", "").strip()
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
+TOKEN_LIFECYCLE = ["draft", "mint_created", "tokens_minted", "liquidity_added", "trading_live"]
+
+# Legacy / UI values that are not part of the launch sequence — map onto canonical lifecycle.
+# Prefer one-time DB cleanup (see backend/db/migrations/002_normalize_legacy_token_status.sql);
+# keep this map as a safety net until legacy rows are gone.
+TOKEN_STATUS_NORMALIZE = {
+    "active": "draft",
+    "pending": "draft",
+}
 
 
 @router.post("/api/projects/{project_id}/create-token")
@@ -91,7 +100,6 @@ async def create_project_token(project_id: str):
         supabase.table("projects")
         .update({
             "token_mint_address": mint,
-            "review_status": "token_live",
             "token_name": token_name,
             "token_symbol": token_symbol,
             "token_supply": token_supply,
@@ -137,7 +145,8 @@ async def mint_project_tokens(project_id: str):
     token_supply = project.get("token_supply")
     token_decimals = project.get("token_decimals") or 9
     mint_address = (project.get("token_mint_address") or "").strip()
-    token_status = (project.get("token_status") or "").strip()
+    raw_status = (project.get("token_status") or "").strip()
+    token_status = _canonical_token_status(raw_status)
 
     if not token_name or not token_symbol or not token_supply:
         raise HTTPException(
@@ -154,7 +163,10 @@ async def mint_project_tokens(project_id: str):
     if token_status not in ["mint_created", "tokens_minted"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Project token must be in mint_created state before minting. Current state: {token_status or 'unknown'}"
+            detail=(
+                f"Project token must be in mint_created state before minting. "
+                f"Current (raw={raw_status!r}, canonical={token_status!r})"
+            ),
         )
 
     if not PROJECT_TREASURY_WALLET:
@@ -226,4 +238,80 @@ async def mint_project_tokens(project_id: str):
         "token_status": "tokens_minted",
         "script_output": output,
         "db_updated": bool(update_resp.data)
+    }
+
+
+def _canonical_token_status(raw: str) -> str:
+    """Map DB/UI token_status onto TOKEN_LIFECYCLE for advancement logic."""
+    key = (raw or "").strip()
+    if not key:
+        return "draft"
+    if key in TOKEN_STATUS_NORMALIZE:
+        return TOKEN_STATUS_NORMALIZE[key]
+    return key
+
+
+@router.post("/api/projects/{project_id}/advance-token-status")
+async def advance_token_status(project_id: str):
+    supabase = get_client()
+
+    project_resp = (
+        supabase.table("projects")
+        .select("*")
+        .eq("id", project_id)
+        .execute()
+    )
+
+    if not project_resp.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_resp.data[0]
+    raw = (project.get("token_status") or "").strip()
+
+    if raw == "rejected":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot advance token status: token lifecycle is rejected for this project.",
+        )
+
+    current = _canonical_token_status(raw)
+
+    if current not in TOKEN_LIFECYCLE:
+        expected = ", ".join(TOKEN_LIFECYCLE)
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Cannot advance token status from {raw!r}. "
+                f"Expected one of: {expected}. "
+                f"Legacy values active and pending are treated as draft."
+            ),
+        )
+
+    if current == "trading_live":
+        raise HTTPException(
+            status_code=400,
+            detail="Token is already at trading_live; nothing to advance.",
+        )
+
+    next_status = TOKEN_LIFECYCLE[TOKEN_LIFECYCLE.index(current) + 1]
+    update_data = {"token_status": next_status}
+
+    if next_status == "trading_live":
+        update_data["status"] = "live"
+
+    update_resp = (
+        supabase.table("projects")
+        .update(update_data)
+        .eq("id", project_id)
+        .execute()
+    )
+
+    return {
+        "status": "success",
+        "project_id": project_id,
+        "previous_token_status_raw": raw or None,
+        "previous_token_status": current,
+        "token_status": next_status,
+        "project_status": update_data.get("status", project.get("status")),
+        "db_updated": bool(update_resp.data),
     }

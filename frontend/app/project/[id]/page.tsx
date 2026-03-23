@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { createClient } from "../../../lib/supabase/client";
 import {
   LineChart,
   Line,
@@ -103,6 +104,12 @@ type Redemption = {
   created_at?: string;
 };
 
+type ProjectFeedback = {
+  rating: number;
+  comment: string;
+  created_at: string;
+};
+
 type Candle = {
   id: number;
   project_id: string;
@@ -117,6 +124,8 @@ type Candle = {
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROJECT_FEE_RATE = 0.015;
 const DUM_FEE_RATE = 0.005;
 const TOTAL_FEE_RATE = PROJECT_FEE_RATE + DUM_FEE_RATE;
@@ -207,6 +216,13 @@ function shortMint(value?: string | null) {
   if (!value) return "-";
   if (value.length <= 12) return value;
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
+}
+
+/** Legacy DB values not in TOKEN_LIFECYCLE — treat as draft for UI/pipeline. */
+function normalizeTokenLifecycleStatus(status?: string | null) {
+  const s = (status || "").trim();
+  if (s === "active" || s === "pending") return "draft";
+  return s || "draft";
 }
 
 function formatTokenStatus(status?: string) {
@@ -381,6 +397,9 @@ export default function ProjectPage() {
   const [redeemStatus, setRedeemStatus] = useState("");
   const [loadingRedeem, setLoadingRedeem] = useState(false);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [feedbackEntries, setFeedbackEntries] = useState<ProjectFeedback[]>([]);
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackComment, setFeedbackComment] = useState("");
 
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
@@ -723,6 +742,22 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     }
   }
 
+  function submitFeedback(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+
+    const entry: ProjectFeedback = {
+      rating: Math.min(5, Math.max(1, Number(feedbackRating) || 5)),
+      comment: feedbackComment.trim(),
+      created_at: new Date().toISOString(),
+    };
+
+    const next = [entry, ...feedbackEntries].slice(0, 20);
+    setFeedbackEntries(next);
+    setFeedbackComment("");
+    setFeedbackRating(5);
+  }
+
   async function saveMemory(e: React.FormEvent) {
     e.preventDefault();
 
@@ -830,8 +865,8 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     }
   }
 
-  async function submitReview(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitReview(e?: React.FormEvent) {
+    e?.preventDefault();
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !tokenSupply.trim()) {
       alert("Please complete token name, symbol, and supply.");
@@ -840,12 +875,21 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
 
     try {
       setLoadingAction(true);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      let userId = user?.id;
+      if (!userId || !UUID_RE.test(userId)) {
+        console.warn("Using fallback dev user id");
+        userId = "91b54662-a9ad-4403-8fe2-752265982e99";
+      }
 
       const res = await fetch(`${API_BASE}/api/projects/${id}/submit-review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          user_id: "demo-user",
+          user_id: userId,
         },
         body: JSON.stringify({
           token_name: tokenName.trim(),
@@ -874,17 +918,24 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
   async function approveProject() {
     try {
       setLoadingAction(true);
-
+  
       const res = await fetch(`${API_BASE}/api/projects/${id}/approve`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          starting_price: 0.01,
+          market_cap: 1000,
+        }),
       });
-
+  
       const data = await res.json();
-
+  
       if (!res.ok) {
         throw new Error(data.detail || "Failed to approve project");
       }
-
+  
       await loadProject();
       await loadTokenMetadata();
       alert("Project approved.");
@@ -952,6 +1003,30 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     }
   }
 
+  async function advanceTokenStatus() {
+    try {
+      setLoadingAction(true);
+
+      const res = await fetch(`${API_BASE}/api/projects/${id}/advance-token-status`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to advance token status");
+      }
+
+      await loadProject();
+      await loadTokenMetadata();
+      alert(`Token status advanced to: ${data.token_status}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to advance token status");
+    } finally {
+      setLoadingAction(false);
+    }
+  }
+
   useEffect(() => {
     loadProject();
     loadMemories();
@@ -970,14 +1045,15 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
   }, [connected, publicKey]);
 
   useEffect(() => {
-    if (!id) return;
+    const ts = normalizeTokenLifecycleStatus(tokenMeta.status || project?.token_status);
+    if (!id || ts !== "trading_live") return;
 
     const interval = setInterval(() => {
       refreshMarketData();
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, tokenMeta.status, project?.token_status]);
 
   useEffect(() => {
     if (!id || !userWallet) {
@@ -988,18 +1064,42 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     loadWalletBalance();
   }, [id, userWallet]);
 
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const raw = localStorage.getItem(`project-feedback:${id}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setFeedbackEntries(parsed);
+      }
+    } catch {
+      setFeedbackEntries([]);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    localStorage.setItem(`project-feedback:${id}`, JSON.stringify(feedbackEntries));
+  }, [id, feedbackEntries]);
+
   const reviewStatus = projectStatus || "draft";
+  const tokenStatus = normalizeTokenLifecycleStatus(
+    tokenMeta.status || project?.token_status
+  );
   const isSubmitted = reviewStatus === "submitted";
-  const isApproved = reviewStatus === "approved";
-  const isTokenLive = reviewStatus === "token_live";
   const isRejected = reviewStatus === "rejected";
+  const isPending = reviewStatus === "pending";
+  const isApprovedProject = reviewStatus === "approved";
+  const isTradingLive = tokenStatus === "trading_live";
+  const canShowMarketUi = isTradingLive;
 
   const emoji = useMemo(() => getProjectEmoji(project), [project]);
   const category = useMemo(() => getCategory(project), [project]);
   const accent = useMemo(() => getAccent(project), [project]);
   const parsedAiOutput = useMemo(() => parseAiOutput(project?.ai_output), [project?.ai_output]);
 
-  const tokenStage = getTokenStageIndex(tokenMeta.status || project?.token_status || "draft");
+  const tokenStage = getTokenStageIndex(tokenStatus);
   const tokenStages = ["Draft", "Mint Created", "Tokens Minted", "Liquidity Added", "Trading Live"];
   const latestCandle = candles.length ? candles[candles.length - 1] : null;
 
@@ -1090,6 +1190,37 @@ const heroUtility =
 
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
+  const statusBanner = canShowMarketUi
+    ? "Approved / Live - trading enabled"
+    : isApprovedProject
+    ? "Approved - ready to launch token trading"
+    : isRejected
+    ? "Rejected - needs changes before resubmission"
+    : isSubmitted
+    ? "Submitted for Review - awaiting admin review"
+    : isPending
+    ? "Pending - created but not submitted"
+    : "Draft - continue setting up your project";
+  const nextTokenActionLabel =
+    tokenStatus === "draft"
+      ? "Create Token"
+      : tokenStatus === "mint_created"
+      ? "Advance to Tokens Minted"
+      : tokenStatus === "tokens_minted"
+      ? "Advance to Liquidity Added"
+      : tokenStatus === "liquidity_added"
+      ? "Advance to Trading Live"
+      : "Launch In Progress";
+  const averageRating = feedbackEntries.length
+    ? feedbackEntries.reduce((acc, item) => acc + item.rating, 0) / feedbackEntries.length
+    : 0;
+  const nextStepMessage = isRejected
+    ? "Make edits and resubmit"
+    : isSubmitted
+    ? "Waiting for admin approval"
+    : isPending
+    ? "Ready to submit for review"
+    : "Complete your project details";
 
 return (
   <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
@@ -1145,6 +1276,14 @@ return (
         </div>
       </div>
 
+      <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
+        <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
+          Review & publication
+        </span>
+        <div className="mt-2 text-base text-white">{statusBanner}</div>
+      </div>
+
+      {canShowMarketUi ? (
       <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -1425,6 +1564,13 @@ return (
     </div>
   )}
 
+  <div className="mt-4 rounded-xl border border-zinc-800 bg-black p-3">
+    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Unlocked Utility</div>
+    <div className="mt-2 text-sm text-zinc-300">
+      {parsedAiOutput?.token_utility || project?.token_utility || "Utility details are not configured yet."}
+    </div>
+  </div>
+
   <div className="mt-4 border-t border-zinc-800 pt-4">
     <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
       Redemption History
@@ -1457,6 +1603,51 @@ return (
         ))}
       </div>
     )}
+  </div>
+
+  <div className="mt-4 border-t border-zinc-800 pt-4">
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Trust Layer</div>
+      <div className="text-xs text-zinc-500">
+        {feedbackEntries.length
+          ? `${averageRating.toFixed(1)} / 5 (${feedbackEntries.length} review${
+              feedbackEntries.length === 1 ? "" : "s"
+            })`
+          : "No ratings yet"}
+      </div>
+    </div>
+
+    <form onSubmit={submitFeedback} className="space-y-3">
+      <div>
+        <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">Rating</label>
+        <select
+          value={feedbackRating}
+          onChange={(e) => setFeedbackRating(Number(e.target.value))}
+          className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+        >
+          <option value={5}>5 - Excellent</option>
+          <option value={4}>4 - Good</option>
+          <option value={3}>3 - Okay</option>
+          <option value={2}>2 - Poor</option>
+          <option value={1}>1 - Bad</option>
+        </select>
+      </div>
+
+      <textarea
+        value={feedbackComment}
+        onChange={(e) => setFeedbackComment(e.target.value)}
+        rows={3}
+        placeholder="Share a quick note about your redemption experience..."
+        className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+      />
+
+      <button
+        type="submit"
+        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+      >
+        Save Review
+      </button>
+    </form>
   </div>
 </div>
               <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
@@ -1628,9 +1819,141 @@ return (
             </div>
           </div>
         </div>
+      ) : isApprovedProject ? (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Approved Launch</div>
+          <h2 className="font-mono text-3xl font-bold text-white">Approved - Ready to Mint</h2>
+          <p className="mt-3 max-w-3xl text-zinc-400">
+            This project is approved. Complete token launch steps to unlock live market and trading UI.
+          </p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
+              <div className="mt-2 text-white">{tokenMeta.name || project?.token_name || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
+              <div className="mt-2 text-white">{tokenMeta.symbol || project?.token_symbol || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
+              <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Launch stage</div>
+              <div className="mt-2 text-white">{formatTokenStatus(tokenStatus)}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-300">
+            <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</span>
+            <div className="mt-2 text-white">{project?.status || "draft"}</div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              type="button"
+              disabled={loadingAction || tokenStatus === "trading_live"}
+              onClick={tokenStatus === "draft" ? createToken : advanceTokenStatus}
+              className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+              style={{ background: accent }}
+            >
+              {loadingAction ? "Working..." : nextTokenActionLabel}
+            </button>
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-5">
+            {tokenStages.map((stage, index) => {
+              const isCompleted = index <= tokenStage;
+              const isCurrent = index === tokenStage;
+              return (
+                <div
+                  key={`launch-${stage}`}
+                  className={`rounded-2xl border p-4 text-center ${
+                    isCompleted ? "border-emerald-400/40 bg-emerald-400/10" : "border-zinc-800 bg-black"
+                  }`}
+                >
+                  <div
+                    className={`text-[11px] uppercase tracking-[0.22em] ${
+                      isCurrent
+                        ? "text-emerald-300"
+                        : isCompleted
+                        ? "text-zinc-200"
+                        : "text-zinc-600"
+                    }`}
+                  >
+                    {stage}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Pre-live Project</div>
+          <h2 className="font-mono text-3xl font-bold text-white">{projectName}</h2>
+          <p className="mt-3 max-w-3xl text-zinc-400">
+            {project?.description || parsedAiOutput?.description || "No description available yet."}
+          </p>
+
+          <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
+            {category}
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
+              <div className="mt-2 text-white">{tokenMeta.name || project?.token_name || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
+              <div className="mt-2 text-white">{tokenMeta.symbol || project?.token_symbol || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
+              <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
+              <div className="mt-2 text-white">{reviewStatus}</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
+              <div className="mt-2 text-white">{project?.status || "draft"}</div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
+            <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-2xl border border-zinc-700 bg-black px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
+            >
+              Edit Project
+            </Link>
+            {(reviewStatus === "draft" || reviewStatus === "pending") && (
+              <button
+                type="button"
+                onClick={() => submitReview()}
+                disabled={loadingAction}
+                className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                style={{ background: accent }}
+              >
+                {loadingAction ? "Submitting..." : "Submit for Review"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Token Status</div>
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Launch stage</div>
 
           <div className="mb-8 grid gap-3 md:grid-cols-5">
             {tokenStages.map((stage, index) => {
@@ -1661,7 +1984,7 @@ return (
           </div>
 
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
-            {getStatusExplanation(tokenMeta.status || project?.token_status || "draft")}
+            {getStatusExplanation(tokenStatus)}
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -1694,9 +2017,9 @@ return (
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Status</div>
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Launch stage</div>
               <div className="mt-2 break-words text-lg text-white">
-                {formatTokenStatus(tokenMeta.status || project?.token_status || "")}
+                {formatTokenStatus(tokenStatus)}
               </div>
             </div>
 
@@ -1759,51 +2082,46 @@ return (
           </div>
         </div>
 
-        {(reviewStatus === "draft" || reviewStatus === "pending") && (
-          <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Pipeline</div>
+        {!isApprovedProject && (
+          <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Summary</div>
 
-            <h2 className="font-mono text-3xl font-bold text-white">Submit for Review</h2>
+            <h2 className="font-mono text-3xl font-bold text-white">Submission Details</h2>
 
             <p className="mt-3 max-w-3xl text-zinc-500">
-              Prepare this project for DUM Club review. Once submitted, it can be approved and then
-              minted into a live Solana token.
+              This section shows the project details used during review. Submit action is available
+              from the pre-live panel above.
             </p>
 
-            <form onSubmit={submitReview} className="mt-6 grid gap-4 md:grid-cols-3">
-              <input
-                value={tokenName}
-                onChange={(e) => setTokenName(e.target.value)}
-                placeholder="Token Name"
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-              />
+            <p className="mt-3 text-sm text-zinc-400">
+              Review: {reviewStatus} · Publication: {project?.status || "draft"}
+            </p>
 
-              <input
-                value={tokenSymbol}
-                onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
-                placeholder="Symbol"
-                maxLength={6}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-              />
-
-              <input
-                value={tokenSupply}
-                onChange={(e) => setTokenSupply(e.target.value)}
-                placeholder="Total Supply"
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-              />
-
-              <div className="flex flex-wrap gap-3 md:col-span-3">
-                <button
-                  type="submit"
-                  disabled={loadingAction}
-                  className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                  style={{ background: accent }}
-                >
-                  {loadingAction ? "Submitting..." : "Submit Review"}
-                </button>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
+                <div className="mt-2 text-white">{tokenName || project?.token_name || "-"}</div>
               </div>
-            </form>
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
+                <div className="mt-2 text-white">{tokenSymbol || project?.token_symbol || "-"}</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
+                <div className="mt-2 text-white">{tokenSupply || project?.token_supply || "-"}</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Utility</div>
+                <div className="mt-2 text-white">
+                  {parsedAiOutput?.token_utility || project?.token_utility || "-"}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-300">
+              <div className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">Launch Checklist</div>
+              <div>{nextStepMessage}</div>
+            </div>
           </div>
         )}
 

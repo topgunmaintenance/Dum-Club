@@ -17,6 +17,7 @@ class GenerateAppRequest(BaseModel):
     prompt: str
     wallet_address: str | None = None
     owner_id: str | None = None
+    project_id: str | None = None
 
 
 def try_parse_json(candidate: str) -> dict | None:
@@ -155,11 +156,10 @@ Rules:
             "raw_output": raw_text,
         }
 
-    insert_payload = {
+    payload = {
         "name": title,
         "title": title,
         "description": description,
-        "status": "draft",
         "template_type": template_type,
         "prompt": req.prompt,
         "token_utility": token_utility,
@@ -167,14 +167,26 @@ Rules:
     }
 
     if req.wallet_address:
-        insert_payload["wallet_address"] = req.wallet_address
+        payload["wallet_address"] = req.wallet_address
 
     if req.owner_id:
-        insert_payload["owner_id"] = req.owner_id
+        payload["owner_id"] = req.owner_id
 
-    created = supabase.table("projects").insert(insert_payload).execute()
-
-    created_project = created.data[0] if created.data and len(created.data) > 0 else None
+    # If build flow already created a project, enrich that existing row.
+    if req.project_id:
+        updated = (
+            supabase.table("projects")
+            .update(payload)
+            .eq("id", req.project_id)
+            .execute()
+        )
+        created_project = updated.data[0] if updated.data and len(updated.data) > 0 else None
+    else:
+        # Fallback: create a fresh project with valid lifecycle defaults.
+        payload["status"] = "draft"
+        payload["review_status"] = "pending"
+        created = supabase.table("projects").insert(payload).execute()
+        created_project = created.data[0] if created.data and len(created.data) > 0 else None
 
     return {
         "status": "success",

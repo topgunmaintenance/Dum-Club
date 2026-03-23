@@ -111,7 +111,7 @@ export default function Home() {
                       </div>
 
                       <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        {project.status || "live"}
+                        Publication · {project.status || "live"}
                       </div>
 
                       <div className="mt-5 line-clamp-3 text-zinc-500">
@@ -127,7 +127,7 @@ export default function Home() {
                         AI Fitness Coach
                       </div>
                       <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        live
+                        Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
                         Beginner AI fitness project for workouts, nutrition, and habit-building.
@@ -140,7 +140,7 @@ export default function Home() {
                         MathMaster
                       </div>
                       <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        live
+                        Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
                         AI-powered tutoring platform for students.
@@ -153,7 +153,7 @@ export default function Home() {
                         Dum Club
                       </div>
                       <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        live
+                        Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
                         Public ecosystem for building and discovering AI-native projects.

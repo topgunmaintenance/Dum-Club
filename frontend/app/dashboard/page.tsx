@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { linkWalletToProfile } from "../../lib/linkWalletToProfile";
@@ -13,7 +13,12 @@ type Project = {
   description?: string;
   template_type?: string;
   status?: string;
+  review_status?: string | null;
 };
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default function DashboardPage() {
   const { publicKey, connected, wallet } = useWallet();
@@ -47,7 +52,7 @@ export default function DashboardPage() {
     syncWallet();
   }, [connected, publicKey, wallet]);
 
-  async function loadProjects() {
+  const loadProjects = useCallback(async () => {
     if (!walletAddress) {
       setProjects([]);
       return;
@@ -59,7 +64,7 @@ export default function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      let url = "http://localhost:8000/api/projects/";
+      let url = `${API_BASE}/api/projects/`;
 
       if (user?.id) {
         url += `?owner_id=${user.id}`;
@@ -70,7 +75,8 @@ export default function DashboardPage() {
       const res = await fetch(url);
 
       if (!res.ok) {
-        throw new Error("Failed to load projects");
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || "Failed to load projects");
       }
 
       const data = await res.json();
@@ -79,7 +85,7 @@ export default function DashboardPage() {
       console.error(err);
       setProjects([]);
     }
-  }
+  }, [walletAddress]);
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
@@ -102,34 +108,47 @@ export default function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user?.id) {
-        throw new Error("No authenticated user found");
+      let userId = user?.id;
+      if (!userId || !UUID_RE.test(userId)) {
+        console.warn("Using fallback dev user id");
+        userId = "91b54662-a9ad-4403-8fe2-752265982e99";
       }
 
-      const res = await fetch("http://localhost:8000/api/projects/", {
+      const compact = name.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      const base = (compact || "PRJ").slice(0, 6);
+      const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
+      const tokenSymbol = `${base}${suffix}`.slice(0, 10);
+
+      const res = await fetch(`${API_BASE}/api/projects/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          user_id: userId,
         },
         body: JSON.stringify({
-          owner_id: user.id,
           wallet_address: walletAddress,
-          title: name.trim(),
-          description: "",
-          template_type: "ai_legacy_vault",
-          status: "draft",
+          name: name.trim(),
+          description: "Auto-created from dashboard.",
+          category: "ai",
+          utility_type: "access",
+          utility_value: "Access to the project utility",
+          token_supply: 21000000,
+          token_symbol: tokenSymbol,
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+      console.log("create project response:", data);
+
       if (!res.ok) {
-        throw new Error("Failed to create project");
+        throw new Error(data?.detail || data?.message || "Failed to create project");
       }
 
       setName("");
       await loadProjects();
     } catch (err) {
       console.error(err);
-      alert("Failed to create project");
+      alert(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setLoading(false);
     }
@@ -137,7 +156,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadProjects();
-  }, [walletAddress]);
+  }, [loadProjects]);
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
@@ -214,7 +233,10 @@ export default function DashboardPage() {
                         <span>
                           Template: {project.template_type || "unknown"}
                         </span>
-                        <span>Status: {project.status || "draft"}</span>
+                        <span>
+                          Review: {project.review_status || "—"} · Publication:{" "}
+                          {project.status || "draft"}
+                        </span>
                       </div>
                     </div>
                   </Link>
