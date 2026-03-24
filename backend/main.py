@@ -1,3 +1,15 @@
+"""
+When running `python -m uvicorn backend.main:app` from the repo root, Python only
+puts the repo root on sys.path, so imports like `from api.routes` fail unless the
+`backend/` directory is also on the path. Bootstrap once here before any local imports.
+"""
+import sys
+from pathlib import Path
+
+_backend_dir = Path(__file__).resolve().parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

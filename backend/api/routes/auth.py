@@ -1,4 +1,5 @@
 from typing import Optional
+import traceback
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -24,50 +25,63 @@ class SyncRequest(BaseModel):
 
 @router.post("/sync")
 async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_user)):
-    if current_user.get("sub") != body.privy_id:
-        raise HTTPException(status_code=403, detail="Token mismatch")
+    try:
+        print("🔥 SYNC HIT")
 
-    supabase = get_client()
-    existing = supabase.table("users").select("*").eq("privy_id", body.privy_id).execute()
+        if current_user.get("sub") != body.privy_id:
+            raise HTTPException(status_code=403, detail="Token mismatch")
 
-    wallet_address = body.embedded_wallet or (
-        body.linked_wallets[0].address if body.linked_wallets else None
-    )
-    wallets = [w.model_dump() for w in body.linked_wallets]
+        supabase = get_client()
+        existing = (
+            supabase.table("users").select("*").eq("privy_id", body.privy_id).execute()
+        )
 
-    if existing.data:
-        updated = (
+        wallet_address = body.embedded_wallet or (
+            body.linked_wallets[0].address if body.linked_wallets else None
+        )
+        wallets = [w.model_dump() for w in body.linked_wallets]
+
+        if existing.data:
+            updated = (
+                supabase.table("users")
+                .update(
+                    {
+                        "email": body.email,
+                        "embedded_wallet": body.embedded_wallet,
+                        "linked_wallets": wallets,
+                        "google_linked": body.google_linked,
+                        "wallet_address": wallet_address,
+                    }
+                )
+                .eq("privy_id", body.privy_id)
+                .execute()
+            )
+            print("✅ SYNC SUCCESS (update)")
+            return (updated.data or [{}])[0]
+
+        created = (
             supabase.table("users")
-            .update(
+            .insert(
                 {
+                    "privy_id": body.privy_id,
                     "email": body.email,
+                    "wallet_address": wallet_address,
                     "embedded_wallet": body.embedded_wallet,
                     "linked_wallets": wallets,
                     "google_linked": body.google_linked,
-                    "wallet_address": wallet_address,
+                    "is_admin": False,
                 }
             )
-            .eq("privy_id", body.privy_id)
             .execute()
         )
-        return (updated.data or [{}])[0]
-
-    created = (
-        supabase.table("users")
-        .insert(
-            {
-                "privy_id": body.privy_id,
-                "email": body.email,
-                "wallet_address": wallet_address,
-                "embedded_wallet": body.embedded_wallet,
-                "linked_wallets": wallets,
-                "google_linked": body.google_linked,
-                "is_admin": False,
-            }
-        )
-        .execute()
-    )
-    return (created.data or [{}])[0]
+        print("✅ SYNC SUCCESS (insert)")
+        return (created.data or [{}])[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("❌ SYNC ERROR:", repr(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="sync_user_failed")
 
 
 @router.get("/me")

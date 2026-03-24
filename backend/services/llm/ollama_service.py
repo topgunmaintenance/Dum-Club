@@ -4,7 +4,7 @@ Default model: llama3  —  swap to mistral, phi3, etc. via env var.
 """
 import os
 import ollama
-from typing import AsyncIterator
+from typing import AsyncIterator, List, Optional
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
@@ -14,8 +14,8 @@ _client = ollama.AsyncClient(host=OLLAMA_HOST)
 
 async def chat_with_context(
     user_query: str,
-    context_chunks: list[dict],
-    system_prompt: str | None = None,
+    context_chunks: List[dict],
+    system_prompt: Optional[str] = None,
 ) -> str:
     """
     RAG-style generation: inject retrieved chunks then ask the LLM.
@@ -52,7 +52,7 @@ async def chat_with_context(
 
 async def stream_chat(
     user_query: str,
-    context_chunks: list[dict],
+    context_chunks: List[dict],
 ) -> AsyncIterator[str]:
     """Streaming version for real-time UI updates."""
     context_text = "\n\n---\n\n".join(c["chunk_text"] for c in context_chunks)
@@ -71,6 +71,6 @@ async def stream_chat(
         yield chunk["message"]["content"]
 
 
-async def list_available_models() -> list[str]:
+async def list_available_models() -> List[str]:
     result = await _client.list()
     return [m["name"] for m in result.get("models", [])]

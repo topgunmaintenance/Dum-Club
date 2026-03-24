@@ -3,10 +3,10 @@ Embedding service using Sentence Transformers.
 Model: all-MiniLM-L6-v2  →  384-dim vectors  (matches SQL schema)
 """
 from sentence_transformers import SentenceTransformer
-from typing import List
+from typing import List, Optional
 import numpy as np
 
-_model: SentenceTransformer | None = None
+_model: Optional[SentenceTransformer] = None
 MODEL_NAME = "all-MiniLM-L6-v2"
 
 

@@ -1,3 +1,5 @@
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 from db.supabase import get_client
@@ -15,12 +17,12 @@ client = ollama.Client(host=OLLAMA_HOST)
 
 class GenerateAppRequest(BaseModel):
     prompt: str
-    wallet_address: str | None = None
-    owner_id: str | None = None
-    project_id: str | None = None
+    wallet_address: Optional[str] = None
+    owner_id: Optional[str] = None
+    project_id: Optional[str] = None
 
 
-def try_parse_json(candidate: str) -> dict | None:
+def try_parse_json(candidate: str) -> Optional[Dict[str, Any]]:
     try:
         parsed = json.loads(candidate)
         if isinstance(parsed, dict):
@@ -52,7 +54,7 @@ def repair_json_string(text: str) -> str:
     return text.strip()
 
 
-def extract_json_block(text: str) -> dict | None:
+def extract_json_block(text: str) -> Optional[Dict[str, Any]]:
     text = text.strip()
 
     # 1) direct parse

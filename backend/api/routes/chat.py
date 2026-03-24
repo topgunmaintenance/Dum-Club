@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -17,19 +19,19 @@ _client = ollama.Client(host=OLLAMA_HOST)
 
 class ChatRequest(BaseModel):
     message: str
-    project_id: str | None = None
+    project_id: Optional[str] = None
     stream: bool = False
 
 
 class ProjectGatedChatRequest(BaseModel):
     message: str
     project_id: str
-    wallet_address: str | None = None
-    session_id: str | None = None
+    wallet_address: Optional[str] = None
+    session_id: Optional[str] = None
     stream: bool = False
 
 
-def load_project_memories(project_id: str) -> tuple[str, int]:
+def load_project_memories(project_id: str) -> Tuple[str, int]:
     client = get_client()
     result = (
         client.table("memories")
@@ -139,7 +141,7 @@ def wallet_holds_project_token(wallet_address: str, mint_address: str) -> bool:
         return False
 
 
-def get_usage_record(project_id: str, wallet_address: str | None, session_id: str | None):
+def get_usage_record(project_id: str, wallet_address: Optional[str], session_id: Optional[str]):
     client = get_client()
 
     query = client.table("project_ai_usage").select("*").eq("project_id", project_id)
@@ -155,7 +157,7 @@ def get_usage_record(project_id: str, wallet_address: str | None, session_id: st
     return result.data[0] if result.data else None
 
 
-def increment_usage(project_id: str, wallet_address: str | None, session_id: str | None):
+def increment_usage(project_id: str, wallet_address: Optional[str], session_id: Optional[str]):
     client = get_client()
 
     existing = get_usage_record(project_id, wallet_address, session_id)
@@ -186,8 +188,8 @@ def increment_usage(project_id: str, wallet_address: str | None, session_id: str
 
 def load_chat_history(
     project_id: str,
-    wallet_address: str | None,
-    session_id: str | None,
+    wallet_address: Optional[str],
+    session_id: Optional[str],
     limit: int = 10,
 ):
     client = get_client()
@@ -220,8 +222,8 @@ def save_chat_message(
     project_id: str,
     role: str,
     content: str,
-    wallet_address: str | None,
-    session_id: str | None,
+    wallet_address: Optional[str],
+    session_id: Optional[str],
 ):
     client = get_client()
 
@@ -284,7 +286,7 @@ async def chat(req: ChatRequest):
 @router.post("/project-gated")
 async def project_gated_chat(
     req: ProjectGatedChatRequest,
-    x_session_id: str | None = Header(default=None)
+    x_session_id: Optional[str] = Header(default=None)
 ):
     client = get_client()
 

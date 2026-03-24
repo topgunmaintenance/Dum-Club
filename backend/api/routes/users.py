@@ -1,4 +1,6 @@
 """Users / profile routes."""
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from db.supabase import get_client
@@ -8,10 +10,10 @@ router = APIRouter()
 
 class ProfileUpsert(BaseModel):
     wallet_address: str
-    username:       str | None = None
-    display_name:   str | None = None
-    bio:            str | None = None
-    avatar_url:     str | None = None
+    username:       Optional[str] = None
+    display_name:   Optional[str] = None
+    bio:            Optional[str] = None
+    avatar_url:     Optional[str] = None
 
 
 @router.post("/profile")

@@ -45,7 +45,7 @@ class SubmitReviewRequest(BaseModel):
 
 
 class RejectProjectRequest(BaseModel):
-    reason: str | None = None
+    reason: Optional[str] = None
 
 
 class ApproveProjectRequest(BaseModel):

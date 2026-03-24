@@ -1,4 +1,6 @@
 """Content routes — create posts, ingest text content."""
+from typing import Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 from db.supabase import get_client
@@ -11,8 +13,8 @@ class PostCreate(BaseModel):
     creator_wallet: str
     title:          str
     body:           str
-    media_url:      str | None = None
-    media_type:     str | None = None
+    media_url:      Optional[str] = None
+    media_type:     Optional[str] = None
     is_gated:       bool = False
     min_vault_sol:  float = 0.0
 

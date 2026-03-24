@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -29,7 +30,7 @@ def _to_decimal(value) -> Decimal:
         return Decimal("0")
 
 
-def _decimal_to_float(value: Decimal, places: int | None = None) -> float:
+def _decimal_to_float(value: Decimal, places: Optional[int] = None) -> float:
     if places is not None:
         quant = Decimal("1." + ("0" * places))
         value = value.quantize(quant)

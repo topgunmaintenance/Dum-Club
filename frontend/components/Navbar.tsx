@@ -1,23 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import {
-  WalletDisconnectButton,
-  WalletMultiButton,
-} from "@solana/wallet-adapter-react-ui";
+import { WalletDisconnectButton } from "@solana/wallet-adapter-react-ui";
 import { useAuth } from "../lib/auth/AuthContext";
+
+const WalletMultiButton = dynamic(
+  () =>
+    import("@solana/wallet-adapter-react-ui").then((m) => ({
+      default: m.WalletMultiButton,
+    })),
+  { ssr: false }
+);
 
 export function Navbar() {
   const path = usePathname();
   const { publicKey, connected } = useWallet();
   const { user, loading, login, logout } = useAuth();
 
-  const [mounted] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [navHover, setNavHover] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const links = [
     { href: "/discover", label: "Discover" },
@@ -155,17 +163,7 @@ export function Navbar() {
           minHeight: "52px",
         }}
       >
-        {!mounted ? (
-          <div
-            style={{
-              height: "52px",
-              width: "240px",
-              border: "1px solid #1c1c1c",
-              borderRadius: "14px",
-              background: "#0d0d0d",
-            }}
-          />
-        ) : (
+        {mounted && (
           <>
             {loading ? (
               <button
@@ -286,15 +284,6 @@ export function Navbar() {
             ) : (
               <WalletMultiButton
                 className="dum-wallet-btn"
-                labels={{
-                  "no-wallet": "CONNECT WALLET",
-                  "select-wallet": "CONNECT WALLET",
-                  "change-wallet": "SWITCH WALLET",
-                  connecting: "CONNECTING...",
-                  "copy-address": "COPY ADDRESS",
-                  copied: "COPIED",
-                  "has-wallet": "CONNECT WALLET",
-                }}
                 style={{
                   background: "none",
                   border: "1px solid #2a2a2a",
