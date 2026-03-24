@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from api.routes import (
+    auth,
+    admin,
     vault,
     content,
     chat,
@@ -64,6 +66,8 @@ app.include_router(memories.router, prefix="/api/memories", tags=["Memories"])
 app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
 app.include_router(market.router, tags=["Market"])
 app.include_router(booking.router, tags=["Booking"])
+app.include_router(auth.router)
+app.include_router(admin.router)
 
 # AI Generator Routes
 app.include_router(generate_app.router, prefix="/api/generate-app", tags=["AI Generator"])

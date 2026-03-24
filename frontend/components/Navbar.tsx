@@ -2,41 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   WalletDisconnectButton,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import GoogleSignInButton from "./GoogleSignInButton";
-import { createClient } from "../lib/supabase/client";
+import { useAuth } from "../lib/auth/AuthContext";
 
 export function Navbar() {
   const path = usePathname();
   const { publicKey, connected } = useWallet();
+  const { user, loading, login, logout } = useAuth();
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(true);
   const [navHover, setNavHover] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (!error) setGoogleEmail(data.user?.email ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setGoogleEmail(session?.user?.email ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const links = [
     { href: "/discover", label: "Discover" },
@@ -50,15 +31,9 @@ export function Navbar() {
     : "";
 
   const shortEmail =
-    googleEmail && googleEmail.length > 26
-      ? `${googleEmail.slice(0, 22)}...`
-      : googleEmail;
-
-  const handleGoogleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setGoogleEmail(null);
-  };
+    user?.email && user.email.length > 26
+      ? `${user.email.slice(0, 22)}...`
+      : user?.email ?? null;
 
   return (
     <nav
@@ -192,10 +167,30 @@ export function Navbar() {
           />
         ) : (
           <>
-            {googleEmail ? (
+            {loading ? (
               <button
                 type="button"
-                onClick={handleGoogleSignOut}
+                disabled
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "12px",
+                  color: "#777",
+                  letterSpacing: "0.08em",
+                  border: "1px solid #2a2a2a",
+                  background: "#111",
+                  borderRadius: "14px",
+                  padding: "13px 18px",
+                  height: "52px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                Loading...
+              </button>
+            ) : user ? (
+              <button
+                type="button"
+                onClick={() => logout()}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = "#00FFB2";
                   e.currentTarget.style.border =
@@ -232,7 +227,27 @@ export function Navbar() {
                 {shortEmail}
               </button>
             ) : (
-              <GoogleSignInButton />
+              <button
+                type="button"
+                onClick={login}
+                style={{
+                  background: "none",
+                  border: "1px solid #2a2a2a",
+                  color: "#e8e8e8",
+                  padding: "13px 18px",
+                  fontSize: "12px",
+                  letterSpacing: "0.13em",
+                  cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace",
+                  textTransform: "uppercase",
+                  borderRadius: "14px",
+                  height: "52px",
+                  minWidth: "220px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                Continue with Google
+              </button>
             )}
 
             {connected ? (
