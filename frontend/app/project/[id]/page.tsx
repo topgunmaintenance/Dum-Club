@@ -23,6 +23,7 @@ type Memory = {
 
 type Project = {
   id: string;
+  owner_id?: string | null;
   wallet_address?: string | null;
   name?: string;
   title?: string;
@@ -41,6 +42,7 @@ type Project = {
   token_created_at?: string | null;
   ai_free_question_limit?: number | null;
   holder_ai_unlimited?: boolean | null;
+  utility_value?: string | null;
   ai_output?:
     | {
         title?: string;
@@ -389,8 +391,12 @@ export default function ProjectPage() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [userWallet, setUserWallet] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState("");
+  const [tradeTab, setTradeTab] = useState<"buy" | "sell">("buy");
   const [loadingTrade, setLoadingTrade] = useState(false);
   const [tradeMessage, setTradeMessage] = useState("");
+  const [tradeWinFlash, setTradeWinFlash] = useState(false);
+  const [copyFlash, setCopyFlash] = useState(false);
+  const [shareFlash, setShareFlash] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
   const [redeemAmount, setRedeemAmount] = useState("");
   const [redeemCode, setRedeemCode] = useState("");
@@ -404,6 +410,9 @@ export default function ProjectPage() {
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+
+  const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
     is_holder: boolean;
@@ -426,8 +435,6 @@ export default function ProjectPage() {
     locked: false,
     lock_message: "",
   });
-const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUpperCase();
-
   async function loadProject() {
     if (!id) return;
 
@@ -460,6 +467,20 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
         token_required: Boolean(projectData?.token_mint_address),
         token_mint_address: projectData?.token_mint_address || null,
       }));
+
+      try {
+        const profileRes = await fetch(`${API_BASE}/api/projects/${id}/service-profile`, {
+          cache: "no-store",
+        });
+        if (profileRes.ok) {
+          const p = await profileRes.json();
+          setServiceProfile(p == null ? null : p);
+        } else {
+          setServiceProfile(null);
+        }
+      } catch {
+        setServiceProfile(null);
+      }
     } catch (err) {
       console.error(err);
       setProject(null);
@@ -664,11 +685,27 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
         throw new Error(detail || `Failed to ${side}`);
       }
 
-      setTradeMessage(
-        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(numericAmount, 2)} ${
-          project?.token_symbol || tokenMeta.symbol || "TOKENS"
-        }`
+      const sym = project?.token_symbol || tokenMeta.symbol || "TOKENS";
+      const supply = Number(
+        market?.max_supply ?? project?.token_supply ?? 21_000_000
       );
+      const nextBal =
+        side === "buy"
+          ? walletBalance + numericAmount
+          : Math.max(0, walletBalance - numericAmount);
+      const ownershipPct =
+        supply > 0 && Number.isFinite(nextBal)
+          ? (nextBal / supply) * 100
+          : 0;
+
+      setTradeMessage(
+        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(
+          numericAmount,
+          2
+        )} ${sym} · est. ${formatNumber(ownershipPct, 4)}% of supply`
+      );
+      setTradeWinFlash(true);
+      window.setTimeout(() => setTradeWinFlash(false), 900);
 
       setTradeAmount("");
       await refreshMarketData();
@@ -690,6 +727,11 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
       setRedeemStatus("Enter a valid amount to redeem.");
       return;
     }
+
+    if (!userWallet?.trim()) {
+      setRedeemStatus("Connect your wallet to redeem.");
+      return;
+    }
   
     if (numericAmount > walletBalance) {
       setRedeemStatus(
@@ -699,14 +741,14 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
       );
       return;
     }
-  
+
     try {
       setLoadingRedeem(true);
       setRedeemStatus("");
       setRedeemCode("");
-  
-      const wallet = userWallet?.trim() || "demo-wallet";
-  
+
+      const wallet = userWallet.trim();
+
       const res = await fetch(`${API_BASE}/api/projects/${id}/redeem`, {
         method: "POST",
         headers: {
@@ -873,16 +915,26 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
       return;
     }
 
+    const isPlaceholder =
+      !project?.description ||
+      project.description === "Auto-created from dashboard." ||
+      project.description.startsWith("Project workspace for ");
+
+    if (isPlaceholder) {
+      alert("Please add a real description before submitting for review.");
+      return;
+    }
+
     try {
       setLoadingAction(true);
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      let userId = user?.id;
+      const userId = user?.id;
       if (!userId || !UUID_RE.test(userId)) {
-        console.warn("Using fallback dev user id");
-        userId = "91b54662-a9ad-4403-8fe2-752265982e99";
+        alert("Please sign in with a valid account to submit for review.");
+        return;
       }
 
       const res = await fetch(`${API_BASE}/api/projects/${id}/submit-review`, {
@@ -1036,6 +1088,21 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
   }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+      setIsOwner(Boolean(user?.id && project?.owner_id === user.id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.owner_id, project?.id]);
+
+  useEffect(() => {
     if (!connected || !publicKey) {
       setUserWallet(null);
       return;
@@ -1112,8 +1179,7 @@ const NETWORK_LABEL = (process.env.NEXT_PUBLIC_SOLANA_NETWORK || "local").toUppe
     return candles.filter((c) => new Date(c.bucket_time).getTime() >= cutoff);
   }, [candles, chartRange]);
 
-  const useCandles = filteredCandles.length ? filteredCandles : candles;
-const chartData = useMemo(() => {
+  const chartData = useMemo(() => {
   const useCandles = filteredCandles.length ? filteredCandles : candles;
 
   return useCandles.map((c) => ({
@@ -1222,8 +1288,55 @@ const heroUtility =
     ? "Ready to submit for review"
     : "Complete your project details";
 
+  // ── Hero display values (read-only aliases; gates unchanged) ─────────────
+  const heroTitle = projectName;
+  const displaySymbol = (project?.token_symbol || tokenSymbol || tokenMeta.symbol || "TOKEN").toUpperCase();
+  const displayStatusLabel = formatTokenStatus(tokenStatus);
+
+  const hasMarketSnapshot = Boolean(
+    canShowMarketUi && market != null && Number(market.price ?? 0) > 0
+  );
+  const heroPrice = Number(market?.price || 0);
+  const heroPriceChangePct = rangeChangePct;
+  const heroPriceUp = heroPriceChangePct >= 0;
+
+  const utilityBullets: string[] = useMemo(() => {
+    const raw = (project?.utility_value || "").trim();
+    if (raw.includes("•") || raw.includes("\n")) {
+      return raw
+        .split(/[•\n]/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 4)
+        .slice(0, 3);
+    }
+    const first = raw || "Unlock premium access";
+    return [
+      first,
+      "AI-powered features for holders",
+      "Ecosystem growth benefits",
+    ].slice(0, 3);
+  }, [project?.utility_value]);
+
+  const scrollToBuyPanel = () => {
+    document.getElementById("buy-panel")?.scrollIntoView({ behavior: "smooth" });
+  };
+  const scrollToAiWorkspace = () => {
+    document.getElementById("ai-workspace")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const supplyDisplay =
+    project?.token_supply != null && project.token_supply > 0
+      ? formatNumber(project.token_supply, 0)
+      : tokenMeta.supply
+      ? formatNumber(Number(tokenMeta.supply), 0)
+      : "—";
+
 return (
-  <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
+  <div
+    className={`min-h-screen bg-black px-4 py-10 text-white sm:px-6 ${
+      canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
+    }`}
+  >
     <div className="mx-auto max-w-7xl">
       <Link
         href="/discover"
@@ -1254,6 +1367,8 @@ return (
                 {projectName}
               </h1>
 
+              <p className="mt-2 max-w-2xl text-sm text-zinc-400 sm:text-base">{heroUtility}</p>
+
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span
                   className="rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em]"
@@ -1262,19 +1377,218 @@ return (
                   {category}
                 </span>
               </div>
+
+              <div className="mt-5 rounded-2xl border border-zinc-800 bg-black/40 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                  Why hold this token
+                </p>
+                <ul className="space-y-2">
+                  {utilityBullets.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                      <span className="mt-0.5 text-emerald-400">✦</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-2 text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Memory Count
-            </div>
-            <div className="text-2xl font-semibold text-white">
-              {memories.length}
-            </div>
+          <div className="w-full space-y-3 lg:w-80">
+            {canShowMarketUi && (
+              <div className="flex items-center justify-end gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                <span className="text-xs font-medium text-emerald-400">LIVE MARKET</span>
+              </div>
+            )}
+
+            {hasMarketSnapshot ? (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+                <div className="mb-1 text-xs text-zinc-500">Current Price</div>
+                <div className="flex items-end gap-3">
+                  <span className="text-3xl font-black text-white">
+                    ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
+                  </span>
+                  <span
+                    className={`mb-1 text-sm font-semibold ${
+                      heroPriceUp ? "text-emerald-400" : "text-red-400"
+                    }`}
+                  >
+                    {heroPriceUp ? "+" : ""}
+                    {heroPriceChangePct.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                  <div>
+                    <div className="text-xs text-zinc-500">Market Cap</div>
+                    <div className="text-sm font-semibold text-white">
+                      {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-zinc-500">Volume 24h</div>
+                    <div className="text-sm font-semibold text-white">
+                      {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-xl border border-zinc-800 bg-black/40 p-3">
+                  <p className="text-xs font-medium text-emerald-400">Holder benefit</p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {chatMeta.holder_unlimited
+                      ? "Holding unlocks unlimited AI access and deeper project utility."
+                      : "This token powers access, perks, and participation in the project."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+                <div className="mb-1 text-xs text-zinc-500">Token</div>
+                <div className="text-2xl font-black text-white">${displaySymbol}</div>
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                  <div>
+                    <div className="text-xs text-zinc-500">Supply</div>
+                    <div className="text-sm font-semibold text-white">{supplyDisplay}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-zinc-500">Launch stage</div>
+                    <div className="text-sm font-semibold text-zinc-300">{displayStatusLabel}</div>
+                  </div>
+                </div>
+                <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-400">
+                  {isApprovedProject
+                    ? "Approved — completing token launch"
+                    : "Pending review before market launch"}
+                </div>
+                <div className="mt-3 text-xs text-zinc-500">
+                  Early stage — supply and liquidity still forming.
+                </div>
+              </div>
+            )}
+
+            {canShowMarketUi ? (
+              <>
+                <button
+                  type="button"
+                  onClick={scrollToBuyPanel}
+                  className="w-full rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+                >
+                  Buy ${displaySymbol}
+                </button>
+                <button
+                  type="button"
+                  onClick={scrollToAiWorkspace}
+                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                >
+                  Ask AI →
+                </button>
+                {serviceProfile && (
+                  <Link
+                    href={`/project/${id}/book`}
+                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
+                  >
+                    Book service
+                  </Link>
+                )}
+                {isOwner && (
+                  <Link
+                    href={`/project/${id}/manage`}
+                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                  >
+                    Manage bookings →
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={scrollToAiWorkspace}
+                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                >
+                  Ask AI →
+                </button>
+                {serviceProfile && (
+                  <Link
+                    href={`/project/${id}/book`}
+                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
+                  >
+                    Book service
+                  </Link>
+                )}
+                {isOwner && (
+                  <Link
+                    href={`/project/${id}/manage`}
+                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                  >
+                    Manage bookings →
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {canShowMarketUi && hasMarketSnapshot && (
+        <div className="mb-8 border-b border-t border-zinc-800 bg-black">
+          <div className="mx-auto max-w-7xl px-2">
+            <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
+              {[
+                {
+                  label: "Price",
+                  value: `$${formatPrice(market?.price)}`,
+                },
+                {
+                  label: "24h Change",
+                  value: `${heroPriceUp ? "+" : ""}${heroPriceChangePct.toFixed(2)}%`,
+                  positive: heroPriceUp,
+                },
+                {
+                  label: "Market Cap",
+                  value:
+                    market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—",
+                },
+                {
+                  label: "Volume 24h",
+                  value:
+                    market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—",
+                },
+                {
+                  label: "Last Trade",
+                  value: market?.last_trade_at ? formatDateTime(market.last_trade_at) : "—",
+                },
+                ...(supplyDisplay !== "—"
+                  ? [
+                      {
+                        label: "Supply",
+                        value: supplyDisplay,
+                      },
+                    ]
+                  : []),
+              ].map((stat: { label: string; value: string; positive?: boolean }) => (
+                <div key={stat.label} className="min-w-0 flex-shrink-0 px-4 py-3 sm:px-5">
+                  <div className="text-xs text-zinc-500">{stat.label}</div>
+                  <div
+                    className={`text-sm font-semibold ${
+                      stat.positive === true
+                        ? "text-emerald-400"
+                        : stat.positive === false
+                        ? "text-red-400"
+                        : "text-white"
+                    }`}
+                  >
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
         <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
@@ -1459,7 +1773,7 @@ return (
               </div>
             </div>
 
-            <div className="rounded-3xl border border-zinc-800 bg-black p-5">
+            <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
               <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Trade Panel</div>
 
               <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
@@ -1480,29 +1794,54 @@ return (
                   />
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="mb-1 flex rounded-xl border border-zinc-800 p-1">
                   <button
                     type="button"
-                    disabled={loadingTrade}
-                    onClick={() => executeTrade("buy")}
-                    className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                    style={{ background: accent }}
+                    onClick={() => setTradeTab("buy")}
+                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
+                      tradeTab === "buy"
+                        ? "bg-emerald-500 text-black"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
                   >
-                    {loadingTrade ? "Working..." : "Buy"}
+                    Buy
                   </button>
-
                   <button
                     type="button"
-                    disabled={loadingTrade}
-                    onClick={() => executeTrade("sell")}
-                    className="rounded-2xl border border-zinc-700 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                    onClick={() => setTradeTab("sell")}
+                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
+                      tradeTab === "sell"
+                        ? "bg-red-500 text-white"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
                   >
-                    {loadingTrade ? "Working..." : "Sell"}
+                    Sell
                   </button>
                 </div>
 
+                <button
+                  type="button"
+                  disabled={loadingTrade}
+                  onClick={() => executeTrade(tradeTab)}
+                  className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:opacity-50 ${
+                    tradeTab === "buy"
+                      ? "bg-emerald-500 text-black hover:bg-emerald-400"
+                      : "bg-red-500 text-white hover:bg-red-400"
+                  }`}
+                >
+                  {loadingTrade
+                    ? "Working..."
+                    : tradeTab === "buy"
+                    ? `Buy $${displaySymbol}`
+                    : `Sell $${displaySymbol}`}
+                </button>
+
                 {tradeMessage && (
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300">
+                  <div
+                    className={`rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300 ${
+                      tradeWinFlash ? "win-flash" : ""
+                    }`}
+                  >
                     {tradeMessage}
                   </div>
                 )}
@@ -1556,11 +1895,73 @@ return (
   )}
 
   {redeemCode && (
-    <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3">
+    <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4">
       <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300">
         Claim Code
       </div>
-      <div className="mt-1 font-mono text-white">{redeemCode}</div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="font-mono text-sm text-white">{redeemCode}</span>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(redeemCode);
+              setCopyFlash(true);
+              window.setTimeout(() => setCopyFlash(false), 800);
+            } catch {
+              setRedeemStatus("Could not copy to clipboard.");
+            }
+          }}
+          className={`rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition ${
+            copyFlash
+              ? "border-emerald-400 bg-emerald-400/20 text-emerald-200"
+              : "border-zinc-600 text-zinc-300 hover:border-emerald-500/50"
+          }`}
+        >
+          {copyFlash ? "Copied" : "Copy"}
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const sym =
+                project?.token_symbol || tokenMeta.symbol || "TOKEN";
+              const base =
+                typeof window !== "undefined"
+                  ? window.location.origin
+                  : process.env.NEXT_PUBLIC_SITE_URL || "https://dumclub.xyz";
+              const projectUrl = `${base.replace(/\/$/, "")}/project/${id}`;
+              await navigator.clipboard.writeText(
+                `Just redeemed $${sym} on DUM Club.\n\nCode: ${redeemCode}\nProject: ${projectName}\n\n${projectUrl}`
+              );
+              setShareFlash(true);
+              window.setTimeout(() => setShareFlash(false), 800);
+            } catch {
+              setRedeemStatus("Could not copy share message.");
+            }
+          }}
+          className={`rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition ${
+            shareFlash
+              ? "border-emerald-400 bg-emerald-400/20 text-emerald-200"
+              : "border-emerald-500/40 text-emerald-200/90 hover:border-emerald-400"
+          }`}
+        >
+          {shareFlash ? "Copied" : "Share"}
+        </button>
+      </div>
+      <p className="mt-3 text-xs text-zinc-500">
+        Share this code with your team or drop it in Discord to prove redemption.
+      </p>
+      {project?.token_mint_address && (
+        <div className="mt-4 rounded-lg border border-zinc-800 bg-black/40 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+            Verified on Solana
+          </div>
+          <div className="mt-1 break-all font-mono text-[11px] text-zinc-400">
+            Mint · {project.token_mint_address}
+          </div>
+        </div>
+      )}
     </div>
   )}
 
@@ -1700,21 +2101,6 @@ return (
                       Frontend estimate based on trade size versus recent activity and available supply depth.
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
-                  <span className="font-mono text-zinc-300">1.50%</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Fee</span>
-                  <span className="font-mono text-zinc-300">0.50%</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Total Fee</span>
-                  <span className="font-mono text-white">2.00%</span>
                 </div>
               </div>
 
@@ -2178,7 +2564,7 @@ return (
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div id="ai-workspace" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
 
             <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -2217,8 +2603,9 @@ return (
             <h2 className="font-mono text-3xl font-bold text-white">Ask AI</h2>
 
             <p className="mt-3 text-zinc-500">
-              Each project includes 3 free AI questions. Support this project by holding its token to
-              unlock unlimited AI access.
+              This project includes {chatMeta.free_limit} free AI question
+              {chatMeta.free_limit === 1 ? "" : "s"}. Support it by holding its token to unlock
+              unlimited AI access.
             </p>
 
             {chatMeta.locked && (
@@ -2255,8 +2642,43 @@ return (
             </div>
           </div>
         </div>
-      </div>
     </div>
+
+    {canShowMarketUi && hasMarketSnapshot && (
+      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-black/90 backdrop-blur-md lg:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
+            <span className="truncate font-black text-white">{heroTitle}</span>
+            <span className="font-mono text-sm text-zinc-400">${displaySymbol}</span>
+            <span className="text-lg font-bold text-white">
+              ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
+            </span>
+            <span
+              className={`text-sm font-semibold ${
+                heroPriceUp ? "text-emerald-400" : "text-red-400"
+              }`}
+            >
+              {heroPriceUp ? "+" : ""}
+              {heroPriceChangePct.toFixed(2)}%
+            </span>
+          </div>
+
+          <div className="flex flex-shrink-0 items-center gap-3">
+            <span className="hidden text-xs text-zinc-500 xl:inline">
+              Holders unlock unlimited AI access
+            </span>
+            <button
+              type="button"
+              onClick={scrollToBuyPanel}
+              className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
+            >
+              Buy ${displaySymbol}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
   );
 }
 

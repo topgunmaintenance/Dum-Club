@@ -20,6 +20,17 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function deriveTokenSymbolFromName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words
+    .map((w) => w.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2))
+    .join("")
+    .slice(0, 5);
+  const base =
+    letters.length >= 3 ? letters : (letters + "DUM").slice(0, 5);
+  return base.slice(0, 10);
+}
+
 export default function DashboardPage() {
   const { publicKey, connected, wallet } = useWallet();
   const walletAddress = publicKey?.toBase58();
@@ -108,16 +119,13 @@ export default function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      let userId = user?.id;
-      if (!userId || !UUID_RE.test(userId)) {
-        console.warn("Using fallback dev user id");
-        userId = "91b54662-a9ad-4403-8fe2-752265982e99";
+      if (!user?.id || !UUID_RE.test(user.id)) {
+        alert("Please sign in to create a project.");
+        return;
       }
 
-      const compact = name.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-      const base = (compact || "PRJ").slice(0, 6);
-      const suffix = Math.random().toString(36).slice(2, 5).toUpperCase();
-      const tokenSymbol = `${base}${suffix}`.slice(0, 10);
+      const userId = user.id;
+      const tokenSymbol = deriveTokenSymbolFromName(name);
 
       const res = await fetch(`${API_BASE}/api/projects/`, {
         method: "POST",
@@ -128,7 +136,8 @@ export default function DashboardPage() {
         body: JSON.stringify({
           wallet_address: walletAddress,
           name: name.trim(),
-          description: "Auto-created from dashboard.",
+          title: name.trim(),
+          description: `Project workspace for ${name.trim()}.`,
           category: "ai",
           utility_type: "access",
           utility_value: "Access to the project utility",
@@ -213,9 +222,21 @@ export default function DashboardPage() {
                 Connect your wallet to view and create projects.
               </p>
             ) : projects.length === 0 ? (
-              <p className="mt-4 text-zinc-400">
-                No projects yet. Create your first AI app to begin.
-              </p>
+              <div className="mt-6 rounded-xl border border-dashed border-zinc-700 bg-black/40 p-8 text-center">
+                <p className="text-lg font-semibold text-zinc-200">
+                  No projects yet
+                </p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Spin up a workspace from the builder, or create a blank project here and open it
+                  to add AI memory and launch.
+                </p>
+                <Link
+                  href="/build"
+                  className="mt-6 inline-flex rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-2.5 text-sm font-semibold text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-500/20"
+                >
+                  Open builder →
+                </Link>
+              </div>
             ) : (
               <div className="mt-4 space-y-3">
                 {projects.map((project) => (

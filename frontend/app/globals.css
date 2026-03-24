@@ -56,3 +56,119 @@ body {
   background: rgba(0, 255, 178, 0.06) !important;
   box-shadow: 0 0 10px rgba(0, 255, 178, 0.22) !important;
 }
+
+/* Shared motion utilities (respect reduced motion) */
+@keyframes price-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes win-flash {
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: rgba(52, 211, 153, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+.price-flash {
+  animation: price-pulse 0.4s ease-out;
+}
+
+.fade-up {
+  animation: fade-up 0.3s ease-out forwards;
+}
+
+.win-flash {
+  animation: win-flash 0.8s ease-out;
+}
+
+.live-dot {
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-flash,
+  .fade-up,
+  .win-flash,
+  .live-dot {
+    animation: none !important;
+  }
+}
+
+/* Home: horizontal activity marquee */
+@keyframes home-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.home-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: home-marquee 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-marquee-track {
+    animation: none !important;
+  }
+}
+
+/* Discover: synthetic attention pulse (use sparingly; prefer real price flashes) */
+@keyframes border-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0px rgba(52, 211, 153, 0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.2);
+  }
+}
+
+.card-pulse {
+  animation: border-glow 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-pulse {
+    animation: none !important;
+  }
+}

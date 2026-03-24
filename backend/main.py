@@ -16,6 +16,7 @@ from api.routes import (
     token,
     project_tokens,
     market,
+    booking,
 )
 
 from db.supabase import init_supabase
@@ -62,6 +63,7 @@ app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(memories.router, prefix="/api/memories", tags=["Memories"])
 app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
 app.include_router(market.router, tags=["Market"])
+app.include_router(booking.router, tags=["Booking"])
 
 # AI Generator Routes
 app.include_router(generate_app.router, prefix="/api/generate-app", tags=["AI Generator"])

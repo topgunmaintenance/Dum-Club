@@ -352,3 +352,24 @@ async def get_project_candles(project_id: str):
     )
 
     return candles_res.data or []
+
+
+@router.get("/api/activity/recent-trades")
+async def get_recent_trades(limit: int = 48):
+    """Latest trades across all projects (homepage activity ticker)."""
+    if limit < 1:
+        limit = 1
+    if limit > 100:
+        limit = 100
+
+    supabase = get_client()
+
+    trades_res = (
+        supabase.table("project_trades")
+        .select("id, project_id, side, price, token_symbol, amount, created_at")
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+
+    return {"trades": trades_res.data or []}
