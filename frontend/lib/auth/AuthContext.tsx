@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
@@ -28,19 +35,33 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { ready, authenticated, user, login, logout: privyLogout, getAccessToken } =
+    usePrivy();
   const { wallets } = useSolanaWallets();
   const [dumUser, setDumUser] = useState<DumUser | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Privy user id we successfully POSTed to /api/auth/sync this session (avoids JWKS/sync spam). */
+  const syncedPrivyIdRef = useRef<string | null>(null);
+  const lastIsAdminRef = useRef(false);
+
+  const logout = async () => {
+    syncedPrivyIdRef.current = null;
+    lastIsAdminRef.current = false;
+    await privyLogout();
+  };
 
   useEffect(() => {
     if (!ready) return;
 
     if (!authenticated || !user) {
+      syncedPrivyIdRef.current = null;
+      lastIsAdminRef.current = false;
       setDumUser(null);
       setLoading(false);
       return;
     }
+
+    let cancelled = false;
 
     const syncUser = async () => {
       try {
@@ -53,8 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const embeddedWallet = linkedWallets.find((w) => w.type === "privy") || null;
         const activeWallet = linkedWallets[0] || embeddedWallet;
 
-        let isAdmin = false;
-        if (accessToken) {
+        let isAdmin = lastIsAdminRef.current;
+        const shouldPostSync =
+          Boolean(accessToken) && syncedPrivyIdRef.current !== user.id;
+
+        if (shouldPostSync) {
           try {
             const res = await fetch(`${API_BASE}/api/auth/sync`, {
               method: "POST",
@@ -73,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
               const synced = await res.json();
               isAdmin = Boolean(synced?.is_admin);
+              lastIsAdminRef.current = isAdmin;
+              syncedPrivyIdRef.current = user.id;
             } else {
               console.error("Auth sync HTTP error", res.status);
             }
@@ -81,22 +107,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        setDumUser({
-          privyId: user.id,
-          email: user.email?.address || null,
-          walletAddress: activeWallet?.address || null,
-          isAdmin,
-          accessToken: accessToken || null,
-        });
+        if (!cancelled) {
+          setDumUser({
+            privyId: user.id,
+            email: user.email?.address || null,
+            walletAddress: activeWallet?.address || null,
+            isAdmin,
+            accessToken: accessToken || null,
+          });
+        }
       } catch (err) {
         console.error("Auth sync failed", err);
-        setDumUser(null);
+        if (!cancelled) setDumUser(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     syncUser();
+    return () => {
+      cancelled = true;
+    };
   }, [ready, authenticated, user, wallets, getAccessToken]);
 
   const value = useMemo<AuthContextType>(

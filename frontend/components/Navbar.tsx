@@ -38,11 +38,6 @@ export function Navbar() {
     ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
     : "";
 
-  const shortEmail =
-    user?.email && user.email.length > 26
-      ? `${user.email.slice(0, 22)}...`
-      : user?.email ?? null;
-
   return (
     <nav
       onMouseEnter={() => setNavHover(true)}
@@ -222,7 +217,15 @@ export function Navbar() {
                   transition: "all 0.15s ease",
                 }}
               >
-                {shortEmail}
+                {user.email
+                  ? user.email.slice(0, 6) +
+                    "..." +
+                    user.email.slice(-4)
+                  : user.walletAddress
+                    ? user.walletAddress.slice(0, 6) +
+                      "..." +
+                      user.walletAddress.slice(-4)
+                    : ""}
               </button>
             ) : (
               <button
@@ -231,7 +234,7 @@ export function Navbar() {
                 style={{
                   background: "none",
                   border: "1px solid #2a2a2a",
-                  color: "#e8e8e8",
+                  color: "#e8e8e8", // make sure this is explicitly set
                   padding: "13px 18px",
                   fontSize: "12px",
                   letterSpacing: "0.13em",
@@ -241,7 +244,6 @@ export function Navbar() {
                   borderRadius: "14px",
                   height: "52px",
                   minWidth: "220px",
-                  transition: "all 0.15s ease",
                 }}
               >
                 Continue with Google
