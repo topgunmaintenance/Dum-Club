@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function VaultPage() {
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { wallets } = useSolanaWallets();
+  const wallet = wallets[0];
+  const address = wallet?.address;
+  const connection = new Connection(
+    process.env.NEXT_PUBLIC_SOLANA_RPC || "https://api.devnet.solana.com"
+  );
 
   const [creatorWallet, setCreatorWallet] = useState("");
   const [amount, setAmount]               = useState("0.1");
@@ -16,22 +20,27 @@ export default function VaultPage() {
   const [txSig, setTxSig]                 = useState("");
 
   async function handleVault() {
-    if (!publicKey) return alert("Connect your wallet first");
+    if (!wallet || !address) return alert("Connect your wallet first");
     setStatus("sending");
 
     try {
       const creator = new PublicKey(creatorWallet);
       const lamports = Math.floor(parseFloat(amount) * LAMPORTS_PER_SOL);
 
+      const fromPubkey = new PublicKey(address);
       const tx = new Transaction().add(
         SystemProgram.transfer({
-          fromPubkey: publicKey,
+          fromPubkey,
           toPubkey:   creator,
           lamports,
         })
       );
 
-      const sig = await sendTransaction(tx, connection);
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = fromPubkey;
+
+      const sig = await wallet.sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "confirmed");
 
       // Record in backend
@@ -39,7 +48,7 @@ export default function VaultPage() {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          supporter_wallet: publicKey.toBase58(),
+          supporter_wallet: address,
           creator_wallet:   creatorWallet,
           amount_sol:       parseFloat(amount),
           tx_signature:     sig,
@@ -83,7 +92,7 @@ export default function VaultPage() {
 
         <button
           onClick={handleVault}
-          disabled={status === "sending" || !publicKey}
+          disabled={status === "sending" || !wallet || !address}
           className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition rounded-xl py-3 font-semibold text-sm"
         >
           {status === "sending" ? "Sending…" : "Vault SOL →"}
