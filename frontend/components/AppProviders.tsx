@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { WalletProviders } from "./WalletProviders";
 import { AuthProvider } from "../lib/auth/AuthContext";
 
@@ -9,6 +10,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   if (!appId) {
     return <WalletProviders>{children}</WalletProviders>;
   }
+
+  const solanaConnectors = toSolanaWalletConnectors({
+    // Avoid auto-connecting to injected wallets on page load.
+    shouldAutoConnect: false,
+  });
 
   return (
     <PrivyProvider
@@ -20,9 +26,16 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
+        externalWallets: {
+          solana: {
+            connectors: solanaConnectors,
+          },
+        },
         appearance: {
           theme: "dark",
           accentColor: "#00FFB2",
+          walletChainType: "ethereum-and-solana",
+          walletList: ["phantom"],
         },
       }}
     >

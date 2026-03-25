@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { linkWalletToProfile } from "../../lib/linkWalletToProfile";
 import { createClient } from "../../lib/supabase/client";
@@ -32,8 +32,10 @@ function deriveTokenSymbolFromName(name: string): string {
 }
 
 export default function DashboardPage() {
-  const { publicKey, connected, wallet } = useWallet();
-  const walletAddress = publicKey?.toBase58();
+  const { wallets } = useSolanaWallets();
+  const wallet = wallets[0];
+  const address = wallet?.address;
+  const walletAddress = address;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
@@ -43,14 +45,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function syncWallet() {
-      if (!connected || !publicKey || hasLinkedRef.current) return;
+      if (!address || hasLinkedRef.current) return;
 
       try {
         hasLinkedRef.current = true;
 
         await linkWalletToProfile(
-          publicKey.toBase58(),
-          wallet?.adapter?.name || "solana"
+          address,
+          wallet?.walletClientType || "solana"
         );
 
         console.log("Wallet linked to profile");
@@ -61,7 +63,7 @@ export default function DashboardPage() {
     }
 
     syncWallet();
-  }, [connected, publicKey, wallet]);
+  }, [address, wallet]);
 
   const loadProjects = useCallback(async () => {
     if (!walletAddress) {

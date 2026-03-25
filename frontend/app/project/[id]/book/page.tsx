@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
 import QRCode from "react-qr-code";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -22,7 +22,9 @@ type BookingSuccess = {
 
 export default function BookPage() {
   const { id } = useParams() as { id: string };
-  const { publicKey } = useWallet();
+  const { wallets } = useSolanaWallets();
+  const wallet = wallets[0];
+  const address = wallet?.address;
 
   const [project, setProject] = useState<Record<string, unknown> | null>(null);
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
@@ -65,7 +67,7 @@ export default function BookPage() {
   const tokenSymbol = (project?.token_symbol as string) || "TOKEN";
 
   async function handleBook() {
-    if (!selectedSlot || !publicKey) return;
+    if (!selectedSlot || !address) return;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}/book`, {
@@ -73,7 +75,7 @@ export default function BookPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slot_id: selectedSlot.id,
-          customer_wallet: publicKey.toBase58(),
+          customer_wallet: address,
           customer_email: customerEmail || undefined,
           customer_name: customerName || undefined,
           token_amount: 1,
@@ -212,7 +214,7 @@ export default function BookPage() {
           </div>
         </div>
 
-        {!publicKey ? (
+        {!address ? (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
             <div className="mb-3 text-3xl">🔒</div>
             <p className="text-zinc-400">Connect your wallet to book this service</p>

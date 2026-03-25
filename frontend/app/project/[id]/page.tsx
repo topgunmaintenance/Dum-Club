@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { createClient } from "../../../lib/supabase/client";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import {
   LineChart,
   Line,
@@ -362,7 +362,8 @@ function getStatusExplanation(status?: string) {
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { publicKey, connected } = useWallet();
+  const { wallets } = useSolanaWallets();
+  const address = wallets[0]?.address;
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("Untitled Project");
@@ -1103,13 +1104,13 @@ export default function ProjectPage() {
   }, [project?.owner_id, project?.id]);
 
   useEffect(() => {
-    if (!connected || !publicKey) {
+    if (!address) {
       setUserWallet(null);
       return;
     }
 
-    setUserWallet(publicKey.toBase58());
-  }, [connected, publicKey]);
+    setUserWallet(address);
+  }, [address]);
 
   useEffect(() => {
     const ts = normalizeTokenLifecycleStatus(tokenMeta.status || project?.token_status);
@@ -2522,7 +2523,7 @@ return (
               later.
             </p>
 
-            {publicKey ? (
+            {address ? (
             <form onSubmit={saveMemory} className="mt-6 space-y-4">
               <textarea
                 value={memoryText}

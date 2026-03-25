@@ -4,8 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletDisconnectButton } from "@solana/wallet-adapter-react-ui";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useAuth } from "../lib/auth/AuthContext";
 
 const WalletMultiButton = dynamic(
@@ -18,7 +17,10 @@ const WalletMultiButton = dynamic(
 
 export function Navbar() {
   const path = usePathname();
-  const { publicKey, connected } = useWallet();
+  const { wallets } = useSolanaWallets();
+  const wallet = wallets[0];
+  const address = wallet?.address;
+  const connected = !!address;
   const { user, loading, login, logout } = useAuth();
 
   const [mounted, setMounted] = useState(false);
@@ -34,9 +36,7 @@ export function Navbar() {
     { href: "/chat", label: "AI Chat" },
   ];
 
-  const shortAddress = publicKey
-    ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
-    : "";
+  const shortAddress = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "";
 
   return (
     <nav
@@ -265,8 +265,10 @@ export function Navbar() {
                   {shortAddress}
                 </div>
 
-                <WalletDisconnectButton
+                <button
+                  type="button"
                   className="dum-wallet-btn"
+                  onClick={() => wallet?.disconnect()}
                   style={{
                     background: "none",
                     border: "1px solid #2a2a2a",
@@ -281,7 +283,9 @@ export function Navbar() {
                     boxShadow: "none",
                     height: "52px",
                   }}
-                />
+                >
+                  Disconnect
+                </button>
               </>
             ) : (
               <WalletMultiButton
