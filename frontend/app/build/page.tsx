@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type LaunchState = "idle" | "generating" | "error";
+
+const PROGRESS_STEPS = [
+  "Reading your idea...",
+  "Generating project metadata...",
+  "Creating token identity...",
+  "Setting up live market...",
+  "Almost there...",
+];
 
 const EXAMPLES = [
   "An AI fitness coach that builds custom workout plans",
@@ -19,6 +27,18 @@ export default function BuildPage() {
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
   const [error, setError] = useState("");
+  const [progressStep, setProgressStep] = useState(0);
+
+  useEffect(() => {
+    if (state !== "generating") {
+      setProgressStep(0);
+      return;
+    }
+    const intervals = PROGRESS_STEPS.map((_, i) =>
+      window.setTimeout(() => setProgressStep(i), i * 6000)
+    );
+    return () => intervals.forEach(clearTimeout);
+  }, [state]);
 
   async function handleLaunch(e: React.FormEvent) {
     e.preventDefault();
@@ -98,12 +118,18 @@ export default function BuildPage() {
             {generating ? (
               <span className="flex items-center justify-center gap-3">
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                Generating your project...
+                {PROGRESS_STEPS[progressStep]}
               </span>
             ) : (
               "Launch →"
             )}
           </button>
+
+          {generating && (
+            <p className="mt-3 text-center font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600">
+              Step {progressStep + 1} of {PROGRESS_STEPS.length} · usually under 30s
+            </p>
+          )}
 
           {state === "error" && error && (
             <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
