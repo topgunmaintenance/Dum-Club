@@ -371,7 +371,7 @@ export default function ProjectPage() {
   const [memoryText, setMemoryText] = useState("");
   const [memories, setMemories] = useState<Memory[]>([]);
   const [question, setQuestion] = useState("");
-  const [response, setResponse] = useState("No response yet.");
+  const [response, setResponse] = useState("");
 
   const [tokenName, setTokenName] = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
@@ -1548,7 +1548,7 @@ return (
                 >
                   Ask AI →
                 </button>
-                {serviceProfile && (
+                {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
                     className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
@@ -1557,12 +1557,26 @@ return (
                   </Link>
                 )}
                 {isOwner && (
-                  <Link
-                    href={`/project/${id}/manage`}
-                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
-                  >
-                    Manage bookings →
-                  </Link>
+                  Boolean(serviceProfile?.is_active) ? (
+                    <Link
+                      href={`/project/${id}/manage`}
+                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                    >
+                      Manage bookings →
+                    </Link>
+                  ) : serviceProfile ? (
+                    <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
+                      <Link
+                        href={`/project/${id}/manage`}
+                        className="block font-mono text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                      >
+                        Set up your service →
+                      </Link>
+                      <p className="mt-1 text-[10px] text-zinc-600">
+                        Turn this project into a bookable offer
+                      </p>
+                    </div>
+                  ) : null
                 )}
               </>
             ) : (
@@ -1574,7 +1588,7 @@ return (
                 >
                   Ask AI →
                 </button>
-                {serviceProfile && (
+                {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
                     className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
@@ -1583,12 +1597,26 @@ return (
                   </Link>
                 )}
                 {isOwner && (
-                  <Link
-                    href={`/project/${id}/manage`}
-                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
-                  >
-                    Manage bookings →
-                  </Link>
+                  Boolean(serviceProfile?.is_active) ? (
+                    <Link
+                      href={`/project/${id}/manage`}
+                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                    >
+                      Manage bookings →
+                    </Link>
+                  ) : serviceProfile ? (
+                    <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
+                      <Link
+                        href={`/project/${id}/manage`}
+                        className="block font-mono text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                      >
+                        Set up your service →
+                      </Link>
+                      <p className="mt-1 text-[10px] text-zinc-600">
+                        Turn this project into a bookable offer
+                      </p>
+                    </div>
+                  ) : null
                 )}
               </>
             )}
@@ -1727,8 +1755,17 @@ return (
         </p>
 
         {chatMeta.locked && (
-          <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-950/20 p-4 text-sm text-red-200">
-            {chatMeta.lock_message}
+          <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-zinc-950 p-5">
+            <p className="text-sm text-zinc-400">{chatMeta.lock_message}</p>
+            {canShowMarketUi && (
+              <button
+                type="button"
+                onClick={scrollToBuyPanel}
+                className="mt-3 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+              >
+                Get ${displaySymbol} to unlock →
+              </button>
+            )}
           </div>
         )}
 
@@ -1755,7 +1792,11 @@ return (
           <h3 className="font-mono text-2xl font-bold text-white">AI Response</h3>
 
           <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
-            {response}
+            {response || (
+              <span className="text-zinc-600">
+                Ask a question above — the AI knows this project deeply.
+              </span>
+            )}
           </div>
         </div>
       </div>

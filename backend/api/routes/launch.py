@@ -239,6 +239,31 @@ async def instant_launch(req: LaunchRequest):
             }
         ).execute()
 
+    # ── 5b. Seed default service profile ────────────────────────────────────
+    # Dormant by default (is_active=False). Owner enables via /manage.
+    # Check-first mirrors the market seed pattern; guards against retry duplicates
+    # (service_profiles has UNIQUE(project_id) so a blind INSERT would fail).
+    existing_profile = (
+        supabase.table("service_profiles")
+        .select("id")
+        .eq("project_id", project_id)
+        .execute()
+    )
+    if not existing_profile.data:
+        supabase.table("service_profiles").insert(
+            {
+                "project_id": project_id,
+                "service_type": "remote",
+                "duration_minutes": 60,
+                "buffer_minutes": 15,
+                "price_per_token": 1.0,
+                "currency": "USD",
+                "service_description": None,
+                "is_active": False,
+                "updated_at": now,
+            }
+        ).execute()
+
     # ── 6. Set project live ──────────────────────────────────────────────────
     # On-chain mint/minting (create-token, mint-tokens) requires funded Solana
     # wallets + Node scripts and is handled by the admin token pipeline later.
