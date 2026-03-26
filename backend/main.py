@@ -10,9 +10,11 @@ _backend_dir = Path(__file__).resolve().parent
 if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from api.routes import (
     auth,
@@ -50,20 +52,30 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_LOCALHOST_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+
+
+def _build_cors_origins() -> list[str]:
+    origins = list(_LOCALHOST_ORIGINS)
+    for var in ("FRONTEND_URL", "FRONTEND_PREVIEW_URL"):
+        val = os.getenv(var, "").strip().rstrip("/")
+        if val:
+            origins.append(val)
+    return origins
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-        "https://dum.club",   # ← your real domain (corrected)
-    ],
+    allow_origins=_build_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-
 )
 
 
