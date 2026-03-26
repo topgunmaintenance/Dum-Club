@@ -413,6 +413,9 @@ export default function ProjectPage() {
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  // Live banner — shown to owner on arrival; structured for future launch-arrival gating
+  const [showLiveBanner, setShowLiveBanner] = useState(true);
+  const [bannerCopied, setBannerCopied] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
     is_holder: boolean;
@@ -1102,6 +1105,14 @@ export default function ProjectPage() {
     };
   }, [project?.owner_id, project?.id]);
 
+  // Auto-dismiss live banner 8s after isOwner resolves.
+  // TODO: gate to launch arrivals only (e.g. ?launched=1 query param) when ready.
+  useEffect(() => {
+    if (!isOwner) return;
+    const t = window.setTimeout(() => setShowLiveBanner(false), 8000);
+    return () => clearTimeout(t);
+  }, [isOwner]);
+
   useEffect(() => {
     if (!connected || !publicKey) {
       setUserWallet(null);
@@ -1338,6 +1349,42 @@ return (
     }`}
   >
     <div className="mx-auto max-w-7xl">
+      {isOwner && showLiveBanner && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-400">✦</span>
+            <span className="text-sm font-semibold text-emerald-200">
+              <span className="font-mono uppercase tracking-[0.15em]">{heroTitle}</span>
+              {" is live — "}
+              <span className="font-normal text-emerald-300/80">share it with your community</span>
+            </span>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(window.location.href);
+                  setBannerCopied(true);
+                  window.setTimeout(() => setBannerCopied(false), 1500);
+                } catch {}
+              }}
+              className="rounded-lg border border-emerald-400/40 px-3 py-1.5 font-mono text-xs uppercase tracking-[0.18em] text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+            >
+              {bannerCopied ? "Copied ✓" : "Copy link"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLiveBanner(false)}
+              aria-label="Dismiss"
+              className="text-emerald-600 transition hover:text-emerald-400"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <Link
         href="/discover"
         className="mb-8 inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
@@ -1723,6 +1770,28 @@ return (
         </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
+            {trades.length === 0 ? (
+              <div className="flex flex-col justify-center gap-6 rounded-3xl border border-zinc-800 bg-black p-8">
+                <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
+                  ◆ Day Zero
+                </div>
+                <div>
+                  <h3 className="font-mono text-2xl font-bold text-white">
+                    Be the first to support this project
+                  </h3>
+                  <p className="mt-3 max-w-sm text-zinc-400">
+                    No trades yet. Early supporters back ideas before the market
+                    does — and shape the token's opening price history.
+                  </p>
+                </div>
+                <p className="text-sm text-zinc-500">
+                  <span className="font-mono text-zinc-400">${displaySymbol}</span>
+                  {" · "}Starting price{" "}
+                  {market?.price ? `$${formatPrice(market.price)}` : "$0.001000"}
+                  {supplyDisplay !== "—" && <>{" · "}{supplyDisplay} supply</>}
+                </p>
+              </div>
+            ) : (
             <div className="space-y-6">
               <div className="grid gap-4 md:grid-cols-5">
                 <div className="rounded-2xl border border-zinc-800 bg-black p-5">
@@ -1866,6 +1935,7 @@ return (
                 )}
               </div>
             </div>
+            )}
 
             <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
               <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">{displaySymbol} · Support this project</div>
