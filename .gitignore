@@ -9,6 +9,7 @@ node_modules/
 voices/
 dist/
 build/
+!frontend/app/build/
 .DS_Store
 keys/
 keys/*.json
