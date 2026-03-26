@@ -13,6 +13,20 @@ module.exports = {
           600: "#9333ea",
         },
       },
+      keyframes: {
+        fadeSlideDown: {
+          "0%":   { opacity: "0", transform: "translateY(-8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)"    },
+        },
+        fadeIn: {
+          "0%":   { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+      },
+      animation: {
+        "fade-slide-down": "fadeSlideDown 0.3s ease-out both",
+        "fade-in":         "fadeIn 0.2s ease-out both",
+      },
     },
   },
   plugins: [],

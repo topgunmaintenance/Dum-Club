@@ -118,7 +118,9 @@ export default function BuildPage() {
             {generating ? (
               <span className="flex items-center justify-center gap-3">
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                {PROGRESS_STEPS[progressStep]}
+                <span key={progressStep} className="animate-fade-in">
+                  {PROGRESS_STEPS[progressStep]}
+                </span>
               </span>
             ) : (
               "Launch →"
