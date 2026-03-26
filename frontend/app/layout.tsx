@@ -7,8 +7,22 @@ import { Navbar } from "../components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DUM Club",
-  description: "Support creators by vaulting SOL",
+  title: "DUM Club — Launch AI Projects on Solana",
+  description:
+    "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+  openGraph: {
+    title: "DUM Club — Launch AI Projects on Solana",
+    description:
+      "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+    siteName: "DUM Club",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DUM Club — Launch AI Projects on Solana",
+    description:
+      "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+  },
 };
 
 export default function RootLayout({
