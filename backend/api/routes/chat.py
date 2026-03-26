@@ -14,7 +14,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 
-_client = ollama.Client(host=OLLAMA_HOST)
+_client = ollama.Client(host=OLLAMA_HOST, timeout=30)
 
 
 class ChatRequest(BaseModel):

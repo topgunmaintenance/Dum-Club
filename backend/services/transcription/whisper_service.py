@@ -1,8 +1,6 @@
 """
 Transcription service using OpenAI Whisper (local).
 """
-import whisper
-import torch
 import tempfile
 import os
 from pathlib import Path
@@ -10,9 +8,11 @@ from pathlib import Path
 _model = None
 
 
-def _load_model(size: str = "base") -> whisper.Whisper:
+def _load_model(size: str = "base"):
     global _model
     if _model is None:
+        import whisper  # lazy: not installed in prod image; fails at call time, not startup
+        import torch
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"🎤 Loading Whisper '{size}' on {device}")
         _model = whisper.load_model(size, device=device)
@@ -28,6 +28,7 @@ async def transcribe_audio(
     Transcribe audio bytes → {text, language, segments}.
     Supports any format ffmpeg can handle (mp3, mp4, wav, m4a, ogg…).
     """
+    import torch  # lazy: mirrors _load_model; needed for fp16 flag below
     model = _load_model(model_size)
 
     # Write to temp file — Whisper requires a file path

@@ -30,7 +30,7 @@ router = APIRouter()
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-_ollama = ollama.Client(host=OLLAMA_HOST)
+_ollama = ollama.Client(host=OLLAMA_HOST, timeout=30)
 
 DEFAULT_TOKEN_SUPPLY = 21_000_000
 DEFAULT_STARTING_PRICE = 0.001

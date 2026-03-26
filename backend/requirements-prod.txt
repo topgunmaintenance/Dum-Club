@@ -1,0 +1,45 @@
+# Production dependencies — no heavy ML stack.
+# Routes that need torch/whisper/sentence-transformers fail gracefully
+# at call time (ImportError) rather than blocking container startup.
+# Use requirements.txt for local development with the full ML stack.
+
+# ── API ───────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+pydantic==2.7.1
+pydantic-settings==2.3.0
+httpx==0.27.0
+PyJWT==2.9.0
+
+# ── Database ──────────────────────────────────────────────────
+supabase==2.5.1
+asyncpg==0.29.0
+pgvector==0.3.6
+
+# ── LLM (Ollama client) ───────────────────────────────────────
+ollama==0.2.1
+
+# ── Speech (Piper wrapper — binary called via subprocess) ─────
+soundfile==0.12.1
+numpy==1.26.4
+
+# ── Utils ─────────────────────────────────────────────────────
+python-dotenv==1.0.1
+aiofiles==23.2.1
+pillow==10.3.0
+requests==2.32.3
+
+# ── Heavy ML stack (transcription / embeddings / RAG) ─────────
+# Not installed in the production image. Routes that depend on
+# these packages fail gracefully at call time, not at startup.
+# Uncomment here (or use requirements.txt) for local dev / GPU hosts.
+# openai-whisper
+# torch==2.3.0
+# torchaudio==2.3.0
+# sentence-transformers==3.0.1
+# llama-index==0.10.43
+# llama-index-vector-stores-supabase==0.1.3
+# llama-index-embeddings-huggingface==0.2.2
