@@ -1488,9 +1488,9 @@ return (
                 {serviceProfile && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
+                    className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
                   >
-                    Book service
+                    Book service →
                   </Link>
                 )}
                 {isOwner && (
@@ -1514,9 +1514,9 @@ return (
                 {serviceProfile && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
+                    className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
                   >
-                    Book service
+                    Book service →
                   </Link>
                 )}
                 {isOwner && (
@@ -1860,13 +1860,17 @@ return (
     <span className="font-mono text-white">2.00%</span>
   </div>
 </div>
-<div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+<details className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950">
+  <summary className="cursor-pointer select-none px-4 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
+    Holder access ▸
+  </summary>
+  <div className="p-4 pt-0">
   <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-    Redeem Token
+    Holder Access
   </div>
 
   <div className="mb-3 text-sm text-zinc-400">
-    Turn your token into real project utility.
+    Use tokens to signal support and unlock holder access.
   </div>
 
   <input
@@ -1885,7 +1889,7 @@ return (
     disabled={loadingRedeem}
     className="mt-3 w-full rounded-xl bg-green-500 py-2 font-semibold text-black disabled:opacity-50"
   >
-    {loadingRedeem ? "Redeeming..." : "Redeem"}
+    {loadingRedeem ? "Unlocking..." : "Unlock Access"}
   </button>
 
   {redeemStatus && (
@@ -1897,7 +1901,7 @@ return (
   {redeemCode && (
     <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4">
       <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300">
-        Claim Code
+        Access Code
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm text-white">{redeemCode}</span>
@@ -1932,7 +1936,7 @@ return (
                   : process.env.NEXT_PUBLIC_SITE_URL || "https://dumclub.xyz";
               const projectUrl = `${base.replace(/\/$/, "")}/project/${id}`;
               await navigator.clipboard.writeText(
-                `Just redeemed $${sym} on DUM Club.\n\nCode: ${redeemCode}\nProject: ${projectName}\n\n${projectUrl}`
+                `Just unlocked $${sym} holder access on DUM Club.\n\nCode: ${redeemCode}\nProject: ${projectName}\n\n${projectUrl}`
               );
               setShareFlash(true);
               window.setTimeout(() => setShareFlash(false), 800);
@@ -1950,7 +1954,7 @@ return (
         </button>
       </div>
       <p className="mt-3 text-xs text-zinc-500">
-        Share this code with your team or drop it in Discord to prove redemption.
+        Share this code with your team or drop it in Discord.
       </p>
       {project?.token_mint_address && (
         <div className="mt-4 rounded-lg border border-zinc-800 bg-black/40 px-3 py-2">
@@ -1974,11 +1978,11 @@ return (
 
   <div className="mt-4 border-t border-zinc-800 pt-4">
     <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-      Redemption History
+      Access History
     </div>
 
     {redemptions.length === 0 ? (
-      <div className="text-sm text-zinc-500">No redemptions yet.</div>
+      <div className="text-sm text-zinc-500">No access history yet.</div>
     ) : (
       <div className="space-y-2">
         {redemptions.slice(0, 5).map((item) => (
@@ -2038,7 +2042,7 @@ return (
         value={feedbackComment}
         onChange={(e) => setFeedbackComment(e.target.value)}
         rows={3}
-        placeholder="Share a quick note about your redemption experience..."
+        placeholder="Share a quick note about this project..."
         className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
       />
 
@@ -2050,7 +2054,8 @@ return (
       </button>
     </form>
   </div>
-</div>
+  </div>
+</details>
               <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
                 <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-zinc-600">Trade Preview</div>
 

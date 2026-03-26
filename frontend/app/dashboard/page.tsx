@@ -172,7 +172,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-10">
           <div className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-medium text-purple-200">
-            Your AI Apps
+            Your Projects
           </div>
 
           <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
@@ -180,7 +180,7 @@ export default function DashboardPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-zinc-400">
-            Create and manage Solana-native AI apps from one place.
+            Create and manage Solana-native AI projects from one place.
           </p>
         </div>
 

@@ -310,8 +310,8 @@ export default function Home() {
               </h1>
 
               <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-zinc-400 sm:text-xl">
-                Own access to AI-powered services and launch into the DUM Club ecosystem with
-                real project pages, token utility, and live markets.
+                Launch AI-powered projects into the DUM Club ecosystem with real project pages,
+                live token activity, and community demand signals.
               </p>
 
               <p className="mx-auto mt-5 max-w-3xl text-base italic text-zinc-600">
@@ -627,8 +627,7 @@ export default function Home() {
               <span className="text-emerald-400">60 SECONDS.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-zinc-500">
-              Describe it. We build the AI, the token, and the market. Supporters buy in. Holders
-              redeem real value.
+              Describe it. We build the AI, the token, and the market. Supporters join early. Holders back ideas and grow with them.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link
@@ -726,8 +725,7 @@ export default function Home() {
                 DIGITAL UTILITY MOVEMENT
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
-                Build AI-powered projects on Solana. Token holders redeem real value. Markets move
-                with demand.
+                Build AI-powered projects on Solana. Token holders back ideas early. Markets move with demand.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
