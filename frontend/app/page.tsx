@@ -31,6 +31,13 @@ type MarketSnapshot = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+const HERO_EXAMPLES = [
+  "Build the assistant first. Grow the community and token layer after.",
+  "An AI fitness coach that adapts to your progress every week.",
+  "A music discovery tool that learns your taste over time.",
+  "A recipe vault powered by local chefs and community curation.",
+];
+
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
   if (source.includes("fitness") || source.includes("health")) return "💪";
@@ -112,6 +119,7 @@ export default function Home() {
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
   const [tick, setTick] = useState(0);
+  const [exampleIdx, setExampleIdx] = useState(0);
   const marketPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const flashTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -280,6 +288,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const id = setInterval(() => setExampleIdx((i) => (i + 1) % HERO_EXAMPLES.length), 3500);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     return () => {
       for (const timeoutId of Object.values(flashTimeoutsRef.current)) {
         clearTimeout(timeoutId);
@@ -314,16 +327,17 @@ export default function Home() {
                 live token activity, and community demand signals.
               </p>
 
-              <p className="mx-auto mt-5 max-w-3xl text-base italic text-zinc-600">
-                Build the assistant first. Grow the community and token layer after.
+              <p key={exampleIdx} className="mx-auto mt-5 max-w-3xl text-base italic text-zinc-600 animate-fade-in">
+                {HERO_EXAMPLES[exampleIdx]}
               </p>
 
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
                   href="/build"
-                  className="inline-flex min-w-[260px] items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90"
+                  className="group inline-flex min-w-[260px] items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90"
                 >
-                  Build a Project →
+                  Build a Project{" "}
+                  <span className="inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
                 </Link>
 
                 <Link
