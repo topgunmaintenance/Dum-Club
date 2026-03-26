@@ -455,8 +455,8 @@ export default function Home() {
             60 seconds to live
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
-            Describe your idea, we generate the workspace and token metadata, then your project
-            page goes live with a public market feed and holder utility. Most launches surface in
+            Describe your service, we set up your listing and credit configuration, then your
+            service page goes live and customers can get credits. Most listings go live in
             under a minute.
           </p>
           <div className="mt-8 grid gap-6 border-t border-zinc-800 pt-8 sm:grid-cols-3">
@@ -468,7 +468,7 @@ export default function Home() {
             <div>
               <div className="font-mono text-2xl font-bold text-zinc-700">02</div>
               <div className="mt-2 font-mono text-sm font-semibold text-white">Generate</div>
-              <p className="mt-2 text-sm text-zinc-500">AI drafts the app shape and token story.</p>
+              <p className="mt-2 text-sm text-zinc-500">We generate your service listing and credit setup.</p>
             </div>
             <div>
               <div className="font-mono text-2xl font-bold text-zinc-700">03</div>
@@ -482,8 +482,8 @@ export default function Home() {
         <div className="mx-auto mt-16 max-w-7xl border-t border-zinc-900">
           <div className="border-b border-zinc-900/80 py-2 text-center">
             <span className="font-mono text-[10px] text-zinc-600">
-              {tradesInLast24h} trades in the last 24h across {liveProjectCount}{" "}
-              live project{liveProjectCount === 1 ? "" : "s"}
+              {tradesInLast24h} activities in the last 24h across {liveProjectCount}{" "}
+              live service{liveProjectCount === 1 ? "" : "s"}
             </span>
           </div>
           <div className="mb-2 px-4 pt-3 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
@@ -491,28 +491,20 @@ export default function Home() {
           </div>
           {recentTrades.length === 0 ? (
             <div className="py-4 text-center font-mono text-xs text-zinc-600">
-              No recent trades yet — open a market and make the first move.
+              No recent activity yet.
             </div>
           ) : (
             <div className="overflow-hidden py-3">
               <div className="home-marquee-track gap-8">
                 {recentTrades.concat(recentTrades).map((trade, i) => {
-                  const side = trade.side === "sell" ? "sell" : "buy";
-                  const price = Number(trade.price ?? 0);
                   const sym = trade.token_symbol || "—";
                   return (
                     <span
                       key={`t-${i}`}
                       className="flex shrink-0 items-center font-mono text-xs text-zinc-500"
                     >
-                      <span
-                        className={
-                          side === "buy" ? "text-emerald-400" : "text-red-400"
-                        }
-                      >
-                        {side === "buy" ? "↑" : "↓"}
-                      </span>{" "}
-                      {sym} · ${formatPrice(price)} · {formatTimeAgo(trade.created_at)}
+                      <span className="text-zinc-600">◆</span>{" "}
+                      {sym} · {formatTimeAgo(trade.created_at)}
                       <span className="mx-4 text-zinc-800">|</span>
                     </span>
                   );
@@ -551,26 +543,14 @@ export default function Home() {
                             ${getTicker(featured.project)}
                           </span>
                           <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500">
-                            {featured.project.token_utility || "Token-gated AI access"}
+                            {featured.project.token_utility || "Service credit access"}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      {featured.market ? (
-                        <>
-                          <div className="font-mono text-3xl font-black text-white">
-                            ${formatPrice(featured.market.price)}
-                          </div>
-                          <div className="mt-1 font-mono text-sm text-emerald-400">
-                            ${formatNumber(featured.market.market_cap, 0)} mkt cap
-                          </div>
-                        </>
-                      ) : (
-                        <div className="font-mono text-sm text-zinc-500">Market loading…</div>
-                      )}
                       <div className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 font-mono text-sm font-bold text-black transition group-hover:bg-emerald-400">
-                        Open market →
+                        View service →
                       </div>
                     </div>
                   </div>
@@ -595,9 +575,9 @@ export default function Home() {
                   label: "Projects live",
                   value: allPublicProjects.length.toString(),
                 },
-                { label: "AI questions answered", value: "∞" },
+                { label: "Credits redeemed", value: "∞" },
                 {
-                  label: "Tokens created",
+                  label: "Services listed",
                   value: allPublicProjects.length.toString(),
                 },
                 { label: "Built on Solana", value: "✓" },
@@ -627,8 +607,7 @@ export default function Home() {
               <span className="text-emerald-400">60 SECONDS.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-zinc-500">
-              Describe it. We build the AI, the token, and the market. Supporters buy in. Holders
-              redeem real value.
+              Describe your service. We set up your listing and credits. Customers get credits and redeem real value.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link
@@ -798,7 +777,7 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "How it works", href: "/#how-it-works" },
-                  { label: "Token economics", href: "#" },
+                  { label: "How credits work", href: "#" },
                   { label: "Creator guide", href: "#" },
                   {
                     label: "Contact",
@@ -820,18 +799,17 @@ export default function Home() {
 
           <div className="mt-16 border-t border-zinc-900 pt-8">
             <p className="mb-4 text-[11px] leading-relaxed text-zinc-700">
-              The content on this platform is for informational purposes only and does not
-              constitute financial, legal, or investment advice. Token prices are determined by
-              market activity and may be volatile. You assume sole responsibility for evaluating any
-              risks associated with participating in DUM Club projects or purchasing tokens. DUM Club
-              is built on Solana and operates in an experimental capacity as a beta product.
+              DUM Club is a service credit marketplace. Credits represent access to real services
+              offered by listed businesses and creators. Credits are utility only and do not
+              constitute financial instruments or investment products. DUM Club is built on Solana
+              and operates in an experimental capacity as a beta product.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="font-mono text-[10px] text-zinc-700">
                 © {new Date().getFullYear()} DUM Club. All rights reserved.
               </div>
               <div className="flex gap-6">
-                {["Terms of Use", "Privacy Policy", "Token Disclaimer"].map((item) => (
+                {["Terms of Use", "Privacy Policy", "Credit Policy"].map((item) => (
                   <a
                     key={item}
                     href="#"

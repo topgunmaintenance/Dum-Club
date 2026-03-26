@@ -174,7 +174,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-10">
           <div className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-medium text-purple-200">
-            Your AI Apps
+            Your Services
           </div>
 
           <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
@@ -182,7 +182,7 @@ export default function DashboardPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-zinc-400">
-            Create and manage Solana-native AI apps from one place.
+            Create and manage your service listings.
           </p>
         </div>
 
@@ -229,8 +229,7 @@ export default function DashboardPage() {
                   No projects yet
                 </p>
                 <p className="mt-2 text-sm text-zinc-500">
-                  Spin up a workspace from the builder, or create a blank project here and open it
-                  to add AI memory and launch.
+                  Create a service listing from the builder, or add one here to set up credits and go live.
                 </p>
                 <Link
                   href="/build"

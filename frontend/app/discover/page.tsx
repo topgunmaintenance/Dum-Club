@@ -33,7 +33,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TARGET_MARKET_CAP = 100_000;
 
 const DISCOVER_TABS = [
-  { id: "movers", label: "🔥 Movers" },
+  { id: "movers", label: "🔥 Popular" },
   { id: "new", label: "⚡ New" },
   { id: "live", label: "🟢 Live" },
   { id: "all", label: "All" },
@@ -421,27 +421,20 @@ export default function DiscoverPage() {
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
         {recentTrades.length === 0 ? (
           <p className="text-center font-mono text-[10px] text-zinc-600">
-            No recent trades yet — markets are warming up.
+            No recent activity yet.
           </p>
         ) : (
           <div className="overflow-hidden">
             <div className="home-marquee-track gap-6">
               {recentTrades.concat(recentTrades).map((trade, i) => {
-                const side = trade.side === "sell" ? "sell" : "buy";
-                const price = Number(trade.price ?? 0);
                 const sym = trade.token_symbol || "—";
                 return (
                   <span
                     key={`d-${i}`}
                     className="flex shrink-0 items-center font-mono text-[10px]"
                   >
-                    <span
-                      className={side === "buy" ? "text-emerald-400" : "text-red-400"}
-                    >
-                      {side === "buy" ? "↑" : "↓"}
-                    </span>
+                    <span className="text-zinc-600">◆</span>
                     <span className="ml-1 text-zinc-400">{sym}</span>
-                    <span className="ml-1 text-zinc-600">${formatPrice(price)}</span>
                     <span className="ml-2 text-zinc-800">·</span>
                   </span>
                 );
@@ -459,7 +452,7 @@ export default function DiscoverPage() {
         <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <h1 className="font-mono text-4xl font-bold uppercase tracking-[-0.04em] text-white sm:text-6xl">
-              Trending Projects
+              Available Services
             </h1>
           </div>
         </div>
@@ -490,10 +483,9 @@ export default function DiscoverPage() {
           </div>
           <div className="min-w-[140px] flex-1 border-l border-zinc-800 pl-4 sm:pl-6">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              24h volume (est.)
+              Activity
             </div>
             <div className="font-mono text-2xl font-bold text-emerald-400/90">
-              $
               {totalVolume24h >= 1e6
                 ? `${(totalVolume24h / 1e6).toFixed(2)}M`
                 : totalVolume24h.toFixed(0)}
@@ -584,24 +576,6 @@ export default function DiscoverPage() {
                               : "text-white"
                           }`}
                         >
-                          {price != null && price > 0 ? `$${price.toFixed(6)}` : "—"}
-                          {(flash || pulsing) && (
-                            <span
-                              className={`ml-1 text-sm ${
-                                flash && priceFlashDirection[project.id] === "down"
-                                  ? "text-red-400"
-                                  : pulsing && !flash
-                                  ? "text-emerald-500/80"
-                                  : "text-emerald-400"
-                              }`}
-                            >
-                              {flash
-                                ? priceFlashDirection[project.id] === "down"
-                                  ? "↓"
-                                  : "↑"
-                                : "↑"}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -609,10 +583,10 @@ export default function DiscoverPage() {
                     <div className="mt-3">
                       <div className="mb-1 flex items-center justify-between">
                         <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
-                          Market cap
+                          Credits issued
                         </span>
                         <span className="font-mono text-[10px] text-zinc-400">
-                          {snap?.market_cap != null ? `$${formatCompact(snap.market_cap)}` : "—"}
+                          {snap?.market_cap != null ? formatCompact(snap.market_cap) : "—"}
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
@@ -623,9 +597,6 @@ export default function DiscoverPage() {
                             minWidth: mcap > 0 ? "4px" : "0",
                           }}
                         />
-                      </div>
-                      <div className="mt-1 font-mono text-[9px] text-zinc-700">
-                        Target: $100K market cap
                       </div>
                     </div>
 
@@ -638,7 +609,7 @@ export default function DiscoverPage() {
                     </p>
 
                     <div className="mt-6 flex items-center justify-between gap-3 border-t border-zinc-900 pt-4">
-                      <span className="text-xs text-zinc-600">Open workspace →</span>
+                      <span className="text-xs text-zinc-600">View service →</span>
 
                       <span
                         className="border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em]"

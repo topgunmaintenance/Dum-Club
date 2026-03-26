@@ -410,15 +410,49 @@ async def redeem_project_token(project_id: str, body: RedemptionRequest):
 
     project = project_res.data[0]
 
-    if project.get("status") != "live":
-        raise HTTPException(status_code=400, detail="Project is not live for redemption")
+    if project.get("review_status") not in ("approved", "live"):
+        raise HTTPException(status_code=400, detail="Project must be approved before credits can be redeemed")
+
+    wallet = body.wallet.strip()
+    amount = body.amount
+
+    # Check caller has sufficient credits in project_balances
+    balance_res = (
+        supabase.table("project_balances")
+        .select("balance")
+        .eq("project_id", project_id)
+        .eq("wallet_address", wallet)
+        .limit(1)
+        .execute()
+    )
+
+    row = balance_res.data[0] if balance_res.data else None
+    current_balance = float(row.get("balance", 0)) if row else 0.0
+
+    if current_balance < amount:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient credits. You have {current_balance:.2f} available.",
+        )
+
+    # Deduct redeemed amount from balance
+    new_balance = current_balance - amount
+    supabase.table("project_balances").upsert(
+        {
+            "project_id": project_id,
+            "wallet_address": wallet,
+            "balance": new_balance,
+            "updated_at": now_iso(),
+        },
+        on_conflict="wallet_address,project_id",
+    ).execute()
 
     claim_code = generate_claim_code(project.get("token_symbol", "DUM"))
 
     redemption_insert = {
         "project_id": project_id,
-        "wallet": body.wallet,
-        "amount": body.amount,
+        "wallet": wallet,
+        "amount": amount,
         "code": claim_code,
         "status": "pending",
         "created_at": now_iso(),

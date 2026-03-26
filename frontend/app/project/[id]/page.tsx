@@ -5,15 +5,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "../../../lib/supabase/client";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
 
 type Memory = {
   id: string;
@@ -872,12 +863,12 @@ export default function ProjectPage() {
           locked: true,
           lock_message:
             detail?.message ||
-            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access.",
+            "You’ve reached the 3-question free limit. Get credits to unlock unlimited AI access.",
         }));
 
         setResponse(
           detail?.message ||
-            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access."
+            "You’ve reached the 3-question free limit. Get credits to unlock unlimited AI access."
         );
         return;
       }
@@ -1244,7 +1235,7 @@ export default function ProjectPage() {
 const heroUtility =
   parsedAiOutput?.token_utility ||
   project?.token_utility ||
-  `Hold ${project?.token_symbol || tokenMeta.symbol || "this token"} to unlock deeper project access and utility inside DUM Club.`;
+  `Get credits to access this service and its full utility in DUM Club.`;
  
  const uniqueTradeSources = useMemo(() => {
    const keys = new Set<string>();
@@ -1258,9 +1249,9 @@ const heroUtility =
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
   const statusBanner = canShowMarketUi
-    ? "Approved / Live - trading enabled"
+    ? "Approved / Live - credits active"
     : isApprovedProject
-    ? "Approved - ready to launch token trading"
+    ? "Approved - ready to launch credits"
     : isRejected
     ? "Rejected - needs changes before resubmission"
     : isSubmitted
@@ -1310,11 +1301,11 @@ const heroUtility =
         .filter((s) => s.length > 4)
         .slice(0, 3);
     }
-    const first = raw || "Unlock premium access";
+    const first = raw || "Access to the service";
     return [
       first,
-      "AI-powered features for holders",
-      "Ecosystem growth benefits",
+      "Use credits to redeem this service",
+      "Transfer unused credits to others",
     ].slice(0, 3);
   }, [project?.utility_value]);
 
@@ -1334,9 +1325,7 @@ const heroUtility =
 
 return (
   <div
-    className={`min-h-screen bg-black px-4 py-10 text-white sm:px-6 ${
-      canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
-    }`}
+    className="min-h-screen bg-black px-4 py-10 text-white sm:px-6"
   >
     <div className="mx-auto max-w-7xl">
       <Link
@@ -1381,7 +1370,7 @@ return (
 
               <div className="mt-5 rounded-2xl border border-zinc-800 bg-black/40 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                  Why hold this token
+                  What this service includes
                 </p>
                 <ul className="space-y-2">
                   {utilityBullets.map((item, i) => (
@@ -1396,200 +1385,61 @@ return (
           </div>
 
           <div className="w-full space-y-3 lg:w-80">
-            {canShowMarketUi && (
-              <div className="flex items-center justify-end gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                </span>
-                <span className="text-xs font-medium text-emerald-400">LIVE MARKET</span>
-              </div>
-            )}
 
-            {hasMarketSnapshot ? (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <div className="mb-1 text-xs text-zinc-500">Current Price</div>
-                <div className="flex items-end gap-3">
-                  <span className="text-3xl font-black text-white">
-                    ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
-                  </span>
-                  <span
-                    className={`mb-1 text-sm font-semibold ${
-                      heroPriceUp ? "text-emerald-400" : "text-red-400"
-                    }`}
-                  >
-                    {heroPriceUp ? "+" : ""}
-                    {heroPriceChangePct.toFixed(2)}%
-                  </span>
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+              <div className="mb-1 text-xs text-zinc-500">Credits</div>
+              <div className="text-2xl font-black text-white">{displaySymbol}</div>
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                <div>
+                  <div className="text-xs text-zinc-500">Available</div>
+                  <div className="text-sm font-semibold text-white">{supplyDisplay}</div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
-                  <div>
-                    <div className="text-xs text-zinc-500">Market Cap</div>
-                    <div className="text-sm font-semibold text-white">
-                      {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-zinc-500">Volume 24h</div>
-                    <div className="text-sm font-semibold text-white">
-                      {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-xl border border-zinc-800 bg-black/40 p-3">
-                  <p className="text-xs font-medium text-emerald-400">Holder benefit</p>
-                  <p className="mt-1 text-sm text-zinc-300">
-                    {chatMeta.holder_unlimited
-                      ? "Holding unlocks unlimited AI access and deeper project utility."
-                      : "This token powers access, perks, and participation in the project."}
-                  </p>
+                <div>
+                  <div className="text-xs text-zinc-500">Redeemed</div>
+                  <div className="text-sm font-semibold text-zinc-300">{redemptions.length}</div>
                 </div>
               </div>
-            ) : (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <div className="mb-1 text-xs text-zinc-500">Token</div>
-                <div className="text-2xl font-black text-white">${displaySymbol}</div>
-                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
-                  <div>
-                    <div className="text-xs text-zinc-500">Supply</div>
-                    <div className="text-sm font-semibold text-white">{supplyDisplay}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-zinc-500">Launch stage</div>
-                    <div className="text-sm font-semibold text-zinc-300">{displayStatusLabel}</div>
-                  </div>
-                </div>
-                <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-400">
-                  {isApprovedProject
-                    ? "Approved — completing token launch"
-                    : "Pending review before market launch"}
-                </div>
-                <div className="mt-3 text-xs text-zinc-500">
-                  Early stage — supply and liquidity still forming.
-                </div>
+              <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-400">
+                {displayStatusLabel}
               </div>
-            )}
+            </div>
 
-            {canShowMarketUi ? (
-              <>
-                <button
-                  type="button"
-                  onClick={scrollToBuyPanel}
-                  className="w-full rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+            <>
+              <button
+                type="button"
+                onClick={scrollToBuyPanel}
+                className="w-full rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+              >
+                Get Credits
+              </button>
+              <button
+                type="button"
+                onClick={scrollToAiWorkspace}
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+              >
+                Ask AI →
+              </button>
+              {serviceProfile && (
+                <Link
+                  href={`/project/${id}/book`}
+                  className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
                 >
-                  Buy ${displaySymbol}
-                </button>
-                <button
-                  type="button"
-                  onClick={scrollToAiWorkspace}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                  Book service
+                </Link>
+              )}
+              {isOwner && (
+                <Link
+                  href={`/project/${id}/manage`}
+                  className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
                 >
-                  Ask AI →
-                </button>
-                {serviceProfile && (
-                  <Link
-                    href={`/project/${id}/book`}
-                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
-                  >
-                    Book service
-                  </Link>
-                )}
-                {isOwner && (
-                  <Link
-                    href={`/project/${id}/manage`}
-                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
-                  >
-                    Manage bookings →
-                  </Link>
-                )}
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={scrollToAiWorkspace}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
-                >
-                  Ask AI →
-                </button>
-                {serviceProfile && (
-                  <Link
-                    href={`/project/${id}/book`}
-                    className="block w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-emerald-400/40 hover:bg-zinc-800"
-                  >
-                    Book service
-                  </Link>
-                )}
-                {isOwner && (
-                  <Link
-                    href={`/project/${id}/manage`}
-                    className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
-                  >
-                    Manage bookings →
-                  </Link>
-                )}
-              </>
-            )}
+                  Manage bookings →
+                </Link>
+              )}
+            </>
           </div>
         </div>
       </div>
 
-      {canShowMarketUi && hasMarketSnapshot && (
-        <div className="mb-8 border-b border-t border-zinc-800 bg-black">
-          <div className="mx-auto max-w-7xl px-2">
-            <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
-              {[
-                {
-                  label: "Price",
-                  value: `$${formatPrice(market?.price)}`,
-                },
-                {
-                  label: "24h Change",
-                  value: `${heroPriceUp ? "+" : ""}${heroPriceChangePct.toFixed(2)}%`,
-                  positive: heroPriceUp,
-                },
-                {
-                  label: "Market Cap",
-                  value:
-                    market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—",
-                },
-                {
-                  label: "Volume 24h",
-                  value:
-                    market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—",
-                },
-                {
-                  label: "Last Trade",
-                  value: market?.last_trade_at ? formatDateTime(market.last_trade_at) : "—",
-                },
-                ...(supplyDisplay !== "—"
-                  ? [
-                      {
-                        label: "Supply",
-                        value: supplyDisplay,
-                      },
-                    ]
-                  : []),
-              ].map((stat: { label: string; value: string; positive?: boolean }) => (
-                <div key={stat.label} className="min-w-0 flex-shrink-0 px-4 py-3 sm:px-5">
-                  <div className="text-xs text-zinc-500">{stat.label}</div>
-                  <div
-                    className={`text-sm font-semibold ${
-                      stat.positive === true
-                        ? "text-emerald-400"
-                        : stat.positive === false
-                        ? "text-red-400"
-                        : "text-white"
-                    }`}
-                  >
-                    {stat.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
         <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
@@ -1600,280 +1450,36 @@ return (
 
       {canShowMarketUi ? (
       <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Live Market
-            </div>
-            <div className="mt-2 flex items-center gap-3">
-              <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-                {formatPercent(rangeChangePct, 2)}
-              </span>
-              <span className="text-sm text-zinc-500">selected range</span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {(["1H", "1D", "1W", "1M", "ALL"] as ChartRange[]).map((range) => (
-              <button
-                key={range}
-                type="button"
-                onClick={() => setChartRange(range)}
-                className={`rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
-                  chartRange === range
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                    : "border-zinc-800 bg-black text-zinc-400 hover:bg-zinc-900"
-                }`}
-              >
-                {range}
-              </button>
-            ))}
-          </div>
-        </div>
-
-          <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-5">
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Price</div>
-                  <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Market Cap</div>
-                  <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">24h Volume</div>
-                  <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Last Trade</div>
-                  <div className="text-sm text-zinc-300">{formatDateTime(market?.last_trade_at)}</div>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Flow</div>
-                  <div className="font-mono text-sm text-zinc-300">
-                    <span className="text-emerald-300">{buyCount} buy</span>
-                    <span className="mx-2 text-zinc-600">/</span>
-                    <span className="text-red-300">{sellCount} sell</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">
-                    Price Chart
-                  </div>
-                  <div className="text-xs text-zinc-500">
-                    {chartData.length ? `${chartData.length} data points` : "No chart data"}
-                  </div>
-                </div>
-
-                <div style={{ width: "100%", height: 310 }}>
-                  <ResponsiveContainer>
-                    <LineChart data={chartData}>
-                      <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                      <XAxis dataKey="time" stroke="#666" tickLine={false} axisLine={false} />
-                      <YAxis stroke="#666" tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#050505",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: 16,
-                          color: "#fff",
-                        }}
-                        labelStyle={{ color: "#9ca3af" }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="price"
-                        stroke="#00FFB2"
-                        strokeWidth={2.5}
-                        dot={false}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
-                <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Latest Candle</div>
-
-                <div className="grid gap-4 sm:grid-cols-5">
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Open</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.open)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">High</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.high)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Low</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.low)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Close</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.close)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Volume</div>
-                    <div className="mt-2 font-mono text-white">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 text-xs text-zinc-500">
-                  Candle Bucket: {selectedLatestCandle?.bucket_time ? formatDateTime(selectedLatestCandle.bucket_time) : "-"}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Recent Trades</div>
-                  <button
-                    type="button"
-                    onClick={refreshMarketData}
-                    className="rounded-full border border-zinc-700 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-zinc-300 transition hover:bg-zinc-900"
-                  >
-                    Refresh
-                  </button>
-                </div>
-
-                {trades.length === 0 ? (
-                  <div className="text-sm text-zinc-500">No trades yet.</div>
-                ) : (
-                  <div className="space-y-3">
-                    {trades.slice(0, 8).map((trade) => (
-                      <div
-                        key={trade.id}
-                        className="grid gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm md:grid-cols-[90px_1.05fr_0.9fr_0.9fr_1.2fr]"
-                      >
-                        <div
-                          className={`font-mono uppercase tracking-[0.15em] ${
-                            trade.side === "buy" ? "text-emerald-300" : "text-red-300"
-                          }`}
-                        >
-                          {trade.side}
-                        </div>
-                        <div className="text-zinc-300">
-                          {formatNumber(trade.amount, 2)} {trade.token_symbol || ""}
-                        </div>
-                        <div className="font-mono text-zinc-300">${formatPrice(trade.price)}</div>
-                        <div className="font-mono text-zinc-300">${formatNumber(trade.gross_value, 6)}</div>
-                        <div className="text-zinc-500">{formatDateTime(trade.created_at)}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
-              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Trade Panel</div>
+              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Credits</div>
 
-              <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
+              <h2 className="font-mono text-2xl font-bold text-white">Get Credits</h2>
 
-              <div className="mt-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-                    Token Amount
-                  </label>
-                  <input
-                    value={tradeAmount}
-                    onChange={(e) => setTradeAmount(e.target.value)}
-                    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
-                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-                    type="number"
-                    min="0"
-                    step="any"
-                  />
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Available</div>
+                  <div className="mt-2 font-mono text-2xl text-white">{supplyDisplay}</div>
+                  <div className="mt-1 text-xs text-zinc-500">{displaySymbol}</div>
                 </div>
-
-                <div className="mb-1 flex rounded-xl border border-zinc-800 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setTradeTab("buy")}
-                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
-                      tradeTab === "buy"
-                        ? "bg-emerald-500 text-black"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Buy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTradeTab("sell")}
-                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
-                      tradeTab === "sell"
-                        ? "bg-red-500 text-white"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Sell
-                  </button>
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Redeemed</div>
+                  <div className="mt-2 font-mono text-2xl text-white">{redemptions.length}</div>
+                  <div className="mt-1 text-xs text-zinc-500">credits used</div>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={loadingTrade}
-                  onClick={() => executeTrade(tradeTab)}
-                  className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:opacity-50 ${
-                    tradeTab === "buy"
-                      ? "bg-emerald-500 text-black hover:bg-emerald-400"
-                      : "bg-red-500 text-white hover:bg-red-400"
-                  }`}
-                >
-                  {loadingTrade
-                    ? "Working..."
-                    : tradeTab === "buy"
-                    ? `Buy $${displaySymbol}`
-                    : `Sell $${displaySymbol}`}
-                </button>
-
-                {tradeMessage && (
-                  <div
-                    className={`rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300 ${
-                      tradeWinFlash ? "win-flash" : ""
-                    }`}
-                  >
-                    {tradeMessage}
-                  </div>
-                )}
               </div>
-              <div className="mt-8 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-  <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
-    <span className="font-mono text-zinc-300">1.50%</span>
-  </div>
-  <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Fee</span>
-    <span className="font-mono text-zinc-300">0.50%</span>
-  </div>
-  <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Total Fee</span>
-    <span className="font-mono text-white">2.00%</span>
-  </div>
-</div>
 <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
   <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-    Redeem Token
+    Redeem Credits
   </div>
 
   <div className="mb-3 text-sm text-zinc-400">
-    Turn your token into real project utility.
+    Use your credits to redeem this service.
   </div>
 
   <input
     value={redeemAmount}
     onChange={(e) => setRedeemAmount(e.target.value)}
-    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+    placeholder="Enter credit amount"
     className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
     type="number"
     min="0"
@@ -2052,160 +1658,9 @@ return (
     </form>
   </div>
 </div>
-              <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-zinc-600">Trade Preview</div>
 
-                <div className="grid gap-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Current Price</span>
-                    <span className="font-mono text-zinc-300">${formatPrice(market?.price)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Trade Amount</span>
-                    <span className="font-mono text-zinc-300">
-                      {formatNumber(numericTradeAmount, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Gross Value</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(tradeGrossValue, 4)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Project Fee</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(estimatedProjectFee, 4)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">DUM Fee</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(estimatedDumFee, 4)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4 border-t border-zinc-800 pt-3">
-                    <span className="text-zinc-400">Est. Buy Cost</span>
-                    <span className="font-mono text-white">${formatNumber(estimatedBuyCost, 4)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-400">Est. Sell Proceeds</span>
-                    <span className="font-mono text-white">${formatNumber(estimatedSellProceeds, 4)}</span>
-                  </div>
-
-                  <div className={`mt-2 rounded-2xl border p-3 text-sm ${impactTone}`}>
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Est. Price Impact</span>
-                      <span className="font-mono">{formatPercent(estimatedPriceImpactPct, 2)}</span>
-                    </div>
-                    <div className="mt-2 text-xs opacity-90">
-                      Frontend estimate based on trade size versus recent activity and available supply depth.
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Quick Snapshot</div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Your Balance</div>
-                    <div className="mt-2 font-mono text-2xl text-white">
-                      {formatNumber(walletBalance, 2)}
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      {project?.token_symbol || tokenMeta.symbol || ""}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Mark Value Est.</div>
-                    <div className="mt-2 font-mono text-2xl text-white">
-                      ${formatNumber(positionValue, 4)}
-                    </div>
-                    <div className="mt-1 text-xs text-zinc-500">
-                      Based on latest trade price
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Connected Wallet</span>
-                    <span className="font-mono text-zinc-300">{shortMint(userWallet)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Available to Sell</span>
-                    <span className="font-mono text-zinc-300">
-                      {formatNumber(walletBalance, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
-                    </span>
-                  </div>
-
-                  <div className="text-[11px] text-zinc-500">
-                    Mark value is an estimate only and may differ from actual exit value depending on trade size and liquidity.
-                  </div>
-
-                  <div className="mt-2 rounded-2xl border border-zinc-800 bg-black p-4">
-                    <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Token Structure</div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Circulating</span>
-                        <span className="font-mono text-zinc-300">
-                          {formatNumber(market?.circulating_supply, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Max Supply</span>
-                        <span className="font-mono text-zinc-300">
-                          {formatNumber(
-                            market?.max_supply || Number(tokenMeta.supply) || project?.token_supply,
-                            2
-                          )}{" "}
-                          {project?.token_symbol || tokenMeta.symbol || ""}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Symbol</span>
-                        <span className="font-mono text-zinc-300">
-                          {project?.token_symbol || tokenMeta.symbol || "-"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Mint</span>
-                        <span className="font-mono text-zinc-300">
-                          {shortMint(tokenMeta.mint_address || project?.token_mint_address)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Market Trust Signals</div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <div className="font-mono text-lg text-white">{trades.length}</div>
-                        <div className="text-xs text-zinc-500">Recent trades</div>
-                      </div>
-                      <div>
-                        <div className="font-mono text-lg text-white">{uniqueTradeSources}</div>
-                        <div className="text-xs text-zinc-500">Active participants</div>
-                      </div>
-                      <div>
-                        <div className="font-mono text-lg text-white">{formatCurrencyCompact(market?.volume_24h, 2)}</div>
-                        <div className="text-xs text-zinc-500">24h volume</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-        </div>
+      </div>
       ) : isApprovedProject ? (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Approved Launch</div>
@@ -2593,11 +2048,11 @@ return (
             </div>
 
             <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-              <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Token-Gated Utility</div>
+              <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Credit Access</div>
               <div className="text-sm text-zinc-300">
                 {chatMeta.is_holder && chatMeta.holder_unlimited
-                  ? `Wallet recognized. ${project?.token_symbol || tokenMeta.symbol || "Token"} holders have unlimited AI access on this project.`
-                  : `This project gives ${chatMeta.free_limit} free AI questions. Hold ${project?.token_symbol || tokenMeta.symbol || "the project token"} to unlock deeper ongoing access.`}
+                  ? `Wallet recognized. You have unlimited AI access on this project.`
+                  : `This project gives ${chatMeta.free_limit} free AI questions. Get credits to unlock deeper ongoing access.`}
               </div>
             </div>
 
@@ -2605,8 +2060,7 @@ return (
 
             <p className="mt-3 text-zinc-500">
               This project includes {chatMeta.free_limit} free AI question
-              {chatMeta.free_limit === 1 ? "" : "s"}. Support it by holding its token to unlock
-              unlimited AI access.
+              {chatMeta.free_limit === 1 ? "" : "s"}. Get credits to unlock unlimited AI access.
             </p>
 
             {chatMeta.locked && (
@@ -2630,7 +2084,7 @@ return (
                 disabled={loadingAsk || chatMeta.locked || !question.trim()}
                 className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
               >
-                {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
+                {loadingAsk ? "Asking..." : chatMeta.locked ? "Get Credits to Unlock" : "Ask AI"}
               </button>
             </form>
 
@@ -2645,40 +2099,6 @@ return (
         </div>
     </div>
 
-    {canShowMarketUi && hasMarketSnapshot && (
-      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-black/90 backdrop-blur-md lg:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
-            <span className="truncate font-black text-white">{heroTitle}</span>
-            <span className="font-mono text-sm text-zinc-400">${displaySymbol}</span>
-            <span className="text-lg font-bold text-white">
-              ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
-            </span>
-            <span
-              className={`text-sm font-semibold ${
-                heroPriceUp ? "text-emerald-400" : "text-red-400"
-              }`}
-            >
-              {heroPriceUp ? "+" : ""}
-              {heroPriceChangePct.toFixed(2)}%
-            </span>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-3">
-            <span className="hidden text-xs text-zinc-500 xl:inline">
-              Holders unlock unlimited AI access
-            </span>
-            <button
-              type="button"
-              onClick={scrollToBuyPanel}
-              className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
-            >
-              Buy ${displaySymbol}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
   </div>
   );
 }
