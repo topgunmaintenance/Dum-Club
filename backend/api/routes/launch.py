@@ -32,6 +32,11 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 _ollama = ollama.Client(host=OLLAMA_HOST, timeout=30)
 
+_OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY", "")
+_OPENAI_MODEL     = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+_ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+_ANTHROPIC_MODEL  = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+
 DEFAULT_TOKEN_SUPPLY = 21_000_000
 DEFAULT_STARTING_PRICE = 0.001
 
@@ -131,6 +136,76 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ── Hosted LLM fallback (used when Ollama is unavailable) ─────────────────────
+
+def _try_hosted_llm(idea: str) -> Optional[dict]:
+    """Try OpenAI then Anthropic when Ollama is unavailable or timed out.
+    Returns a parsed metadata dict or None if no hosted LLM is configured."""
+    import httpx  # already in requirements-prod.txt; imported here to keep at call site
+
+    user_msg = f"Project idea: {idea}"
+
+    if _OPENAI_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {_OPENAI_API_KEY}"},
+                json={
+                    "model": _OPENAI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": _SYSTEM_PROMPT.strip()},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            choices = r.json().get("choices", [])
+            text = (
+                (choices[0].get("message") or {}).get("content", "").strip()
+                if choices else ""
+            )
+            result = _extract_json(text) if text else None
+            if result:
+                print(f"[launch] hosted LLM: openai ({_OPENAI_MODEL})")
+                return result
+        except Exception:
+            pass
+
+    if _ANTHROPIC_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": _ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                },
+                json={
+                    "model": _ANTHROPIC_MODEL,
+                    "max_tokens": 512,
+                    "system": _SYSTEM_PROMPT.strip(),
+                    "messages": [{"role": "user", "content": user_msg}],
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            # Messages API: content is a list of typed blocks; find the first text block
+            content_blocks = r.json().get("content", [])
+            text = next(
+                (b["text"] for b in content_blocks if b.get("type") == "text"),
+                None,
+            )
+            result = _extract_json(text) if text else None
+            if result:
+                print(f"[launch] hosted LLM: anthropic ({_ANTHROPIC_MODEL})")
+                return result
+        except Exception:
+            pass
+
+    return None
+
+
 # ── Main endpoint ──────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=LaunchResponse)
@@ -141,8 +216,9 @@ async def instant_launch(req: LaunchRequest):
     supabase = get_client()
     now = _now()
 
-    # ── 1. Generate project metadata via Ollama ──────────────────────────────
+    # ── 1. Generate project metadata via Ollama → hosted LLM fallback ──────────
     raw_output = ""
+    _llm_used = "raw-idea fallback"
     try:
         response = _ollama.chat(
             model=OLLAMA_MODEL,
@@ -153,8 +229,18 @@ async def instant_launch(req: LaunchRequest):
         )
         raw_output = response["message"]["content"].strip()
         parsed = _extract_json(raw_output)
+        if parsed:
+            _llm_used = f"ollama ({OLLAMA_MODEL})"
     except Exception:
         parsed = None
+
+    if parsed is None:
+        print("[launch] Ollama unavailable or returned invalid JSON — trying hosted LLM")
+        parsed = _try_hosted_llm(req.idea.strip())
+        if parsed:
+            _llm_used = "hosted LLM"  # specific provider already logged inside _try_hosted_llm
+
+    print(f"[launch] metadata source: {_llm_used}")
 
     if parsed:
         title = (parsed.get("title") or req.idea.strip())[:80]
