@@ -1533,6 +1533,18 @@ return (
         </div>
       </div>
 
+      <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-600">About this project</div>
+        <p className="max-w-3xl text-base leading-relaxed text-zinc-300">
+          {project?.description || parsedAiOutput?.description || "No description available yet."}
+        </p>
+        {project?.prompt && (
+          <p className="mt-4 text-sm text-zinc-500">
+            Launched from the idea: &ldquo;{project.prompt}&rdquo;
+          </p>
+        )}
+      </div>
+
       {canShowMarketUi && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-zinc-800 bg-black">
           <div className="mx-auto max-w-7xl px-2">
@@ -1590,11 +1602,91 @@ return (
         </div>
       )}
 
-      <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
-        <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
-          Review & publication
-        </span>
-        <div className="mt-2 text-base text-white">{statusBanner}</div>
+      {isOwner && (
+        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
+          <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
+            Review & publication
+          </span>
+          <div className="mt-2 text-base text-white">{statusBanner}</div>
+        </div>
+      )}
+
+      <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
+
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+            {chatMeta.is_holder ? "Holder" : "Non-holder"}
+          </span>
+
+          <span
+            className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
+              chatMeta.locked ? "border-red-400/30 text-red-300" : "border-zinc-700 text-zinc-300"
+            }`}
+          >
+            {chatMeta.is_holder && chatMeta.holder_unlimited
+              ? "Unlimited AI"
+              : chatMeta.free_questions_left > 0
+              ? `${chatMeta.free_questions_left} FREE QUESTION${
+                  chatMeta.free_questions_left === 1 ? "" : "S"
+                }`
+              : "SUPPORT TO UNLOCK"}
+          </span>
+
+          <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+            Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
+          </span>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Token-Gated Utility</div>
+          <div className="text-sm text-zinc-300">
+            {chatMeta.is_holder && chatMeta.holder_unlimited
+              ? `Wallet recognized. ${project?.token_symbol || tokenMeta.symbol || "Token"} holders have unlimited AI access on this project.`
+              : `This project gives ${chatMeta.free_limit} free AI questions. Hold ${project?.token_symbol || tokenMeta.symbol || "the project token"} to unlock deeper ongoing access.`}
+          </div>
+        </div>
+
+        <h2 className="font-mono text-3xl font-bold text-white">Ask AI</h2>
+
+        <p className="mt-3 text-zinc-500">
+          This project includes {chatMeta.free_limit} free AI question
+          {chatMeta.free_limit === 1 ? "" : "s"}. Support it by holding its token to unlock
+          unlimited AI access.
+        </p>
+
+        {chatMeta.locked && (
+          <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-950/20 p-4 text-sm text-red-200">
+            {chatMeta.lock_message}
+          </div>
+        )}
+
+        <form onSubmit={askAI} className="mt-6 space-y-4">
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder={`Ask something about ${projectName}...`}
+            rows={5}
+            disabled={loadingAsk || chatMeta.locked}
+            className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
+          />
+
+          <button
+            type="submit"
+            disabled={loadingAsk || chatMeta.locked || !question.trim()}
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+          >
+            {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
+          </button>
+        </form>
+
+        <div className="mt-10">
+          <h3 className="font-mono text-2xl font-bold text-white">AI Response</h3>
+
+          <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
+            {response}
+          </div>
+        </div>
       </div>
 
       {canShowMarketUi ? (
@@ -1602,7 +1694,7 @@ return (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Live Market
+              Token Activity
             </div>
             <div className="mt-2 flex items-center gap-3">
               <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
@@ -1701,36 +1793,38 @@ return (
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
-                <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Latest Candle</div>
-
-                <div className="grid gap-4 sm:grid-cols-5">
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Open</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.open)}</div>
+              <details className="rounded-3xl border border-zinc-800 bg-black">
+                <summary className="cursor-pointer select-none px-5 py-4 text-xs uppercase tracking-[0.25em] text-zinc-600 hover:text-zinc-400">
+                  Latest Candle OHLCV ▸
+                </summary>
+                <div className="px-5 pb-5">
+                  <div className="grid gap-4 sm:grid-cols-5">
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Open</div>
+                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.open)}</div>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">High</div>
+                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.high)}</div>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Low</div>
+                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.low)}</div>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Close</div>
+                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.close)}</div>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Volume</div>
+                      <div className="mt-2 font-mono text-white">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">High</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.high)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Low</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.low)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Close</div>
-                    <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.close)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Volume</div>
-                    <div className="mt-2 font-mono text-white">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
+                  <div className="mt-4 text-xs text-zinc-500">
+                    Candle Bucket: {selectedLatestCandle?.bucket_time ? formatDateTime(selectedLatestCandle.bucket_time) : "-"}
                   </div>
                 </div>
-
-                <div className="mt-4 text-xs text-zinc-500">
-                  Candle Bucket: {selectedLatestCandle?.bucket_time ? formatDateTime(selectedLatestCandle.bucket_time) : "-"}
-                </div>
-              </div>
+              </details>
 
               <div className="rounded-3xl border border-zinc-800 bg-black p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
@@ -1774,7 +1868,7 @@ return (
             </div>
 
             <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
-              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">Trade Panel</div>
+              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">{displaySymbol} · Support this project</div>
 
               <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
 
@@ -2151,9 +2245,11 @@ return (
                     Mark value is an estimate only and may differ from actual exit value depending on trade size and liquidity.
                   </div>
 
-                  <div className="mt-2 rounded-2xl border border-zinc-800 bg-black p-4">
-                    <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Token Structure</div>
-                    <div className="space-y-3">
+                  <details className="mt-2 rounded-2xl border border-zinc-800 bg-black">
+                    <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
+                      Token Structure ▸
+                    </summary>
+                    <div className="space-y-3 px-4 pb-4">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-zinc-500">Circulating</span>
                         <span className="font-mono text-zinc-300">
@@ -2186,7 +2282,7 @@ return (
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </details>
 
                   <div className="rounded-2xl border border-zinc-800 bg-black p-4">
                     <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Market Trust Signals</div>
@@ -2516,8 +2612,7 @@ return (
           </div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
             <h2 className="font-mono text-3xl font-bold text-white">Add Memory</h2>
@@ -2569,84 +2664,6 @@ return (
             </div>
           </div>
 
-          <div id="ai-workspace" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
-
-            <div className="mb-5 flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
-                {chatMeta.is_holder ? "Holder" : "Non-holder"}
-              </span>
-
-              <span
-                className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
-                  chatMeta.locked ? "border-red-400/30 text-red-300" : "border-zinc-700 text-zinc-300"
-                }`}
-              >
-                {chatMeta.is_holder && chatMeta.holder_unlimited
-                  ? "Unlimited AI"
-                  : chatMeta.free_questions_left > 0
-                  ? `${chatMeta.free_questions_left} FREE QUESTION${
-                      chatMeta.free_questions_left === 1 ? "" : "S"
-                    }`
-                  : "SUPPORT TO UNLOCK"}
-              </span>
-
-              <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
-                Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
-              </span>
-            </div>
-
-            <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-              <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Token-Gated Utility</div>
-              <div className="text-sm text-zinc-300">
-                {chatMeta.is_holder && chatMeta.holder_unlimited
-                  ? `Wallet recognized. ${project?.token_symbol || tokenMeta.symbol || "Token"} holders have unlimited AI access on this project.`
-                  : `This project gives ${chatMeta.free_limit} free AI questions. Hold ${project?.token_symbol || tokenMeta.symbol || "the project token"} to unlock deeper ongoing access.`}
-              </div>
-            </div>
-
-            <h2 className="font-mono text-3xl font-bold text-white">Ask AI</h2>
-
-            <p className="mt-3 text-zinc-500">
-              This project includes {chatMeta.free_limit} free AI question
-              {chatMeta.free_limit === 1 ? "" : "s"}. Support it by holding its token to unlock
-              unlimited AI access.
-            </p>
-
-            {chatMeta.locked && (
-              <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-950/20 p-4 text-sm text-red-200">
-                {chatMeta.lock_message}
-              </div>
-            )}
-
-            <form onSubmit={askAI} className="mt-6 space-y-4">
-              <textarea
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder={`Ask something about ${projectName}...`}
-                rows={5}
-                disabled={loadingAsk || chatMeta.locked}
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
-              />
-
-              <button
-                type="submit"
-                disabled={loadingAsk || chatMeta.locked || !question.trim()}
-                className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
-              >
-                {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
-              </button>
-            </form>
-
-            <div className="mt-10">
-              <h3 className="font-mono text-2xl font-bold text-white">AI Response</h3>
-
-              <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
-                {response}
-              </div>
-            </div>
-          </div>
-        </div>
     </div>
 
     {canShowMarketUi && hasMarketSnapshot && (
