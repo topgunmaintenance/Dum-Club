@@ -232,7 +232,7 @@ async def instant_launch(req: LaunchRequest):
             {
                 "project_id": project_id,
                 "price": DEFAULT_STARTING_PRICE,
-                "market_cap": 0,
+                "market_cap": DEFAULT_STARTING_PRICE * DEFAULT_TOKEN_SUPPLY,
                 "volume_24h": 0,
                 "last_trade_at": None,
                 "updated_at": now,

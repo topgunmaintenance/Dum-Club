@@ -69,7 +69,7 @@ export default function BuildPage() {
       }
 
       const data = await res.json();
-      router.push(`/project/${data.project_id}`);
+      router.push(`/project/${data.project_id}?launched=1`);
     } catch (err) {
       setState("error");
       setError(err instanceof Error ? err.message : "Something went wrong.");

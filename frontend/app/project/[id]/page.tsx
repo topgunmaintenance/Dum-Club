@@ -407,14 +407,15 @@ export default function ProjectPage() {
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackComment, setFeedbackComment] = useState("");
 
+  const [loadingProject, setLoadingProject] = useState(true);
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  // Live banner — shown to owner on arrival; structured for future launch-arrival gating
-  const [showLiveBanner, setShowLiveBanner] = useState(true);
+  // Live banner — shown only on launch arrivals via ?launched=1 from /build
+  const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
@@ -489,6 +490,8 @@ export default function ProjectPage() {
       setProject(null);
       setProjectName("Untitled Project");
       setProjectStatus("draft");
+    } finally {
+      setLoadingProject(false);
     }
   }
 
@@ -1105,13 +1108,18 @@ export default function ProjectPage() {
     };
   }, [project?.owner_id, project?.id]);
 
-  // Auto-dismiss live banner 8s after isOwner resolves.
-  // TODO: gate to launch arrivals only (e.g. ?launched=1 query param) when ready.
+  // Gate banner to launch arrivals only (?launched=1 from /build redirect).
   useEffect(() => {
-    if (!isOwner) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("launched") === "1") setShowLiveBanner(true);
+  }, []);
+
+  // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
+  useEffect(() => {
+    if (!isOwner || !showLiveBanner) return;
     const t = window.setTimeout(() => setShowLiveBanner(false), 8000);
     return () => clearTimeout(t);
-  }, [isOwner]);
+  }, [isOwner, showLiveBanner]);
 
   useEffect(() => {
     if (!connected || !publicKey) {
@@ -1410,11 +1418,19 @@ return (
                 Project Profile
               </div>
 
-              <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
-                {projectName}
-              </h1>
+              {loadingProject ? (
+                <div className="h-10 w-72 animate-pulse rounded-lg bg-zinc-800 sm:h-14" />
+              ) : (
+                <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
+                  {projectName}
+                </h1>
+              )}
 
-              <p className="mt-2 max-w-2xl text-sm text-zinc-400 sm:text-base">{heroUtility}</p>
+              {loadingProject ? (
+                <div className="mt-2 h-4 w-80 animate-pulse rounded bg-zinc-800" />
+              ) : (
+                <p className="mt-2 max-w-2xl text-sm text-zinc-400 sm:text-base">{heroUtility}</p>
+              )}
 
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span
@@ -1582,9 +1598,17 @@ return (
 
       <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-600">About this project</div>
-        <p className="max-w-3xl text-base leading-relaxed text-zinc-300">
-          {project?.description || parsedAiOutput?.description || "No description available yet."}
-        </p>
+        {loadingProject ? (
+          <div className="space-y-2">
+            <div className="h-4 w-full animate-pulse rounded bg-zinc-800" />
+            <div className="h-4 w-5/6 animate-pulse rounded bg-zinc-800" />
+            <div className="h-4 w-4/6 animate-pulse rounded bg-zinc-800" />
+          </div>
+        ) : (
+          <p className="max-w-3xl text-base leading-relaxed text-zinc-300">
+            {project?.description || parsedAiOutput?.description || "No description available yet."}
+          </p>
+        )}
         {project?.prompt && (
           <p className="mt-4 text-sm text-zinc-500">
             Launched from the idea: &ldquo;{project.prompt}&rdquo;
