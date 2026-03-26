@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { createClient } from "../../lib/supabase/client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -24,6 +25,7 @@ const EXAMPLES = [
 
 export default function BuildPage() {
   const router = useRouter();
+  const { publicKey } = useWallet();
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
   const [error, setError] = useState("");
@@ -59,7 +61,7 @@ export default function BuildPage() {
         body: JSON.stringify({
           idea: idea.trim(),
           owner_id: user?.id ?? null,
-          wallet_address: null,
+          wallet_address: publicKey?.toBase58() ?? null,
         }),
       });
 
