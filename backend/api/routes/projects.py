@@ -14,27 +14,51 @@ _UUID_RE = re.compile(
 
 
 def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
-    """Return a UUID-safe owner_id for DB operations.
+    """Resolve any owner identity to a profiles.id UUID (FK target for projects.owner_id).
 
-    - None / empty → None
-    - Already a UUID → returned as-is
-    - Privy DID or other string → look up users.id by privy_id; None if not found
+    - None / empty  → None (no owner stored)
+    - Valid UUID    → returned as-is (assumed to already be a profiles.id)
+    - Privy DID     → users.wallet_address → profiles.id (auto-create profile if needed)
+
+    Raises HTTPException(422) if the Privy account has no wallet linked yet.
     """
     if not owner_id:
         return None
     if _UUID_RE.match(owner_id):
         return owner_id
+
+    # Step 1: resolve privy_id → wallet_address via users table
     try:
-        res = (
+        user_res = (
             supabase.table("users")
-            .select("id")
+            .select("wallet_address")
             .eq("privy_id", owner_id)
             .limit(1)
             .execute()
         )
-        return res.data[0]["id"] if res.data else None
     except Exception as exc:
-        print(f"[projects] _resolve_owner_uuid lookup failed: {exc!r}")
+        print(f"[projects] _resolve_owner_uuid users lookup failed: {exc!r}")
+        return None
+
+    if not user_res.data or not user_res.data[0].get("wallet_address"):
+        raise HTTPException(
+            status_code=422,
+            detail="User profile not ready — no wallet is linked to this account yet. "
+                   "Connect a Solana wallet and try again.",
+        )
+
+    wallet = user_res.data[0]["wallet_address"]
+
+    # Step 2: get or create profile by wallet_address → return profiles.id
+    try:
+        upsert_res = (
+            supabase.table("profiles")
+            .upsert({"wallet_address": wallet}, on_conflict="wallet_address")
+            .execute()
+        )
+        return upsert_res.data[0]["id"] if upsert_res.data else None
+    except Exception as exc:
+        print(f"[projects] _resolve_owner_uuid profile upsert failed: {exc!r}")
         return None
 
 router = APIRouter()
@@ -518,11 +542,13 @@ async def list_projects(owner_id: Optional[str] = Query(default=None)):
     query = supabase.table("projects").select("*").order("created_at", desc=True)
 
     if owner_id:
-        resolved = _resolve_owner_uuid(supabase, owner_id)
+        try:
+            resolved = _resolve_owner_uuid(supabase, owner_id)
+        except HTTPException:
+            return []
         if resolved:
             query = query.eq("owner_id", resolved)
         else:
-            # Unknown owner — return empty rather than all projects
             return []
 
     res = query.limit(50).execute()
