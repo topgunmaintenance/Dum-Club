@@ -69,6 +69,14 @@ async def create_project_token(project_id: str):
             detail="Token mint already exists for this project."
         )
 
+    raw_status = (project.get("token_status") or "").strip()
+    canonical_status = TOKEN_STATUS_NORMALIZE.get(raw_status, raw_status) or "draft"
+    if canonical_status != "draft":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Token lifecycle has already started (status: {raw_status!r}). Cannot create a second token."
+        )
+
     # -----------------------------
     # CREATE MINT (simulated)
     # -----------------------------

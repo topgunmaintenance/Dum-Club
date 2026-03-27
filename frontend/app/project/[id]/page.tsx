@@ -1326,6 +1326,8 @@ const heroUtility =
     ? "Ready to submit for review"
     : "Complete your project details";
 
+  const isSimulated = (tokenMeta.mint_address || project?.token_mint_address || "").startsWith("SIM_");
+
   // ── Hero display values (read-only aliases; gates unchanged) ─────────────
   const heroTitle = projectName;
   const displaySymbol = (project?.token_symbol || tokenSymbol || tokenMeta.symbol || "TOKEN").toUpperCase();
@@ -2515,7 +2517,17 @@ return (
             )}
           </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-5">
+          {isSimulated && (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+                Simulation Mode
+              </span>
+              <span className="text-[10px] text-zinc-600">· off-chain</span>
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-3 md:grid-cols-5">
             {tokenStages.map((stage, index) => {
               const isCompleted = index <= tokenStage;
               const isCurrent = index === tokenStage;
