@@ -73,25 +73,18 @@ async def create_project_token(project_id: str):
     # -----------------------------
     # CREATE MINT
     # -----------------------------
-    result = subprocess.run(
-        ["node", "scripts/create_project_token.js", "create-mint"],
-        cwd="/workspace",
-        capture_output=True,
-        text=True
+    # On-chain mint creation requires Node.js, a funded Solana keypair, and
+    # the mint script environment (/workspace + keys/token-creator.json).
+    # These are not available in the current deployment environment.
+    # Restore the subprocess.run block below once the runtime is provisioned.
+    raise HTTPException(
+        status_code=503,
+        detail=(
+            "On-chain token creation is not yet available in this deployment environment. "
+            "It requires Node.js, a funded Solana keypair, and the mint script runtime. "
+            "Please contact the admin to complete token creation."
+        ),
     )
-
-    if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=result.stderr)
-
-    try:
-        output = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Invalid token script output: {result.stdout}"
-        )
-
-    mint = output["mintAddress"]
 
     # -----------------------------
     # UPDATE PROJECT RECORD
