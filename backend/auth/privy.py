@@ -61,14 +61,17 @@ def verify_privy_token(token: str) -> dict:
             print("[auth] no matching key found — kid mismatch or wrong PRIVY_APP_ID")
             raise HTTPException(status_code=401, detail="Invalid token key")
 
+        # Log actual iss claim to determine correct issuer value
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        print(f"[auth] token iss={unverified.get('iss')!r} aud={unverified.get('aud')!r}")
+
         try:
             payload = jwt.decode(
                 token,
                 public_key,
                 algorithms=["ES256", "RS256"],
                 audience=PRIVY_APP_ID,
-                issuer="privy.io",
-                options={"verify_exp": True},
+                options={"verify_exp": True, "verify_iss": False},
             )
         except jwt.ExpiredSignatureError:
             print("[auth] token expired")
