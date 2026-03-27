@@ -60,12 +60,19 @@ _LOCALHOST_ORIGINS = [
     "http://127.0.0.1:3001",
 ]
 
+_PRODUCTION_ORIGINS = [
+    "https://dum-club.vercel.app",
+    "https://www.dum-club.vercel.app",
+    "https://dum.club",
+    "https://www.dum.club",
+]
+
 
 def _build_cors_origins() -> list[str]:
-    origins = list(_LOCALHOST_ORIGINS)
+    origins = list(_LOCALHOST_ORIGINS) + list(_PRODUCTION_ORIGINS)
     for var in ("FRONTEND_URL", "FRONTEND_PREVIEW_URL"):
         val = os.getenv(var, "").strip().rstrip("/")
-        if val:
+        if val and val not in origins:
             origins.append(val)
     return origins
 
