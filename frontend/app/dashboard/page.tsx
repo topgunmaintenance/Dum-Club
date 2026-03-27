@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -89,6 +90,22 @@ export default function DashboardPage() {
       setProjects([]);
     }
   }, [user?.privyId]);
+
+  // On first load: backfill any orphaned projects (owner_id=null, wallet matches)
+  // then load the project list. Safe to call repeatedly — no-ops if nothing to fix.
+  useEffect(() => {
+    if (!user?.privyId) return;
+    fetch(
+      `${API_BASE}/api/projects/backfill-owner?owner_id=${encodeURIComponent(user.privyId)}`,
+      { method: "POST" }
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.updated > 0) console.log(`[backfill] claimed ${data.updated} project(s)`);
+      })
+      .catch(() => {})
+      .finally(() => loadProjects());
+  }, [user?.privyId, loadProjects]);
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
@@ -143,16 +160,36 @@ export default function DashboardPage() {
     }
   }
 
+  async function deleteProject(project: Project) {
+    if (!user?.privyId) return;
+    const label = project.title || project.name || "this project";
+    if (!confirm(`Remove "${label}" from your dashboard? This cannot be undone.`)) return;
+
+    setDeletingId(project.id);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/${project.id}?owner_id=${encodeURIComponent(user.privyId)}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || "Failed to delete project");
+      }
+      setProjects((prev) => prev.filter((p) => p.id !== project.id));
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to delete project");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function copyAddress() {
     if (!walletAddress) return;
     navigator.clipboard.writeText(walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
-
-  useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
 
   return (
     <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
@@ -277,8 +314,8 @@ export default function DashboardPage() {
             ) : (
               <div className="mt-4 space-y-3">
                 {projects.map((project) => (
-                  <Link key={project.id} href={`/project/${project.id}`}>
-                    <div className="cursor-pointer rounded-xl border border-zinc-800 bg-black p-5 transition hover:border-purple-500 hover:bg-zinc-900">
+                  <div key={project.id} className="group relative rounded-xl border border-zinc-800 bg-black transition hover:border-purple-500 hover:bg-zinc-900">
+                    <Link href={`/project/${project.id}`} className="block p-5">
                       <h3 className="text-lg font-semibold text-white">
                         {project.title || project.name || "Untitled Project"}
                       </h3>
@@ -296,8 +333,18 @@ export default function DashboardPage() {
                           {project.status || "draft"}
                         </span>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteProject(project)}
+                      disabled={deletingId === project.id}
+                      className="absolute right-3 top-3 rounded-lg px-2 py-1 text-xs text-zinc-600 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+                      title="Remove project"
+                    >
+                      {deletingId === project.id ? "…" : "✕"}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

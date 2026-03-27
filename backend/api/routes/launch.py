@@ -185,6 +185,7 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
         upsert_res = (
             supabase.table("profiles")
             .upsert({"wallet_address": wallet}, on_conflict="wallet_address")
+            .select("id")
             .execute()
         )
         return upsert_res.data[0]["id"] if upsert_res.data else None
