@@ -32,6 +32,7 @@ export default function BuildPage() {
   const [state, setState] = useState<LaunchState>("idle");
   const [error, setError] = useState("");
   const [progressStep, setProgressStep] = useState(0);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   useEffect(() => {
     if (state !== "generating") {
@@ -64,6 +65,11 @@ export default function BuildPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          setState("idle");
+          setShowLimitModal(true);
+          return;
+        }
         throw new Error(data?.detail || "Launch failed — please try again.");
       }
 
@@ -79,6 +85,45 @@ export default function BuildPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 text-white">
+
+      {/* Launch limit modal */}
+      {showLimitModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm"
+          onClick={() => setShowLimitModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-amber-400">
+              Daily limit reached
+            </div>
+            <h2 className="mt-3 text-xl font-black text-white">
+              You&apos;ve hit your launch limit.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              Upgrade for more launches, or grow your existing project to
+              unlock unlimited access.
+            </p>
+            <button
+              type="button"
+              className="mt-6 w-full rounded-xl bg-emerald-400 px-6 py-3 font-mono text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300"
+              onClick={() => setShowLimitModal(false)}
+            >
+              Upgrade
+            </button>
+            <button
+              type="button"
+              className="mt-3 w-full rounded-xl px-6 py-2 text-sm text-zinc-600 transition hover:text-zinc-400"
+              onClick={() => setShowLimitModal(false)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-2xl">
 
         {/* Eyebrow */}
