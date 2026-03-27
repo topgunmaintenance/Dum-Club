@@ -32,10 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { wallets } = useSolanaWallets();
   const [dumUser, setDumUser] = useState<DumUser | null>(null);
   const [loading, setLoading] = useState(true);
-  // Guard: track which user.id was last synced and whether a sync is in flight.
-  // This prevents repeated calls when Privy re-renders with new object references.
+  // Guard: track which (user.id + wallet) combination was last synced.
+  // Using a composite key means we re-sync once when Privy lazily provisions
+  // an embedded wallet for Google users after the initial login sync.
   const syncedForRef = useRef<string | null>(null);
   const syncInFlightRef = useRef(false);
+
+  // Stable primitive: address of first available wallet, or "" if none yet.
+  // Used as dep so the effect re-fires when a wallet is provisioned.
+  const firstWalletAddress = wallets[0]?.address ?? "";
 
   // Refs always hold the latest Privy functions; updated every render before
   // any effect or memo runs. Refs themselves do not cause re-renders.
@@ -62,9 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Already synced for this user this session, or a sync is already running.
-    if (syncedForRef.current === user.id || syncInFlightRef.current) return;
-    syncedForRef.current = user.id;
+    // Already synced for this (user + wallet) combination, or a sync is running.
+    const syncKey = `${user.id}:${firstWalletAddress}`;
+    if (syncedForRef.current === syncKey || syncInFlightRef.current) return;
+    syncedForRef.current = syncKey;
     syncInFlightRef.current = true;
 
     const syncUser = async () => {
@@ -123,10 +129,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncUser().finally(() => { syncInFlightRef.current = false; });
-  // user.id is the stable identifier — avoids re-triggering on Privy object re-renders.
-  // wallets is read inside syncUser at call time, not needed as dep.
+  // user.id + firstWalletAddress form a composite key: re-syncs once when Privy
+  // lazily provisions an embedded wallet for Google users after initial login.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, user?.id]);
+  }, [ready, authenticated, user?.id, firstWalletAddress]);
 
   const value = useMemo<AuthContextType>(
     () => ({

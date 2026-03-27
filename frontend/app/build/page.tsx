@@ -26,7 +26,7 @@ const EXAMPLES = [
 export default function BuildPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { wallets } = useSolanaWallets();
+  const { wallets, createWallet } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
@@ -126,10 +126,21 @@ export default function BuildPage() {
             )}
           </button>
 
-          {!walletAddress && !generating && (
-            <p className="mt-2 text-center text-xs text-amber-400/80">
-              Sign in to launch
-            </p>
+          {!generating && !walletAddress && (
+            user ? (
+              <div className="mt-3 text-center">
+                <p className="text-xs text-amber-400/80">A Solana wallet is required to launch.</p>
+                <button
+                  type="button"
+                  onClick={() => createWallet()}
+                  className="mt-2 rounded-xl bg-purple-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-purple-500"
+                >
+                  Create wallet
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-center text-xs text-amber-400/80">Sign in to launch</p>
+            )
           )}
 
           {generating && (
