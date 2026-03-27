@@ -1401,15 +1401,15 @@ return (
       </Link>
 
       <div
-        className="mb-8 rounded-3xl border border-zinc-900 bg-black p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
+        className="mb-8 rounded-3xl border border-zinc-900 bg-black p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8"
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
         }}
       >
         <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex gap-6">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-4xl shadow-inner">
+          <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
               {emoji}
             </div>
 
@@ -1858,7 +1858,7 @@ return (
               </div>
             ) : (
             <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 <div className="rounded-2xl border border-zinc-800 bg-black p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Price</div>
                   <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>

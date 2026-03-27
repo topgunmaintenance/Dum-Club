@@ -164,7 +164,7 @@ export default function BuildPage() {
         )}
 
         {/* How it works */}
-        <div className="mt-12 grid grid-cols-3 gap-4 border-t border-zinc-900 pt-8">
+        <div className="mt-12 grid grid-cols-1 gap-4 border-t border-zinc-900 pt-8 sm:grid-cols-3">
           {[
             { step: "01", label: "Describe", desc: "One sentence is enough" },
             { step: "02", label: "Generate", desc: "AI builds the project and token" },

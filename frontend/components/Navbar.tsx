@@ -14,6 +14,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [navHover, setNavHover] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -41,10 +42,6 @@ export function Navbar() {
         borderBottom: navHover
           ? "1px solid rgba(0,255,178,0.30)"
           : "1px solid #1c1c1c",
-        padding: "20px 32px",
-        display: "grid",
-        gridTemplateColumns: "300px 1fr 560px",
-        alignItems: "center",
         position: "sticky",
         top: 0,
         background: navHover
@@ -52,208 +49,389 @@ export function Navbar() {
           : "rgba(6,6,6,0.92)",
         backdropFilter: "blur(16px)",
         zIndex: 50,
-        minHeight: "92px",
         transition: "all 0.22s ease",
       }}
     >
-      <Link
-        href="/"
-        onMouseEnter={() => setBrandHover(true)}
-        onMouseLeave={() => setBrandHover(false)}
-        style={{
-          fontFamily: "'Space Mono', monospace",
-          fontSize: "30px",
-          fontWeight: 700,
-          color: brandHover ? "#00FFB2" : "#e8e8e8",
-          textDecoration: "none",
-          letterSpacing: "-0.05em",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0px",
-          justifySelf: "start",
-          transition: "all 0.18s ease",
-          textShadow: brandHover ? "0 0 10px rgba(0,255,178,0.28)" : "none",
-        }}
-      >
-        <span style={{ color: "#00FFB2" }}>DUM</span>
-        <span>CLUB</span>
-        <span
+      {/* ── Mobile header bar (hidden on lg+) ─────────────── */}
+      <div className="flex items-center justify-between px-4 py-4 lg:hidden">
+        <Link
+          href="/"
+          onMouseEnter={() => setBrandHover(true)}
+          onMouseLeave={() => setBrandHover(false)}
           style={{
-            marginLeft: "12px",
-            fontSize: "11px",
-            letterSpacing: "0.24em",
-            color: brandHover ? "#00FFB2" : "#666",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "22px",
+            fontWeight: 700,
+            color: brandHover ? "#00FFB2" : "#e8e8e8",
+            textDecoration: "none",
+            letterSpacing: "-0.05em",
+            display: "inline-flex",
+            alignItems: "center",
             transition: "all 0.18s ease",
           }}
         >
-          BETA
-        </span>
-      </Link>
+          <span style={{ color: "#00FFB2" }}>DUM</span>
+          <span>CLUB</span>
+          <span
+            style={{
+              marginLeft: "8px",
+              fontSize: "9px",
+              letterSpacing: "0.24em",
+              color: "#666",
+            }}
+          >
+            BETA
+          </span>
+        </Link>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "14px",
-        }}
-      >
-        {links.map((l) => {
-          const active = path === l.href;
-
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#00FFB2";
-                e.currentTarget.style.border =
-                  "1px solid rgba(0,255,178,0.28)";
-                e.currentTarget.style.background = "rgba(0,255,178,0.06)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 10px rgba(0,255,178,0.18)";
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.color = "#9a9a9a";
-                  e.currentTarget.style.border = "1px solid transparent";
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.boxShadow = "none";
-                }
-              }}
-              style={{
-                padding: "12px 18px",
-                borderRadius: "12px",
-                fontSize: "13px",
-                fontWeight: 700,
-                textDecoration: "none",
-                transition: "all 0.15s ease",
-                background: active ? "rgba(0,255,178,0.08)" : "transparent",
-                color: active ? "#00FFB2" : "#9a9a9a",
-                border: active
-                  ? "1px solid rgba(0,255,178,0.22)"
-                  : "1px solid transparent",
-                fontFamily: "'Space Mono', monospace",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-              }}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "20px",
+            background: "none",
+            border: "1px solid #2a2a2a",
+            color: menuOpen ? "#00FFB2" : "#9a9a9a",
+            borderRadius: "10px",
+            width: "44px",
+            height: "44px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+          }}
+        >
+          {menuOpen ? "✕" : "≡"}
+        </button>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: "14px",
-          minHeight: "52px",
-        }}
-      >
-        {mounted && (
-          <>
-            {loading ? (
-              <button
-                type="button"
-                disabled
+      {/* ── Mobile dropdown (hidden on lg+, shown when open) ─ */}
+      {menuOpen && (
+        <div
+          className="lg:hidden"
+          style={{
+            borderTop: "1px solid #1c1c1c",
+            background: "rgba(6,6,6,0.97)",
+            paddingBottom: "16px",
+          }}
+        >
+          {links.map((l) => {
+            const active = path === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMenuOpen(false)}
                 style={{
+                  display: "block",
+                  padding: "14px 20px",
                   fontFamily: "'Space Mono', monospace",
-                  fontSize: "12px",
-                  color: "#777",
-                  letterSpacing: "0.08em",
-                  border: "1px solid #2a2a2a",
-                  background: "#111",
-                  borderRadius: "14px",
-                  padding: "13px 18px",
-                  height: "52px",
-                  display: "flex",
-                  alignItems: "center",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  color: active ? "#00FFB2" : "#9a9a9a",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #111",
                 }}
               >
-                Loading...
-              </button>
-            ) : user ? (
-              <button
-                type="button"
-                onClick={() => logout()}
+                {l.label}
+              </Link>
+            );
+          })}
+
+          {mounted && (
+            <div
+              style={{
+                padding: "14px 20px 0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              {loading ? (
+                <div
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    color: "#777",
+                    padding: "4px 0",
+                  }}
+                >
+                  Loading...
+                </div>
+              ) : user ? (
+                <button
+                  type="button"
+                  onClick={() => { logout(); setMenuOpen(false); }}
+                  title="Sign out"
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    color: "#00FFB2",
+                    letterSpacing: "0.08em",
+                    border: "1px solid rgba(0,255,178,0.22)",
+                    background: "rgba(0,255,178,0.06)",
+                    borderRadius: "14px",
+                    padding: "14px 18px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    width: "100%",
+                  }}
+                >
+                  {shortEmail}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { login(); setMenuOpen(false); }}
+                  style={{
+                    background: "none",
+                    border: "1px solid #2a2a2a",
+                    color: "#e8e8e8",
+                    padding: "14px 18px",
+                    fontSize: "12px",
+                    letterSpacing: "0.13em",
+                    cursor: "pointer",
+                    fontFamily: "'Space Mono', monospace",
+                    textTransform: "uppercase",
+                    borderRadius: "14px",
+                    width: "100%",
+                  }}
+                >
+                  Continue with Google
+                </button>
+              )}
+
+              {connected && (
+                <div
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "11px",
+                    color: "#00FFB2",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {shortAddress}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Desktop nav (hidden below lg) ─────────────────── */}
+      <div
+        className="hidden lg:grid lg:items-center"
+        style={{
+          gridTemplateColumns: "300px 1fr 560px",
+          padding: "20px 32px",
+          minHeight: "92px",
+        }}
+      >
+        <Link
+          href="/"
+          onMouseEnter={() => setBrandHover(true)}
+          onMouseLeave={() => setBrandHover(false)}
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "30px",
+            fontWeight: 700,
+            color: brandHover ? "#00FFB2" : "#e8e8e8",
+            textDecoration: "none",
+            letterSpacing: "-0.05em",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0px",
+            justifySelf: "start",
+            transition: "all 0.18s ease",
+            textShadow: brandHover ? "0 0 10px rgba(0,255,178,0.28)" : "none",
+          }}
+        >
+          <span style={{ color: "#00FFB2" }}>DUM</span>
+          <span>CLUB</span>
+          <span
+            style={{
+              marginLeft: "12px",
+              fontSize: "11px",
+              letterSpacing: "0.24em",
+              color: brandHover ? "#00FFB2" : "#666",
+              transition: "all 0.18s ease",
+            }}
+          >
+            BETA
+          </span>
+        </Link>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "14px",
+          }}
+        >
+          {links.map((l) => {
+            const active = path === l.href;
+
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = "#00FFB2";
                   e.currentTarget.style.border =
-                    "1px solid rgba(0,255,178,0.35)";
-                  e.currentTarget.style.background = "rgba(0,255,178,0.10)";
+                    "1px solid rgba(0,255,178,0.28)";
+                  e.currentTarget.style.background = "rgba(0,255,178,0.06)";
                   e.currentTarget.style.boxShadow =
-                    "0 0 10px rgba(0,255,178,0.22)";
+                    "0 0 10px rgba(0,255,178,0.18)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#00FFB2";
-                  e.currentTarget.style.border =
-                    "1px solid rgba(0,255,178,0.22)";
-                  e.currentTarget.style.background = "rgba(0,255,178,0.06)";
-                  e.currentTarget.style.boxShadow = "none";
+                  if (!active) {
+                    e.currentTarget.style.color = "#9a9a9a";
+                    e.currentTarget.style.border = "1px solid transparent";
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.boxShadow = "none";
+                  }
                 }}
-                title="Sign out"
                 style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: "12px",
-                  color: "#00FFB2",
-                  letterSpacing: "0.08em",
-                  whiteSpace: "nowrap",
-                  border: "1px solid rgba(0,255,178,0.22)",
-                  background: "rgba(0,255,178,0.06)",
-                  borderRadius: "14px",
-                  padding: "13px 18px",
-                  height: "52px",
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
+                  padding: "12px 18px",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  textDecoration: "none",
                   transition: "all 0.15s ease",
-                }}
-              >
-                {shortEmail}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={login}
-                style={{
-                  background: "none",
-                  border: "1px solid #2a2a2a",
-                  color: "#e8e8e8",
-                  padding: "13px 18px",
-                  fontSize: "12px",
-                  letterSpacing: "0.13em",
-                  cursor: "pointer",
+                  background: active ? "rgba(0,255,178,0.08)" : "transparent",
+                  color: active ? "#00FFB2" : "#9a9a9a",
+                  border: active
+                    ? "1px solid rgba(0,255,178,0.22)"
+                    : "1px solid transparent",
                   fontFamily: "'Space Mono', monospace",
+                  letterSpacing: "0.15em",
                   textTransform: "uppercase",
-                  borderRadius: "14px",
-                  height: "52px",
-                  minWidth: "220px",
-                  transition: "all 0.15s ease",
                 }}
               >
-                Continue with Google
-              </button>
-            )}
+                {l.label}
+              </Link>
+            );
+          })}
+        </div>
 
-            {connected && (
-              <div
-                style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: "12px",
-                  color: "#00FFB2",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {shortAddress}
-              </div>
-            )}
-          </>
-        )}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "14px",
+            minHeight: "52px",
+          }}
+        >
+          {mounted && (
+            <>
+              {loading ? (
+                <button
+                  type="button"
+                  disabled
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    color: "#777",
+                    letterSpacing: "0.08em",
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    borderRadius: "14px",
+                    padding: "13px 18px",
+                    height: "52px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Loading...
+                </button>
+              ) : user ? (
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#00FFB2";
+                    e.currentTarget.style.border =
+                      "1px solid rgba(0,255,178,0.35)";
+                    e.currentTarget.style.background = "rgba(0,255,178,0.10)";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 10px rgba(0,255,178,0.22)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#00FFB2";
+                    e.currentTarget.style.border =
+                      "1px solid rgba(0,255,178,0.22)";
+                    e.currentTarget.style.background = "rgba(0,255,178,0.06)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                  title="Sign out"
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    color: "#00FFB2",
+                    letterSpacing: "0.08em",
+                    whiteSpace: "nowrap",
+                    border: "1px solid rgba(0,255,178,0.22)",
+                    background: "rgba(0,255,178,0.06)",
+                    borderRadius: "14px",
+                    padding: "13px 18px",
+                    height: "52px",
+                    display: "flex",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {shortEmail}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={login}
+                  style={{
+                    background: "none",
+                    border: "1px solid #2a2a2a",
+                    color: "#e8e8e8",
+                    padding: "13px 18px",
+                    fontSize: "12px",
+                    letterSpacing: "0.13em",
+                    cursor: "pointer",
+                    fontFamily: "'Space Mono', monospace",
+                    textTransform: "uppercase",
+                    borderRadius: "14px",
+                    height: "52px",
+                    minWidth: "220px",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Continue with Google
+                </button>
+              )}
+
+              {connected && (
+                <div
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    color: "#00FFB2",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {shortAddress}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
