@@ -67,7 +67,7 @@ def verify_privy_token(token: str) -> dict:
                 public_key,
                 algorithms=["ES256", "RS256"],
                 audience=PRIVY_APP_ID,
-                issuer="https://auth.privy.io",
+                issuer="privy.io",
                 options={"verify_exp": True},
             )
         except jwt.ExpiredSignatureError:
