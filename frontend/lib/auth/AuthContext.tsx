@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
@@ -32,6 +32,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { wallets } = useSolanaWallets();
   const [dumUser, setDumUser] = useState<DumUser | null>(null);
   const [loading, setLoading] = useState(true);
+  // Guard: track which user.id was last synced and whether a sync is in flight.
+  // This prevents repeated calls when Privy re-renders with new object references.
+  const syncedForRef = useRef<string | null>(null);
+  const syncInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -39,13 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authenticated || !user) {
       setDumUser(null);
       setLoading(false);
+      syncedForRef.current = null;
       return;
     }
+
+    // Already synced for this user this session, or a sync is already running.
+    if (syncedForRef.current === user.id || syncInFlightRef.current) return;
+    syncedForRef.current = user.id;
+    syncInFlightRef.current = true;
 
     const syncUser = async () => {
       try {
         setLoading(true);
         const accessToken = await getAccessToken();
+        // Read wallets at call time — not a dep to avoid unstable array refs.
         const linkedWallets: LinkedWallet[] = wallets.map((w) => ({
           address: w.address,
           type: String(w.walletClientType),
@@ -96,9 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    syncUser();
+    syncUser().finally(() => { syncInFlightRef.current = false; });
+  // user.id is the stable identifier — avoids re-triggering on Privy object re-renders.
+  // wallets is read inside syncUser at call time, not needed as dep.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, authenticated, user, wallets]);
+  }, [ready, authenticated, user?.id]);
 
   const value = useMemo<AuthContextType>(
     () => ({

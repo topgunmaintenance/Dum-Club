@@ -14,7 +14,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["google", "email", "wallet"],
+        loginMethods: ["google", "email"],
         embeddedWallets: {
           solana: {
             createOnLogin: "users-without-wallets",
