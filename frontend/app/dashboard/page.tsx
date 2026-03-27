@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { createClient } from "../../lib/supabase/client";
 
 type Project = {
   id: number | string;
@@ -17,8 +16,6 @@ type Project = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function deriveTokenSymbolFromName(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -42,18 +39,12 @@ export default function DashboardPage() {
 
   const loadProjects = useCallback(async () => {
     try {
-      const supabase = createClient();
-      const {
-        data: { user: supabaseUser },
-      } = await supabase.auth.getUser();
-
-      if (!supabaseUser?.id) {
+      if (!user?.privyId) {
         setProjects([]);
         return;
       }
 
-      let url = `${API_BASE}/api/projects/?owner_id=${supabaseUser.id}`;
-
+      const url = `${API_BASE}/api/projects/?owner_id=${encodeURIComponent(user.privyId)}`;
       const res = await fetch(url);
 
       if (!res.ok) {
@@ -67,7 +58,7 @@ export default function DashboardPage() {
       console.error(err);
       setProjects([]);
     }
-  }, []);
+  }, [user?.privyId]);
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
@@ -77,20 +68,15 @@ export default function DashboardPage() {
       return;
     }
 
+    if (!user?.privyId) {
+      alert("Please sign in to create a project.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user?.id || !UUID_RE.test(user.id)) {
-        alert("Please sign in to create a project.");
-        return;
-      }
-
-      const userId = user.id;
+      const userId = user.privyId;
       const tokenSymbol = deriveTokenSymbolFromName(name);
 
       const res = await fetch(`${API_BASE}/api/projects/`, {
