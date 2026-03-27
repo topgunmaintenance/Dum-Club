@@ -1979,7 +1979,7 @@ return (
                     {trades.slice(0, 8).map((trade) => (
                       <div
                         key={trade.id}
-                        className="grid gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm md:grid-cols-[90px_1.05fr_0.9fr_0.9fr_1.2fr]"
+                        className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-sm md:grid-cols-[90px_1.05fr_0.9fr_0.9fr_1.2fr] md:gap-3 md:p-4"
                       >
                         <div
                           className={`font-mono uppercase tracking-[0.15em] ${
@@ -1993,7 +1993,7 @@ return (
                         </div>
                         <div className="font-mono text-zinc-300">${formatPrice(trade.price)}</div>
                         <div className="font-mono text-zinc-300">${formatNumber(trade.gross_value, 6)}</div>
-                        <div className="text-zinc-500">{formatDateTime(trade.created_at)}</div>
+                        <div className="col-span-2 text-zinc-500 md:col-span-1">{formatDateTime(trade.created_at)}</div>
                       </div>
                     ))}
                   </div>

@@ -334,7 +334,7 @@ export default function Home() {
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
                   href="/build"
-                  className="group inline-flex min-w-[260px] items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90"
+                  className="group inline-flex w-full items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90 sm:min-w-[260px] sm:w-auto"
                 >
                   Build a Project{" "}
                   <span className="inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
@@ -342,7 +342,7 @@ export default function Home() {
 
                 <Link
                   href="/discover"
-                  className="inline-flex min-w-[260px] items-center justify-center border border-zinc-800 bg-transparent px-8 py-4 font-mono text-sm uppercase tracking-[0.28em] text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  className="inline-flex w-full items-center justify-center border border-zinc-800 bg-transparent px-8 py-4 font-mono text-sm uppercase tracking-[0.28em] text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:min-w-[260px] sm:w-auto"
                 >
                   Explore Feed
                 </Link>

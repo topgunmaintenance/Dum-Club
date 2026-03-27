@@ -481,14 +481,14 @@ export default function DiscoverPage() {
           ))}
         </div>
 
-        <div className="mb-8 flex flex-wrap gap-4 border border-zinc-900 bg-zinc-950/50 px-4 py-5 sm:px-6">
+        <div className="mb-8 grid grid-cols-2 gap-4 border border-zinc-900 bg-zinc-950/50 px-4 py-5 sm:flex sm:flex-wrap sm:px-6">
           <div className="min-w-[140px] flex-1">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Public projects
             </div>
             <div className="font-mono text-2xl font-bold text-white">{totalPublicProjects}</div>
           </div>
-          <div className="min-w-[140px] flex-1 border-l border-zinc-800 pl-4 sm:pl-6">
+          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               24h volume (est.)
             </div>
@@ -499,7 +499,7 @@ export default function DiscoverPage() {
                 : totalVolume24h.toFixed(0)}
             </div>
           </div>
-          <div className="min-w-[140px] flex-1 border-l border-zinc-800 pl-4 sm:pl-6">
+          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Newest
             </div>
@@ -507,7 +507,7 @@ export default function DiscoverPage() {
               {getProjectLabel(newestProject)}
             </div>
           </div>
-          <div className="min-w-[100px] flex-1 border-l border-zinc-800 pl-4 sm:pl-6">
+          <div className="min-w-[100px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               New today
             </div>
