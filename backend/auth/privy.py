@@ -1,8 +1,10 @@
+import json
 import os
 from functools import lru_cache
 
 import httpx
 import jwt
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -47,7 +49,13 @@ def verify_privy_token(token: str) -> dict:
         public_key = None
         for key in jwks.get("keys", []):
             if key.get("kid") == token_kid:
-                public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
+                key_json = json.dumps(key)
+                kty = key.get("kty", "RSA")
+                if kty == "EC":
+                    public_key = ECAlgorithm.from_jwk(key_json)
+                else:
+                    public_key = RSAAlgorithm.from_jwk(key_json)
+                print(f"[auth] key loaded, kty={kty!r}")
                 break
         if not public_key:
             print("[auth] no matching key found — kid mismatch or wrong PRIVY_APP_ID")
@@ -57,8 +65,9 @@ def verify_privy_token(token: str) -> dict:
             payload = jwt.decode(
                 token,
                 public_key,
-                algorithms=["RS256"],
+                algorithms=["ES256", "RS256"],
                 audience=PRIVY_APP_ID,
+                issuer="https://auth.privy.io",
                 options={"verify_exp": True},
             )
         except jwt.ExpiredSignatureError:
