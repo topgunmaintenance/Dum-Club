@@ -78,6 +78,20 @@ def get_project_token_metadata(project_id: str):
         }
 
     # -----------------------------
+    # STATUS 2 — SIMULATED MINT
+    # -----------------------------
+    if mint_address.startswith("SIM_"):
+        return {
+            "mint_address": mint_address,
+            "name": token_name,
+            "symbol": token_symbol,
+            "supply": db_supply,
+            "decimals": db_decimals or 9,
+            "status": project_token_status,
+            "simulated": True,
+        }
+
+    # -----------------------------
     # FETCH TOKEN SUPPLY
     # -----------------------------
     token_supply = rpc_call("getTokenSupply", [mint_address])
