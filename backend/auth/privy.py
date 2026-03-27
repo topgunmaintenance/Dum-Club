@@ -16,9 +16,9 @@ PRIVY_APP_ID = os.getenv("PRIVY_APP_ID")
 @lru_cache(maxsize=1)
 def get_privy_jwks() -> dict:
     if not PRIVY_APP_ID:
-        raise HTTPException(status_code=500, detail="PRIVY_APP_ID not configured")
+        raise HTTPException(status_code=503, detail="PRIVY_APP_ID not configured")
     res = httpx.get(
-        "https://auth.privy.io/api/v1/apps/jwks.json",
+        f"https://auth.privy.io/api/v1/apps/{PRIVY_APP_ID}/jwks.json",
         headers={"privy-app-id": PRIVY_APP_ID},
         timeout=10.0,
     )
@@ -28,7 +28,7 @@ def get_privy_jwks() -> dict:
 
 def verify_privy_token(token: str) -> dict:
     if not PRIVY_APP_ID:
-        raise HTTPException(status_code=500, detail="PRIVY_APP_ID not configured")
+        raise HTTPException(status_code=503, detail="PRIVY_APP_ID not configured")
     try:
         jwks = get_privy_jwks()
         header = jwt.get_unverified_header(token)

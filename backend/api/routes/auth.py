@@ -36,9 +36,12 @@ async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_
             supabase.table("users").select("*").eq("privy_id", body.privy_id).execute()
         )
 
-        wallet_address = body.embedded_wallet or (
-            body.linked_wallets[0].address if body.linked_wallets else None
+        # Prefer a linked external wallet; fall back to the embedded Privy wallet.
+        external_wallet = next(
+            (w.address for w in body.linked_wallets if w.type != "privy"),
+            None,
         )
+        wallet_address = external_wallet or body.embedded_wallet
         wallets = [w.model_dump() for w in body.linked_wallets]
 
         if existing.data:
