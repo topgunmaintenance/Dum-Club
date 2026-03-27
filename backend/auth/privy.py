@@ -13,6 +13,7 @@ from db.supabase import get_client
 security = HTTPBearer(auto_error=False)
 
 PRIVY_APP_ID = os.getenv("PRIVY_APP_ID")
+_PRIVY_ISSUER = "privy.io"
 
 
 @lru_cache(maxsize=1)
@@ -31,7 +32,6 @@ def get_privy_jwks() -> dict:
 def verify_privy_token(token: str) -> dict:
     if not PRIVY_APP_ID:
         raise HTTPException(status_code=503, detail="PRIVY_APP_ID not configured")
-    print(f"[auth] verifying token (PRIVY_APP_ID present: {bool(PRIVY_APP_ID)})")
     try:
         try:
             jwks = get_privy_jwks()
@@ -41,10 +41,8 @@ def verify_privy_token(token: str) -> dict:
             print(f"[auth] JWKS fetch failed: {type(e).__name__}: {e}")
             raise HTTPException(status_code=503, detail="Failed to fetch JWKS")
 
-        available_kids = [k.get("kid") for k in jwks.get("keys", [])]
         header = jwt.get_unverified_header(token)
         token_kid = header.get("kid")
-        print(f"[auth] token kid={token_kid!r}, available kids={available_kids}")
 
         public_key = None
         for key in jwks.get("keys", []):
@@ -55,15 +53,10 @@ def verify_privy_token(token: str) -> dict:
                     public_key = ECAlgorithm.from_jwk(key_json)
                 else:
                     public_key = RSAAlgorithm.from_jwk(key_json)
-                print(f"[auth] key loaded, kty={kty!r}")
                 break
         if not public_key:
-            print("[auth] no matching key found — kid mismatch or wrong PRIVY_APP_ID")
+            print(f"[auth] no matching key kid={token_kid!r}")
             raise HTTPException(status_code=401, detail="Invalid token key")
-
-        # Log actual iss claim to determine correct issuer value
-        unverified = jwt.decode(token, options={"verify_signature": False})
-        print(f"[auth] token iss={unverified.get('iss')!r} aud={unverified.get('aud')!r}")
 
         try:
             payload = jwt.decode(
@@ -71,19 +64,22 @@ def verify_privy_token(token: str) -> dict:
                 public_key,
                 algorithms=["ES256", "RS256"],
                 audience=PRIVY_APP_ID,
-                options={"verify_exp": True, "verify_iss": False},
+                issuer=_PRIVY_ISSUER,
+                options={"verify_exp": True},
             )
         except jwt.ExpiredSignatureError:
             print("[auth] token expired")
             raise HTTPException(status_code=401, detail="Token expired")
+        except jwt.InvalidIssuerError:
+            print("[auth] issuer mismatch")
+            raise HTTPException(status_code=401, detail="Token issuer mismatch")
         except jwt.InvalidAudienceError:
-            print(f"[auth] audience mismatch — token aud does not match PRIVY_APP_ID")
+            print("[auth] audience mismatch")
             raise HTTPException(status_code=401, detail="Token audience mismatch")
         except Exception as e:
             print(f"[auth] jwt.decode failed: {type(e).__name__}: {e}")
             raise HTTPException(status_code=401, detail=f"Token decode failed: {type(e).__name__}")
 
-        print(f"[auth] token verified, sub={payload.get('sub')!r}")
         return payload
     except HTTPException:
         raise
