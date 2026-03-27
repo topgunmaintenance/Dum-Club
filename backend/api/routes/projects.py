@@ -54,6 +54,7 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
         upsert_res = (
             supabase.table("profiles")
             .upsert({"wallet_address": wallet}, on_conflict="wallet_address")
+            .select("id")
             .execute()
         )
         return upsert_res.data[0]["id"] if upsert_res.data else None
@@ -524,6 +525,7 @@ async def list_public_projects():
         .select("*")
         .eq("review_status", "approved")
         .eq("status", "live")
+        .eq("is_deleted", False)
         .order("created_at", desc=True)
         .limit(50)
         .execute()
@@ -539,7 +541,7 @@ async def list_public_projects():
 async def list_projects(owner_id: Optional[str] = Query(default=None)):
     supabase = get_client()
 
-    query = supabase.table("projects").select("*").order("created_at", desc=True)
+    query = supabase.table("projects").select("*").eq("is_deleted", False).order("created_at", desc=True)
 
     if owner_id:
         try:
@@ -556,6 +558,105 @@ async def list_projects(owner_id: Optional[str] = Query(default=None)):
     return res.data or []
 
 # -----------------------------
+# Backfill orphaned projects
+# -----------------------------
+
+@router.post("/backfill-owner")
+async def backfill_owner(owner_id: str = Query(...)):
+    """Claim any projects whose wallet_address matches the caller but owner_id is NULL.
+
+    Safe to call repeatedly — only touches rows with owner_id IS NULL.
+    Returns the number of rows updated.
+    """
+    supabase = get_client()
+
+    try:
+        resolved = _resolve_owner_uuid(supabase, owner_id)
+    except HTTPException:
+        raise
+
+    if not resolved:
+        raise HTTPException(status_code=422, detail="Could not resolve owner to a profile UUID")
+
+    # Find the wallet address for this profile so we can match orphaned rows
+    profile_res = (
+        supabase.table("profiles")
+        .select("wallet_address")
+        .eq("id", resolved)
+        .limit(1)
+        .execute()
+    )
+    if not profile_res.data:
+        raise HTTPException(status_code=422, detail="Profile not found after resolution")
+
+    wallet = profile_res.data[0]["wallet_address"]
+
+    # Find orphaned projects (wallet matches, owner_id not yet set)
+    orphan_res = (
+        supabase.table("projects")
+        .select("id")
+        .eq("wallet_address", wallet)
+        .is_("owner_id", "null")
+        .execute()
+    )
+
+    if not orphan_res.data:
+        return {"updated": 0, "message": "No orphaned projects found for this wallet"}
+
+    orphan_ids = [row["id"] for row in orphan_res.data]
+
+    update_res = (
+        supabase.table("projects")
+        .update({"owner_id": resolved})
+        .in_("id", orphan_ids)
+        .execute()
+    )
+
+    count = len(update_res.data) if update_res.data else 0
+    print(f"[backfill] set owner_id={resolved} on {count} projects for wallet {wallet[:8]}…")
+    return {"updated": count, "message": f"Claimed {count} orphaned project(s)"}
+
+
+# -----------------------------
+# Soft delete project
+# -----------------------------
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str,
+    owner_id: str = Query(...),
+):
+    """Soft-delete a project (sets is_deleted=true). Owner only."""
+    supabase = get_client()
+
+    try:
+        resolved = _resolve_owner_uuid(supabase, owner_id)
+    except HTTPException:
+        raise
+
+    if not resolved:
+        raise HTTPException(status_code=422, detail="Could not verify owner identity")
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id")
+        .eq("id", project_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if project_res.data[0].get("owner_id") != resolved:
+        raise HTTPException(status_code=403, detail="Not project owner")
+
+    supabase.table("projects").update({"is_deleted": True}).eq("id", project_id).execute()
+
+    return {"status": "deleted", "project_id": project_id}
+
+
+# -----------------------------
 # Get Project by ID
 # -----------------------------
 
@@ -567,6 +668,7 @@ async def get_project(project_id: str):
         supabase.table("projects")
         .select("*")
         .eq("id", project_id)
+        .eq("is_deleted", False)
         .limit(1)
         .execute()
     )
