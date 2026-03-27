@@ -32,6 +32,13 @@ def rpc_call(method: str, params: list):
     return data.get("result")
 
 
+@router.get("/sol-balance/{address}")
+def get_sol_balance(address: str):
+    result = rpc_call("getBalance", [address])
+    lamports = result.get("value", 0) if isinstance(result, dict) else 0
+    return {"address": address, "lamports": lamports, "sol": round(lamports / 1e9, 9)}
+
+
 @router.get("/projects/{project_id}/token-metadata")
 def get_project_token_metadata(project_id: str):
     client = get_client()
