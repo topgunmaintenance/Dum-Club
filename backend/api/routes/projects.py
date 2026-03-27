@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Query
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime, timezone
@@ -479,16 +479,15 @@ async def list_public_projects():
 # -----------------------------
 
 @router.get("/")
-async def list_projects():
+async def list_projects(owner_id: Optional[str] = Query(default=None)):
     supabase = get_client()
 
-    res = (
-        supabase.table("projects")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(50)
-        .execute()
-    )
+    query = supabase.table("projects").select("*").order("created_at", desc=True)
+
+    if owner_id:
+        query = query.eq("owner_id", owner_id)
+
+    res = query.limit(50).execute()
 
     return res.data or []
 

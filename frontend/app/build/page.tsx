@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import { createClient } from "../../lib/supabase/client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -53,17 +52,12 @@ export default function BuildPage() {
     setError("");
 
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       const res = await fetch(`${API}/api/launch/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idea: idea.trim(),
-          owner_id: user?.id ?? null,
+          owner_id: user?.privyId ?? null,
           wallet_address: walletAddress,
         }),
       });

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { createClient } from "../../lib/supabase/client";
 
 type Project = {
   id: number | string;
@@ -17,8 +16,7 @@ type Project = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
 function deriveTokenSymbolFromName(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -31,43 +29,80 @@ function deriveTokenSymbolFromName(name: string): string {
   return base.slice(0, 10);
 }
 
+function shortAddress(addr: string): string {
+  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { wallets } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
+  // Determine wallet type label from live wallets list
+  const activeWalletMeta = walletAddress
+    ? wallets.find((w) => w.address === walletAddress)
+    : wallets[0] ?? null;
+  const walletType = activeWalletMeta
+    ? activeWalletMeta.walletClientType === "privy"
+      ? "Embedded"
+      : activeWalletMeta.walletClientType ?? "External"
+    : null;
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+
+  // Fetch SOL balance whenever wallet address changes
+  useEffect(() => {
+    if (!walletAddress) {
+      setSolBalance(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(SOLANA_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getBalance",
+        params: [walletAddress],
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          const lamports = data?.result?.value ?? 0;
+          setSolBalance(lamports / 1e9);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSolBalance(null);
+      });
+    return () => { cancelled = true; };
+  }, [walletAddress]);
 
   const loadProjects = useCallback(async () => {
+    if (!user?.privyId) {
+      setProjects([]);
+      return;
+    }
     try {
-      const supabase = createClient();
-      const {
-        data: { user: supabaseUser },
-      } = await supabase.auth.getUser();
-
-      if (!supabaseUser?.id) {
-        setProjects([]);
-        return;
-      }
-
-      let url = `${API_BASE}/api/projects/?owner_id=${supabaseUser.id}`;
-
-      const res = await fetch(url);
-
+      const res = await fetch(
+        `${API_BASE}/api/projects/?owner_id=${encodeURIComponent(user.privyId)}`
+      );
       if (!res.ok) {
         const err = await res.json().catch(() => null);
         throw new Error(err?.detail || "Failed to load projects");
       }
-
       const data = await res.json();
       setProjects(data.projects || data || []);
     } catch (err) {
       console.error(err);
       setProjects([]);
     }
-  }, []);
+  }, [user?.privyId]);
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
@@ -77,27 +112,21 @@ export default function DashboardPage() {
       return;
     }
 
+    if (!user?.privyId) {
+      alert("Please sign in to create a project.");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user?.id || !UUID_RE.test(user.id)) {
-        alert("Please sign in to create a project.");
-        return;
-      }
-
-      const userId = user.id;
       const tokenSymbol = deriveTokenSymbolFromName(name);
 
       const res = await fetch(`${API_BASE}/api/projects/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          user_id: userId,
+          user_id: user.privyId,
         },
         body: JSON.stringify({
           wallet_address: walletAddress,
@@ -113,7 +142,6 @@ export default function DashboardPage() {
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log("create project response:", data);
 
       if (!res.ok) {
         throw new Error(data?.detail || data?.message || "Failed to create project");
@@ -148,6 +176,31 @@ export default function DashboardPage() {
           <p className="mt-3 max-w-2xl text-zinc-400">
             Create and manage Solana-native AI projects from one place.
           </p>
+
+          {/* Wallet identity row */}
+          {user && (
+            <div className="mt-5 inline-flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm">
+              {walletAddress ? (
+                <>
+                  <span className="font-mono text-zinc-300">
+                    {shortAddress(walletAddress)}
+                  </span>
+                  {walletType && (
+                    <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-500">
+                      {walletType}
+                    </span>
+                  )}
+                  {solBalance !== null && (
+                    <span className="font-mono text-zinc-400">
+                      {solBalance.toFixed(4)} SOL
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-zinc-500">No wallet connected</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
