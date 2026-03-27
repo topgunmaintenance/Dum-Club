@@ -12,7 +12,12 @@ router = APIRouter()
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-client = ollama.Client(host=OLLAMA_HOST)
+client = ollama.Client(host=OLLAMA_HOST, timeout=30)
+
+_GEN_OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY", "")
+_GEN_OPENAI_MODEL     = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+_GEN_ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+_GEN_ANTHROPIC_MODEL  = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 
 class GenerateAppRequest(BaseModel):
@@ -94,6 +99,81 @@ def extract_json_block(text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _generate_with_fallback(messages: list) -> str:
+    """Call Ollama; fall back to OpenAI then Anthropic. Returns raw LLM text or '' on all failures."""
+    import httpx
+
+    # Primary: Ollama
+    try:
+        resp = client.chat(model=OLLAMA_MODEL, messages=messages)
+        print("[generate] LLM: ollama")
+        return resp["message"]["content"].strip()
+    except Exception:
+        print("[generate] Ollama unavailable — trying hosted LLM fallback")
+
+    system_content = next(
+        (m["content"] for m in messages if m.get("role") == "system"), ""
+    )
+    non_system = [m for m in messages if m.get("role") != "system"]
+
+    # Fallback 1: OpenAI — json_object mode ensures valid JSON response
+    if _GEN_OPENAI_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {_GEN_OPENAI_API_KEY}"},
+                json={
+                    "model": _GEN_OPENAI_MODEL,
+                    "messages": messages,
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            choices = r.json().get("choices", [])
+            text = (
+                (choices[0].get("message") or {}).get("content", "").strip()
+                if choices else ""
+            )
+            if text:
+                print(f"[generate] hosted LLM: openai ({_GEN_OPENAI_MODEL})")
+                return text
+        except Exception:
+            pass
+
+    # Fallback 2: Anthropic — system prompt separated per Messages API requirement
+    if _GEN_ANTHROPIC_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": _GEN_ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                },
+                json={
+                    "model": _GEN_ANTHROPIC_MODEL,
+                    "max_tokens": 512,
+                    "system": system_content,
+                    "messages": non_system,
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            content_blocks = r.json().get("content", [])
+            text = next(
+                (b["text"] for b in content_blocks if b.get("type") == "text"),
+                None,
+            )
+            if text:
+                print(f"[generate] hosted LLM: anthropic ({_GEN_ANTHROPIC_MODEL})")
+                return text
+        except Exception:
+            pass
+
+    print("[generate] all LLM providers failed — using raw-idea fallback")
+    return ""
+
+
 @router.post("/")
 async def generate_app(req: GenerateAppRequest):
     supabase = get_client()
@@ -122,15 +202,10 @@ Rules:
 
     user_prompt = f"App idea: {req.prompt}"
 
-    response = client.chat(
-        model=OLLAMA_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    )
-
-    raw_text = response["message"]["content"].strip()
+    raw_text = _generate_with_fallback([
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ])
     parsed = extract_json_block(raw_text)
 
     if parsed:
