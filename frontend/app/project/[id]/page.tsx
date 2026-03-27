@@ -397,6 +397,7 @@ export default function ProjectPage() {
   const [loadingTrade, setLoadingTrade] = useState(false);
   const [tradeMessage, setTradeMessage] = useState("");
   const [tradeWinFlash, setTradeWinFlash] = useState(false);
+  const [tradeIsError, setTradeIsError] = useState(false);
   const [copyFlash, setCopyFlash] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
@@ -640,12 +641,19 @@ export default function ProjectPage() {
   }
 
   async function executeTrade(side: "buy" | "sell") {
-    if (!id || !tradeAmount.trim()) return;
+    if (!id) return;
+
+    if (!tradeAmount.trim() || Number(tradeAmount) <= 0) {
+      setTradeMessage("Enter a token amount to trade.");
+      setTradeIsError(true);
+      return;
+    }
 
     const numericAmount = Number(tradeAmount);
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setTradeMessage("Enter a valid amount.");
+      setTradeIsError(true);
       return;
     }
 
@@ -655,18 +663,21 @@ export default function ProjectPage() {
           project?.token_symbol || tokenMeta.symbol || "TOKENS"
         }.`
       );
+      setTradeIsError(true);
       return;
     }
 
     const wallet = userWallet?.trim();
     if (!wallet || wallet.length < 8) {
-      setTradeMessage("Connected wallet not found.");
+      setTradeMessage("A connected Solana wallet is required to trade. Sign in with a wallet-linked account or connect a Solana wallet.");
+      setTradeIsError(true);
       return;
     }
 
     try {
       setLoadingTrade(true);
       setTradeMessage("");
+      setTradeIsError(false);
 
       const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
         method: "POST",
@@ -721,6 +732,7 @@ export default function ProjectPage() {
     } catch (err: any) {
       console.error(err);
       setTradeMessage(err?.message || `Failed to ${side}`);
+      setTradeIsError(true);
     } finally {
       setLoadingTrade(false);
     }
@@ -2065,8 +2077,12 @@ return (
 
                 {tradeMessage && (
                   <div
-                    className={`rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300 ${
-                      tradeWinFlash ? "win-flash" : ""
+                    className={`rounded-2xl border p-4 text-sm ${
+                      tradeWinFlash
+                        ? "win-flash border-emerald-500/30 bg-emerald-950/20 text-emerald-300"
+                        : tradeIsError
+                        ? "border-red-500/30 bg-red-950/20 text-red-300"
+                        : "border-zinc-800 bg-zinc-950 text-zinc-300"
                     }`}
                   >
                     {tradeMessage}
