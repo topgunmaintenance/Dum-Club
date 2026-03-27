@@ -1,20 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletDisconnectButton } from "@solana/wallet-adapter-react-ui";
 import { useAuth } from "../lib/auth/AuthContext";
-
-const WalletMultiButton = dynamic(
-  () =>
-    import("@solana/wallet-adapter-react-ui").then((m) => ({
-      default: m.WalletMultiButton,
-    })),
-  { ssr: false }
-);
 
 export function Navbar() {
   const path = usePathname();
@@ -248,61 +238,19 @@ export function Navbar() {
               </button>
             )}
 
-            {connected ? (
-              <>
-                <div
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "12px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {shortAddress}
-                </div>
-
-                <WalletDisconnectButton
-                  className="dum-wallet-btn"
-                  style={{
-                    background: "none",
-                    border: "1px solid #2a2a2a",
-                    color: "#e8e8e8",
-                    padding: "13px 18px",
-                    fontSize: "12px",
-                    letterSpacing: "0.13em",
-                    cursor: "pointer",
-                    fontFamily: "'Space Mono', monospace",
-                    textTransform: "uppercase",
-                    borderRadius: "14px",
-                    boxShadow: "none",
-                    height: "52px",
-                  }}
-                />
-              </>
-            ) : (
-              <WalletMultiButton
-                className="dum-wallet-btn"
+            {connected && (
+              <div
                 style={{
-                  background: "none",
-                  border: "1px solid #2a2a2a",
-                  color: "#e8e8e8",
-                  borderRadius: "14px",
-                  padding: "13px 20px",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  letterSpacing: "0.13em",
                   fontFamily: "'Space Mono', monospace",
+                  fontSize: "12px",
+                  color: "#00FFB2",
+                  letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  boxShadow: "none",
-                  height: "52px",
-                  minWidth: "190px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  whiteSpace: "nowrap",
                 }}
-              />
+              >
+                {shortAddress}
+              </div>
             )}
           </>
         )}

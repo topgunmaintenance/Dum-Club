@@ -97,7 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncUser();
-  }, [ready, authenticated, user, wallets, getAccessToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, authenticated, user, wallets]);
 
   const value = useMemo<AuthContextType>(
     () => ({
