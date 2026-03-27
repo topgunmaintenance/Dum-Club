@@ -16,6 +16,11 @@ SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 
 _client = ollama.Client(host=OLLAMA_HOST, timeout=30)
 
+_CHAT_OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
+_CHAT_OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+_CHAT_ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+_CHAT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -238,6 +243,77 @@ def save_chat_message(
     client.table("project_chat_messages").insert(payload).execute()
 
 
+def _chat_with_fallback(messages: list) -> str:
+    """Call Ollama for non-streaming chat; fall back to OpenAI then Anthropic on failure."""
+    import httpx
+
+    # Primary: Ollama
+    try:
+        resp = _client.chat(model=OLLAMA_MODEL, messages=messages)
+        print("[chat] LLM: ollama")
+        return resp["message"]["content"]
+    except Exception:
+        print("[chat] Ollama unavailable — trying hosted LLM fallback")
+
+    # Pre-extract system prompt for Anthropic (requires separate field, not a message role)
+    system_content = next(
+        (m["content"] for m in messages if m.get("role") == "system"), ""
+    )
+    non_system = [m for m in messages if m.get("role") != "system"]
+
+    # Fallback 1: OpenAI (accepts system role inline — pass full messages list)
+    if _CHAT_OPENAI_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {_CHAT_OPENAI_API_KEY}"},
+                json={"model": _CHAT_OPENAI_MODEL, "messages": messages},
+                timeout=30,
+            )
+            r.raise_for_status()
+            choices = r.json().get("choices", [])
+            text = (
+                (choices[0].get("message") or {}).get("content", "").strip()
+                if choices else ""
+            )
+            if text:
+                print(f"[chat] hosted LLM: openai ({_CHAT_OPENAI_MODEL})")
+                return text
+        except Exception:
+            pass
+
+    # Fallback 2: Anthropic (system prompt separated; first message must be user role)
+    if _CHAT_ANTHROPIC_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": _CHAT_ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                },
+                json={
+                    "model": _CHAT_ANTHROPIC_MODEL,
+                    "max_tokens": 1024,
+                    "system": system_content,
+                    "messages": non_system,
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            content_blocks = r.json().get("content", [])
+            text = next(
+                (b["text"] for b in content_blocks if b.get("type") == "text"),
+                None,
+            )
+            if text:
+                print(f"[chat] hosted LLM: anthropic ({_CHAT_ANTHROPIC_MODEL})")
+                return text
+        except Exception:
+            pass
+
+    raise HTTPException(status_code=503, detail="AI service temporarily unavailable.")
+
+
 @router.post("/")
 async def chat(req: ChatRequest):
     client = get_client()
@@ -274,10 +350,10 @@ async def chat(req: ChatRequest):
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    response = _client.chat(model=OLLAMA_MODEL, messages=messages)
+    answer = _chat_with_fallback(messages)
 
     return {
-        "answer": response["message"]["content"],
+        "answer": answer,
         "project_id": req.project_id,
         "memories_used": memories_used,
     }
@@ -358,8 +434,7 @@ async def project_gated_chat(
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    response = _client.chat(model=OLLAMA_MODEL, messages=messages)
-    answer = response["message"]["content"]
+    answer = _chat_with_fallback(messages)
 
     save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
     save_chat_message(req.project_id, "assistant", answer, wallet_address, session_id)
