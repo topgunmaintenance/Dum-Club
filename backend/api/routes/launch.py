@@ -18,7 +18,7 @@ import json
 import os
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import ollama
@@ -39,6 +39,7 @@ _ANTHROPIC_MODEL  = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 DEFAULT_TOKEN_SUPPLY = 21_000_000
 DEFAULT_STARTING_PRICE = 0.001
+LAUNCH_DAILY_LIMIT = 5
 
 _SYSTEM_PROMPT = """
 You are an AI product strategist for DUM Club, an AI-powered Solana launchpad for ideas.
@@ -215,6 +216,21 @@ async def instant_launch(req: LaunchRequest):
 
     supabase = get_client()
     now = _now()
+
+    # ── 0. Rate limit: max 5 launches per identity per 24 hours ─────────────────
+    if req.owner_id or req.wallet_address:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        q = supabase.table("projects").select("id", count="exact")
+        if req.owner_id:
+            q = q.eq("owner_id", req.owner_id)
+        else:
+            q = q.eq("wallet_address", req.wallet_address)
+        recent = q.gte("created_at", cutoff).execute()
+        if (recent.count or 0) >= LAUNCH_DAILY_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail="Launch limit reached. Try again tomorrow.",
+            )
 
     # ── 1. Generate project metadata via Ollama → hosted LLM fallback ──────────
     raw_output = ""
