@@ -363,7 +363,7 @@ function getStatusExplanation(status?: string) {
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { user: authUser } = useAuth();
+  const { user: authUser, login } = useAuth();
   const { wallets } = useSolanaWallets();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -2017,78 +2017,118 @@ return (
 
               <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
 
-              <div className="mt-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-                    Token Amount
-                  </label>
-                  <input
-                    value={tradeAmount}
-                    onChange={(e) => setTradeAmount(e.target.value)}
-                    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
-                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
-                    type="number"
-                    min="0"
-                    step="any"
-                  />
-                </div>
-
-                <div className="mb-1 flex rounded-xl border border-zinc-800 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setTradeTab("buy")}
-                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
-                      tradeTab === "buy"
-                        ? "bg-emerald-500 text-black"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Buy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTradeTab("sell")}
-                    className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
-                      tradeTab === "sell"
-                        ? "bg-red-500 text-white"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Sell
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={loadingTrade}
-                  onClick={() => executeTrade(tradeTab)}
-                  className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:opacity-50 ${
-                    tradeTab === "buy"
-                      ? "bg-emerald-500 text-black hover:bg-emerald-400"
-                      : "bg-red-500 text-white hover:bg-red-400"
-                  }`}
-                >
-                  {loadingTrade
-                    ? "Working..."
-                    : tradeTab === "buy"
-                    ? `Buy $${displaySymbol}`
-                    : `Sell $${displaySymbol}`}
-                </button>
-
-                {tradeMessage && (
-                  <div
-                    className={`rounded-2xl border p-4 text-sm ${
-                      tradeWinFlash
-                        ? "win-flash border-emerald-500/30 bg-emerald-950/20 text-emerald-300"
-                        : tradeIsError
-                        ? "border-red-500/30 bg-red-950/20 text-red-300"
-                        : "border-zinc-800 bg-zinc-950 text-zinc-300"
-                    }`}
-                  >
-                    {tradeMessage}
-                  </div>
-                )}
+              {/* State indicator */}
+              <div className="mt-3 flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${authUser ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400" : "border-zinc-700 bg-zinc-900 text-zinc-500"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${authUser ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                  {authUser ? "Signed in" : "Not signed in"}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${userWallet ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400" : "border-zinc-700 bg-zinc-900 text-zinc-500"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${userWallet ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                  {userWallet ? "Wallet connected" : "Wallet required"}
+                </span>
               </div>
+
+              {!authUser ? (
+                /* Not signed in */
+                <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
+                  <p className="text-sm text-zinc-400">Sign in to trade {displaySymbol}.</p>
+                  <button
+                    type="button"
+                    onClick={login}
+                    className="mt-4 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              ) : !userWallet ? (
+                /* Signed in but no Solana wallet */
+                <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
+                  <p className="text-sm text-zinc-400">A connected Solana wallet is required to trade.</p>
+                  <p className="mt-2 text-xs text-zinc-600">Connect a Phantom, Solflare, or Backpack wallet to continue.</p>
+                  <button
+                    type="button"
+                    onClick={login}
+                    className="mt-4 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
+                  >
+                    Connect wallet
+                  </button>
+                </div>
+              ) : (
+                /* Signed in + wallet connected — full trade form */
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+                      Token Amount
+                    </label>
+                    <input
+                      value={tradeAmount}
+                      onChange={(e) => setTradeAmount(e.target.value)}
+                      placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+                      className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                      type="number"
+                      min="0"
+                      step="any"
+                    />
+                  </div>
+
+                  <div className="mb-1 flex rounded-xl border border-zinc-800 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setTradeTab("buy")}
+                      className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
+                        tradeTab === "buy"
+                          ? "bg-emerald-500 text-black"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      Buy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTradeTab("sell")}
+                      className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
+                        tradeTab === "sell"
+                          ? "bg-red-500 text-white"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      Sell
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={loadingTrade}
+                    onClick={() => executeTrade(tradeTab)}
+                    className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:opacity-50 ${
+                      tradeTab === "buy"
+                        ? "bg-emerald-500 text-black hover:bg-emerald-400"
+                        : "bg-red-500 text-white hover:bg-red-400"
+                    }`}
+                  >
+                    {loadingTrade
+                      ? "Working..."
+                      : tradeTab === "buy"
+                      ? `Buy $${displaySymbol}`
+                      : `Sell $${displaySymbol}`}
+                  </button>
+
+                  {tradeMessage && (
+                    <div
+                      className={`rounded-2xl border p-4 text-sm ${
+                        tradeWinFlash
+                          ? "win-flash border-emerald-500/30 bg-emerald-950/20 text-emerald-300"
+                          : tradeIsError
+                          ? "border-red-500/30 bg-red-950/20 text-red-300"
+                          : "border-zinc-800 bg-zinc-950 text-zinc-300"
+                      }`}
+                    >
+                      {tradeMessage}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-8 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
   <div className="flex items-center justify-between gap-4">
     <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
