@@ -29,32 +29,55 @@ def get_privy_jwks() -> dict:
 def verify_privy_token(token: str) -> dict:
     if not PRIVY_APP_ID:
         raise HTTPException(status_code=503, detail="PRIVY_APP_ID not configured")
+    print(f"[auth] verifying token (PRIVY_APP_ID present: {bool(PRIVY_APP_ID)})")
     try:
-        jwks = get_privy_jwks()
+        try:
+            jwks = get_privy_jwks()
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[auth] JWKS fetch failed: {type(e).__name__}: {e}")
+            raise HTTPException(status_code=503, detail="Failed to fetch JWKS")
+
+        available_kids = [k.get("kid") for k in jwks.get("keys", [])]
         header = jwt.get_unverified_header(token)
+        token_kid = header.get("kid")
+        print(f"[auth] token kid={token_kid!r}, available kids={available_kids}")
 
         public_key = None
         for key in jwks.get("keys", []):
-            if key.get("kid") == header.get("kid"):
+            if key.get("kid") == token_kid:
                 public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
                 break
         if not public_key:
+            print("[auth] no matching key found — kid mismatch or wrong PRIVY_APP_ID")
             raise HTTPException(status_code=401, detail="Invalid token key")
 
-        payload = jwt.decode(
-            token,
-            public_key,
-            algorithms=["RS256"],
-            audience=PRIVY_APP_ID,
-            options={"verify_exp": True},
-        )
+        try:
+            payload = jwt.decode(
+                token,
+                public_key,
+                algorithms=["RS256"],
+                audience=PRIVY_APP_ID,
+                options={"verify_exp": True},
+            )
+        except jwt.ExpiredSignatureError:
+            print("[auth] token expired")
+            raise HTTPException(status_code=401, detail="Token expired")
+        except jwt.InvalidAudienceError:
+            print(f"[auth] audience mismatch — token aud does not match PRIVY_APP_ID")
+            raise HTTPException(status_code=401, detail="Token audience mismatch")
+        except Exception as e:
+            print(f"[auth] jwt.decode failed: {type(e).__name__}: {e}")
+            raise HTTPException(status_code=401, detail=f"Token decode failed: {type(e).__name__}")
+
+        print(f"[auth] token verified, sub={payload.get('sub')!r}")
         return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+        print(f"[auth] unexpected error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=401, detail="Token verification failed")
 
 
 def get_current_user(
