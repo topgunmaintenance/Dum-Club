@@ -211,6 +211,7 @@ def _try_hosted_llm(idea: str) -> Optional[dict]:
 
 @router.post("/", response_model=LaunchResponse)
 async def instant_launch(req: LaunchRequest):
+  try:
     if not req.idea or not req.idea.strip():
         raise HTTPException(status_code=400, detail="idea is required")
 
@@ -308,6 +309,7 @@ async def instant_launch(req: LaunchRequest):
     if req.wallet_address:
         project_payload["wallet_address"] = req.wallet_address
 
+    print(f"[launch] project_payload keys: {sorted(project_payload.keys())}")
     create_res = supabase.table("projects").insert(project_payload).execute()
     if not create_res.data:
         raise HTTPException(status_code=500, detail="Failed to create project")
@@ -381,3 +383,8 @@ async def instant_launch(req: LaunchRequest):
         title=title,
         token_symbol=token_symbol,
     )
+  except HTTPException:
+      raise
+  except Exception as exc:
+      print(f"[launch] UNHANDLED {type(exc).__name__}: {exc}")
+      raise
