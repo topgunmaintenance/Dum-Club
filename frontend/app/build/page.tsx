@@ -114,7 +114,7 @@ export default function BuildPage() {
 
           <button
             type="submit"
-            disabled={!idea.trim() || generating}
+            disabled={!idea.trim() || generating || !publicKey}
             className="mt-4 w-full rounded-2xl border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {generating ? (
@@ -128,6 +128,12 @@ export default function BuildPage() {
               "Launch →"
             )}
           </button>
+
+          {!publicKey && !generating && (
+            <p className="mt-2 text-center text-xs text-amber-400/80">
+              Connect a wallet to launch
+            </p>
+          )}
 
           {generating && (
             <p className="mt-3 text-center font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600">

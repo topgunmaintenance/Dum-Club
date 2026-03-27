@@ -214,6 +214,9 @@ async def instant_launch(req: LaunchRequest):
     if not req.idea or not req.idea.strip():
         raise HTTPException(status_code=400, detail="idea is required")
 
+    if not req.wallet_address or not req.wallet_address.strip():
+        raise HTTPException(status_code=400, detail="wallet_address is required to launch a project")
+
     supabase = get_client()
     now = _now()
 
@@ -299,7 +302,7 @@ async def instant_launch(req: LaunchRequest):
             "token_utility": token_utility,
             "raw_output": raw_output,
         },
-        "wallet_address": req.wallet_address or "temp_wallet",
+        "wallet_address": req.wallet_address,
         "created_at": now,
     }
     if req.owner_id:
@@ -369,7 +372,7 @@ async def instant_launch(req: LaunchRequest):
     # For instant launch we advance status in DB directly so the project page
     # renders as fully live the moment the user lands on it.
     supabase.table("projects").update(
-        {"token_status": "trading_live", "status": "live"}
+        {"token_status": "pending", "status": "live"}
     ).eq("id", project_id).execute()
 
     return LaunchResponse(
