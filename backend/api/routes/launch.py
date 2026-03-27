@@ -289,8 +289,6 @@ async def instant_launch(req: LaunchRequest):
         "token_supply": DEFAULT_TOKEN_SUPPLY,
         "token_decimals": 9,
         "token_utility": token_utility,
-        "utility_type": "access",
-        "utility_value": token_utility,
         "status": "draft",
         "review_status": "pending",
         "token_status": "draft",
