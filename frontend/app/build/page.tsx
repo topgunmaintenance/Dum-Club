@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { createClient } from "../../lib/supabase/client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -26,7 +27,8 @@ const EXAMPLES = [
 export default function BuildPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const walletAddress = user?.walletAddress ?? null;
+  const { wallets } = useSolanaWallets();
+  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
   const [error, setError] = useState("");
