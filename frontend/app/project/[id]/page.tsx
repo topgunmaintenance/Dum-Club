@@ -1309,12 +1309,34 @@ const heroUtility =
     tokenStatus === "draft"
       ? "Create Token"
       : tokenStatus === "mint_created"
-      ? "Advance to Tokens Minted"
+      ? "Mint Token Supply"
       : tokenStatus === "tokens_minted"
-      ? "Advance to Liquidity Added"
+      ? "Add Liquidity"
       : tokenStatus === "liquidity_added"
-      ? "Advance to Trading Live"
-      : "Launch In Progress";
+      ? "Go Live"
+      : "Live";
+
+  const launchSectionHeading =
+    tokenStatus === "draft"
+      ? "Create Your Token"
+      : tokenStatus === "mint_created"
+      ? "Token Initialized"
+      : tokenStatus === "tokens_minted"
+      ? "Supply Minted"
+      : tokenStatus === "liquidity_added"
+      ? "Liquidity Ready"
+      : "Live on DUM Club";
+
+  const nextStepHint =
+    tokenStatus === "draft"
+      ? "Initialize on-chain token infrastructure for this project."
+      : tokenStatus === "mint_created"
+      ? "Next: mint the full token supply to the project treasury."
+      : tokenStatus === "tokens_minted"
+      ? "Next: add market liquidity to enable live pricing."
+      : tokenStatus === "liquidity_added"
+      ? "Next: open live trading on DUM Club."
+      : null;
   const averageRating = feedbackEntries.length
     ? feedbackEntries.reduce((acc, item) => acc + item.rating, 0) / feedbackEntries.length
     : 0;
@@ -2481,7 +2503,7 @@ return (
             )}
           </div>
 
-          <h2 className="font-mono text-2xl font-bold text-white sm:text-3xl">Ready to Mint</h2>
+          <h2 className="font-mono text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
             {getStatusExplanation(tokenStatus)}
           </p>
@@ -2532,20 +2554,25 @@ return (
             })}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              disabled={loadingAction || tokenStatus === "trading_live"}
-              onClick={tokenStatus === "draft" ? createToken : advanceTokenStatus}
-              className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-              style={{ background: accent }}
-            >
-              {loadingAction ? "Working..." : nextTokenActionLabel}
-            </button>
-            {actionMessage && (
-              <p className={`text-xs leading-relaxed ${actionIsError ? "text-red-400" : "text-emerald-400"}`}>
-                {actionMessage}
-              </p>
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                disabled={loadingAction || tokenStatus === "trading_live"}
+                onClick={tokenStatus === "draft" ? createToken : advanceTokenStatus}
+                className="rounded-xl px-6 py-3 font-mono text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ background: tokenStatus === "trading_live" ? "#52525b" : accent }}
+              >
+                {loadingAction ? "Working..." : nextTokenActionLabel}
+              </button>
+              {actionMessage && (
+                <p className={`text-xs leading-relaxed ${actionIsError ? "text-red-400" : "text-emerald-400"}`}>
+                  {actionMessage}
+                </p>
+              )}
+            </div>
+            {nextStepHint && !loadingAction && (
+              <p className="mt-3 text-xs text-zinc-600">{nextStepHint}</p>
             )}
           </div>
         </div>
@@ -2646,9 +2673,11 @@ return (
             </div>
           )}
 
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
-            {getStatusExplanation(tokenStatus)}
-          </div>
+          {!isApprovedProject && (
+            <div className="mb-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
+              {getStatusExplanation(tokenStatus)}
+            </div>
+          )}
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-zinc-800 bg-black p-4">
