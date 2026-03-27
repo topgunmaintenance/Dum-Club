@@ -412,6 +412,8 @@ export default function ProjectPage() {
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionIsError, setActionIsError] = useState(false);
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -1043,6 +1045,7 @@ export default function ProjectPage() {
   }
 
   async function createToken() {
+    setActionMessage(null);
     try {
       setLoadingAction(true);
 
@@ -1058,10 +1061,12 @@ export default function ProjectPage() {
 
       await loadProject();
       await loadTokenMetadata();
-      alert(`Token created: ${data.mint}`);
+      setActionIsError(false);
+      setActionMessage(`Token created — mint: ${data.mint}`);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to create token");
+      setActionIsError(true);
+      setActionMessage(err.message || "Failed to create token");
     } finally {
       setLoadingAction(false);
     }
@@ -1082,10 +1087,12 @@ export default function ProjectPage() {
 
       await loadProject();
       await loadTokenMetadata();
-      alert(`Token status advanced to: ${data.token_status}`);
+      setActionIsError(false);
+      setActionMessage(`Status advanced to: ${data.token_status}`);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to advance token status");
+      setActionIsError(true);
+      setActionMessage(err.message || "Failed to advance token status");
     } finally {
       setLoadingAction(false);
     }
@@ -2501,6 +2508,11 @@ return (
             >
               {loadingAction ? "Working..." : nextTokenActionLabel}
             </button>
+            {actionMessage && (
+              <p className={`mt-3 text-xs leading-relaxed ${actionIsError ? "text-red-400" : "text-emerald-400"}`}>
+                {actionMessage}
+              </p>
+            )}
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-5">

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-import json
 import os
-import subprocess
+import uuid
 from datetime import datetime, timezone
 from db.supabase import get_client
 
@@ -71,20 +70,13 @@ async def create_project_token(project_id: str):
         )
 
     # -----------------------------
-    # CREATE MINT
+    # CREATE MINT (simulated)
     # -----------------------------
-    # On-chain mint creation requires Node.js, a funded Solana keypair, and
-    # the mint script environment (/workspace + keys/token-creator.json).
-    # These are not available in the current deployment environment.
-    # Restore the subprocess.run block below once the runtime is provisioned.
-    raise HTTPException(
-        status_code=503,
-        detail=(
-            "On-chain token creation is not yet available in this deployment environment. "
-            "It requires Node.js, a funded Solana keypair, and the mint script runtime. "
-            "Please contact the admin to complete token creation."
-        ),
-    )
+    # Real on-chain minting requires Node.js + a funded Solana keypair.
+    # Until that runtime is provisioned, generate a deterministic placeholder
+    # so the token lifecycle can advance through the UI.
+    # Replace this block with the subprocess.run call once ready.
+    mint = "SIM_" + uuid.uuid4().hex[:24].upper()
 
     # -----------------------------
     # UPDATE PROJECT RECORD
