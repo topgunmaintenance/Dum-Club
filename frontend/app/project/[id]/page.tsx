@@ -395,6 +395,7 @@ export default function ProjectPage() {
   const [loadingTrade, setLoadingTrade] = useState(false);
   const [tradeMessage, setTradeMessage] = useState("");
   const [tradeWinFlash, setTradeWinFlash] = useState(false);
+  const [tradeIsError, setTradeIsError] = useState(false);
   const [copyFlash, setCopyFlash] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
@@ -643,11 +644,13 @@ export default function ProjectPage() {
     const numericAmount = Number(tradeAmount);
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setTradeIsError(true);
       setTradeMessage("Enter a valid amount.");
       return;
     }
 
     if (side === "sell" && numericAmount > walletBalance) {
+      setTradeIsError(true);
       setTradeMessage(
         `Insufficient balance. You only have ${formatNumber(walletBalance, 2)} ${
           project?.token_symbol || tokenMeta.symbol || "TOKENS"
@@ -658,12 +661,14 @@ export default function ProjectPage() {
 
     const wallet = userWallet?.trim();
     if (!wallet || wallet.length < 8) {
+      setTradeIsError(true);
       setTradeMessage("Connected wallet not found.");
       return;
     }
 
     try {
       setLoadingTrade(true);
+      setTradeIsError(false);
       setTradeMessage("");
 
       const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
@@ -718,6 +723,7 @@ export default function ProjectPage() {
       await loadWalletBalance();
     } catch (err: any) {
       console.error(err);
+      setTradeIsError(true);
       setTradeMessage(err?.message || `Failed to ${side}`);
     } finally {
       setLoadingTrade(false);
@@ -1233,6 +1239,12 @@ export default function ProjectPage() {
 
   const positionValue = walletBalance * Number(market?.price || 0);
   const numericTradeAmount = Number(tradeAmount || 0);
+  const tradeInputValid = numericTradeAmount > 0 && Number.isFinite(numericTradeAmount);
+  const tradeHint = !userWallet
+    ? "Connect a wallet to trade"
+    : tradeAmount !== "" && !tradeInputValid
+    ? "Enter a valid amount"
+    : null;
   const tradeGrossValue = numericTradeAmount * Number(market?.price || 0);
   const estimatedProjectFee = tradeGrossValue * PROJECT_FEE_RATE;
   const estimatedDumFee = tradeGrossValue * DUM_FEE_RATE;
@@ -2048,11 +2060,15 @@ return (
                   </button>
                 </div>
 
+                {tradeHint && (
+                  <p className="text-xs text-amber-400/80">{tradeHint}</p>
+                )}
+
                 <button
                   type="button"
-                  disabled={loadingTrade}
+                  disabled={loadingTrade || !userWallet || !tradeInputValid}
                   onClick={() => executeTrade(tradeTab)}
-                  className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:opacity-50 ${
+                  className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
                     tradeTab === "buy"
                       ? "bg-emerald-500 text-black hover:bg-emerald-400"
                       : "bg-red-500 text-white hover:bg-red-400"
@@ -2067,8 +2083,10 @@ return (
 
                 {tradeMessage && (
                   <div
-                    className={`rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300 ${
-                      tradeWinFlash ? "win-flash" : ""
+                    className={`rounded-2xl border p-4 text-sm ${
+                      tradeIsError
+                        ? "border-red-400/30 bg-red-950/20 text-red-300"
+                        : `border-emerald-400/30 bg-emerald-950/20 text-emerald-300${tradeWinFlash ? " win-flash" : ""}`
                     }`}
                   >
                     {tradeMessage}
