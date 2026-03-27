@@ -16,7 +16,6 @@ type Project = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
 function deriveTokenSymbolFromName(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -38,7 +37,6 @@ export default function DashboardPage() {
   const { wallets } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
-  // Determine wallet type label from live wallets list
   const activeWalletMeta = walletAddress
     ? wallets.find((w) => w.address === walletAddress)
     : wallets[0] ?? null;
@@ -52,30 +50,18 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Fetch SOL balance whenever wallet address changes
   useEffect(() => {
     if (!walletAddress) {
       setSolBalance(null);
       return;
     }
     let cancelled = false;
-    fetch(SOLANA_RPC, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getBalance",
-        params: [walletAddress],
-      }),
-    })
+    fetch(`${API_BASE}/api/sol-balance/${walletAddress}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) {
-          const lamports = data?.result?.value ?? 0;
-          setSolBalance(lamports / 1e9);
-        }
+        if (!cancelled) setSolBalance(data.sol ?? null);
       })
       .catch(() => {
         if (!cancelled) setSolBalance(null);
@@ -157,6 +143,13 @@ export default function DashboardPage() {
     }
   }
 
+  function copyAddress() {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
@@ -182,7 +175,7 @@ export default function DashboardPage() {
             <div className="mt-5 inline-flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm">
               {walletAddress ? (
                 <>
-                  <span className="font-mono text-zinc-300">
+                  <span className="font-mono text-zinc-300" title={walletAddress}>
                     {shortAddress(walletAddress)}
                   </span>
                   {walletType && (
@@ -195,6 +188,31 @@ export default function DashboardPage() {
                       {solBalance.toFixed(4)} SOL
                     </span>
                   )}
+                  <span className="text-zinc-700">·</span>
+                  <button
+                    type="button"
+                    onClick={copyAddress}
+                    className="text-xs text-zinc-500 transition hover:text-zinc-300"
+                  >
+                    {copied ? "Copied!" : "Copy address"}
+                  </button>
+                  <a
+                    href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-zinc-500 transition hover:text-zinc-300"
+                  >
+                    Explorer ↗
+                  </a>
+                  <a
+                    href="https://faucet.solana.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-zinc-500 transition hover:text-emerald-400"
+                    title="Get test SOL — devnet only"
+                  >
+                    Get test SOL ↗
+                  </a>
                 </>
               ) : (
                 <span className="text-zinc-500">No wallet connected</span>

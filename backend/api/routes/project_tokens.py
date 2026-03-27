@@ -10,7 +10,7 @@ _TOKEN_STATUS_DISPLAY = {"active": "draft", "pending": "draft"}
 
 SOLANA_RPC_URL = os.getenv(
     "SOLANA_RPC_URL",
-    "https://api.mainnet-beta.solana.com",
+    "https://api.devnet.solana.com",
 )
 
 
@@ -30,6 +30,13 @@ def rpc_call(method: str, params: list):
         raise HTTPException(status_code=400, detail=data["error"])
 
     return data.get("result")
+
+
+@router.get("/sol-balance/{address}")
+def get_sol_balance(address: str):
+    result = rpc_call("getBalance", [address])
+    lamports = result.get("value", 0) if isinstance(result, dict) else 0
+    return {"address": address, "lamports": lamports, "sol": round(lamports / 1e9, 9)}
 
 
 @router.get("/projects/{project_id}/token-metadata")
