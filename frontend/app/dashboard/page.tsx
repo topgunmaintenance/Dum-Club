@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useCallback, useEffect, useState } from "react";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
-import { linkWalletToProfile } from "../../lib/linkWalletToProfile";
+import { useAuth } from "../../lib/auth/AuthContext";
 import { createClient } from "../../lib/supabase/client";
 
 type Project = {
@@ -32,56 +32,27 @@ function deriveTokenSymbolFromName(name: string): string {
 }
 
 export default function DashboardPage() {
-  const { publicKey, connected, wallet } = useWallet();
-  const walletAddress = publicKey?.toBase58();
+  const { user } = useAuth();
+  const { wallets } = useSolanaWallets();
+  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const hasLinkedRef = useRef(false);
-
-  useEffect(() => {
-    async function syncWallet() {
-      if (!connected || !publicKey || hasLinkedRef.current) return;
-
-      try {
-        hasLinkedRef.current = true;
-
-        await linkWalletToProfile(
-          publicKey.toBase58(),
-          wallet?.adapter?.name || "solana"
-        );
-
-        console.log("Wallet linked to profile");
-      } catch (error) {
-        console.error("Wallet link failed:", error);
-        hasLinkedRef.current = false;
-      }
-    }
-
-    syncWallet();
-  }, [connected, publicKey, wallet]);
-
   const loadProjects = useCallback(async () => {
-    if (!walletAddress) {
-      setProjects([]);
-      return;
-    }
-
     try {
       const supabase = createClient();
       const {
-        data: { user },
+        data: { user: supabaseUser },
       } = await supabase.auth.getUser();
 
-      let url = `${API_BASE}/api/projects/`;
-
-      if (user?.id) {
-        url += `?owner_id=${user.id}`;
-      } else {
-        url += `?wallet_address=${walletAddress}`;
+      if (!supabaseUser?.id) {
+        setProjects([]);
+        return;
       }
+
+      let url = `${API_BASE}/api/projects/?owner_id=${supabaseUser.id}`;
 
       const res = await fetch(url);
 
@@ -96,18 +67,13 @@ export default function DashboardPage() {
       console.error(err);
       setProjects([]);
     }
-  }, [walletAddress]);
+  }, []);
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
 
     if (!name.trim()) {
       alert("Please enter a project name");
-      return;
-    }
-
-    if (!walletAddress) {
-      alert("Please connect your wallet first");
       return;
     }
 
@@ -206,7 +172,7 @@ export default function DashboardPage() {
 
               <button
                 type="submit"
-                disabled={loading || !walletAddress}
+                disabled={loading || !user}
                 className="w-full rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Creating..." : "Create Project"}
@@ -217,9 +183,9 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <h2 className="text-xl font-bold md:text-2xl">Your Projects</h2>
 
-            {!walletAddress ? (
+            {!user ? (
               <p className="mt-4 text-zinc-400">
-                Connect your wallet to view and create projects.
+                Sign in to view and create projects.
               </p>
             ) : projects.length === 0 ? (
               <div className="mt-6 rounded-xl border border-dashed border-zinc-700 bg-black/40 p-8 text-center">
