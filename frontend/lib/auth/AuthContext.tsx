@@ -37,6 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncedForRef = useRef<string | null>(null);
   const syncInFlightRef = useRef(false);
 
+  // Refs always hold the latest Privy functions; updated every render before
+  // any effect or memo runs. Refs themselves do not cause re-renders.
+  const loginRef = useRef(login);
+  const logoutRef = useRef(logout);
+  const getAccessTokenRef = useRef(getAccessToken);
+  loginRef.current = login;
+  logoutRef.current = logout;
+  getAccessTokenRef.current = getAccessToken;
+
+  // Stable wrappers created once — reference never changes across renders.
+  // Dispatch through refs so they always invoke the current Privy function.
+  const stableLogin    = useRef(() => loginRef.current()).current;
+  const stableLogout   = useRef(() => logoutRef.current()).current;
+  const stableGetToken = useRef(async () => (await getAccessTokenRef.current()) || null).current;
+
   useEffect(() => {
     if (!ready) return;
 
@@ -118,11 +133,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: dumUser,
       loading,
       isAdmin: Boolean(dumUser?.isAdmin),
-      login,
-      logout,
-      getToken: async () => (await getAccessToken()) || null,
+      login: stableLogin,
+      logout: stableLogout,
+      getToken: stableGetToken,
     }),
-    [dumUser, loading, login, logout, getAccessToken]
+    [dumUser, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
