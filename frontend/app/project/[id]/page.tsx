@@ -1421,7 +1421,7 @@ return (
               {loadingProject ? (
                 <div className="h-10 w-72 animate-pulse rounded-lg bg-zinc-800 sm:h-14" />
               ) : (
-                <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
+                <h1 className="font-mono text-3xl font-bold leading-tight text-white sm:text-5xl">
                   {projectName}
                 </h1>
               )}
@@ -1746,7 +1746,7 @@ return (
           </div>
         </div>
 
-        <h2 className="font-mono text-3xl font-bold text-white">Ask AI</h2>
+        <h2 className="font-mono text-2xl font-bold text-white">Ask AI</h2>
 
         <p className="mt-3 text-zinc-500">
           This project includes {chatMeta.free_limit} free AI question
@@ -1789,7 +1789,7 @@ return (
         </form>
 
         <div className="mt-10">
-          <h3 className="font-mono text-2xl font-bold text-white">AI Response</h3>
+          <h3 className="font-mono text-xl font-bold text-white">AI Response</h3>
 
           <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
             {response || (
@@ -1841,7 +1841,7 @@ return (
                   ◆ Day Zero
                 </div>
                 <div>
-                  <h3 className="font-mono text-2xl font-bold text-white">
+                  <h3 className="font-mono text-xl font-bold text-white">
                     Be the first to support this project
                   </h3>
                   <p className="mt-3 max-w-sm text-zinc-400">
@@ -2005,7 +2005,7 @@ return (
             <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
               <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">{displaySymbol} · Support this project</div>
 
-              <h2 className="font-mono text-2xl font-bold text-white">Buy / Sell</h2>
+              <h2 className="font-mono text-xl font-bold text-white">Buy / Sell</h2>
 
               <div className="mt-6 space-y-4">
                 <div>

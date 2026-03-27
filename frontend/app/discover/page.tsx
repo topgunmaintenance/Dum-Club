@@ -451,14 +451,14 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-6 py-10">
         <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
           ◆ Discovery Feed
         </div>
 
-        <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <div className="mb-6 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h1 className="font-mono text-4xl font-bold uppercase tracking-[-0.04em] text-white sm:text-6xl">
+            <h1 className="font-mono text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
               Trending Projects
             </h1>
           </div>
@@ -470,7 +470,7 @@ export default function DiscoverPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 rounded-lg px-4 py-2 font-mono text-[10px] uppercase tracking-[0.1em] transition ${
+              className={`flex-shrink-0 rounded-lg px-4 py-2 font-mono text-xs uppercase tracking-[0.1em] transition ${
                 activeTab === tab.id
                   ? "bg-emerald-400 font-bold text-black"
                   : "text-zinc-500 hover:text-zinc-300"

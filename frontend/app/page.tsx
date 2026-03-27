@@ -302,19 +302,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-black text-white">
-      <section className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
+      <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
         <div className="relative overflow-hidden border border-zinc-900 bg-black">
           <div className="absolute inset-0 opacity-20">
             <div className="h-full w-full bg-[radial-gradient(circle_at_top,rgba(0,255,178,0.12),transparent_35%)]" />
           </div>
 
-          <div className="relative px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
+          <div className="relative px-6 py-10 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
             <div className="mx-auto max-w-5xl text-center">
               <div className="mb-6 inline-flex items-center text-xs uppercase tracking-[0.35em] text-emerald-400">
                 ◆ Powered by Solana
               </div>
 
-              <h1 className="font-mono text-5xl font-bold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:text-7xl lg:text-[95px]">
+              <h1 className="font-mono text-5xl font-bold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
                 Describe it.
                 <br />
                 <span className="text-emerald-400">We build the AI,</span>
@@ -322,7 +322,7 @@ export default function Home() {
                 the token, and the market.
               </h1>
 
-              <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-zinc-400 sm:text-xl">
+              <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-zinc-400 sm:text-lg">
                 Launch AI-powered projects into the DUM Club ecosystem with real project pages,
                 live token activity, and community demand signals.
               </p>
@@ -598,7 +598,7 @@ export default function Home() {
         </div>
 
         {/* Platform stats */}
-        <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
+        <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-12 sm:py-14">
           <div className="mx-auto max-w-5xl">
             <div className="mb-8 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               Platform pulse
@@ -630,12 +630,12 @@ export default function Home() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="border-t border-zinc-900 px-4 py-20 text-center sm:py-24">
+        <div className="border-t border-zinc-900 px-4 py-14 text-center sm:py-16">
           <div className="mx-auto max-w-2xl">
             <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               Ready?
             </div>
-            <h2 className="font-mono text-4xl font-black tracking-tight text-white sm:text-5xl">
+            <h2 className="font-mono text-3xl font-black tracking-tight text-white sm:text-4xl">
               YOUR IDEA.
               <br />
               <span className="text-emerald-400">60 SECONDS.</span>
