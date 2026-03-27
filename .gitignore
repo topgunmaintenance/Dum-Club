@@ -14,3 +14,4 @@ build/
 keys/
 keys/*.json
 token-creator.json
+.claude/
