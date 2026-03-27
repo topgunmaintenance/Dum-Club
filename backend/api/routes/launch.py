@@ -299,12 +299,11 @@ async def instant_launch(req: LaunchRequest):
             "token_utility": token_utility,
             "raw_output": raw_output,
         },
+        "wallet_address": req.wallet_address or "temp_wallet",
         "created_at": now,
     }
     if req.owner_id:
         project_payload["owner_id"] = req.owner_id
-    if req.wallet_address:
-        project_payload["wallet_address"] = req.wallet_address
 
     create_res = supabase.table("projects").insert(project_payload).execute()
     if not create_res.data:
