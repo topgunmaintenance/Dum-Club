@@ -7,6 +7,36 @@ import secrets
 
 from db.supabase import get_client
 
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
+    """Return a UUID-safe owner_id for DB operations.
+
+    - None / empty → None
+    - Already a UUID → returned as-is
+    - Privy DID or other string → look up users.id by privy_id; None if not found
+    """
+    if not owner_id:
+        return None
+    if _UUID_RE.match(owner_id):
+        return owner_id
+    try:
+        res = (
+            supabase.table("users")
+            .select("id")
+            .eq("privy_id", owner_id)
+            .limit(1)
+            .execute()
+        )
+        return res.data[0]["id"] if res.data else None
+    except Exception as exc:
+        print(f"[projects] _resolve_owner_uuid lookup failed: {exc!r}")
+        return None
+
 router = APIRouter()
 
 # Projects table semantics (avoid mixing these in routes or UI):
@@ -93,6 +123,9 @@ async def create_project(
 
     token_symbol = validate_token_symbol(body.token_symbol)
 
+    # Resolve any non-UUID owner identity (e.g. Privy DID) to the users-table UUID.
+    owner_uuid = _resolve_owner_uuid(supabase, user_id)
+
     symbol_res = (
         supabase.table("projects")
         .select("id")
@@ -107,7 +140,7 @@ async def create_project(
     title = body.title.strip() if body.title else body.name.strip()
 
     project_insert = {
-        "owner_id": user_id,
+        "owner_id": owner_uuid,
         "wallet_address": body.wallet_address,
         "name": body.name.strip(),
         "title": title,
@@ -485,7 +518,12 @@ async def list_projects(owner_id: Optional[str] = Query(default=None)):
     query = supabase.table("projects").select("*").order("created_at", desc=True)
 
     if owner_id:
-        query = query.eq("owner_id", owner_id)
+        resolved = _resolve_owner_uuid(supabase, owner_id)
+        if resolved:
+            query = query.eq("owner_id", resolved)
+        else:
+            # Unknown owner — return empty rather than all projects
+            return []
 
     res = query.limit(50).execute()
 

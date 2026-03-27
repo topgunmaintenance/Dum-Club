@@ -18,6 +18,7 @@ import json
 import os
 import re
 import secrets
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -137,6 +138,37 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
+    """Return a UUID-safe owner_id for DB operations.
+
+    - None / empty → None
+    - Already a UUID → returned as-is
+    - Privy DID or other string → look up users.id by privy_id; None if not found
+    """
+    if not owner_id:
+        return None
+    if _UUID_RE.match(owner_id):
+        return owner_id
+    try:
+        res = (
+            supabase.table("users")
+            .select("id")
+            .eq("privy_id", owner_id)
+            .limit(1)
+            .execute()
+        )
+        return res.data[0]["id"] if res.data else None
+    except Exception as exc:
+        print(f"[launch] _resolve_owner_uuid lookup failed: {exc!r}")
+        return None
+
+
 # ── Hosted LLM fallback (used when Ollama is unavailable) ─────────────────────
 
 def _try_hosted_llm(idea: str) -> Optional[dict]:
@@ -217,15 +249,29 @@ async def instant_launch(req: LaunchRequest):
     if not req.wallet_address or not req.wallet_address.strip():
         raise HTTPException(status_code=400, detail="wallet_address is required to launch a project")
 
+    try:
+        return await _do_launch(req)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[launch] UNHANDLED ERROR: {exc!r}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Launch failed: {exc}")
+
+
+async def _do_launch(req: LaunchRequest) -> LaunchResponse:
     supabase = get_client()
     now = _now()
 
+    # Resolve any non-UUID owner_id (e.g. Privy DID) to the users-table UUID.
+    resolved_owner = _resolve_owner_uuid(supabase, req.owner_id)
+
     # ── 0. Rate limit: max 5 launches per identity per 24 hours ─────────────────
-    if req.owner_id or req.wallet_address:
+    if resolved_owner or req.wallet_address:
         cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
         q = supabase.table("projects").select("id", count="exact")
-        if req.owner_id:
-            q = q.eq("owner_id", req.owner_id)
+        if resolved_owner:
+            q = q.eq("owner_id", resolved_owner)
         else:
             q = q.eq("wallet_address", req.wallet_address)
         recent = q.gte("created_at", cutoff).execute()
@@ -305,8 +351,8 @@ async def instant_launch(req: LaunchRequest):
         "wallet_address": req.wallet_address,
         "created_at": now,
     }
-    if req.owner_id:
-        project_payload["owner_id"] = req.owner_id
+    if resolved_owner:
+        project_payload["owner_id"] = resolved_owner
 
     create_res = supabase.table("projects").insert(project_payload).execute()
     if not create_res.data:
