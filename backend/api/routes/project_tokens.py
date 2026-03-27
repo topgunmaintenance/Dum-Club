@@ -10,7 +10,7 @@ _TOKEN_STATUS_DISPLAY = {"active": "draft", "pending": "draft"}
 
 SOLANA_RPC_URL = os.getenv(
     "SOLANA_RPC_URL",
-    "https://api.mainnet-beta.solana.com",
+    "https://api.devnet.solana.com",
 )
 
 
