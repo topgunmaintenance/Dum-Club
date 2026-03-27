@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useAuth } from "../../lib/auth/AuthContext";
 import { createClient } from "../../lib/supabase/client";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -25,7 +25,8 @@ const EXAMPLES = [
 
 export default function BuildPage() {
   const router = useRouter();
-  const { publicKey } = useWallet();
+  const { user } = useAuth();
+  const walletAddress = user?.walletAddress ?? null;
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
   const [error, setError] = useState("");
@@ -61,7 +62,7 @@ export default function BuildPage() {
         body: JSON.stringify({
           idea: idea.trim(),
           owner_id: user?.id ?? null,
-          wallet_address: publicKey?.toBase58() ?? null,
+          wallet_address: walletAddress,
         }),
       });
 
@@ -114,7 +115,7 @@ export default function BuildPage() {
 
           <button
             type="submit"
-            disabled={!idea.trim() || generating || !publicKey}
+            disabled={!idea.trim() || generating || !walletAddress}
             className="mt-4 w-full rounded-2xl border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {generating ? (
@@ -129,9 +130,9 @@ export default function BuildPage() {
             )}
           </button>
 
-          {!publicKey && !generating && (
+          {!walletAddress && !generating && (
             <p className="mt-2 text-center text-xs text-amber-400/80">
-              Connect a wallet to launch
+              Sign in to launch
             </p>
           )}
 
