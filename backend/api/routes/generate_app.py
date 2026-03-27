@@ -243,8 +243,7 @@ Rules:
         "ai_output": ai_output,
     }
 
-    if req.wallet_address:
-        payload["wallet_address"] = req.wallet_address
+    payload["wallet_address"] = req.wallet_address or ""
 
     if req.owner_id:
         payload["owner_id"] = req.owner_id
