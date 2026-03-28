@@ -425,6 +425,8 @@ export default function ProjectPage() {
   const [builderLoading, setBuilderLoading] = useState(false);
   const [builderResult, setBuilderResult] = useState<{ current: string; suggested: string } | null>(null);
   const [builderField, setBuilderField] = useState<string | null>(null);
+  const [builderToast, setBuilderToast] = useState<string | null>(null);
+  const [promoCopy, setPromoCopy] = useState<string>("");
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -1022,8 +1024,25 @@ export default function ProjectPage() {
     }
   }
 
+  function showBuilderToast(msg: string) {
+    setBuilderToast(msg);
+    setTimeout(() => setBuilderToast(null), 3000);
+  }
+
   async function applyBuilderResult() {
-    if (!builderResult || !builderField || !project) return;
+    if (!builderResult || !project) return;
+
+    // Promo copy — store in frontend state only
+    if (builderAction === "promo") {
+      setPromoCopy(builderResult.suggested);
+      showBuilderToast("Promo copy saved — ready to share");
+      setBuilderAction(null);
+      setBuilderResult(null);
+      setBuilderField(null);
+      return;
+    }
+
+    if (!builderField) return;
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}`, {
         method: "PATCH",
@@ -1034,6 +1053,7 @@ export default function ProjectPage() {
         const updated = await res.json();
         setProject(updated);
         setProjectName(updated.name || updated.title || "Untitled Project");
+        showBuilderToast("Updated — your project just got stronger");
       }
     } catch (err) {
       console.error("Failed to apply:", err);
@@ -1048,6 +1068,15 @@ export default function ProjectPage() {
     setBuilderResult(null);
     setBuilderField(null);
     setBuilderLoading(false);
+  }
+
+  async function copyToClipboard(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showBuilderToast(`Copied ${label} to clipboard`);
+    } catch {
+      showBuilderToast("Failed to copy");
+    }
   }
 
   async function submitReview(e?: React.FormEvent) {
@@ -1933,8 +1962,18 @@ return (
               )}
 
               <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                  {builderAction === "roast" ? "Roast" : builderAction === "promo" ? "Promo Copy" : "Suggested"}
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                    {builderAction === "roast" ? "Roast" : builderAction === "promo" ? "Promo Copy" : "Suggested"}
+                  </span>
+                  {(builderAction === "promo" || builderAction === "roast") && (
+                    <button
+                      onClick={() => copyToClipboard(builderResult.suggested, "text")}
+                      className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                    >
+                      Copy
+                    </button>
+                  )}
                 </div>
                 <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
                   {builderResult.suggested}
@@ -1942,7 +1981,7 @@ return (
               </div>
 
               <div className="flex gap-2">
-                {builderField && builderAction !== "roast" && (
+                {builderAction !== "roast" && (
                   <button
                     onClick={applyBuilderResult}
                     className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
@@ -1968,6 +2007,53 @@ return (
                   {builderAction === "roast" ? "Dismiss" : "Cancel"}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Saved promo copy display */}
+          {!builderAction && promoCopy && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  Saved Promo Copy
+                </span>
+                <button
+                  onClick={() => copyToClipboard(promoCopy, "promo copy")}
+                  className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                {promoCopy}
+              </div>
+            </div>
+          )}
+
+          {/* Share project */}
+          {!builderAction && (
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => copyToClipboard(window.location.href, "project link")}
+                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Share Project Link
+              </button>
+              {promoCopy && (
+                <button
+                  onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                >
+                  Share Promo + Link
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Success toast */}
+          {builderToast && (
+            <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
+              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
             </div>
           )}
         </div>
