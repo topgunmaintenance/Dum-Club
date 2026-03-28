@@ -440,6 +440,9 @@ export default function ProjectPage() {
     price: string;
     type: StoreItemType;
     benefits?: string[];
+    required_token_amount?: number | null;
+    perk_description?: string | null;
+    token_holder_price?: string | null;
   }
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
@@ -2018,12 +2021,39 @@ return (
               <div className="grid gap-4 sm:grid-cols-2">
                 {storeItems.map((item) => {
                   const badge = storeTypeBadge[item.type];
+                  const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
+                  const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
+                  const showGating = hasPerk && tokenConfigured;
+                  let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
+                  if (showGating) {
+                    if (!userWallet) perkState = "no_wallet";
+                    else if (walletBalance >= (item.required_token_amount || 0)) perkState = "unlocked";
+                    else perkState = "locked";
+                  }
+                  const pitchPrice = perkState === "unlocked" && item.token_holder_price != null ? item.token_holder_price : item.price || "Free";
+                  const pitchFree = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
+
                   return (
                     <div key={item.id} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 flex flex-col">
-                      <div className="mb-3">
+                      <div className="mb-3 flex items-center gap-2">
                         <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
                           {badge.label}
                         </span>
+                        {showGating && perkState === "unlocked" && (
+                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400">
+                            ✓ Unlocked
+                          </span>
+                        )}
+                        {showGating && perkState === "locked" && (
+                          <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-amber-400">
+                            Requires {item.required_token_amount} tokens
+                          </span>
+                        )}
+                        {showGating && perkState === "no_wallet" && (
+                          <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase text-zinc-500">
+                            🔒 Gated
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-base font-semibold text-white">{item.name}</h3>
                       {item.description && (
@@ -2039,8 +2069,22 @@ return (
                           ))}
                         </ul>
                       )}
+                      {showGating && item.perk_description && (
+                        <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
+                          <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
+                        </div>
+                      )}
                       <div className="mt-auto pt-4 flex items-center justify-between">
-                        <span className="font-mono text-lg font-bold text-white">{item.price || "Free"}</span>
+                        <div>
+                          {pitchFree ? (
+                            <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
+                          ) : (
+                            <span className="font-mono text-lg font-bold text-white">{pitchPrice}</span>
+                          )}
+                          {perkState === "unlocked" && item.token_holder_price != null && item.price && !pitchFree && (
+                            <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
+                          )}
+                        </div>
                         <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
                           {item.type === "subscription" ? "Subscribe" : "Buy"}
                         </button>
@@ -2828,6 +2872,33 @@ return (
                   className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
                 />
               )}
+              {/* Token perk fields */}
+              {project?.token_mint_address && !project.token_mint_address.startsWith("SIM_") && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">Token Perk (optional)</div>
+                  <input
+                    type="number"
+                    placeholder="Required token amount (e.g. 100)"
+                    value={storeEditing.required_token_amount ?? ""}
+                    onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Perk description (e.g. 50% off for holders)"
+                    value={storeEditing.perk_description ?? ""}
+                    onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Token holder price (e.g. 0.25 SOL or Free)"
+                    value={storeEditing.token_holder_price ?? ""}
+                    onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  />
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={saveStoreItem}
@@ -2850,12 +2921,50 @@ return (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {storeItems.map((item) => {
                 const badge = storeTypeBadge[item.type];
+                const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
+                const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
+                const showGating = hasPerk && tokenConfigured;
+
+                // Determine perk state
+                let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
+                if (showGating) {
+                  if (!userWallet) {
+                    perkState = "no_wallet";
+                  } else if (walletBalance >= (item.required_token_amount || 0)) {
+                    perkState = "unlocked";
+                  } else {
+                    perkState = "locked";
+                  }
+                }
+
+                const displayPrice = perkState === "unlocked" && item.token_holder_price != null
+                  ? item.token_holder_price
+                  : item.price || "Free";
+                const isFreeForHolder = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
+
                 return (
                   <div key={item.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
                     <div className="mb-3 flex items-center justify-between">
-                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
-                        {badge.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                        {showGating && perkState === "unlocked" && (
+                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
+                            ✓ Unlocked
+                          </span>
+                        )}
+                        {showGating && perkState === "locked" && (
+                          <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-400">
+                            Requires {item.required_token_amount} tokens
+                          </span>
+                        )}
+                        {showGating && perkState === "no_wallet" && (
+                          <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500">
+                            🔒 Gated
+                          </span>
+                        )}
+                      </div>
                       {isOwner && (
                         <div className="flex gap-2">
                           <button
@@ -2887,8 +2996,42 @@ return (
                         ))}
                       </ul>
                     )}
+
+                    {/* Perk description — always visible when a perk exists */}
+                    {showGating && item.perk_description && (
+                      <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
+                        <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
+                      </div>
+                    )}
+
+                    {/* No wallet hint */}
+                    {showGating && perkState === "no_wallet" && (
+                      <div className="mt-2">
+                        <span className="text-[11px] text-zinc-600">Connect wallet to check eligibility</span>
+                      </div>
+                    )}
+
+                    {/* Locked: show what they're missing */}
+                    {showGating && perkState === "locked" && item.token_holder_price != null && (
+                      <div className="mt-2">
+                        <span className="text-[11px] text-zinc-500">
+                          Token holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span>
+                        </span>
+                      </div>
+                    )}
+
                     <div className="mt-auto pt-4 flex items-center justify-between">
-                      <span className="font-mono text-lg font-bold text-white">{item.price || "Free"}</span>
+                      <div>
+                        {isFreeForHolder ? (
+                          <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
+                        ) : (
+                          <span className="font-mono text-lg font-bold text-white">{displayPrice}</span>
+                        )}
+                        {perkState === "unlocked" && item.token_holder_price != null && item.price && !isFreeForHolder && (
+                          <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
+                        )}
+                      </div>
+                      {/* TODO: enforce server-side in Phase 10 */}
                       <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
                         {item.type === "subscription" ? "Subscribe" : "Buy"}
                       </button>
