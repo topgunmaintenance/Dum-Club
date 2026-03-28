@@ -446,6 +446,16 @@ export default function ProjectPage() {
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
   const [storePickerFor, setStorePickerFor] = useState<string | null>(null);
+
+  // Project Score state
+  interface ProjectScore {
+    virality: { score: number; reason: string };
+    trust: { score: number; reason: string };
+    utility: { score: number; reason: string };
+  }
+  const [projectScore, setProjectScore] = useState<ProjectScore | null>(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
+
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -1262,6 +1272,50 @@ export default function ProjectPage() {
     window.history.replaceState({}, "", url.toString());
   }
 
+  /* ── Project Score ────────────────────────────────── */
+  async function evaluateProjectScore() {
+    if (!project) return;
+    setScoreLoading(true);
+    setProjectScore(null);
+    const storeSummary = storeItems.length
+      ? storeItems.map((i) => `${i.name} (${i.type}, ${i.price})`).join(", ")
+      : "none";
+    const prompt = `You are a startup scoring engine. Evaluate this project on 3 dimensions and return ONLY a valid JSON object.\n\nProject: "${project.title || project.name || "Untitled"}"\nDescription: "${project.description || "N/A"}"\nToken: ${project.token_symbol || "N/A"}\nToken utility: "${project.token_utility || "N/A"}"\nPromo copy: "${promoCopy || "N/A"}"\nStore items: ${storeSummary}\nCategory: ${project.template_type || "General"}\n\nScore each dimension 0-100:\n1. Virality — how shareable and attention-grabbing is this project?\n2. Trust — how credible and professional does it appear?\n3. Utility — how useful and valuable is the token/product offering?\n\nReturn ONLY this JSON:\n{"virality":{"score":N,"reason":"..."},"trust":{"score":N,"reason":"..."},"utility":{"score":N,"reason":"..."}}\n\nKeep each reason under 80 characters. Be honest and specific. No markdown.`;
+    try {
+      const res = await fetch(`${API_BASE}/api/chat/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: prompt, project_id: id, stream: false }),
+      });
+      if (!res.ok) throw new Error("Score request failed");
+      const data = await res.json();
+      const cleaned = (data.answer || "").replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      setProjectScore({
+        virality: { score: Number(parsed.virality?.score || 0), reason: parsed.virality?.reason || "" },
+        trust: { score: Number(parsed.trust?.score || 0), reason: parsed.trust?.reason || "" },
+        utility: { score: Number(parsed.utility?.score || 0), reason: parsed.utility?.reason || "" },
+      });
+    } catch (err) {
+      console.error("Score evaluation failed:", err);
+      showBuilderToast("Failed to evaluate — try again");
+    } finally {
+      setScoreLoading(false);
+    }
+  }
+
+  function scoreColor(score: number): string {
+    if (score >= 75) return "text-emerald-400";
+    if (score >= 50) return "text-amber-400";
+    return "text-red-400";
+  }
+
+  function barColor(score: number): string {
+    if (score >= 75) return "bg-emerald-400";
+    if (score >= 50) return "bg-amber-400";
+    return "bg-red-400";
+  }
+
   /* ── Store / Offers helpers ─────────────────────── */
   function persistStoreItems(items: StoreItem[]) {
     fetch(`${API_BASE}/api/projects/${id}`, {
@@ -1913,6 +1967,33 @@ return (
               </div>
             </div>
           </div>
+
+          {/* Project Score in pitch view */}
+          {projectScore && (
+            <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+              <div className="mb-4 text-center">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                  Project Score
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {(["virality", "trust", "utility"] as const).map((dim) => {
+                  const entry = projectScore[dim];
+                  const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+                  return (
+                    <div key={dim}>
+                      <div className={`font-mono text-2xl font-bold ${scoreColor(entry.score)}`}>
+                        {entry.score}
+                      </div>
+                      <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-500">
+                        {label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Promo copy section */}
           {promoCopy && (
@@ -2573,6 +2654,101 @@ return (
           {builderToast && (
             <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
               <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Project Score ────────────────────────── */}
+      {isOwner && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+              AI Evaluation
+            </span>
+            <button
+              onClick={evaluateProjectScore}
+              disabled={scoreLoading}
+              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+            >
+              {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
+            </button>
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Project Score</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            AI-powered evaluation of your project's strength
+          </p>
+
+          {scoreLoading && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-sm text-zinc-400">Evaluating your project...</span>
+              </div>
+            </div>
+          )}
+
+          {!scoreLoading && !projectScore && (
+            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+              <p className="text-sm text-zinc-600">
+                Click "Score My Project" to get an AI evaluation
+              </p>
+            </div>
+          )}
+
+          {!scoreLoading && projectScore && (
+            <div className="mt-5 space-y-4">
+              {(["virality", "trust", "utility"] as const).map((dim) => {
+                const entry = projectScore[dim];
+                const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+                return (
+                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-black p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-white">{label}</span>
+                      <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
+                        {entry.score}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
+                        style={{ width: `${entry.score}%` }}
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
+                      <button
+                        onClick={() => {
+                          const tips: Record<string, string> = {
+                            virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
+                            trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
+                            utility: "How can I improve my token utility and product value? Give me 3 concrete suggestions.",
+                          };
+                          const action = builderActions.find((a) => a.key === "roast")!;
+                          const improveAction: BuilderActionDef = {
+                            ...action,
+                            key: `improve_${dim}`,
+                            label: `Improve ${label}`,
+                            prompt: (p) =>
+                              `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                          };
+                          runBuilderAction(improveAction, null);
+                        }}
+                        className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
+                      >
+                        Improve →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                <span className="font-mono text-2xl font-bold text-white">
+                  {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
+                </span>
+                <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
+              </div>
             </div>
           )}
         </div>
