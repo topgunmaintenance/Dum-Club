@@ -12,6 +12,9 @@ type Project = {
   status?: string;
   created_at?: string;
   token_symbol?: string | null;
+  token_utility?: string | null;
+  promo_copy?: string | null;
+  store_items?: any[] | null;
 };
 
 type MarketSnapshot = {
@@ -35,7 +38,9 @@ const TARGET_MARKET_CAP = 100_000;
 const DISCOVER_TABS = [
   { id: "movers", label: "🔥 Movers" },
   { id: "new", label: "⚡ New" },
+  { id: "top", label: "🏆 Top Scored" },
   { id: "live", label: "🟢 Live" },
+  { id: "offers", label: "🛒 Has Offers" },
   { id: "all", label: "All" },
   { id: "ai", label: "AI" },
   { id: "health", label: "Health" },
@@ -97,14 +102,29 @@ function matchesAi(project: Project) {
   );
 }
 
+function hasOffers(project: Project): boolean {
+  return Array.isArray(project.store_items) && project.store_items.length > 0;
+}
+
+function hasSubscription(project: Project): boolean {
+  return Array.isArray(project.store_items) && project.store_items.some((i: any) => i.type === "subscription");
+}
+
+function offerCount(project: Project): number {
+  return Array.isArray(project.store_items) ? project.store_items.length : 0;
+}
+
 function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
   switch (tab) {
     case "all":
     case "movers":
     case "new":
+    case "top":
       return true;
     case "live":
       return (project.status || "live") === "live";
+    case "offers":
+      return hasOffers(project);
     case "health":
       return getCategory(project) === "Health";
     case "food":
@@ -382,6 +402,17 @@ export default function DiscoverPage() {
     };
   }, [projects, marketByProject]);
 
+  function projectReadinessScore(p: Project): number {
+    let s = 0;
+    if (p.description && p.description.length > 20) s += 20;
+    if (p.token_utility && p.token_utility.length > 10) s += 20;
+    if (p.promo_copy && p.promo_copy.length > 10) s += 20;
+    if (hasOffers(p)) s += 20;
+    if (hasSubscription(p)) s += 10;
+    if ((marketByProject[p.id]?.volume_24h || 0) > 0) s += 10;
+    return s;
+  }
+
   const sortedProjects = useMemo(() => {
     let list = projects.filter((p) => tabIncludesProject(p, activeTab));
 
@@ -394,6 +425,10 @@ export default function DiscoverPage() {
       list = [...list].sort(
         (a, b) =>
           new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+    } else if (activeTab === "top") {
+      list = [...list].sort(
+        (a, b) => projectReadinessScore(b) - projectReadinessScore(a)
       );
     } else {
       list = [...list].sort(
@@ -633,11 +668,60 @@ export default function DiscoverPage() {
                       {project.title || project.name || "Untitled Project"}
                     </h3>
 
-                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-500">
+                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-500">
                       {project.description || "No description yet."}
                     </p>
 
-                    <div className="mt-6 flex items-center justify-between gap-3 border-t border-zinc-900 pt-4">
+                    {/* Readiness score bar */}
+                    {(() => {
+                      const rs = projectReadinessScore(project);
+                      const rsColor = rs >= 75 ? "bg-emerald-400" : rs >= 50 ? "bg-amber-400" : "bg-zinc-600";
+                      const rsText = rs >= 75 ? "text-emerald-400" : rs >= 50 ? "text-amber-400" : "text-zinc-600";
+                      return (
+                        <div className="mt-3">
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
+                              Readiness
+                            </span>
+                            <span className={`font-mono text-[10px] font-bold ${rsText}`}>
+                              {rs}/100
+                            </span>
+                          </div>
+                          <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${rsColor}`}
+                              style={{ width: `${rs}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Badges row: offers, subscription, utility */}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {hasOffers(project) && (
+                        <span className="rounded-full border border-sky-400/20 bg-sky-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-sky-400">
+                          {offerCount(project)} offer{offerCount(project) > 1 ? "s" : ""}
+                        </span>
+                      )}
+                      {hasSubscription(project) && (
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
+                          Subscription
+                        </span>
+                      )}
+                      {project.token_utility && (
+                        <span className="rounded-full border border-purple-400/20 bg-purple-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-purple-400">
+                          Utility
+                        </span>
+                      )}
+                      {project.promo_copy && (
+                        <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-400">
+                          Promo
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-900 pt-4">
                       <span className="text-xs text-zinc-600">Open workspace →</span>
 
                       <span
