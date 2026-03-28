@@ -158,8 +158,11 @@ export default function ChatPage() {
   }
 
   /* ── Send message ────────────────────────────────── */
-  async function send() {
-    if (!input.trim() || loading) return;
+  const sendRef = useRef<(override?: string) => void>(() => {});
+
+  async function send(overrideMessage?: string) {
+    const msg = overrideMessage ?? input;
+    if (!msg.trim() || loading) return;
 
     if (limitReached) {
       setShowLimitModal(true);
@@ -171,17 +174,17 @@ export default function ChatPage() {
 
     // Auto-create conversation on first message
     if (!convo) {
-      convo = { id: makeId(), title: titleFromMessage(input), messages: [], createdAt: Date.now() };
+      convo = { id: makeId(), title: titleFromMessage(msg), messages: [], createdAt: Date.now() };
       convos = [convo, ...convos];
       setActiveId(convo.id);
     }
 
     // Title from first user message
     if (convo.messages.length === 0) {
-      convo = { ...convo, title: titleFromMessage(input) };
+      convo = { ...convo, title: titleFromMessage(msg) };
     }
 
-    const userMsg: Message = { role: "user", content: input };
+    const userMsg: Message = { role: "user", content: msg };
     const assistantMsg: Message = { role: "assistant", content: "" };
     convo = { ...convo, messages: [...convo.messages, userMsg, assistantMsg] };
     convos = convos.map((c) => (c.id === convo!.id ? convo! : c));
@@ -197,7 +200,7 @@ export default function ChatPage() {
       const res = await fetch(`${API}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, project_id: currentProject?.id ?? null, stream: true }),
+        body: JSON.stringify({ message: msg, project_id: currentProject?.id ?? null, stream: true }),
       });
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -254,13 +257,38 @@ export default function ChatPage() {
     }
   }
 
-  const suggestions = [
-    "Growth Plan",
-    "Token Utility",
-    "Launch Strategy",
-    "Monetization",
-    "Marketing Ideas",
+  sendRef.current = send;
+
+  const suggestions: { label: string; prompt: string }[] = [
+    {
+      label: "Growth Plan",
+      prompt: "Create a detailed growth strategy for my project. Include user acquisition channels, community building tactics, key milestones for the first 90 days, and metrics to track progress.",
+    },
+    {
+      label: "Token Utility",
+      prompt: "Design a token utility framework for my project. Cover core use cases, holder benefits, staking or governance mechanics, and how the token drives long-term value within the ecosystem.",
+    },
+    {
+      label: "Launch Strategy",
+      prompt: "Build a step-by-step launch plan for my project. Include pre-launch hype tactics, launch day execution, post-launch momentum strategies, and a timeline with key deliverables.",
+    },
+    {
+      label: "Monetization",
+      prompt: "Outline a monetization strategy for my project. Include revenue streams, pricing models, fee structures, and how to balance free and premium features for sustainable growth.",
+    },
+    {
+      label: "Marketing Ideas",
+      prompt: "Generate creative marketing ideas for my project. Include social media campaigns, influencer strategies, community engagement tactics, and low-budget high-impact approaches.",
+    },
   ];
+
+  function sendPrompt(prompt: string) {
+    setInput(prompt);
+    // Use a microtask so state updates before send() reads input
+    setTimeout(() => {
+      sendRef.current(prompt);
+    }, 0);
+  }
 
   /* ── Render ──────────────────────────────────────── */
   return (
@@ -504,11 +532,11 @@ export default function ChatPage() {
                 <div className="dc-suggestions">
                   {suggestions.map((s) => (
                     <button
-                      key={s}
+                      key={s.label}
                       className="dc-sug-btn"
-                      onClick={() => { setInput(s); textareaRef.current?.focus(); }}
+                      onClick={() => sendPrompt(s.prompt)}
                     >
-                      {s}
+                      {s.label}
                     </button>
                   ))}
                 </div>
