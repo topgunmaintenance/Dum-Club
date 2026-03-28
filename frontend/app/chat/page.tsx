@@ -287,6 +287,9 @@ export default function ChatPage() {
         .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
+        .dc-sol-balance{display:flex;align-items:center;gap:6px;background:#0a0a1a;border:1px solid #1a1a3a;border-radius:20px;padding:5px 12px;white-space:nowrap}
+        .dc-sol-icon{font-size:13px;color:#9945FF}
+        .dc-sol-amount{font-size:11px;font-weight:600;color:#c4b5fd}
 
         /* ── Messages ────────────────────────────── */
         .dc-messages{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
@@ -427,8 +430,14 @@ export default function ChatPage() {
               </div>
               <span className="dc-project-tag">No project selected</span>
             </div>
-            <div className={`dc-badge${limitReached ? " warn" : ""}`}>
-              {limitReached ? "0 messages left" : `${remaining} left`}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="dc-sol-balance">
+                <span className="dc-sol-icon">◎</span>
+                <span className="dc-sol-amount">1.42 SOL</span>
+              </div>
+              <div className={`dc-badge${limitReached ? " warn" : ""}`}>
+                {limitReached ? "0 messages left" : `${remaining} left`}
+              </div>
             </div>
           </div>
 
