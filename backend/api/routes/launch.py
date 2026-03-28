@@ -172,11 +172,8 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
         return None
 
     if not user_res.data or not user_res.data[0].get("wallet_address"):
-        raise HTTPException(
-            status_code=422,
-            detail="User profile not ready — no wallet is linked to this account yet. "
-                   "Connect a Solana wallet and try again.",
-        )
+        # No wallet yet — return None; callers that need a profile UUID will handle this
+        return None
 
     wallet = user_res.data[0]["wallet_address"]
 
@@ -378,6 +375,8 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
     }
     if resolved_owner:
         project_payload["owner_id"] = resolved_owner
+    if req.owner_id and not _UUID_RE.match(req.owner_id):
+        project_payload["privy_id"] = req.owner_id
 
     create_res = supabase.table("projects").insert(project_payload).execute()
     if not create_res.data:

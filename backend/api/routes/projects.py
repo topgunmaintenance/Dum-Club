@@ -16,11 +16,11 @@ _UUID_RE = re.compile(
 def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
     """Resolve any owner identity to a profiles.id UUID (FK target for projects.owner_id).
 
-    - None / empty  → None (no owner stored)
+    - None / empty  → None
     - Valid UUID    → returned as-is (assumed to already be a profiles.id)
     - Privy DID     → users.wallet_address → profiles.id (auto-create profile if needed)
-
-    Raises HTTPException(422) if the Privy account has no wallet linked yet.
+                      If the Privy account has no wallet yet, returns None instead of
+                      raising — callers that need a resolved UUID should check the result.
     """
     if not owner_id:
         return None
@@ -41,11 +41,8 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
         return None
 
     if not user_res.data or not user_res.data[0].get("wallet_address"):
-        raise HTTPException(
-            status_code=422,
-            detail="User profile not ready — no wallet is linked to this account yet. "
-                   "Connect a Solana wallet and try again.",
-        )
+        # User exists but has no wallet yet — not an error, caller gets None
+        return None
 
     wallet = user_res.data[0]["wallet_address"]
 
@@ -149,7 +146,10 @@ async def create_project(
     token_symbol = validate_token_symbol(body.token_symbol)
 
     # Resolve any non-UUID owner identity (e.g. Privy DID) to the users-table UUID.
+    # Returns None when wallet not yet linked — project is stored with owner_id=NULL
+    # and privy_id set so backfill-owner can claim it when wallet appears.
     owner_uuid = _resolve_owner_uuid(supabase, user_id)
+    privy_id_value = user_id if user_id and not _UUID_RE.match(user_id) else None
 
     symbol_res = (
         supabase.table("projects")
@@ -166,6 +166,7 @@ async def create_project(
 
     project_insert = {
         "owner_id": owner_uuid,
+        "privy_id": privy_id_value,
         "wallet_address": body.wallet_address,
         "name": body.name.strip(),
         "title": title,
@@ -544,12 +545,14 @@ async def list_projects(owner_id: Optional[str] = Query(default=None)):
     query = supabase.table("projects").select("*").eq("is_deleted", False).order("created_at", desc=True)
 
     if owner_id:
-        try:
-            resolved = _resolve_owner_uuid(supabase, owner_id)
-        except HTTPException:
-            return []
+        resolved = _resolve_owner_uuid(supabase, owner_id)
+        is_privy_did = owner_id and not _UUID_RE.match(owner_id)
         if resolved:
-            query = query.eq("owner_id", resolved)
+            # Wallet linked: match by owner_id OR privy_id (catches both old and new rows)
+            query = query.or_(f"owner_id.eq.{resolved},privy_id.eq.{owner_id}") if is_privy_did else query.eq("owner_id", resolved)
+        elif is_privy_did:
+            # No wallet yet: fall back to privy_id column
+            query = query.eq("privy_id", owner_id)
         else:
             return []
 
@@ -570,13 +573,12 @@ async def backfill_owner(owner_id: str = Query(...)):
     """
     supabase = get_client()
 
-    try:
-        resolved = _resolve_owner_uuid(supabase, owner_id)
-    except HTTPException:
-        raise
+    resolved = _resolve_owner_uuid(supabase, owner_id)
 
     if not resolved:
-        raise HTTPException(status_code=422, detail="Could not resolve owner to a profile UUID")
+        # No wallet linked yet — nothing to backfill by wallet, but privy_id rows
+        # are already queryable via list_projects; this is a no-op, not an error.
+        return {"updated": 0, "message": "No wallet linked yet — projects tracked by privy_id"}
 
     # Find the wallet address for this profile so we can match orphaned rows
     profile_res = (
@@ -587,21 +589,21 @@ async def backfill_owner(owner_id: str = Query(...)):
         .execute()
     )
     if not profile_res.data:
-        raise HTTPException(status_code=422, detail="Profile not found after resolution")
+        return {"updated": 0, "message": "Profile not found after resolution"}
 
     wallet = profile_res.data[0]["wallet_address"]
 
-    # Find orphaned projects (wallet matches, owner_id not yet set)
-    orphan_res = (
-        supabase.table("projects")
-        .select("id")
-        .eq("wallet_address", wallet)
-        .is_("owner_id", "null")
-        .execute()
-    )
+    # Claim projects where wallet_address matches but owner_id is still NULL.
+    # Also claim projects where privy_id matches and owner_id is NULL.
+    is_privy_did = owner_id and not _UUID_RE.match(owner_id)
+    orphan_filter = supabase.table("projects").select("id").is_("owner_id", "null")
+    if is_privy_did:
+        orphan_res = orphan_filter.or_(f"wallet_address.eq.{wallet},privy_id.eq.{owner_id}").execute()
+    else:
+        orphan_res = orphan_filter.eq("wallet_address", wallet).execute()
 
     if not orphan_res.data:
-        return {"updated": 0, "message": "No orphaned projects found for this wallet"}
+        return {"updated": 0, "message": "No orphaned projects found"}
 
     orphan_ids = [row["id"] for row in orphan_res.data]
 
