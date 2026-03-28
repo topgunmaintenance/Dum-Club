@@ -79,6 +79,7 @@ export default function ChatPage() {
   const [usedCount, setUsedCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatMode, setChatMode] = useState<"general" | "project">("general");
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -291,6 +292,12 @@ export default function ChatPage() {
         .dc-sol-icon{font-size:13px;color:#9945FF}
         .dc-sol-amount{font-size:11px;font-weight:600;color:#c4b5fd}
 
+        /* ── Mode toggle ─────────────────────────── */
+        .dc-mode-bar{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid #0e0e0e;flex-shrink:0}
+        .dc-mode-btn{background:none;border:1px solid transparent;color:#3f3f46;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit;letter-spacing:-0.01em}
+        .dc-mode-btn:hover{color:#71717a}
+        .dc-mode-btn.active{background:#111;border-color:#1a3a1a;color:#4ade80}
+
         /* ── Messages ────────────────────────────── */
         .dc-messages{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
         .dc-msg-list{max-width:760px;margin:0 auto;padding:24px 20px 16px;display:flex;flex-direction:column;gap:4px}
@@ -316,10 +323,13 @@ export default function ChatPage() {
         .dc-gap{height:10px}
         .dc-cursor{display:inline-block;width:2px;height:15px;background:#4ade80;margin-left:2px;animation:dc-blink 0.8s infinite;vertical-align:middle}
         @keyframes dc-blink{0%,100%{opacity:1}50%{opacity:0}}
-        .dc-thinking{display:flex;gap:5px;align-items:center;padding:4px 0}
-        .dc-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;opacity:0.4;animation:dc-pulse 1.2s infinite}
+        .dc-thinking{display:flex;gap:8px;align-items:center;padding:6px 0}
+        .dc-thinking-label{font-size:12px;color:#3f3f46;font-weight:500;letter-spacing:0.01em}
+        .dc-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;opacity:0.3;animation:dc-pulse 1.4s ease-in-out infinite}
         .dc-dot:nth-child(2){animation-delay:0.2s}.dc-dot:nth-child(3){animation-delay:0.4s}
-        @keyframes dc-pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+        @keyframes dc-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+        .dc-msg-content .dc-streaming{animation:dc-textReveal 0.3s ease}
+        @keyframes dc-textReveal{from{opacity:0.6}to{opacity:1}}
 
         /* ── Empty state ─────────────────────────── */
         .dc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 80px}
@@ -441,6 +451,22 @@ export default function ChatPage() {
             </div>
           </div>
 
+          {/* Mode toggle */}
+          <div className="dc-mode-bar">
+            <button
+              className={`dc-mode-btn${chatMode === "general" ? " active" : ""}`}
+              onClick={() => setChatMode("general")}
+            >
+              General Chat
+            </button>
+            <button
+              className={`dc-mode-btn${chatMode === "project" ? " active" : ""}`}
+              onClick={() => setChatMode("project")}
+            >
+              Project Mode
+            </button>
+          </div>
+
           {/* Messages area */}
           <div className="dc-messages">
             {messages.length === 0 ? (
@@ -477,9 +503,10 @@ export default function ChatPage() {
                         {m.role === "assistant" ? (
                           <>
                             {m.content ? (
-                              <span dangerouslySetInnerHTML={{ __html: formatMessage(m.content) }} />
+                              <span className={loading && i === messages.length - 1 ? "dc-streaming" : ""} dangerouslySetInnerHTML={{ __html: formatMessage(m.content) }} />
                             ) : (
                               <div className="dc-thinking">
+                                <span className="dc-thinking-label">Thinking</span>
                                 <div className="dc-dot" />
                                 <div className="dc-dot" />
                                 <div className="dc-dot" />
