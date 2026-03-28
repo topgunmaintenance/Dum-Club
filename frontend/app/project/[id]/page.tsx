@@ -444,6 +444,8 @@ export default function ProjectPage() {
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
+  const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
+  const [storePickerFor, setStorePickerFor] = useState<string | null>(null);
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -966,15 +968,24 @@ export default function ProjectPage() {
   type BuilderActionDef = {
     key: string;
     label: string;
-    field: string | null; // null = preview-only (roast)
-    prompt: (p: Project) => string;
+    field: string | null;
+    group: "project" | "store";
+    needsItem?: boolean;
+    prompt: (p: Project, items?: StoreItem[], target?: StoreItem | null) => string;
   };
 
+  const storeCtx = (items: StoreItem[]) =>
+    items.length
+      ? `\n\nExisting store items:\n${items.map((i) => `- ${i.name} (${i.type}, ${i.price}): ${i.description}`).join("\n")}`
+      : "\n\nNo store items yet.";
+
   const builderActions: BuilderActionDef[] = [
+    // ── Project Copy ──
     {
       key: "headline",
       label: "Improve Headline",
       field: "title",
+      group: "project",
       prompt: (p) =>
         `You are a startup branding expert. Improve this project headline to be more compelling, memorable, and clear.\n\nCurrent headline: "${p.title || p.name || "Untitled"}"\nProject description: "${p.description || "N/A"}"\nCategory: ${p.template_type || "General"}\nToken: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved headline text, nothing else. Keep it under 60 characters.`,
     },
@@ -982,6 +993,7 @@ export default function ProjectPage() {
       key: "description",
       label: "Improve Description",
       field: "description",
+      group: "project",
       prompt: (p) =>
         `You are a startup copywriter. Improve this project description to be more engaging, clear, and professional.\n\nCurrent description: "${p.description || "N/A"}"\nProject title: "${p.title || p.name || "Untitled"}"\nCategory: ${p.template_type || "General"}\nToken utility: "${p.token_utility || "N/A"}"\n\nReturn ONLY the improved description text, nothing else. Keep it under 300 characters.`,
     },
@@ -989,6 +1001,7 @@ export default function ProjectPage() {
       key: "token_utility",
       label: "Improve Token Utility",
       field: "token_utility",
+      group: "project",
       prompt: (p) =>
         `You are a tokenomics expert. Improve this token utility description to be clearer, more compelling, and specific about the value proposition.\n\nCurrent token utility: "${p.token_utility || "N/A"}"\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken symbol: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved token utility text, nothing else. Keep it under 250 characters.`,
     },
@@ -996,6 +1009,7 @@ export default function ProjectPage() {
       key: "promo",
       label: "Create Promo Copy",
       field: null,
+      group: "project",
       prompt: (p) =>
         `You are a crypto marketing copywriter. Create short, punchy promotional copy for this project that could be used on social media or a landing page.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nReturn 2-3 lines of promotional copy. Be bold and engaging. No hashtags.`,
     },
@@ -1003,13 +1017,63 @@ export default function ProjectPage() {
       key: "roast",
       label: "Roast My Project 🔥",
       field: null,
+      group: "project",
       prompt: (p) =>
         `You are a brutally honest startup critic known for sharp, useful roasts. Roast this project — be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be funny but not abusive.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
     },
+    // ── Store Intelligence ──
+    {
+      key: "store_ideas",
+      label: "Generate Product Ideas",
+      field: null,
+      group: "store",
+      prompt: (p, items) =>
+        `You are a product strategist for crypto/web3 projects. Generate 2-3 product or service ideas for this project that the owner could sell.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}${storeCtx(items || [])}\n\nReturn ONLY a valid JSON array of objects with these fields: name, description, price (string like "0.5 SOL"), type (one of: physical, digital, service, subscription). For subscription type, also include a "benefits" array of 2-3 short strings.\n\nExample: [{"name":"...", "description":"...", "price":"0.5 SOL", "type":"digital"}]\n\nReturn ONLY the JSON array, no markdown, no explanation.`,
+    },
+    {
+      key: "store_improve_desc",
+      label: "Improve Product Description",
+      field: null,
+      group: "store",
+      needsItem: true,
+      prompt: (p, _items, target) =>
+        `You are a product copywriter. Improve this product description to be more compelling, clear, and conversion-focused.\n\nProject: "${p.title || p.name || "Untitled"}"\nProduct name: "${target?.name || "N/A"}"\nCurrent description: "${target?.description || "N/A"}"\nProduct type: ${target?.type || "N/A"}\nPrice: ${target?.price || "N/A"}\n\nReturn ONLY the improved description text, nothing else. Keep it under 200 characters.`,
+    },
+    {
+      key: "store_pricing",
+      label: "Suggest Pricing",
+      field: null,
+      group: "store",
+      needsItem: true,
+      prompt: (p, items, target) =>
+        `You are a pricing strategist for crypto/web3 projects. Suggest an optimal price for this product.\n\nProject: "${p.title || p.name || "Untitled"}"\nProduct: "${target?.name || "N/A"}"\nDescription: "${target?.description || "N/A"}"\nType: ${target?.type || "N/A"}\nCurrent price: ${target?.price || "N/A"}${storeCtx(items || [])}\n\nReturn ONLY the suggested price as a short string (e.g. "0.25 SOL" or "1.5 SOL/month"). Nothing else.`,
+    },
+    {
+      key: "store_subscription",
+      label: "Create Subscription Offer",
+      field: null,
+      group: "store",
+      prompt: (p, items) =>
+        `You are a subscription product designer for crypto/web3 projects. Create a subscription offer for this project.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeCtx(items || [])}\n\nReturn ONLY a valid JSON object with these fields: name, description, price (string like "1 SOL/month"), type (must be "subscription"), benefits (array of 3-4 short benefit strings).\n\nExample: {"name":"...", "description":"...", "price":"1 SOL/month", "type":"subscription", "benefits":["...", "..."]}\n\nReturn ONLY the JSON object, no markdown, no explanation.`,
+    },
   ];
 
-  async function runBuilderAction(action: BuilderActionDef) {
+  function initiateBuilderAction(action: BuilderActionDef) {
+    if (action.needsItem && storeItems.length > 0) {
+      setStorePickerFor(action.key);
+      return;
+    }
+    if (action.needsItem && storeItems.length === 0) {
+      showBuilderToast("Add a store item first");
+      return;
+    }
+    runBuilderAction(action, null);
+  }
+
+  async function runBuilderAction(action: BuilderActionDef, targetItem: StoreItem | null) {
     if (!project) return;
+    setStorePickerFor(null);
+    setStoreTargetItem(targetItem);
     setBuilderAction(action.key);
     setBuilderField(action.field);
     setBuilderLoading(true);
@@ -1020,7 +1084,7 @@ export default function ProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: action.prompt(project),
+          message: action.prompt(project, storeItems, targetItem),
           project_id: id,
           stream: false,
         }),
@@ -1035,6 +1099,10 @@ export default function ProjectPage() {
           ? project.description || ""
           : action.field === "token_utility"
           ? project.token_utility || ""
+          : targetItem && action.key === "store_improve_desc"
+          ? targetItem.description || ""
+          : targetItem && action.key === "store_pricing"
+          ? targetItem.price || ""
           : "";
       setBuilderResult({ current: currentVal, suggested });
     } catch (err) {
@@ -1066,12 +1134,85 @@ export default function ProjectPage() {
         console.error("Failed to persist promo copy:", err);
       }
       showBuilderToast("Promo copy saved — ready to share");
-      setBuilderAction(null);
-      setBuilderResult(null);
-      setBuilderField(null);
+      dismissBuilder();
       return;
     }
 
+    // Store: Generate Product Ideas → parse JSON array, add items
+    if (builderAction === "store_ideas") {
+      try {
+        const cleaned = builderResult.suggested.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+        const newItems: StoreItem[] = (Array.isArray(parsed) ? parsed : [parsed]).map((item: any) => ({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name: item.name || "Untitled",
+          description: item.description || "",
+          price: item.price || "Free",
+          type: (["physical", "digital", "service", "subscription"].includes(item.type) ? item.type : "digital") as StoreItemType,
+          benefits: Array.isArray(item.benefits) ? item.benefits : [],
+        }));
+        const nextItems = [...storeItems, ...newItems];
+        setStoreItems(nextItems);
+        persistStoreItems(nextItems);
+        showBuilderToast(`${newItems.length} offer${newItems.length > 1 ? "s" : ""} added to your store`);
+      } catch {
+        showBuilderToast("Could not parse product ideas — try regenerating");
+        return;
+      }
+      dismissBuilder();
+      return;
+    }
+
+    // Store: Create Subscription Offer → parse JSON object, add item
+    if (builderAction === "store_subscription") {
+      try {
+        const cleaned = builderResult.suggested.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        const item = JSON.parse(cleaned);
+        const newItem: StoreItem = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name: item.name || "Subscription",
+          description: item.description || "",
+          price: item.price || "Free",
+          type: "subscription",
+          benefits: Array.isArray(item.benefits) ? item.benefits : [],
+        };
+        const nextItems = [...storeItems, newItem];
+        setStoreItems(nextItems);
+        persistStoreItems(nextItems);
+        showBuilderToast("Subscription offer added");
+      } catch {
+        showBuilderToast("Could not parse subscription — try regenerating");
+        return;
+      }
+      dismissBuilder();
+      return;
+    }
+
+    // Store: Improve Product Description → update target item
+    if (builderAction === "store_improve_desc" && storeTargetItem) {
+      const nextItems = storeItems.map((i) =>
+        i.id === storeTargetItem.id ? { ...i, description: builderResult.suggested } : i
+      );
+      setStoreItems(nextItems);
+      persistStoreItems(nextItems);
+      showBuilderToast("Product description updated");
+      dismissBuilder();
+      return;
+    }
+
+    // Store: Suggest Pricing → update target item price
+    if (builderAction === "store_pricing" && storeTargetItem) {
+      const nextItems = storeItems.map((i) =>
+        i.id === storeTargetItem.id ? { ...i, price: builderResult.suggested } : i
+      );
+      setStoreItems(nextItems);
+      persistStoreItems(nextItems);
+      showBuilderToast("Pricing updated");
+      dismissBuilder();
+      return;
+    }
+
+    // Standard project field update
     if (!builderField) return;
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}`, {
@@ -1088,9 +1229,7 @@ export default function ProjectPage() {
     } catch (err) {
       console.error("Failed to apply:", err);
     }
-    setBuilderAction(null);
-    setBuilderResult(null);
-    setBuilderField(null);
+    dismissBuilder();
   }
 
   function dismissBuilder() {
@@ -1098,6 +1237,8 @@ export default function ProjectPage() {
     setBuilderResult(null);
     setBuilderField(null);
     setBuilderLoading(false);
+    setStoreTargetItem(null);
+    setStorePickerFor(null);
   }
 
   async function copyToClipboard(text: string, label: string) {
@@ -2244,17 +2385,66 @@ return (
           </p>
 
           {/* Action buttons */}
-          {!builderAction && (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {builderActions.map((a) => (
-                <button
-                  key={a.key}
-                  onClick={() => runBuilderAction(a)}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                >
-                  {a.label}
-                </button>
-              ))}
+          {!builderAction && !storePickerFor && (
+            <div className="mt-5 space-y-4">
+              <div>
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
+                <div className="flex flex-wrap gap-2">
+                  {builderActions.filter((a) => a.group === "project").map((a) => (
+                    <button
+                      key={a.key}
+                      onClick={() => initiateBuilderAction(a)}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
+                <div className="flex flex-wrap gap-2">
+                  {builderActions.filter((a) => a.group === "store").map((a) => (
+                    <button
+                      key={a.key}
+                      onClick={() => initiateBuilderAction(a)}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Item picker for store actions */}
+          {storePickerFor && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                Select an item
+              </div>
+              <div className="space-y-2">
+                {storeItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      const action = builderActions.find((a) => a.key === storePickerFor);
+                      if (action) runBuilderAction(action, item);
+                    }}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-left transition hover:border-emerald-400/30"
+                  >
+                    <div className="text-sm font-medium text-white">{item.name}</div>
+                    <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setStorePickerFor(null)}
+                className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Cancel
+              </button>
             </div>
           )}
 
@@ -2287,7 +2477,13 @@ return (
               <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                    {builderAction === "roast" ? "Roast" : builderAction === "promo" ? "Promo Copy" : "Suggested"}
+                    {builderAction === "roast" ? "Roast"
+                      : builderAction === "promo" ? "Promo Copy"
+                      : builderAction === "store_ideas" ? "Product Ideas"
+                      : builderAction === "store_subscription" ? "Subscription Offer"
+                      : builderAction === "store_improve_desc" ? "Improved Description"
+                      : builderAction === "store_pricing" ? "Suggested Price"
+                      : "Suggested"}
                   </span>
                   {(builderAction === "promo" || builderAction === "roast") && (
                     <button
@@ -2316,7 +2512,7 @@ return (
                   <button
                     onClick={() => {
                       const action = builderActions.find((a) => a.key === builderAction);
-                      if (action) runBuilderAction(action);
+                      if (action) runBuilderAction(action, storeTargetItem);
                     }}
                     className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
                   >
