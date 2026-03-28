@@ -109,9 +109,9 @@ export default function BuildPage() {
             <button
               type="button"
               className="mt-6 w-full rounded-xl bg-emerald-400 px-6 py-3 font-mono text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300"
-              onClick={() => setShowLimitModal(false)}
+              onClick={() => { setShowLimitModal(false); router.push("/upgrade"); }}
             >
-              Upgrade
+              See upgrade options
             </button>
             <button
               type="button"
