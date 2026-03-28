@@ -427,6 +427,7 @@ export default function ProjectPage() {
   const [builderField, setBuilderField] = useState<string | null>(null);
   const [builderToast, setBuilderToast] = useState<string | null>(null);
   const [promoCopy, setPromoCopy] = useState<string>("");
+  const [pitchMode, setPitchMode] = useState(false);
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -1079,6 +1080,18 @@ export default function ProjectPage() {
     }
   }
 
+  function togglePitchMode() {
+    const next = !pitchMode;
+    setPitchMode(next);
+    const url = new URL(window.location.href);
+    if (next) {
+      url.searchParams.set("view", "pitch");
+    } else {
+      url.searchParams.delete("view");
+    }
+    window.history.replaceState({}, "", url.toString());
+  }
+
   async function submitReview(e?: React.FormEvent) {
     e?.preventDefault();
 
@@ -1280,9 +1293,11 @@ export default function ProjectPage() {
   }, [project?.owner_id, project?.id]);
 
   // Gate banner to launch arrivals only (?launched=1 from /build redirect).
+  // Also detect ?view=pitch for shareable presentation mode.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("launched") === "1") setShowLiveBanner(true);
+    if (params.get("view") === "pitch") setPitchMode(true);
   }, []);
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
@@ -1554,6 +1569,187 @@ return (
     }`}
   >
     <div className="mx-auto max-w-7xl">
+
+      {/* ── Presentation / Pitch Mode ──────────────── */}
+      {pitchMode && (
+        <div className="relative">
+          {/* Exit button (owner sees toggle, public sees back) */}
+          <div className="mb-8 flex items-center justify-between">
+            <Link
+              href="/discover"
+              className="inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
+            >
+              ← Back to Feed
+            </Link>
+            {isOwner && (
+              <button
+                onClick={togglePitchMode}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-medium uppercase tracking-[0.15em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              >
+                Exit Pitch View
+              </button>
+            )}
+          </div>
+
+          {/* Pitch hero */}
+          <div
+            className="mb-10 rounded-3xl border border-zinc-800 bg-black p-8 sm:p-12 text-center"
+            style={{
+              borderTop: `3px solid ${accent}`,
+              boxShadow: `0 0 80px rgba(0,255,178,0.06)`,
+            }}
+          >
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-1.5">
+                <span className="text-2xl">{emoji}</span>
+                <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  {category} · DUM Club
+                </span>
+              </div>
+
+              <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
+                {projectName}
+              </h1>
+
+              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+                {parsedAiOutput?.description || project?.description || ""}
+              </p>
+
+              {/* Token badge */}
+              {displaySymbol && displaySymbol !== "TOKEN" && (
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
+                  <span className="text-sm font-bold text-emerald-400">${displaySymbol}</span>
+                  {hasMarketSnapshot && (
+                    <span className={`text-sm font-medium ${heroPriceUp ? "text-emerald-400" : "text-red-400"}`}>
+                      {heroPriceUp ? "+" : ""}{heroPriceChangePct.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Pitch content grid */}
+          <div className="mb-10 grid gap-6 md:grid-cols-2">
+            {/* Token Utility */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                Token Utility
+              </div>
+              <p className="text-sm leading-relaxed text-zinc-300">
+                {heroUtility}
+              </p>
+              {utilityBullets.length > 0 && (
+                <ul className="mt-4 space-y-2">
+                  {utilityBullets.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
+                      <span className="mt-0.5 text-emerald-400">✦</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Key Metrics */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                Key Metrics
+              </div>
+              <div className="space-y-3">
+                {hasMarketSnapshot && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-500">Price</span>
+                      <span className="font-mono font-semibold text-white">${heroPrice.toFixed(6)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-500">Market Cap</span>
+                      <span className="font-mono font-semibold text-white">
+                        ${formatNumber(Number(market?.market_cap || 0), 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-500">24h Volume</span>
+                      <span className="font-mono font-semibold text-white">
+                        ${formatNumber(Number(market?.volume_24h || 0), 2)}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-500">Supply</span>
+                  <span className="font-mono font-semibold text-white">{supplyDisplay}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-500">Status</span>
+                  <span className="font-mono text-xs font-semibold uppercase text-emerald-400">
+                    {displayStatusLabel}
+                  </span>
+                </div>
+                {feedbackEntries.length > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500">Rating</span>
+                    <span className="font-mono font-semibold text-white">
+                      {averageRating.toFixed(1)} / 5
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Promo copy section */}
+          {promoCopy && (
+            <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                About This Project
+              </div>
+              <p className="mx-auto max-w-xl text-base leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                {promoCopy}
+              </p>
+            </div>
+          )}
+
+          {/* CTA */}
+          <div className="mb-10 text-center">
+            <div className="inline-flex flex-wrap items-center justify-center gap-3">
+              {canShowMarketUi && (
+                <button
+                  onClick={() => { setPitchMode(false); setTimeout(scrollToBuyPanel, 100); }}
+                  className="rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                >
+                  Buy ${displaySymbol}
+                </button>
+              )}
+              <button
+                onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
+                className="rounded-xl border border-zinc-700 px-8 py-3 text-sm font-medium text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              >
+                Ask AI
+              </button>
+              {isOwner && (
+                <button
+                  onClick={() => copyToClipboard(`${window.location.origin}/project/${id}?view=pitch`, "pitch link")}
+                  className="rounded-xl border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Copy Pitch Link
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Toast (shared with builder) */}
+          {builderToast && (
+            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-zinc-950 px-5 py-2.5 shadow-lg">
+              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Normal project view ────────────────────── */}
+      {!pitchMode && (<>
       {isOwner && showLiveBanner && (
         <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4 animate-fade-slide-down">
           <div className="flex items-center gap-3">
@@ -1910,8 +2106,16 @@ return (
       {/* ── AI Project Builder (Owner Only) ────────── */}
       {isOwner && (
         <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-emerald-400/60">
-            Owner Tools
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
+              Owner Tools
+            </span>
+            <button
+              onClick={togglePitchMode}
+              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+            >
+              Presentation Mode
+            </button>
           </div>
           <h2 className="text-xl font-bold text-white tracking-tight">
             DUM AI Project Builder
@@ -3247,6 +3451,7 @@ return (
         </div>
       </div>
     )}
+    </>)}
   </div>
   );
 }
