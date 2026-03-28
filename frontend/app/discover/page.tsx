@@ -450,6 +450,19 @@ export default function DiscoverPage() {
     );
   }, [marketByProject]);
 
+  // Global ranking by readiness score
+  const rankedProjects = useMemo(() => {
+    return [...projects]
+      .map((p) => ({ ...p, readiness: projectReadinessScore(p) }))
+      .sort((a, b) => b.readiness - a.readiness);
+  }, [projects, marketByProject]);
+
+  const rankMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    rankedProjects.forEach((p, i) => { map[p.id] = i + 1; });
+    return map;
+  }, [rankedProjects]);
+
   return (
     <main className="min-h-screen bg-black text-white">
       {/* Live activity strip */}
@@ -550,6 +563,48 @@ export default function DiscoverPage() {
           </div>
         </div>
 
+        {/* Leaderboard strip */}
+        {rankedProjects.length > 0 && (
+          <div className="mb-8 rounded-2xl border border-zinc-900 bg-zinc-950 p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                Top Projects
+              </span>
+              <Link
+                href="/leaderboard"
+                className="text-[11px] font-medium text-zinc-500 transition hover:text-emerald-400"
+              >
+                View Leaderboard →
+              </Link>
+            </div>
+            <div className="space-y-1">
+              {rankedProjects.slice(0, 5).map((p, i) => {
+                const rsColor = p.readiness >= 75 ? "text-emerald-400" : p.readiness >= 50 ? "text-amber-400" : "text-zinc-500";
+                return (
+                  <Link key={p.id} href={`/project/${p.id}`}>
+                    <div className="flex items-center gap-4 rounded-xl px-3 py-2.5 transition hover:bg-zinc-900">
+                      <span className="w-6 text-center font-mono text-sm font-bold text-zinc-600">
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 truncate text-sm font-medium text-white">
+                        {p.title || p.name || "Untitled"}
+                      </span>
+                      {p.token_symbol && (
+                        <span className="font-mono text-[10px] uppercase text-zinc-600">
+                          ${getTicker(p)}
+                        </span>
+                      )}
+                      <span className={`font-mono text-sm font-bold ${rsColor}`}>
+                        {p.readiness}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="border border-zinc-900 bg-zinc-950 p-8 text-zinc-400">
             Loading public projects...
@@ -586,7 +641,25 @@ export default function DiscoverPage() {
                     }`}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
-                      <div style={{ fontSize: "36px" }}>{emoji}</div>
+                      <div className="flex items-start gap-2.5">
+                        <div style={{ fontSize: "36px" }}>{emoji}</div>
+                        {(() => {
+                          const rank = rankMap[project.id];
+                          if (!rank) return null;
+                          const label = rank <= 3 ? `#${rank} Top Scored` : rank <= 10 ? "Top 10" : rank <= 50 ? "Top 50" : null;
+                          if (!label) return null;
+                          const cls = rank <= 3
+                            ? "border-emerald-400/30 text-emerald-400"
+                            : rank <= 10
+                            ? "border-amber-400/30 text-amber-400"
+                            : "border-zinc-700 text-zinc-500";
+                          return (
+                            <span className={`mt-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${cls}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
+                      </div>
 
                       <div className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
