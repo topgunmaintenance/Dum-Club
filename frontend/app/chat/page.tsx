@@ -349,13 +349,13 @@ export default function ChatPage() {
         @media(max-width:640px){
           .dc-topbar{flex-direction:column;align-items:stretch;padding:10px 14px;gap:0;overflow:visible}
           .dc-topbar-left{gap:8px}
-          .dc-topbar-right{gap:6px;padding-top:8px;margin-top:8px;border-top:1px solid #111;flex-wrap:wrap;padding-right:2px}
+          .dc-topbar-right{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding-top:8px;margin-top:8px;border-top:1px solid #111}
           .dc-menu-btn{width:30px;height:30px;min-width:30px;border-radius:8px;font-size:13px}
           .dc-context{flex-wrap:nowrap;gap:6px;min-width:0;flex:1}
           .dc-context-dot{width:6px;height:6px;flex-shrink:0}
           .dc-context-label{font-size:12px;margin-left:0;width:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
           .dc-context-sub{display:none}
-          .dc-project-tag{margin-left:0;font-size:9px;padding:3px 8px;border-radius:10px;max-width:45%;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
+          .dc-project-tag{margin-left:0;font-size:9px;padding:3px 8px;border-radius:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
           .dc-sol-balance{padding:3px 8px;border-radius:14px;flex-shrink:0}
           .dc-sol-icon{font-size:10px}
           .dc-sol-amount{font-size:9px}
