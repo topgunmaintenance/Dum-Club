@@ -19,8 +19,9 @@ supabase==2.5.1
 asyncpg==0.29.0
 pgvector==0.3.6
 
-# ── LLM (Ollama client) ───────────────────────────────────────
+# ── LLM ───────────────────────────────────────────────────────
 ollama==0.2.1
+anthropic==0.52.0
 
 # ── Speech (Piper wrapper — binary called via subprocess) ─────
 soundfile==0.12.1

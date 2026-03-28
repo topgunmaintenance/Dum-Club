@@ -4,7 +4,10 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
-import anthropic
+try:
+    import anthropic
+except ImportError:
+    anthropic = None  # type: ignore[assignment]
 import ollama
 import os
 import requests
@@ -23,8 +26,8 @@ _CHAT_ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 _CHAT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 # Anthropic SDK client (primary provider)
-_anthropic_client: Optional[anthropic.Anthropic] = None
-if _CHAT_ANTHROPIC_API_KEY:
+_anthropic_client = None
+if anthropic and _CHAT_ANTHROPIC_API_KEY:
     _anthropic_client = anthropic.Anthropic(api_key=_CHAT_ANTHROPIC_API_KEY)
 
 
