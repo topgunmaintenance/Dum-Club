@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -80,8 +81,10 @@ export default function ChatPage() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatMode, setChatMode] = useState<"general" | "project">("general");
+  const [currentProject, setCurrentProject] = useState<{ id: string; name: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const searchParams = useSearchParams();
 
   const remaining = Math.max(0, FREE_MESSAGE_LIMIT - usedCount);
   const limitReached = remaining <= 0;
@@ -100,6 +103,25 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  /* ── Load project from URL params ───────────────── */
+  useEffect(() => {
+    const projectId = searchParams.get("project_id");
+    if (!projectId) {
+      setCurrentProject(null);
+      setChatMode("general");
+      return;
+    }
+    setChatMode("project");
+    fetch(`${API}/api/projects/${projectId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setCurrentProject({ id: data.id, name: data.name || data.title || "Untitled Project" });
+        }
+      })
+      .catch(() => setCurrentProject(null));
+  }, [searchParams]);
 
   /* ── Auto-resize textarea ────────────────────────── */
   useEffect(() => {
@@ -175,7 +197,7 @@ export default function ChatPage() {
       const res = await fetch(`${API}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, project_id: null, stream: true }),
+        body: JSON.stringify({ message: input, project_id: currentProject?.id ?? null, stream: true }),
       });
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
@@ -285,7 +307,8 @@ export default function ChatPage() {
         .dc-context-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
         .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em;width:100%;margin-left:16px}
         .dc-context-sub{font-size:11px;color:#71717a;margin-left:16px}
-        .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap}
+        .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap;transition:all 0.15s}
+        .dc-project-tag.active{color:#4ade80;border-color:#1a3a1a;background:#0a1a0a}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
         .dc-sol-balance{display:flex;align-items:center;gap:6px;background:#0a0a1a;border:1px solid #1a1a3a;border-radius:20px;padding:5px 12px;white-space:nowrap}
@@ -438,7 +461,9 @@ export default function ChatPage() {
                 <span className="dc-context-label">DUM AI — Powered by Claude</span>
                 <span className="dc-context-sub">Built to help you launch and grow your project</span>
               </div>
-              <span className="dc-project-tag">No project selected</span>
+              <span className={`dc-project-tag${currentProject ? " active" : ""}`}>
+                {currentProject ? `Working on: ${currentProject.name}` : "No project selected"}
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div className="dc-sol-balance">
