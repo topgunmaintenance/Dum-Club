@@ -44,6 +44,8 @@ type Project = {
   ai_free_question_limit?: number | null;
   holder_ai_unlimited?: boolean | null;
   utility_value?: string | null;
+  promo_copy?: string | null;
+  store_items?: any[] | null;
   ai_output?:
     | {
         title?: string;
@@ -499,6 +501,10 @@ export default function ProjectPage() {
         token_required: Boolean(projectData?.token_mint_address),
         token_mint_address: projectData?.token_mint_address || null,
       }));
+
+      // Hydrate promo copy and store items from persisted data
+      if (projectData?.promo_copy) setPromoCopy(projectData.promo_copy);
+      if (Array.isArray(projectData?.store_items)) setStoreItems(projectData.store_items);
 
       try {
         const profileRes = await fetch(`${API_BASE}/api/projects/${id}/service-profile`, {
@@ -1047,9 +1053,18 @@ export default function ProjectPage() {
   async function applyBuilderResult() {
     if (!builderResult || !project) return;
 
-    // Promo copy — store in frontend state only
+    // Promo copy — persist via PATCH
     if (builderAction === "promo") {
       setPromoCopy(builderResult.suggested);
+      try {
+        await fetch(`${API_BASE}/api/projects/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ promo_copy: builderResult.suggested }),
+        });
+      } catch (err) {
+        console.error("Failed to persist promo copy:", err);
+      }
       showBuilderToast("Promo copy saved — ready to share");
       setBuilderAction(null);
       setBuilderResult(null);
@@ -1107,6 +1122,14 @@ export default function ProjectPage() {
   }
 
   /* ── Store / Offers helpers ─────────────────────── */
+  function persistStoreItems(items: StoreItem[]) {
+    fetch(`${API_BASE}/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store_items: items }),
+    }).catch((err) => console.error("Failed to persist store items:", err));
+  }
+
   function openStoreForm(item?: StoreItem) {
     setStoreEditing(
       item || { id: "", name: "", description: "", price: "", type: "digital", benefits: [] }
@@ -1116,19 +1139,23 @@ export default function ProjectPage() {
 
   function saveStoreItem() {
     if (!storeEditing || !storeEditing.name.trim()) return;
-    setStoreItems((prev) => {
-      if (storeEditing.id) {
-        return prev.map((i) => (i.id === storeEditing.id ? storeEditing : i));
-      }
-      return [...prev, { ...storeEditing, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }];
-    });
+    let nextItems: StoreItem[];
+    if (storeEditing.id) {
+      nextItems = storeItems.map((i) => (i.id === storeEditing.id ? storeEditing : i));
+    } else {
+      nextItems = [...storeItems, { ...storeEditing, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }];
+    }
+    setStoreItems(nextItems);
+    persistStoreItems(nextItems);
     setStoreFormOpen(false);
     setStoreEditing(null);
     showBuilderToast("Offer saved");
   }
 
   function removeStoreItem(itemId: string) {
-    setStoreItems((prev) => prev.filter((i) => i.id !== itemId));
+    const nextItems = storeItems.filter((i) => i.id !== itemId);
+    setStoreItems(nextItems);
+    persistStoreItems(nextItems);
     showBuilderToast("Offer removed");
   }
 

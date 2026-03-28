@@ -689,6 +689,8 @@ class ProjectUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     token_utility: Optional[str] = None
+    promo_copy: Optional[str] = None
+    store_items: Optional[list] = None
 
 
 @router.patch("/{project_id}")
