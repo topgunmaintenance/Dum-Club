@@ -279,10 +279,11 @@ export default function ChatPage() {
         .dc-menu-btn{display:none;background:none;border:1px solid #1a1a1a;color:#71717a;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.12s;font-family:inherit}
         .dc-menu-btn:hover{border-color:#333;color:#a1a1aa}
         @media(max-width:1023px){.dc-menu-btn{display:flex}}
-        .dc-context{display:flex;align-items:center;gap:8px}
+        .dc-context{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
         .dc-context-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
-        .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em}
-        .dc-context-sub{font-size:11px;color:#3f3f46;margin-left:2px}
+        .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em;width:100%;margin-left:16px}
+        .dc-context-sub{font-size:11px;color:#71717a;margin-left:16px}
+        .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
 
@@ -420,9 +421,10 @@ export default function ChatPage() {
               <button className="dc-menu-btn" onClick={() => setSidebarOpen(true)}>&#9776;</button>
               <div className="dc-context">
                 <span className="dc-context-dot" />
-                <span className="dc-context-label">General Chat</span>
-                <span className="dc-context-sub">&#x2022; DUM AI</span>
+                <span className="dc-context-label">DUM AI — Powered by Claude</span>
+                <span className="dc-context-sub">Built to help you launch and grow your project</span>
               </div>
+              <span className="dc-project-tag">No project selected</span>
             </div>
             <div className={`dc-badge${limitReached ? " warn" : ""}`}>
               {limitReached ? "0 messages left" : `${remaining} left`}
