@@ -232,10 +232,11 @@ export default function ChatPage() {
   }
 
   const suggestions = [
-    "How do I build a Solana program?",
-    "What is a crypto vault?",
-    "How does SOL staking work?",
-    "What makes DUM Club different?",
+    "Growth Plan",
+    "Token Utility",
+    "Launch Strategy",
+    "Monetization",
+    "Marketing Ideas",
   ];
 
   /* ── Render ──────────────────────────────────────── */
