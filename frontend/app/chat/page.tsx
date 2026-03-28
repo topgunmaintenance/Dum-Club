@@ -328,26 +328,40 @@ export default function ChatPage() {
         /* ── Main area ───────────────────────────── */
         .dc-main{flex:1;display:flex;flex-direction:column;min-width:0}
         .dc-topbar{padding:14px 20px;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+        .dc-topbar-left{display:flex;align-items:center;gap:12px}
+        .dc-topbar-right{display:flex;align-items:center;gap:10px}
+        @media(max-width:640px){
+          .dc-topbar{flex-wrap:wrap;padding:10px 14px;gap:6px}
+          .dc-topbar-left{gap:8px;flex:1;min-width:0}
+          .dc-topbar-right{width:100%;gap:6px;padding-top:4px;border-top:1px solid #111}
+        }
         .dc-menu-btn{display:none;background:none;border:1px solid #1a1a1a;color:#71717a;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.12s;font-family:inherit}
         .dc-menu-btn:hover{border-color:#333;color:#a1a1aa}
         @media(max-width:1023px){.dc-menu-btn{display:flex}}
+        @media(max-width:640px){.dc-menu-btn{width:32px;height:32px;border-radius:8px;font-size:14px}}
         .dc-context{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
         .dc-context-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
         .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em;width:100%;margin-left:16px}
+        @media(max-width:640px){.dc-context-label{font-size:12px;margin-left:0}}
         .dc-context-sub{font-size:11px;color:#71717a;margin-left:16px}
+        @media(max-width:640px){.dc-context-sub{display:none}}
         .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap;transition:all 0.15s}
         .dc-project-tag.active{color:#4ade80;border-color:#1a3a1a;background:#0a1a0a}
+        @media(max-width:640px){.dc-project-tag{margin-left:0;font-size:9px;padding:2px 8px}}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
+        @media(max-width:640px){.dc-badge{padding:4px 10px;font-size:10px}}
         .dc-sol-balance{display:flex;align-items:center;gap:6px;background:#0a0a1a;border:1px solid #1a1a3a;border-radius:20px;padding:5px 12px;white-space:nowrap}
         .dc-sol-icon{font-size:13px;color:#9945FF}
         .dc-sol-amount{font-size:11px;font-weight:600;color:#c4b5fd}
+        @media(max-width:640px){.dc-sol-balance{padding:4px 10px}.dc-sol-icon{font-size:11px}.dc-sol-amount{font-size:10px}}
 
         /* ── Mode toggle ─────────────────────────── */
         .dc-mode-bar{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid #0e0e0e;flex-shrink:0}
         .dc-mode-btn{background:none;border:1px solid transparent;color:#3f3f46;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit;letter-spacing:-0.01em}
         .dc-mode-btn:hover{color:#71717a}
         .dc-mode-btn.active{background:#111;border-color:#1a3a1a;color:#4ade80}
+        @media(max-width:640px){.dc-mode-bar{padding:6px 14px;gap:2px}.dc-mode-btn{padding:5px 10px;font-size:11px}}
 
         /* ── Messages ────────────────────────────── */
         .dc-messages{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
@@ -381,16 +395,34 @@ export default function ChatPage() {
         @keyframes dc-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
         .dc-msg-content .dc-streaming{animation:dc-textReveal 0.3s ease}
         @keyframes dc-textReveal{from{opacity:0.6}to{opacity:1}}
+        @media(max-width:640px){
+          .dc-msg-list{padding:16px 14px 10px}
+          .dc-msg{gap:10px;padding:14px 0}
+          .dc-msg-avatar{width:28px;height:28px;font-size:11px;border-radius:8px}
+          .dc-msg-content{font-size:13.5px;line-height:1.65}
+          .dc-code-block{padding:10px 12px;font-size:11.5px;border-radius:8px}
+        }
 
         /* ── Empty state ─────────────────────────── */
         .dc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 80px}
         .dc-empty-icon{width:56px;height:56px;background:#0a0a0a;border:1px solid #1a3a1a;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:24px}
         .dc-empty-title{font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:10px}
         .dc-empty-sub{font-size:14px;color:#52525b;text-align:center;max-width:420px;line-height:1.7;margin-bottom:32px}
+        .dc-empty-sub-full{display:inline}
+        .dc-empty-sub-short{display:none}
         .dc-suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:440px;width:100%}
-        @media(max-width:500px){.dc-suggestions{grid-template-columns:1fr}}
+        @media(max-width:500px){.dc-suggestions{grid-template-columns:1fr 1fr;gap:6px}}
         .dc-sug-btn{background:#0a0a0a;border:1px solid #141414;color:#71717a;padding:12px 14px;border-radius:12px;font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;line-height:1.4;font-family:inherit}
         .dc-sug-btn:hover{border-color:#1a3a1a;color:#4ade80;background:#0a1208}
+        @media(max-width:640px){
+          .dc-empty{padding:24px 16px 40px}
+          .dc-empty-icon{width:44px;height:44px;font-size:20px;margin-bottom:16px;border-radius:12px}
+          .dc-empty-title{font-size:20px;margin-bottom:6px}
+          .dc-empty-sub{font-size:13px;line-height:1.6;margin-bottom:20px;max-width:320px}
+          .dc-empty-sub-full{display:none}
+          .dc-empty-sub-short{display:inline}
+          .dc-sug-btn{padding:8px 12px;font-size:12px;border-radius:10px;text-align:center;line-height:1.3}
+        }
 
         /* ── Input ───────────────────────────────── */
         .dc-input-wrap{flex-shrink:0;padding:0 20px 20px}
@@ -404,12 +436,21 @@ export default function ChatPage() {
         .dc-send:hover:not(:disabled){background:#22c55e;transform:scale(1.04)}
         .dc-send:disabled{opacity:0.3;cursor:not-allowed}
         .dc-input-hint{font-size:11px;color:#27272a;text-align:center;margin-top:8px}
+        @media(max-width:640px){
+          .dc-input-wrap{padding:0 10px 12px}
+          .dc-input-box{border-radius:14px;padding:8px 8px 8px 14px;gap:8px}
+          .dc-textarea{font-size:14px}
+          .dc-send{width:34px;height:34px;border-radius:10px;font-size:15px}
+          .dc-input-hint{font-size:10px;margin-top:6px}
+        }
 
         /* ── Limit inline ────────────────────────── */
         .dc-limit-inline{max-width:760px;margin:0 auto 12px;border-radius:14px;border:1px solid #1a3a1a;background:#080f08;padding:20px 24px;text-align:center;animation:dc-fadeUp 0.25s ease}
         .dc-limit-inline-title{font-size:14px;font-weight:700;color:#fff}
         .dc-limit-inline-sub{font-size:12px;color:#52525b;margin-top:4px}
         .dc-limit-inline-btns{display:flex;gap:8px;justify-content:center;margin-top:14px}
+
+        @media(max-width:640px){.dc-limit-inline{padding:14px 16px;border-radius:12px}.dc-limit-inline-title{font-size:13px}.dc-limit-inline-sub{font-size:11px}}
 
         /* ── Limit modal ─────────────────────────── */
         .dc-modal-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);padding:16px}
@@ -482,18 +523,18 @@ export default function ChatPage() {
         <main className="dc-main">
           {/* Top bar */}
           <div className="dc-topbar">
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="dc-topbar-left">
               <button className="dc-menu-btn" onClick={() => setSidebarOpen(true)}>&#9776;</button>
               <div className="dc-context">
                 <span className="dc-context-dot" />
                 <span className="dc-context-label">DUM AI — Powered by Claude</span>
                 <span className="dc-context-sub">Built to help you launch and grow your project</span>
               </div>
+            </div>
+            <div className="dc-topbar-right">
               <span className={`dc-project-tag${currentProject ? " active" : ""}`}>
                 {currentProject ? `Working on: ${currentProject.name}` : "No project selected"}
               </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div className="dc-sol-balance">
                 <span className="dc-sol-icon">◎</span>
                 <span className="dc-sol-amount">1.42 SOL</span>
@@ -527,7 +568,8 @@ export default function ChatPage() {
                 <div className="dc-empty-icon">&#x26A1;</div>
                 <div className="dc-empty-title">What are you building?</div>
                 <div className="dc-empty-sub">
-                  DUM AI is your project co-pilot &mdash; powered by Claude. It understands tokenomics, launch strategy, growth, and marketing so you can move faster and build smarter.
+                  <span className="dc-empty-sub-full">DUM AI is your project co-pilot &mdash; powered by Claude. It understands tokenomics, launch strategy, growth, and marketing so you can move faster and build smarter.</span>
+                  <span className="dc-empty-sub-short">DUM AI helps with launch strategy, growth, monetization, and tokenomics.</span>
                 </div>
                 <div className="dc-suggestions">
                   {suggestions.map((s) => (
