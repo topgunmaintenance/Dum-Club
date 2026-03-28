@@ -4,6 +4,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
+import anthropic
 import ollama
 import os
 import requests
@@ -14,12 +15,17 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 
-_client = ollama.Client(host=OLLAMA_HOST, timeout=30)
+_ollama_client = ollama.Client(host=OLLAMA_HOST, timeout=30)
 
 _CHAT_OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
 _CHAT_OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 _CHAT_ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 _CHAT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+
+# Anthropic SDK client (primary provider)
+_anthropic_client: Optional[anthropic.Anthropic] = None
+if _CHAT_ANTHROPIC_API_KEY:
+    _anthropic_client = anthropic.Anthropic(api_key=_CHAT_ANTHROPIC_API_KEY)
 
 
 class ChatRequest(BaseModel):
@@ -243,25 +249,61 @@ def save_chat_message(
     client.table("project_chat_messages").insert(payload).execute()
 
 
+def _split_system(messages: list) -> Tuple[str, list]:
+    """Extract the system prompt from message list (Anthropic requires it separate)."""
+    system = next((m["content"] for m in messages if m.get("role") == "system"), "")
+    non_system = [m for m in messages if m.get("role") != "system"]
+    return system, non_system
+
+
+def _chat_with_anthropic(messages: list) -> Optional[str]:
+    """Non-streaming Claude call via the Anthropic SDK."""
+    if not _anthropic_client:
+        return None
+    try:
+        system, non_system = _split_system(messages)
+        resp = _anthropic_client.messages.create(
+            model=_CHAT_ANTHROPIC_MODEL,
+            max_tokens=2048,
+            system=system,
+            messages=non_system,
+        )
+        text = next(
+            (b.text for b in resp.content if b.type == "text"), None
+        )
+        if text:
+            print(f"[chat] LLM: anthropic ({_CHAT_ANTHROPIC_MODEL})")
+            return text
+    except Exception as e:
+        print(f"[chat] Anthropic error: {e}")
+    return None
+
+
+def _stream_with_anthropic(messages: list):
+    """Streaming Claude call via the Anthropic SDK. Yields SSE-formatted tokens."""
+    if not _anthropic_client:
+        return None
+    system, non_system = _split_system(messages)
+    with _anthropic_client.messages.stream(
+        model=_CHAT_ANTHROPIC_MODEL,
+        max_tokens=2048,
+        system=system,
+        messages=non_system,
+    ) as stream:
+        for text in stream.text_stream:
+            yield text
+
+
 def _chat_with_fallback(messages: list) -> str:
-    """Call Ollama for non-streaming chat; fall back to OpenAI then Anthropic on failure."""
+    """Primary: Claude API. Fallback 1: OpenAI. Fallback 2: Ollama."""
     import httpx
 
-    # Primary: Ollama
-    try:
-        resp = _client.chat(model=OLLAMA_MODEL, messages=messages)
-        print("[chat] LLM: ollama")
-        return resp["message"]["content"]
-    except Exception:
-        print("[chat] Ollama unavailable — trying hosted LLM fallback")
+    # Primary: Anthropic Claude
+    result = _chat_with_anthropic(messages)
+    if result:
+        return result
 
-    # Pre-extract system prompt for Anthropic (requires separate field, not a message role)
-    system_content = next(
-        (m["content"] for m in messages if m.get("role") == "system"), ""
-    )
-    non_system = [m for m in messages if m.get("role") != "system"]
-
-    # Fallback 1: OpenAI (accepts system role inline — pass full messages list)
+    # Fallback 1: OpenAI
     if _CHAT_OPENAI_API_KEY:
         try:
             r = httpx.post(
@@ -277,39 +319,18 @@ def _chat_with_fallback(messages: list) -> str:
                 if choices else ""
             )
             if text:
-                print(f"[chat] hosted LLM: openai ({_CHAT_OPENAI_MODEL})")
+                print(f"[chat] LLM: openai ({_CHAT_OPENAI_MODEL})")
                 return text
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[chat] OpenAI error: {e}")
 
-    # Fallback 2: Anthropic (system prompt separated; first message must be user role)
-    if _CHAT_ANTHROPIC_API_KEY:
-        try:
-            r = httpx.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": _CHAT_ANTHROPIC_API_KEY,
-                    "anthropic-version": "2023-06-01",
-                },
-                json={
-                    "model": _CHAT_ANTHROPIC_MODEL,
-                    "max_tokens": 1024,
-                    "system": system_content,
-                    "messages": non_system,
-                },
-                timeout=30,
-            )
-            r.raise_for_status()
-            content_blocks = r.json().get("content", [])
-            text = next(
-                (b["text"] for b in content_blocks if b.get("type") == "text"),
-                None,
-            )
-            if text:
-                print(f"[chat] hosted LLM: anthropic ({_CHAT_ANTHROPIC_MODEL})")
-                return text
-        except Exception:
-            pass
+    # Fallback 2: Ollama (local)
+    try:
+        resp = _ollama_client.chat(model=OLLAMA_MODEL, messages=messages)
+        print("[chat] LLM: ollama")
+        return resp["message"]["content"]
+    except Exception as e:
+        print(f"[chat] Ollama error: {e}")
 
     raise HTTPException(status_code=503, detail="AI service temporarily unavailable.")
 
@@ -342,10 +363,25 @@ async def chat(req: ChatRequest):
 
     if req.stream:
         def event_stream():
-            stream = _client.chat(model=OLLAMA_MODEL, messages=messages, stream=True)
-            for chunk in stream:
-                token = chunk["message"]["content"]
-                yield f"data: {token}\n\n"
+            streamed = False
+            # Primary: Claude streaming
+            if _anthropic_client:
+                try:
+                    for token in _stream_with_anthropic(messages):
+                        streamed = True
+                        yield f"data: {token}\n\n"
+                except Exception as e:
+                    print(f"[chat/stream] Anthropic error: {e}")
+            # Fallback: Ollama streaming
+            if not streamed:
+                try:
+                    stream = _ollama_client.chat(model=OLLAMA_MODEL, messages=messages, stream=True)
+                    for chunk in stream:
+                        token = chunk["message"]["content"]
+                        yield f"data: {token}\n\n"
+                except Exception as e:
+                    print(f"[chat/stream] Ollama error: {e}")
+                    yield "data: Something went wrong.\n\n"
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
@@ -418,13 +454,28 @@ async def project_gated_chat(
 
     if req.stream:
         def event_stream():
-            stream = _client.chat(model=OLLAMA_MODEL, messages=messages, stream=True)
             collected = ""
-
-            for chunk in stream:
-                token = chunk["message"]["content"]
-                collected += token
-                yield f"data: {token}\n\n"
+            streamed = False
+            # Primary: Claude streaming
+            if _anthropic_client:
+                try:
+                    for token in _stream_with_anthropic(messages):
+                        streamed = True
+                        collected += token
+                        yield f"data: {token}\n\n"
+                except Exception as e:
+                    print(f"[chat/project-stream] Anthropic error: {e}")
+            # Fallback: Ollama streaming
+            if not streamed:
+                try:
+                    stream = _ollama_client.chat(model=OLLAMA_MODEL, messages=messages, stream=True)
+                    for chunk in stream:
+                        token = chunk["message"]["content"]
+                        collected += token
+                        yield f"data: {token}\n\n"
+                except Exception as e:
+                    print(f"[chat/project-stream] Ollama error: {e}")
+                    yield "data: Something went wrong.\n\n"
 
             save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
             save_chat_message(req.project_id, "assistant", collected, wallet_address, session_id)
