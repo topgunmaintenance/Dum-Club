@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "../../lib/auth/AuthContext";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -73,6 +75,10 @@ function formatMessage(text: string) {
 
 /* ── Component ─────────────────────────────────────── */
 export default function ChatPage() {
+  const { user } = useAuth();
+  const { wallets } = useSolanaWallets();
+  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -82,9 +88,28 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatMode, setChatMode] = useState<"general" | "project">("general");
   const [currentProject, setCurrentProject] = useState<{ id: string; name: string } | null>(null);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
+
+  /* ── Fetch SOL balance from same endpoint as dashboard ── */
+  useEffect(() => {
+    if (!walletAddress) {
+      setSolBalance(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${API}/api/sol-balance/${walletAddress}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setSolBalance(data.sol ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setSolBalance(null);
+      });
+    return () => { cancelled = true; };
+  }, [walletAddress]);
 
   const remaining = Math.max(0, FREE_MESSAGE_LIMIT - usedCount);
   const limitReached = remaining <= 0;
@@ -541,10 +566,14 @@ export default function ChatPage() {
               <span className={`dc-project-tag${currentProject ? " active" : ""}`}>
                 {currentProject ? `Working on: ${currentProject.name}` : "No project selected"}
               </span>
-              <div className="dc-sol-balance">
-                <span className="dc-sol-icon">◎</span>
-                <span className="dc-sol-amount">1.42 SOL</span>
-              </div>
+              {walletAddress && (
+                <div className="dc-sol-balance">
+                  <span className="dc-sol-icon">◎</span>
+                  <span className="dc-sol-amount">
+                    {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : "—"}
+                  </span>
+                </div>
+              )}
               <div className={`dc-badge${limitReached ? " warn" : ""}`}>
                 {limitReached ? "0 messages left" : `${remaining} left`}
               </div>
