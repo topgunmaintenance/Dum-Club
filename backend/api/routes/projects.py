@@ -679,3 +679,56 @@ async def get_project(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project_res.data[0]
+
+
+# -----------------------------
+# Partial update project fields (owner only)
+# -----------------------------
+
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    token_utility: Optional[str] = None
+
+
+@router.patch("/{project_id}")
+async def update_project(
+    project_id: str,
+    body: ProjectUpdate,
+    x_owner_id: Optional[str] = Header(None),
+):
+    """Update allowed project fields. Owner only."""
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+
+    if x_owner_id:
+        resolved = _resolve_owner_uuid(supabase, x_owner_id)
+        if resolved != project.get("owner_id"):
+            raise HTTPException(status_code=403, detail="Not the project owner")
+
+    updates = {k: v for k, v in body.dict().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    supabase.table("projects").update(updates).eq("id", project_id).execute()
+
+    updated = (
+        supabase.table("projects")
+        .select("*")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+    return updated.data

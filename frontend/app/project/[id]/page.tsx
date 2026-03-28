@@ -419,6 +419,12 @@ export default function ProjectPage() {
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+
+  // AI Builder state
+  const [builderAction, setBuilderAction] = useState<string | null>(null);
+  const [builderLoading, setBuilderLoading] = useState(false);
+  const [builderResult, setBuilderResult] = useState<{ current: string; suggested: string } | null>(null);
+  const [builderField, setBuilderField] = useState<string | null>(null);
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -931,6 +937,117 @@ export default function ProjectPage() {
     } finally {
       setLoadingAsk(false);
     }
+  }
+
+  /* ── AI Builder actions ──────────────────────────── */
+  type BuilderActionDef = {
+    key: string;
+    label: string;
+    field: string | null; // null = preview-only (roast)
+    prompt: (p: Project) => string;
+  };
+
+  const builderActions: BuilderActionDef[] = [
+    {
+      key: "headline",
+      label: "Improve Headline",
+      field: "title",
+      prompt: (p) =>
+        `You are a startup branding expert. Improve this project headline to be more compelling, memorable, and clear.\n\nCurrent headline: "${p.title || p.name || "Untitled"}"\nProject description: "${p.description || "N/A"}"\nCategory: ${p.template_type || "General"}\nToken: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved headline text, nothing else. Keep it under 60 characters.`,
+    },
+    {
+      key: "description",
+      label: "Improve Description",
+      field: "description",
+      prompt: (p) =>
+        `You are a startup copywriter. Improve this project description to be more engaging, clear, and professional.\n\nCurrent description: "${p.description || "N/A"}"\nProject title: "${p.title || p.name || "Untitled"}"\nCategory: ${p.template_type || "General"}\nToken utility: "${p.token_utility || "N/A"}"\n\nReturn ONLY the improved description text, nothing else. Keep it under 300 characters.`,
+    },
+    {
+      key: "token_utility",
+      label: "Improve Token Utility",
+      field: "token_utility",
+      prompt: (p) =>
+        `You are a tokenomics expert. Improve this token utility description to be clearer, more compelling, and specific about the value proposition.\n\nCurrent token utility: "${p.token_utility || "N/A"}"\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken symbol: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved token utility text, nothing else. Keep it under 250 characters.`,
+    },
+    {
+      key: "promo",
+      label: "Create Promo Copy",
+      field: null,
+      prompt: (p) =>
+        `You are a crypto marketing copywriter. Create short, punchy promotional copy for this project that could be used on social media or a landing page.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nReturn 2-3 lines of promotional copy. Be bold and engaging. No hashtags.`,
+    },
+    {
+      key: "roast",
+      label: "Roast My Project 🔥",
+      field: null,
+      prompt: (p) =>
+        `You are a brutally honest startup critic known for sharp, useful roasts. Roast this project — be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be funny but not abusive.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
+    },
+  ];
+
+  async function runBuilderAction(action: BuilderActionDef) {
+    if (!project) return;
+    setBuilderAction(action.key);
+    setBuilderField(action.field);
+    setBuilderLoading(true);
+    setBuilderResult(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: action.prompt(project),
+          project_id: id,
+          stream: false,
+        }),
+      });
+      if (!res.ok) throw new Error("AI request failed");
+      const data = await res.json();
+      const suggested = (data.answer || "").trim();
+      const currentVal =
+        action.field === "title"
+          ? project.title || project.name || ""
+          : action.field === "description"
+          ? project.description || ""
+          : action.field === "token_utility"
+          ? project.token_utility || ""
+          : "";
+      setBuilderResult({ current: currentVal, suggested });
+    } catch (err) {
+      console.error(err);
+      setBuilderResult({ current: "", suggested: "Failed to generate suggestion. Try again." });
+    } finally {
+      setBuilderLoading(false);
+    }
+  }
+
+  async function applyBuilderResult() {
+    if (!builderResult || !builderField || !project) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [builderField]: builderResult.suggested }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProject(updated);
+        setProjectName(updated.name || updated.title || "Untitled Project");
+      }
+    } catch (err) {
+      console.error("Failed to apply:", err);
+    }
+    setBuilderAction(null);
+    setBuilderResult(null);
+    setBuilderField(null);
+  }
+
+  function dismissBuilder() {
+    setBuilderAction(null);
+    setBuilderResult(null);
+    setBuilderField(null);
+    setBuilderLoading(false);
   }
 
   async function submitReview(e?: React.FormEvent) {
@@ -1758,6 +1875,101 @@ return (
             Review & publication
           </span>
           <div className="mt-2 text-base text-white">{statusBanner}</div>
+        </div>
+      )}
+
+      {/* ── AI Project Builder (Owner Only) ────────── */}
+      {isOwner && (
+        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
+          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-emerald-400/60">
+            Owner Tools
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            DUM AI Project Builder
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Improve your project page and promo copy with AI
+          </p>
+
+          {/* Action buttons */}
+          {!builderAction && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {builderActions.map((a) => (
+                <button
+                  key={a.key}
+                  onClick={() => runBuilderAction(a)}
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Loading state */}
+          {builderLoading && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-sm text-zinc-400">
+                  DUM AI is analyzing your project...
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Preview panel */}
+          {builderResult && !builderLoading && (
+            <div className="mt-5 space-y-4">
+              {builderField && builderResult.current && (
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                    Current
+                  </div>
+                  <div className="text-sm leading-relaxed text-zinc-400">
+                    {builderResult.current}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                  {builderAction === "roast" ? "Roast" : builderAction === "promo" ? "Promo Copy" : "Suggested"}
+                </div>
+                <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                  {builderResult.suggested}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {builderField && builderAction !== "roast" && (
+                  <button
+                    onClick={applyBuilderResult}
+                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                  >
+                    Apply
+                  </button>
+                )}
+                {builderAction !== "roast" && (
+                  <button
+                    onClick={() => {
+                      const action = builderActions.find((a) => a.key === builderAction);
+                      if (action) runBuilderAction(action);
+                    }}
+                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                  >
+                    Regenerate
+                  </button>
+                )}
+                <button
+                  onClick={dismissBuilder}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  {builderAction === "roast" ? "Dismiss" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
