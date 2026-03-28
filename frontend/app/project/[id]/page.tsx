@@ -428,6 +428,20 @@ export default function ProjectPage() {
   const [builderToast, setBuilderToast] = useState<string | null>(null);
   const [promoCopy, setPromoCopy] = useState<string>("");
   const [pitchMode, setPitchMode] = useState(false);
+
+  // Store / Offers state
+  type StoreItemType = "physical" | "digital" | "service" | "subscription";
+  interface StoreItem {
+    id: string;
+    name: string;
+    description: string;
+    price: string;
+    type: StoreItemType;
+    benefits?: string[];
+  }
+  const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
+  const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
+  const [storeFormOpen, setStoreFormOpen] = useState(false);
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
   const [bannerCopied, setBannerCopied] = useState(false);
@@ -1092,6 +1106,39 @@ export default function ProjectPage() {
     window.history.replaceState({}, "", url.toString());
   }
 
+  /* ── Store / Offers helpers ─────────────────────── */
+  function openStoreForm(item?: StoreItem) {
+    setStoreEditing(
+      item || { id: "", name: "", description: "", price: "", type: "digital", benefits: [] }
+    );
+    setStoreFormOpen(true);
+  }
+
+  function saveStoreItem() {
+    if (!storeEditing || !storeEditing.name.trim()) return;
+    setStoreItems((prev) => {
+      if (storeEditing.id) {
+        return prev.map((i) => (i.id === storeEditing.id ? storeEditing : i));
+      }
+      return [...prev, { ...storeEditing, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }];
+    });
+    setStoreFormOpen(false);
+    setStoreEditing(null);
+    showBuilderToast("Offer saved");
+  }
+
+  function removeStoreItem(itemId: string) {
+    setStoreItems((prev) => prev.filter((i) => i.id !== itemId));
+    showBuilderToast("Offer removed");
+  }
+
+  const storeTypeBadge: Record<StoreItemType, { label: string; color: string }> = {
+    physical: { label: "Physical", color: "border-amber-400/30 text-amber-400" },
+    digital: { label: "Digital", color: "border-sky-400/30 text-sky-400" },
+    service: { label: "Service", color: "border-purple-400/30 text-purple-400" },
+    subscription: { label: "Subscription", color: "border-emerald-400/30 text-emerald-400" },
+  };
+
   async function submitReview(e?: React.FormEvent) {
     e?.preventDefault();
 
@@ -1711,6 +1758,51 @@ return (
             </div>
           )}
 
+          {/* Offers in pitch view */}
+          {storeItems.length > 0 && (
+            <div className="mb-10">
+              <div className="mb-5 text-center">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                  Offers
+                </span>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {storeItems.map((item) => {
+                  const badge = storeTypeBadge[item.type];
+                  return (
+                    <div key={item.id} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 flex flex-col">
+                      <div className="mb-3">
+                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-semibold text-white">{item.name}</h3>
+                      {item.description && (
+                        <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>
+                      )}
+                      {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
+                        <ul className="mt-3 space-y-1.5">
+                          {item.benefits.map((b, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
+                              <span className="mt-0.5 text-emerald-400">✦</span>
+                              <span>{b}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="mt-auto pt-4 flex items-center justify-between">
+                        <span className="font-mono text-lg font-bold text-white">{item.price || "Free"}</span>
+                        <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
+                          {item.type === "subscription" ? "Subscribe" : "Buy"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* CTA */}
           <div className="mb-10 text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">
@@ -2259,6 +2351,161 @@ return (
             <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
               <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Store / Offers ────────────────────────── */}
+      {(isOwner || storeItems.length > 0) && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+              Marketplace
+            </span>
+            {isOwner && !storeFormOpen && (
+              <button
+                onClick={() => openStoreForm()}
+                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              >
+                + Add Offer
+              </button>
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Offers</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {isOwner ? "Products, services, and subscriptions for your community" : "Available from this project"}
+          </p>
+
+          {/* Owner: add/edit form */}
+          {isOwner && storeFormOpen && storeEditing && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                {storeEditing.id ? "Edit Offer" : "New Offer"}
+              </div>
+              <input
+                type="text"
+                placeholder="Name"
+                value={storeEditing.name}
+                onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+              <textarea
+                placeholder="Description"
+                value={storeEditing.description}
+                onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+              />
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Price (e.g. 0.5 SOL)"
+                  value={storeEditing.price}
+                  onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
+                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+                <select
+                  value={storeEditing.type}
+                  onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
+                  className="rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+                >
+                  <option value="digital">Digital</option>
+                  <option value="physical">Physical</option>
+                  <option value="service">Service</option>
+                  <option value="subscription">Subscription</option>
+                </select>
+              </div>
+              {storeEditing.type === "subscription" && (
+                <textarea
+                  placeholder="Benefits (one per line)"
+                  value={(storeEditing.benefits || []).join("\n")}
+                  onChange={(e) =>
+                    setStoreEditing({
+                      ...storeEditing,
+                      benefits: e.target.value.split("\n").filter((l) => l.trim()),
+                    })
+                  }
+                  rows={3}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                />
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={saveStoreItem}
+                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+                >
+                  {storeEditing.id ? "Save Changes" : "Add Offer"}
+                </button>
+                <button
+                  onClick={() => { setStoreFormOpen(false); setStoreEditing(null); }}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Item cards */}
+          {storeItems.length > 0 ? (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {storeItems.map((item) => {
+                const badge = storeTypeBadge[item.type];
+                return (
+                  <div key={item.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                      {isOwner && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openStoreForm(item)}
+                            className="text-[11px] text-zinc-600 transition hover:text-zinc-300"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => removeStoreItem(item.id)}
+                            className="text-[11px] text-zinc-600 transition hover:text-red-400"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-base font-semibold text-white">{item.name}</h3>
+                    {item.description && (
+                      <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>
+                    )}
+                    {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
+                      <ul className="mt-3 space-y-1.5">
+                        {item.benefits.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
+                            <span className="mt-0.5 text-emerald-400">✦</span>
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-auto pt-4 flex items-center justify-between">
+                      <span className="font-mono text-lg font-bold text-white">{item.price || "Free"}</span>
+                      <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
+                        {item.type === "subscription" ? "Subscribe" : "Buy"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            !storeFormOpen && (
+              <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+                <p className="text-sm text-zinc-600">
+                  {isOwner ? "No offers yet — add your first product, service, or subscription" : "No offers available yet"}
+                </p>
+              </div>
+            )
           )}
         </div>
       )}
