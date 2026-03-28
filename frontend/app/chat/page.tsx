@@ -330,38 +330,44 @@ export default function ChatPage() {
         .dc-topbar{padding:14px 20px;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
         .dc-topbar-left{display:flex;align-items:center;gap:12px}
         .dc-topbar-right{display:flex;align-items:center;gap:10px}
-        @media(max-width:640px){
-          .dc-topbar{flex-wrap:wrap;padding:10px 14px;gap:6px}
-          .dc-topbar-left{gap:8px;flex:1;min-width:0}
-          .dc-topbar-right{width:100%;gap:6px;padding-top:4px;border-top:1px solid #111}
-        }
         .dc-menu-btn{display:none;background:none;border:1px solid #1a1a1a;color:#71717a;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.12s;font-family:inherit}
         .dc-menu-btn:hover{border-color:#333;color:#a1a1aa}
         @media(max-width:1023px){.dc-menu-btn{display:flex}}
-        @media(max-width:640px){.dc-menu-btn{width:32px;height:32px;border-radius:8px;font-size:14px}}
         .dc-context{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
         .dc-context-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
         .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em;width:100%;margin-left:16px}
-        @media(max-width:640px){.dc-context-label{font-size:12px;margin-left:0}}
         .dc-context-sub{font-size:11px;color:#71717a;margin-left:16px}
-        @media(max-width:640px){.dc-context-sub{display:none}}
         .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap;transition:all 0.15s}
         .dc-project-tag.active{color:#4ade80;border-color:#1a3a1a;background:#0a1a0a}
-        @media(max-width:640px){.dc-project-tag{margin-left:0;font-size:9px;padding:2px 8px}}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
-        @media(max-width:640px){.dc-badge{padding:4px 10px;font-size:10px}}
         .dc-sol-balance{display:flex;align-items:center;gap:6px;background:#0a0a1a;border:1px solid #1a1a3a;border-radius:20px;padding:5px 12px;white-space:nowrap}
         .dc-sol-icon{font-size:13px;color:#9945FF}
         .dc-sol-amount{font-size:11px;font-weight:600;color:#c4b5fd}
-        @media(max-width:640px){.dc-sol-balance{padding:4px 10px}.dc-sol-icon{font-size:11px}.dc-sol-amount{font-size:10px}}
+
+        /* ── Mobile header ───────────────────────── */
+        @media(max-width:640px){
+          .dc-topbar{flex-direction:column;align-items:stretch;padding:10px 12px;gap:0}
+          .dc-topbar-left{gap:8px}
+          .dc-topbar-right{gap:6px;padding-top:8px;margin-top:8px;border-top:1px solid #111;flex-wrap:wrap}
+          .dc-menu-btn{width:30px;height:30px;min-width:30px;border-radius:8px;font-size:13px}
+          .dc-context{flex-wrap:nowrap;gap:6px;min-width:0;flex:1}
+          .dc-context-dot{width:6px;height:6px;flex-shrink:0}
+          .dc-context-label{font-size:12px;margin-left:0;width:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .dc-context-sub{display:none}
+          .dc-project-tag{margin-left:0;font-size:9px;padding:3px 8px;border-radius:10px;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+          .dc-sol-balance{padding:3px 8px;border-radius:14px}
+          .dc-sol-icon{font-size:10px}
+          .dc-sol-amount{font-size:9px}
+          .dc-badge{padding:3px 8px;font-size:9px;border-radius:14px}
+        }
 
         /* ── Mode toggle ─────────────────────────── */
         .dc-mode-bar{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid #0e0e0e;flex-shrink:0}
         .dc-mode-btn{background:none;border:1px solid transparent;color:#3f3f46;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit;letter-spacing:-0.01em}
         .dc-mode-btn:hover{color:#71717a}
         .dc-mode-btn.active{background:#111;border-color:#1a3a1a;color:#4ade80}
-        @media(max-width:640px){.dc-mode-bar{padding:6px 14px;gap:2px}.dc-mode-btn{padding:5px 10px;font-size:11px}}
+        @media(max-width:640px){.dc-mode-bar{padding:5px 12px;gap:2px}.dc-mode-btn{padding:4px 10px;font-size:10px;border-radius:8px}}
 
         /* ── Messages ────────────────────────────── */
         .dc-messages{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
@@ -411,17 +417,17 @@ export default function ChatPage() {
         .dc-empty-sub-full{display:inline}
         .dc-empty-sub-short{display:none}
         .dc-suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:440px;width:100%}
-        @media(max-width:500px){.dc-suggestions{grid-template-columns:1fr 1fr;gap:6px}}
         .dc-sug-btn{background:#0a0a0a;border:1px solid #141414;color:#71717a;padding:12px 14px;border-radius:12px;font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;line-height:1.4;font-family:inherit}
         .dc-sug-btn:hover{border-color:#1a3a1a;color:#4ade80;background:#0a1208}
         @media(max-width:640px){
-          .dc-empty{padding:24px 16px 40px}
-          .dc-empty-icon{width:44px;height:44px;font-size:20px;margin-bottom:16px;border-radius:12px}
-          .dc-empty-title{font-size:20px;margin-bottom:6px}
-          .dc-empty-sub{font-size:13px;line-height:1.6;margin-bottom:20px;max-width:320px}
+          .dc-empty{padding:20px 16px 32px}
+          .dc-empty-icon{width:40px;height:40px;font-size:18px;margin-bottom:12px;border-radius:10px}
+          .dc-empty-title{font-size:18px;margin-bottom:4px}
+          .dc-empty-sub{font-size:12px;line-height:1.5;margin-bottom:16px;max-width:280px}
           .dc-empty-sub-full{display:none}
           .dc-empty-sub-short{display:inline}
-          .dc-sug-btn{padding:8px 12px;font-size:12px;border-radius:10px;text-align:center;line-height:1.3}
+          .dc-suggestions{grid-template-columns:1fr 1fr 1fr;gap:5px;max-width:360px}
+          .dc-sug-btn{padding:7px 6px;font-size:11px;border-radius:8px;text-align:center;line-height:1.2}
         }
 
         /* ── Input ───────────────────────────────── */
@@ -437,11 +443,11 @@ export default function ChatPage() {
         .dc-send:disabled{opacity:0.3;cursor:not-allowed}
         .dc-input-hint{font-size:11px;color:#27272a;text-align:center;margin-top:8px}
         @media(max-width:640px){
-          .dc-input-wrap{padding:0 10px 12px}
-          .dc-input-box{border-radius:14px;padding:8px 8px 8px 14px;gap:8px}
-          .dc-textarea{font-size:14px}
-          .dc-send{width:34px;height:34px;border-radius:10px;font-size:15px}
-          .dc-input-hint{font-size:10px;margin-top:6px}
+          .dc-input-wrap{padding:0 10px 10px}
+          .dc-input-box{border-radius:12px;padding:7px 7px 7px 12px;gap:6px}
+          .dc-textarea{font-size:14px;min-height:22px}
+          .dc-send{width:32px;height:32px;border-radius:9px;font-size:14px}
+          .dc-input-hint{font-size:10px;margin-top:4px}
         }
 
         /* ── Limit inline ────────────────────────── */
