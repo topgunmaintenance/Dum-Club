@@ -79,6 +79,7 @@ export default function ChatPage() {
   const [usedCount, setUsedCount] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatMode, setChatMode] = useState<"general" | "project">("general");
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -232,10 +233,11 @@ export default function ChatPage() {
   }
 
   const suggestions = [
-    "How do I build a Solana program?",
-    "What is a crypto vault?",
-    "How does SOL staking work?",
-    "What makes DUM Club different?",
+    "Growth Plan",
+    "Token Utility",
+    "Launch Strategy",
+    "Monetization",
+    "Marketing Ideas",
   ];
 
   /* ── Render ──────────────────────────────────────── */
@@ -279,12 +281,22 @@ export default function ChatPage() {
         .dc-menu-btn{display:none;background:none;border:1px solid #1a1a1a;color:#71717a;width:36px;height:36px;border-radius:10px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.12s;font-family:inherit}
         .dc-menu-btn:hover{border-color:#333;color:#a1a1aa}
         @media(max-width:1023px){.dc-menu-btn{display:flex}}
-        .dc-context{display:flex;align-items:center;gap:8px}
+        .dc-context{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
         .dc-context-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
-        .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em}
-        .dc-context-sub{font-size:11px;color:#3f3f46;margin-left:2px}
+        .dc-context-label{font-size:13px;font-weight:600;color:#e4e4e7;letter-spacing:-0.01em;width:100%;margin-left:16px}
+        .dc-context-sub{font-size:11px;color:#71717a;margin-left:16px}
+        .dc-project-tag{font-size:10px;color:#52525b;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:2px 10px;margin-left:8px;white-space:nowrap}
         .dc-badge{display:flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #1a3a1a;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#4ade80;white-space:nowrap;flex-shrink:0}
         .dc-badge.warn{color:#fbbf24;border-color:#3a2a0a;background:#1a1508}
+        .dc-sol-balance{display:flex;align-items:center;gap:6px;background:#0a0a1a;border:1px solid #1a1a3a;border-radius:20px;padding:5px 12px;white-space:nowrap}
+        .dc-sol-icon{font-size:13px;color:#9945FF}
+        .dc-sol-amount{font-size:11px;font-weight:600;color:#c4b5fd}
+
+        /* ── Mode toggle ─────────────────────────── */
+        .dc-mode-bar{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid #0e0e0e;flex-shrink:0}
+        .dc-mode-btn{background:none;border:1px solid transparent;color:#3f3f46;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit;letter-spacing:-0.01em}
+        .dc-mode-btn:hover{color:#71717a}
+        .dc-mode-btn.active{background:#111;border-color:#1a3a1a;color:#4ade80}
 
         /* ── Messages ────────────────────────────── */
         .dc-messages{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a1a1a transparent}
@@ -311,16 +323,19 @@ export default function ChatPage() {
         .dc-gap{height:10px}
         .dc-cursor{display:inline-block;width:2px;height:15px;background:#4ade80;margin-left:2px;animation:dc-blink 0.8s infinite;vertical-align:middle}
         @keyframes dc-blink{0%,100%{opacity:1}50%{opacity:0}}
-        .dc-thinking{display:flex;gap:5px;align-items:center;padding:4px 0}
-        .dc-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;opacity:0.4;animation:dc-pulse 1.2s infinite}
+        .dc-thinking{display:flex;gap:8px;align-items:center;padding:6px 0}
+        .dc-thinking-label{font-size:12px;color:#3f3f46;font-weight:500;letter-spacing:0.01em}
+        .dc-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;opacity:0.3;animation:dc-pulse 1.4s ease-in-out infinite}
         .dc-dot:nth-child(2){animation-delay:0.2s}.dc-dot:nth-child(3){animation-delay:0.4s}
-        @keyframes dc-pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+        @keyframes dc-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+        .dc-msg-content .dc-streaming{animation:dc-textReveal 0.3s ease}
+        @keyframes dc-textReveal{from{opacity:0.6}to{opacity:1}}
 
         /* ── Empty state ─────────────────────────── */
         .dc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 80px}
-        .dc-empty-icon{width:64px;height:64px;background:#0a0a0a;border:1px solid #1a3a1a;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px}
-        .dc-empty-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.02em;margin-bottom:6px}
-        .dc-empty-sub{font-size:14px;color:#3f3f46;text-align:center;max-width:380px;line-height:1.6;margin-bottom:28px}
+        .dc-empty-icon{width:56px;height:56px;background:#0a0a0a;border:1px solid #1a3a1a;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:24px}
+        .dc-empty-title{font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:10px}
+        .dc-empty-sub{font-size:14px;color:#52525b;text-align:center;max-width:420px;line-height:1.7;margin-bottom:32px}
         .dc-suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:440px;width:100%}
         @media(max-width:500px){.dc-suggestions{grid-template-columns:1fr}}
         .dc-sug-btn{background:#0a0a0a;border:1px solid #141414;color:#71717a;padding:12px 14px;border-radius:12px;font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;line-height:1.4;font-family:inherit}
@@ -420,13 +435,36 @@ export default function ChatPage() {
               <button className="dc-menu-btn" onClick={() => setSidebarOpen(true)}>&#9776;</button>
               <div className="dc-context">
                 <span className="dc-context-dot" />
-                <span className="dc-context-label">General Chat</span>
-                <span className="dc-context-sub">&#x2022; DUM AI</span>
+                <span className="dc-context-label">DUM AI — Powered by Claude</span>
+                <span className="dc-context-sub">Built to help you launch and grow your project</span>
+              </div>
+              <span className="dc-project-tag">No project selected</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="dc-sol-balance">
+                <span className="dc-sol-icon">◎</span>
+                <span className="dc-sol-amount">1.42 SOL</span>
+              </div>
+              <div className={`dc-badge${limitReached ? " warn" : ""}`}>
+                {limitReached ? "0 messages left" : `${remaining} left`}
               </div>
             </div>
-            <div className={`dc-badge${limitReached ? " warn" : ""}`}>
-              {limitReached ? "0 messages left" : `${remaining} left`}
-            </div>
+          </div>
+
+          {/* Mode toggle */}
+          <div className="dc-mode-bar">
+            <button
+              className={`dc-mode-btn${chatMode === "general" ? " active" : ""}`}
+              onClick={() => setChatMode("general")}
+            >
+              General Chat
+            </button>
+            <button
+              className={`dc-mode-btn${chatMode === "project" ? " active" : ""}`}
+              onClick={() => setChatMode("project")}
+            >
+              Project Mode
+            </button>
           </div>
 
           {/* Messages area */}
@@ -434,9 +472,9 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <div className="dc-empty">
                 <div className="dc-empty-icon">&#x26A1;</div>
-                <div className="dc-empty-title">DUM AI</div>
+                <div className="dc-empty-title">What are you building?</div>
                 <div className="dc-empty-sub">
-                  Your AI learns your project &mdash; and helps you grow it. Ask anything to get started.
+                  DUM AI is your project co-pilot &mdash; powered by Claude. It understands tokenomics, launch strategy, growth, and marketing so you can move faster and build smarter.
                 </div>
                 <div className="dc-suggestions">
                   {suggestions.map((s) => (
@@ -465,9 +503,10 @@ export default function ChatPage() {
                         {m.role === "assistant" ? (
                           <>
                             {m.content ? (
-                              <span dangerouslySetInnerHTML={{ __html: formatMessage(m.content) }} />
+                              <span className={loading && i === messages.length - 1 ? "dc-streaming" : ""} dangerouslySetInnerHTML={{ __html: formatMessage(m.content) }} />
                             ) : (
                               <div className="dc-thinking">
+                                <span className="dc-thinking-label">Thinking</span>
                                 <div className="dc-dot" />
                                 <div className="dc-dot" />
                                 <div className="dc-dot" />
