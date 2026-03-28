@@ -323,9 +323,9 @@ export default function ChatPage() {
 
         /* ── Empty state ─────────────────────────── */
         .dc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 80px}
-        .dc-empty-icon{width:64px;height:64px;background:#0a0a0a;border:1px solid #1a3a1a;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px}
-        .dc-empty-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.02em;margin-bottom:6px}
-        .dc-empty-sub{font-size:14px;color:#3f3f46;text-align:center;max-width:380px;line-height:1.6;margin-bottom:28px}
+        .dc-empty-icon{width:56px;height:56px;background:#0a0a0a;border:1px solid #1a3a1a;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:24px}
+        .dc-empty-title{font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:10px}
+        .dc-empty-sub{font-size:14px;color:#52525b;text-align:center;max-width:420px;line-height:1.7;margin-bottom:32px}
         .dc-suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:440px;width:100%}
         @media(max-width:500px){.dc-suggestions{grid-template-columns:1fr}}
         .dc-sug-btn{background:#0a0a0a;border:1px solid #141414;color:#71717a;padding:12px 14px;border-radius:12px;font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;line-height:1.4;font-family:inherit}
@@ -446,9 +446,9 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <div className="dc-empty">
                 <div className="dc-empty-icon">&#x26A1;</div>
-                <div className="dc-empty-title">DUM AI</div>
+                <div className="dc-empty-title">What are you building?</div>
                 <div className="dc-empty-sub">
-                  Your AI learns your project &mdash; and helps you grow it. Ask anything to get started.
+                  DUM AI is your project co-pilot &mdash; powered by Claude. It understands tokenomics, launch strategy, growth, and marketing so you can move faster and build smarter.
                 </div>
                 <div className="dc-suggestions">
                   {suggestions.map((s) => (
