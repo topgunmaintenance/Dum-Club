@@ -454,6 +454,8 @@ export default function ProjectPage() {
     offer_type: string;
     delivery_info: string | null;
     token_discount_percent: number;
+    primary_image_url: string | null;
+    video_url: string | null;
     is_active: boolean;
     created_at: string;
   }
@@ -631,6 +633,8 @@ export default function ProjectPage() {
       offer_type: "digital_service",
       delivery_info: "",
       token_discount_percent: 0,
+      primary_image_url: "",
+      video_url: "",
     });
     setOfferFormOpen(true);
   }
@@ -655,6 +659,8 @@ export default function ProjectPage() {
         offer_type: offerEditing.offer_type || "digital_service",
         delivery_info: offerEditing.delivery_info?.trim() || null,
         token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
+        primary_image_url: offerEditing.primary_image_url?.trim() || null,
+        video_url: offerEditing.video_url?.trim() || null,
       };
       if (!isEdit) body.project_id = id;
 
@@ -2976,6 +2982,33 @@ return (
               onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
             />
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Media (optional)</div>
+              <input
+                type="url"
+                placeholder="Image URL (paste a link to your product image)"
+                value={offerEditing.primary_image_url || ""}
+                onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+              {offerEditing.primary_image_url?.trim() && (
+                <div className="rounded-lg overflow-hidden border border-zinc-800">
+                  <img
+                    src={offerEditing.primary_image_url}
+                    alt="Preview"
+                    className="w-full max-h-48 object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              )}
+              <input
+                type="url"
+                placeholder="Video URL (YouTube, Loom, etc.)"
+                value={offerEditing.video_url || ""}
+                onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => saveOffer()}
@@ -3120,6 +3153,27 @@ return (
                       </div>
                     )}
                   </div>
+                  {/* Media */}
+                  {offer.video_url ? (
+                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
+                      <iframe
+                        src={offer.video_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                        allowFullScreen
+                        title={offer.title}
+                      />
+                    </div>
+                  ) : offer.primary_image_url ? (
+                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800">
+                      <img
+                        src={offer.primary_image_url}
+                        alt={offer.title}
+                        className="w-full max-h-56 object-cover"
+                      />
+                    </div>
+                  ) : null}
+
                   <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
                   {offer.description && (
                     <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>

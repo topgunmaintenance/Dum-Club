@@ -23,6 +23,8 @@ class OfferCreate(BaseModel):
     offer_type: str  # 'digital_service' | 'physical_product'
     delivery_info: Optional[str] = None
     token_discount_percent: int = Field(default=0, ge=0, le=100)
+    primary_image_url: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 class OfferUpdate(BaseModel):
@@ -33,6 +35,8 @@ class OfferUpdate(BaseModel):
     delivery_info: Optional[str] = None
     token_discount_percent: Optional[int] = Field(default=None, ge=0, le=100)
     is_active: Optional[bool] = None
+    primary_image_url: Optional[str] = None
+    video_url: Optional[str] = None
 
 
 VALID_OFFER_TYPES = {"digital_service", "physical_product"}
@@ -115,6 +119,8 @@ async def create_offer(
         "offer_type": body.offer_type,
         "delivery_info": (body.delivery_info or "").strip() or None,
         "token_discount_percent": body.token_discount_percent,
+        "primary_image_url": (body.primary_image_url or "").strip() or None,
+        "video_url": (body.video_url or "").strip() or None,
         "is_active": True,
     }
 
