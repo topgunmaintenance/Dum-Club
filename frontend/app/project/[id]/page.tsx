@@ -444,7 +444,20 @@ export default function ProjectPage() {
     perk_description?: string | null;
     token_holder_price?: string | null;
   }
+  interface Offer {
+    id: string;
+    project_id: string;
+    title: string;
+    description: string | null;
+    price_usd: number;
+    offer_type: string;
+    delivery_info: string | null;
+    token_discount_percent: number;
+    is_active: boolean;
+    created_at: string;
+  }
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -589,6 +602,19 @@ export default function ProjectPage() {
     } catch (err) {
       console.error(err);
       setMemories([]);
+    }
+  }
+
+  async function loadOffers() {
+    if (!id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/offers/${id}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load offers");
+      const data = await res.json();
+      setOffers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setOffers([]);
     }
   }
 
@@ -1544,6 +1570,7 @@ export default function ProjectPage() {
   useEffect(() => {
     loadProject();
     loadMemories();
+    loadOffers();
     loadTokenMetadata();
     refreshMarketData();
     loadRedemptions();
@@ -2798,259 +2825,271 @@ return (
         </div>
       )}
 
-      {/* ── Store / Offers ────────────────────────── */}
-      {(isOwner || storeItems.length > 0) && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Marketplace
-            </span>
-            {isOwner && !storeFormOpen && (
-              <button
-                onClick={() => openStoreForm()}
-                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
-              >
-                + Add Offer
-              </button>
-            )}
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Offers</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {isOwner ? "Products, services, and subscriptions for your community" : "Available from this project"}
-          </p>
-
-          {/* Owner: add/edit form */}
-          {isOwner && storeFormOpen && storeEditing && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                {storeEditing.id ? "Edit Offer" : "New Offer"}
-              </div>
-              <input
-                type="text"
-                placeholder="Name"
-                value={storeEditing.name}
-                onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
-              <textarea
-                placeholder="Description"
-                value={storeEditing.description}
-                onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
-                rows={2}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
-              />
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Price (e.g. 0.5 SOL)"
-                  value={storeEditing.price}
-                  onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
-                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                />
-                <select
-                  value={storeEditing.type}
-                  onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
-                  className="rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
-                >
-                  <option value="digital">Digital</option>
-                  <option value="physical">Physical</option>
-                  <option value="service">Service</option>
-                  <option value="subscription">Subscription</option>
-                </select>
-              </div>
-              {storeEditing.type === "subscription" && (
-                <textarea
-                  placeholder="Benefits (one per line)"
-                  value={(storeEditing.benefits || []).join("\n")}
-                  onChange={(e) =>
-                    setStoreEditing({
-                      ...storeEditing,
-                      benefits: e.target.value.split("\n").filter((l) => l.trim()),
-                    })
-                  }
-                  rows={3}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
-                />
-              )}
-              {/* Token perk fields */}
-              {project?.token_mint_address && !project.token_mint_address.startsWith("SIM_") && (
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">Token Perk (optional)</div>
-                  <input
-                    type="number"
-                    placeholder="Required token amount (e.g. 100)"
-                    value={storeEditing.required_token_amount ?? ""}
-                    onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Perk description (e.g. 50% off for holders)"
-                    value={storeEditing.perk_description ?? ""}
-                    onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Token holder price (e.g. 0.25 SOL or Free)"
-                    value={storeEditing.token_holder_price ?? ""}
-                    onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                  />
-                </div>
-              )}
-              <div className="flex gap-2">
-                <button
-                  onClick={saveStoreItem}
-                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-                >
-                  {storeEditing.id ? "Save Changes" : "Add Offer"}
-                </button>
-                <button
-                  onClick={() => { setStoreFormOpen(false); setStoreEditing(null); }}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Item cards */}
-          {storeItems.length > 0 ? (
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {storeItems.map((item) => {
-                const badge = storeTypeBadge[item.type];
-                const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
-                const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
-                const showGating = hasPerk && tokenConfigured;
-
-                // Determine perk state
-                let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
-                if (showGating) {
-                  if (!userWallet) {
-                    perkState = "no_wallet";
-                  } else if (walletBalance >= (item.required_token_amount || 0)) {
-                    perkState = "unlocked";
-                  } else {
-                    perkState = "locked";
-                  }
-                }
-
-                const displayPrice = perkState === "unlocked" && item.token_holder_price != null
-                  ? item.token_holder_price
-                  : item.price || "Free";
-                const isFreeForHolder = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
-
-                return (
-                  <div key={item.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
-                    <div className="mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
-                          {badge.label}
-                        </span>
-                        {showGating && perkState === "unlocked" && (
-                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
-                            ✓ Unlocked
-                          </span>
-                        )}
-                        {showGating && perkState === "locked" && (
-                          <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-400">
-                            Requires {item.required_token_amount} tokens
-                          </span>
-                        )}
-                        {showGating && perkState === "no_wallet" && (
-                          <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500">
-                            🔒 Gated
-                          </span>
-                        )}
-                      </div>
-                      {isOwner && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openStoreForm(item)}
-                            className="text-[11px] text-zinc-600 transition hover:text-zinc-300"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => removeStoreItem(item.id)}
-                            className="text-[11px] text-zinc-600 transition hover:text-red-400"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-white">{item.name}</h3>
-                    {item.description && (
-                      <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>
-                    )}
-                    {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
-                      <ul className="mt-3 space-y-1.5">
-                        {item.benefits.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                            <span className="mt-0.5 text-emerald-400">✦</span>
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {/* Perk description — always visible when a perk exists */}
-                    {showGating && item.perk_description && (
-                      <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
-                        <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
-                      </div>
-                    )}
-
-                    {/* No wallet hint */}
-                    {showGating && perkState === "no_wallet" && (
-                      <div className="mt-2">
-                        <span className="text-[11px] text-zinc-600">Connect wallet to check eligibility</span>
-                      </div>
-                    )}
-
-                    {/* Locked: show what they're missing */}
-                    {showGating && perkState === "locked" && item.token_holder_price != null && (
-                      <div className="mt-2">
-                        <span className="text-[11px] text-zinc-500">
-                          Token holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span>
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="mt-auto pt-4 flex items-center justify-between">
-                      <div>
-                        {isFreeForHolder ? (
-                          <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
-                        ) : (
-                          <span className="font-mono text-lg font-bold text-white">{displayPrice}</span>
-                        )}
-                        {perkState === "unlocked" && item.token_holder_price != null && item.price && !isFreeForHolder && (
-                          <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
-                        )}
-                      </div>
-                      {/* TODO: enforce server-side in Phase 10 */}
-                      <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
-                        {item.type === "subscription" ? "Subscribe" : "Buy"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            !storeFormOpen && (
-              <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-                <p className="text-sm text-zinc-600">
-                  {isOwner ? "No offers yet — add your first product, service, or subscription" : "No offers available yet"}
-                </p>
-              </div>
-            )
+      {/* ── Offers (Public Storefront + Owner Tools) ── */}
+      <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+            Storefront
+          </span>
+          {isOwner && !storeFormOpen && (
+            <button
+              onClick={() => openStoreForm()}
+              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+            >
+              + Add Offer
+            </button>
           )}
         </div>
-      )}
+        <h2 className="text-xl font-bold text-white tracking-tight">Offers</h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          {isOwner ? "Products, services, and subscriptions for your community" : "Services and products from this project"}
+        </p>
+
+        {/* Owner: add/edit form */}
+        {isOwner && storeFormOpen && storeEditing && (
+          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+              {storeEditing.id ? "Edit Offer" : "New Offer"}
+            </div>
+            <input
+              type="text"
+              placeholder="Name"
+              value={storeEditing.name}
+              onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+            />
+            <textarea
+              placeholder="Description"
+              value={storeEditing.description}
+              onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
+              rows={2}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+            />
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="Price (e.g. 0.5 SOL)"
+                value={storeEditing.price}
+                onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
+                className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+              <select
+                value={storeEditing.type}
+                onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
+                className="rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+              >
+                <option value="digital">Digital</option>
+                <option value="physical">Physical</option>
+                <option value="service">Service</option>
+                <option value="subscription">Subscription</option>
+              </select>
+            </div>
+            {storeEditing.type === "subscription" && (
+              <textarea
+                placeholder="Benefits (one per line)"
+                value={(storeEditing.benefits || []).join("\n")}
+                onChange={(e) =>
+                  setStoreEditing({
+                    ...storeEditing,
+                    benefits: e.target.value.split("\n").filter((l) => l.trim()),
+                  })
+                }
+                rows={3}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+              />
+            )}
+            {/* Token perk fields */}
+            {project?.token_mint_address && !project.token_mint_address.startsWith("SIM_") && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">Token Perk (optional)</div>
+                <input
+                  type="number"
+                  placeholder="Required token amount (e.g. 100)"
+                  value={storeEditing.required_token_amount ?? ""}
+                  onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+                <input
+                  type="text"
+                  placeholder="Perk description (e.g. 50% off for holders)"
+                  value={storeEditing.perk_description ?? ""}
+                  onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+                <input
+                  type="text"
+                  placeholder="Token holder price (e.g. 0.25 SOL or Free)"
+                  value={storeEditing.token_holder_price ?? ""}
+                  onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={saveStoreItem}
+                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+              >
+                {storeEditing.id ? "Save Changes" : "Add Offer"}
+              </button>
+              <button
+                onClick={() => { setStoreFormOpen(false); setStoreEditing(null); }}
+                className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Backend offers (from offers table — public storefront) */}
+        {offers.length > 0 && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {offers.map((offer) => {
+              const typeBadge = offer.offer_type === "physical_product"
+                ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400" }
+                : { label: "Digital Service", color: "border-sky-400/30 text-sky-400" };
+              return (
+                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${typeBadge.color}`}>
+                      {typeBadge.label}
+                    </span>
+                    {offer.token_discount_percent > 0 && (
+                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
+                        {offer.token_discount_percent}% holder discount
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-semibold text-white">{offer.title}</h3>
+                  {offer.description && (
+                    <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
+                  )}
+                  {offer.delivery_info && (
+                    <p className="mt-2 text-xs text-zinc-600">{offer.delivery_info}</p>
+                  )}
+                  <div className="mt-auto pt-4 flex items-center justify-between">
+                    <span className="font-mono text-lg font-bold text-white">
+                      ${Number(offer.price_usd).toFixed(2)}
+                      <span className="ml-1 text-xs font-normal text-zinc-500">USD</span>
+                    </span>
+                    <button
+                      disabled
+                      className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-500 cursor-not-allowed opacity-60"
+                    >
+                      {authUser ? "Buy Now" : "Connect to buy"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Owner store items (from store_items JSONB) */}
+        {storeItems.length > 0 && (
+          <div className={`${offers.length > 0 ? "mt-4" : "mt-5"} grid gap-4 sm:grid-cols-2`}>
+            {storeItems.map((item) => {
+              const badge = storeTypeBadge[item.type];
+              const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
+              const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
+              const showGating = hasPerk && tokenConfigured;
+
+              let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
+              if (showGating) {
+                if (!userWallet) {
+                  perkState = "no_wallet";
+                } else if (walletBalance >= (item.required_token_amount || 0)) {
+                  perkState = "unlocked";
+                } else {
+                  perkState = "locked";
+                }
+              }
+
+              const displayPrice = perkState === "unlocked" && item.token_holder_price != null
+                ? item.token_holder_price
+                : item.price || "Free";
+              const isFreeForHolder = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
+
+              return (
+                <div key={item.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                      {showGating && perkState === "unlocked" && (
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400">✓ Unlocked</span>
+                      )}
+                      {showGating && perkState === "locked" && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-amber-400">Requires {item.required_token_amount} tokens</span>
+                      )}
+                      {showGating && perkState === "no_wallet" && (
+                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase text-zinc-500">🔒 Gated</span>
+                      )}
+                    </div>
+                    {isOwner && (
+                      <div className="flex gap-2">
+                        <button onClick={() => openStoreForm(item)} className="text-[11px] text-zinc-600 transition hover:text-zinc-300">Edit</button>
+                        <button onClick={() => removeStoreItem(item.id)} className="text-[11px] text-zinc-600 transition hover:text-red-400">Remove</button>
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-base font-semibold text-white">{item.name}</h3>
+                  {item.description && <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>}
+                  {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
+                    <ul className="mt-3 space-y-1.5">
+                      {item.benefits.map((b, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
+                          <span className="mt-0.5 text-emerald-400">✦</span><span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {showGating && item.perk_description && (
+                    <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
+                      <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
+                    </div>
+                  )}
+                  {showGating && perkState === "no_wallet" && (
+                    <div className="mt-2"><span className="text-[11px] text-zinc-600">Connect wallet to check eligibility</span></div>
+                  )}
+                  {showGating && perkState === "locked" && item.token_holder_price != null && (
+                    <div className="mt-2"><span className="text-[11px] text-zinc-500">Token holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span></span></div>
+                  )}
+                  <div className="mt-auto pt-4 flex items-center justify-between">
+                    <div>
+                      {isFreeForHolder ? (
+                        <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
+                      ) : (
+                        <span className="font-mono text-lg font-bold text-white">{displayPrice}</span>
+                      )}
+                      {perkState === "unlocked" && item.token_holder_price != null && item.price && !isFreeForHolder && (
+                        <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
+                      )}
+                    </div>
+                    <button
+                      disabled
+                      className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-500 cursor-not-allowed opacity-60"
+                    >
+                      {authUser ? "Buy Now" : "Connect to buy"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {offers.length === 0 && storeItems.length === 0 && !storeFormOpen && (
+          <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+            <p className="text-sm text-zinc-600">
+              {isOwner ? "No offers yet — add your first product or service" : "No services or products available yet"}
+            </p>
+          </div>
+        )}
+      </div>
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
