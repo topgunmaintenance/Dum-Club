@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -74,7 +74,7 @@ function formatMessage(text: string) {
 }
 
 /* ── Component ─────────────────────────────────────── */
-export default function ChatPage() {
+function ChatPageInner() {
   const { user } = useAuth();
   const { wallets } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
@@ -748,4 +748,13 @@ export default function ChatPage() {
     </>
   );
 }
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div style={{ background: "#050505", minHeight: "100vh" }} />}>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
 export const dynamic = "force-dynamic";

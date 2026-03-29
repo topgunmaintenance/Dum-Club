@@ -2,7 +2,6 @@
 Checkout — Stripe payment intents, webhook, and order queries.
 """
 import os
-import stripe
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -15,13 +14,23 @@ from auth.privy import get_current_user
 
 router = APIRouter()
 
-# ── Stripe config ─────────────────────────────────────────────
+# ── Stripe config (lazy import — backend starts without stripe installed) ──
 
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+_stripe = None
 
-if _STRIPE_SECRET:
-    stripe.api_key = _STRIPE_SECRET
+
+def _get_stripe():
+    global _stripe
+    if _stripe is None:
+        try:
+            import stripe
+            stripe.api_key = _STRIPE_SECRET
+            _stripe = stripe
+        except ImportError:
+            raise HTTPException(status_code=503, detail="Stripe SDK not installed")
+    return _stripe
 
 PLATFORM_FEE_RATE = 0.07  # 7%
 
@@ -124,8 +133,9 @@ async def create_payment_intent(
     buyer_user_id = privy_id
 
     # 5. Create Stripe PaymentIntent
+    s = _get_stripe()
     try:
-        intent = stripe.PaymentIntent.create(
+        intent = s.PaymentIntent.create(
             amount=amount_cents,
             currency="usd",
             metadata={
@@ -135,7 +145,7 @@ async def create_payment_intent(
                 "project_id": project_id,
             },
         )
-    except stripe.error.StripeError as e:
+    except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")
 
     # 6. Insert order record
@@ -180,12 +190,15 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 
+    s = _get_stripe()
     try:
-        event = stripe.Webhook.construct_event(
+        event = s.Webhook.construct_event(
             payload, sig_header, _STRIPE_WEBHOOK_SECRET
         )
-    except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        if "SignatureVerification" in type(e).__name__:
+            raise HTTPException(status_code=400, detail="Invalid signature")
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
 
