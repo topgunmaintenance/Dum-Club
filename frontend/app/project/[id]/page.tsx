@@ -470,6 +470,8 @@ export default function ProjectPage() {
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
+  const [buyStep, setBuyStep] = useState<Record<string, string>>({});
+  const [buyError, setBuyError] = useState<Record<string, string>>({});
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
   interface Order {
     id: string;
@@ -791,18 +793,38 @@ export default function ProjectPage() {
   }
 
   async function buyOffer(offer: Offer) {
-    console.log("[BUY DEBUG]", { offerId: offer.id, authUser: !!authUser, privyId: authUser?.privyId, isDemo, isOwner });
-    if (!authUser) { console.log("[BUY DEBUG] EXIT: no authUser"); return; }
+    const oid = offer.id;
+    setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
+    setBuyError((p) => ({ ...p, [oid]: "" }));
+
+    if (!authUser) {
+      setBuyStep((p) => ({ ...p, [oid]: "blocked_no_auth" }));
+      return;
+    }
+    if (isOwner) {
+      setBuyStep((p) => ({ ...p, [oid]: "blocked_owner" }));
+      return;
+    }
     if (isDemo) {
-      console.log("[BUY DEBUG] EXIT: demo mode, showing banner");
-      setDemoClickedId(offer.id);
+      setBuyStep((p) => ({ ...p, [oid]: "blocked_demo" }));
+      setDemoClickedId(oid);
       setTimeout(() => setDemoClickedId(null), 5000);
       return;
     }
-    setBuyingOfferId(offer.id);
+
+    setBuyingOfferId(oid);
+    setBuyStep((p) => ({ ...p, [oid]: "getting_token" }));
+
     try {
       const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      if (!token) {
+        setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
+        setBuyError((p) => ({ ...p, [oid]: "getToken() returned null" }));
+        setBuyingOfferId(null);
+        return;
+      }
+
+      setBuyStep((p) => ({ ...p, [oid]: "calling_checkout" }));
 
       const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
         method: "POST",
@@ -811,26 +833,34 @@ export default function ProjectPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          offer_id: offer.id,
+          offer_id: oid,
           success_url: window.location.href,
           cancel_url: window.location.href,
         }),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Checkout failed");
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.detail || `HTTP ${res.status}`;
+        setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
+        setBuyError((p) => ({ ...p, [oid]: msg }));
+        setBuyingOfferId(null);
+        return;
       }
 
       const data = await res.json();
       if (data.checkout_url) {
+        setBuyStep((p) => ({ ...p, [oid]: "redirecting" }));
         window.location.href = data.checkout_url;
       } else {
-        throw new Error("No checkout URL returned");
+        setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
+        setBuyError((p) => ({ ...p, [oid]: "No checkout_url in response" }));
+        setBuyingOfferId(null);
       }
     } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Checkout failed");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
+      setBuyError((p) => ({ ...p, [oid]: msg }));
       setBuyingOfferId(null);
     }
   }
@@ -3489,11 +3519,14 @@ return (
                       </p>
                     </div>
                   )}
-                  {/* DEBUG: Buy button state — REMOVE AFTER DEBUGGING */}
-                  <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-[10px] font-mono text-red-300/80 leading-relaxed break-all">
-                    <div>auth: {authUser ? "YES" : "NO"} | privyId: {authUser?.privyId ? "YES" : "NO"} | wallet: {authUser?.walletAddress ? authUser.walletAddress.slice(0,6) + "..." : "NONE"}</div>
-                    <div>isOwner: {String(isOwner)} | isDemo: {String(isDemo)} | projOwner: {project?.owner_id?.slice(0,8) || "null"} | projPrivy: {project?.privy_id?.slice(0,12) || "null"}</div>
+                  {/* DEBUG: full state trace — REMOVE AFTER FIX CONFIRMED */}
+                  <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-[10px] font-mono text-red-300/80 leading-relaxed break-all space-y-0.5">
+                    <div>SRC: OFFERS_TABLE | id: {offer.id.slice(0,8)}</div>
+                    <div>auth: {authUser ? "YES" : "NO"} | privy: {authUser?.privyId ? "Y" : "N"} | wallet: {authUser?.walletAddress?.slice(0,6) || "NONE"}</div>
+                    <div>owner: {String(isOwner)} | demo: {String(isDemo)}</div>
                     <div>btn: {isOwner ? "YOUR_OFFER" : !authUser ? "CONNECT" : isDemo ? "DEMO" : "BUY_NOW"}</div>
+                    <div>step: {buyStep[offer.id] || "idle"}</div>
+                    {buyError[offer.id] && <div className="text-red-400">ERR: {buyError[offer.id]}</div>}
                   </div>
                 </div>
               );
@@ -3583,13 +3616,14 @@ return (
                         <div className="text-xs text-zinc-600 line-through mt-0.5">{item.price}</div>
                       )}
                     </div>
-                    <button
-                      disabled
-                      className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-400 transition cursor-not-allowed"
-                      title={authUser ? "Coming soon" : "Sign in to purchase"}
-                    >
-                      {authUser ? "Buy Now" : "Connect to buy"}
-                    </button>
+                    <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
+                      Preview only
+                    </span>
+                  </div>
+                  {/* DEBUG: store_items card trace — REMOVE AFTER FIX CONFIRMED */}
+                  <div className="mt-2 rounded-lg border border-orange-500/30 bg-orange-500/5 p-2 text-[10px] font-mono text-orange-300/80 leading-relaxed">
+                    <div>SRC: STORE_ITEMS_JSONB (not checkout-enabled)</div>
+                    <div>This offer is from the old store_items system. Only OFFERS_TABLE items support checkout.</div>
                   </div>
                 </div>
               );
