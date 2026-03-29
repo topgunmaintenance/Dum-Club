@@ -26,10 +26,12 @@ def _get_stripe():
     if _stripe is None:
         try:
             import stripe
-            stripe.api_key = _STRIPE_SECRET
-            _stripe = stripe
         except ImportError:
-            raise HTTPException(status_code=503, detail="Stripe SDK not installed")
+            raise HTTPException(status_code=503, detail="Stripe SDK not installed — add stripe to requirements-prod.txt")
+        if not _STRIPE_SECRET:
+            raise HTTPException(status_code=503, detail="STRIPE_SECRET_KEY environment variable is not set")
+        stripe.api_key = _STRIPE_SECRET
+        _stripe = stripe
     return _stripe
 
 PLATFORM_FEE_RATE = 0.07  # 7%
