@@ -4204,7 +4204,7 @@ return (
             </div>
           </div>
 
-    </div>
+    </>)}
 
     {canShowMarketUi && hasMarketSnapshot && (
       <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-black/90 backdrop-blur-md lg:block">
@@ -4240,7 +4240,7 @@ return (
         </div>
       </div>
     )}
-    </>)}
+  </div>
   </div>
   );
 }
