@@ -791,8 +791,10 @@ export default function ProjectPage() {
   }
 
   async function buyOffer(offer: Offer) {
-    if (!authUser) return;
+    console.log("[BUY DEBUG]", { offerId: offer.id, authUser: !!authUser, privyId: authUser?.privyId, isDemo, isOwner });
+    if (!authUser) { console.log("[BUY DEBUG] EXIT: no authUser"); return; }
     if (isDemo) {
+      console.log("[BUY DEBUG] EXIT: demo mode, showing banner");
       setDemoClickedId(offer.id);
       setTimeout(() => setDemoClickedId(null), 5000);
       return;
@@ -3487,6 +3489,12 @@ return (
                       </p>
                     </div>
                   )}
+                  {/* DEBUG: Buy button state — REMOVE AFTER DEBUGGING */}
+                  <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-[10px] font-mono text-red-300/80 leading-relaxed break-all">
+                    <div>auth: {authUser ? "YES" : "NO"} | privyId: {authUser?.privyId ? "YES" : "NO"} | wallet: {authUser?.walletAddress ? authUser.walletAddress.slice(0,6) + "..." : "NONE"}</div>
+                    <div>isOwner: {String(isOwner)} | isDemo: {String(isDemo)} | projOwner: {project?.owner_id?.slice(0,8) || "null"} | projPrivy: {project?.privy_id?.slice(0,12) || "null"}</div>
+                    <div>btn: {isOwner ? "YOUR_OFFER" : !authUser ? "CONNECT" : isDemo ? "DEMO" : "BUY_NOW"}</div>
+                  </div>
                 </div>
               );
             })}
