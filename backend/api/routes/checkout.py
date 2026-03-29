@@ -136,6 +136,12 @@ async def create_payment_intent(
     # 4. Resolve buyer identity
     buyer_user_id = privy_id
 
+    # 4a. Check inventory
+    if not offer.get("unlimited_inventory", True):
+        available = (offer.get("quantity_available") or 0) - (offer.get("quantity_sold") or 0)
+        if available <= 0:
+            raise HTTPException(status_code=400, detail="This offer is sold out")
+
     # 5. Create Stripe Checkout Session
     s = _get_stripe()
     success_url = body.success_url or "https://dum-club.vercel.app/dashboard"
@@ -177,7 +183,8 @@ async def create_payment_intent(
         "platform_fee_usd": platform_fee,
         "seller_receives_usd": seller_receives,
         "stripe_payment_intent_id": session.payment_intent or session.id,
-        "status": "pending",
+        "stripe_session_id": session.id,
+        "status": "pending_payment",
         "buyer_email": body.buyer_email,
         "notes": body.notes,
         "token_discount_applied": token_discount_applied,
@@ -221,32 +228,64 @@ async def stripe_webhook(request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
 
-    if event["type"] == "payment_intent.succeeded":
-        pi = event["data"]["object"]
-        pi_id = pi["id"]
+    supabase = get_client()
 
-        supabase = get_client()
+    def _mark_paid(lookup_field: str, lookup_value: str, source: str):
+        """Idempotent: only update if current status is pending_payment or pending."""
+        order_res = (
+            supabase.table("orders")
+            .select("id, offer_id, status")
+            .eq(lookup_field, lookup_value)
+            .limit(1)
+            .execute()
+        )
+        if not order_res.data:
+            print(f"[webhook] No order found: {lookup_field}={lookup_value}")
+            return
+        order = order_res.data[0]
+        if order["status"] not in ("pending_payment", "pending"):
+            print(f"[webhook] Order {order['id']} already {order['status']}, skipping ({source})")
+            return
+
+        # Update order to paid
         supabase.table("orders").update({
             "status": "paid",
             "updated_at": _now_iso(),
-        }).eq("stripe_payment_intent_id", pi_id).execute()
+        }).eq("id", order["id"]).execute()
 
-        print(f"[checkout] Order paid: PI={pi_id}")
+        # Decrement inventory on the offer
+        offer_id = order.get("offer_id")
+        if offer_id:
+            offer_res = (
+                supabase.table("offers")
+                .select("id, quantity_sold, unlimited_inventory")
+                .eq("id", offer_id)
+                .limit(1)
+                .execute()
+            )
+            if offer_res.data:
+                o = offer_res.data[0]
+                if not o.get("unlimited_inventory", True):
+                    new_sold = (o.get("quantity_sold") or 0) + 1
+                    supabase.table("offers").update({
+                        "quantity_sold": new_sold,
+                    }).eq("id", offer_id).execute()
+
+        print(f"[webhook] Order {order['id']} → paid ({source})")
+
+    if event["type"] == "payment_intent.succeeded":
+        pi_id = event["data"]["object"]["id"]
+        _mark_paid("stripe_payment_intent_id", pi_id, "payment_intent.succeeded")
 
     elif event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         session_id = session["id"]
         pi_id = session.get("payment_intent")
-
-        supabase = get_client()
-        # Try matching by session ID or PI ID
-        lookup_id = pi_id or session_id
-        supabase.table("orders").update({
-            "status": "paid",
-            "updated_at": _now_iso(),
-        }).eq("stripe_payment_intent_id", lookup_id).execute()
-
-        print(f"[checkout] Session completed: {session_id}, PI={pi_id}")
+        # Try PI first (more reliable), fallback to session ID
+        if pi_id:
+            _mark_paid("stripe_payment_intent_id", pi_id, "checkout.session.completed/pi")
+        else:
+            _mark_paid("stripe_session_id", session_id, "checkout.session.completed/session")
 
     return JSONResponse(content={"received": True}, status_code=200)
 
@@ -313,8 +352,8 @@ async def update_order_status(
     """Owner marks an order as delivered."""
     body = await request.json()
     new_status = body.get("status")
-    if new_status not in ("delivered",):
-        raise HTTPException(status_code=400, detail="Invalid status. Allowed: delivered")
+    if new_status not in ("fulfilled", "delivered"):
+        raise HTTPException(status_code=400, detail="Invalid status. Allowed: fulfilled, delivered")
 
     supabase = get_client()
     privy_id = current_user.get("sub")
@@ -330,8 +369,8 @@ async def update_order_status(
         raise HTTPException(status_code=404, detail="Order not found")
 
     order = order_res.data[0]
-    if order["status"] not in ("paid",):
-        raise HTTPException(status_code=400, detail="Only paid orders can be marked delivered")
+    if order["status"] not in ("paid", "fulfilled"):
+        raise HTTPException(status_code=400, detail="Only paid or fulfilled orders can be updated")
 
     project_res = (
         supabase.table("projects")

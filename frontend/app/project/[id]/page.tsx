@@ -456,6 +456,9 @@ export default function ProjectPage() {
     token_discount_percent: number;
     primary_image_url: string | null;
     video_url: string | null;
+    quantity_available: number | null;
+    quantity_sold: number;
+    unlimited_inventory: boolean;
     is_active: boolean;
     created_at: string;
   }
@@ -659,6 +662,8 @@ export default function ProjectPage() {
       token_discount_percent: 0,
       primary_image_url: "",
       video_url: "",
+      quantity_available: null,
+      unlimited_inventory: true,
     });
     setOfferFormOpen(true);
     setOfferImageFile(null);
@@ -774,6 +779,8 @@ export default function ProjectPage() {
         token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
         primary_image_url: imageUrl,
         video_url: offerEditing.video_url?.trim() || null,
+        quantity_available: offerEditing.unlimited_inventory ? null : (offerEditing.quantity_available || null),
+        unlimited_inventory: offerEditing.unlimited_inventory ?? true,
       };
       if (!isEdit) body.project_id = id;
 
@@ -907,16 +914,17 @@ export default function ProjectPage() {
     } catch { setSellerOrders([]); }
   }
 
-  async function markDelivered(orderId: string) {
+  async function updateOrderStatus(orderId: string, status: string) {
     try {
       const token = await getToken();
       if (!token) return;
       await fetch(`${API_BASE}/api/checkout/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: "delivered" }),
+        body: JSON.stringify({ status }),
       });
       await loadSellerOrders();
+      await loadOffers(); // refresh inventory counts
     } catch (err) { console.error(err); }
   }
 
@@ -1898,7 +1906,11 @@ export default function ProjectPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("launched") === "1") setShowLiveBanner(true);
     if (params.get("view") === "pitch") setPitchMode(true);
-    if (params.get("checkout") === "success") setCheckoutResult("success");
+    if (params.get("checkout") === "success") {
+      setCheckoutResult("success");
+      // Refresh offers (inventory) and orders after successful checkout
+      setTimeout(() => { loadOffers(); if (isOwner) loadSellerOrders(); }, 1500);
+    }
     if (params.get("checkout") === "cancelled") setCheckoutResult("cancelled");
   }, []);
 
@@ -3259,6 +3271,28 @@ return (
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
             />
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Inventory</div>
+              <label className="flex items-center gap-2 text-sm text-zinc-400">
+                <input
+                  type="checkbox"
+                  checked={offerEditing.unlimited_inventory ?? true}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, unlimited_inventory: e.target.checked })}
+                  className="rounded border-zinc-700"
+                />
+                Unlimited inventory
+              </label>
+              {!offerEditing.unlimited_inventory && (
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Quantity available"
+                  value={offerEditing.quantity_available || ""}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+              )}
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Media (optional)</div>
 
               {/* Image upload */}
@@ -3504,37 +3538,59 @@ return (
                     </div>
                   )}
 
-                  {/* Price + Action */}
-                  <div className="mt-auto pt-4 flex items-end justify-between gap-3 border-t border-zinc-900 mt-4">
-                    <div>
-                      <div className="font-mono text-2xl font-bold text-white">${Number(offer.price_usd).toFixed(2)}</div>
-                      <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
+                  {/* Inventory info */}
+                  {!offer.unlimited_inventory && (
+                    <div className="mt-2 text-xs text-zinc-600">
+                      {(offer.quantity_sold || 0) > 0 && <span>{offer.quantity_sold} sold</span>}
+                      {(() => {
+                        const remaining = (offer.quantity_available || 0) - (offer.quantity_sold || 0);
+                        if (remaining <= 0) return <span className="ml-1 text-red-400">· Sold out</span>;
+                        if (remaining <= 5) return <span className="ml-1 text-amber-400">· {remaining} left</span>;
+                        return <span className="ml-1">· {remaining} available</span>;
+                      })()}
                     </div>
-                    {isOwner ? (
-                      <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
-                        Your Offer
-                      </span>
-                    ) : !authUser ? (
-                      <button disabled className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed">
-                        Connect to buy
-                      </button>
-                    ) : isDemo ? (
-                      <button
-                        onClick={() => buyOffer(offer)}
-                        className="rounded-xl border border-emerald-400/40 px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
-                      >
-                        {demoClickedId === offer.id ? "⚠ Demo" : "Demo Checkout"}
-                      </button>
-                    ) : (
-                      <button
-                        disabled={buyingOfferId === offer.id}
-                        onClick={() => buyOffer(offer)}
-                        className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
-                      >
-                        {buyingOfferId === offer.id ? "Processing..." : "Buy Now"}
-                      </button>
-                    )}
-                  </div>
+                  )}
+
+                  {/* Price + Action */}
+                  {(() => {
+                    const soldOut = !offer.unlimited_inventory && ((offer.quantity_available || 0) - (offer.quantity_sold || 0)) <= 0;
+                    return (
+                      <div className="mt-auto pt-4 flex items-end justify-between gap-3 border-t border-zinc-900 mt-4">
+                        <div>
+                          <div className="font-mono text-2xl font-bold text-white">${Number(offer.price_usd).toFixed(2)}</div>
+                          <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
+                        </div>
+                        {soldOut ? (
+                          <span className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-2.5 text-xs font-semibold text-red-400 select-none">
+                            Sold Out
+                          </span>
+                        ) : isOwner ? (
+                          <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
+                            Your Offer
+                          </span>
+                        ) : !authUser ? (
+                          <button disabled className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed">
+                            Connect to buy
+                          </button>
+                        ) : isDemo ? (
+                          <button
+                            onClick={() => buyOffer(offer)}
+                            className="rounded-xl border border-emerald-400/40 px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
+                          >
+                            {demoClickedId === offer.id ? "⚠ Demo" : "Demo Checkout"}
+                          </button>
+                        ) : (
+                          <button
+                            disabled={buyingOfferId === offer.id}
+                            onClick={() => buyOffer(offer)}
+                            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
+                          >
+                            {buyingOfferId === offer.id ? "Processing..." : "Buy Now"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Demo inline feedback */}
                   {demoClickedId === offer.id && (
@@ -3660,20 +3716,22 @@ return (
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
-                        isDelivered
+                        order.status === "fulfilled" || order.status === "delivered"
                           ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
-                          : isPaid
+                          : order.status === "paid"
                           ? "border-sky-400/30 text-sky-400 bg-sky-400/10"
+                          : order.status === "pending_payment"
+                          ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
                           : "border-zinc-700 text-zinc-500"
                       }`}>
-                        {order.status}
+                        {order.status === "pending_payment" ? "Awaiting Payment" : order.status}
                       </span>
-                      {isPaid && (
+                      {order.status === "paid" && (
                         <button
-                          onClick={() => markDelivered(order.id)}
+                          onClick={() => updateOrderStatus(order.id, "fulfilled")}
                           className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
                         >
-                          Mark delivered
+                          Mark Fulfilled
                         </button>
                       )}
                     </div>

@@ -25,6 +25,8 @@ class OfferCreate(BaseModel):
     token_discount_percent: int = Field(default=0, ge=0, le=100)
     primary_image_url: Optional[str] = None
     video_url: Optional[str] = None
+    quantity_available: Optional[int] = None
+    unlimited_inventory: bool = True
 
 
 class OfferUpdate(BaseModel):
@@ -37,6 +39,8 @@ class OfferUpdate(BaseModel):
     is_active: Optional[bool] = None
     primary_image_url: Optional[str] = None
     video_url: Optional[str] = None
+    quantity_available: Optional[int] = None
+    unlimited_inventory: Optional[bool] = None
 
 
 VALID_OFFER_TYPES = {"digital_service", "physical_product"}
@@ -121,6 +125,9 @@ async def create_offer(
         "token_discount_percent": body.token_discount_percent,
         "primary_image_url": (body.primary_image_url or "").strip() or None,
         "video_url": (body.video_url or "").strip() or None,
+        "quantity_available": body.quantity_available,
+        "quantity_sold": 0,
+        "unlimited_inventory": body.unlimited_inventory,
         "is_active": True,
     }
 

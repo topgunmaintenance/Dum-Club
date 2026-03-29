@@ -18,8 +18,9 @@ interface Order {
 }
 
 function statusBadge(status: string) {
-  if (status === "delivered") return { label: "Delivered", cls: "border-emerald-400/30 text-emerald-400 bg-emerald-400/10" };
+  if (status === "fulfilled" || status === "delivered") return { label: "Fulfilled", cls: "border-emerald-400/30 text-emerald-400 bg-emerald-400/10" };
   if (status === "paid") return { label: "Paid", cls: "border-sky-400/30 text-sky-400 bg-sky-400/10" };
+  if (status === "pending_payment") return { label: "Awaiting Payment", cls: "border-amber-400/30 text-amber-400 bg-amber-400/10" };
   return { label: status, cls: "border-zinc-700 text-zinc-500 bg-zinc-900" };
 }
 
