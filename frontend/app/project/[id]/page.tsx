@@ -365,7 +365,7 @@ function getStatusExplanation(status?: string) {
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { user: authUser, login } = useAuth();
+  const { user: authUser, login, getToken } = useAuth();
   const { wallets } = useSolanaWallets();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -458,6 +458,9 @@ export default function ProjectPage() {
   }
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [offerFormOpen, setOfferFormOpen] = useState(false);
+  const [offerEditing, setOfferEditing] = useState<Partial<Offer> | null>(null);
+  const [offerSaving, setOfferSaving] = useState(false);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -616,6 +619,82 @@ export default function ProjectPage() {
     } catch (err) {
       console.error(err);
       setOffers([]);
+    }
+  }
+
+  function openOfferForm(offer?: Offer) {
+    setOfferEditing(offer ? { ...offer } : {
+      title: "",
+      description: "",
+      price_usd: 0,
+      offer_type: "digital_service",
+      delivery_info: "",
+      token_discount_percent: 0,
+    });
+    setOfferFormOpen(true);
+  }
+
+  async function saveOffer() {
+    if (!offerEditing || !offerEditing.title?.trim() || !id) return;
+    setOfferSaving(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const isEdit = Boolean(offerEditing.id);
+      const url = isEdit
+        ? `${API_BASE}/api/offers/${offerEditing.id}`
+        : `${API_BASE}/api/offers/create`;
+      const method = isEdit ? "PATCH" : "POST";
+
+      const body: Record<string, unknown> = {
+        title: offerEditing.title?.trim(),
+        description: offerEditing.description?.trim() || null,
+        price_usd: Number(offerEditing.price_usd) || 0,
+        offer_type: offerEditing.offer_type || "digital_service",
+        delivery_info: offerEditing.delivery_info?.trim() || null,
+        token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
+      };
+      if (!isEdit) body.project_id = id;
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Failed to save offer");
+      }
+      await loadOffers();
+      setOfferFormOpen(false);
+      setOfferEditing(null);
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to save offer");
+    } finally {
+      setOfferSaving(false);
+    }
+  }
+
+  async function toggleOfferActive(offer: Offer) {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await fetch(`${API_BASE}/api/offers/${offer.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_active: !offer.is_active }),
+      });
+      await loadOffers();
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -2832,9 +2911,9 @@ return (
           <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
             Creator Offers
           </span>
-          {isOwner && !storeFormOpen && (
+          {isOwner && !offerFormOpen && (
             <button
-              onClick={() => openStoreForm()}
+              onClick={() => openOfferForm()}
               className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300"
             >
               + Add Offer
@@ -2845,6 +2924,79 @@ return (
         <p className="mt-2 text-sm text-zinc-500">
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
+
+        {/* Owner: create/edit offer form (backend offers) */}
+        {isOwner && offerFormOpen && offerEditing && (
+          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+              {offerEditing.id ? "Edit Offer" : "New Offer"}
+            </div>
+            <input
+              type="text"
+              placeholder="Offer title"
+              value={offerEditing.title || ""}
+              onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+            />
+            <textarea
+              placeholder="Description"
+              value={offerEditing.description || ""}
+              onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
+              rows={2}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0.50"
+                placeholder="Price (USD)"
+                value={offerEditing.price_usd || ""}
+                onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+              <select
+                value={offerEditing.offer_type || "digital_service"}
+                onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+              >
+                <option value="digital_service">Digital Service</option>
+                <option value="physical_product">Physical Product</option>
+              </select>
+            </div>
+            <input
+              type="text"
+              placeholder="Delivery info (e.g. Delivered via email within 24h)"
+              value={offerEditing.delivery_info || ""}
+              onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+            />
+            <input
+              type="number"
+              min="0"
+              max="100"
+              placeholder="Token holder discount % (0-100)"
+              value={offerEditing.token_discount_percent || ""}
+              onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => saveOffer()}
+                disabled={offerSaving || !offerEditing.title?.trim() || !offerEditing.price_usd}
+                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
+              </button>
+              <button
+                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); }}
+                className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Owner: add/edit form */}
         {isOwner && storeFormOpen && storeEditing && (
@@ -2952,14 +3104,24 @@ return (
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
                 <div key={offer.id} className="group rounded-2xl border border-zinc-800 bg-black p-6 flex flex-col transition hover:border-zinc-700">
-                  <div className="mb-4 flex items-center gap-2 flex-wrap">
-                    <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
-                      {typeBadge.label}
-                    </span>
-                    {offer.token_discount_percent > 0 && (
-                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
-                        {offer.token_discount_percent}% off for holders
+                  <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
+                        {typeBadge.label}
                       </span>
+                      {offer.token_discount_percent > 0 && (
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
+                          {offer.token_discount_percent}% off for holders
+                        </span>
+                      )}
+                    </div>
+                    {isOwner && (
+                      <div className="flex gap-2">
+                        <button onClick={() => openOfferForm(offer)} className="text-[11px] text-zinc-600 transition hover:text-zinc-300">Edit</button>
+                        <button onClick={() => toggleOfferActive(offer)} className="text-[11px] text-zinc-600 transition hover:text-amber-400">
+                          {offer.is_active ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
                     )}
                   </div>
                   <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
@@ -3094,8 +3256,16 @@ return (
           <div className="mt-6 rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
             <div className="text-2xl mb-3 opacity-30">🛍</div>
             <p className="text-sm font-medium text-zinc-500">
-              {isOwner ? "No offers yet — add your first product or service" : "No services or products available yet"}
+              {isOwner ? "You haven't listed any offers yet" : "This creator hasn't listed any offers yet."}
             </p>
+            {isOwner && !offerFormOpen && (
+              <button
+                onClick={() => openOfferForm()}
+                className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-2.5 text-sm font-medium text-emerald-400 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
+              >
+                + Create your first offer
+              </button>
+            )}
           </div>
         )}
       </div>
