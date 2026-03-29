@@ -469,6 +469,8 @@ export default function ProjectPage() {
   const [offerAiField, setOfferAiField] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
+  const [demoMessage, setDemoMessage] = useState(false);
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -775,6 +777,11 @@ export default function ProjectPage() {
 
   async function buyOffer(offer: Offer) {
     if (!authUser) return;
+    if (isDemo) {
+      setDemoMessage(true);
+      setTimeout(() => setDemoMessage(false), 4000);
+      return;
+    }
     setBuyingOfferId(offer.id);
     try {
       const token = await getToken();
@@ -3018,9 +3025,16 @@ return (
       {/* ── Offers (Public Storefront + Owner Tools) ── */}
       <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
-            Creator Offers
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
+              Creator Offers
+            </span>
+            {isDemo && (
+              <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-amber-400/60">
+                Demo
+              </span>
+            )}
+          </div>
           {isOwner && !offerFormOpen && (
             <button
               onClick={() => openOfferForm()}
@@ -3035,14 +3049,25 @@ return (
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
 
-        {/* Checkout result banner */}
-        {checkoutResult === "success" && (
+        {/* Demo mode banner */}
+        {demoMessage && (
+          <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 flex items-center justify-between animate-fade-slide-down">
+            <div>
+              <span className="text-sm font-medium text-amber-300">Checkout is disabled in demo mode</span>
+              <p className="text-xs text-zinc-500 mt-0.5">This storefront is live as a preview. Real payments will be enabled later.</p>
+            </div>
+            <button onClick={() => setDemoMessage(false)} className="text-xs text-amber-400/60 hover:text-amber-300 shrink-0 ml-3">Dismiss</button>
+          </div>
+        )}
+
+        {/* Checkout result banner (only in live mode) */}
+        {!isDemo && checkoutResult === "success" && (
           <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 flex items-center justify-between">
             <span className="text-sm font-medium text-emerald-300">Payment successful — thank you for your purchase!</span>
             <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
           </div>
         )}
-        {checkoutResult === "cancelled" && (
+        {!isDemo && checkoutResult === "cancelled" && (
           <div className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-zinc-400">Checkout was cancelled</span>
             <button onClick={() => setCheckoutResult(null)} className="text-xs text-zinc-600 hover:text-zinc-300">Dismiss</button>
@@ -3393,15 +3418,19 @@ return (
                       onClick={() => buyOffer(offer)}
                       className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
                         authUser
-                          ? "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
+                          ? isDemo
+                            ? "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
+                            : "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                       }`}
                     >
                       {buyingOfferId === offer.id
                         ? "Processing..."
-                        : authUser
-                        ? "Buy Now"
-                        : "Connect to buy"}
+                        : !authUser
+                        ? "Connect to buy"
+                        : isDemo
+                        ? "Preview"
+                        : "Buy Now"}
                     </button>
                   </div>
                 </div>
