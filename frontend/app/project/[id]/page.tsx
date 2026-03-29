@@ -665,6 +665,30 @@ export default function ProjectPage() {
     setOfferImagePreview(null);
   }
 
+  function convertStoreItemToOffer(item: StoreItem) {
+    const typeMap: Record<string, string> = {
+      digital: "digital_service",
+      service: "digital_service",
+      subscription: "digital_service",
+      physical: "physical_product",
+    };
+    setOfferEditing({
+      title: item.name || "",
+      description: item.description || "",
+      price_usd: parseFloat(item.price?.replace(/[^0-9.]/g, "") || "0") || 0,
+      offer_type: typeMap[item.type] || "digital_service",
+      delivery_info: "",
+      token_discount_percent: 0,
+      primary_image_url: "",
+      video_url: "",
+    });
+    setOfferFormOpen(true);
+    setOfferImageFile(null);
+    setOfferImagePreview(null);
+    // Scroll to the form
+    document.getElementById("offers-section")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   async function uploadOfferImage(file: File): Promise<string | null> {
     try {
       const supabase = createClient();
@@ -3534,100 +3558,41 @@ return (
           </div>
         )}
 
-        {/* Owner store items (from store_items JSONB) */}
-        {storeItems.length > 0 && (
-          <div className={`${offers.length > 0 ? "mt-4" : "mt-6"} grid gap-4 sm:grid-cols-2`}>
-            {storeItems.map((item) => {
-              const badge = storeTypeBadge[item.type];
-              const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
-              const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
-              const showGating = hasPerk && tokenConfigured;
-
-              let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
-              if (showGating) {
-                if (!userWallet) {
-                  perkState = "no_wallet";
-                } else if (walletBalance >= (item.required_token_amount || 0)) {
-                  perkState = "unlocked";
-                } else {
-                  perkState = "locked";
-                }
-              }
-
-              const displayPrice = perkState === "unlocked" && item.token_holder_price != null
-                ? item.token_holder_price
-                : item.price || "Free";
-              const isFreeForHolder = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
-
-              return (
-                <div key={item.id} className="group rounded-2xl border border-zinc-800 bg-black p-6 flex flex-col transition hover:border-zinc-700">
-                  <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${badge.color}`}>
+        {/* Legacy store items (owner-only — not checkout-enabled) */}
+        {isOwner && storeItems.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Legacy Items</span>
+              <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold text-amber-400/60">Not purchasable</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {storeItems.map((item) => {
+                const badge = storeTypeBadge[item.type];
+                return (
+                  <div key={item.id} className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-5 flex flex-col">
+                    <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${badge.color} opacity-60`}>
                         {badge.label}
                       </span>
-                      {showGating && perkState === "unlocked" && (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">✓ Unlocked</span>
-                      )}
-                      {showGating && perkState === "locked" && (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2.5 py-1 text-[10px] font-semibold text-amber-400">Requires {item.required_token_amount} tokens</span>
-                      )}
-                      {showGating && perkState === "no_wallet" && (
-                        <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] font-semibold text-zinc-500">🔒 Gated</span>
-                      )}
-                    </div>
-                    {isOwner && (
-                      <div className="flex gap-2">
-                        <button onClick={() => openStoreForm(item)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-300">Edit</button>
+                      <div className="flex gap-1">
                         <button onClick={() => removeStoreItem(item.id)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-red-400">Remove</button>
                       </div>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-bold text-white leading-snug">{item.name}</h3>
-                  {item.description && <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{item.description}</p>}
-                  {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
-                    <ul className="mt-3 space-y-1.5">
-                      {item.benefits.map((b, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                          <span className="mt-0.5 text-emerald-400">✦</span><span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {showGating && item.perk_description && (
-                    <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
-                      <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
                     </div>
-                  )}
-                  {showGating && perkState === "no_wallet" && (
-                    <div className="mt-2"><span className="text-[11px] text-zinc-600">Connect wallet to check eligibility</span></div>
-                  )}
-                  {showGating && perkState === "locked" && item.token_holder_price != null && (
-                    <div className="mt-2"><span className="text-[11px] text-zinc-500">Holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span></span></div>
-                  )}
-                  <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-900 mt-5">
-                    <div>
-                      {isFreeForHolder ? (
-                        <div className="font-mono text-2xl font-bold text-emerald-400">Free</div>
-                      ) : (
-                        <div className="font-mono text-2xl font-bold text-white">{displayPrice}</div>
-                      )}
-                      {perkState === "unlocked" && item.token_holder_price != null && item.price && !isFreeForHolder && (
-                        <div className="text-xs text-zinc-600 line-through mt-0.5">{item.price}</div>
-                      )}
+                    <h3 className="text-base font-semibold text-zinc-300">{item.name}</h3>
+                    {item.description && <p className="mt-1 text-sm text-zinc-500 leading-relaxed line-clamp-2">{item.description}</p>}
+                    <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-zinc-800/50 mt-4">
+                      <span className="font-mono text-base text-zinc-500">{item.price || "Free"}</span>
+                      <button
+                        onClick={() => convertStoreItemToOffer(item)}
+                        className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                      >
+                        Convert to Offer →
+                      </button>
                     </div>
-                    <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
-                      Preview only
-                    </span>
                   </div>
-                  {/* DEBUG: store_items card trace — REMOVE AFTER FIX CONFIRMED */}
-                  <div className="mt-2 rounded-lg border border-orange-500/30 bg-orange-500/5 p-2 text-[10px] font-mono text-orange-300/80 leading-relaxed">
-                    <div>SRC: STORE_ITEMS_JSONB (not checkout-enabled)</div>
-                    <div>This offer is from the old store_items system. Only OFFERS_TABLE items support checkout.</div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 
