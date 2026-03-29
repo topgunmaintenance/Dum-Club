@@ -3449,35 +3449,42 @@ return (
                       <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
                     </div>
                     {isOwner ? (
-                      <span className="rounded-xl bg-zinc-800/50 px-4 py-2 text-[11px] font-medium text-zinc-600">
-                        Your offer
+                      <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
+                        Your Offer
                       </span>
+                    ) : !authUser ? (
+                      <button
+                        disabled
+                        className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed"
+                      >
+                        Connect to buy
+                      </button>
+                    ) : isDemo ? (
+                      <button
+                        onClick={() => buyOffer(offer)}
+                        className="rounded-xl border border-emerald-400/40 bg-transparent px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
+                      >
+                        {demoClickedId === offer.id ? "⚠ Demo" : "Demo Checkout"}
+                      </button>
                     ) : (
                       <button
-                        disabled={!authUser || buyingOfferId === offer.id}
+                        disabled={buyingOfferId === offer.id}
                         onClick={() => buyOffer(offer)}
-                        className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
-                          !authUser
-                            ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                            : isDemo
-                            ? "bg-emerald-500/80 text-black hover:bg-emerald-400"
-                            : "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
-                        }`}
+                        className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
                       >
-                        {buyingOfferId === offer.id
-                          ? "Processing..."
-                          : !authUser
-                          ? "Connect to buy"
-                          : isDemo
-                          ? "Demo Checkout"
-                          : "Buy Now"}
+                        {buyingOfferId === offer.id ? "Processing..." : "Buy Now"}
                       </button>
                     )}
                   </div>
-                  {/* Inline demo feedback */}
+                  {/* Inline demo feedback — inside card */}
                   {demoClickedId === offer.id && (
-                    <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-300 animate-fade-slide-down">
-                      Demo mode — checkout is disabled. Real payments coming soon.
+                    <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 animate-fade-slide-down">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+                        <span>⚠</span> Demo Mode
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
+                        Checkout is disabled right now. To enable real checkout, this project must go live.
+                      </p>
                     </div>
                   )}
                 </div>
