@@ -611,6 +611,7 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/offers/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load offers");
       const data = await res.json();
+      console.log("OFFERS DATA:", data);
       setOffers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -3089,7 +3090,7 @@ return (
         )}
 
         {/* Empty state */}
-        {offers.length === 0 && storeItems.length === 0 && !storeFormOpen && (
+        {offers.length === 0 && storeItems.length === 0 && (
           <div className="mt-6 rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
             <div className="text-2xl mb-3 opacity-30">🛍</div>
             <p className="text-sm font-medium text-zinc-500">
