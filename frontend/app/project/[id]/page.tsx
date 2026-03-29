@@ -3051,12 +3051,13 @@ return (
 
         {/* Demo mode banner */}
         {demoMessage && (
-          <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 flex items-center justify-between animate-fade-slide-down">
+          <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-5 py-4 flex items-start justify-between gap-3 animate-fade-slide-down">
             <div>
-              <span className="text-sm font-medium text-amber-300">Checkout is disabled in demo mode</span>
-              <p className="text-xs text-zinc-500 mt-0.5">This storefront is live as a preview. Real payments will be enabled later.</p>
+              <div className="text-sm font-semibold text-amber-300">Demo Mode</div>
+              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">Checkout is currently disabled. This is a preview of how purchases will work.</p>
+              <p className="text-[11px] text-zinc-600 mt-1">Real payments will be enabled soon.</p>
             </div>
-            <button onClick={() => setDemoMessage(false)} className="text-xs text-amber-400/60 hover:text-amber-300 shrink-0 ml-3">Dismiss</button>
+            <button onClick={() => setDemoMessage(false)} className="text-xs text-amber-400/60 hover:text-amber-300 shrink-0">✕</button>
           </div>
         )}
 
@@ -3418,9 +3419,7 @@ return (
                       onClick={() => buyOffer(offer)}
                       className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
                         authUser
-                          ? isDemo
-                            ? "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
-                            : "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
+                          ? "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                       }`}
                     >
@@ -3429,7 +3428,7 @@ return (
                         : !authUser
                         ? "Connect to buy"
                         : isDemo
-                        ? "Preview"
+                        ? "Demo Checkout"
                         : "Buy Now"}
                     </button>
                   </div>
