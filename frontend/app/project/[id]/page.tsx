@@ -752,7 +752,11 @@ export default function ProjectPage() {
       let imageUrl = offerEditing.primary_image_url?.trim() || null;
       if (offerImageFile) {
         const uploaded = await uploadOfferImage(offerImageFile);
-        if (uploaded) imageUrl = uploaded;
+        if (uploaded) {
+          imageUrl = uploaded;
+        } else {
+          alert("Image upload failed — offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
+        }
       }
 
       const isEdit = Boolean(offerEditing.id);
@@ -3483,7 +3487,11 @@ return (
                     <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800">
                       <img src={offer.primary_image_url} alt={offer.title} className="w-full max-h-56 object-cover" />
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="mb-3 flex h-32 items-center justify-center rounded-xl border border-zinc-800/50 bg-zinc-900/30 text-zinc-700 text-2xl">
+                      {offer.offer_type === "physical_product" ? "📦" : "💼"}
+                    </div>
+                  )}
 
                   {/* Content */}
                   <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
