@@ -2162,11 +2162,11 @@ const heroUtility =
 
 return (
   <div
-    className={`min-h-screen bg-black px-4 py-10 text-white sm:px-6 ${
+    className={`min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8 ${
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
       {pitchMode && (
@@ -2750,7 +2750,7 @@ return (
 
       {canShowMarketUi && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-zinc-800 bg-black">
-          <div className="mx-auto max-w-7xl px-2">
+          <div className="mx-auto max-w-6xl px-2">
             <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
               {[
                 {
@@ -3437,16 +3437,17 @@ return (
           </div>
         )}
 
-        {/* Backend offers (from offers table — public storefront) */}
+        {/* Offers from offers table */}
         {offers.length > 0 && (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {offers.map((offer) => {
               const typeBadge = offer.offer_type === "physical_product"
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className="group rounded-2xl border border-zinc-800 bg-black p-6 flex flex-col transition hover:border-zinc-700">
-                  <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-black p-5 sm:p-6 flex flex-col transition hover:border-zinc-700">
+                  {/* Header: badge + owner controls */}
+                  <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
                         {typeBadge.label}
@@ -3461,14 +3462,15 @@ return (
                       <div className="flex gap-1">
                         <button onClick={() => openOfferForm(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-300">Edit</button>
                         <button onClick={() => toggleOfferActive(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-amber-400">
-                          {offer.is_active ? "Deactivate" : "Activate"}
+                          Deactivate
                         </button>
                       </div>
                     )}
                   </div>
+
                   {/* Media */}
                   {offer.video_url ? (
-                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
+                    <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
                       <iframe
                         src={offer.video_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
                         className="w-full h-full"
@@ -3478,30 +3480,26 @@ return (
                       />
                     </div>
                   ) : offer.primary_image_url ? (
-                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800">
-                      <img
-                        src={offer.primary_image_url}
-                        alt={offer.title}
-                        className="w-full max-h-56 object-cover"
-                      />
+                    <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800">
+                      <img src={offer.primary_image_url} alt={offer.title} className="w-full max-h-56 object-cover" />
                     </div>
                   ) : null}
 
+                  {/* Content */}
                   <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
                   {offer.description && (
                     <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
                   )}
                   {offer.delivery_info && (
-                    <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-600">
-                      <span className="text-zinc-700">↳</span>
-                      <span>{offer.delivery_info}</span>
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-600">
+                      <span>↳</span><span>{offer.delivery_info}</span>
                     </div>
                   )}
-                  <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-900 mt-5">
+
+                  {/* Price + Action */}
+                  <div className="mt-auto pt-4 flex items-end justify-between gap-3 border-t border-zinc-900 mt-4">
                     <div>
-                      <div className="font-mono text-2xl font-bold text-white">
-                        ${Number(offer.price_usd).toFixed(2)}
-                      </div>
+                      <div className="font-mono text-2xl font-bold text-white">${Number(offer.price_usd).toFixed(2)}</div>
                       <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
                     </div>
                     {isOwner ? (
@@ -3509,16 +3507,13 @@ return (
                         Your Offer
                       </span>
                     ) : !authUser ? (
-                      <button
-                        disabled
-                        className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed"
-                      >
+                      <button disabled className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed">
                         Connect to buy
                       </button>
                     ) : isDemo ? (
                       <button
                         onClick={() => buyOffer(offer)}
-                        className="rounded-xl border border-emerald-400/40 bg-transparent px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
+                        className="rounded-xl border border-emerald-400/40 px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
                       >
                         {demoClickedId === offer.id ? "⚠ Demo" : "Demo Checkout"}
                       </button>
@@ -3532,26 +3527,20 @@ return (
                       </button>
                     )}
                   </div>
-                  {/* Inline demo feedback — inside card */}
+
+                  {/* Demo inline feedback */}
                   {demoClickedId === offer.id && (
-                    <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 animate-fade-slide-down">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-300">
-                        <span>⚠</span> Demo Mode
-                      </div>
-                      <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
-                        Checkout is disabled right now. To enable real checkout, this project must go live.
-                      </p>
+                    <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-300/80">
+                      Checkout is disabled in demo mode.
                     </div>
                   )}
-                  {/* DEBUG: full state trace — REMOVE AFTER FIX CONFIRMED */}
-                  <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-[10px] font-mono text-red-300/80 leading-relaxed break-all space-y-0.5">
-                    <div>SRC: OFFERS_TABLE | id: {offer.id.slice(0,8)}</div>
-                    <div>auth: {authUser ? "YES" : "NO"} | privy: {authUser?.privyId ? "Y" : "N"} | wallet: {authUser?.walletAddress?.slice(0,6) || "NONE"}</div>
-                    <div>owner: {String(isOwner)} | demo: {String(isDemo)}</div>
-                    <div>btn: {isOwner ? "YOUR_OFFER" : !authUser ? "CONNECT" : isDemo ? "DEMO" : "BUY_NOW"}</div>
-                    <div>step: {buyStep[offer.id] || "idle"}</div>
-                    {buyError[offer.id] && <div className="text-red-400">ERR: {buyError[offer.id]}</div>}
-                  </div>
+
+                  {/* Error feedback */}
+                  {buyError[offer.id] && (
+                    <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                      {buyError[offer.id]}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -4844,7 +4833,7 @@ return (
 
     {canShowMarketUi && hasMarketSnapshot && (
       <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-black/90 backdrop-blur-md lg:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
             <span className="truncate font-black text-white">{heroTitle}</span>
             <span className="font-mono text-sm text-zinc-400">${displaySymbol}</span>
