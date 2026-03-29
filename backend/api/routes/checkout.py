@@ -300,3 +300,54 @@ async def seller_orders(
     )
 
     return res.data or []
+
+
+@router.patch("/orders/{order_id}/status")
+async def update_order_status(
+    order_id: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Owner marks an order as delivered."""
+    body = await request.json()
+    new_status = body.get("status")
+    if new_status not in ("delivered",):
+        raise HTTPException(status_code=400, detail="Invalid status. Allowed: delivered")
+
+    supabase = get_client()
+    privy_id = current_user.get("sub")
+
+    order_res = (
+        supabase.table("orders")
+        .select("id, project_id, status")
+        .eq("id", order_id)
+        .limit(1)
+        .execute()
+    )
+    if not order_res.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    order = order_res.data[0]
+    if order["status"] not in ("paid",):
+        raise HTTPException(status_code=400, detail="Only paid orders can be marked delivered")
+
+    project_res = (
+        supabase.table("projects")
+        .select("owner_id")
+        .eq("id", order["project_id"])
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    resolved = _resolve_privy_to_owner(supabase, privy_id)
+    if resolved != project_res.data[0].get("owner_id"):
+        raise HTTPException(status_code=403, detail="Not the project owner")
+
+    supabase.table("orders").update({
+        "status": new_status,
+        "updated_at": _now_iso(),
+    }).eq("id", order_id).execute()
+
+    return {"status": new_status, "order_id": order_id}

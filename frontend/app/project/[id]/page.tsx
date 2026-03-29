@@ -471,6 +471,21 @@ export default function ProjectPage() {
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
   const [demoMessage, setDemoMessage] = useState(false);
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
+  interface Order {
+    id: string;
+    offer_id: string;
+    project_id: string;
+    buyer_user_id: string;
+    buyer_email: string | null;
+    amount_paid_usd: number;
+    platform_fee_usd: number;
+    seller_receives_usd: number;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    offers?: { title: string; offer_type: string; price_usd: number } | null;
+  }
+  const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -816,6 +831,33 @@ export default function ProjectPage() {
       alert(err instanceof Error ? err.message : "Checkout failed");
       setBuyingOfferId(null);
     }
+  }
+
+  async function loadSellerOrders() {
+    if (!id || !isOwner) return;
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSellerOrders(Array.isArray(data) ? data : []);
+    } catch { setSellerOrders([]); }
+  }
+
+  async function markDelivered(orderId: string) {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      await fetch(`${API_BASE}/api/checkout/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "delivered" }),
+      });
+      await loadSellerOrders();
+    } catch (err) { console.error(err); }
   }
 
   async function loadMarket() {
@@ -1785,6 +1827,10 @@ export default function ProjectPage() {
     const walletMatch = Boolean(authUser?.walletAddress && project.wallet_address && authUser.walletAddress === project.wallet_address);
     setIsOwner(privyMatch || walletMatch);
   }, [project?.owner_id, project?.privy_id, project?.wallet_address, project?.id, authUser?.privyId, authUser?.walletAddress]);
+
+  useEffect(() => {
+    if (isOwner && id) loadSellerOrders();
+  }, [isOwner, id]);
 
   // Gate banner to launch arrivals only (?launched=1 from /build redirect).
   // Also detect ?view=pitch for shareable presentation mode.
@@ -3552,6 +3598,79 @@ return (
           </div>
         )}
       </div>
+
+      {/* ── Seller Sales (Owner Only) ──────────────── */}
+      {isOwner && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
+          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
+            Sales
+          </div>
+          <h2 className="font-mono text-2xl font-bold text-white">Orders</h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            Purchases from your offers
+          </p>
+
+          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
+            <span className="text-[11px] text-zinc-600">
+              Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
+            </span>
+          </div>
+
+          {sellerOrders.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+              <p className="text-sm text-zinc-600">No sales yet</p>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {sellerOrders.map((order) => {
+                const isPaid = order.status === "paid";
+                const isDelivered = order.status === "delivered";
+                return (
+                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-black p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-white truncate">
+                          {order.offers?.title || "Offer"}
+                        </h3>
+                        <div className="mt-1 text-xs text-zinc-600">
+                          {order.buyer_email || "Anonymous buyer"} · {new Date(order.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-base font-bold text-white">
+                          ${Number(order.amount_paid_usd).toFixed(2)}
+                        </div>
+                        <div className="text-[10px] text-zinc-600 mt-0.5">
+                          You receive: ${Number(order.seller_receives_usd).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                        isDelivered
+                          ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
+                          : isPaid
+                          ? "border-sky-400/30 text-sky-400 bg-sky-400/10"
+                          : "border-zinc-700 text-zinc-500"
+                      }`}>
+                        {order.status}
+                      </span>
+                      {isPaid && (
+                        <button
+                          onClick={() => markDelivered(order.id)}
+                          className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                        >
+                          Mark delivered
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>

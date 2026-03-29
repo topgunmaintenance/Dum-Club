@@ -212,15 +212,23 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Generate Project CTA */}
-        <Link
-          href="/build"
-          className="mb-8 flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-5 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
-        >
-          <span className="text-2xl">🚀</span>
-          <span className="text-lg font-bold text-emerald-400">Generate Project</span>
-          <span className="text-sm text-zinc-500">Describe an idea and launch instantly</span>
-        </Link>
+        {/* Quick actions */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/build"
+            className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-5 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
+          >
+            <span className="text-2xl">🚀</span>
+            <span className="text-lg font-bold text-emerald-400">Generate Project</span>
+          </Link>
+          <Link
+            href="/orders"
+            className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 px-6 py-5 transition hover:border-zinc-700"
+          >
+            <span className="text-2xl">📦</span>
+            <span className="text-lg font-bold text-zinc-300">My Orders</span>
+          </Link>
+        </div>
 
         {/* Projects list */}
         <div>
