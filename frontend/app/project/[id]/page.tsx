@@ -466,6 +466,7 @@ export default function ProjectPage() {
   const [offerSaving, setOfferSaving] = useState(false);
   const [offerImageFile, setOfferImageFile] = useState<File | null>(null);
   const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
+  const [offerAiField, setOfferAiField] = useState<string | null>(null);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -658,6 +659,40 @@ export default function ProjectPage() {
     } catch (err) {
       console.error("Image upload failed:", err);
       return null;
+    }
+  }
+
+  async function offerAiAssist(field: "title" | "description" | "price") {
+    if (!offerEditing || !project) return;
+    setOfferAiField(field);
+    const ctx = `Project: "${project.title || project.name || "Untitled"}"\nDescription: "${project.description || "N/A"}"\nCategory: ${project.template_type || "General"}\nOffer type: ${offerEditing.offer_type || "digital_service"}\nCurrent title: "${offerEditing.title || ""}"\nCurrent description: "${offerEditing.description || ""}"`;
+    let prompt = "";
+    if (field === "title") {
+      prompt = `You are a product listing expert. Generate a short, compelling title for this offer.\n\n${ctx}\n\nReturn ONLY the title text, nothing else. Keep it under 50 characters.`;
+    } else if (field === "description") {
+      prompt = `You are a product copywriter. Write a clear, persuasive description for this offer.\n\n${ctx}\n\nReturn ONLY the description text, nothing else. Keep it under 200 characters. Be specific and professional.`;
+    } else {
+      prompt = `You are a pricing strategist. Suggest a realistic USD price for this offer.\n\n${ctx}\nCurrent price: $${offerEditing.price_usd || "not set"}\n\nReturn ONLY a number (e.g. 29.99). Nothing else.`;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/chat/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: prompt, project_id: id, stream: false }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const result = (data.answer || "").trim();
+      if (field === "title") setOfferEditing({ ...offerEditing, title: result });
+      else if (field === "description") setOfferEditing({ ...offerEditing, description: result });
+      else {
+        const num = parseFloat(result.replace(/[^0-9.]/g, ""));
+        if (!isNaN(num)) setOfferEditing({ ...offerEditing, price_usd: num });
+      }
+    } catch {
+      // silently fail — user can type manually
+    } finally {
+      setOfferAiField(null);
     }
   }
 
@@ -2964,34 +2999,68 @@ return (
             <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
               {offerEditing.id ? "Edit Offer" : "New Offer"}
             </div>
-            <input
-              type="text"
-              placeholder="Offer title"
-              value={offerEditing.title || ""}
-              onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-            />
-            <textarea
-              placeholder="Description"
-              value={offerEditing.description || ""}
-              onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
-              rows={2}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="number"
-                step="0.01"
-                min="0.50"
-                placeholder="Price (USD)"
-                value={offerEditing.price_usd || ""}
-                onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
+            <div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Offer title"
+                  value={offerEditing.title || ""}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
+                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => offerAiAssist("title")}
+                  disabled={offerAiField === "title"}
+                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                >
+                  {offerAiField === "title" ? "..." : "AI Title"}
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="flex gap-2 items-start">
+                <textarea
+                  placeholder="Description"
+                  value={offerEditing.description || ""}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
+                  rows={2}
+                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => offerAiAssist("description")}
+                  disabled={offerAiField === "description"}
+                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                >
+                  {offerAiField === "description" ? "..." : "AI Copy"}
+                </button>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex gap-2 sm:col-span-1">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.50"
+                  placeholder="Price (USD)"
+                  value={offerEditing.price_usd || ""}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
+                  className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => offerAiAssist("price")}
+                  disabled={offerAiField === "price"}
+                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                >
+                  {offerAiField === "price" ? "..." : "$?"}
+                </button>
+              </div>
               <select
                 value={offerEditing.offer_type || "digital_service"}
                 onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40 sm:col-span-2"
               >
                 <option value="digital_service">Digital Service</option>
                 <option value="physical_product">Physical Product</option>
