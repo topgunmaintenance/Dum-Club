@@ -144,6 +144,7 @@ export default function DashboardPage() {
 
         {/* Stats + Wallet + CTA row */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* grid: 2 stat cards + 1 wide wallet card (spans 2 on lg) */}
           {/* Total Projects */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
@@ -164,35 +165,50 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Wallet */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          {/* Wallet + Balance */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Wallet
             </div>
             {walletAddress ? (
-              <div className="mt-1">
-                <button
-                  onClick={copyAddress}
-                  className="font-mono text-sm text-zinc-300 transition hover:text-white"
-                  title={walletAddress}
-                >
-                  {copied ? "Copied!" : shortAddress(walletAddress)}
-                </button>
+              <div className="mt-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm text-zinc-300" title={walletAddress}>
+                    {shortAddress(walletAddress)}
+                  </span>
+                  <span className="font-mono text-lg font-bold text-white">
+                    {solBalance !== null ? `${solBalance.toFixed(4)}` : "—"}
+                    <span className="ml-1 text-xs font-normal text-zinc-500">SOL</span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={copyAddress}
+                    className="rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    {copied ? "Copied ✓" : "Copy address"}
+                  </button>
+                  <a
+                    href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    Explorer ↗
+                  </a>
+                  <a
+                    href="https://faucet.solana.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  >
+                    Get test SOL ↗
+                  </a>
+                </div>
               </div>
             ) : (
-              <div className="mt-1 text-sm text-zinc-600">Not connected</div>
+              <div className="mt-2 text-sm text-zinc-600">No wallet connected</div>
             )}
-          </div>
-
-          {/* Balance */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              Balance
-            </div>
-            <div className="mt-1 font-mono text-2xl font-bold text-white">
-              {solBalance !== null ? `${solBalance.toFixed(4)}` : "—"}
-              <span className="ml-1 text-sm font-normal text-zinc-500">SOL</span>
-            </div>
           </div>
         </div>
 
