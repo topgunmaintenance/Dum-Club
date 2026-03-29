@@ -469,7 +469,7 @@ export default function ProjectPage() {
   const [offerAiField, setOfferAiField] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
-  const [demoMessage, setDemoMessage] = useState(false);
+  const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
   interface Order {
     id: string;
@@ -793,8 +793,8 @@ export default function ProjectPage() {
   async function buyOffer(offer: Offer) {
     if (!authUser) return;
     if (isDemo) {
-      setDemoMessage(true);
-      setTimeout(() => setDemoMessage(false), 4000);
+      setDemoClickedId(offer.id);
+      setTimeout(() => setDemoClickedId(null), 5000);
       return;
     }
     setBuyingOfferId(offer.id);
@@ -3095,17 +3095,7 @@ return (
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
 
-        {/* Demo mode banner */}
-        {demoMessage && (
-          <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/5 px-5 py-4 flex items-start justify-between gap-3 animate-fade-slide-down">
-            <div>
-              <div className="text-sm font-semibold text-amber-300">Demo Mode</div>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">Checkout is currently disabled. This is a preview of how purchases will work.</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Real payments will be enabled soon.</p>
-            </div>
-            <button onClick={() => setDemoMessage(false)} className="text-xs text-amber-400/60 hover:text-amber-300 shrink-0">✕</button>
-          </div>
-        )}
+        {/* Demo mode indicator (section-level) */}
 
         {/* Checkout result banner (only in live mode) */}
         {!isDemo && checkoutResult === "success" && (
@@ -3123,72 +3113,70 @@ return (
 
         {/* Owner: create/edit offer form (backend offers) */}
         {isOwner && offerFormOpen && offerEditing && (
-          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
+          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5 space-y-4">
             <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
               {offerEditing.id ? "Edit Offer" : "New Offer"}
             </div>
             <div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Offer title"
-                  value={offerEditing.title || ""}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => offerAiAssist("title")}
-                  disabled={offerAiField === "title"}
-                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-                >
-                  {offerAiField === "title" ? "..." : "AI Title"}
-                </button>
-              </div>
+              <input
+                type="text"
+                placeholder="Offer title"
+                value={offerEditing.title || ""}
+                onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              />
+              <button
+                type="button"
+                onClick={() => offerAiAssist("title")}
+                disabled={offerAiField === "title"}
+                className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+              >
+                {offerAiField === "title" ? "Generating..." : "✨ AI Title"}
+              </button>
             </div>
             <div>
-              <div className="flex gap-2 items-start">
-                <textarea
-                  placeholder="Description"
-                  value={offerEditing.description || ""}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
-                  rows={2}
-                  className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => offerAiAssist("description")}
-                  disabled={offerAiField === "description"}
-                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-                >
-                  {offerAiField === "description" ? "..." : "AI Copy"}
-                </button>
-              </div>
+              <textarea
+                placeholder="Description"
+                value={offerEditing.description || ""}
+                onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
+                rows={3}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+              />
+              <button
+                type="button"
+                onClick={() => offerAiAssist("description")}
+                disabled={offerAiField === "description"}
+                className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+              >
+                {offerAiField === "description" ? "Generating..." : "✨ AI Copy"}
+              </button>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex gap-2 sm:col-span-1">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.50"
-                  placeholder="Price (USD)"
-                  value={offerEditing.price_usd || ""}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                  className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => offerAiAssist("price")}
-                  disabled={offerAiField === "price"}
-                  className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-2 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-                >
-                  {offerAiField === "price" ? "..." : "$?"}
-                </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.50"
+                    placeholder="Price (USD)"
+                    value={offerEditing.price_usd || ""}
+                    onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
+                    className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => offerAiAssist("price")}
+                    disabled={offerAiField === "price"}
+                    className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-3 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                  >
+                    {offerAiField === "price" ? "..." : "$?"}
+                  </button>
+                </div>
               </div>
               <select
                 value={offerEditing.offer_type || "digital_service"}
                 onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40 sm:col-span-2"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
               >
                 <option value="digital_service">Digital Service</option>
                 <option value="physical_product">Physical Product</option>
@@ -3278,17 +3266,17 @@ return (
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={() => saveOffer()}
                 disabled={offerSaving || !offerEditing.title?.trim() || !offerEditing.price_usd}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
               </button>
               <button
                 onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); }}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                className="w-full sm:w-auto rounded-xl border border-zinc-800 px-5 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
               >
                 Cancel
               </button>
@@ -3460,24 +3448,38 @@ return (
                       </div>
                       <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
                     </div>
-                    <button
-                      disabled={!authUser || buyingOfferId === offer.id}
-                      onClick={() => buyOffer(offer)}
-                      className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
-                        authUser
-                          ? "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
-                          : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {buyingOfferId === offer.id
-                        ? "Processing..."
-                        : !authUser
-                        ? "Connect to buy"
-                        : isDemo
-                        ? "Demo Checkout"
-                        : "Buy Now"}
-                    </button>
+                    {isOwner ? (
+                      <span className="rounded-xl bg-zinc-800/50 px-4 py-2 text-[11px] font-medium text-zinc-600">
+                        Your offer
+                      </span>
+                    ) : (
+                      <button
+                        disabled={!authUser || buyingOfferId === offer.id}
+                        onClick={() => buyOffer(offer)}
+                        className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
+                          !authUser
+                            ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                            : isDemo
+                            ? "bg-emerald-500/80 text-black hover:bg-emerald-400"
+                            : "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
+                        }`}
+                      >
+                        {buyingOfferId === offer.id
+                          ? "Processing..."
+                          : !authUser
+                          ? "Connect to buy"
+                          : isDemo
+                          ? "Demo Checkout"
+                          : "Buy Now"}
+                      </button>
+                    )}
                   </div>
+                  {/* Inline demo feedback */}
+                  {demoClickedId === offer.id && (
+                    <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-300 animate-fade-slide-down">
+                      Demo mode — checkout is disabled. Real payments coming soon.
+                    </div>
+                  )}
                 </div>
               );
             })}
