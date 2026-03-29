@@ -25,6 +25,7 @@ type Memory = {
 type Project = {
   id: string;
   owner_id?: string | null;
+  privy_id?: string | null;
   wallet_address?: string | null;
   name?: string;
   title?: string;
@@ -421,7 +422,6 @@ export default function ProjectPage() {
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [ownerDebug, setOwnerDebug] = useState("");
 
   // AI Builder state
   const [builderAction, setBuilderAction] = useState<string | null>(null);
@@ -1658,21 +1658,14 @@ export default function ProjectPage() {
   }, [id]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (cancelled) return;
-      const match = Boolean(user?.id && project?.owner_id === user.id);
-      setIsOwner(match);
-      setOwnerDebug(`supabaseUser=${user?.id || "null"} | ownerID=${project?.owner_id || "null"} | privyId=${authUser?.privyId || "null"} | match=${match}`);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [project?.owner_id, project?.id]);
+    if (!project) {
+      setIsOwner(false);
+      return;
+    }
+    const privyMatch = Boolean(authUser?.privyId && project.privy_id && authUser.privyId === project.privy_id);
+    const walletMatch = Boolean(authUser?.walletAddress && project.wallet_address && authUser.walletAddress === project.wallet_address);
+    setIsOwner(privyMatch || walletMatch);
+  }, [project?.owner_id, project?.privy_id, project?.wallet_address, project?.id, authUser?.privyId, authUser?.walletAddress]);
 
   // Gate banner to launch arrivals only (?launched=1 from /build redirect).
   // Also detect ?view=pitch for shareable presentation mode.
@@ -2905,13 +2898,6 @@ return (
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* DEBUG: remove after fixing owner detection */}
-      {ownerDebug && (
-        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs font-mono text-yellow-300/80 break-all">
-          {ownerDebug}
         </div>
       )}
 
