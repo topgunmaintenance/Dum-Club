@@ -464,6 +464,8 @@ export default function ProjectPage() {
   const [offerFormOpen, setOfferFormOpen] = useState(false);
   const [offerEditing, setOfferEditing] = useState<Partial<Offer> | null>(null);
   const [offerSaving, setOfferSaving] = useState(false);
+  const [offerImageFile, setOfferImageFile] = useState<File | null>(null);
+  const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -637,6 +639,26 @@ export default function ProjectPage() {
       video_url: "",
     });
     setOfferFormOpen(true);
+    setOfferImageFile(null);
+    setOfferImagePreview(null);
+  }
+
+  async function uploadOfferImage(file: File): Promise<string | null> {
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `offer-images/${id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("offers").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("offers").getPublicUrl(path);
+      return data.publicUrl;
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      return null;
+    }
   }
 
   async function saveOffer() {
@@ -645,6 +667,13 @@ export default function ProjectPage() {
     try {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
+
+      // Upload image if file selected
+      let imageUrl = offerEditing.primary_image_url?.trim() || null;
+      if (offerImageFile) {
+        const uploaded = await uploadOfferImage(offerImageFile);
+        if (uploaded) imageUrl = uploaded;
+      }
 
       const isEdit = Boolean(offerEditing.id);
       const url = isEdit
@@ -659,7 +688,7 @@ export default function ProjectPage() {
         offer_type: offerEditing.offer_type || "digital_service",
         delivery_info: offerEditing.delivery_info?.trim() || null,
         token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
-        primary_image_url: offerEditing.primary_image_url?.trim() || null,
+        primary_image_url: imageUrl,
         video_url: offerEditing.video_url?.trim() || null,
       };
       if (!isEdit) body.project_id = id;
@@ -679,6 +708,8 @@ export default function ProjectPage() {
       await loadOffers();
       setOfferFormOpen(false);
       setOfferEditing(null);
+      setOfferImageFile(null);
+      setOfferImagePreview(null);
     } catch (err) {
       console.error(err);
       alert(err instanceof Error ? err.message : "Failed to save offer");
@@ -2984,23 +3015,64 @@ return (
             />
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Media (optional)</div>
-              <input
-                type="url"
-                placeholder="Image URL (paste a link to your product image)"
-                value={offerEditing.primary_image_url || ""}
-                onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
-              {offerEditing.primary_image_url?.trim() && (
-                <div className="rounded-lg overflow-hidden border border-zinc-800">
+
+              {/* Image upload */}
+              <div>
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-black px-4 py-3 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300">
+                  <span>📷</span>
+                  <span>{offerImageFile ? offerImageFile.name : "Upload image or take photo"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setOfferImageFile(file);
+                        setOfferImagePreview(URL.createObjectURL(file));
+                        setOfferEditing({ ...offerEditing, primary_image_url: "" });
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Image preview (upload or existing URL) */}
+              {(offerImagePreview || offerEditing.primary_image_url?.trim()) && (
+                <div className="relative rounded-lg overflow-hidden border border-zinc-800">
                   <img
-                    src={offerEditing.primary_image_url}
+                    src={offerImagePreview || offerEditing.primary_image_url || ""}
                     alt="Preview"
                     className="w-full max-h-48 object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOfferImageFile(null);
+                      setOfferImagePreview(null);
+                      setOfferEditing({ ...offerEditing, primary_image_url: "" });
+                    }}
+                    className="absolute top-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-zinc-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
                 </div>
               )}
+
+              {/* Fallback: paste URL */}
+              {!offerImageFile && (
+                <input
+                  type="url"
+                  placeholder="Or paste image URL"
+                  value={offerEditing.primary_image_url || ""}
+                  onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                />
+              )}
+
+              {/* Video URL */}
               <input
                 type="url"
                 placeholder="Video URL (YouTube, Loom, etc.)"
@@ -3018,7 +3090,7 @@ return (
                 {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
               </button>
               <button
-                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); }}
+                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); }}
                 className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
               >
                 Cancel
