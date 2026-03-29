@@ -2826,23 +2826,23 @@ return (
       )}
 
       {/* ── Offers (Public Storefront + Owner Tools) ── */}
-      <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+      <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-            Storefront
+          <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
+            Creator Offers
           </span>
           {isOwner && !storeFormOpen && (
             <button
               onClick={() => openStoreForm()}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300"
             >
               + Add Offer
             </button>
           )}
         </div>
-        <h2 className="text-xl font-bold text-white tracking-tight">Offers</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          {isOwner ? "Products, services, and subscriptions for your community" : "Services and products from this project"}
+        <h2 className="font-mono text-2xl font-bold text-white">Offers</h2>
+        <p className="mt-2 text-sm text-zinc-500">
+          {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
 
         {/* Owner: add/edit form */}
@@ -2944,38 +2944,44 @@ return (
 
         {/* Backend offers (from offers table — public storefront) */}
         {offers.length > 0 && (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {offers.map((offer) => {
               const typeBadge = offer.offer_type === "physical_product"
-                ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400" }
-                : { label: "Digital Service", color: "border-sky-400/30 text-sky-400" };
+                ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
+                : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${typeBadge.color}`}>
+                <div key={offer.id} className="group rounded-2xl border border-zinc-800 bg-black p-6 flex flex-col transition hover:border-zinc-700">
+                  <div className="mb-4 flex items-center gap-2 flex-wrap">
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
                       {typeBadge.label}
                     </span>
                     {offer.token_discount_percent > 0 && (
-                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
-                        {offer.token_discount_percent}% holder discount
+                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
+                        {offer.token_discount_percent}% off for holders
                       </span>
                     )}
                   </div>
-                  <h3 className="text-base font-semibold text-white">{offer.title}</h3>
+                  <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
                   {offer.description && (
-                    <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
+                    <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
                   )}
                   {offer.delivery_info && (
-                    <p className="mt-2 text-xs text-zinc-600">{offer.delivery_info}</p>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-600">
+                      <span className="text-zinc-700">↳</span>
+                      <span>{offer.delivery_info}</span>
+                    </div>
                   )}
-                  <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="font-mono text-lg font-bold text-white">
-                      ${Number(offer.price_usd).toFixed(2)}
-                      <span className="ml-1 text-xs font-normal text-zinc-500">USD</span>
-                    </span>
+                  <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-900 mt-5">
+                    <div>
+                      <div className="font-mono text-2xl font-bold text-white">
+                        ${Number(offer.price_usd).toFixed(2)}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
+                    </div>
                     <button
                       disabled
-                      className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-500 cursor-not-allowed opacity-60"
+                      className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-400 transition cursor-not-allowed"
+                      title={authUser ? "Coming soon" : "Sign in to purchase"}
                     >
                       {authUser ? "Buy Now" : "Connect to buy"}
                     </button>
@@ -2988,7 +2994,7 @@ return (
 
         {/* Owner store items (from store_items JSONB) */}
         {storeItems.length > 0 && (
-          <div className={`${offers.length > 0 ? "mt-4" : "mt-5"} grid gap-4 sm:grid-cols-2`}>
+          <div className={`${offers.length > 0 ? "mt-4" : "mt-6"} grid gap-4 sm:grid-cols-2`}>
             {storeItems.map((item) => {
               const badge = storeTypeBadge[item.type];
               const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
@@ -3012,20 +3018,20 @@ return (
               const isFreeForHolder = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
 
               return (
-                <div key={item.id} className="rounded-2xl border border-zinc-800 bg-black p-5 flex flex-col">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
+                <div key={item.id} className="group rounded-2xl border border-zinc-800 bg-black p-6 flex flex-col transition hover:border-zinc-700">
+                  <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${badge.color}`}>
                         {badge.label}
                       </span>
                       {showGating && perkState === "unlocked" && (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400">✓ Unlocked</span>
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">✓ Unlocked</span>
                       )}
                       {showGating && perkState === "locked" && (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-amber-400">Requires {item.required_token_amount} tokens</span>
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/5 px-2.5 py-1 text-[10px] font-semibold text-amber-400">Requires {item.required_token_amount} tokens</span>
                       )}
                       {showGating && perkState === "no_wallet" && (
-                        <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase text-zinc-500">🔒 Gated</span>
+                        <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] font-semibold text-zinc-500">🔒 Gated</span>
                       )}
                     </div>
                     {isOwner && (
@@ -3035,8 +3041,8 @@ return (
                       </div>
                     )}
                   </div>
-                  <h3 className="text-base font-semibold text-white">{item.name}</h3>
-                  {item.description && <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>}
+                  <h3 className="text-lg font-bold text-white leading-snug">{item.name}</h3>
+                  {item.description && <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{item.description}</p>}
                   {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
                     <ul className="mt-3 space-y-1.5">
                       {item.benefits.map((b, i) => (
@@ -3055,22 +3061,23 @@ return (
                     <div className="mt-2"><span className="text-[11px] text-zinc-600">Connect wallet to check eligibility</span></div>
                   )}
                   {showGating && perkState === "locked" && item.token_holder_price != null && (
-                    <div className="mt-2"><span className="text-[11px] text-zinc-500">Token holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span></span></div>
+                    <div className="mt-2"><span className="text-[11px] text-zinc-500">Holder price: <span className="text-emerald-400/70">{item.token_holder_price}</span></span></div>
                   )}
-                  <div className="mt-auto pt-4 flex items-center justify-between">
+                  <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-900 mt-5">
                     <div>
                       {isFreeForHolder ? (
-                        <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
+                        <div className="font-mono text-2xl font-bold text-emerald-400">Free</div>
                       ) : (
-                        <span className="font-mono text-lg font-bold text-white">{displayPrice}</span>
+                        <div className="font-mono text-2xl font-bold text-white">{displayPrice}</div>
                       )}
                       {perkState === "unlocked" && item.token_holder_price != null && item.price && !isFreeForHolder && (
-                        <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
+                        <div className="text-xs text-zinc-600 line-through mt-0.5">{item.price}</div>
                       )}
                     </div>
                     <button
                       disabled
-                      className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-500 cursor-not-allowed opacity-60"
+                      className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-400 transition cursor-not-allowed"
+                      title={authUser ? "Coming soon" : "Sign in to purchase"}
                     >
                       {authUser ? "Buy Now" : "Connect to buy"}
                     </button>
@@ -3083,8 +3090,9 @@ return (
 
         {/* Empty state */}
         {offers.length === 0 && storeItems.length === 0 && !storeFormOpen && (
-          <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-            <p className="text-sm text-zinc-600">
+          <div className="mt-6 rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
+            <div className="text-2xl mb-3 opacity-30">🛍</div>
+            <p className="text-sm font-medium text-zinc-500">
               {isOwner ? "No offers yet — add your first product or service" : "No services or products available yet"}
             </p>
           </div>
