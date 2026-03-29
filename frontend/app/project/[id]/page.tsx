@@ -3414,9 +3414,9 @@ return (
                       )}
                     </div>
                     {isOwner && (
-                      <div className="flex gap-2">
-                        <button onClick={() => openOfferForm(offer)} className="text-[11px] text-zinc-600 transition hover:text-zinc-300">Edit</button>
-                        <button onClick={() => toggleOfferActive(offer)} className="text-[11px] text-zinc-600 transition hover:text-amber-400">
+                      <div className="flex gap-1">
+                        <button onClick={() => openOfferForm(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-300">Edit</button>
+                        <button onClick={() => toggleOfferActive(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-amber-400">
                           {offer.is_active ? "Deactivate" : "Activate"}
                         </button>
                       </div>
@@ -3528,8 +3528,8 @@ return (
                     </div>
                     {isOwner && (
                       <div className="flex gap-2">
-                        <button onClick={() => openStoreForm(item)} className="text-[11px] text-zinc-600 transition hover:text-zinc-300">Edit</button>
-                        <button onClick={() => removeStoreItem(item.id)} className="text-[11px] text-zinc-600 transition hover:text-red-400">Remove</button>
+                        <button onClick={() => openStoreForm(item)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-300">Edit</button>
+                        <button onClick={() => removeStoreItem(item.id)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-red-400">Remove</button>
                       </div>
                     )}
                   </div>
