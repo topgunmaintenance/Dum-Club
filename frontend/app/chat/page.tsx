@@ -700,7 +700,7 @@ function ChatPageInner() {
                   disabled={loading || limitReached}
                   rows={1}
                 />
-                <button className="dc-send" onClick={send} disabled={loading || !input.trim() || limitReached}>
+                <button className="dc-send" onClick={() => send()} disabled={loading || !input.trim() || limitReached}>
                   &#x2191;
                 </button>
               </div>
