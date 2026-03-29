@@ -41,6 +41,8 @@ class PaymentIntentRequest(BaseModel):
     offer_id: str
     buyer_email: Optional[str] = None
     notes: Optional[str] = None
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -132,18 +134,33 @@ async def create_payment_intent(
     # 4. Resolve buyer identity
     buyer_user_id = privy_id
 
-    # 5. Create Stripe PaymentIntent
+    # 5. Create Stripe Checkout Session
     s = _get_stripe()
+    success_url = body.success_url or "https://dum-club.vercel.app/dashboard"
+    cancel_url = body.cancel_url or success_url
+
     try:
-        intent = s.PaymentIntent.create(
-            amount=amount_cents,
-            currency="usd",
+        session = s.checkout.Session.create(
+            mode="payment",
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": amount_cents,
+                    "product_data": {
+                        "name": offer["title"],
+                        "description": (offer.get("description") or "")[:500] or None,
+                    },
+                },
+                "quantity": 1,
+            }],
             metadata={
                 "offer_id": offer["id"],
                 "buyer_user_id": buyer_user_id,
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
             },
+            success_url=success_url + "?checkout=success",
+            cancel_url=cancel_url + "?checkout=cancelled",
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")
@@ -157,7 +174,7 @@ async def create_payment_intent(
         "amount_paid_usd": final_price,
         "platform_fee_usd": platform_fee,
         "seller_receives_usd": seller_receives,
-        "stripe_payment_intent_id": intent.id,
+        "stripe_payment_intent_id": session.payment_intent or session.id,
         "status": "pending",
         "buyer_email": body.buyer_email,
         "notes": body.notes,
@@ -171,12 +188,12 @@ async def create_payment_intent(
     order = order_res.data[0]
 
     return {
-        "client_secret": intent.client_secret,
+        "checkout_url": session.url,
+        "session_id": session.id,
         "order_id": order["id"],
         "final_price": final_price,
         "platform_fee": platform_fee,
         "seller_receives": seller_receives,
-        "stripe_payment_intent_id": intent.id,
     }
 
 
@@ -213,6 +230,21 @@ async def stripe_webhook(request: Request):
         }).eq("stripe_payment_intent_id", pi_id).execute()
 
         print(f"[checkout] Order paid: PI={pi_id}")
+
+    elif event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        session_id = session["id"]
+        pi_id = session.get("payment_intent")
+
+        supabase = get_client()
+        # Try matching by session ID or PI ID
+        lookup_id = pi_id or session_id
+        supabase.table("orders").update({
+            "status": "paid",
+            "updated_at": _now_iso(),
+        }).eq("stripe_payment_intent_id", lookup_id).execute()
+
+        print(f"[checkout] Session completed: {session_id}, PI={pi_id}")
 
     return JSONResponse(content={"received": True}, status_code=200)
 

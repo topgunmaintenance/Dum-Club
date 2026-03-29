@@ -467,6 +467,8 @@ export default function ProjectPage() {
   const [offerImageFile, setOfferImageFile] = useState<File | null>(null);
   const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
   const [offerAiField, setOfferAiField] = useState<string | null>(null);
+  const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
+  const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
@@ -768,6 +770,44 @@ export default function ProjectPage() {
       await loadOffers();
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  async function buyOffer(offer: Offer) {
+    if (!authUser) return;
+    setBuyingOfferId(offer.id);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          offer_id: offer.id,
+          success_url: window.location.href,
+          cancel_url: window.location.href,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Checkout failed");
+      }
+
+      const data = await res.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Checkout failed");
+      setBuyingOfferId(null);
     }
   }
 
@@ -1745,6 +1785,8 @@ export default function ProjectPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("launched") === "1") setShowLiveBanner(true);
     if (params.get("view") === "pitch") setPitchMode(true);
+    if (params.get("checkout") === "success") setCheckoutResult("success");
+    if (params.get("checkout") === "cancelled") setCheckoutResult("cancelled");
   }, []);
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
@@ -2993,6 +3035,20 @@ return (
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
 
+        {/* Checkout result banner */}
+        {checkoutResult === "success" && (
+          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-medium text-emerald-300">Payment successful — thank you for your purchase!</span>
+            <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
+          </div>
+        )}
+        {checkoutResult === "cancelled" && (
+          <div className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-zinc-400">Checkout was cancelled</span>
+            <button onClick={() => setCheckoutResult(null)} className="text-xs text-zinc-600 hover:text-zinc-300">Dismiss</button>
+          </div>
+        )}
+
         {/* Owner: create/edit offer form (backend offers) */}
         {isOwner && offerFormOpen && offerEditing && (
           <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
@@ -3333,11 +3389,19 @@ return (
                       <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
                     </div>
                     <button
-                      disabled
-                      className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-400 transition cursor-not-allowed"
-                      title={authUser ? "Coming soon" : "Sign in to purchase"}
+                      disabled={!authUser || buyingOfferId === offer.id}
+                      onClick={() => buyOffer(offer)}
+                      className={`rounded-xl px-5 py-2.5 text-xs font-semibold transition ${
+                        authUser
+                          ? "bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-60"
+                          : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                      }`}
                     >
-                      {authUser ? "Buy Now" : "Connect to buy"}
+                      {buyingOfferId === offer.id
+                        ? "Processing..."
+                        : authUser
+                        ? "Buy Now"
+                        : "Connect to buy"}
                     </button>
                   </div>
                 </div>
