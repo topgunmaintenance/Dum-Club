@@ -421,6 +421,7 @@ export default function ProjectPage() {
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [ownerDebug, setOwnerDebug] = useState("");
 
   // AI Builder state
   const [builderAction, setBuilderAction] = useState<string | null>(null);
@@ -1664,7 +1665,9 @@ export default function ProjectPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (cancelled) return;
-      setIsOwner(Boolean(user?.id && project?.owner_id === user.id));
+      const match = Boolean(user?.id && project?.owner_id === user.id);
+      setIsOwner(match);
+      setOwnerDebug(`supabaseUser=${user?.id || "null"} | ownerID=${project?.owner_id || "null"} | privyId=${authUser?.privyId || "null"} | match=${match}`);
     })();
     return () => {
       cancelled = true;
@@ -2902,6 +2905,13 @@ return (
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* DEBUG: remove after fixing owner detection */}
+      {ownerDebug && (
+        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-3 text-xs font-mono text-yellow-300/80 break-all">
+          {ownerDebug}
         </div>
       )}
 
