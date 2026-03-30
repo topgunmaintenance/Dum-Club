@@ -186,6 +186,10 @@ async def health_checkout(_admin=Depends(require_admin)):
     if not webhook_configured:
         issues.append("STRIPE_WEBHOOK_SECRET not set")
 
+    resend_configured = bool(os.getenv("RESEND_API_KEY", "").strip())
+    if not resend_configured:
+        issues.append("RESEND_API_KEY not set — order emails will not send")
+
     # Check orders table
     orders_ok = False
     last_paid_at = None
@@ -258,6 +262,7 @@ async def health_checkout(_admin=Depends(require_admin)):
         "details": {
             "stripe_key_present": stripe_configured,
             "webhook_secret_present": webhook_configured,
+            "resend_key_present": resend_configured,
             "orders_table_readable": orders_ok,
             "last_paid_order_at": last_paid_at,
             "total_orders": total_orders,
