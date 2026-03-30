@@ -473,6 +473,7 @@ export default function ProjectPage() {
   const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [offerAiField, setOfferAiField] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
@@ -2008,6 +2009,14 @@ export default function ProjectPage() {
     loadWalletBalance();
   }, [id, userWallet]);
 
+  // Lightbox: close on ESC
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxUrl(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxUrl]);
+
   useEffect(() => {
     if (!id) return;
     try {
@@ -2651,14 +2660,20 @@ return (
             )}
 
             {hasMarketSnapshot ? (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <div className="mb-1 text-xs text-zinc-500">Current Price</div>
+              <div className="rounded-2xl border border-emerald-500/10 bg-zinc-900 p-5 shadow-[0_0_30px_rgba(0,255,163,0.04)]">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="text-xs text-zinc-500">Current Price</span>
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  </span>
+                </div>
                 <div className="flex items-end gap-3">
-                  <span className="text-3xl font-black text-white">
+                  <span className="font-mono text-3xl font-black text-white">
                     ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
                   </span>
                   <span
-                    className={`mb-1 text-sm font-semibold ${
+                    className={`mb-1 font-mono text-sm font-semibold ${
                       heroPriceUp ? "text-emerald-400" : "text-red-400"
                     }`}
                   >
@@ -2666,21 +2681,21 @@ return (
                     {heroPriceChangePct.toFixed(2)}%
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
                   <div>
-                    <div className="text-xs text-zinc-500">Market Cap</div>
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">Market Cap</div>
+                    <div className="mt-0.5 font-mono text-sm font-semibold text-white">
                       {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-zinc-500">Volume 24h</div>
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">Volume 24h</div>
+                    <div className="mt-0.5 font-mono text-sm font-semibold text-white">
                       {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-xl border border-zinc-800 bg-base/40 p-3">
+                <div className="mt-4 rounded-xl border border-emerald-400/10 bg-emerald-400/5 p-3">
                   <p className="text-xs font-medium text-emerald-400">Holder benefit</p>
                   <p className="mt-1 text-sm text-zinc-300">
                     {chatMeta.holder_unlimited
@@ -3224,7 +3239,13 @@ return (
             </button>
           )}
         </div>
-        <h2 className="text-2xl font-bold text-white">Offers</h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h2 className="text-2xl font-bold text-white">Offers</h2>
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-zinc-500">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/60"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Secure checkout via Stripe
+          </span>
+        </div>
         <p className="mt-2 text-sm text-zinc-500">
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
@@ -3567,7 +3588,7 @@ return (
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-base p-5 sm:p-6 flex flex-col transition hover:border-zinc-700">
+                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-card p-5 sm:p-6 flex flex-col transition hover:border-zinc-700 hover:shadow-[0_0_20px_rgba(0,255,163,0.02)]">
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -3592,7 +3613,7 @@ return (
 
                   {/* Media */}
                   {offer.video_url ? (
-                    <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
+                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
                       <iframe
                         src={offer.video_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
                         className="w-full h-full"
@@ -3602,11 +3623,18 @@ return (
                       />
                     </div>
                   ) : offer.primary_image_url ? (
-                    <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800">
-                      <img src={offer.primary_image_url} alt={offer.title} className="w-full max-h-56 object-cover" />
+                    <div
+                      className="mb-4 cursor-pointer rounded-xl overflow-hidden border border-zinc-800 group/img"
+                      onClick={() => setLightboxUrl(offer.primary_image_url!)}
+                    >
+                      <img
+                        src={offer.primary_image_url}
+                        alt={offer.title}
+                        className="w-full aspect-[4/3] object-cover transition-transform duration-300 group-hover/img:scale-105"
+                      />
                     </div>
                   ) : (
-                    <div className="mb-3 flex h-32 items-center justify-center rounded-xl border border-zinc-800/50 bg-zinc-900/30 text-zinc-700 text-2xl">
+                    <div className="mb-4 flex h-40 items-center justify-center rounded-xl border border-zinc-800/50 bg-zinc-900/30 text-zinc-700 text-3xl">
                       {offer.offer_type === "physical_product" ? "📦" : "💼"}
                     </div>
                   )}
@@ -3639,10 +3667,10 @@ return (
                   {(() => {
                     const soldOut = !offer.unlimited_inventory && offer.quantity_available != null && (offer.quantity_available - (offer.quantity_sold || 0)) <= 0;
                     return (
-                      <div className="mt-auto pt-4 flex items-end justify-between gap-3 border-t border-zinc-900 mt-4">
+                      <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-800/60 mt-5">
                         <div>
                           <div className="font-mono text-2xl font-bold text-white">${Number(offer.price_usd).toFixed(2)}</div>
-                          <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD</div>
+                          <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD · Secure checkout</div>
                         </div>
                         {soldOut ? (
                           <span className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-2.5 text-xs font-semibold text-red-400 select-none">
@@ -3798,8 +3826,8 @@ return (
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                         order.status === "fulfilled" || order.status === "delivered"
                           ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
                           : order.status === "paid"
@@ -3808,6 +3836,12 @@ return (
                           ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
                           : "border-zinc-700 text-zinc-500"
                       }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          order.status === "fulfilled" || order.status === "delivered" ? "bg-emerald-400"
+                          : order.status === "paid" ? "bg-sky-400"
+                          : order.status === "pending_payment" ? "bg-amber-400"
+                          : "bg-zinc-600"
+                        }`} />
                         {order.status === "pending_payment" ? "Awaiting Payment" : order.status}
                       </span>
                       {order.status === "paid" && (
@@ -4119,8 +4153,8 @@ return (
             </div>
             )}
 
-            <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-base p-5">
-              <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">{displaySymbol} · Support this project</div>
+            <div id="buy-panel" className="rounded-3xl border border-emerald-500/10 bg-base p-5 sm:p-6 shadow-[0_0_40px_rgba(0,255,163,0.03)]">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-emerald-400/50">{displaySymbol} · Support this project</div>
 
               <h2 className="text-xl font-bold text-white">Buy / Sell</h2>
 
@@ -5016,6 +5050,28 @@ return (
       </div>
     )}
   </div>
+
+  {/* ── Image Lightbox Modal ── */}
+  {lightboxUrl && (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-base/90 backdrop-blur-sm"
+      onClick={() => setLightboxUrl(null)}
+    >
+      <button
+        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800/80 text-xl text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+        onClick={() => setLightboxUrl(null)}
+        aria-label="Close"
+      >
+        ✕
+      </button>
+      <img
+        src={lightboxUrl}
+        alt="Full size"
+        className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  )}
   </div>
   );
 }
