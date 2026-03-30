@@ -1,5 +1,16 @@
 # Claude Engineering Rules — DUM Club
 
+## Priority Rule
+
+When conflicts exist:
+1. `production.md` rules override everything
+2. `marketplace-checklist.md` defines completion
+3. `debug-template.md` defines structure
+
+Do not bypass these for speed.
+
+---
+
 ## Product Context
 
 DUM Club is an AI-powered Solana launchpad for ideas.
