@@ -632,12 +632,12 @@ export default function DiscoverPage() {
               const barPct = Math.min((mcap / TARGET_MARKET_CAP) * 100, 100);
 
               return (
-                <Link key={project.id} href={`/project/${project.id}`}>
+                <Link key={project.id} href={`/project/${project.id}`} className="group">
                   <div
-                    className={`h-full rounded-2xl border bg-base p-6 transition-all duration-300 md:p-7 ${
+                    className={`h-full rounded-2xl border bg-card p-6 transition-all duration-300 md:p-7 ${
                       pulsing
-                        ? "card-pulse border-emerald-400/60 shadow-[0_0_12px_rgba(52,211,153,0.15)]"
-                        : "border-zinc-900 hover:border-emerald-400/20"
+                        ? "card-pulse border-emerald-400/60 shadow-[0_0_16px_rgba(52,211,153,0.15)]"
+                        : "border-zinc-800/80 hover:border-zinc-700 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
                     }`}
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
@@ -741,34 +741,9 @@ export default function DiscoverPage() {
                       {project.title || project.name || "Untitled Project"}
                     </h3>
 
-                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-500">
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">
                       {project.description || "No description yet."}
                     </p>
-
-                    {/* Readiness score bar */}
-                    {(() => {
-                      const rs = projectReadinessScore(project);
-                      const rsColor = rs >= 75 ? "bg-emerald-400" : rs >= 50 ? "bg-amber-400" : "bg-zinc-600";
-                      const rsText = rs >= 75 ? "text-emerald-400" : rs >= 50 ? "text-amber-400" : "text-zinc-600";
-                      return (
-                        <div className="mt-3">
-                          <div className="mb-1 flex items-center justify-between">
-                            <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
-                              Readiness
-                            </span>
-                            <span className={`font-mono text-[10px] font-bold ${rsText}`}>
-                              {rs}/100
-                            </span>
-                          </div>
-                          <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${rsColor}`}
-                              style={{ width: `${rs}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })()}
 
                     {/* Badges row: offers, subscription, utility */}
                     <div className="mt-3 flex flex-wrap gap-1.5">
@@ -794,11 +769,36 @@ export default function DiscoverPage() {
                       )}
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-900 pt-4">
-                      <span className="text-xs text-zinc-600">Open workspace →</span>
+                    {/* Readiness score bar */}
+                    {(() => {
+                      const rs = projectReadinessScore(project);
+                      const rsColor = rs >= 75 ? "bg-emerald-400" : rs >= 50 ? "bg-amber-400" : "bg-zinc-600";
+                      const rsText = rs >= 75 ? "text-emerald-400" : rs >= 50 ? "text-amber-400" : "text-zinc-600";
+                      return (
+                        <div className="mt-4">
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-[9px] uppercase tracking-widest text-zinc-600">
+                              Readiness
+                            </span>
+                            <span className={`font-mono text-[10px] font-bold ${rsText}`}>
+                              {rs}/100
+                            </span>
+                          </div>
+                          <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${rsColor}`}
+                              style={{ width: `${rs}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-4">
+                      <span className="text-xs font-medium text-zinc-400 transition group-hover:text-emerald-400">View Project →</span>
 
                       <span
-                        className="border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+                        className="rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]"
                         style={{
                           borderColor: accent,
                           color: accent,
