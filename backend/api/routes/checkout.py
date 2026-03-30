@@ -325,13 +325,20 @@ async def stripe_webhook(request: Request):
         # Decrement inventory
         offer_id = order.get("offer_id")
         if offer_id:
-            offer_res = supabase.table("offers").select("id, quantity_sold, unlimited_inventory").eq("id", offer_id).limit(1).execute()
+            offer_res = supabase.table("offers").select("id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
             if offer_res.data:
                 o = offer_res.data[0]
-                if not o.get("unlimited_inventory", True):
-                    new_sold = (o.get("quantity_sold") or 0) + 1
-                    supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
-                    print(f"[webhook] Inventory: offer {offer_id} sold={new_sold}")
+                is_unlimited = o.get("unlimited_inventory")
+                current_sold = o.get("quantity_sold") or 0
+                current_available = o.get("quantity_available")
+                print(f"[webhook] Inventory check: offer={offer_id}, unlimited={is_unlimited}, sold={current_sold}, available={current_available}")
+
+                # Always increment quantity_sold (tracks total sales regardless of unlimited flag)
+                new_sold = current_sold + 1
+                supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
+                print(f"[webhook] Inventory updated: offer={offer_id}, quantity_sold {current_sold} → {new_sold}")
+            else:
+                print(f"[webhook] WARNING: offer {offer_id} not found for inventory update")
 
         # Send emails (non-blocking)
         try:
