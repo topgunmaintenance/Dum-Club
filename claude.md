@@ -97,3 +97,96 @@ Short imperative commits:
 - Token trading and price movement should work end-to-end
 - AI chat for project creation should be the primary happy path
 - The user should feel an immediate visible result after launching an idea
+
+---
+
+## Operational Rules
+
+These rules are mandatory for all debugging, fixing, and deployment work.
+See also: `production.md`, `marketplace-checklist.md`, `debug-template.md`, `handoff-template.md`.
+
+### Scope Control
+Before changing code, identify:
+- exact frontend handler
+- exact backend route
+- exact DB table(s)
+- exact deployment target(s)
+
+Do not modify unrelated files. Do not refactor unrelated code. Do not redesign UI unless explicitly requested.
+
+### Deployment Awareness (CRITICAL)
+Before debugging any issue involving offers, checkout, token trading, auth, file upload, or project creation:
+1. Verify GitHub branch and latest commit
+2. Verify Vercel deployment commit
+3. Verify Railway deployment commit
+
+If backend and frontend are not on aligned commits — STOP. Report the mismatch. Do not change application logic until deployment is aligned.
+
+### Bug Classification
+Always classify every issue as one of before proposing a fix:
+- code bug
+- deployment mismatch
+- environment variable issue
+- DB / RLS issue
+- stale cache issue
+- third-party service issue
+- user-flow misunderstanding
+
+### Root Cause Rule
+Do not claim a fix based only on reading code. You must identify:
+1. symptom
+2. failing layer
+3. root cause
+4. minimal fix
+5. proof
+
+### No Silent Failure Rule
+Never allow silent returns for user actions. No early return in user-triggered flows unless:
+- a visible user-facing error is shown
+- a console or backend log is written
+
+### Evidence Rule
+Do not say "fixed" unless you provide evidence for:
+- request fired
+- backend route hit
+- DB write succeeded
+- UI refreshed correctly
+
+### Logging Rule
+For transactional flows, add temporary logs if needed. If logs are added: keep them scoped, label them clearly, remove or downgrade noisy logs after verification.
+
+### Report Format Rule
+Every bug report must follow `debug-template.md`. Every session must end with `handoff-template.md`.
+
+### System Separation Rule
+Treat these as separate systems even if they share a page:
+- Creator Offers (create, edit, list)
+- Offer Checkout / Order lifecycle
+- Token Buy/Sell market
+- Project manage/admin state
+
+Do not assume a fix for one is safe for another. Never change more than one system in a single commit unless the root cause spans both.
+
+### Freeze Rule
+After stabilizing a critical flow, freeze it. Do not refactor it during unrelated work. If a later task touches it, re-run its checklist from `marketplace-checklist.md`.
+
+### Session End Rule
+At the end of each work session, provide the handoff template:
+- what changed
+- what is verified
+- what is unverified
+- what branch contains the work
+- whether GitHub/Vercel/Railway are aligned
+- exact next step
+
+### Banned Phrases
+Never use:
+- "probably fixed"
+- "should work now"
+- "looks good"
+
+Only use:
+- "verified fixed" (with evidence)
+- "partially fixed" (state what remains)
+- "root cause found, unverified in production"
+- "blocked by deployment mismatch"
