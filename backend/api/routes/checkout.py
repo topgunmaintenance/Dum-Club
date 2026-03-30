@@ -202,6 +202,19 @@ async def create_payment_intent(
     order = order_res.data[0]
     print(f"[checkout] Order created: id={order['id']}")
 
+    # Backfill order_id into Stripe session metadata for webhook reliability
+    try:
+        s.checkout.Session.modify(session.id, metadata={
+            "offer_id": offer["id"],
+            "buyer_user_id": buyer_user_id,
+            "seller_user_id": seller_user_id,
+            "project_id": project_id,
+            "order_id": order["id"],
+        })
+        print(f"[checkout] Session metadata updated with order_id={order['id']}")
+    except Exception as meta_err:
+        print(f"[checkout] Warning: could not update session metadata: {meta_err}")
+
     return {
         "checkout_url": session.url,
         "session_id": session.id,
@@ -216,7 +229,7 @@ async def create_payment_intent(
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
-    print(f"[webhook] Received webhook request")
+    print(f"[webhook] ========== WEBHOOK RECEIVED ==========")
 
     if not _STRIPE_WEBHOOK_SECRET:
         print("[webhook] ERROR: STRIPE_WEBHOOK_SECRET not configured")
@@ -224,88 +237,120 @@ async def stripe_webhook(request: Request):
 
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
-    print(f"[webhook] Signature header present: {bool(sig_header)}")
+    print(f"[webhook] Payload size: {len(payload)} bytes, sig present: {bool(sig_header)}")
 
     s = _get_stripe()
     try:
         event = s.Webhook.construct_event(
             payload, sig_header, _STRIPE_WEBHOOK_SECRET
         )
-        print(f"[webhook] Signature verified. Event type: {event['type']}")
+        print(f"[webhook] ✓ Signature verified. Event: {event['type']} id={event['id']}")
     except Exception as e:
-        print(f"[webhook] Signature verification FAILED: {type(e).__name__}: {e}")
+        print(f"[webhook] ✗ Signature FAILED: {type(e).__name__}: {e}")
         raise HTTPException(status_code=400, detail=f"Webhook signature failed: {type(e).__name__}")
 
     supabase = get_client()
 
-    def _mark_paid(lookup_field: str, lookup_value: str, source: str):
-        """Idempotent: only update if current status is pending_payment or pending."""
-        print(f"[webhook] Looking up order: {lookup_field}={lookup_value}")
-        order_res = (
-            supabase.table("orders")
-            .select("id, offer_id, status")
-            .eq(lookup_field, lookup_value)
-            .limit(1)
-            .execute()
-        )
-        if not order_res.data:
-            print(f"[webhook] No order found: {lookup_field}={lookup_value}")
-            return False
-        order = order_res.data[0]
-        print(f"[webhook] Found order {order['id']}, current status: {order['status']}")
-        if order["status"] not in ("pending_payment", "pending"):
-            print(f"[webhook] Order {order['id']} already {order['status']}, skipping ({source})")
-            return True  # Already processed
+    def _find_order(session_id: str, pi_id: str, metadata: dict) -> dict | None:
+        """Try multiple strategies to find the matching order."""
 
-        # Update order to paid
-        update_res = supabase.table("orders").update({
-            "status": "paid",
-            "updated_at": _now_iso(),
-        }).eq("id", order["id"]).execute()
-        print(f"[webhook] Order {order['id']} updated to paid. Rows: {len(update_res.data or [])}")
+        # Strategy 1: stripe_session_id (most reliable if column exists)
+        if session_id:
+            print(f"[webhook] Lookup strategy 1: stripe_session_id={session_id}")
+            res = supabase.table("orders").select("id, offer_id, status").eq("stripe_session_id", session_id).limit(1).execute()
+            if res.data:
+                print(f"[webhook] ✓ Found by stripe_session_id: order={res.data[0]['id']}")
+                return res.data[0]
+            print(f"[webhook] ✗ Not found by stripe_session_id")
 
-        # Decrement inventory on the offer
-        offer_id = order.get("offer_id")
-        if offer_id:
-            offer_res = (
-                supabase.table("offers")
-                .select("id, quantity_sold, unlimited_inventory")
-                .eq("id", offer_id)
+        # Strategy 2: stripe_payment_intent_id
+        if pi_id:
+            print(f"[webhook] Lookup strategy 2: stripe_payment_intent_id={pi_id}")
+            res = supabase.table("orders").select("id, offer_id, status").eq("stripe_payment_intent_id", pi_id).limit(1).execute()
+            if res.data:
+                print(f"[webhook] ✓ Found by stripe_payment_intent_id: order={res.data[0]['id']}")
+                return res.data[0]
+            print(f"[webhook] ✗ Not found by stripe_payment_intent_id")
+
+        # Strategy 3: order_id from metadata (set after order creation)
+        order_id = metadata.get("order_id")
+        if order_id:
+            print(f"[webhook] Lookup strategy 3: order_id={order_id}")
+            res = supabase.table("orders").select("id, offer_id, status").eq("id", order_id).limit(1).execute()
+            if res.data:
+                print(f"[webhook] ✓ Found by order_id: order={res.data[0]['id']}")
+                return res.data[0]
+            print(f"[webhook] ✗ Not found by order_id")
+
+        # Strategy 4: metadata (offer_id + buyer_user_id + most recent pending)
+        offer_id = metadata.get("offer_id")
+        buyer_id = metadata.get("buyer_user_id")
+        if offer_id and buyer_id:
+            print(f"[webhook] Lookup strategy 3: metadata offer_id={offer_id}, buyer={buyer_id}")
+            res = (
+                supabase.table("orders")
+                .select("id, offer_id, status")
+                .eq("offer_id", offer_id)
+                .eq("buyer_user_id", buyer_id)
+                .in_("status", ["pending_payment", "pending"])
+                .order("created_at", desc=True)
                 .limit(1)
                 .execute()
             )
+            if res.data:
+                print(f"[webhook] ✓ Found by metadata: order={res.data[0]['id']}")
+                return res.data[0]
+            print(f"[webhook] ✗ Not found by metadata")
+
+        print(f"[webhook] ✗✗ ALL LOOKUP STRATEGIES FAILED")
+        return None
+
+    def _process_paid(order: dict, session_id: str, pi_id: str, source: str):
+        """Update order to paid, decrement inventory, send emails."""
+        if order["status"] not in ("pending_payment", "pending"):
+            print(f"[webhook] Order {order['id']} already {order['status']}, skipping")
+            return
+
+        # Update order to paid + backfill IDs
+        update_fields: dict = {"status": "paid", "updated_at": _now_iso()}
+        if session_id:
+            update_fields["stripe_session_id"] = session_id
+        if pi_id:
+            update_fields["stripe_payment_intent_id"] = pi_id
+
+        update_res = supabase.table("orders").update(update_fields).eq("id", order["id"]).execute()
+        rows = len(update_res.data or [])
+        print(f"[webhook] ✓ Order {order['id']} → paid (rows={rows}, source={source})")
+
+        # Decrement inventory
+        offer_id = order.get("offer_id")
+        if offer_id:
+            offer_res = supabase.table("offers").select("id, quantity_sold, unlimited_inventory").eq("id", offer_id).limit(1).execute()
             if offer_res.data:
                 o = offer_res.data[0]
                 if not o.get("unlimited_inventory", True):
                     new_sold = (o.get("quantity_sold") or 0) + 1
-                    supabase.table("offers").update({
-                        "quantity_sold": new_sold,
-                    }).eq("id", offer_id).execute()
-                    print(f"[webhook] Inventory decremented for offer {offer_id}: sold={new_sold}")
+                    supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
+                    print(f"[webhook] Inventory: offer {offer_id} sold={new_sold}")
 
-        print(f"[webhook] Order {order['id']} → paid ({source})")
-
-        # Send email notifications (non-blocking)
+        # Send emails (non-blocking)
         try:
             full_order = supabase.table("orders").select("*, offers(title, price_usd, project_id)").eq("id", order["id"]).single().execute()
             od = full_order.data or {}
             offer_data = od.get("offers") or {}
             offer_title = offer_data.get("title", "Order")
             amount = float(od.get("amount_paid_usd", 0))
-            seller_receives = float(od.get("seller_receives_usd", 0))
-            project_id = od.get("project_id", "")
+            seller_receives_val = float(od.get("seller_receives_usd", 0))
+            proj_id = od.get("project_id", "")
 
-            # Get project name for buyer email
             proj_name = ""
-            if project_id:
-                proj_res = supabase.table("projects").select("title, name").eq("id", project_id).limit(1).execute()
+            if proj_id:
+                proj_res = supabase.table("projects").select("title, name").eq("id", proj_id).limit(1).execute()
                 if proj_res.data:
                     proj_name = proj_res.data[0].get("title") or proj_res.data[0].get("name") or ""
 
-            # Buyer email
             buyer_email = od.get("buyer_email")
             if not buyer_email:
-                # Try to resolve from buyer_user_id (privy_id) → users → email
                 buyer_uid = od.get("buyer_user_id")
                 if buyer_uid:
                     u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
@@ -313,8 +358,8 @@ async def stripe_webhook(request: Request):
                         buyer_email = u_res.data[0].get("email")
 
             send_buyer_payment_confirmed(buyer_email or "", offer_title, amount, proj_name)
+            print(f"[webhook] Buyer email: {'sent' if buyer_email else 'skipped (no email)'}")
 
-            # Seller email — resolve from seller_user_id (profiles.id → wallet → users.email)
             seller_uid = od.get("seller_user_id")
             seller_email = ""
             if seller_uid:
@@ -325,49 +370,48 @@ async def stripe_webhook(request: Request):
                         u_res = supabase.table("users").select("email").eq("wallet_address", wallet).limit(1).execute()
                         if u_res.data:
                             seller_email = u_res.data[0].get("email") or ""
-            send_seller_new_order(seller_email, offer_title, amount, seller_receives, project_id)
+            send_seller_new_order(seller_email, offer_title, amount, seller_receives_val, proj_id)
+            print(f"[webhook] Seller email: {'sent' if seller_email else 'skipped (no email)'}")
         except Exception as email_err:
-            print(f"[webhook] Email notification error (non-blocking): {email_err}")
+            print(f"[webhook] Email error (non-blocking): {email_err}")
 
-        return True
+    # ── Event routing ────────────────────────────────────────
 
-    if event["type"] == "payment_intent.succeeded":
-        pi_id = event["data"]["object"]["id"]
-        print(f"[webhook] payment_intent.succeeded: PI={pi_id}")
-        _mark_paid("stripe_payment_intent_id", pi_id, "payment_intent.succeeded")
-
-    elif event["type"] == "checkout.session.completed":
-        session_obj = event["data"]["object"]
-        session_id = session_obj["id"]
-        pi_id = session_obj.get("payment_intent")
-        payment_status = session_obj.get("payment_status", "unknown")
+    if event["type"] == "checkout.session.completed":
+        obj = event["data"]["object"]
+        session_id = obj["id"]
+        pi_id = obj.get("payment_intent")
+        metadata = obj.get("metadata", {})
+        payment_status = obj.get("payment_status", "unknown")
         print(f"[webhook] checkout.session.completed: session={session_id}, PI={pi_id}, payment_status={payment_status}")
+        print(f"[webhook] Metadata: {metadata}")
 
         if payment_status != "paid":
-            print(f"[webhook] Session not paid yet (status={payment_status}), skipping")
+            print(f"[webhook] Payment not confirmed yet (status={payment_status}), skipping")
             return JSONResponse(content={"received": True}, status_code=200)
 
-        # Try stripe_session_id FIRST (always stored at creation)
-        found = _mark_paid("stripe_session_id", session_id, "checkout.session.completed/session")
+        order = _find_order(session_id, pi_id, metadata)
+        if order:
+            _process_paid(order, session_id, pi_id, "checkout.session.completed")
+        else:
+            print(f"[webhook] CRITICAL: Could not find order for session={session_id}")
 
-        # Fallback 1: try PI lookup
-        if not found and pi_id:
-            print(f"[webhook] Session lookup failed, trying PI: {pi_id}")
-            found = _mark_paid("stripe_payment_intent_id", pi_id, "checkout.session.completed/pi")
+    elif event["type"] == "payment_intent.succeeded":
+        obj = event["data"]["object"]
+        pi_id = obj["id"]
+        metadata = obj.get("metadata", {})
+        print(f"[webhook] payment_intent.succeeded: PI={pi_id}")
 
-        # Fallback 2: update PI on the order if we found it by session
-        if found and pi_id:
-            try:
-                supabase.table("orders").update({
-                    "stripe_payment_intent_id": pi_id,
-                }).eq("stripe_session_id", session_id).execute()
-                print(f"[webhook] Backfilled PI={pi_id} on order with session={session_id}")
-            except Exception:
-                pass
+        order = _find_order("", pi_id, metadata)
+        if order:
+            _process_paid(order, "", pi_id, "payment_intent.succeeded")
+        else:
+            print(f"[webhook] No order found for PI={pi_id} (may already be processed by session event)")
 
     else:
-        print(f"[webhook] Unhandled event type: {event['type']}")
+        print(f"[webhook] Unhandled event: {event['type']}")
 
+    print(f"[webhook] ========== WEBHOOK DONE ==========")
     return JSONResponse(content={"received": True}, status_code=200)
 
 
