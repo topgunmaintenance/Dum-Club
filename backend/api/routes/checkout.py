@@ -175,6 +175,8 @@ async def create_payment_intent(
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")
 
     # 6. Insert order record
+    print(f"[checkout] Session created: id={session.id}, pi={session.payment_intent}")
+
     order_insert = {
         "offer_id": offer["id"],
         "project_id": project_id,
@@ -191,11 +193,14 @@ async def create_payment_intent(
         "token_discount_applied": token_discount_applied,
     }
 
+    print(f"[checkout] Inserting order: session_id={order_insert['stripe_session_id']}, pi={order_insert['stripe_payment_intent_id']}, status={order_insert['status']}")
     order_res = supabase.table("orders").insert(order_insert).execute()
     if not order_res.data:
+        print("[checkout] ERROR: order insert returned no data")
         raise HTTPException(status_code=500, detail="Failed to create order record")
 
     order = order_res.data[0]
+    print(f"[checkout] Order created: id={order['id']}")
 
     return {
         "checkout_url": session.url,
@@ -335,15 +340,30 @@ async def stripe_webhook(request: Request):
         session_obj = event["data"]["object"]
         session_id = session_obj["id"]
         pi_id = session_obj.get("payment_intent")
-        print(f"[webhook] checkout.session.completed: session={session_id}, PI={pi_id}")
+        payment_status = session_obj.get("payment_status", "unknown")
+        print(f"[webhook] checkout.session.completed: session={session_id}, PI={pi_id}, payment_status={payment_status}")
+
+        if payment_status != "paid":
+            print(f"[webhook] Session not paid yet (status={payment_status}), skipping")
+            return JSONResponse(content={"received": True}, status_code=200)
 
         # Try stripe_session_id FIRST (always stored at creation)
         found = _mark_paid("stripe_session_id", session_id, "checkout.session.completed/session")
 
-        # Fallback: try PI if session lookup failed
+        # Fallback 1: try PI lookup
         if not found and pi_id:
-            print(f"[webhook] Session lookup failed, trying PI lookup: {pi_id}")
-            _mark_paid("stripe_payment_intent_id", pi_id, "checkout.session.completed/pi_fallback")
+            print(f"[webhook] Session lookup failed, trying PI: {pi_id}")
+            found = _mark_paid("stripe_payment_intent_id", pi_id, "checkout.session.completed/pi")
+
+        # Fallback 2: update PI on the order if we found it by session
+        if found and pi_id:
+            try:
+                supabase.table("orders").update({
+                    "stripe_payment_intent_id": pi_id,
+                }).eq("stripe_session_id", session_id).execute()
+                print(f"[webhook] Backfilled PI={pi_id} on order with session={session_id}")
+            except Exception:
+                pass
 
     else:
         print(f"[webhook] Unhandled event type: {event['type']}")
