@@ -189,6 +189,8 @@ async def health_checkout(_admin=Depends(require_admin)):
     # Check orders table
     orders_ok = False
     last_paid_at = None
+    pending_count = 0
+    total_orders = 0
     try:
         supabase = get_client()
         supabase.table("orders").select("id").limit(1).execute()
@@ -205,8 +207,42 @@ async def health_checkout(_admin=Depends(require_admin)):
         )
         if paid_res.data:
             last_paid_at = paid_res.data[0].get("updated_at")
+
+        # Count stuck pending_payment orders
+        pending_res = (
+            supabase.table("orders")
+            .select("id", count="exact")
+            .eq("status", "pending_payment")
+            .execute()
+        )
+        pending_count = pending_res.count if hasattr(pending_res, "count") and pending_res.count is not None else len(pending_res.data or [])
+
+        all_res = (
+            supabase.table("orders")
+            .select("id", count="exact")
+            .execute()
+        )
+        total_orders = all_res.count if hasattr(all_res, "count") and all_res.count is not None else len(all_res.data or [])
     except Exception as e:
         issues.append(f"Orders table error: {type(e).__name__}")
+
+    if pending_count > 0:
+        issues.append(f"{pending_count} orders stuck in pending_payment (webhook may not be delivering)")
+
+    # Check Stripe webhook endpoints if possible
+    webhook_endpoints = []
+    try:
+        import stripe
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+        endpoints = stripe.WebhookEndpoint.list(limit=10)
+        for ep in endpoints.get("data", []):
+            webhook_endpoints.append({
+                "url": ep.get("url", ""),
+                "status": ep.get("status", ""),
+                "enabled_events": ep.get("enabled_events", []),
+            })
+    except Exception:
+        pass  # Stripe SDK may not be available or key may be invalid
 
     if issues:
         status = "broken" if not stripe_configured else "degraded"
@@ -224,6 +260,9 @@ async def health_checkout(_admin=Depends(require_admin)):
             "webhook_secret_present": webhook_configured,
             "orders_table_readable": orders_ok,
             "last_paid_order_at": last_paid_at,
+            "total_orders": total_orders,
+            "pending_payment_orders": pending_count,
+            "stripe_webhook_endpoints": webhook_endpoints,
         },
     }
 

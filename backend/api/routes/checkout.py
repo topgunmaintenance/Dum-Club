@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from db.supabase import get_client
-from auth.privy import get_current_user
+from auth.privy import get_current_user, require_admin
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
 
 router = APIRouter()
@@ -552,3 +552,88 @@ async def update_order_status(
             print(f"[fulfillment] Email error (non-blocking): {email_err}")
 
     return {"status": new_status, "order_id": order_id}
+
+
+# ── Admin: Recover stuck orders ──────────────────────────────
+
+@router.post("/orders/recover-pending")
+async def recover_pending_orders(_admin=Depends(require_admin)):
+    """
+    Admin-only: find orders stuck in pending_payment, check Stripe for actual
+    payment status, and process any that were actually paid.
+    """
+    print("[recover] ========== RECOVERING PENDING ORDERS ==========")
+    supabase = get_client()
+    s = _get_stripe()
+
+    # Find all stuck orders
+    pending_res = (
+        supabase.table("orders")
+        .select("id, offer_id, stripe_session_id, stripe_payment_intent_id, status, created_at")
+        .eq("status", "pending_payment")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    stuck_orders = pending_res.data or []
+    print(f"[recover] Found {len(stuck_orders)} pending_payment orders")
+
+    results = []
+    for order in stuck_orders:
+        order_id = order["id"]
+        session_id = order.get("stripe_session_id")
+        pi_id = order.get("stripe_payment_intent_id")
+
+        try:
+            # Check Stripe for actual payment status
+            paid = False
+            actual_pi_id = pi_id
+
+            if session_id:
+                session = s.checkout.Session.retrieve(session_id)
+                print(f"[recover] Order {order_id}: session={session_id}, payment_status={session.payment_status}")
+                if session.payment_status == "paid":
+                    paid = True
+                    actual_pi_id = actual_pi_id or session.payment_intent
+
+            if not paid and actual_pi_id:
+                pi = s.PaymentIntent.retrieve(actual_pi_id)
+                print(f"[recover] Order {order_id}: PI={actual_pi_id}, status={pi.status}")
+                if pi.status == "succeeded":
+                    paid = True
+
+            if paid:
+                print(f"[recover] Order {order_id} was PAID in Stripe — processing now")
+                # Reuse the existing _process_paid logic inline
+                update_fields = {"status": "paid", "updated_at": _now_iso()}
+                if actual_pi_id:
+                    update_fields["stripe_payment_intent_id"] = actual_pi_id
+                supabase.table("orders").update(update_fields).eq("id", order_id).execute()
+
+                # Increment quantity_sold
+                offer_id = order.get("offer_id")
+                if offer_id:
+                    offer_res = supabase.table("offers").select("id, quantity_sold").eq("id", offer_id).limit(1).execute()
+                    if offer_res.data:
+                        current_sold = offer_res.data[0].get("quantity_sold") or 0
+                        supabase.table("offers").update({"quantity_sold": current_sold + 1}).eq("id", offer_id).execute()
+                        print(f"[recover] Offer {offer_id}: quantity_sold {current_sold} → {current_sold + 1}")
+
+                results.append({"order_id": order_id, "action": "recovered", "stripe_status": "paid"})
+            else:
+                print(f"[recover] Order {order_id}: NOT paid in Stripe, skipping")
+                results.append({"order_id": order_id, "action": "skipped", "stripe_status": "unpaid"})
+
+        except Exception as e:
+            print(f"[recover] Error checking order {order_id}: {type(e).__name__}: {e}")
+            results.append({"order_id": order_id, "action": "error", "error": str(e)})
+
+    recovered_count = sum(1 for r in results if r["action"] == "recovered")
+    print(f"[recover] Done: {recovered_count}/{len(stuck_orders)} orders recovered")
+    print(f"[recover] ========== RECOVERY DONE ==========")
+
+    return {
+        "total_pending": len(stuck_orders),
+        "recovered": recovered_count,
+        "results": results,
+    }

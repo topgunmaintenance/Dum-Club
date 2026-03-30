@@ -80,6 +80,8 @@ function SystemHealthPage() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [lastRunAt, setLastRunAt] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [recoveryRunning, setRecoveryRunning] = useState(false);
+  const [recoveryResult, setRecoveryResult] = useState<any>(null);
 
   const runChecks = useCallback(async () => {
     const token = await getToken();
@@ -218,6 +220,52 @@ function SystemHealthPage() {
             />
           ))}
         </div>
+
+        {/* Order Recovery */}
+        {results.checkout?.details && (results.checkout.details as any).pending_payment_orders > 0 && (
+          <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div>
+                <span className="text-sm font-semibold text-amber-400">
+                  {(results.checkout.details as any).pending_payment_orders} orders stuck in pending_payment
+                </span>
+                <p className="text-xs text-zinc-400 mt-1">
+                  These orders may have been paid in Stripe but the webhook didn't process them. Click Recover to check Stripe and update any that were actually paid.
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  const token = await getToken();
+                  if (!token) return;
+                  setRecoveryRunning(true);
+                  setRecoveryResult(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/api/checkout/orders/recover-pending`, {
+                      method: "POST",
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    const data = await res.json();
+                    setRecoveryResult(data);
+                    runChecks(); // refresh health after recovery
+                  } catch (err) {
+                    setRecoveryResult({ error: err instanceof Error ? err.message : "Failed" });
+                  } finally {
+                    setRecoveryRunning(false);
+                  }
+                }}
+                disabled={recoveryRunning}
+                className="shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-semibold text-black transition hover:bg-amber-400 disabled:opacity-50"
+              >
+                {recoveryRunning ? "Recovering..." : "Recover Orders"}
+              </button>
+            </div>
+            {recoveryResult && (
+              <pre className="mt-3 rounded-lg bg-black/50 border border-zinc-800 p-3 text-[11px] text-zinc-400 overflow-x-auto max-h-[200px] overflow-y-auto">
+                {JSON.stringify(recoveryResult, null, 2)}
+              </pre>
+            )}
+          </div>
+        )}
 
         {/* Diagnostic JSON */}
         <details className="mt-8">
