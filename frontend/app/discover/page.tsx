@@ -464,7 +464,7 @@ export default function DiscoverPage() {
   }, [rankedProjects]);
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-base text-white">
       {/* Live activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
         {recentTrades.length === 0 ? (
@@ -506,7 +506,7 @@ export default function DiscoverPage() {
 
         <div className="mb-6 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h1 className="font-mono text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
+            <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
               Trending Projects
             </h1>
           </div>
@@ -518,7 +518,7 @@ export default function DiscoverPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 rounded-lg px-4 py-2 font-mono text-xs uppercase tracking-[0.1em] transition ${
+              className={`flex-shrink-0 rounded-lg px-4 py-2 text-xs uppercase tracking-[0.1em] transition ${
                 activeTab === tab.id
                   ? "bg-emerald-400 font-bold text-black"
                   : "text-zinc-500 hover:text-zinc-300"
@@ -551,7 +551,7 @@ export default function DiscoverPage() {
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Newest
             </div>
-            <div className="line-clamp-2 font-mono text-sm font-semibold text-zinc-200">
+            <div className="line-clamp-2 text-sm font-semibold text-zinc-200">
               {getProjectLabel(newestProject)}
             </div>
           </div>
@@ -634,7 +634,7 @@ export default function DiscoverPage() {
               return (
                 <Link key={project.id} href={`/project/${project.id}`}>
                   <div
-                    className={`h-full rounded-2xl border bg-black p-6 transition-all duration-300 md:p-7 ${
+                    className={`h-full rounded-2xl border bg-base p-6 transition-all duration-300 md:p-7 ${
                       pulsing
                         ? "card-pulse border-emerald-400/60 shadow-[0_0_12px_rgba(52,211,153,0.15)]"
                         : "border-zinc-900 hover:border-emerald-400/20"
@@ -672,7 +672,7 @@ export default function DiscoverPage() {
                           </span>
                         </div>
                         <div
-                          className="mt-1 font-mono text-lg font-bold uppercase"
+                          className="mt-1 text-lg font-bold uppercase"
                           style={{ color: accent }}
                         >
                           ${ticker}
@@ -737,7 +737,7 @@ export default function DiscoverPage() {
                       </div>
                     </div>
 
-                    <h3 className="mt-4 font-mono text-xl font-bold leading-snug text-white md:text-2xl">
+                    <h3 className="mt-4 text-xl font-bold leading-snug text-white md:text-2xl">
                       {project.title || project.name || "Untitled Project"}
                     </h3>
 
@@ -798,7 +798,7 @@ export default function DiscoverPage() {
                       <span className="text-xs text-zinc-600">Open workspace →</span>
 
                       <span
-                        className="border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em]"
+                        className="border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.18em]"
                         style={{
                           borderColor: accent,
                           color: accent,

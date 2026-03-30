@@ -161,7 +161,7 @@ function AdminReviewQueue() {
                 onChange={(e) =>
                   setRejectionReason((prev) => ({ ...prev, [project.id]: e.target.value }))
                 }
-                className="rounded-md border border-red-500 bg-black px-3 py-2 text-sm text-white"
+                className="rounded-md border border-red-500 bg-base px-3 py-2 text-sm text-white"
               >
                 <option value="">Select rejection reason</option>
                 {REJECTION_REASONS.map((r) => (

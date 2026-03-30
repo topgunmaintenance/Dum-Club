@@ -39,7 +39,7 @@ function Check() {
 
 export default function UpgradePage() {
   return (
-    <div className="min-h-screen bg-black px-4 py-20 text-white sm:px-6">
+    <div className="min-h-screen bg-base px-4 py-20 text-white sm:px-6">
       <div className="mx-auto max-w-5xl">
 
         {/* Hero */}
@@ -160,7 +160,7 @@ export default function UpgradePage() {
                 { milestone: "$100 volume", reward: "Featured eligibility" },
                 { milestone: "25 holders", reward: "Pro-tier access" },
               ].map(({ milestone, reward }) => (
-                <div key={milestone} className="rounded-xl border border-zinc-800 bg-black px-5 py-6">
+                <div key={milestone} className="rounded-xl border border-zinc-800 bg-base px-5 py-6">
                   <div className="font-mono text-sm font-bold text-white">{milestone}</div>
                   <div className="mt-2 text-xs text-emerald-400">{reward}</div>
                 </div>

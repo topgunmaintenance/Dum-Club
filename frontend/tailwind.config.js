@@ -7,6 +7,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        base: "var(--color-bg-base)",
+        card: "var(--color-bg-card)",
+        panel: "var(--color-bg-panel)",
+        dum: {
+          green: "var(--color-green)",
+          violet: "var(--color-violet)",
+        },
         purple: {
           400: "#c084fc",
           500: "#a855f7",

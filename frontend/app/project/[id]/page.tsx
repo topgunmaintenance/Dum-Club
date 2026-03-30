@@ -2240,7 +2240,7 @@ const heroUtility =
 
 return (
   <div
-    className={`min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:px-8 ${
+    className={`min-h-screen bg-base px-4 py-8 text-white sm:px-6 lg:px-8 ${
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
@@ -2269,7 +2269,7 @@ return (
 
           {/* Pitch hero */}
           <div
-            className="mb-10 rounded-3xl border border-zinc-800 bg-black p-8 sm:p-12 text-center"
+            className="mb-10 rounded-3xl border border-zinc-800 bg-base p-8 sm:p-12 text-center"
             style={{
               borderTop: `3px solid ${accent}`,
               boxShadow: `0 0 80px rgba(0,255,178,0.06)`,
@@ -2283,7 +2283,7 @@ return (
                 </span>
               </div>
 
-              <h1 className="font-mono text-4xl font-bold leading-tight text-white sm:text-6xl">
+              <h1 className="text-4xl font-bold leading-tight text-white sm:text-6xl">
                 {projectName}
               </h1>
 
@@ -2481,7 +2481,7 @@ return (
                       <div className="mt-auto pt-4 flex items-center justify-between">
                         <div>
                           {pitchFree ? (
-                            <span className="font-mono text-lg font-bold text-emerald-400">Free for holders</span>
+                            <span className="text-lg font-bold text-emerald-400">Free for holders</span>
                           ) : (
                             <span className="font-mono text-lg font-bold text-white">{pitchPrice}</span>
                           )}
@@ -2544,7 +2544,7 @@ return (
           <div className="flex items-center gap-3">
             <span className="text-emerald-400">✦</span>
             <span className="text-sm font-semibold text-emerald-200">
-              <span className="font-mono uppercase tracking-[0.15em]">{heroTitle}</span>
+              <span className="uppercase tracking-[0.15em]">{heroTitle}</span>
               {" is live — "}
               <span className="font-normal text-emerald-300/80">share it with your community</span>
             </span>
@@ -2559,7 +2559,7 @@ return (
                   window.setTimeout(() => setBannerCopied(false), 1500);
                 } catch {}
               }}
-              className="rounded-lg border border-emerald-400/40 px-3 py-1.5 font-mono text-xs uppercase tracking-[0.18em] text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+              className="rounded-lg border border-emerald-400/40 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
             >
               {bannerCopied ? "Copied ✓" : "Copy link"}
             </button>
@@ -2583,7 +2583,7 @@ return (
       </Link>
 
       <div
-        className="mb-8 rounded-3xl border border-zinc-900 bg-black p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8"
+        className="mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8"
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
@@ -2603,7 +2603,7 @@ return (
               {loadingProject ? (
                 <div className="h-10 w-72 animate-pulse rounded-lg bg-zinc-800 sm:h-14" />
               ) : (
-                <h1 className="font-mono text-3xl font-bold leading-tight text-white sm:text-5xl">
+                <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl">
                   {projectName}
                 </h1>
               )}
@@ -2616,14 +2616,14 @@ return (
 
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span
-                  className="rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em]"
+                  className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
                   style={{ borderColor: accent, color: accent }}
                 >
                   {category}
                 </span>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-zinc-800 bg-black/40 p-4">
+              <div className="mt-5 rounded-2xl border border-zinc-800 bg-base/40 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
                   Why hold this token
                 </p>
@@ -2680,7 +2680,7 @@ return (
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-xl border border-zinc-800 bg-black/40 p-3">
+                <div className="mt-4 rounded-xl border border-zinc-800 bg-base/40 p-3">
                   <p className="text-xs font-medium text-emerald-400">Holder benefit</p>
                   <p className="mt-1 text-sm text-zinc-300">
                     {chatMeta.holder_unlimited
@@ -2733,7 +2733,7 @@ return (
                 {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                    className="block w-full px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
                   >
                     Book service →
                   </Link>
@@ -2742,7 +2742,7 @@ return (
                   Boolean(serviceProfile?.is_active) ? (
                     <Link
                       href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
                     >
                       Manage bookings →
                     </Link>
@@ -2750,7 +2750,7 @@ return (
                     <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
                       <Link
                         href={`/project/${id}/manage`}
-                        className="block font-mono text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                        className="block text-xs text-emerald-400/70 transition hover:text-emerald-400"
                       >
                         Set up your service →
                       </Link>
@@ -2773,7 +2773,7 @@ return (
                 {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                    className="block w-full px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
                   >
                     Book service →
                   </Link>
@@ -2782,7 +2782,7 @@ return (
                   Boolean(serviceProfile?.is_active) ? (
                     <Link
                       href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center font-mono text-xs text-zinc-600 transition hover:text-zinc-300"
+                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
                     >
                       Manage bookings →
                     </Link>
@@ -2790,7 +2790,7 @@ return (
                     <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
                       <Link
                         href={`/project/${id}/manage`}
-                        className="block font-mono text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                        className="block text-xs text-emerald-400/70 transition hover:text-emerald-400"
                       >
                         Set up your service →
                       </Link>
@@ -2827,7 +2827,7 @@ return (
       </div>
 
       {canShowMarketUi && hasMarketSnapshot && (
-        <div className="mb-8 border-b border-t border-zinc-800 bg-black">
+        <div className="mb-8 border-b border-t border-zinc-800 bg-base">
           <div className="mx-auto max-w-6xl px-2">
             <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
               {[
@@ -2885,7 +2885,7 @@ return (
 
       {isOwner && (
         <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
-          <span className="font-mono uppercase tracking-[0.18em] text-zinc-400">
+          <span className="uppercase tracking-[0.18em] text-zinc-400">
             Review & publication
           </span>
           <div className="mt-2 text-base text-white">{statusBanner}</div>
@@ -2961,7 +2961,7 @@ return (
                       const action = builderActions.find((a) => a.key === storePickerFor);
                       if (action) runBuilderAction(action, item);
                     }}
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-left transition hover:border-emerald-400/30"
+                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
                   >
                     <div className="text-sm font-medium text-white">{item.name}</div>
                     <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
@@ -3150,7 +3150,7 @@ return (
                 const entry = projectScore[dim];
                 const label = dim.charAt(0).toUpperCase() + dim.slice(1);
                 return (
-                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-white">{label}</span>
                       <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
@@ -3224,7 +3224,7 @@ return (
             </button>
           )}
         </div>
-        <h2 className="font-mono text-2xl font-bold text-white">Offers</h2>
+        <h2 className="text-2xl font-bold text-white">Offers</h2>
         <p className="mt-2 text-sm text-zinc-500">
           {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
         </p>
@@ -3257,7 +3257,7 @@ return (
                 placeholder="Offer title"
                 value={offerEditing.title || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
               />
               <button
                 type="button"
@@ -3274,7 +3274,7 @@ return (
                 value={offerEditing.description || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
                 rows={3}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
               />
               <button
                 type="button"
@@ -3295,7 +3295,7 @@ return (
                     placeholder="Price (USD)"
                     value={offerEditing.price_usd || ""}
                     onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                    className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                    className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                   />
                   <button
                     type="button"
@@ -3310,7 +3310,7 @@ return (
               <select
                 value={offerEditing.offer_type || "digital_service"}
                 onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
               >
                 <option value="digital_service">Digital Service</option>
                 <option value="physical_product">Physical Product</option>
@@ -3321,7 +3321,7 @@ return (
               placeholder="Delivery info (e.g. Delivered via email within 24h)"
               value={offerEditing.delivery_info || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
             />
             <input
               type="number"
@@ -3330,7 +3330,7 @@ return (
               placeholder="Token holder discount % (0-100)"
               value={offerEditing.token_discount_percent || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
             />
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Inventory</div>
@@ -3350,7 +3350,7 @@ return (
                   placeholder="Quantity available"
                   value={offerEditing.quantity_available || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
               )}
             </div>
@@ -3379,7 +3379,7 @@ return (
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-zinc-700 bg-black px-4 py-4 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300 active:scale-[0.98]"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-zinc-700 bg-base px-4 py-4 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300 active:scale-[0.98]"
                 >
                   <span className="text-lg">📷</span>
                   <span className="text-left">
@@ -3404,7 +3404,7 @@ return (
                       setOfferImagePreview(null);
                       setOfferEditing({ ...offerEditing, primary_image_url: "" });
                     }}
-                    className="absolute top-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-xs text-zinc-400 hover:text-white"
+                    className="absolute top-2 right-2 rounded-full bg-base/70 px-2 py-0.5 text-xs text-zinc-400 hover:text-white"
                   >
                     ✕
                   </button>
@@ -3418,7 +3418,7 @@ return (
                   placeholder="Or paste image URL"
                   value={offerEditing.primary_image_url || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
               )}
 
@@ -3428,7 +3428,7 @@ return (
                 placeholder="Video URL (YouTube, Loom, etc.)"
                 value={offerEditing.video_url || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
               />
             </div>
             {offerSaveError && (
@@ -3473,14 +3473,14 @@ return (
               placeholder="Name"
               value={storeEditing.name}
               onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
             />
             <textarea
               placeholder="Description"
               value={storeEditing.description}
               onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
             />
             <div className="flex gap-3">
               <input
@@ -3488,12 +3488,12 @@ return (
                 placeholder="Price (e.g. 0.5 SOL)"
                 value={storeEditing.price}
                 onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
-                className="flex-1 rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="flex-1 rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
               />
               <select
                 value={storeEditing.type}
                 onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
-                className="rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+                className="rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
               >
                 <option value="digital">Digital</option>
                 <option value="physical">Physical</option>
@@ -3512,7 +3512,7 @@ return (
                   })
                 }
                 rows={3}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
               />
             )}
             {/* Token perk fields */}
@@ -3524,21 +3524,21 @@ return (
                   placeholder="Required token amount (e.g. 100)"
                   value={storeEditing.required_token_amount ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
                 <input
                   type="text"
                   placeholder="Perk description (e.g. 50% off for holders)"
                   value={storeEditing.perk_description ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
                 <input
                   type="text"
                   placeholder="Token holder price (e.g. 0.25 SOL or Free)"
                   value={storeEditing.token_holder_price ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
               </div>
             )}
@@ -3567,7 +3567,7 @@ return (
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-black p-5 sm:p-6 flex flex-col transition hover:border-zinc-700">
+                <div key={offer.id} className="rounded-2xl border border-zinc-800 bg-base p-5 sm:p-6 flex flex-col transition hover:border-zinc-700">
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -3758,7 +3758,7 @@ return (
           <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
             Sales
           </div>
-          <h2 className="font-mono text-2xl font-bold text-white">Orders</h2>
+          <h2 className="text-2xl font-bold text-white">Orders</h2>
           <p className="mt-2 text-sm text-zinc-500">
             Purchases from your offers
           </p>
@@ -3779,7 +3779,7 @@ return (
                 const isPaid = order.status === "paid";
                 const isDelivered = order.status === "delivered";
                 return (
-                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-black p-5">
+                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-base p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3 className="text-sm font-semibold text-white truncate">
@@ -3831,12 +3831,12 @@ return (
         <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
             {chatMeta.is_holder ? "Holder" : "Non-holder"}
           </span>
 
           <span
-            className={`rounded-full border px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] ${
+            className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${
               chatMeta.locked ? "border-red-400/30 text-red-300" : "border-zinc-700 text-zinc-300"
             }`}
           >
@@ -3849,7 +3849,7 @@ return (
               : "SUPPORT TO UNLOCK"}
           </span>
 
-          <span className="rounded-full border border-zinc-700 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-zinc-300">
+          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
             Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
           </span>
         </div>
@@ -3863,7 +3863,7 @@ return (
           </div>
         </div>
 
-        <h2 className="font-mono text-2xl font-bold text-white">Ask AI</h2>
+        <h2 className="text-2xl font-bold text-white">Ask AI</h2>
 
         <p className="mt-3 text-zinc-500">
           This project includes {chatMeta.free_limit} free AI question
@@ -3893,22 +3893,22 @@ return (
             placeholder={`Ask something about ${projectName}...`}
             rows={5}
             disabled={loadingAsk || chatMeta.locked}
-            className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
+            className="w-full rounded-2xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
           >
             {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
           </button>
         </form>
 
         <div className="mt-10">
-          <h3 className="font-mono text-xl font-bold text-white">AI Response</h3>
+          <h3 className="text-xl font-bold text-white">AI Response</h3>
 
-          <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
+          <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-base p-4 text-zinc-300">
             {response || (
               <span className="text-zinc-600">
                 Ask a question above — the AI knows this project deeply.
@@ -3939,10 +3939,10 @@ return (
                 key={range}
                 type="button"
                 onClick={() => setChartRange(range)}
-                className={`rounded-full border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] transition ${
+                className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition ${
                   chartRange === range
                     ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                    : "border-zinc-800 bg-black text-zinc-400 hover:bg-zinc-900"
+                    : "border-zinc-800 bg-base text-zinc-400 hover:bg-zinc-900"
                 }`}
               >
                 {range}
@@ -3953,12 +3953,12 @@ return (
 
           <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
             {trades.length === 0 ? (
-              <div className="flex flex-col justify-center gap-6 rounded-3xl border border-zinc-800 bg-black p-8">
+              <div className="flex flex-col justify-center gap-6 rounded-3xl border border-zinc-800 bg-base p-8">
                 <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
                   ◆ Day Zero
                 </div>
                 <div>
-                  <h3 className="font-mono text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-white">
                     Be the first to support this project
                   </h3>
                   <p className="mt-3 max-w-sm text-zinc-400">
@@ -3976,27 +3976,27 @@ return (
             ) : (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Price</div>
                   <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Market Cap</div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">24h Volume</div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Last Trade</div>
                   <div className="text-sm text-zinc-300">{formatDateTime(market?.last_trade_at)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Flow</div>
                   <div className="font-mono text-sm text-zinc-300">
                     <span className="text-emerald-300">{buyCount} buy</span>
@@ -4006,7 +4006,7 @@ return (
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
+              <div className="rounded-3xl border border-zinc-800 bg-base p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">
                     Price Chart
@@ -4044,7 +4044,7 @@ return (
                 </div>
               </div>
 
-              <details className="rounded-3xl border border-zinc-800 bg-black">
+              <details className="rounded-3xl border border-zinc-800 bg-base">
                 <summary className="cursor-pointer select-none px-5 py-4 text-xs uppercase tracking-[0.25em] text-zinc-600 hover:text-zinc-400">
                   Latest Candle OHLCV ▸
                 </summary>
@@ -4077,7 +4077,7 @@ return (
                 </div>
               </details>
 
-              <div className="rounded-3xl border border-zinc-800 bg-black p-5">
+              <div className="rounded-3xl border border-zinc-800 bg-base p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Recent Trades</div>
                   <button
@@ -4119,10 +4119,10 @@ return (
             </div>
             )}
 
-            <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-black p-5">
+            <div id="buy-panel" className="rounded-3xl border border-zinc-800 bg-base p-5">
               <div className="mb-4 text-xs uppercase tracking-[0.25em] text-zinc-600">{displaySymbol} · Support this project</div>
 
-              <h2 className="font-mono text-xl font-bold text-white">Buy / Sell</h2>
+              <h2 className="text-xl font-bold text-white">Buy / Sell</h2>
 
               {/* State indicator */}
               <div className="mt-3 flex items-center gap-2">
@@ -4251,7 +4251,7 @@ return (
   </div>
 </div>
 <details className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950">
-  <summary className="cursor-pointer select-none px-4 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
+  <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
     Holder access ▸
   </summary>
   <div className="p-4 pt-0">
@@ -4267,7 +4267,7 @@ return (
     value={redeemAmount}
     onChange={(e) => setRedeemAmount(e.target.value)}
     placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
-    className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+    className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
     type="number"
     min="0"
     step="any"
@@ -4283,7 +4283,7 @@ return (
   </button>
 
   {redeemStatus && (
-    <div className="mt-3 rounded-xl border border-zinc-800 bg-black p-3 text-sm text-zinc-300">
+    <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3 text-sm text-zinc-300">
       {redeemStatus}
     </div>
   )}
@@ -4347,7 +4347,7 @@ return (
         Share this code with your team or drop it in Discord.
       </p>
       {project?.token_mint_address && (
-        <div className="mt-4 rounded-lg border border-zinc-800 bg-black/40 px-3 py-2">
+        <div className="mt-4 rounded-lg border border-zinc-800 bg-base/40 px-3 py-2">
           <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
             Verified on Solana
           </div>
@@ -4359,7 +4359,7 @@ return (
     </div>
   )}
 
-  <div className="mt-4 rounded-xl border border-zinc-800 bg-black p-3">
+  <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-3">
     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Unlocked Utility</div>
     <div className="mt-2 text-sm text-zinc-300">
       {parsedAiOutput?.token_utility || project?.token_utility || "Utility details are not configured yet."}
@@ -4378,7 +4378,7 @@ return (
         {redemptions.slice(0, 5).map((item) => (
           <div
             key={item.id}
-            className="rounded-xl border border-zinc-800 bg-black p-3"
+            className="rounded-xl border border-zinc-800 bg-base p-3"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="font-mono text-sm text-white">{item.code}</div>
@@ -4418,7 +4418,7 @@ return (
         <select
           value={feedbackRating}
           onChange={(e) => setFeedbackRating(Number(e.target.value))}
-          className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+          className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
         >
           <option value={5}>5 - Excellent</option>
           <option value={4}>4 - Good</option>
@@ -4433,7 +4433,7 @@ return (
         onChange={(e) => setFeedbackComment(e.target.value)}
         rows={3}
         placeholder="Share a quick note about this project..."
-        className="w-full rounded-xl border border-zinc-700 bg-black px-3 py-2 text-white"
+        className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
       />
 
       <button
@@ -4503,7 +4503,7 @@ return (
                 <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Quick Snapshot</div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Your Balance</div>
                     <div className="mt-2 font-mono text-2xl text-white">
                       {formatNumber(walletBalance, 2)}
@@ -4513,7 +4513,7 @@ return (
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Mark Value Est.</div>
                     <div className="mt-2 font-mono text-2xl text-white">
                       ${formatNumber(positionValue, 4)}
@@ -4541,7 +4541,7 @@ return (
                     Mark value is an estimate only and may differ from actual exit value depending on trade size and liquidity.
                   </div>
 
-                  <details className="mt-2 rounded-2xl border border-zinc-800 bg-black">
+                  <details className="mt-2 rounded-2xl border border-zinc-800 bg-base">
                     <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
                       Token Structure ▸
                     </summary>
@@ -4580,7 +4580,7 @@ return (
                     </div>
                   </details>
 
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                     <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Market Trust Signals</div>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
@@ -4609,28 +4609,28 @@ return (
             {isSimulated && (
               <div className="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-zinc-400">Simulation Mode</span>
+                <span className="text-[10px] uppercase tracking-[0.22em] text-zinc-400">Simulation Mode</span>
                 <span className="text-[10px] text-zinc-600">· off-chain</span>
               </div>
             )}
           </div>
 
-          <h2 className="font-mono text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
             {getStatusExplanation(tokenStatus)}
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token</div>
               <div className="mt-2 font-mono text-white">${(tokenMeta.symbol || project?.token_symbol || "-").toUpperCase()}</div>
               <div className="mt-0.5 text-xs text-zinc-500">{tokenMeta.name || project?.token_name || "-"}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
               <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Stage</div>
               <div className="mt-2 text-white">{formatTokenStatus(tokenStatus)}</div>
             </div>
@@ -4648,7 +4648,7 @@ return (
                       ? "border-emerald-400/50 bg-emerald-400/10"
                       : isCompleted
                       ? "border-zinc-700 bg-zinc-900/50"
-                      : "border-zinc-800 bg-black"
+                      : "border-zinc-800 bg-base"
                   }`}
                 >
                   <div className={`font-mono text-xs ${isCurrent ? "text-emerald-500" : isCompleted ? "text-zinc-600" : "text-zinc-800"}`}>
@@ -4666,13 +4666,13 @@ return (
             })}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-5">
             <div className="flex flex-wrap items-center gap-4">
               <button
                 type="button"
                 disabled={loadingAction || tokenStatus === "trading_live"}
                 onClick={tokenStatus === "draft" ? createToken : advanceTokenStatus}
-                className="rounded-xl px-6 py-3 font-mono text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-xl px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 style={{ background: tokenStatus === "trading_live" ? "#52525b" : accent }}
               >
                 {loadingAction ? "Working..." : nextTokenActionLabel}
@@ -4691,7 +4691,7 @@ return (
       ) : (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Pre-live Project</div>
-          <h2 className="font-mono text-3xl font-bold text-white">{projectName}</h2>
+          <h2 className="text-3xl font-bold text-white">{projectName}</h2>
           <p className="mt-3 max-w-3xl text-zinc-400">
             {project?.description || parsedAiOutput?.description || "No description available yet."}
           </p>
@@ -4701,29 +4701,29 @@ return (
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
               <div className="mt-2 text-white">{tokenMeta.name || project?.token_name || "-"}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
               <div className="mt-2 text-white">{tokenMeta.symbol || project?.token_symbol || "-"}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
               <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
               <div className="mt-2 text-white">{reviewStatus}</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
               <div className="mt-2 text-white">{project?.status || "draft"}</div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-4">
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
             <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
             <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
           </div>
@@ -4731,7 +4731,7 @@ return (
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="rounded-2xl border border-zinc-700 bg-black px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
+              className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
             >
               Edit Project
             </Link>
@@ -4740,7 +4740,7 @@ return (
                 type="button"
                 onClick={() => submitReview()}
                 disabled={loadingAction}
-                className="rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
                 style={{ background: accent }}
               >
                 {loadingAction ? "Submitting..." : "Submit for Review"}
@@ -4766,7 +4766,7 @@ return (
                         ? "border-emerald-400/50 bg-emerald-400/10"
                         : isCompleted
                         ? "border-zinc-700 bg-zinc-900/50"
-                        : "border-zinc-800 bg-black"
+                        : "border-zinc-800 bg-base"
                     }`}
                   >
                     <div className={`font-mono text-xs ${isCurrent ? "text-emerald-500" : isCompleted ? "text-zinc-600" : "text-zinc-800"}`}>
@@ -4786,54 +4786,54 @@ return (
           )}
 
           {!isApprovedProject && (
-            <div className="mb-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
+            <div className="mb-6 rounded-2xl border border-zinc-800 bg-base p-4 text-sm text-zinc-400">
               {getStatusExplanation(tokenStatus)}
             </div>
           )}
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Name</div>
               <div className="mt-2 break-words text-lg text-white">
                 {tokenMeta.name || project?.token_name || "-"}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Symbol</div>
               <div className="mt-2 break-words text-lg text-white">
                 {tokenMeta.symbol || project?.token_symbol || "-"}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Supply</div>
               <div className="mt-2 break-words text-lg text-white">
                 {tokenMeta.supply || project?.token_supply || "-"}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Decimals</div>
               <div className="mt-2 break-words text-lg text-white">
                 {tokenMeta.decimals || project?.token_decimals || "-"}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Launch stage</div>
               <div className="mt-2 break-words text-lg text-white">
                 {formatTokenStatus(tokenStatus)}
               </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Created At</div>
               <div className="mt-2 break-words text-sm text-white">{project?.token_created_at || "-"}</div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-4">
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
             <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Mint Address</div>
             <div className="mt-2 break-all text-sm text-white">
               {tokenMeta.mint_address || project?.token_mint_address || "-"}
@@ -4845,13 +4845,13 @@ return (
           <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Blueprint</div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <h2 className="font-mono text-2xl font-bold text-white">Original Prompt</h2>
+            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
+              <h2 className="text-2xl font-bold text-white">Original Prompt</h2>
               <p className="mt-3 text-zinc-400">{project?.prompt || "No prompt saved yet."}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <h2 className="font-mono text-2xl font-bold text-white">Token Utility</h2>
+            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
+              <h2 className="text-2xl font-bold text-white">Token Utility</h2>
               <p className="mt-3 text-zinc-400">
                 {parsedAiOutput?.token_utility || project?.token_utility || "No token utility available yet."}
               </p>
@@ -4859,7 +4859,7 @@ return (
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Description</div>
               <p className="mt-3 text-zinc-300">
                 {parsedAiOutput?.description ||
@@ -4868,12 +4868,12 @@ return (
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Category</div>
               <p className="mt-3 text-zinc-300">{category}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
               <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Template Type</div>
               <p className="mt-3 text-zinc-300">
                 {parsedAiOutput?.template_type ||
@@ -4888,7 +4888,7 @@ return (
           <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Summary</div>
 
-            <h2 className="font-mono text-3xl font-bold text-white">Submission Details</h2>
+            <h2 className="text-3xl font-bold text-white">Submission Details</h2>
 
             <p className="mt-3 max-w-3xl text-zinc-500">
               This section shows the project details used during review. Submit action is available
@@ -4900,19 +4900,19 @@ return (
             </p>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
                 <div className="mt-2 text-white">{tokenName || project?.token_name || "-"}</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
                 <div className="mt-2 text-white">{tokenSymbol || project?.token_symbol || "-"}</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
                 <div className="mt-2 text-white">{tokenSupply || project?.token_supply || "-"}</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Utility</div>
                 <div className="mt-2 text-white">
                   {parsedAiOutput?.token_utility || project?.token_utility || "-"}
@@ -4920,7 +4920,7 @@ return (
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-300">
+            <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4 text-sm text-zinc-300">
               <div className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">Launch Checklist</div>
               <div>{nextStepMessage}</div>
             </div>
@@ -4930,7 +4930,7 @@ return (
         <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
-            <h2 className="font-mono text-3xl font-bold text-white">Add Memory</h2>
+            <h2 className="text-3xl font-bold text-white">Add Memory</h2>
 
             <p className="mt-3 max-w-2xl text-zinc-500">
               Paste a memory, note, creator post, transcript, or product insight so your AI can use it
@@ -4944,33 +4944,33 @@ return (
                 onChange={(e) => setMemoryText(e.target.value)}
                 placeholder="Paste a memory, story, creator post, transcript, or note..."
                 rows={7}
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                className="w-full rounded-2xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none transition focus:border-emerald-400"
               />
 
               <button
                 type="submit"
                 disabled={loadingMemory}
-                className="w-full rounded-2xl px-5 py-3 font-mono text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                className="w-full rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
                 style={{ background: accent }}
               >
                 {loadingMemory ? "Saving..." : "Save Memory"}
               </button>
             </form>
              ) : (
-             <div className="mt-6 rounded-2xl border border-zinc-800 bg-black/40 p-5 text-sm text-zinc-500">
+             <div className="mt-6 rounded-2xl border border-zinc-800 bg-base/40 p-5 text-sm text-zinc-500">
              Sign in to add a project memory.
              </div>
              )}
 
             <div className="mt-10">
-              <h3 className="font-mono text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
+              <h3 className="text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
 
               {memories.length === 0 ? (
                 <p className="mt-4 text-zinc-400">No memories saved yet.</p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {memories.map((memory) => (
-                    <div key={memory.id} className="rounded-2xl border border-zinc-800 bg-black p-4 text-zinc-300">
+                    <div key={memory.id} className="rounded-2xl border border-zinc-800 bg-base p-4 text-zinc-300">
                       {memory.content_text || memory.content || "Empty memory"}
                     </div>
                   ))}
@@ -4982,7 +4982,7 @@ return (
     </>)}
 
     {canShowMarketUi && hasMarketSnapshot && (
-      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-black/90 backdrop-blur-md lg:block">
+      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-base/90 backdrop-blur-md lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
             <span className="truncate font-black text-white">{heroTitle}</span>

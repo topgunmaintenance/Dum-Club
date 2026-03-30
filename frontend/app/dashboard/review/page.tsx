@@ -87,7 +87,7 @@ export default function ReviewDashboardPage() {
   }, [loadQueue]);
 
   return (
-    <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
+    <div className="min-h-screen bg-base px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
@@ -129,15 +129,15 @@ export default function ReviewDashboardPage() {
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-zinc-800 bg-black p-3">
+                  <div className="rounded-xl border border-zinc-800 bg-base p-3">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Token Symbol</div>
                     <div className="mt-1 text-white">{project.token_symbol || "-"}</div>
                   </div>
-                  <div className="rounded-xl border border-zinc-800 bg-black p-3">
+                  <div className="rounded-xl border border-zinc-800 bg-base p-3">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Supply</div>
                     <div className="mt-1 text-white">{project.token_supply || "-"}</div>
                   </div>
-                  <div className="rounded-xl border border-zinc-800 bg-black p-3">
+                  <div className="rounded-xl border border-zinc-800 bg-base p-3">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Utility</div>
                     <div className="mt-1 text-white">{project.token_utility || "-"}</div>
                   </div>

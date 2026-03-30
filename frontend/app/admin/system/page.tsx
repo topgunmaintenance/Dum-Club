@@ -64,7 +64,7 @@ function StatusCard({ label, result, loading: isLoading, error }: {
           <summary className="cursor-pointer text-[10px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
             Details
           </summary>
-          <pre className="mt-2 rounded-lg bg-black/50 border border-zinc-800 p-3 text-[11px] text-zinc-400 overflow-x-auto">
+          <pre className="mt-2 rounded-lg bg-base/50 border border-zinc-800 p-3 text-[11px] text-zinc-400 overflow-x-auto">
             {JSON.stringify(result.details, null, 2)}
           </pre>
         </details>
@@ -176,7 +176,7 @@ function SystemHealthPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-base text-white">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
         {/* Header */}
         <div className="mb-8">
@@ -260,7 +260,7 @@ function SystemHealthPage() {
               </button>
             </div>
             {recoveryResult && (
-              <pre className="mt-3 rounded-lg bg-black/50 border border-zinc-800 p-3 text-[11px] text-zinc-400 overflow-x-auto max-h-[200px] overflow-y-auto">
+              <pre className="mt-3 rounded-lg bg-base/50 border border-zinc-800 p-3 text-[11px] text-zinc-400 overflow-x-auto max-h-[200px] overflow-y-auto">
                 {JSON.stringify(recoveryResult, null, 2)}
               </pre>
             )}

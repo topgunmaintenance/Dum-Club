@@ -103,7 +103,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-base text-white">
       <section className="mx-auto max-w-3xl px-6 py-10">
         <Link
           href="/discover"
@@ -115,7 +115,7 @@ export default function LeaderboardPage() {
         <div className="mb-2 text-xs uppercase tracking-[0.35em] text-emerald-400/60">
           Ranking
         </div>
-        <h1 className="font-mono text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-4xl">
+        <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-4xl">
           Leaderboard
         </h1>
         <p className="mt-2 text-sm text-zinc-500">

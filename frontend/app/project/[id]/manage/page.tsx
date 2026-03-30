@@ -160,7 +160,7 @@ export default function ManagePage() {
     (project?.name as string) || (project?.title as string) || "Project";
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-base text-white">
       <div className="mx-auto max-w-4xl px-6 py-12">
         <Link
           href={`/project/${id}`}
@@ -226,7 +226,7 @@ export default function ManagePage() {
                           </div>
                         )}
                         {b.notes && (
-                          <div className="mt-2 rounded-lg border border-zinc-800 bg-black px-3 py-2 text-xs text-zinc-400">
+                          <div className="mt-2 rounded-lg border border-zinc-800 bg-base px-3 py-2 text-xs text-zinc-400">
                             {String(b.notes)}
                           </div>
                         )}

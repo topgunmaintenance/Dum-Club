@@ -3,8 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: #07071A;
+  --foreground: #F0EFF8;
+
+  /* DUM Club color system */
+  --color-bg-base: #07071A;
+  --color-bg-card: #0D0D25;
+  --color-bg-panel: #12122E;
+
+  --color-green: #00FFA3;
+  --color-green-dim: rgba(0,255,163,0.10);
+
+  --color-violet: #7B61FF;
+
+  --color-text-primary: #F0EFF8;
+  --color-text-secondary: #9B9BB8;
+  --color-text-dim: #545470;
+
+  --color-border: rgba(255,255,255,0.06);
 }
 
 html {

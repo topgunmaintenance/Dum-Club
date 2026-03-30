@@ -129,7 +129,7 @@ export default function DashboardPage() {
   const liveCount = projects.filter((p) => p.status === "live").length;
 
   return (
-    <div className="min-h-screen bg-black px-4 py-10 text-white sm:px-6">
+    <div className="min-h-screen bg-base px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}

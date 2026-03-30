@@ -301,9 +301,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-black text-white">
+    <div className="min-h-screen overflow-hidden bg-base text-white">
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
-        <div className="relative overflow-hidden border border-zinc-900 bg-black">
+        <div className="relative overflow-hidden border border-zinc-900 bg-base">
           <div className="absolute inset-0 opacity-20">
             <div className="h-full w-full bg-[radial-gradient(circle_at_top,rgba(0,255,178,0.12),transparent_35%)]" />
           </div>
@@ -314,7 +314,7 @@ export default function Home() {
                 ◆ Powered by Solana
               </div>
 
-              <h1 className="font-mono text-5xl font-bold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
+              <h1 className="text-5xl font-bold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
                 Describe it.
                 <br />
                 <span className="text-emerald-400">We build the AI,</span>
@@ -334,7 +334,7 @@ export default function Home() {
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
                   href="/build"
-                  className="group inline-flex w-full items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 font-mono text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90 sm:min-w-[260px] sm:w-auto"
+                  className="group inline-flex w-full items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90 sm:min-w-[260px] sm:w-auto"
                 >
                   Build a Project{" "}
                   <span className="inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
@@ -342,7 +342,7 @@ export default function Home() {
 
                 <Link
                   href="/discover"
-                  className="inline-flex w-full items-center justify-center border border-zinc-800 bg-transparent px-8 py-4 font-mono text-sm uppercase tracking-[0.28em] text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:min-w-[260px] sm:w-auto"
+                  className="inline-flex w-full items-center justify-center border border-zinc-800 bg-transparent px-8 py-4 text-sm uppercase tracking-[0.28em] text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:min-w-[260px] sm:w-auto"
                 >
                   Explore Feed
                 </Link>
@@ -353,7 +353,7 @@ export default function Home() {
                   Array.from({ length: 3 }).map((_, i) => (
                     <div
                       key={i}
-                      className="fade-up flex min-h-[140px] flex-1 border border-zinc-900 bg-black p-5 text-left md:min-w-[min(100%,280px)]"
+                      className="fade-up flex min-h-[140px] flex-1 border border-zinc-900 bg-base p-5 text-left md:min-w-[min(100%,280px)]"
                     >
                       <div className="text-zinc-600">Loading live projects…</div>
                     </div>
@@ -374,11 +374,11 @@ export default function Home() {
                       <Link
                         key={project.id}
                         href={`/project/${project.id}`}
-                        className="fade-up group flex min-h-[140px] flex-1 items-start justify-between gap-4 border border-zinc-900 bg-black p-5 text-left transition hover:border-emerald-400/40 hover:bg-zinc-950 md:min-w-[min(100%,280px)]"
+                        className="fade-up group flex min-h-[140px] flex-1 items-start justify-between gap-4 border border-zinc-900 bg-base p-5 text-left transition hover:border-emerald-400/40 hover:bg-zinc-950 md:min-w-[min(100%,280px)]"
                       >
                         <div>
                           <div className="mb-2 text-3xl">{emoji}</div>
-                          <div className="font-mono text-lg font-bold text-white group-hover:text-emerald-50">
+                          <div className="text-lg font-bold text-white group-hover:text-emerald-50">
                             {project.title || project.name || "Untitled Project"}
                           </div>
                           <div className="mt-2 line-clamp-2 text-xs text-zinc-500">
@@ -395,7 +395,7 @@ export default function Home() {
                               LIVE
                             </span>
                           </div>
-                          <div className="mt-1 font-mono text-xs uppercase tracking-[0.16em] text-emerald-400">
+                          <div className="mt-1 text-xs uppercase tracking-[0.16em] text-emerald-400">
                             ${ticker}
                           </div>
                           <div
@@ -413,12 +413,12 @@ export default function Home() {
                   })
                 ) : (
                   <>
-                    <div className="border border-zinc-900 bg-black p-6 text-left">
+                    <div className="border border-zinc-900 bg-base p-6 text-left">
                       <div className="mb-4 text-4xl">💪</div>
-                      <div className="font-mono text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         AI Fitness Coach
                       </div>
-                      <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
+                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
                         Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
@@ -426,12 +426,12 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="border border-zinc-900 bg-black p-6 text-left">
+                    <div className="border border-zinc-900 bg-base p-6 text-left">
                       <div className="mb-4 text-4xl">🧠</div>
-                      <div className="font-mono text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         MathMaster
                       </div>
-                      <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
+                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
                         Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
@@ -439,12 +439,12 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="border border-zinc-900 bg-black p-6 text-left">
+                    <div className="border border-zinc-900 bg-base p-6 text-left">
                       <div className="mb-4 text-4xl">🚀</div>
-                      <div className="font-mono text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-white">
                         Dum Club
                       </div>
-                      <div className="mt-3 font-mono text-sm uppercase tracking-[0.2em] text-emerald-400">
+                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
                         Publication · live
                       </div>
                       <div className="mt-5 text-zinc-500">
@@ -465,7 +465,7 @@ export default function Home() {
           <div className="mb-2 text-xs uppercase tracking-[0.35em] text-emerald-400">
             How it works
           </div>
-          <h2 className="font-mono text-2xl font-bold uppercase tracking-tight text-white sm:text-3xl">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-white sm:text-3xl">
             60 seconds to live
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
@@ -476,17 +476,17 @@ export default function Home() {
           <div className="mt-8 grid gap-6 border-t border-zinc-800 pt-8 sm:grid-cols-3">
             <div>
               <div className="font-mono text-2xl font-bold text-zinc-700">01</div>
-              <div className="mt-2 font-mono text-sm font-semibold text-white">Idea</div>
+              <div className="mt-2 text-sm font-semibold text-white">Idea</div>
               <p className="mt-2 text-sm text-zinc-500">One paragraph is enough to start.</p>
             </div>
             <div>
               <div className="font-mono text-2xl font-bold text-zinc-700">02</div>
-              <div className="mt-2 font-mono text-sm font-semibold text-white">Generate</div>
+              <div className="mt-2 text-sm font-semibold text-white">Generate</div>
               <p className="mt-2 text-sm text-zinc-500">AI drafts the app shape and token story.</p>
             </div>
             <div>
               <div className="font-mono text-2xl font-bold text-zinc-700">03</div>
-              <div className="mt-2 font-mono text-sm font-semibold text-white">Launch</div>
+              <div className="mt-2 text-sm font-semibold text-white">Launch</div>
               <p className="mt-2 text-sm text-zinc-500">Your page is live and discoverable.</p>
             </div>
           </div>
@@ -500,11 +500,11 @@ export default function Home() {
               live project{liveProjectCount === 1 ? "" : "s"}
             </span>
           </div>
-          <div className="mb-2 px-4 pt-3 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+          <div className="mb-2 px-4 pt-3 text-center text-[10px] uppercase tracking-[0.3em] text-zinc-600">
             Live activity
           </div>
           {recentTrades.length === 0 ? (
-            <div className="py-4 text-center font-mono text-xs text-zinc-600">
+            <div className="py-4 text-center text-xs text-zinc-600">
               No recent trades yet — open a market and make the first move.
             </div>
           ) : (
@@ -539,7 +539,7 @@ export default function Home() {
         {/* Featured project spotlight */}
         <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               Featured project
             </div>
             {featured?.project && (
@@ -550,11 +550,11 @@ export default function Home() {
                 >
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-start gap-5">
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800 bg-black text-3xl">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800 bg-base text-3xl">
                         {getProjectEmoji(featured.project, 0)}
                       </div>
                       <div>
-                        <div className="font-mono text-2xl font-black text-white">
+                        <div className="text-2xl font-black text-white">
                           {featured.project.title || featured.project.name || "Untitled"}
                         </div>
                         <div className="mt-1 max-w-lg text-sm text-zinc-400">
@@ -581,9 +581,9 @@ export default function Home() {
                           </div>
                         </>
                       ) : (
-                        <div className="font-mono text-sm text-zinc-500">Market loading…</div>
+                        <div className="text-sm text-zinc-500">Market loading…</div>
                       )}
-                      <div className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 font-mono text-sm font-bold text-black transition group-hover:bg-emerald-400">
+                      <div className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition group-hover:bg-emerald-400">
                         Open market →
                       </div>
                     </div>
@@ -600,7 +600,7 @@ export default function Home() {
         {/* Platform stats */}
         <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-12 sm:py-14">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-8 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-8 text-center text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               Platform pulse
             </div>
             <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
@@ -620,7 +620,7 @@ export default function Home() {
                   <div className="font-mono text-3xl font-black text-white sm:text-4xl">
                     {stat.value}
                   </div>
-                  <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                  <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
                     {stat.label}
                   </div>
                 </div>
@@ -632,10 +632,10 @@ export default function Home() {
         {/* Bottom CTA */}
         <div className="border-t border-zinc-900 px-4 py-14 text-center sm:py-16">
           <div className="mx-auto max-w-2xl">
-            <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               Ready?
             </div>
-            <h2 className="font-mono text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
               YOUR IDEA.
               <br />
               <span className="text-emerald-400">60 SECONDS.</span>
@@ -646,13 +646,13 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link
                 href="/build"
-                className="rounded-xl bg-emerald-400 px-8 py-4 font-mono text-sm font-bold text-black transition hover:bg-emerald-300"
+                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300"
               >
                 Build a Project →
               </Link>
               <Link
                 href="/discover"
-                className="rounded-xl border border-zinc-700 px-8 py-4 font-mono text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
               >
                 Explore Feed
               </Link>
@@ -664,7 +664,7 @@ export default function Home() {
       {/* Latest — real public projects */}
       <div className="border-t border-zinc-900 px-4 py-12">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-6 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+          <div className="mb-6 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
             Latest on DUM Club
           </div>
           {latestProjectsNews.length === 0 && !loadingProjects ? (
@@ -691,7 +691,7 @@ export default function Home() {
                       <div className="mb-2 font-mono text-[10px] text-emerald-500">
                         {formatNewsDate(p.created_at)}
                       </div>
-                      <div className="mb-2 font-mono text-sm font-bold leading-tight text-white">
+                      <div className="mb-2 text-sm font-bold leading-tight text-white">
                         {p.title || p.name || "Untitled project"}
                       </div>
                       <div className="line-clamp-3 text-xs leading-relaxed text-zinc-500">
@@ -707,14 +707,14 @@ export default function Home() {
       {/* Honest stack strip (no fake press logos) */}
       <div className="border-t border-zinc-900 py-8">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="mb-4 text-center font-mono text-[9px] uppercase tracking-[0.3em] text-zinc-700">
+          <div className="mb-4 text-center text-[9px] uppercase tracking-[0.3em] text-zinc-700">
             Built with
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
             {["Solana", "Supabase", "Next.js"].map((name) => (
               <span
                 key={name}
-                className="font-mono text-sm font-bold tracking-wide text-zinc-500"
+                className="text-sm font-bold tracking-wide text-zinc-500"
               >
                 {name}
               </span>
@@ -723,19 +723,19 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="border-t border-zinc-900 bg-black px-4 py-16">
+      <footer className="border-t border-zinc-900 bg-base px-4 py-16">
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <span className="font-mono text-xl font-black tracking-tight text-white">
+                <span className="text-xl font-black tracking-tight text-white">
                   DUM<span className="text-emerald-400">CLUB</span>
                 </span>
                 <span className="rounded border border-zinc-800 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
                   BETA
                 </span>
               </div>
-              <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-600">
+              <p className="mb-4 text-[9px] uppercase tracking-[0.2em] text-zinc-600">
                 DIGITAL UTILITY MOVEMENT
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
@@ -753,7 +753,7 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
                 Platform
               </div>
               <ul className="space-y-3">
@@ -776,7 +776,7 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
                 Community
               </div>
               <ul className="space-y-3">
@@ -804,7 +804,7 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="mb-4 font-mono text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
                 Resources
               </div>
               <ul className="space-y-3">
@@ -839,7 +839,7 @@ export default function Home() {
               is built on Solana and operates in an experimental capacity as a beta product.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="font-mono text-[10px] text-zinc-700">
+              <div className="text-[10px] text-zinc-700">
                 © {new Date().getFullYear()} DUM Club. All rights reserved.
               </div>
               <div className="flex gap-6">
@@ -847,7 +847,7 @@ export default function Home() {
                   <a
                     key={item}
                     href="#"
-                    className="font-mono text-[10px] text-zinc-700 transition hover:text-zinc-400"
+                    className="text-[10px] text-zinc-700 transition hover:text-zinc-400"
                   >
                     {item}
                   </a>

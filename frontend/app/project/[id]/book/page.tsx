@@ -97,7 +97,7 @@ export default function BookPage() {
 
   if (booking) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-base text-white">
         <div className="mx-auto max-w-lg px-6 py-16 text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-400/10 text-4xl">
             ✓
@@ -174,7 +174,7 @@ export default function BookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-base text-white">
       <div className="mx-auto max-w-2xl px-6 py-12">
         <Link
           href={`/project/${id}`}
@@ -290,25 +290,25 @@ export default function BookPage() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
                   />
                   <input
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="Email (optional — for confirmation)"
                     type="email"
-                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
                   />
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any notes for the service provider..."
                     rows={3}
-                    className="w-full resize-none rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full resize-none rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
                   />
                 </div>
 
-                <div className="mt-4 rounded-xl border border-zinc-800 bg-black p-4 text-sm">
+                <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Date</span>
                     <span className="text-white">{selectedDate}</span>

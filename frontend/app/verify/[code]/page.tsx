@@ -49,7 +49,7 @@ export default function VerifyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-zinc-500">
+      <div className="flex min-h-screen items-center justify-center bg-base text-zinc-500">
         Verifying code...
       </div>
     );
@@ -57,7 +57,7 @@ export default function VerifyPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-base text-center">
         <div className="mb-4 text-5xl">❌</div>
         <div className="font-mono text-xl text-red-400">Invalid code</div>
         <div className="mt-2 text-zinc-500">This redemption code was not found.</div>
@@ -72,7 +72,7 @@ export default function VerifyPage() {
     | undefined;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-base px-6 text-white">
       <div className="w-full max-w-sm">
         <div
           className={`mb-6 rounded-2xl border p-6 text-center ${
@@ -122,7 +122,7 @@ export default function VerifyPage() {
             </span>
           </div>
           {booking?.notes && (
-            <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2 text-xs text-zinc-400">
+            <div className="rounded-lg border border-zinc-800 bg-base px-3 py-2 text-xs text-zinc-400">
               {String(booking.notes)}
             </div>
           )}
