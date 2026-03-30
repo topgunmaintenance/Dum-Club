@@ -36,6 +36,7 @@ from api.routes import (
     launch,
     offers,
     checkout,
+    health,
 )
 
 from db.supabase import init_supabase
@@ -112,10 +113,13 @@ app.include_router(launch.router, prefix="/api/launch", tags=["Launch"])
 app.include_router(offers.router, prefix="/api/offers", tags=["Offers"])
 app.include_router(checkout.router, prefix="/api/checkout", tags=["Checkout"])
 
+# System Health
+app.include_router(health.router, prefix="/api/health", tags=["Health"])
+
 # Token Creation (NO PREFIX so route stays clean)
 app.include_router(token.router, tags=["Token"])
 
 
 @app.get("/health")
-async def health():
+async def health_liveness():
     return {"status": "ok", "service": "DUM Club API"}
