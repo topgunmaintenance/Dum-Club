@@ -106,14 +106,17 @@ async def create_offer(
 ):
     supabase = get_client()
     privy_id = current_user.get("sub")
+    print(f"[offers] CREATE request: project={body.project_id}, title='{body.title}', price={body.price_usd}, type={body.offer_type}, privy={privy_id}")
 
     if body.offer_type not in VALID_OFFER_TYPES:
+        print(f"[offers] CREATE rejected: invalid offer_type '{body.offer_type}'")
         raise HTTPException(
             status_code=400,
             detail=f"offer_type must be one of: {', '.join(VALID_OFFER_TYPES)}",
         )
 
     _verify_project_owner(supabase, body.project_id, privy_id)
+    print(f"[offers] CREATE: owner verified for project={body.project_id}")
 
     insert = {
         "project_id": body.project_id,
@@ -131,10 +134,17 @@ async def create_offer(
         "is_active": True,
     }
 
-    res = supabase.table("offers").insert(insert).execute()
-    if not res.data:
-        raise HTTPException(status_code=500, detail="Failed to create offer")
+    try:
+        res = supabase.table("offers").insert(insert).execute()
+    except Exception as db_err:
+        print(f"[offers] CREATE DB ERROR: {type(db_err).__name__}: {db_err}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(db_err)}")
 
+    if not res.data:
+        print(f"[offers] CREATE failed: insert returned no data")
+        raise HTTPException(status_code=500, detail="Failed to create offer — no data returned from database")
+
+    print(f"[offers] CREATE success: id={res.data[0].get('id')}, title='{res.data[0].get('title')}'")
     return res.data[0]
 
 
@@ -142,15 +152,20 @@ async def create_offer(
 async def list_offers(project_id: str):
     supabase = get_client()
 
-    res = (
-        supabase.table("offers")
-        .select("*")
-        .eq("project_id", project_id)
-        .eq("is_active", True)
-        .order("created_at", desc=True)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("offers")
+            .select("*")
+            .eq("project_id", project_id)
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .execute()
+        )
+    except Exception as db_err:
+        print(f"[offers] LIST DB ERROR for project={project_id}: {type(db_err).__name__}: {db_err}")
+        raise HTTPException(status_code=500, detail=f"Database error loading offers")
 
+    print(f"[offers] LIST project={project_id}: {len(res.data or [])} active offers")
     return res.data or []
 
 

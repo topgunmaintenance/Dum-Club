@@ -3,6 +3,7 @@ Checkout — Stripe payment intents, webhook, and order queries.
 """
 import os
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
@@ -148,6 +149,16 @@ async def create_payment_intent(
     success_url = body.success_url or "https://dum-club.vercel.app/dashboard"
     cancel_url = body.cancel_url or success_url
 
+    def _append_query_param(url: str, key: str, value: str) -> str:
+        """Safely append a query parameter to a URL, replacing if already present."""
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
+        params[key] = [value]
+        new_query = urlencode(params, doseq=True)
+        return urlunparse(parsed._replace(query=new_query))
+
+    print(f"[checkout] Creating Stripe session: offer={offer['id']}, amount_cents={amount_cents}, buyer={buyer_user_id}")
+
     try:
         session = s.checkout.Session.create(
             mode="payment",
@@ -168,8 +179,8 @@ async def create_payment_intent(
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
             },
-            success_url=success_url + "?checkout=success",
-            cancel_url=cancel_url + "?checkout=cancelled",
+            success_url=_append_query_param(success_url, "checkout", "success"),
+            cancel_url=_append_query_param(cancel_url, "checkout", "cancelled"),
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")

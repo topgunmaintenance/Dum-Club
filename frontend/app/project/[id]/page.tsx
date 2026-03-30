@@ -467,6 +467,8 @@ export default function ProjectPage() {
   const [offerFormOpen, setOfferFormOpen] = useState(false);
   const [offerEditing, setOfferEditing] = useState<Partial<Offer> | null>(null);
   const [offerSaving, setOfferSaving] = useState(false);
+  const [offerSaveError, setOfferSaveError] = useState<string | null>(null);
+  const [offerSaveSuccess, setOfferSaveSuccess] = useState(false);
   const [offerImageFile, setOfferImageFile] = useState<File | null>(null);
   const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -750,11 +752,28 @@ export default function ProjectPage() {
   }
 
   async function saveOffer() {
-    if (!offerEditing || !offerEditing.title?.trim() || !id) return;
+    console.log("[saveOffer] clicked, offerEditing:", offerEditing?.title, "id:", id);
+    if (!offerEditing) return;
+    if (!offerEditing.title?.trim()) {
+      setOfferSaveError("Title is required");
+      return;
+    }
+    if (!id) {
+      setOfferSaveError("Project ID missing — try refreshing the page");
+      return;
+    }
+    const priceNum = Number(offerEditing.price_usd);
+    if (!priceNum || priceNum <= 0) {
+      setOfferSaveError("Price must be greater than $0");
+      return;
+    }
     setOfferSaving(true);
+    setOfferSaveError(null);
+    setOfferSaveSuccess(false);
     try {
       const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      console.log("[saveOffer] token obtained:", !!token);
+      if (!token) throw new Error("Not authenticated — please sign in again");
 
       // Upload image if file selected
       let imageUrl = offerEditing.primary_image_url?.trim() || null;
@@ -763,7 +782,7 @@ export default function ProjectPage() {
         if (uploaded) {
           imageUrl = uploaded;
         } else {
-          alert("Image upload failed — offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
+          setOfferSaveError("Image upload failed — offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
         }
       }
 
@@ -776,7 +795,7 @@ export default function ProjectPage() {
       const body: Record<string, unknown> = {
         title: offerEditing.title?.trim(),
         description: offerEditing.description?.trim() || null,
-        price_usd: Number(offerEditing.price_usd) || 0,
+        price_usd: priceNum,
         offer_type: offerEditing.offer_type || "digital_service",
         delivery_info: offerEditing.delivery_info?.trim() || null,
         token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
@@ -787,6 +806,7 @@ export default function ProjectPage() {
       };
       if (!isEdit) body.project_id = id;
 
+      console.log("[saveOffer] sending", method, url, JSON.stringify(body));
       const res = await fetch(url, {
         method,
         headers: {
@@ -795,18 +815,30 @@ export default function ProjectPage() {
         },
         body: JSON.stringify(body),
       });
+      console.log("[saveOffer] response status:", res.status);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Failed to save offer");
+        const errData = await res.json().catch(() => ({}));
+        // Pydantic 422 errors return detail as an array of objects
+        let msg = "Failed to save offer";
+        if (typeof errData.detail === "string") {
+          msg = errData.detail;
+        } else if (Array.isArray(errData.detail)) {
+          msg = errData.detail.map((e: any) => e.msg || JSON.stringify(e)).join("; ");
+        }
+        throw new Error(msg);
       }
+      const created = await res.json();
+      console.log("[saveOffer] success, offer id:", created?.id);
       await loadOffers();
       setOfferFormOpen(false);
       setOfferEditing(null);
       setOfferImageFile(null);
       setOfferImagePreview(null);
+      setOfferSaveSuccess(true);
+      setTimeout(() => setOfferSaveSuccess(false), 5000);
     } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to save offer");
+      console.error("[saveOffer] ERROR:", err);
+      setOfferSaveError(err instanceof Error ? err.message : "Failed to save offer");
     } finally {
       setOfferSaving(false);
     }
@@ -832,6 +864,7 @@ export default function ProjectPage() {
 
   async function buyOffer(offer: Offer) {
     const oid = offer.id;
+    console.log("[buyOffer] clicked, offer:", oid, offer.title);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
     setBuyError((p) => ({ ...p, [oid]: "" }));
 
@@ -855,14 +888,19 @@ export default function ProjectPage() {
 
     try {
       const token = await getToken();
+      console.log("[buyOffer] token obtained:", !!token);
       if (!token) {
         setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
-        setBuyError((p) => ({ ...p, [oid]: "getToken() returned null" }));
+        setBuyError((p) => ({ ...p, [oid]: "Authentication failed — please sign in again" }));
         setBuyingOfferId(null);
         return;
       }
 
       setBuyStep((p) => ({ ...p, [oid]: "calling_checkout" }));
+
+      // Strip existing query params to avoid malformed URLs on repeat purchases
+      const cleanUrl = window.location.origin + window.location.pathname;
+      console.log("[buyOffer] clean URL for redirect:", cleanUrl);
 
       const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
         method: "POST",
@@ -872,14 +910,15 @@ export default function ProjectPage() {
         },
         body: JSON.stringify({
           offer_id: oid,
-          success_url: window.location.href,
-          cancel_url: window.location.href,
+          success_url: cleanUrl,
+          cancel_url: cleanUrl,
         }),
       });
 
+      console.log("[buyOffer] checkout response status:", res.status);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const msg = errData.detail || `HTTP ${res.status}`;
+        const msg = typeof errData.detail === "string" ? errData.detail : `Checkout failed (HTTP ${res.status})`;
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
         setBuyError((p) => ({ ...p, [oid]: msg }));
         setBuyingOfferId(null);
@@ -887,6 +926,7 @@ export default function ProjectPage() {
       }
 
       const data = await res.json();
+      console.log("[buyOffer] checkout response:", { checkout_url: !!data.checkout_url, order_id: data.order_id });
       if (data.checkout_url) {
         setBuyStep((p) => ({ ...p, [oid]: "redirecting" }));
         window.location.href = data.checkout_url;
@@ -897,6 +937,7 @@ export default function ProjectPage() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
+      console.error("[buyOffer] ERROR:", msg);
       setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
       setBuyError((p) => ({ ...p, [oid]: msg }));
       setBuyingOfferId(null);
@@ -1910,14 +1951,29 @@ export default function ProjectPage() {
     if (params.get("launched") === "1") setShowLiveBanner(true);
     if (params.get("view") === "pitch") setPitchMode(true);
     if (params.get("checkout") === "success") {
+      console.log("[checkout] Success redirect detected — scheduling data refreshes");
       setCheckoutResult("success");
       // Refresh offers after webhook processes (may take a few seconds)
-      const refreshAfterCheckout = () => { loadOffers(); if (isOwner) loadSellerOrders(); };
+      // Note: loadSellerOrders is also triggered by the isOwner effect, so always safe to call loadOffers here
+      const refreshAfterCheckout = () => {
+        console.log("[checkout] Refreshing offers and orders...");
+        loadOffers();
+        loadSellerOrders();
+      };
       setTimeout(refreshAfterCheckout, 2000);
       setTimeout(refreshAfterCheckout, 5000);
       setTimeout(refreshAfterCheckout, 10000);
+      // Clean up checkout param from URL to prevent stale state on repeat visits/purchases
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("checkout");
+      window.history.replaceState({}, "", cleanUrl.toString());
     }
-    if (params.get("checkout") === "cancelled") setCheckoutResult("cancelled");
+    if (params.get("checkout") === "cancelled") {
+      setCheckoutResult("cancelled");
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("checkout");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }
   }, []);
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
@@ -3375,21 +3431,34 @@ return (
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
               />
             </div>
+            {offerSaveError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                {offerSaveError}
+              </div>
+            )}
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
-                onClick={() => saveOffer()}
+                onClick={() => { setOfferSaveError(null); saveOffer(); }}
                 disabled={offerSaving || !offerEditing.title?.trim() || !offerEditing.price_usd}
                 className="w-full sm:w-auto rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
               </button>
               <button
-                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); }}
+                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
                 className="w-full sm:w-auto rounded-xl border border-zinc-800 px-5 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
               >
                 Cancel
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Offer save success toast */}
+        {offerSaveSuccess && (
+          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-medium text-emerald-300">Offer created successfully!</span>
+            <button onClick={() => setOfferSaveSuccess(false)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
           </div>
         )}
 
