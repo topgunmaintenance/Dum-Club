@@ -1911,8 +1911,11 @@ export default function ProjectPage() {
     if (params.get("view") === "pitch") setPitchMode(true);
     if (params.get("checkout") === "success") {
       setCheckoutResult("success");
-      // Refresh offers (inventory) and orders after successful checkout
-      setTimeout(() => { loadOffers(); if (isOwner) loadSellerOrders(); }, 1500);
+      // Refresh offers after webhook processes (may take a few seconds)
+      const refreshAfterCheckout = () => { loadOffers(); if (isOwner) loadSellerOrders(); };
+      setTimeout(refreshAfterCheckout, 2000);
+      setTimeout(refreshAfterCheckout, 5000);
+      setTimeout(refreshAfterCheckout, 10000);
     }
     if (params.get("checkout") === "cancelled") setCheckoutResult("cancelled");
   }, []);
@@ -3551,11 +3554,11 @@ return (
                   )}
 
                   {/* Inventory info */}
-                  {!offer.unlimited_inventory && (
+                  {!offer.unlimited_inventory && offer.quantity_available != null && (
                     <div className="mt-2 text-xs text-zinc-600">
                       {(offer.quantity_sold || 0) > 0 && <span>{offer.quantity_sold} sold</span>}
                       {(() => {
-                        const remaining = (offer.quantity_available || 0) - (offer.quantity_sold || 0);
+                        const remaining = offer.quantity_available - (offer.quantity_sold || 0);
                         if (remaining <= 0) return <span className="ml-1 text-red-400">· Sold out</span>;
                         if (remaining <= 5) return <span className="ml-1 text-amber-400">· {remaining} left</span>;
                         return <span className="ml-1">· {remaining} available</span>;
@@ -3565,7 +3568,7 @@ return (
 
                   {/* Price + Action */}
                   {(() => {
-                    const soldOut = !offer.unlimited_inventory && ((offer.quantity_available || 0) - (offer.quantity_sold || 0)) <= 0;
+                    const soldOut = !offer.unlimited_inventory && offer.quantity_available != null && (offer.quantity_available - (offer.quantity_sold || 0)) <= 0;
                     return (
                       <div className="mt-auto pt-4 flex items-end justify-between gap-3 border-t border-zinc-900 mt-4">
                         <div>
