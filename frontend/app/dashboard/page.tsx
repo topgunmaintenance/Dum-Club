@@ -129,44 +129,44 @@ export default function DashboardPage() {
   const liveCount = projects.filter((p) => p.status === "live").length;
 
   return (
-    <div className="min-h-screen bg-base px-4 py-10 text-white sm:px-6">
+    <div className="min-h-screen bg-base px-4 py-12 text-white sm:px-6">
       <div className="mx-auto max-w-5xl">
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="text-xs uppercase tracking-[0.35em] text-zinc-600">
+        <div className="mb-10">
+          <div className="text-[10px] uppercase tracking-[0.35em] text-zinc-600">
             Command Center
           </div>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Dashboard
           </h1>
+          <p className="mt-2 text-sm text-zinc-500">Manage your projects and wallet</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* grid: 2 stat cards + 1 wide wallet card (spans 2 on lg) */}
+        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Projects */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="rounded-2xl border border-zinc-800 bg-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Total Projects
             </div>
-            <div className="mt-1 font-mono text-2xl font-bold text-white">
+            <div className="mt-2 font-mono text-3xl font-bold text-white">
               {projects.length}
             </div>
           </div>
 
           {/* Live Projects */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="rounded-2xl border border-zinc-800 bg-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Live
             </div>
-            <div className="mt-1 font-mono text-2xl font-bold text-emerald-400">
+            <div className="mt-2 font-mono text-3xl font-bold text-emerald-400">
               {liveCount}
             </div>
           </div>
 
           {/* Wallet + Balance */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 lg:col-span-2">
+          <div className="rounded-2xl border border-zinc-800 bg-card p-6 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Wallet
             </div>
@@ -213,17 +213,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick actions */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="mb-10 grid gap-4 sm:grid-cols-2">
           <Link
             href="/build"
-            className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-5 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
+            className="group flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-6 transition hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
           >
             <span className="text-2xl">🚀</span>
             <span className="text-lg font-bold text-emerald-400">Generate Project</span>
           </Link>
           <Link
             href="/orders"
-            className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 px-6 py-5 transition hover:border-zinc-700"
+            className="group flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-card px-6 py-6 transition hover:border-zinc-700 hover:-translate-y-0.5"
           >
             <span className="text-2xl">📦</span>
             <span className="text-lg font-bold text-zinc-300">My Orders</span>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {projects.map((project) => {
                 const st = statusLabel(project);
                 const ticker = project.token_symbol
@@ -262,11 +262,11 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative rounded-2xl border border-zinc-800 bg-zinc-950 transition hover:border-emerald-400/20"
+                    className="group relative rounded-2xl border border-zinc-800 bg-card transition hover:border-zinc-700 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
                   >
-                    <Link href={`/project/${project.id}`} className="block p-5">
+                    <Link href={`/project/${project.id}`} className="block p-6">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold text-white">
+                        <h3 className="text-base font-semibold text-white group-hover:text-emerald-50">
                           {project.title || project.name || "Untitled Project"}
                         </h3>
                         <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${st.color}`}>
@@ -275,11 +275,14 @@ export default function DashboardPage() {
                       </div>
 
                       {ticker && (
-                        <div className="mt-2 font-mono text-sm text-zinc-500">{ticker}</div>
+                        <div className="mt-2 font-mono text-sm text-emerald-400/60">{ticker}</div>
                       )}
 
-                      <div className="mt-3 text-xs text-zinc-600">
-                        {project.template_type || "General"}
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-zinc-600">
+                          {project.template_type || "General"}
+                        </span>
+                        <span className="text-xs text-zinc-600 opacity-0 transition group-hover:opacity-100">View →</span>
                       </div>
                     </Link>
 
