@@ -469,6 +469,7 @@ export default function ProjectPage() {
   const [offerSaving, setOfferSaving] = useState(false);
   const [offerImageFile, setOfferImageFile] = useState<File | null>(null);
   const [offerImagePreview, setOfferImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [offerAiField, setOfferAiField] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
@@ -695,6 +696,7 @@ export default function ProjectPage() {
   }
 
   async function uploadOfferImage(file: File): Promise<string | null> {
+    console.log("[image] Uploading:", file.name, file.size, "bytes");
     try {
       const supabase = createClient();
       const ext = file.name.split(".").pop() || "jpg";
@@ -703,11 +705,12 @@ export default function ProjectPage() {
         cacheControl: "3600",
         upsert: false,
       });
-      if (error) throw error;
+      if (error) { console.error("[image] Upload error:", error); throw error; }
       const { data } = supabase.storage.from("offers").getPublicUrl(path);
+      console.log("[image] Upload success:", data.publicUrl);
       return data.publicUrl;
     } catch (err) {
-      console.error("Image upload failed:", err);
+      console.error("[image] Upload failed:", err);
       return null;
     }
   }
@@ -3297,24 +3300,33 @@ return (
 
               {/* Image upload */}
               <div>
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-black px-4 py-3 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300">
-                  <span>📷</span>
-                  <span>{offerImageFile ? offerImageFile.name : "Upload image or take photo"}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setOfferImageFile(file);
-                        setOfferImagePreview(URL.createObjectURL(file));
-                        setOfferEditing({ ...offerEditing, primary_image_url: "" });
-                      }
-                    }}
-                  />
-                </label>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    console.log("[image] File selected:", file?.name, file?.size);
+                    if (file) {
+                      setOfferImageFile(file);
+                      setOfferImagePreview(URL.createObjectURL(file));
+                      setOfferEditing({ ...offerEditing, primary_image_url: "" });
+                    }
+                    // Reset so same file can be re-selected
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-zinc-700 bg-black px-4 py-4 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300 active:scale-[0.98]"
+                >
+                  <span className="text-lg">📷</span>
+                  <span className="text-left">
+                    {offerImageFile ? offerImageFile.name : "Tap to upload image or take photo"}
+                  </span>
+                </button>
               </div>
 
               {/* Image preview (upload or existing URL) */}
