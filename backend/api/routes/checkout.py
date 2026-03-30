@@ -11,6 +11,7 @@ from typing import Optional
 
 from db.supabase import get_client
 from auth.privy import get_current_user
+from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
 
 router = APIRouter()
 
@@ -278,6 +279,51 @@ async def stripe_webhook(request: Request):
                     print(f"[webhook] Inventory decremented for offer {offer_id}: sold={new_sold}")
 
         print(f"[webhook] Order {order['id']} → paid ({source})")
+
+        # Send email notifications (non-blocking)
+        try:
+            full_order = supabase.table("orders").select("*, offers(title, price_usd, project_id)").eq("id", order["id"]).single().execute()
+            od = full_order.data or {}
+            offer_data = od.get("offers") or {}
+            offer_title = offer_data.get("title", "Order")
+            amount = float(od.get("amount_paid_usd", 0))
+            seller_receives = float(od.get("seller_receives_usd", 0))
+            project_id = od.get("project_id", "")
+
+            # Get project name for buyer email
+            proj_name = ""
+            if project_id:
+                proj_res = supabase.table("projects").select("title, name").eq("id", project_id).limit(1).execute()
+                if proj_res.data:
+                    proj_name = proj_res.data[0].get("title") or proj_res.data[0].get("name") or ""
+
+            # Buyer email
+            buyer_email = od.get("buyer_email")
+            if not buyer_email:
+                # Try to resolve from buyer_user_id (privy_id) → users → email
+                buyer_uid = od.get("buyer_user_id")
+                if buyer_uid:
+                    u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
+                    if u_res.data:
+                        buyer_email = u_res.data[0].get("email")
+
+            send_buyer_payment_confirmed(buyer_email or "", offer_title, amount, proj_name)
+
+            # Seller email — resolve from seller_user_id (profiles.id → wallet → users.email)
+            seller_uid = od.get("seller_user_id")
+            seller_email = ""
+            if seller_uid:
+                prof_res = supabase.table("profiles").select("wallet_address").eq("id", seller_uid).limit(1).execute()
+                if prof_res.data:
+                    wallet = prof_res.data[0].get("wallet_address")
+                    if wallet:
+                        u_res = supabase.table("users").select("email").eq("wallet_address", wallet).limit(1).execute()
+                        if u_res.data:
+                            seller_email = u_res.data[0].get("email") or ""
+            send_seller_new_order(seller_email, offer_title, amount, seller_receives, project_id)
+        except Exception as email_err:
+            print(f"[webhook] Email notification error (non-blocking): {email_err}")
+
         return True
 
     if event["type"] == "payment_intent.succeeded":
@@ -405,5 +451,22 @@ async def update_order_status(
         "status": new_status,
         "updated_at": _now_iso(),
     }).eq("id", order_id).execute()
+
+    # Send fulfillment email to buyer (non-blocking)
+    if new_status in ("fulfilled", "delivered"):
+        try:
+            full_order = supabase.table("orders").select("*, offers(title)").eq("id", order_id).single().execute()
+            od = full_order.data or {}
+            offer_title = (od.get("offers") or {}).get("title", "Order")
+            buyer_email = od.get("buyer_email")
+            if not buyer_email:
+                buyer_uid = od.get("buyer_user_id")
+                if buyer_uid:
+                    u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
+                    if u_res.data:
+                        buyer_email = u_res.data[0].get("email")
+            send_buyer_fulfilled(buyer_email or "", offer_title)
+        except Exception as email_err:
+            print(f"[fulfillment] Email error (non-blocking): {email_err}")
 
     return {"status": new_status, "order_id": order_id}

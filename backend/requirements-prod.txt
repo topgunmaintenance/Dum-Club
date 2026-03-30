@@ -36,6 +36,9 @@ requests==2.32.3
 # ── Payments ──────────────────────────────────────────────────
 stripe==11.4.1
 
+# ── Email ─────────────────────────────────────────────────────
+resend==2.5.0
+
 # ── Heavy ML stack (transcription / embeddings / RAG) ─────────
 # Not installed in the production image. Routes that depend on
 # these packages fail gracefully at call time, not at startup.
