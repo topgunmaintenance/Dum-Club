@@ -9,6 +9,12 @@ if (siteHost && !serverActionOrigins.includes(siteHost)) {
 }
 
 const nextConfig = {
+  env: {
+    // Expose Vercel's system git commit SHA to the browser bundle.
+    // VERCEL_GIT_COMMIT_SHA is auto-set by Vercel at build time but is not
+    // NEXT_PUBLIC_ prefixed, so we relay it here.
+    NEXT_PUBLIC_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
+  },
   experimental: {
     serverActions: { allowedOrigins: serverActionOrigins },
   },
