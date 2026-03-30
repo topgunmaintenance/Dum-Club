@@ -1067,6 +1067,7 @@ export default function ProjectPage() {
   }
 
   async function executeTrade(side: "buy" | "sell") {
+    console.log("[executeTrade] clicked:", side, "amount:", tradeAmount, "project:", id);
     if (!id) return;
 
     if (!tradeAmount.trim() || Number(tradeAmount) <= 0) {
@@ -1078,14 +1079,12 @@ export default function ProjectPage() {
     const numericAmount = Number(tradeAmount);
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setTradeIsError(true);
       setTradeMessage("Enter a valid amount.");
       setTradeIsError(true);
       return;
     }
 
     if (side === "sell" && numericAmount > walletBalance) {
-      setTradeIsError(true);
       setTradeMessage(
         `Insufficient balance. You only have ${formatNumber(walletBalance, 2)} ${
           project?.token_symbol || tokenMeta.symbol || "TOKENS"
@@ -1106,8 +1105,8 @@ export default function ProjectPage() {
       setLoadingTrade(true);
       setTradeIsError(false);
       setTradeMessage("");
-      setTradeIsError(false);
 
+      console.log("[executeTrade] sending POST /trade:", { side, amount: numericAmount, wallet: wallet.slice(0, 12) + "..." });
       const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
         method: "POST",
         headers: {
@@ -1120,6 +1119,7 @@ export default function ProjectPage() {
         }),
       });
 
+      console.log("[executeTrade] response status:", res.status);
       const data = await res.json();
 
       if (!res.ok) {
@@ -1133,6 +1133,7 @@ export default function ProjectPage() {
         throw new Error(detail || `Failed to ${side}`);
       }
 
+      console.log("[executeTrade] success:", { newPrice: data.market?.price, newBalance: data.balance?.balance });
       const sym = project?.token_symbol || tokenMeta.symbol || "TOKENS";
       const supply = Number(
         market?.max_supply ?? project?.token_supply ?? 21_000_000
@@ -1159,10 +1160,9 @@ export default function ProjectPage() {
       await refreshMarketData();
       await loadWalletBalance();
     } catch (err: any) {
-      console.error(err);
+      console.error("[executeTrade] ERROR:", err);
       setTradeIsError(true);
       setTradeMessage(err?.message || `Failed to ${side}`);
-      setTradeIsError(true);
     } finally {
       setLoadingTrade(false);
     }

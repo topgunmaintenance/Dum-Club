@@ -155,18 +155,24 @@ async def get_project_balance(project_id: str, wallet: str):
 
 @router.post("/api/projects/{project_id}/trade")
 async def create_project_trade(project_id: str, body: TradeRequest):
+    print(f"[trade] POST /trade: project={project_id}, side={body.side}, amount={body.amount}, wallet={body.wallet[:12]}...")
     supabase = get_client()
 
-    project_res = (
-        supabase.table("projects")
-        .select("*")
-        .eq("id", project_id)
-        .single()
-        .execute()
-    )
+    try:
+        project_res = (
+            supabase.table("projects")
+            .select("*")
+            .eq("id", project_id)
+            .single()
+            .execute()
+        )
+    except Exception as db_err:
+        print(f"[trade] DB ERROR fetching project: {type(db_err).__name__}: {db_err}")
+        raise HTTPException(status_code=500, detail=f"Database error fetching project")
 
     project = project_res.data
     if not project:
+        print(f"[trade] Project not found: {project_id}")
         raise HTTPException(status_code=404, detail="Project not found")
 
     token_symbol = project.get("token_symbol")
@@ -251,7 +257,13 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "source": wallet,
     }
 
-    trade_res = supabase.table("project_trades").insert(trade_insert).execute()
+    # 1. Insert trade row
+    try:
+        trade_res = supabase.table("project_trades").insert(trade_insert).execute()
+        print(f"[trade] Trade inserted: id={trade_res.data[0]['id'] if trade_res.data else '?'}, side={side}, amount={amount}")
+    except Exception as db_err:
+        print(f"[trade] DB ERROR inserting trade: {type(db_err).__name__}: {db_err}")
+        raise HTTPException(status_code=500, detail=f"Failed to record trade: {str(db_err)}")
 
     market_upsert = {
         "project_id": project_id,
@@ -264,10 +276,17 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "updated_at": now,
     }
 
-    supabase.table("project_market_state").upsert(
-        market_upsert,
-        on_conflict="project_id"
-    ).execute()
+    # 2. Upsert market state
+    try:
+        supabase.table("project_market_state").upsert(
+            market_upsert,
+            on_conflict="project_id"
+        ).execute()
+        print(f"[trade] Market state updated: price={new_price}, market_cap={market_cap}")
+    except Exception as db_err:
+        print(f"[trade] DB ERROR upserting market state: {type(db_err).__name__}: {db_err}")
+        # Trade was already inserted — don't fail the whole request, log and continue
+        print(f"[trade] WARNING: trade row exists but market state may be stale")
 
     balance_upsert = {
         "wallet_address": wallet,
@@ -277,49 +296,61 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "updated_at": now,
     }
 
-    supabase.table("project_balances").upsert(
-        balance_upsert,
-        on_conflict="wallet_address,project_id"
-    ).execute()
-
-    candle_time = now[:16] + ":00Z"
-    candles_res = (
-        supabase.table("project_candles")
-        .select("*")
-        .eq("project_id", project_id)
-        .eq("bucket_time", candle_time)
-        .limit(1)
-        .execute()
-    )
-
-    existing_candle = candles_res.data[0] if candles_res.data else None
-
-    if not existing_candle:
-        candle_insert = {
-            "project_id": project_id,
-            "bucket_time": candle_time,
-            "open": _decimal_to_float(current_price, 8),
-            "high": _decimal_to_float(max(current_price, new_price), 8),
-            "low": _decimal_to_float(min(current_price, new_price), 8),
-            "close": _decimal_to_float(new_price, 8),
-            "volume": _decimal_to_float(gross_value, 6),
-        }
-        supabase.table("project_candles").insert(candle_insert).execute()
-    else:
-        candle_update = {
-            "high": _decimal_to_float(
-                max(_to_decimal(existing_candle.get("high")), new_price), 8
-            ),
-            "low": _decimal_to_float(
-                min(_to_decimal(existing_candle.get("low")), new_price), 8
-            ),
-            "close": _decimal_to_float(new_price, 8),
-            "volume": round(float(existing_candle.get("volume") or 0) + float(gross_value), 6),
-        }
-        supabase.table("project_candles").update(candle_update).eq(
-            "id", existing_candle["id"]
+    # 3. Upsert wallet balance
+    try:
+        supabase.table("project_balances").upsert(
+            balance_upsert,
+            on_conflict="wallet_address,project_id"
         ).execute()
+        print(f"[trade] Balance updated: wallet={wallet[:12]}..., balance={new_balance}")
+    except Exception as db_err:
+        print(f"[trade] DB ERROR upserting balance: {type(db_err).__name__}: {db_err}")
+        print(f"[trade] WARNING: trade row exists but balance may be stale")
 
+    # 4. Upsert candle data (non-critical)
+    try:
+        candle_time = now[:16] + ":00Z"
+        candles_res = (
+            supabase.table("project_candles")
+            .select("*")
+            .eq("project_id", project_id)
+            .eq("bucket_time", candle_time)
+            .limit(1)
+            .execute()
+        )
+
+        existing_candle = candles_res.data[0] if candles_res.data else None
+
+        if not existing_candle:
+            candle_insert = {
+                "project_id": project_id,
+                "bucket_time": candle_time,
+                "open": _decimal_to_float(current_price, 8),
+                "high": _decimal_to_float(max(current_price, new_price), 8),
+                "low": _decimal_to_float(min(current_price, new_price), 8),
+                "close": _decimal_to_float(new_price, 8),
+                "volume": _decimal_to_float(gross_value, 6),
+            }
+            supabase.table("project_candles").insert(candle_insert).execute()
+        else:
+            candle_update = {
+                "high": _decimal_to_float(
+                    max(_to_decimal(existing_candle.get("high")), new_price), 8
+                ),
+                "low": _decimal_to_float(
+                    min(_to_decimal(existing_candle.get("low")), new_price), 8
+                ),
+                "close": _decimal_to_float(new_price, 8),
+                "volume": round(float(existing_candle.get("volume") or 0) + float(gross_value), 6),
+            }
+            supabase.table("project_candles").update(candle_update).eq(
+                "id", existing_candle["id"]
+            ).execute()
+        print(f"[trade] Candle data updated for {candle_time}")
+    except Exception as candle_err:
+        print(f"[trade] Candle update error (non-critical): {candle_err}")
+
+    print(f"[trade] ✓ Trade complete: {side} {amount} {token_symbol} @ {current_price} → new_price={new_price}")
     return {
         "status": "success",
         "trade": trade_res.data[0] if trade_res.data else trade_insert,
