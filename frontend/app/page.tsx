@@ -31,11 +31,9 @@ type MarketSnapshot = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const HERO_EXAMPLES = [
-  "Build the assistant first. Grow the community and token layer after.",
-  "An AI fitness coach that adapts to your progress every week.",
-  "A music discovery tool that learns your taste over time.",
-  "A recipe vault powered by local chefs and community curation.",
+const HERO_ROTATING = [
+  "WE LAUNCH IT.",
+  "AI BUILDS IT.",
 ];
 
 function getProjectEmoji(project: Project, index: number) {
@@ -288,7 +286,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setExampleIdx((i) => (i + 1) % HERO_EXAMPLES.length), 3500);
+    const id = setInterval(() => setExampleIdx((i) => (i + 1) % HERO_ROTATING.length), 3500);
     return () => clearInterval(id);
   }, []);
 
@@ -304,45 +302,45 @@ export default function Home() {
     <div className="min-h-screen overflow-hidden bg-base text-white">
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
         <div className="relative overflow-hidden border border-zinc-900 bg-base">
-          <div className="absolute inset-0 opacity-20">
-            <div className="h-full w-full bg-[radial-gradient(circle_at_top,rgba(0,255,178,0.12),transparent_35%)]" />
+          <div className="absolute inset-0">
+            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_center,rgba(123,97,255,0.06),transparent_50%)]" />
           </div>
 
-          <div className="relative px-6 py-10 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
-            <div className="mx-auto max-w-5xl text-center">
-              <div className="mb-6 inline-flex items-center text-xs uppercase tracking-[0.35em] text-emerald-400">
-                ◆ Powered by Solana
+          <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/80 px-4 py-2 text-xs uppercase tracking-[0.35em] text-emerald-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                Powered by Solana
               </div>
 
-              <h1 className="text-5xl font-bold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
+              <h1 className="text-5xl font-bold uppercase leading-[0.92] tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl">
                 Describe it.
                 <br />
-                <span className="text-emerald-400">We build the AI,</span>
-                <br />
-                the token, and the market.
+                <span key={exampleIdx} className="inline-block text-emerald-400 animate-fade-in">
+                  {HERO_ROTATING[exampleIdx]}
+                </span>
               </h1>
 
-              <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-zinc-400 sm:text-lg">
-                Launch AI-powered projects into the DUM Club ecosystem with real project pages,
-                live token activity, and community demand signals.
+              <p className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg sm:leading-8">
+                AI generates your project, token, and market — then you go live on Solana instantly.
               </p>
 
-              <p key={exampleIdx} className="mx-auto mt-5 max-w-3xl text-base italic text-zinc-600 animate-fade-in">
-                {HERO_EXAMPLES[exampleIdx]}
-              </p>
-
-              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
                   href="/build"
-                  className="group inline-flex w-full items-center justify-center border border-emerald-400 bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.28em] text-black transition hover:opacity-90 sm:min-w-[260px] sm:w-auto"
+                  className="group inline-flex w-full items-center justify-center rounded-xl bg-emerald-400 px-10 py-4 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_30px_rgba(0,255,163,0.3)] sm:min-w-[260px] sm:w-auto"
                 >
                   Build a Project{" "}
-                  <span className="inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
+                  <span className="ml-2 inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
                 </Link>
 
                 <Link
                   href="/discover"
-                  className="inline-flex w-full items-center justify-center border border-zinc-800 bg-transparent px-8 py-4 text-sm uppercase tracking-[0.28em] text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:min-w-[260px] sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-700 bg-transparent px-10 py-4 text-sm uppercase tracking-[0.2em] text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:min-w-[260px] sm:w-auto"
                 >
                   Explore Feed
                 </Link>
