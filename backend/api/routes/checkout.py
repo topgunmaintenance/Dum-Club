@@ -226,6 +226,21 @@ async def create_payment_intent(
     except Exception as meta_err:
         print(f"[checkout] Warning: could not update session metadata: {meta_err}")
 
+    # Also set metadata on the Payment Intent so payment_intent.succeeded
+    # webhooks can find the order without an extra Stripe API call
+    if session.payment_intent:
+        try:
+            s.PaymentIntent.modify(session.payment_intent, metadata={
+                "offer_id": offer["id"],
+                "buyer_user_id": buyer_user_id,
+                "seller_user_id": seller_user_id,
+                "project_id": project_id,
+                "order_id": order["id"],
+            })
+            print(f"[checkout] Payment Intent metadata updated: PI={session.payment_intent}")
+        except Exception as pi_meta_err:
+            print(f"[checkout] Warning: could not update PI metadata: {pi_meta_err}")
+
     return {
         "checkout_url": session.url,
         "session_id": session.id,
@@ -419,9 +434,38 @@ async def stripe_webhook(request: Request):
         pi_id = obj["id"]
         metadata = obj.get("metadata", {})
         print(f"[webhook] payment_intent.succeeded: PI={pi_id}")
+        print(f"[webhook] PI metadata: {metadata}")
 
         order = _find_order("", pi_id, metadata)
+
+        # If PI lookup fails, resolve the Checkout Session from Stripe and retry
+        # with the session_id. This handles the common case where the order row has
+        # stripe_session_id but stripe_payment_intent_id is NULL (Stripe doesn't
+        # assign the PI until the customer pays, after session creation).
+        if not order:
+            print(f"[webhook] PI lookup failed — attempting to resolve Checkout Session from Stripe")
+            try:
+                sessions = s.checkout.Session.list(payment_intent=pi_id, limit=1)
+                if sessions.data:
+                    resolved_session = sessions.data[0]
+                    resolved_session_id = resolved_session["id"]
+                    resolved_metadata = resolved_session.get("metadata", {})
+                    print(f"[webhook] Resolved session_id={resolved_session_id} from PI={pi_id}")
+                    print(f"[webhook] Session metadata: {resolved_metadata}")
+                    order = _find_order(resolved_session_id, pi_id, resolved_metadata)
+                else:
+                    print(f"[webhook] No Checkout Session found for PI={pi_id}")
+            except Exception as resolve_err:
+                print(f"[webhook] Error resolving session from PI: {type(resolve_err).__name__}: {resolve_err}")
+
         if order:
+            # Backfill the PI ID so future lookups work directly
+            if pi_id:
+                try:
+                    supabase.table("orders").update({"stripe_payment_intent_id": pi_id}).eq("id", order["id"]).execute()
+                    print(f"[webhook] Backfilled stripe_payment_intent_id={pi_id} on order {order['id']}")
+                except Exception:
+                    pass
             _process_paid(order, "", pi_id, "payment_intent.succeeded")
         else:
             print(f"[webhook] No order found for PI={pi_id} (may already be processed by session event)")
