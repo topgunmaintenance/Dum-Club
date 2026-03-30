@@ -5,7 +5,7 @@ No DB writes. No secrets exposed.
 import os
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from db.supabase import get_client
 from auth.privy import require_admin
 
@@ -47,9 +47,13 @@ async def health_root():
 # ── /api/health/deployment — commit alignment ────────────────
 
 @router.get("/deployment")
-async def health_deployment(_admin=Depends(require_admin)):
+async def health_deployment(
+    _admin=Depends(require_admin),
+    fe_commit: str = Query("", description="Frontend commit hash passed from the browser"),
+):
     backend_commit = os.getenv("RAILWAY_GIT_COMMIT_SHA", os.getenv("GIT_COMMIT_SHA", ""))
-    frontend_commit = os.getenv("FRONTEND_COMMIT_SHA", "")
+    # Frontend commit: prefer query param from the browser, fall back to env var
+    frontend_commit = fe_commit.strip() or os.getenv("FRONTEND_COMMIT_SHA", "")
 
     if not backend_commit and not frontend_commit:
         return {

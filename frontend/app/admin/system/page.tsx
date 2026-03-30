@@ -5,6 +5,7 @@ import AdminRoute from "../../../components/AdminRoute";
 import { useAuth } from "../../../lib/auth/AuthContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const FE_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
 
 type HealthResult = {
   ok: boolean;
@@ -93,7 +94,11 @@ function SystemHealthPage() {
         if (sys.requiresAuth && token) {
           headers["Authorization"] = `Bearer ${token}`;
         }
-        const res = await fetch(`${API_BASE}${sys.endpoint}`, {
+        // Pass frontend commit hash to deployment endpoint so backend can compare
+        const url = sys.key === "deployment" && FE_COMMIT
+          ? `${API_BASE}${sys.endpoint}?fe_commit=${encodeURIComponent(FE_COMMIT)}`
+          : `${API_BASE}${sys.endpoint}`;
+        const res = await fetch(url, {
           cache: "no-store",
           headers,
         });
