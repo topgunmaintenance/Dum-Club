@@ -261,6 +261,127 @@ def _try_hosted_llm(idea: str) -> Optional[dict]:
     return None
 
 
+_OFFERS_SYSTEM_PROMPT = """
+You are helping a new business create their first product/service offers.
+
+Given a business idea, generate 1 to 3 realistic offers this business could sell.
+Return ONLY valid JSON — an array of objects with this structure:
+
+[
+  {
+    "title": "Short offer name (3-6 words)",
+    "description": "One sentence describing what the customer gets",
+    "price_usd": 29.00,
+    "offer_type": "digital_service"
+  }
+]
+
+Rules:
+- Return only a JSON array, no markdown, no code fences, no extra text
+- offer_type must be "digital_service" or "physical_product"
+- price_usd must be realistic (between 5 and 500)
+- Keep titles short and action-oriented
+- Descriptions should be one clear sentence about the deliverable
+- Generate 2-3 offers at different price points when possible
+"""
+
+
+def _extract_json_array(text: str) -> Optional[list]:
+    """Extract a JSON array from LLM output."""
+    text = text.strip()
+    text = re.sub(r"^```json\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^```\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    first = text.find("[")
+    if first != -1:
+        text = text[first:]
+    opens, closes = text.count("["), text.count("]")
+    if opens > closes:
+        text += "]" * (opens - closes)
+    try:
+        parsed = json.loads(text.strip())
+        return parsed if isinstance(parsed, list) else None
+    except Exception:
+        return None
+
+
+def _generate_offers_from_idea(idea: str, title: str) -> Optional[list]:
+    """Generate 1-3 draft offers using LLM. Returns list of offer dicts or None."""
+    user_msg = f"Business idea: {idea}\nBusiness name: {title}"
+
+    # Try Ollama first
+    try:
+        response = _ollama.chat(
+            model=OLLAMA_MODEL,
+            messages=[
+                {"role": "system", "content": _OFFERS_SYSTEM_PROMPT},
+                {"role": "user", "content": user_msg},
+            ],
+        )
+        raw = response["message"]["content"].strip()
+        offers = _extract_json_array(raw)
+        if offers:
+            print(f"[launch] offers generated via ollama: {len(offers)}")
+            return offers
+    except Exception:
+        pass
+
+    # Fallback to hosted LLMs
+    import httpx
+
+    if _OPENAI_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {_OPENAI_API_KEY}"},
+                json={
+                    "model": _OPENAI_MODEL,
+                    "messages": [
+                        {"role": "system", "content": _OFFERS_SYSTEM_PROMPT.strip()},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            text = (r.json().get("choices", [{}])[0].get("message") or {}).get("content", "")
+            offers = _extract_json_array(text)
+            if offers:
+                print(f"[launch] offers generated via openai: {len(offers)}")
+                return offers
+        except Exception:
+            pass
+
+    if _ANTHROPIC_API_KEY:
+        try:
+            r = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": _ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                },
+                json={
+                    "model": _ANTHROPIC_MODEL,
+                    "max_tokens": 512,
+                    "system": _OFFERS_SYSTEM_PROMPT.strip(),
+                    "messages": [{"role": "user", "content": user_msg}],
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            content_blocks = r.json().get("content", [])
+            text = next((b["text"] for b in content_blocks if b.get("type") == "text"), None)
+            offers = _extract_json_array(text) if text else None
+            if offers:
+                print(f"[launch] offers generated via anthropic: {len(offers)}")
+                return offers
+        except Exception:
+            pass
+
+    return None
+
+
 # ── Main endpoint ──────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=LaunchResponse)
@@ -444,6 +565,35 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
     supabase.table("projects").update(
         {"token_status": "pending", "status": "live"}
     ).eq("id", project_id).execute()
+
+    # ── 7. Auto-generate draft offers ──────────────────────────────────────
+    # Best-effort: if LLM fails, the project still launches without offers.
+    try:
+        offer_list = _generate_offers_from_idea(req.idea.strip(), title)
+        if offer_list:
+            for offer in offer_list[:3]:  # cap at 3
+                offer_title = (offer.get("title") or "")[:120]
+                offer_desc = offer.get("description") or ""
+                price = float(offer.get("price_usd") or 0)
+                offer_type = offer.get("offer_type", "digital_service")
+                if offer_type not in ("digital_service", "physical_product"):
+                    offer_type = "digital_service"
+                if not offer_title or price < 0.50:
+                    continue
+                supabase.table("offers").insert({
+                    "project_id": project_id,
+                    "title": offer_title,
+                    "description": offer_desc,
+                    "price_usd": round(price, 2),
+                    "offer_type": offer_type,
+                    "token_discount_percent": 10,
+                    "unlimited_inventory": True,
+                    "quantity_sold": 0,
+                    "is_active": True,
+                }).execute()
+            print(f"[launch] inserted {min(len(offer_list), 3)} auto-generated offers")
+    except Exception as exc:
+        print(f"[launch] offer auto-generation failed (non-fatal): {exc!r}")
 
     return LaunchResponse(
         status="success",
