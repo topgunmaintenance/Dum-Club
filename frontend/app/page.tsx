@@ -31,11 +31,6 @@ type MarketSnapshot = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const HERO_ROTATING = [
-  "WE LAUNCH IT.",
-  "AI BUILDS IT.",
-];
-
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
   if (source.includes("fitness") || source.includes("health")) return "💪";
@@ -103,11 +98,154 @@ function isPlaceholderDescription(d?: string | null) {
   return false;
 }
 
-/** Tiny display-only spread so hero cards are not identical when API prices match. */
-function displaySpreadFromId(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return (h % 2500) / 1_000_000;
+/* ─── AI Chat Demo for Hero ─── */
+function HeroChatDemo() {
+  const [step, setStep] = useState(0);
+  const [buildIdx, setBuildIdx] = useState(0);
+  const buildSteps = [
+    "Analyzing idea...",
+    "Creating project page...",
+    "Setting up offers...",
+    "Configuring payments...",
+    "✓ Live!",
+  ];
+
+  useEffect(() => {
+    const delays = [600, 2000, 3200, 4400, 6000];
+    const timers = delays.map((d, i) => setTimeout(() => setStep(i + 1), d));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  useEffect(() => {
+    if (step !== 4) return;
+    let i = 0;
+    const t = setInterval(() => {
+      i++;
+      setBuildIdx(i);
+      if (i >= buildSteps.length - 1) clearInterval(t);
+    }, 350);
+    return () => clearInterval(t);
+  }, [step]);
+
+  return (
+    <div className="w-full max-w-[340px] rounded-2xl border border-zinc-800 bg-zinc-950/90 shadow-2xl shadow-black/50 overflow-hidden">
+      {/* Title bar */}
+      <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
+        <div className="flex gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
+        </div>
+        <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          DUM CLUB AI
+        </div>
+        <div className="relative flex h-2 w-2">
+          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </div>
+      </div>
+
+      {/* Chat body */}
+      <div className="space-y-3 px-4 py-4" style={{ minHeight: 280 }}>
+        {/* AI greeting */}
+        {step >= 1 && (
+          <div className="hero-chat-msg flex gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
+              D
+            </div>
+            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+              What&apos;s your business idea? I&apos;ll build it for you.
+            </div>
+          </div>
+        )}
+
+        {/* User message */}
+        {step >= 2 && (
+          <div className="hero-chat-msg flex justify-end">
+            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[13px] leading-relaxed text-emerald-100">
+              I want to start a mobile car wash business
+            </div>
+          </div>
+        )}
+
+        {/* AI response */}
+        {step >= 3 && (
+          <div className="hero-chat-msg flex gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
+              D
+            </div>
+            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+              On it — building your business now.
+            </div>
+          </div>
+        )}
+
+        {/* Build progress */}
+        {step >= 4 && (
+          <div className="hero-chat-msg flex gap-2">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
+              D
+            </div>
+            <div className="rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2.5 font-mono text-[11px] leading-[1.8] text-zinc-500">
+              {buildSteps.slice(0, buildIdx + 1).map((line, i) => (
+                <div
+                  key={i}
+                  className={
+                    i === buildIdx && buildIdx < buildSteps.length - 1
+                      ? "text-emerald-400"
+                      : i < buildIdx
+                      ? "text-zinc-600"
+                      : "text-emerald-400"
+                  }
+                >
+                  {line}
+                </div>
+              ))}
+              {buildIdx < buildSteps.length - 1 && (
+                <span className="hero-chat-typing inline-flex gap-0.5 text-emerald-400">
+                  <span>.</span><span>.</span><span>.</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Final live card */}
+        {step >= 5 && (
+          <div className="hero-chat-card rounded-xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.07] to-violet-500/[0.07] p-3.5">
+            <div className="mb-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+              ✓ LIVE · DUM.CLUB/SPARKLE-WASH
+            </div>
+            <div className="mb-0.5 text-[15px] font-bold text-white">
+              Sparkle Mobile Wash
+            </div>
+            <div className="mb-3 text-[12px] text-zinc-400">
+              Premium mobile car detailing at your doorstep
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] text-zinc-500">Starting at</div>
+                <div className="text-lg font-extrabold text-emerald-400">$49</div>
+              </div>
+              <div className="rounded-full bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">
+                Book Now
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input bar */}
+      <div className="flex items-center gap-2 border-t border-zinc-800/80 bg-zinc-950 px-3 py-2.5">
+        <div className="flex-1 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[12px] text-zinc-600">
+          Describe what you offer...
+        </div>
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] text-white">
+          ↑
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -115,16 +253,7 @@ export default function Home() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
-  const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
-  const [tick, setTick] = useState(0);
-  const [exampleIdx, setExampleIdx] = useState(0);
   const marketPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const flashTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  const heroProjects = useMemo(
-    () => allPublicProjects.slice(0, 3),
-    [allPublicProjects]
-  );
 
   const latestProjectsNews = useMemo(
     () =>
@@ -223,26 +352,12 @@ export default function Home() {
         })
       );
 
-      setMarketByProject((prev) => {
+      setMarketByProject(() => {
         const next: Record<string, MarketSnapshot> = {};
         for (const [projectId, snapshot] of snapshots) {
           if (!snapshot) continue;
           next[projectId] = snapshot;
         }
-
-        for (const [projectId, snapshot] of Object.entries(next)) {
-          const oldPrice = prev[projectId]?.price;
-          if (oldPrice != null && snapshot.price !== oldPrice) {
-            setFlashingProjectIds((current) => ({ ...current, [projectId]: true }));
-            if (flashTimeoutsRef.current[projectId]) {
-              clearTimeout(flashTimeoutsRef.current[projectId]);
-            }
-            flashTimeoutsRef.current[projectId] = setTimeout(() => {
-              setFlashingProjectIds((current) => ({ ...current, [projectId]: false }));
-            }, 600);
-          }
-        }
-
         return next;
       });
     } catch (err) {
@@ -280,178 +395,69 @@ export default function Home() {
     };
   }, [allPublicProjects]);
 
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => setExampleIdx((i) => (i + 1) % HERO_ROTATING.length), 3500);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      for (const timeoutId of Object.values(flashTimeoutsRef.current)) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, []);
-
   return (
     <div className="min-h-screen overflow-hidden bg-base text-white">
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
+        {/* ── HERO ── */}
         <div className="relative overflow-hidden border border-zinc-900 bg-base">
+          {/* Ambient background */}
           <div className="absolute inset-0">
-            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_center,rgba(123,97,255,0.06),transparent_50%)]" />
+            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.10),transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.06),transparent_50%)]" />
           </div>
 
-          <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
-            <div className="mx-auto max-w-4xl text-center">
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/80 px-4 py-2 text-xs uppercase tracking-[0.35em] text-emerald-400">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </span>
-                Powered by Solana
+          <div className="relative px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
+            <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-20">
+
+              {/* LEFT — Message */}
+              <div>
+                <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  Turn any idea into
+                  <br />
+                  <span className="text-emerald-400">a funded business.</span>
+                </h1>
+
+                <div className="mt-8 space-y-1">
+                  <p className="text-lg font-medium text-zinc-200 sm:text-xl">
+                    Describe your idea.
+                  </p>
+                  <p className="text-lg font-medium text-zinc-200 sm:text-xl">
+                    AI builds it.
+                  </p>
+                  <p className="text-lg font-medium text-emerald-400 sm:text-xl">
+                    Start selling instantly.
+                  </p>
+                </div>
+
+                <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
+                  <Link
+                    href="/build"
+                    className="group inline-flex items-center justify-center rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_30px_rgba(0,255,163,0.3)] sm:w-auto"
+                  >
+                    Start Building
+                    <span className="ml-2 inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/discover"
+                    className="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-auto"
+                  >
+                    See Live Example
+                  </Link>
+                </div>
+
+                <p className="mt-5 text-[13px] text-zinc-500">
+                  No website needed · No developer required · No crypto knowledge
+                </p>
               </div>
 
-              <h1 className="text-5xl font-bold uppercase leading-[0.92] tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl">
-                Describe it.
-                <br />
-                <span key={exampleIdx} className="inline-block text-emerald-400 animate-fade-in">
-                  {HERO_ROTATING[exampleIdx]}
-                </span>
-              </h1>
-
-              <p className="mx-auto mt-8 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg sm:leading-8">
-                AI generates your project, token, and market — then you go live on Solana instantly.
-              </p>
-
-              <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link
-                  href="/build"
-                  className="group inline-flex w-full items-center justify-center rounded-xl bg-emerald-400 px-10 py-4 text-sm font-bold uppercase tracking-[0.2em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_30px_rgba(0,255,163,0.3)] sm:min-w-[260px] sm:w-auto"
-                >
-                  Build a Project{" "}
-                  <span className="ml-2 inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">→</span>
-                </Link>
-
-                <Link
-                  href="/discover"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-700 bg-transparent px-10 py-4 text-sm uppercase tracking-[0.2em] text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:min-w-[260px] sm:w-auto"
-                >
-                  Explore Feed
-                </Link>
+              {/* RIGHT — AI Chat Demo */}
+              <div className="flex justify-center lg:justify-end">
+                <HeroChatDemo />
               </div>
 
-              <div className="mx-auto mt-16 flex max-w-5xl flex-col gap-4 md:flex-row md:flex-wrap md:justify-center">
-                {loadingProjects ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="fade-up flex min-h-[140px] flex-1 border border-zinc-900 bg-base p-5 text-left md:min-w-[min(100%,280px)]"
-                    >
-                      <div className="text-zinc-600">Loading live projects…</div>
-                    </div>
-                  ))
-                ) : heroProjects.length > 0 ? (
-                  heroProjects.map((project, index) => {
-                    const emoji = getProjectEmoji(project, index);
-                    const ticker = getTicker(project);
-                    const snap = marketByProject[project.id];
-                    const basePrice = snap?.price ?? 0;
-                    const spread = displaySpreadFromId(project.id);
-                    const wiggle =
-                      Math.sin(tick / 2 + index * 3) * 0.000008;
-                    const displayPrice = basePrice + spread + wiggle;
-                    const flash = flashingProjectIds[project.id];
-
-                    return (
-                      <Link
-                        key={project.id}
-                        href={`/project/${project.id}`}
-                        className="fade-up group flex min-h-[140px] flex-1 items-start justify-between gap-4 border border-zinc-900 bg-base p-5 text-left transition hover:border-emerald-400/40 hover:bg-zinc-950 md:min-w-[min(100%,280px)]"
-                      >
-                        <div>
-                          <div className="mb-2 text-3xl">{emoji}</div>
-                          <div className="text-lg font-bold text-white group-hover:text-emerald-50">
-                            {project.title || project.name || "Untitled Project"}
-                          </div>
-                          <div className="mt-2 line-clamp-2 text-xs text-zinc-500">
-                            {project.description || "No description yet."}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="relative flex h-2 w-2">
-                              <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                            </span>
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-500">
-                              LIVE
-                            </span>
-                          </div>
-                          <div className="mt-1 text-xs uppercase tracking-[0.16em] text-emerald-400">
-                            ${ticker}
-                          </div>
-                          <div
-                            className={`mt-2 font-mono text-xl font-bold text-white transition-colors duration-300 ${
-                              flash ? "price-flash text-emerald-300" : ""
-                            }`}
-                          >
-                            {snap
-                              ? `$${formatPrice(displayPrice)}`
-                              : "—"}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })
-                ) : (
-                  <>
-                    <div className="border border-zinc-900 bg-base p-6 text-left">
-                      <div className="mb-4 text-4xl">💪</div>
-                      <div className="text-2xl font-bold text-white">
-                        AI Fitness Coach
-                      </div>
-                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        Publication · live
-                      </div>
-                      <div className="mt-5 text-zinc-500">
-                        Beginner AI fitness project for workouts, nutrition, and habit-building.
-                      </div>
-                    </div>
-
-                    <div className="border border-zinc-900 bg-base p-6 text-left">
-                      <div className="mb-4 text-4xl">🧠</div>
-                      <div className="text-2xl font-bold text-white">
-                        MathMaster
-                      </div>
-                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        Publication · live
-                      </div>
-                      <div className="mt-5 text-zinc-500">
-                        AI-powered tutoring platform for students.
-                      </div>
-                    </div>
-
-                    <div className="border border-zinc-900 bg-base p-6 text-left">
-                      <div className="mb-4 text-4xl">🚀</div>
-                      <div className="text-2xl font-bold text-white">
-                        Dum Club
-                      </div>
-                      <div className="mt-3 text-sm uppercase tracking-[0.2em] text-emerald-400">
-                        Publication · live
-                      </div>
-                      <div className="mt-5 text-zinc-500">
-                        Public ecosystem for building and discovering AI-native projects.
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </div>
