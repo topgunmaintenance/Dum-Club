@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Starfield } from "../../components/Starfield";
 
 type Project = {
   id: string;
@@ -464,7 +465,8 @@ export default function DiscoverPage() {
   }, [rankedProjects]);
 
   return (
-    <main className="min-h-screen bg-base text-white">
+    <main className="relative min-h-screen bg-base text-white">
+      <Starfield count={70} />
       {/* Live activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
         {recentTrades.length === 0 ? (

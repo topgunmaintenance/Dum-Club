@@ -228,9 +228,10 @@ export function Navbar() {
       <div
         className="hidden lg:grid lg:items-center"
         style={{
-          gridTemplateColumns: "300px 1fr 560px",
-          padding: "20px 32px",
+          gridTemplateColumns: "auto 1fr auto",
+          padding: "20px clamp(16px, 3vw, 32px)",
           minHeight: "92px",
+          gap: "16px",
         }}
       >
         <Link
@@ -407,7 +408,7 @@ export function Navbar() {
                     textTransform: "uppercase",
                     borderRadius: "14px",
                     height: "52px",
-                    minWidth: "220px",
+                    whiteSpace: "nowrap",
                     transition: "all 0.15s ease",
                   }}
                 >

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Starfield } from "../components/Starfield";
 
 type Project = {
   id: string;
@@ -98,89 +99,6 @@ function isPlaceholderDescription(d?: string | null) {
   return false;
 }
 
-/* ─── Ambient Starfield Background ─── */
-function Starfield() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let w: number, h: number, raf: number;
-
-    type Star = {
-      x: number;
-      y: number;
-      size: number;
-      baseAlpha: number;
-      speed: number;
-      phase: number;
-      r: number;
-      g: number;
-      b: number;
-    };
-
-    let stars: Star[] = [];
-
-    const build = () => {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-      stars = Array.from({ length: 70 }, () => {
-        const roll = Math.random();
-        // 65% cool white, 25% mint tint, 10% violet tint
-        const [r, g, b] =
-          roll < 0.65
-            ? [180 + Math.random() * 70, 190 + Math.random() * 60, 220 + Math.random() * 35]
-            : roll < 0.9
-            ? [0, 180 + Math.random() * 70, 130 + Math.random() * 70]
-            : [100 + Math.random() * 55, 70 + Math.random() * 45, 200 + Math.random() * 55];
-        return {
-          x: Math.random() * w,
-          y: Math.random() * h,
-          size: Math.random() < 0.85 ? Math.random() * 0.7 + 0.2 : Math.random() * 1.1 + 0.6,
-          baseAlpha: 0.15 + Math.random() * 0.35,
-          speed: 0.004 + Math.random() * 0.012,
-          phase: Math.random() * Math.PI * 2,
-          r,
-          g,
-          b,
-        };
-      });
-    };
-
-    build();
-    window.addEventListener("resize", build);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      for (const s of stars) {
-        s.phase += s.speed;
-        const alpha = s.baseAlpha * (0.5 + 0.5 * Math.sin(s.phase));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${s.r | 0},${s.g | 0},${s.b | 0},${alpha.toFixed(3)})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    };
-
-    raf = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", build);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      style={{ opacity: 0.7 }}
-    />
-  );
-}
 
 /* ─── Creator Proof Data & Components ─── */
 type CreatorStory = {
@@ -698,15 +616,15 @@ export default function Home() {
   }, [allPublicProjects]);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-base text-white">
-      <section className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
+    <div className="relative min-h-screen overflow-hidden bg-base text-white">
+      <Starfield count={90} />
+      <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
         <div className="relative overflow-hidden border border-zinc-900 bg-base">
           {/* Ambient background */}
           <div className="absolute inset-0">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.10),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.06),transparent_50%)]" />
-            <Starfield />
           </div>
 
           <div className="relative px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
@@ -772,9 +690,9 @@ export default function Home() {
             onClose={() => setCreatorModal(null)}
           />
         )}
-        <div className="mx-auto mt-14 max-w-6xl">
+        <div className="creator-section-fade mx-auto mt-14 max-w-6xl">
           <div className="mb-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Creators building right now
+            Ways people are launching
           </div>
           <CreatorTicker onPick={setCreatorModal} />
         </div>
