@@ -188,6 +188,25 @@ body {
 .hero-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
 .hero-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
 
+/* Premium card hover */
+.card-premium {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+}
+
+.card-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(0, 255, 163, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-premium:hover {
+    transform: none !important;
+  }
+}
+
 /* Creator proof ticker */
 @keyframes creator-ticker {
   from { transform: translateX(0); }

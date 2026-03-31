@@ -709,22 +709,22 @@ export default function Home() {
             page goes live with a public market feed and holder utility. Most launches surface in
             under a minute.
           </p>
-          <div className="mt-12 grid gap-8 border-t border-zinc-800 pt-10 sm:grid-cols-3">
-            <div>
-              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">01</div>
-              <div className="mt-3 text-base font-bold text-white">Idea</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">One paragraph is enough to start.</p>
-            </div>
-            <div>
-              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">02</div>
-              <div className="mt-3 text-base font-bold text-white">Generate</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">AI drafts the app shape and token story.</p>
-            </div>
-            <div>
-              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">03</div>
-              <div className="mt-3 text-base font-bold text-white">Launch</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">Your page is live and discoverable.</p>
-            </div>
+          <div className="mt-12 grid gap-3 pt-10 sm:grid-cols-3">
+            {[
+              { n: "01", title: "Idea", desc: "One paragraph is enough to start." },
+              { n: "02", title: "Generate", desc: "AI drafts the app shape and token story." },
+              { n: "03", title: "Launch", desc: "Your page is live and discoverable." },
+            ].map((step) => (
+              <div
+                key={step.n}
+                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-800/40 bg-gradient-to-br from-zinc-900/60 to-zinc-950 p-6 hover:border-emerald-400/15"
+              >
+                <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-400/[0.03] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="font-mono text-3xl font-extrabold text-emerald-400/30">{step.n}</div>
+                <div className="mt-3 text-base font-bold text-white">{step.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{step.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -781,12 +781,14 @@ export default function Home() {
             {featured?.project && (
               <Link href={`/project/${featured.project.id}`}>
                 <div
-                  className="group rounded-3xl border border-zinc-800 bg-zinc-950 p-8 transition hover:border-emerald-400/30"
-                  style={{ borderTop: "3px solid rgba(52,211,153,0.5)" }}
+                  className="card-premium group relative overflow-hidden rounded-3xl border border-zinc-800/60 bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900/50 p-8 hover:border-emerald-400/25"
+                  style={{ borderTop: "2px solid rgba(0,255,163,0.3)" }}
                 >
+                  {/* Inner ambient glow */}
+                  <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-emerald-400/[0.04] blur-3xl transition-opacity duration-500 group-hover:opacity-100 opacity-0" />
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-start gap-5">
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800 bg-base text-3xl">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 text-3xl shadow-inner">
                         {getProjectEmoji(featured.project, 0)}
                       </div>
                       <div>
@@ -852,7 +854,10 @@ export default function Home() {
                 },
                 { label: "Built on Solana", value: "✓" },
               ].map((stat) => (
-                <div key={stat.label} className="text-center">
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-zinc-800/30 bg-gradient-to-b from-zinc-900/40 to-transparent p-6 text-center"
+                >
                   <div className="font-mono text-4xl font-black text-white sm:text-5xl">
                     {stat.value}
                   </div>
@@ -915,14 +920,14 @@ export default function Home() {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-32 animate-pulse rounded-xl border border-zinc-800 bg-zinc-950"
+                      className="h-32 animate-pulse rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-950 to-zinc-900/30"
                     />
                   ))
                 : latestProjectsNews.map((p) => (
                     <Link
                       key={p.id}
                       href={`/project/${p.id}`}
-                      className="block rounded-xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700 hover:bg-zinc-900/50"
+                      className="card-premium block rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-950 to-zinc-900/30 p-6 hover:border-emerald-400/15"
                     >
                       <div className="mb-2 font-mono text-[10px] text-emerald-500">
                         {formatNewsDate(p.created_at)}
