@@ -188,6 +188,28 @@ body {
 .hero-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
 .hero-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
 
+/* Creator proof ticker */
+@keyframes creator-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.creator-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: creator-ticker 32s linear infinite;
+}
+
+.creator-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creator-ticker-track {
+    animation: none !important;
+  }
+}
+
 /* Home: horizontal activity marquee */
 @keyframes home-marquee {
   from {

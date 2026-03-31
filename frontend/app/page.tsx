@@ -98,6 +98,223 @@ function isPlaceholderDescription(d?: string | null) {
   return false;
 }
 
+/* ─── Creator Proof Data & Components ─── */
+type CreatorStory = {
+  id: string;
+  name: string;
+  emoji: string;
+  tag: string;
+  project: string;
+  sold: string;
+  result: string;
+  detail: string;
+  stat: { value: string; label: string };
+};
+
+const CREATOR_STORIES: CreatorStory[] = [
+  {
+    id: "mike",
+    name: "Mike T.",
+    emoji: "📄",
+    tag: "Made $420 selling a resume service",
+    project: "ResumeAI Pro",
+    sold: "AI-powered resume reviews",
+    result: "$420 revenue in first week",
+    detail:
+      "Mike described his resume coaching service in two sentences. The AI built his project page with booking and payment in 8 minutes. He shared the link on LinkedIn and had 14 paying clients by Friday.",
+    stat: { value: "$420", label: "Week one" },
+  },
+  {
+    id: "sarah",
+    name: "Sarah K.",
+    emoji: "💪",
+    tag: "Launched a fitness plan in 10 minutes",
+    project: "FitWithSarah",
+    sold: "8-week transformation program",
+    result: "22 sign-ups in 3 days",
+    detail:
+      "Sarah typed 'I run an 8-week body transformation program for women.' The AI created her page, pricing tiers, and booking flow. She posted the link to her Instagram story — 22 people signed up before the weekend.",
+    stat: { value: "22", label: "Sign-ups" },
+  },
+  {
+    id: "alex",
+    name: "Alex R.",
+    emoji: "🎨",
+    tag: "Sold 12 digital products today",
+    project: "DesignVault",
+    sold: "Figma template packs",
+    result: "12 sales in one day",
+    detail:
+      "Alex uploaded his Figma templates and let the AI write the product descriptions. Within 24 hours he had 12 sales — without building a website or setting up Stripe manually.",
+    stat: { value: "12", label: "Sales today" },
+  },
+  {
+    id: "priya",
+    name: "Priya M.",
+    emoji: "📸",
+    tag: "Booked 6 clients for photo sessions",
+    project: "PriyaLens",
+    sold: "Portrait photography sessions",
+    result: "6 bookings in 48 hours",
+    detail:
+      "Priya described her portrait photography packages. The AI built a clean booking page with three tiers. She shared it in two Facebook groups and booked 6 sessions in two days.",
+    stat: { value: "6", label: "Bookings" },
+  },
+  {
+    id: "dani",
+    name: "Dani L.",
+    emoji: "🎵",
+    tag: "200 downloads of his beat pack",
+    project: "DaniBeats",
+    sold: "Lo-fi beat pack downloads",
+    result: "200 downloads on day one",
+    detail:
+      "Dani dropped a link to his beat pack. The AI wrote the copy, set three pricing tiers, and the page went live. 200 downloads on the first day — no distributor, no middleman.",
+    stat: { value: "200", label: "Downloads" },
+  },
+  {
+    id: "jess",
+    name: "Jess W.",
+    emoji: "🧁",
+    tag: "Made $310 from custom cake orders",
+    project: "Jess Bakes",
+    sold: "Custom cake ordering",
+    result: "$310 revenue in first weekend",
+    detail:
+      "Jess described her custom cake business. AI built an ordering page with flavour options, delivery slots, and pricing. She shared it in her neighbourhood WhatsApp group and booked $310 in orders over the weekend.",
+    stat: { value: "$310", label: "First weekend" },
+  },
+];
+
+function CreatorProofModal({
+  story,
+  onClose,
+}: {
+  story: CreatorStory;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", h);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="relative w-full max-w-md animate-fade-in rounded-2xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/60">
+        {/* Top accent line */}
+        <div className="absolute left-[20%] right-[20%] top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-xs text-zinc-500 transition hover:bg-zinc-800 hover:text-white"
+        >
+          ✕
+        </button>
+
+        {/* Label */}
+        <div className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+          <span className="inline-block h-px w-4 bg-emerald-400" />
+          Creator Story
+        </div>
+
+        {/* Avatar + name */}
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-violet-500 text-xl">
+            {story.emoji}
+          </div>
+          <div>
+            <div className="text-[15px] font-bold text-white">{story.name}</div>
+            <div className="text-[12px] text-zinc-500">{story.project}</div>
+          </div>
+        </div>
+
+        {/* Quote */}
+        <div className="mb-3 border-l-2 border-emerald-400/30 pl-3 text-[14px] italic leading-relaxed text-zinc-400">
+          &ldquo;{story.detail}&rdquo;
+        </div>
+
+        {/* Result stat */}
+        <div className="mb-5 grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
+            <div className="text-xl font-extrabold text-emerald-400">
+              {story.stat.value}
+            </div>
+            <div className="mt-1 text-[10px] text-zinc-600">
+              {story.stat.label}
+            </div>
+          </div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
+            <div className="text-xl font-extrabold text-white">AI</div>
+            <div className="mt-1 text-[10px] text-zinc-600">Built by</div>
+          </div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
+            <div className="text-xl font-extrabold text-white">$0</div>
+            <div className="mt-1 text-[10px] text-zinc-600">Setup cost</div>
+          </div>
+        </div>
+
+        {/* What they sold */}
+        <div className="mb-5 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+            What they sell
+          </div>
+          <div className="mt-1 text-[14px] text-zinc-300">{story.sold}</div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
+          <span className="text-[11px] text-zinc-600">
+            No developer needed
+          </span>
+          <Link
+            href="/build"
+            className="rounded-lg bg-emerald-400 px-4 py-2 text-[12px] font-bold text-black transition hover:bg-emerald-300"
+          >
+            Start Building →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreatorTicker({
+  onPick,
+}: {
+  onPick: (story: CreatorStory) => void;
+}) {
+  const pills = [...CREATOR_STORIES, ...CREATOR_STORIES];
+  return (
+    <div className="overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}>
+      <div className="creator-ticker-track gap-3">
+        {pills.map((story, i) => (
+          <button
+            key={`${story.id}-${i}`}
+            onClick={() => onPick(story)}
+            className="flex shrink-0 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-[13px] text-zinc-400 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-zinc-200 hover:shadow-[0_0_20px_rgba(0,255,163,0.08)]"
+          >
+            <span className="text-base">{story.emoji}</span>
+            <span className="font-medium">{story.name}</span>
+            <span className="text-zinc-600">·</span>
+            <span className="text-emerald-400/80">{story.tag}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── AI Chat Demo for Hero ─── */
 function HeroChatDemo() {
   const [step, setStep] = useState(0);
@@ -249,6 +466,7 @@ function HeroChatDemo() {
 }
 
 export default function Home() {
+  const [creatorModal, setCreatorModal] = useState<CreatorStory | null>(null);
   const [allPublicProjects, setAllPublicProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
@@ -460,6 +678,20 @@ export default function Home() {
 
             </div>
           </div>
+        </div>
+
+        {/* ── CREATOR PROOF ── */}
+        {creatorModal && (
+          <CreatorProofModal
+            story={creatorModal}
+            onClose={() => setCreatorModal(null)}
+          />
+        )}
+        <div className="mx-auto mt-14 max-w-6xl">
+          <div className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+            Creators building right now
+          </div>
+          <CreatorTicker onPick={setCreatorModal} />
         </div>
 
         <div
