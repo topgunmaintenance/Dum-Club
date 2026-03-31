@@ -2635,6 +2635,7 @@ return (
                 </span>
               </div>
 
+              {projectView === "analytics" && (
               <div className="mt-5 rounded-2xl border border-zinc-800 bg-base/40 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
                   Why hold this token
@@ -2648,6 +2649,7 @@ return (
                   ))}
                 </ul>
               </div>
+              )}
             </div>
           </div>
 
@@ -3918,7 +3920,7 @@ return (
       )}
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-        <div id="ai-workspace" className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
+        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
