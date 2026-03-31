@@ -317,136 +317,52 @@ function CreatorTicker({
   );
 }
 
-/* ─── AI Chat Demo for Hero — Multi-Scenario ─── */
-const DEMO_SCENARIOS = [
-  {
-    id: "carwash",
-    icon: "🚗",
-    label: "Car Wash",
-    prompt: "I want to start a mobile car wash business",
-    slug: "SPARKLE-WASH",
-    name: "Sparkle Mobile Wash",
-    desc: "Premium mobile car detailing at your doorstep",
-    price: "$49",
-    cta: "Book Now",
-  },
-  {
-    id: "trainer",
-    icon: "💪",
-    label: "Trainer",
-    prompt: "I'm a personal trainer selling 8-week programs",
-    slug: "FIT-TRANSFORM",
-    name: "FitTransform 8-Week",
-    desc: "Complete body transformation coaching program",
-    price: "$297",
-    cta: "Enroll",
-  },
-  {
-    id: "hvac",
-    icon: "❄️",
-    label: "HVAC",
-    prompt: "HVAC repair and installation service in Phoenix",
-    slug: "COOL-AIR-PRO",
-    name: "CoolAir Pro Services",
-    desc: "Licensed HVAC repair, maintenance & installation",
-    price: "$89",
-    cta: "Get Quote",
-  },
-  {
-    id: "jewelry",
-    icon: "💎",
-    label: "Jewelry",
-    prompt: "Handmade silver jewelry store with custom pieces",
-    slug: "SILVER-FORGE",
-    name: "Silver Forge Studio",
-    desc: "Handcrafted sterling silver jewelry & custom orders",
-    price: "$65",
-    cta: "Shop Now",
-  },
-  {
-    id: "news",
-    icon: "📰",
-    label: "News AI",
-    prompt: "AI news app that shows left and right perspectives",
-    slug: "BOTH-SIDES-AI",
-    name: "BothSides News AI",
-    desc: "Balanced news: see every story from left & right",
-    price: "$4.99/mo",
-    cta: "Subscribe",
-  },
-];
+/* ─── Hero Walkthrough — Describe / Launch / Grow ─── */
+const WALKTHROUGH_STEPS = [
+  { id: "describe", label: "Describe", icon: "💬" },
+  { id: "launch", label: "Launch", icon: "🚀" },
+  { id: "grow", label: "Grow", icon: "💰" },
+] as const;
 
-function HeroChatDemo() {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [step, setStep] = useState(0);
-  const [buildIdx, setBuildIdx] = useState(0);
-  const [userInteracted, setUserInteracted] = useState(false);
-  const buildSteps = [
-    "Analyzing idea...",
-    "Creating project page...",
-    "Setting up offers...",
-    "Configuring payments...",
-    "✓ Live!",
-  ];
+function HeroWalkthrough() {
+  const [activeStep, setActiveStep] = useState(0);
+  const [userClicked, setUserClicked] = useState(false);
 
-  const scenario = DEMO_SCENARIOS[activeIdx];
-
-  // Reset animation when scenario changes
+  // Auto-rotate every 5s unless user has clicked a tab
   useEffect(() => {
-    setStep(0);
-    setBuildIdx(0);
-    const delays = [500, 1800, 2800, 3800, 5200];
-    const timers = delays.map((d, i) => setTimeout(() => setStep(i + 1), d));
-    return () => timers.forEach(clearTimeout);
-  }, [activeIdx]);
-
-  // Build progress animation
-  useEffect(() => {
-    if (step !== 4) return;
-    let i = 0;
+    if (userClicked) return;
     const t = setInterval(() => {
-      i++;
-      setBuildIdx(i);
-      if (i >= buildSteps.length - 1) clearInterval(t);
-    }, 300);
+      setActiveStep((i) => (i + 1) % 3);
+    }, 5000);
     return () => clearInterval(t);
-  }, [step]);
+  }, [userClicked, activeStep]);
 
-  // Auto-rotate every 8s if user hasn't clicked a tab
-  useEffect(() => {
-    if (userInteracted) return;
-    const t = setInterval(() => {
-      setActiveIdx((i) => (i + 1) % DEMO_SCENARIOS.length);
-    }, 8000);
-    return () => clearInterval(t);
-  }, [userInteracted, activeIdx]);
-
-  const handleTabClick = (idx: number) => {
-    setUserInteracted(true);
-    setActiveIdx(idx);
+  const handleTab = (idx: number) => {
+    setUserClicked(true);
+    setActiveStep(idx);
   };
 
   return (
     <div className="w-full max-w-[360px]">
-      {/* Scenario tabs */}
-      <div className="mb-3 flex items-center gap-1 overflow-x-auto rounded-full border border-zinc-800/50 bg-zinc-950/80 p-1 backdrop-blur-sm">
-        {DEMO_SCENARIOS.map((s, i) => (
+      {/* Step tabs */}
+      <div className="mb-3 flex items-center gap-1 rounded-full border border-zinc-800/50 bg-zinc-950/80 p-1 backdrop-blur-sm">
+        {WALKTHROUGH_STEPS.map((step, i) => (
           <button
-            key={s.id}
-            onClick={() => handleTabClick(i)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all duration-300 ${
-              i === activeIdx
+            key={step.id}
+            onClick={() => handleTab(i)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-all duration-300 ${
+              i === activeStep
                 ? "bg-emerald-400/15 text-emerald-300 shadow-[0_0_12px_rgba(0,255,163,0.1)]"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            <span className="text-sm">{s.icon}</span>
-            <span className="hidden sm:inline">{s.label}</span>
+            <span className="text-sm">{step.icon}</span>
+            {step.label}
           </button>
         ))}
       </div>
 
-      {/* Chat window */}
+      {/* Fixed container */}
       <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
         {/* Title bar */}
         <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
@@ -456,7 +372,7 @@ function HeroChatDemo() {
             <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
           </div>
           <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-            DUM CLUB AI
+            DUM CLUB
           </div>
           <div className="relative flex h-2 w-2">
             <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -464,76 +380,208 @@ function HeroChatDemo() {
           </div>
         </div>
 
-        {/* Chat body */}
-        <div className="space-y-3 px-4 py-4" style={{ minHeight: 280 }} key={scenario.id}>
-          {step >= 1 && (
-            <div className="hero-chat-msg flex gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
-                What&apos;s your business idea? I&apos;ll build it for you.
-              </div>
-            </div>
-          )}
+        {/* Inner content — fixed height, content swaps */}
+        <div style={{ minHeight: 320 }} key={activeStep}>
+          {activeStep === 0 && <StepDescribe />}
+          {activeStep === 1 && <StepLaunch />}
+          {activeStep === 2 && <StepGrow />}
+        </div>
 
-          {step >= 2 && (
-            <div className="hero-chat-msg flex justify-end">
-              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[13px] leading-relaxed text-emerald-100">
-                {scenario.prompt}
-              </div>
-            </div>
-          )}
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950 px-4 py-2">
+          <span className="font-mono text-[9px] text-zinc-700">
+            Step {activeStep + 1} of 3
+          </span>
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  i === activeStep ? "w-4 bg-emerald-400" : "w-1.5 bg-zinc-800"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {step >= 3 && (
-            <div className="hero-chat-msg flex gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
-                On it — building your business now.
-              </div>
-            </div>
-          )}
+/* ── Step 1: Describe ── */
+function StepDescribe() {
+  return (
+    <div className="space-y-3 px-4 py-4 hero-chat-msg">
+      {/* User input */}
+      <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-3">
+        <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+          Your idea
+        </div>
+        <div className="text-[13px] leading-relaxed text-zinc-300">
+          I want to start a mobile car wash business with premium detailing packages
+        </div>
+        <div className="mt-2 flex justify-end">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 text-[10px] font-bold text-black">
+            ↑
+          </div>
+        </div>
+      </div>
 
-          {step >= 4 && (
-            <div className="hero-chat-msg flex gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-              <div className="rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2.5 font-mono text-[11px] leading-[1.8] text-zinc-500">
-                {buildSteps.slice(0, buildIdx + 1).map((line, i) => (
-                  <div key={i} className={i === buildIdx && buildIdx < buildSteps.length - 1 ? "text-emerald-400" : i < buildIdx ? "text-zinc-600" : "text-emerald-400"}>
-                    {line}
-                  </div>
-                ))}
-                {buildIdx < buildSteps.length - 1 && (
-                  <span className="hero-chat-typing inline-flex gap-0.5 text-emerald-400"><span>.</span><span>.</span><span>.</span></span>
+      {/* AI response */}
+      <div className="flex gap-2">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
+          D
+        </div>
+        <div className="rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2">
+          <div className="text-[13px] leading-relaxed text-zinc-300">
+            Building your project now...
+          </div>
+          <div className="mt-2 space-y-1 font-mono text-[11px]">
+            <div className="text-zinc-600">✓ Project created</div>
+            <div className="text-zinc-600">✓ Offers generated</div>
+            <div className="text-zinc-600">✓ Payments configured</div>
+            <div className="text-emerald-400">✓ Live!</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Result card */}
+      <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] p-3">
+        <div className="font-mono text-[9px] font-bold uppercase tracking-widest text-emerald-400">
+          ✓ Project ready
+        </div>
+        <div className="mt-1 text-[14px] font-bold text-white">Sparkle Mobile Wash</div>
+        <div className="text-[11px] text-zinc-500">3 offers · payments active</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Step 2: Launch ── */
+function StepLaunch() {
+  return (
+    <div className="px-4 py-4 hero-chat-msg">
+      {/* Storefront header */}
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
+          <div className="text-[11px] text-zinc-500">dum.club/sparkle-wash</div>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
+        </div>
+      </div>
+
+      {/* Offers list */}
+      <div className="space-y-2">
+        {[
+          { name: "Basic Wash", price: "$29", tag: "Popular" },
+          { name: "Full Detail Package", price: "$89", tag: null },
+          { name: "Monthly Membership", price: "$49/mo", tag: "Subscription" },
+        ].map((offer) => (
+          <div
+            key={offer.name}
+            className="flex items-center justify-between rounded-lg border border-zinc-800/50 bg-zinc-900/40 px-3 py-2.5"
+          >
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="text-[13px] font-semibold text-white">{offer.name}</div>
+                {offer.tag && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400/70">
+                    {offer.tag}
+                  </span>
                 )}
               </div>
             </div>
-          )}
-
-          {step >= 5 && (
-            <div className="hero-chat-card rounded-xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.07] to-violet-500/[0.07] p-3.5">
-              <div className="mb-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">
-                ✓ LIVE · DUM.CLUB/{scenario.slug}
-              </div>
-              <div className="mb-0.5 text-[15px] font-bold text-white">{scenario.name}</div>
-              <div className="mb-3 text-[12px] text-zinc-400">{scenario.desc}</div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] text-zinc-500">Starting at</div>
-                  <div className="text-lg font-extrabold text-emerald-400">{scenario.price}</div>
-                </div>
-                <div className="rounded-full bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">
-                  {scenario.cta}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input bar */}
-        <div className="flex items-center gap-2 border-t border-zinc-800/80 bg-zinc-950 px-3 py-2.5">
-          <div className="flex-1 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[12px] text-zinc-600">
-            Describe what you offer...
+            <div className="text-[14px] font-bold text-emerald-400">{offer.price}</div>
           </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] text-white">↑</div>
+        ))}
+      </div>
+
+      {/* Quick actions */}
+      <div className="mt-3 flex gap-2">
+        <div className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/50 py-2 text-[11px] text-zinc-400">
+          <span>🔗</span> Share
+        </div>
+        <div className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/50 py-2 text-[11px] text-zinc-400">
+          <span>✏️</span> Edit
+        </div>
+        <div className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/50 py-2 text-[11px] text-zinc-400">
+          <span>📊</span> Analytics
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Step 3: Grow ── */
+function StepGrow() {
+  return (
+    <div className="px-4 py-4 hero-chat-msg">
+      {/* Featured offer */}
+      <div className="mb-3 rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-violet-500/[0.05] p-4">
+        <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          Your top offer
+        </div>
+        <div className="text-[16px] font-bold text-white">Full Detail Package</div>
+        <div className="mt-1 text-[12px] text-zinc-400">
+          Complete interior & exterior detailing with ceramic coating
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-xl font-extrabold text-emerald-400">$89</div>
+          <div className="rounded-full bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">
+            Buy Now
+          </div>
+        </div>
+      </div>
+
+      {/* Sale notification */}
+      <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.08] px-3 py-2.5">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-sm">
+          🎉
+        </div>
+        <div>
+          <div className="text-[12px] font-semibold text-emerald-300">
+            +1 Sale — $89.00
+          </div>
+          <div className="text-[10px] text-emerald-400/60">
+            Payment processed · just now
+          </div>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/40 p-2.5 text-center">
+          <div className="text-[16px] font-extrabold text-white">12</div>
+          <div className="text-[9px] text-zinc-600">Sales</div>
+        </div>
+        <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/40 p-2.5 text-center">
+          <div className="text-[16px] font-extrabold text-emerald-400">$847</div>
+          <div className="text-[9px] text-zinc-600">Revenue</div>
+        </div>
+        <div className="rounded-lg border border-zinc-800/50 bg-zinc-900/40 p-2.5 text-center">
+          <div className="text-[16px] font-extrabold text-white">4.9</div>
+          <div className="text-[9px] text-zinc-600">Rating</div>
+        </div>
+      </div>
+
+      {/* Share prompt */}
+      <div className="mt-3 rounded-lg border border-violet-500/20 bg-violet-500/[0.06] p-3 text-center">
+        <div className="text-[11px] text-zinc-400">
+          Share your store to keep growing
+        </div>
+        <div className="mt-2 flex justify-center gap-2">
+          <div className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400">
+            Copy Link
+          </div>
+          <div className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] text-zinc-400">
+            Share on X
+          </div>
         </div>
       </div>
     </div>
@@ -763,9 +811,9 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* RIGHT — AI Chat Demo */}
+              {/* RIGHT — 3-Step Walkthrough */}
               <div className="hero-chat-entrance hero-demo-float flex justify-center lg:justify-end">
-                <HeroChatDemo />
+                <HeroWalkthrough />
               </div>
 
             </div>
