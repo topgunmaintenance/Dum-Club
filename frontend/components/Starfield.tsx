@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
  * Renders twinkling dots on a canvas. Designed to sit behind page content
  * at low opacity. Negligible performance cost (~70-100 arc draws/frame).
  */
-export function Starfield({ count = 80 }: { count?: number }) {
+export function Starfield({ count = 120 }: { count?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -47,9 +47,9 @@ export function Starfield({ count = 80 }: { count?: number }) {
         return {
           x: Math.random() * w,
           y: Math.random() * h,
-          size: Math.random() < 0.85 ? Math.random() * 0.7 + 0.2 : Math.random() * 1.1 + 0.6,
-          baseAlpha: 0.15 + Math.random() * 0.35,
-          speed: 0.004 + Math.random() * 0.012,
+          size: Math.random() < 0.8 ? Math.random() * 0.9 + 0.3 : Math.random() * 1.4 + 0.7,
+          baseAlpha: 0.25 + Math.random() * 0.5,
+          speed: 0.008 + Math.random() * 0.018,
           phase: Math.random() * Math.PI * 2,
           r,
           g,
@@ -65,7 +65,7 @@ export function Starfield({ count = 80 }: { count?: number }) {
       ctx.clearRect(0, 0, w, h);
       for (const s of stars) {
         s.phase += s.speed;
-        const alpha = s.baseAlpha * (0.5 + 0.5 * Math.sin(s.phase));
+        const alpha = s.baseAlpha * (0.35 + 0.65 * Math.sin(s.phase));
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${s.r | 0},${s.g | 0},${s.b | 0},${alpha.toFixed(3)})`;
@@ -85,7 +85,7 @@ export function Starfield({ count = 80 }: { count?: number }) {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 h-full w-full"
-      style={{ opacity: 0.6, zIndex: 0 }}
+      style={{ opacity: 0.85, zIndex: 0 }}
     />
   );
 }

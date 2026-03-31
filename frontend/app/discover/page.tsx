@@ -466,7 +466,7 @@ export default function DiscoverPage() {
 
   return (
     <main className="relative min-h-screen bg-base text-white">
-      <Starfield count={70} />
+      <Starfield count={100} />
       {/* Live activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
         {recentTrades.length === 0 ? (

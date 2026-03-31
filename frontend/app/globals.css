@@ -210,7 +210,7 @@ body {
 /* Creator proof ticker */
 @keyframes creator-ticker {
   from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  to { transform: translateX(-33.333%); }
 }
 
 @keyframes creator-section-in {
@@ -221,7 +221,7 @@ body {
 .creator-ticker-track {
   display: flex;
   width: max-content;
-  animation: creator-ticker 40s linear infinite;
+  animation: creator-ticker 25s linear infinite;
   will-change: transform;
 }
 

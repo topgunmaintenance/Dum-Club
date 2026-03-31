@@ -296,7 +296,7 @@ function CreatorTicker({
 }: {
   onPick: (story: CreatorStory) => void;
 }) {
-  const pills = [...CREATOR_STORIES, ...CREATOR_STORIES];
+  const pills = [...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES];
   return (
     <div className="overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}>
       <div className="creator-ticker-track gap-3">
@@ -617,7 +617,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-base text-white">
-      <Starfield count={90} />
+      <Starfield count={130} />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
         <div className="relative overflow-hidden border border-zinc-900 bg-base">
