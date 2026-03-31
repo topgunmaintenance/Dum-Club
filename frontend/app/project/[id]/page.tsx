@@ -414,6 +414,7 @@ export default function ProjectPage() {
   const [feedbackComment, setFeedbackComment] = useState("");
 
   const [loadingProject, setLoadingProject] = useState(true);
+  const [projectView, setProjectView] = useState<"storefront" | "analytics">("storefront");
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -2649,7 +2650,7 @@ return (
           </div>
 
           <div className="w-full space-y-3 lg:w-80">
-            {canShowMarketUi && (
+            {projectView === "analytics" && canShowMarketUi && (
               <div className="flex items-center justify-end gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -2659,7 +2660,34 @@ return (
               </div>
             )}
 
-            {hasMarketSnapshot ? (
+            {projectView === "storefront" && (
+              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-900 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Live Project</span>
+                </div>
+                <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+                  {project?.description
+                    ? project.description.length > 120
+                      ? project.description.slice(0, 120) + "..."
+                      : project.description
+                    : "Explore offers, ask the AI, and support this project."}
+                </p>
+                <div className="flex flex-col gap-2">
+                  <a href="#offers-section" className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
+                    View Offers ↓
+                  </a>
+                  <a href="#ai-workspace" className="flex items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                    Ask AI
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {projectView === "analytics" && hasMarketSnapshot ? (
               <div className="rounded-2xl border border-emerald-500/10 bg-zinc-900 p-5 shadow-[0_0_30px_rgba(0,255,163,0.04)]">
                 <div className="mb-1 flex items-center gap-2">
                   <span className="text-xs text-zinc-500">Current Price</span>
@@ -2704,7 +2732,7 @@ return (
                   </p>
                 </div>
               </div>
-            ) : (
+            ) : projectView === "analytics" ? (
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
                 <div className="mb-1 text-xs text-zinc-500">Token</div>
                 <div className="text-2xl font-black text-white">${displaySymbol}</div>
@@ -2727,9 +2755,9 @@ return (
                   Early stage — supply and liquidity still forming.
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {canShowMarketUi ? (
+            {projectView === "analytics" && canShowMarketUi ? (
               <>
                 <button
                   type="button"
@@ -2821,6 +2849,32 @@ return (
         </div>
       </div>
 
+      {/* ── View Toggle (owner only) ── */}
+      {isOwner && (
+        <div className="mb-6 flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-950 p-1 w-fit">
+          <button
+            onClick={() => setProjectView("storefront")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
+              projectView === "storefront"
+                ? "bg-emerald-400 text-black"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Storefront
+          </button>
+          <button
+            onClick={() => setProjectView("analytics")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
+              projectView === "analytics"
+                ? "bg-emerald-400 text-black"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Analytics
+          </button>
+        </div>
+      )}
+
       <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">About</div>
         {loadingProject ? (
@@ -2841,7 +2895,7 @@ return (
         )}
       </div>
 
-      {canShowMarketUi && hasMarketSnapshot && (
+      {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-zinc-800 bg-base">
           <div className="mx-auto max-w-6xl px-2">
             <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
@@ -2907,8 +2961,8 @@ return (
         </div>
       )}
 
-      {/* ── AI Project Builder (Owner Only) ────────── */}
-      {isOwner && (
+      {/* ── AI Project Builder (Owner Only — Analytics view) ────────── */}
+      {isOwner && projectView === "analytics" && (
         <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
@@ -3122,8 +3176,8 @@ return (
         </div>
       )}
 
-      {/* ── Project Score ────────────────────────── */}
-      {isOwner && (
+      {/* ── Project Score (Analytics view) ────────────────────────── */}
+      {isOwner && projectView === "analytics" && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
@@ -3862,7 +3916,7 @@ return (
       )}
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
+        <div id="ai-workspace" className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
@@ -3952,7 +4006,8 @@ return (
         </div>
       </div>
 
-      {canShowMarketUi ? (
+      {projectView === "analytics" && canShowMarketUi ? (
+      /* Token Activity — only in analytics view */
       <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -4636,7 +4691,7 @@ return (
             </div>
           </div>
         </div>
-      ) : isApprovedProject ? (
+      ) : projectView === "analytics" && isApprovedProject ? (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">Token Launch Pipeline</div>
@@ -5015,7 +5070,7 @@ return (
 
     </>)}
 
-    {canShowMarketUi && hasMarketSnapshot && (
+    {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
       <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-base/90 backdrop-blur-md lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">

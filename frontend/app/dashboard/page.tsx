@@ -230,6 +230,70 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* ── Action Prompts ── */}
+        {user && (
+          <div className="mb-10">
+            {projects.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
+                <div className="mb-2 text-2xl">💡</div>
+                <div className="mb-1 text-base font-bold text-white">Launch your first project</div>
+                <p className="mb-4 text-sm text-zinc-400">Describe your idea and AI will build your project page with offers in under 60 seconds.</p>
+                <Link
+                  href="/build"
+                  className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                >
+                  Start Building →
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-3">
+                {projects.some((p) => p.status === "live") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const live = projects.find((p) => p.status === "live");
+                      if (live) {
+                        const url = `${window.location.origin}/project/${live.id}`;
+                        navigator.clipboard.writeText(url).catch(() => {});
+                        alert("Link copied! Share it with your audience.");
+                      }
+                    }}
+                    className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                  >
+                    <span className="text-xl">🔗</span>
+                    <div>
+                      <div className="text-sm font-bold text-white">Share your page</div>
+                      <div className="text-xs text-zinc-500">Copy your project link</div>
+                    </div>
+                  </button>
+                )}
+                {projects.some((p) => p.status === "live") && (
+                  <Link
+                    href={`/project/${projects.find((p) => p.status === "live")?.id}#offers-section`}
+                    className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                  >
+                    <span className="text-xl">🏷️</span>
+                    <div>
+                      <div className="text-sm font-bold text-white">Manage your offers</div>
+                      <div className="text-xs text-zinc-500">Add or edit what you sell</div>
+                    </div>
+                  </Link>
+                )}
+                <Link
+                  href="/orders"
+                  className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                >
+                  <span className="text-xl">📊</span>
+                  <div>
+                    <div className="text-sm font-bold text-white">View your orders</div>
+                    <div className="text-xs text-zinc-500">Track sales and fulfillment</div>
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Projects list */}
         <div>
           <div className="mb-4 flex items-center justify-between">
