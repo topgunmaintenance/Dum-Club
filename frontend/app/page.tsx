@@ -347,7 +347,7 @@ function HeroChatDemo() {
   }, [step]);
 
   return (
-    <div className="w-full max-w-[340px] rounded-2xl border border-zinc-800 bg-zinc-950/90 shadow-2xl shadow-black/50 overflow-hidden">
+    <div className="w-full max-w-[340px] rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
       {/* Title bar */}
       <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
         <div className="flex gap-1.5">
@@ -620,11 +620,33 @@ export default function Home() {
       <Starfield count={130} />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
-        <div className="relative overflow-hidden border border-zinc-900 bg-base">
-          {/* Ambient background */}
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-base">
+          {/* Ambient background — layered gradient + animated orbs */}
           <div className="absolute inset-0">
-            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.10),transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.06),transparent_50%)]" />
+            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
+            {/* Floating orb 1 — emerald, top-left */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: "-8%", top: "5%",
+                width: 500, height: 500, borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(0,255,163,0.07), transparent 65%)",
+                filter: "blur(80px)",
+                animation: "orb-drift 22s ease-in-out infinite",
+              }}
+            />
+            {/* Floating orb 2 — violet, bottom-right */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                right: "-5%", bottom: "0%",
+                width: 420, height: 420, borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(123,97,255,0.09), transparent 65%)",
+                filter: "blur(80px)",
+                animation: "orb-drift-reverse 28s ease-in-out infinite",
+              }}
+            />
           </div>
 
           <div className="relative px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
@@ -632,42 +654,44 @@ export default function Home() {
 
               {/* LEFT — Message */}
               <div>
-                <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                <h1 className="hero-entrance text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
                   Describe it.
                   <br />
-                  <span className="text-emerald-400">AI launches it.</span>
+                  <span className="text-emerald-400" style={{ textShadow: "0 0 40px rgba(0,255,163,0.3)" }}>
+                    AI launches it.
+                  </span>
                 </h1>
 
-                <p className="mt-6 max-w-md text-base leading-relaxed text-zinc-300 sm:text-lg">
+                <p className="hero-entrance-delay-1 mt-6 max-w-md text-base leading-relaxed text-zinc-300 sm:text-lg">
                   Turn your idea into a live project with built-in pages, offers, and payments — no developer needed.
                 </p>
 
-                <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
+                <div className="hero-entrance-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Link
                     href="/build"
-                    className="group inline-flex items-center justify-center rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_30px_rgba(0,255,163,0.3)] sm:w-auto"
+                    className="group inline-flex items-center justify-center rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] hover:scale-[1.02] sm:w-auto"
                   >
                     Start Building
-                    <span className="ml-2 inline-block transition-transform duration-150 ease-out group-hover:translate-x-1">
+                    <span className="ml-2 inline-block transition-transform duration-200 ease-out group-hover:translate-x-1">
                       →
                     </span>
                   </Link>
 
                   <Link
                     href="/discover"
-                    className="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-auto"
+                    className="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-300 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-emerald-400/30 hover:text-white hover:shadow-[0_0_20px_rgba(0,255,163,0.08)] sm:w-auto"
                   >
                     See Live Example
                   </Link>
                 </div>
 
-                <p className="mt-5 text-[13px] text-zinc-500">
+                <p className="hero-entrance-delay-2 mt-5 text-[13px] text-zinc-500">
                   No website needed · No developer required · No crypto knowledge
                 </p>
               </div>
 
               {/* RIGHT — AI Chat Demo */}
-              <div className="flex justify-center lg:justify-end">
+              <div className="hero-chat-entrance flex justify-center lg:justify-end">
                 <HeroChatDemo />
               </div>
 

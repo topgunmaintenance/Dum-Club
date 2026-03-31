@@ -188,17 +188,62 @@ body {
 .hero-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
 .hero-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
 
+/* ── Hero ambient orb drift ── */
+@keyframes orb-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(30px, -20px) scale(1.05); }
+  50%  { transform: translate(-10px, 30px) scale(0.97); }
+  75%  { transform: translate(-30px, -10px) scale(1.03); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orb-drift-reverse {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(-20px, 15px) scale(0.96); }
+  50%  { transform: translate(15px, -25px) scale(1.04); }
+  75%  { transform: translate(25px, 10px) scale(0.98); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ── Hero entrance animations ── */
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-slide-in-right {
+  from { opacity: 0; transform: translateX(30px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.hero-entrance {
+  animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-entrance-delay-1 {
+  animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.hero-entrance-delay-2 {
+  animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.hero-chat-entrance {
+  animation: hero-slide-in-right 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
 /* Premium card hover */
 .card-premium {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s ease;
 }
 
 .card-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
-              0 0 0 1px rgba(0, 255, 163, 0.06);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(0, 255, 163, 0.08),
+              0 0 24px rgba(0, 255, 163, 0.04);
 }
 
 @media (prefers-reduced-motion: reduce) {
