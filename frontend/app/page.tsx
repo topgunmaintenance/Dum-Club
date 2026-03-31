@@ -317,10 +317,70 @@ function CreatorTicker({
   );
 }
 
-/* ─── AI Chat Demo for Hero ─── */
+/* ─── AI Chat Demo for Hero — Multi-Scenario ─── */
+const DEMO_SCENARIOS = [
+  {
+    id: "carwash",
+    icon: "🚗",
+    label: "Car Wash",
+    prompt: "I want to start a mobile car wash business",
+    slug: "SPARKLE-WASH",
+    name: "Sparkle Mobile Wash",
+    desc: "Premium mobile car detailing at your doorstep",
+    price: "$49",
+    cta: "Book Now",
+  },
+  {
+    id: "trainer",
+    icon: "💪",
+    label: "Trainer",
+    prompt: "I'm a personal trainer selling 8-week programs",
+    slug: "FIT-TRANSFORM",
+    name: "FitTransform 8-Week",
+    desc: "Complete body transformation coaching program",
+    price: "$297",
+    cta: "Enroll",
+  },
+  {
+    id: "hvac",
+    icon: "❄️",
+    label: "HVAC",
+    prompt: "HVAC repair and installation service in Phoenix",
+    slug: "COOL-AIR-PRO",
+    name: "CoolAir Pro Services",
+    desc: "Licensed HVAC repair, maintenance & installation",
+    price: "$89",
+    cta: "Get Quote",
+  },
+  {
+    id: "jewelry",
+    icon: "💎",
+    label: "Jewelry",
+    prompt: "Handmade silver jewelry store with custom pieces",
+    slug: "SILVER-FORGE",
+    name: "Silver Forge Studio",
+    desc: "Handcrafted sterling silver jewelry & custom orders",
+    price: "$65",
+    cta: "Shop Now",
+  },
+  {
+    id: "news",
+    icon: "📰",
+    label: "News AI",
+    prompt: "AI news app that shows left and right perspectives",
+    slug: "BOTH-SIDES-AI",
+    name: "BothSides News AI",
+    desc: "Balanced news: see every story from left & right",
+    price: "$4.99/mo",
+    cta: "Subscribe",
+  },
+];
+
 function HeroChatDemo() {
+  const [activeIdx, setActiveIdx] = useState(0);
   const [step, setStep] = useState(0);
   const [buildIdx, setBuildIdx] = useState(0);
+  const [userInteracted, setUserInteracted] = useState(false);
   const buildSteps = [
     "Analyzing idea...",
     "Creating project page...",
@@ -329,12 +389,18 @@ function HeroChatDemo() {
     "✓ Live!",
   ];
 
+  const scenario = DEMO_SCENARIOS[activeIdx];
+
+  // Reset animation when scenario changes
   useEffect(() => {
-    const delays = [600, 2000, 3200, 4400, 6000];
+    setStep(0);
+    setBuildIdx(0);
+    const delays = [500, 1800, 2800, 3800, 5200];
     const timers = delays.map((d, i) => setTimeout(() => setStep(i + 1), d));
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [activeIdx]);
 
+  // Build progress animation
   useEffect(() => {
     if (step !== 4) return;
     let i = 0;
@@ -342,125 +408,132 @@ function HeroChatDemo() {
       i++;
       setBuildIdx(i);
       if (i >= buildSteps.length - 1) clearInterval(t);
-    }, 350);
+    }, 300);
     return () => clearInterval(t);
   }, [step]);
 
+  // Auto-rotate every 8s if user hasn't clicked a tab
+  useEffect(() => {
+    if (userInteracted) return;
+    const t = setInterval(() => {
+      setActiveIdx((i) => (i + 1) % DEMO_SCENARIOS.length);
+    }, 8000);
+    return () => clearInterval(t);
+  }, [userInteracted, activeIdx]);
+
+  const handleTabClick = (idx: number) => {
+    setUserInteracted(true);
+    setActiveIdx(idx);
+  };
+
   return (
-    <div className="w-full max-w-[340px] rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
-      {/* Title bar */}
-      <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
-        <div className="flex gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
-        </div>
-        <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-          DUM CLUB AI
-        </div>
-        <div className="relative flex h-2 w-2">
-          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-        </div>
+    <div className="w-full max-w-[360px]">
+      {/* Scenario tabs */}
+      <div className="mb-3 flex items-center gap-1 overflow-x-auto rounded-full border border-zinc-800/50 bg-zinc-950/80 p-1 backdrop-blur-sm">
+        {DEMO_SCENARIOS.map((s, i) => (
+          <button
+            key={s.id}
+            onClick={() => handleTabClick(i)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all duration-300 ${
+              i === activeIdx
+                ? "bg-emerald-400/15 text-emerald-300 shadow-[0_0_12px_rgba(0,255,163,0.1)]"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <span className="text-sm">{s.icon}</span>
+            <span className="hidden sm:inline">{s.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Chat body */}
-      <div className="space-y-3 px-4 py-4" style={{ minHeight: 280 }}>
-        {/* AI greeting */}
-        {step >= 1 && (
-          <div className="hero-chat-msg flex gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
-              D
-            </div>
-            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
-              What&apos;s your business idea? I&apos;ll build it for you.
-            </div>
+      {/* Chat window */}
+      <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
+        {/* Title bar */}
+        <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
+          <div className="flex gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
           </div>
-        )}
-
-        {/* User message */}
-        {step >= 2 && (
-          <div className="hero-chat-msg flex justify-end">
-            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[13px] leading-relaxed text-emerald-100">
-              I want to start a mobile car wash business
-            </div>
+          <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            DUM CLUB AI
           </div>
-        )}
-
-        {/* AI response */}
-        {step >= 3 && (
-          <div className="hero-chat-msg flex gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
-              D
-            </div>
-            <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
-              On it — building your business now.
-            </div>
+          <div className="relative flex h-2 w-2">
+            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </div>
-        )}
+        </div>
 
-        {/* Build progress */}
-        {step >= 4 && (
-          <div className="hero-chat-msg flex gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">
-              D
+        {/* Chat body */}
+        <div className="space-y-3 px-4 py-4" style={{ minHeight: 280 }} key={scenario.id}>
+          {step >= 1 && (
+            <div className="hero-chat-msg flex gap-2">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+                What&apos;s your business idea? I&apos;ll build it for you.
+              </div>
             </div>
-            <div className="rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2.5 font-mono text-[11px] leading-[1.8] text-zinc-500">
-              {buildSteps.slice(0, buildIdx + 1).map((line, i) => (
-                <div
-                  key={i}
-                  className={
-                    i === buildIdx && buildIdx < buildSteps.length - 1
-                      ? "text-emerald-400"
-                      : i < buildIdx
-                      ? "text-zinc-600"
-                      : "text-emerald-400"
-                  }
-                >
-                  {line}
+          )}
+
+          {step >= 2 && (
+            <div className="hero-chat-msg flex justify-end">
+              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[13px] leading-relaxed text-emerald-100">
+                {scenario.prompt}
+              </div>
+            </div>
+          )}
+
+          {step >= 3 && (
+            <div className="hero-chat-msg flex gap-2">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+              <div className="max-w-[78%] rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+                On it — building your business now.
+              </div>
+            </div>
+          )}
+
+          {step >= 4 && (
+            <div className="hero-chat-msg flex gap-2">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+              <div className="rounded-bl-2xl rounded-br-2xl rounded-tr-2xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2.5 font-mono text-[11px] leading-[1.8] text-zinc-500">
+                {buildSteps.slice(0, buildIdx + 1).map((line, i) => (
+                  <div key={i} className={i === buildIdx && buildIdx < buildSteps.length - 1 ? "text-emerald-400" : i < buildIdx ? "text-zinc-600" : "text-emerald-400"}>
+                    {line}
+                  </div>
+                ))}
+                {buildIdx < buildSteps.length - 1 && (
+                  <span className="hero-chat-typing inline-flex gap-0.5 text-emerald-400"><span>.</span><span>.</span><span>.</span></span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step >= 5 && (
+            <div className="hero-chat-card rounded-xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.07] to-violet-500/[0.07] p-3.5">
+              <div className="mb-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">
+                ✓ LIVE · DUM.CLUB/{scenario.slug}
+              </div>
+              <div className="mb-0.5 text-[15px] font-bold text-white">{scenario.name}</div>
+              <div className="mb-3 text-[12px] text-zinc-400">{scenario.desc}</div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] text-zinc-500">Starting at</div>
+                  <div className="text-lg font-extrabold text-emerald-400">{scenario.price}</div>
                 </div>
-              ))}
-              {buildIdx < buildSteps.length - 1 && (
-                <span className="hero-chat-typing inline-flex gap-0.5 text-emerald-400">
-                  <span>.</span><span>.</span><span>.</span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Final live card */}
-        {step >= 5 && (
-          <div className="hero-chat-card rounded-xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.07] to-violet-500/[0.07] p-3.5">
-            <div className="mb-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-400">
-              ✓ LIVE · DUM.CLUB/SPARKLE-WASH
-            </div>
-            <div className="mb-0.5 text-[15px] font-bold text-white">
-              Sparkle Mobile Wash
-            </div>
-            <div className="mb-3 text-[12px] text-zinc-400">
-              Premium mobile car detailing at your doorstep
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] text-zinc-500">Starting at</div>
-                <div className="text-lg font-extrabold text-emerald-400">$49</div>
-              </div>
-              <div className="rounded-full bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">
-                Book Now
+                <div className="rounded-full bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">
+                  {scenario.cta}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input bar */}
-      <div className="flex items-center gap-2 border-t border-zinc-800/80 bg-zinc-950 px-3 py-2.5">
-        <div className="flex-1 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[12px] text-zinc-600">
-          Describe what you offer...
+          )}
         </div>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] text-white">
-          ↑
+
+        {/* Input bar */}
+        <div className="flex items-center gap-2 border-t border-zinc-800/80 bg-zinc-950 px-3 py-2.5">
+          <div className="flex-1 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[12px] text-zinc-600">
+            Describe what you offer...
+          </div>
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500 text-[11px] text-white">↑</div>
         </div>
       </div>
     </div>

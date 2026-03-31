@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { Starfield } from "../../components/Starfield";
 
 type Project = {
   id: number | string;
@@ -129,8 +130,9 @@ export default function DashboardPage() {
   const liveCount = projects.filter((p) => p.status === "live").length;
 
   return (
-    <div className="min-h-screen bg-base px-4 py-12 text-white sm:px-6">
-      <div className="mx-auto max-w-5xl">
+    <div className="relative min-h-screen bg-base px-4 py-12 text-white sm:px-6">
+      <Starfield count={50} />
+      <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Header */}
         <div className="mb-10">

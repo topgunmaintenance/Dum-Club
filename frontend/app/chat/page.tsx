@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { Starfield } from "../../components/Starfield";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -497,7 +498,8 @@ function ChatPageInner() {
         .dc-btn-dismiss:hover{color:#71717a}
       `}</style>
 
-      <div className="dc-page">
+      <div className="dc-page" style={{ position: "relative" }}>
+        <Starfield count={40} />
         {/* ── Sidebar ──────────────────────────────── */}
         <aside className={`dc-sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="dc-sb-header">

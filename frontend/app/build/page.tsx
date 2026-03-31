@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { Starfield } from "../../components/Starfield";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -84,7 +85,8 @@ export default function BuildPage() {
   const generating = state === "generating";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 text-white">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-base px-4 text-white">
+      <Starfield count={80} />
 
       {/* Launch limit modal */}
       {showLimitModal && (

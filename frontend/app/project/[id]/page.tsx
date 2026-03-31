@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useAuth } from "../../../lib/auth/AuthContext";
+import { Starfield } from "../../../components/Starfield";
 import { createClient } from "../../../lib/supabase/client";
 import {
   LineChart,
@@ -2250,11 +2251,12 @@ const heroUtility =
 
 return (
   <div
-    className={`min-h-screen bg-base px-4 py-8 text-white sm:px-6 lg:px-8 ${
+    className={`relative min-h-screen bg-base px-4 py-8 text-white sm:px-6 lg:px-8 ${
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
-    <div className="mx-auto max-w-6xl">
+    <Starfield count={50} />
+    <div className="relative z-[1] mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
       {pitchMode && (
