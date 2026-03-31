@@ -185,6 +185,58 @@ function SystemHealthPage() {
           <p className={`mt-2 text-sm font-medium ${summaryColor}`}>{summaryText}</p>
         </div>
 
+        {/* ── Deploy Status Banner ── */}
+        {(() => {
+          const deployResult = results.deployment;
+          const feCommit = FE_COMMIT || null;
+          const beCommit = (deployResult?.details as any)?.backend_commit || null;
+          const isPreview = typeof window !== "undefined" && window.location.hostname.includes("vercel.app") && !window.location.hostname.startsWith("dum-club.");
+          const aligned = deployResult?.status === "healthy";
+          const hasMismatch = deployResult && !aligned && feCommit && beCommit;
+
+          return (
+            <div className={`mb-6 rounded-xl border p-4 ${
+              hasMismatch
+                ? "border-red-500/30 bg-red-500/5"
+                : isPreview
+                ? "border-amber-500/30 bg-amber-500/5"
+                : "border-zinc-800 bg-zinc-900/30"
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`inline-block h-2 w-2 rounded-full ${
+                  hasMismatch ? "bg-red-500" : isPreview ? "bg-amber-500" : "bg-emerald-500"
+                }`} />
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+                  {isPreview ? "Preview Deploy" : "Production Deploy"}
+                </span>
+                {hasMismatch && (
+                  <span className="ml-auto text-[10px] font-bold uppercase text-red-400">SHA Mismatch</span>
+                )}
+              </div>
+              <div className="grid gap-1 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Frontend SHA</span>
+                  <span className="text-zinc-300">{feCommit ? feCommit.slice(0, 12) : "not set"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Backend SHA</span>
+                  <span className="text-zinc-300">{beCommit ? String(beCommit).slice(0, 12) : "not set"}</span>
+                </div>
+              </div>
+              {hasMismatch && (
+                <p className="mt-2 text-[11px] text-red-400/80">
+                  Frontend and backend are running different commits. Merge and redeploy to align.
+                </p>
+              )}
+              {isPreview && (
+                <p className="mt-2 text-[11px] text-amber-400/80">
+                  This is a preview deployment, not production. Changes here are not live.
+                </p>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Controls */}
         <div className="mb-6 flex items-center gap-3 flex-wrap">
           <button
