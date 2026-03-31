@@ -633,22 +633,14 @@ export default function Home() {
               {/* LEFT — Message */}
               <div>
                 <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  Turn any idea into
+                  Describe it.
                   <br />
-                  <span className="text-emerald-400">a funded business.</span>
+                  <span className="text-emerald-400">AI launches it.</span>
                 </h1>
 
-                <div className="mt-8 space-y-1">
-                  <p className="text-lg font-medium text-zinc-200 sm:text-xl">
-                    Describe your idea.
-                  </p>
-                  <p className="text-lg font-medium text-zinc-200 sm:text-xl">
-                    AI builds it.
-                  </p>
-                  <p className="text-lg font-medium text-emerald-400 sm:text-xl">
-                    Start selling instantly.
-                  </p>
-                </div>
+                <p className="mt-6 max-w-md text-base leading-relaxed text-zinc-300 sm:text-lg">
+                  Turn your idea into a live project with built-in pages, offers, and payments — no developer needed.
+                </p>
 
                 <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Link
