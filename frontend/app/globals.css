@@ -266,7 +266,7 @@ body {
 .creator-ticker-track {
   display: flex;
   width: max-content;
-  animation: creator-ticker 25s linear infinite;
+  animation: creator-ticker 22s linear infinite;
   will-change: transform;
 }
 

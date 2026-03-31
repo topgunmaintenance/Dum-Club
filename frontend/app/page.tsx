@@ -299,7 +299,7 @@ function CreatorTicker({
   const pills = [...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES];
   return (
     <div className="overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}>
-      <div className="creator-ticker-track gap-3">
+      <div className="creator-ticker-track gap-4">
         {pills.map((story, i) => (
           <button
             key={`${story.id}-${i}`}
@@ -735,8 +735,8 @@ export default function Home() {
                   </span>
                 </h1>
 
-                <p className="hero-entrance-delay-1 mt-6 max-w-md text-base leading-relaxed text-zinc-300 sm:text-lg">
-                  Turn your idea into a live project with built-in pages, offers, and payments — no developer needed.
+                <p className="hero-entrance-delay-1 mt-6 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+                  DUM Club gives creators an AI-powered storefront, a community, and a loyalty system that rewards your best customers — automatically.
                 </p>
 
                 <div className="hero-entrance-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
@@ -781,7 +781,7 @@ export default function Home() {
         )}
         <div className="creator-section-fade mx-auto mt-14 max-w-6xl">
           <div className="mb-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Ways people are launching
+            Creators building right now
           </div>
           <CreatorTicker onPick={setCreatorModal} />
         </div>
@@ -793,19 +793,17 @@ export default function Home() {
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             How it works
           </div>
-          <h2 className="text-3xl font-extrabold uppercase tracking-tight text-white sm:text-4xl">
-            60 seconds to live
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Three steps. Your business, live today.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            Describe your idea, we generate the workspace and token metadata, then your project
-            page goes live with a public market feed and holder utility. Most launches surface in
-            under a minute.
+            No developers. No technical knowledge. Just describe what you offer.
           </p>
           <div className="mt-12 grid gap-3 pt-10 sm:grid-cols-3">
             {[
-              { n: "01", title: "Idea", desc: "One paragraph is enough to start." },
-              { n: "02", title: "Generate", desc: "AI drafts the app shape and token story." },
-              { n: "03", title: "Launch", desc: "Your page is live and discoverable." },
+              { n: "01", title: "Describe It", desc: "Tell the AI what you offer in plain English — coaching, services, products, anything." },
+              { n: "02", title: "We Launch It", desc: "Your storefront, pricing, and offers go live automatically. No setup needed." },
+              { n: "03", title: "Your Fans Buy It", desc: "Customers pay by card. Loyalty perks unlock automatically for your best supporters." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -815,6 +813,52 @@ export default function Home() {
                 <div className="font-mono text-3xl font-extrabold text-emerald-400/30">{step.n}</div>
                 <div className="mt-3 text-base font-bold text-white">{step.title}</div>
                 <p className="mt-2 text-sm leading-relaxed text-zinc-400">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FEATURES ── */}
+        <div className="mx-auto mt-20 max-w-6xl px-2">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
+            Platform
+          </div>
+          <h2 className="mb-10 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Everything you need. Nothing you don&apos;t.
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                tag: "AI",
+                title: "AI Project Builder",
+                desc: "Describe your idea. The AI builds your storefront, pricing, and offers instantly.",
+              },
+              {
+                tag: "Store",
+                title: "Creator Marketplace",
+                desc: "Sell services, products, or access. One link. Customers pay instantly.",
+              },
+              {
+                tag: "Loyalty",
+                title: "Automatic Rewards",
+                desc: "Your best customers unlock perks automatically. No extra work.",
+              },
+              {
+                tag: "Payments",
+                title: "Fast Invisible Payments",
+                desc: "Payments are instant and simple. No crypto knowledge required.",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-800/40 bg-gradient-to-br from-zinc-900/60 to-zinc-950 p-7 hover:border-emerald-400/15"
+              >
+                <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-400/[0.03] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="mb-3 inline-block rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                  {f.tag}
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-white">{f.title}</h3>
+                <p className="text-sm leading-relaxed text-zinc-400">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -969,25 +1013,25 @@ export default function Home() {
               Ready?
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-              YOUR IDEA.
+              Your business.
               <br />
-              <span className="text-emerald-400">60 SECONDS.</span>
+              <span className="text-emerald-400">Live today.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Describe it. We build the AI, the token, and the market. Supporters join early. Holders back ideas and grow with them.
+              Tell the AI what you offer. We handle the storefront, payments, and loyalty — you just share the link.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/build"
                 className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
-                Build a Project →
+                Start Building Free →
               </Link>
               <Link
                 href="/discover"
                 className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                Explore Feed
+                Browse Creator Stores
               </Link>
             </div>
           </div>
