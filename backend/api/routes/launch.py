@@ -7,9 +7,11 @@ POST /api/launch/
   3. Inserts the project record
   4. Internally approves it (not a public endpoint — approval is scoped to this flow only)
   5. Seeds project_market_state so the project page shows price/volume immediately
-  6. Sets token_status = "trading_live" and status = "live" directly in DB
-     (on-chain mint/minting is handled separately by the admin token pipeline)
-  7. Returns project_id for the frontend to redirect to /project/{id}
+  5b. Seeds default service profile (dormant)
+  6. Creates a simulated token (SIM_ prefix) and sets token_status = "trading_live"
+     and status = "live" so the project page renders fully live immediately
+  7. Auto-generates 1-3 draft offers from the idea (best-effort)
+  8. Returns project_id for the frontend to redirect to /project/{id}
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ import os
 import re
 import secrets
 import traceback
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -75,6 +78,8 @@ class LaunchResponse(BaseModel):
     project_id: str
     title: str
     token_symbol: str
+    token_mint_address: Optional[str] = None
+    token_status: Optional[str] = None
 
 
 # ── JSON helpers (mirrors generate_app.py approach) ───────────────────────────
@@ -557,14 +562,21 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
             }
         ).execute()
 
-    # ── 6. Set project live ──────────────────────────────────────────────────
-    # On-chain mint/minting (create-token, mint-tokens) requires funded Solana
-    # wallets + Node scripts and is handled by the admin token pipeline later.
-    # For instant launch we advance status in DB directly so the project page
-    # renders as fully live the moment the user lands on it.
+    # ── 6. Create simulated token + set project fully live ─────────────────
+    # Real on-chain minting requires Node.js + a funded Solana keypair.
+    # Until that runtime is provisioned, generate a simulated mint address
+    # and advance the token through the full lifecycle so the project page
+    # renders with trading enabled the moment the user lands on it.
+    sim_mint = "SIM_" + uuid.uuid4().hex[:24].upper()
     supabase.table("projects").update(
-        {"token_status": "pending", "status": "live"}
+        {
+            "token_mint_address": sim_mint,
+            "token_status": "trading_live",
+            "token_created_at": now,
+            "status": "live",
+        }
     ).eq("id", project_id).execute()
+    print(f"[launch] token auto-created: {sim_mint} → trading_live")
 
     # ── 7. Auto-generate draft offers ──────────────────────────────────────
     # Best-effort: if LLM fails, the project still launches without offers.
@@ -600,4 +612,6 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
         project_id=project_id,
         title=title,
         token_symbol=token_symbol,
+        token_mint_address=sim_mint,
+        token_status="trading_live",
     )
