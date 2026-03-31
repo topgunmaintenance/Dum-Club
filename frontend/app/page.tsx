@@ -615,7 +615,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-base text-white">
-      <section className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
+      <section className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
         <div className="relative overflow-hidden border border-zinc-900 bg-base">
           {/* Ambient background */}
@@ -688,7 +688,7 @@ export default function Home() {
           />
         )}
         <div className="mx-auto mt-14 max-w-6xl">
-          <div className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+          <div className="mb-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
             Creators building right now
           </div>
           <CreatorTicker onPick={setCreatorModal} />
@@ -696,40 +696,40 @@ export default function Home() {
 
         <div
           id="how-it-works"
-          className="mx-auto mt-16 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-6 py-10 sm:px-10"
+          className="mx-auto mt-20 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-16 sm:px-12 sm:py-20"
         >
-          <div className="mb-2 text-xs uppercase tracking-[0.35em] text-emerald-400">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             How it works
           </div>
-          <h2 className="text-2xl font-bold uppercase tracking-tight text-white sm:text-3xl">
+          <h2 className="text-3xl font-extrabold uppercase tracking-tight text-white sm:text-4xl">
             60 seconds to live
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-400">
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
             Describe your idea, we generate the workspace and token metadata, then your project
             page goes live with a public market feed and holder utility. Most launches surface in
             under a minute.
           </p>
-          <div className="mt-8 grid gap-6 border-t border-zinc-800 pt-8 sm:grid-cols-3">
+          <div className="mt-12 grid gap-8 border-t border-zinc-800 pt-10 sm:grid-cols-3">
             <div>
-              <div className="font-mono text-2xl font-bold text-zinc-700">01</div>
-              <div className="mt-2 text-sm font-semibold text-white">Idea</div>
-              <p className="mt-2 text-sm text-zinc-500">One paragraph is enough to start.</p>
+              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">01</div>
+              <div className="mt-3 text-base font-bold text-white">Idea</div>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">One paragraph is enough to start.</p>
             </div>
             <div>
-              <div className="font-mono text-2xl font-bold text-zinc-700">02</div>
-              <div className="mt-2 text-sm font-semibold text-white">Generate</div>
-              <p className="mt-2 text-sm text-zinc-500">AI drafts the app shape and token story.</p>
+              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">02</div>
+              <div className="mt-3 text-base font-bold text-white">Generate</div>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">AI drafts the app shape and token story.</p>
             </div>
             <div>
-              <div className="font-mono text-2xl font-bold text-zinc-700">03</div>
-              <div className="mt-2 text-sm font-semibold text-white">Launch</div>
-              <p className="mt-2 text-sm text-zinc-500">Your page is live and discoverable.</p>
+              <div className="font-mono text-3xl font-extrabold text-emerald-400/40">03</div>
+              <div className="mt-3 text-base font-bold text-white">Launch</div>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">Your page is live and discoverable.</p>
             </div>
           </div>
         </div>
 
         {/* Live activity ticker */}
-        <div className="mx-auto mt-16 max-w-7xl border-t border-zinc-900">
+        <div className="mx-auto mt-20 max-w-7xl border-t border-zinc-900">
           <div className="border-b border-zinc-900/80 py-2 text-center">
             <span className="font-mono text-[10px] text-zinc-600">
               {tradesInLast24h} trades in the last 24h across {liveProjectCount}{" "}
@@ -773,9 +773,9 @@ export default function Home() {
         </div>
 
         {/* Featured project spotlight */}
-        <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
+        <div className="border-t border-zinc-900 px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               Featured project
             </div>
             {featured?.project && (
@@ -793,7 +793,7 @@ export default function Home() {
                         <div className="text-2xl font-black text-white">
                           {featured.project.title || featured.project.name || "Untitled"}
                         </div>
-                        <div className="mt-1 max-w-lg text-sm text-zinc-400">
+                        <div className="mt-1 max-w-lg text-sm leading-relaxed text-zinc-300">
                           {featured.project.description || "No description yet."}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -834,12 +834,12 @@ export default function Home() {
         </div>
 
         {/* Platform stats */}
-        <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-12 sm:py-14">
+        <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl">
-            <div className="mb-8 text-center text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-10 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
               Platform pulse
             </div>
-            <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-10 lg:grid-cols-4">
               {[
                 {
                   label: "Projects live",
@@ -853,10 +853,10 @@ export default function Home() {
                 { label: "Built on Solana", value: "✓" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="font-mono text-3xl font-black text-white sm:text-4xl">
+                  <div className="font-mono text-4xl font-black text-white sm:text-5xl">
                     {stat.value}
                   </div>
-                  <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                  <div className="mt-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
                     {stat.label}
                   </div>
                 </div>
@@ -866,29 +866,29 @@ export default function Home() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="border-t border-zinc-900 px-4 py-14 text-center sm:py-16">
+        <div className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
-            <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               Ready?
             </div>
-            <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
               YOUR IDEA.
               <br />
               <span className="text-emerald-400">60 SECONDS.</span>
             </h2>
-            <p className="mx-auto mt-6 max-w-md text-zinc-500">
+            <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
               Describe it. We build the AI, the token, and the market. Supporters join early. Holders back ideas and grow with them.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/build"
-                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300"
+                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
                 Build a Project →
               </Link>
               <Link
                 href="/discover"
-                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Explore Feed
               </Link>
@@ -898,13 +898,13 @@ export default function Home() {
       </section>
 
       {/* Latest — real public projects */}
-      <div className="border-t border-zinc-900 px-4 py-12">
+      <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-6 text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+          <div className="mb-8 text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
             Latest on DUM Club
           </div>
           {latestProjectsNews.length === 0 && !loadingProjects ? (
-            <p className="text-sm text-zinc-600">
+            <p className="text-sm text-zinc-500">
               {allPublicProjects.length === 0
                 ? "No public projects yet — launch one and it will show up here."
                 : "Projects with real descriptions (not placeholders) will appear here."}
@@ -922,15 +922,15 @@ export default function Home() {
                     <Link
                       key={p.id}
                       href={`/project/${p.id}`}
-                      className="block rounded-xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
+                      className="block rounded-xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700 hover:bg-zinc-900/50"
                     >
                       <div className="mb-2 font-mono text-[10px] text-emerald-500">
                         {formatNewsDate(p.created_at)}
                       </div>
-                      <div className="mb-2 text-sm font-bold leading-tight text-white">
+                      <div className="mb-2 text-base font-bold leading-tight text-white">
                         {p.title || p.name || "Untitled project"}
                       </div>
-                      <div className="line-clamp-3 text-xs leading-relaxed text-zinc-500">
+                      <div className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
                         {p.description?.trim() || "Live on DUM Club with token-gated AI and markets."}
                       </div>
                     </Link>
@@ -941,16 +941,16 @@ export default function Home() {
       </div>
 
       {/* Honest stack strip (no fake press logos) */}
-      <div className="border-t border-zinc-900 py-8">
+      <div className="border-t border-zinc-900 py-10">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="mb-4 text-center text-[9px] uppercase tracking-[0.3em] text-zinc-700">
+          <div className="mb-5 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
             Built with
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
             {["Solana", "Supabase", "Next.js"].map((name) => (
               <span
                 key={name}
-                className="text-sm font-bold tracking-wide text-zinc-500"
+                className="text-sm font-bold tracking-wide text-zinc-400"
               >
                 {name}
               </span>
@@ -971,10 +971,10 @@ export default function Home() {
                   BETA
                 </span>
               </div>
-              <p className="mb-4 text-[9px] uppercase tracking-[0.2em] text-zinc-600">
+              <p className="mb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
                 DIGITAL UTILITY MOVEMENT
               </p>
-              <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
+              <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
                 Build AI-powered projects on Solana. Token holders back ideas early. Markets move with demand.
               </p>
               <div className="mt-6 flex items-center gap-3">
