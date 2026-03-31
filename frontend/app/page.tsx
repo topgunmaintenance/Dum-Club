@@ -296,7 +296,7 @@ function CreatorTicker({
 }: {
   onPick: (story: CreatorStory) => void;
 }) {
-  const pills = [...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES];
+  const pills = [...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES, ...CREATOR_STORIES];
   return (
     <div className="overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}>
       <div className="creator-ticker-track gap-4">
@@ -693,9 +693,9 @@ export default function Home() {
       <Starfield count={130} />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-base">
+        <div className="relative rounded-2xl border border-zinc-800/60 bg-base">
           {/* Ambient background — layered gradient + animated orbs */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 overflow-hidden">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
             {/* Floating orb 1 — emerald, top-left */}
@@ -764,7 +764,7 @@ export default function Home() {
               </div>
 
               {/* RIGHT — AI Chat Demo */}
-              <div className="hero-chat-entrance flex justify-center lg:justify-end">
+              <div className="hero-chat-entrance hero-demo-float flex justify-center lg:justify-end">
                 <HeroChatDemo />
               </div>
 
@@ -882,7 +882,7 @@ export default function Home() {
           ) : (
             <div className="overflow-hidden py-3">
               <div className="home-marquee-track gap-8">
-                {recentTrades.concat(recentTrades).map((trade, i) => {
+                {[...recentTrades, ...recentTrades, ...recentTrades, ...recentTrades].map((trade, i) => {
                   const side = trade.side === "sell" ? "sell" : "buy";
                   const price = Number(trade.price ?? 0);
                   const sym = trade.token_symbol || "—";

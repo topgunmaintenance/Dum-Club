@@ -476,7 +476,7 @@ export default function DiscoverPage() {
         ) : (
           <div className="overflow-hidden">
             <div className="home-marquee-track gap-6">
-              {recentTrades.concat(recentTrades).map((trade, i) => {
+              {[...recentTrades, ...recentTrades, ...recentTrades, ...recentTrades].map((trade, i) => {
                 const side = trade.side === "sell" ? "sell" : "buy";
                 const price = Number(trade.price ?? 0);
                 const sym = trade.token_symbol || "—";

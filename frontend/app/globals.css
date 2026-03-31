@@ -232,6 +232,22 @@ body {
   animation: hero-slide-in-right 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
+/* Subtle idle float for AI demo */
+@keyframes hero-demo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.hero-demo-float {
+  animation: hero-demo-float 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-demo-float {
+    animation: none !important;
+  }
+}
+
 /* Premium card hover */
 .card-premium {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
@@ -255,7 +271,7 @@ body {
 /* Creator proof ticker */
 @keyframes creator-ticker {
   from { transform: translateX(0); }
-  to { transform: translateX(-33.333%); }
+  to { transform: translateX(-20%); }
 }
 
 @keyframes creator-section-in {
@@ -266,7 +282,7 @@ body {
 .creator-ticker-track {
   display: flex;
   width: max-content;
-  animation: creator-ticker 22s linear infinite;
+  animation: creator-ticker 14s linear infinite;
   will-change: transform;
 }
 
@@ -301,7 +317,11 @@ body {
 .home-marquee-track {
   display: flex;
   width: max-content;
-  animation: home-marquee 38s linear infinite;
+  animation: home-marquee 20s linear infinite;
+}
+
+.home-marquee-track:hover {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
