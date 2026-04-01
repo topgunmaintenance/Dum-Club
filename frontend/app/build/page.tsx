@@ -140,6 +140,14 @@ export default function BuildPage() {
           <span className="text-emerald-400">We launch it.</span>
         </h1>
 
+        <div className="mt-3 flex items-center gap-2 text-[12px] font-medium tracking-wide text-zinc-600">
+          <span className="text-emerald-400/70">Describe</span>
+          <span className="text-zinc-700">→</span>
+          <span className="text-emerald-400/70">Launch</span>
+          <span className="text-zinc-700">→</span>
+          <span className="text-emerald-400/70">Grow</span>
+        </div>
+
         <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-500">
           One sentence is enough. AI generates the project, token, and market —
           then you land on a live page instantly.

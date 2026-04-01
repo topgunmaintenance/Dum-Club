@@ -321,16 +321,17 @@ function CreatorTicker({
 function HeroWalkthrough() {
   const [msg, setMsg] = useState(0);
 
-  // Messages appear one by one, flowing downward like a conversation
+  // Messages appear one by one, flowing downward like a real AI conversation
   useEffect(() => {
     const delays = [
-      0,      // msg 0: user idea (instant)
-      800,    // msg 1: AI "building..."
-      2200,   // msg 2: build steps complete
-      3600,   // msg 3: project result card
-      5000,   // msg 4: storefront header + offers
-      7200,   // msg 5: sale notification
-      8600,   // msg 6: stats row
+      0,      // msg 0: AI greeting (instant)
+      1200,   // msg 1: user types idea
+      2400,   // msg 2: AI "building..."
+      3800,   // msg 3: build steps complete
+      5200,   // msg 4: project result card
+      6800,   // msg 5: storefront header + offers
+      9000,   // msg 6: sale notification
+      10400,  // msg 7: stats row
     ];
     const timers = delays.map((d, i) =>
       setTimeout(() => setMsg(i), d)
@@ -339,7 +340,7 @@ function HeroWalkthrough() {
   }, []);
 
   // Determine which step tab is active based on message progress
-  const activeTab = msg <= 3 ? 0 : msg <= 4 ? 1 : 2;
+  const activeTab = msg <= 4 ? 0 : msg <= 5 ? 1 : 2;
 
   return (
     <div className="w-full max-w-[360px]">
@@ -387,10 +388,20 @@ function HeroWalkthrough() {
         {/* Conversation — messages flow down, container stays fixed */}
         <div className="overflow-y-auto px-4 py-3 space-y-2.5" style={{ height: 340 }}>
 
-          {/* ── DESCRIBE phase ── */}
+          {/* ── DESCRIBE phase — starts with AI chat ── */}
 
-          {/* User idea */}
+          {/* AI greeting */}
           {msg >= 0 && (
+            <div className="hero-chat-msg flex gap-2">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[8px] font-extrabold text-black">D</div>
+              <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[12px] leading-relaxed text-zinc-300">
+                What do you want to build? Describe your idea and I&apos;ll create everything for you.
+              </div>
+            </div>
+          )}
+
+          {/* User types idea */}
+          {msg >= 1 && (
             <div className="hero-chat-msg flex justify-end">
               <div className="max-w-[85%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[12px] leading-relaxed text-emerald-100">
                 I want to start a mobile car wash business with premium detailing packages
@@ -399,11 +410,11 @@ function HeroWalkthrough() {
           )}
 
           {/* AI building */}
-          {msg >= 1 && (
+          {msg >= 2 && (
             <div className="hero-chat-msg flex gap-2">
               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[8px] font-extrabold text-black">D</div>
               <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 font-mono text-[10px] leading-[1.7] text-zinc-500">
-                {msg >= 2 ? (
+                {msg >= 3 ? (
                   <>
                     <div className="text-zinc-600">✓ Project created</div>
                     <div className="text-zinc-600">✓ Offers generated</div>
@@ -418,7 +429,7 @@ function HeroWalkthrough() {
           )}
 
           {/* Result card */}
-          {msg >= 3 && (
+          {msg >= 4 && (
             <div className="hero-chat-msg rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] p-2.5">
               <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-emerald-400">✓ Project ready</div>
               <div className="mt-0.5 text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
@@ -429,7 +440,7 @@ function HeroWalkthrough() {
           {/* ── LAUNCH phase ── */}
 
           {/* Storefront with offers */}
-          {msg >= 4 && (
+          {msg >= 5 && (
             <div className="hero-chat-msg space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="text-[12px] font-bold text-white">Your storefront</div>
@@ -460,7 +471,7 @@ function HeroWalkthrough() {
           {/* ── GROW phase ── */}
 
           {/* Sale notification */}
-          {msg >= 5 && (
+          {msg >= 6 && (
             <div className="hero-chat-msg flex items-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.07] px-3 py-2">
               <span className="text-sm">🎉</span>
               <div>
@@ -471,7 +482,7 @@ function HeroWalkthrough() {
           )}
 
           {/* Stats */}
-          {msg >= 6 && (
+          {msg >= 7 && (
             <div className="hero-chat-msg grid grid-cols-3 gap-1.5">
               {[
                 { val: "12", label: "Sales", color: "text-white" },
@@ -703,7 +714,15 @@ export default function Home() {
                   </span>
                 </h1>
 
-                <p className="hero-entrance-delay-1 mt-6 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+                <div className="hero-entrance-delay-1 mt-3 flex items-center gap-2 text-[12px] font-medium tracking-wide text-zinc-600 sm:text-[13px]">
+                  <span className="text-emerald-400/70">Describe</span>
+                  <span className="text-zinc-700">→</span>
+                  <span className="text-emerald-400/70">Launch</span>
+                  <span className="text-zinc-700">→</span>
+                  <span className="text-emerald-400/70">Grow</span>
+                </div>
+
+                <p className="hero-entrance-delay-1 mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
                   DUM Club gives creators an AI-powered storefront, a community, and a loyalty system that rewards your best customers — automatically.
                 </p>
 
