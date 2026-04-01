@@ -225,6 +225,88 @@ function shortMint(value?: string | null) {
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
 }
 
+/* ── Floating Section Navigator ── */
+const NAV_SECTIONS = [
+  { id: "section-top", label: "Top" },
+  { id: "section-about", label: "About" },
+  { id: "offers-section", label: "Offers" },
+  { id: "section-orders", label: "Orders" },
+  { id: "ai-workspace", label: "AI" },
+  { id: "section-tokens", label: "Tokens" },
+  { id: "section-memory", label: "Memory" },
+];
+
+function SectionNav({ refreshKey = "" }: { refreshKey?: string }) {
+  const [active, setActive] = useState("");
+  const [visible, setVisible] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Only show dots for sections that actually exist in the DOM
+    const present = NAV_SECTIONS.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+    setVisible(present);
+    if (!present.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActive(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+
+    for (const id of present) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [refreshKey]);
+
+  if (visible.length < 2) return null;
+
+  return (
+    <nav className="fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
+      <div className="flex flex-col items-end gap-3">
+        {visible.map((id) => {
+          const section = NAV_SECTIONS.find((s) => s.id === id);
+          if (!section) return null;
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="group flex items-center gap-2"
+              title={section.label}
+            >
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest opacity-0 transition-all duration-200 group-hover:opacity-100 ${
+                  isActive
+                    ? "bg-emerald-400/10 text-emerald-400"
+                    : "bg-zinc-900 text-zinc-500"
+                }`}
+              >
+                {section.label}
+              </span>
+              <span
+                className={`block rounded-full transition-all duration-300 ${
+                  isActive
+                    ? "h-3 w-3 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]"
+                    : "h-1.5 w-1.5 bg-zinc-700 group-hover:bg-zinc-500"
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 /** Legacy DB values not in TOKEN_LIFECYCLE — treat as draft for UI/pipeline. */
 function normalizeTokenLifecycleStatus(status?: string | null) {
   const s = (status || "").trim();
@@ -2256,6 +2338,7 @@ return (
     }`}
   >
     <Starfield count={50} />
+    <SectionNav refreshKey={projectView} />
     <div className="relative z-[1] mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
@@ -2595,6 +2678,7 @@ return (
       </Link>
 
       <div
+        id="section-top"
         className="mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8"
         style={{
           borderTop: `3px solid ${accent}`,
@@ -2879,7 +2963,7 @@ return (
         </div>
       )}
 
-      <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+      <div id="section-about" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">About</div>
         {loadingProject ? (
           <div className="space-y-2">
@@ -3840,7 +3924,7 @@ return (
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {isOwner && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
+        <div id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
           <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
             Sales
           </div>
@@ -4012,7 +4096,7 @@ return (
 
       {projectView === "analytics" && canShowMarketUi ? (
       /* Token Activity — only in analytics view */
-      <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+      <div id="section-tokens" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
@@ -5020,7 +5104,7 @@ return (
           </div>
         )}
 
-        <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
             <h2 className="text-3xl font-bold text-white">Add Memory</h2>
