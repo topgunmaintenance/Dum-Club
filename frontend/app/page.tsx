@@ -297,22 +297,50 @@ function CreatorTicker({
   onPick: (story: CreatorStory) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
+  const offsetRef = useRef(0);
+  const pausedRef = useRef(false);
+  const rafRef = useRef<number>(0);
 
-  // JS-driven marquee: measures actual track width and animates with CSS
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    // Wait for layout, then measure one set's width
+
+    let halfWidth = 0;
     const measure = () => {
-      const fullWidth = track.scrollWidth;
-      const halfWidth = fullWidth / 2;
-      // Set CSS custom property for the exact pixel shift
-      track.style.setProperty("--ticker-shift", `-${halfWidth}px`);
+      halfWidth = track.scrollWidth / 2;
     };
-    measure();
+
+    // Measure after fonts/layout settle
+    const measureTimer = setTimeout(measure, 100);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+
+    let lastTime = 0;
+    const speed = 60; // pixels per second
+
+    const tick = (time: number) => {
+      if (lastTime === 0) lastTime = time;
+      const delta = time - lastTime;
+      lastTime = time;
+
+      if (!pausedRef.current && halfWidth > 0) {
+        offsetRef.current -= (speed * delta) / 1000;
+        // Reset seamlessly when one full set has scrolled past
+        if (Math.abs(offsetRef.current) >= halfWidth) {
+          offsetRef.current += halfWidth;
+        }
+        track.style.transform = `translateX(${offsetRef.current}px)`;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(measureTimer);
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   const renderPill = (story: CreatorStory, key: string) => (
@@ -332,17 +360,13 @@ function CreatorTicker({
     <div
       className="overflow-hidden"
       style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={() => { pausedRef.current = false; }}
     >
       <div
         ref={trackRef}
         className="flex gap-4"
-        style={{
-          width: "max-content",
-          animation: "creator-ticker-px 15s linear infinite",
-          animationPlayState: paused ? "paused" : "running",
-        }}
+        style={{ width: "max-content", willChange: "transform" }}
       >
         {CREATOR_STORIES.map((s, i) => renderPill(s, `a-${s.id}-${i}`))}
         {CREATOR_STORIES.map((s, i) => renderPill(s, `b-${s.id}-${i}`))}
@@ -825,7 +849,7 @@ export default function Home() {
                   </Link>
 
                   <Link
-                    href="/discover"
+                    href={allPublicProjects.length > 0 ? `/project/${allPublicProjects[0].id}` : "/discover"}
                     className="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-300 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-emerald-400/30 hover:text-white hover:shadow-[0_0_20px_rgba(0,255,163,0.08)] sm:w-auto"
                   >
                     See Live Example
@@ -833,7 +857,11 @@ export default function Home() {
                 </div>
 
                 <p className="hero-entrance-delay-2 mt-5 text-[13px] text-zinc-500">
-                  No website needed · No developer required · No crypto knowledge
+                  {allPublicProjects.length > 0 && (
+                    <span className="text-emerald-400/70">{allPublicProjects.length} projects live</span>
+                  )}
+                  {allPublicProjects.length > 0 && " · "}
+                  No website needed · No developer required
                 </p>
               </div>
 

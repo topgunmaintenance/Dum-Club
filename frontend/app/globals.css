@@ -268,11 +268,7 @@ body {
   }
 }
 
-/* Creator proof ticker — pixel-based for reliability */
-@keyframes creator-ticker-px {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(var(--ticker-shift, -50%)); }
-}
+/* Creator proof ticker — driven by requestAnimationFrame in JS */
 
 @keyframes creator-section-in {
   from { opacity: 0; transform: translateY(10px); }
@@ -284,9 +280,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [style*="creator-ticker-px"] {
-    animation: none !important;
-  }
   .creator-section-fade {
     animation: none !important;
     opacity: 1 !important;
