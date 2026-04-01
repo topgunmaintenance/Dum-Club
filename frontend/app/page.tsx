@@ -948,7 +948,7 @@ export default function Home() {
               {
                 tag: "Payments",
                 title: "Fast Invisible Payments",
-                desc: "Payments are instant and simple. No crypto knowledge required.",
+                desc: "Payments are instant and simple. No technical knowledge required.",
               },
             ].map((f) => (
               <div
@@ -979,7 +979,7 @@ export default function Home() {
           </div>
           {recentTrades.length === 0 ? (
             <div className="py-4 text-center text-xs text-zinc-600">
-              No recent trades yet — open a market and make the first move.
+              No activity yet — launch a project and make the first move.
             </div>
           ) : (
             <div className="overflow-hidden py-3">
@@ -1041,7 +1041,7 @@ export default function Home() {
                             ${getTicker(featured.project)}
                           </span>
                           <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500">
-                            {featured.project.token_utility || "Token-gated AI access"}
+                            {featured.project.token_utility || "AI-powered access"}
                           </span>
                         </div>
                       </div>
@@ -1060,7 +1060,7 @@ export default function Home() {
                         <div className="text-sm text-zinc-500">Market loading…</div>
                       )}
                       <div className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition group-hover:bg-emerald-400">
-                        Open market →
+                        View project →
                       </div>
                     </div>
                   </div>
@@ -1087,7 +1087,7 @@ export default function Home() {
                 },
                 { label: "AI questions answered", value: "∞" },
                 {
-                  label: "Tokens created",
+                  label: "Storefronts active",
                   value: allPublicProjects.length.toString(),
                 },
                 { label: "Built on Solana", value: "✓" },
@@ -1174,7 +1174,7 @@ export default function Home() {
                         {p.title || p.name || "Untitled project"}
                       </div>
                       <div className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
-                        {p.description?.trim() || "Live on DUM Club with token-gated AI and markets."}
+                        {p.description?.trim() || "Live on DUM Club with AI and community features."}
                       </div>
                     </Link>
                   ))}
@@ -1218,7 +1218,7 @@ export default function Home() {
                 DIGITAL UTILITY MOVEMENT
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
-                Build AI-powered projects on Solana. Token holders back ideas early. Markets move with demand.
+                Build AI-powered projects on Solana. Supporters back ideas early. Communities grow with demand.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
@@ -1289,7 +1289,7 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "How it works", href: "/#how-it-works" },
-                  { label: "Token economics", href: "#" },
+                  { label: "How rewards work", href: "#" },
                   { label: "Creator guide", href: "#" },
                   {
                     label: "Contact",

@@ -13,8 +13,8 @@ type LaunchState = "idle" | "generating" | "error";
 const PROGRESS_STEPS = [
   "Reading your idea...",
   "Generating project metadata...",
-  "Creating token identity...",
-  "Setting up live market...",
+  "Setting up your brand...",
+  "Configuring payments...",
   "Almost there...",
 ];
 
@@ -149,7 +149,7 @@ export default function BuildPage() {
         </div>
 
         <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-500">
-          One sentence is enough. AI generates the project, token, and market —
+          One sentence is enough. AI generates your storefront, offers, and payments —
           then you land on a live page instantly.
         </p>
 
@@ -185,7 +185,7 @@ export default function BuildPage() {
             <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
               <div className="mb-2 text-lg font-bold text-white">Ready to launch?</div>
               <p className="mb-4 text-sm text-zinc-400">
-                Sign in with Google to create your project. It takes 5 seconds — no crypto knowledge needed.
+                Sign in with Google to create your project. It takes 5 seconds — no technical knowledge needed.
               </p>
               <button
                 type="button"
@@ -252,7 +252,7 @@ export default function BuildPage() {
         <div className="mt-12 grid grid-cols-1 gap-4 border-t border-zinc-900 pt-8 sm:grid-cols-3">
           {[
             { step: "01", label: "Describe", desc: "One sentence is enough" },
-            { step: "02", label: "Generate", desc: "AI builds the project and token" },
+            { step: "02", label: "Generate", desc: "AI builds your storefront and offers" },
             { step: "03", label: "Live", desc: "Land on a live project page" },
           ].map((s) => (
             <div key={s.step}>
