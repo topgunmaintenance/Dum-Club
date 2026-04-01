@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Starfield } from "../components/Starfield";
 
 type Project = {
@@ -318,35 +318,80 @@ function CreatorTicker({
 }
 
 /* ─── Hero Walkthrough — Describe / Launch / Grow ─── */
+
+// Phase definitions: which messages belong to each phase
+const PHASE_DESCRIBE = { start: 0, end: 4 }; // msgs 0-4
+const PHASE_LAUNCH = { start: 5, end: 5 };    // msg 5
+const PHASE_GROW = { start: 6, end: 7 };      // msgs 6-7
+const PHASE_STARTS = [PHASE_DESCRIBE.start, PHASE_LAUNCH.start, PHASE_GROW.start];
+const PHASE_ENDS = [PHASE_DESCRIBE.end, PHASE_LAUNCH.end, PHASE_GROW.end];
+
 function HeroWalkthrough() {
   const [msg, setMsg] = useState(0);
+  const [userClicked, setUserClicked] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Messages appear one by one, flowing downward like a real AI conversation
-  useEffect(() => {
-    const delays = [
-      0,      // msg 0: AI greeting (instant)
-      1200,   // msg 1: user types idea
-      2400,   // msg 2: AI "building..."
-      3800,   // msg 3: build steps complete
-      5200,   // msg 4: project result card
-      6800,   // msg 5: storefront header + offers
-      9000,   // msg 6: sale notification
-      10400,  // msg 7: stats row
-    ];
-    const timers = delays.map((d, i) =>
-      setTimeout(() => setMsg(i), d)
-    );
-    return () => timers.forEach(clearTimeout);
+  // Start auto-animation for a phase: reveal messages from `from` to `to` with stagger
+  const animatePhase = useCallback((from: number, to: number) => {
+    // Clear any running timers
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+
+    // Show `from` immediately
+    setMsg(from);
+
+    // Stagger remaining messages
+    for (let i = from + 1; i <= to; i++) {
+      const delay = (i - from) * 1200;
+      timersRef.current.push(
+        setTimeout(() => setMsg(i), delay)
+      );
+    }
   }, []);
 
-  // Determine which step tab is active based on message progress
-  const activeTab = msg <= 4 ? 0 : msg <= 5 ? 1 : 2;
+  // Initial auto-play: run through all phases with pauses between
+  useEffect(() => {
+    if (userClicked) return;
 
-  // Clicking a tab fast-forwards to that phase
+    const allTimers: ReturnType<typeof setTimeout>[] = [];
+    // Phase timings: Describe starts at 0, Launch at 6.8s, Grow at 9s
+    const phaseDelays = [0, 6800, 9000];
+    const phases = [
+      [PHASE_DESCRIBE.start, PHASE_DESCRIBE.end],
+      [PHASE_LAUNCH.start, PHASE_LAUNCH.end],
+      [PHASE_GROW.start, PHASE_GROW.end],
+    ];
+
+    phases.forEach(([start, end], phaseIdx) => {
+      for (let i = start; i <= end; i++) {
+        const msgDelay = phaseDelays[phaseIdx] + (i - start) * 1200;
+        allTimers.push(
+          setTimeout(() => setMsg(i), msgDelay)
+        );
+      }
+    });
+
+    timersRef.current = allTimers;
+    return () => allTimers.forEach(clearTimeout);
+  }, [userClicked]);
+
+  // Auto-scroll to bottom when new messages appear
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [msg]);
+
+  // Determine which step tab is active based on current message
+  const activeTab = msg <= PHASE_DESCRIBE.end ? 0 : msg <= PHASE_LAUNCH.end ? 1 : 2;
+
+  // Clicking a tab: cancel auto-play, animate that phase from its start
   const handleTabClick = (tabIdx: number) => {
-    // Phase start messages: Describe=0, Launch=5, Grow=6
-    const jumpTo = [0, 5, 6][tabIdx] ?? 0;
-    setMsg(Math.max(msg, jumpTo));
+    setUserClicked(true);
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    animatePhase(PHASE_STARTS[tabIdx], PHASE_ENDS[tabIdx]);
   };
 
   return (
@@ -394,7 +439,7 @@ function HeroWalkthrough() {
         </div>
 
         {/* Conversation — messages flow down, container stays fixed */}
-        <div className="overflow-y-auto px-4 py-3 space-y-2.5" style={{ height: 340 }}>
+        <div ref={scrollRef} className="overflow-y-auto px-4 py-3 space-y-2.5" style={{ height: 340 }}>
 
           {/* ── DESCRIBE phase — starts with AI chat ── */}
 
