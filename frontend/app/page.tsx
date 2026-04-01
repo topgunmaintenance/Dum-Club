@@ -342,28 +342,36 @@ function HeroWalkthrough() {
   // Determine which step tab is active based on message progress
   const activeTab = msg <= 4 ? 0 : msg <= 5 ? 1 : 2;
 
+  // Clicking a tab fast-forwards to that phase
+  const handleTabClick = (tabIdx: number) => {
+    // Phase start messages: Describe=0, Launch=5, Grow=6
+    const jumpTo = [0, 5, 6][tabIdx] ?? 0;
+    setMsg(Math.max(msg, jumpTo));
+  };
+
   return (
     <div className="w-full max-w-[360px]">
-      {/* Step tabs — highlight based on conversation progress */}
+      {/* Step tabs — clickable, highlight based on conversation progress */}
       <div className="mb-3 flex items-center gap-1 rounded-full border border-zinc-800/50 bg-zinc-950/80 p-1 backdrop-blur-sm">
         {[
           { icon: "💬", label: "Describe" },
           { icon: "🚀", label: "Launch" },
           { icon: "💰", label: "Grow" },
         ].map((step, i) => (
-          <div
+          <button
             key={step.label}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-all duration-500 ${
+            onClick={() => handleTabClick(i)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-all duration-500 cursor-pointer ${
               i === activeTab
                 ? "bg-emerald-400/15 text-emerald-300 shadow-[0_0_12px_rgba(0,255,163,0.1)]"
                 : i < activeTab
-                ? "text-emerald-400/40"
-                : "text-zinc-600"
+                ? "text-emerald-400/40 hover:text-emerald-400/60"
+                : "text-zinc-600 hover:text-zinc-400"
             }`}
           >
             <span className="text-sm">{step.icon}</span>
             {step.label}
-          </div>
+          </button>
         ))}
       </div>
 
