@@ -1413,12 +1413,12 @@ export default function ProjectPage() {
           locked: true,
           lock_message:
             detail?.message ||
-            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access.",
+            "You’ve reached the free question limit. Back this project to unlock unlimited AI access.",
         }));
 
         setResponse(
           detail?.message ||
-            "You’ve reached the 3-question free limit. Support this project by holding its token to unlock unlimited AI access."
+            "You’ve reached the free question limit. Back this project to unlock unlimited AI access."
         );
         return;
       }
@@ -2606,7 +2606,7 @@ return (
                   onClick={() => { setPitchMode(false); setTimeout(scrollToBuyPanel, 100); }}
                   className="rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
                 >
-                  Buy ${displaySymbol}
+                  Back this project
                 </button>
               )}
               <button
@@ -2843,11 +2843,11 @@ return (
                   </div>
                 </div>
                 <div className="mt-4 rounded-xl border border-emerald-400/10 bg-emerald-400/5 p-3">
-                  <p className="text-xs font-medium text-emerald-400">Holder benefit</p>
+                  <p className="text-xs font-medium text-emerald-400">Supporter perks</p>
                   <p className="mt-1 text-sm text-zinc-300">
                     {chatMeta.holder_unlimited
-                      ? "Holding unlocks unlimited AI access and deeper project utility."
-                      : "This token powers access, perks, and participation in the project."}
+                      ? "Supporters get unlimited AI access and exclusive project perks."
+                      : "Back this project to unlock perks, access, and participation."}
                   </p>
                 </div>
               </div>
@@ -3495,7 +3495,7 @@ return (
               type="number"
               min="0"
               max="100"
-              placeholder="Token holder discount % (0-100)"
+              placeholder="Supporter discount % (0-100)"
               value={offerEditing.token_discount_percent || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
               className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
@@ -3696,14 +3696,14 @@ return (
                 />
                 <input
                   type="text"
-                  placeholder="Perk description (e.g. 50% off for holders)"
+                  placeholder="Perk description (e.g. 50% off for supporters)"
                   value={storeEditing.perk_description ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
                   className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                 />
                 <input
                   type="text"
-                  placeholder="Token holder price (e.g. 0.25 SOL or Free)"
+                  placeholder="Supporter price (e.g. 0.25 SOL or Free)"
                   value={storeEditing.token_holder_price ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
                   className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
@@ -3744,7 +3744,7 @@ return (
                       </span>
                       {offer.token_discount_percent > 0 && (
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
-                          {offer.token_discount_percent}% off for holders
+                          {offer.token_discount_percent}% off for supporters
                         </span>
                       )}
                     </div>
@@ -4030,17 +4030,19 @@ return (
               : "SUPPORT TO UNLOCK"}
           </span>
 
-          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-            Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
-          </span>
+          {projectView === "analytics" && (
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
+              Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
+            </span>
+          )}
         </div>
 
         <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Token-Gated Utility</div>
+          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Supporter Perks</div>
           <div className="text-sm text-zinc-300">
             {chatMeta.is_holder && chatMeta.holder_unlimited
-              ? `Wallet recognized. ${project?.token_symbol || tokenMeta.symbol || "Token"} holders have unlimited AI access on this project.`
-              : `This project gives ${chatMeta.free_limit} free AI questions. Hold ${project?.token_symbol || tokenMeta.symbol || "the project token"} to unlock deeper ongoing access.`}
+              ? `Supporter recognized. You have unlimited AI access on this project.`
+              : `This project gives ${chatMeta.free_limit} free AI questions. Back this project to unlock unlimited access.`}
           </div>
         </div>
 
@@ -4048,7 +4050,7 @@ return (
 
         <p className="mt-3 text-zinc-500">
           This project includes {chatMeta.free_limit} free AI question
-          {chatMeta.free_limit === 1 ? "" : "s"}. Support it by holding its token to unlock
+          {chatMeta.free_limit === 1 ? "" : "s"}. Back this project to unlock
           unlimited AI access.
         </p>
 
@@ -4061,7 +4063,7 @@ return (
                 onClick={scrollToBuyPanel}
                 className="mt-3 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
               >
-                Get ${displaySymbol} to unlock →
+                Back this project to unlock →
               </button>
             )}
           </div>
