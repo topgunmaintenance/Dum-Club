@@ -225,6 +225,15 @@ function shortMint(value?: string | null) {
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
 }
 
+/* ── Scroll helper — accounts for sticky navbar offset ── */
+const NAV_OFFSET = 110; // navbar ~92px + 18px breathing room
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
+  window.scrollTo({ top, behavior: "smooth" });
+}
+
 /* ── Floating Section Navigator ── */
 const NAV_SECTIONS = [
   { id: "section-top", label: "Top", mode: "both" as const },
@@ -278,9 +287,7 @@ function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: str
           return (
             <button
               key={id}
-              onClick={() => {
-                document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-              }}
+              onClick={() => scrollToSection(id)}
               className="flex items-center gap-2 transition-all duration-200"
             >
               <span
@@ -779,7 +786,7 @@ export default function ProjectPage() {
     setOfferImageFile(null);
     setOfferImagePreview(null);
     // Scroll to the form
-    document.getElementById("offers-section")?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection("offers-section");
   }
 
   async function uploadOfferImage(file: File): Promise<string | null> {
@@ -2317,12 +2324,8 @@ const heroUtility =
     ].slice(0, 3);
   }, [project?.utility_value]);
 
-  const scrollToBuyPanel = () => {
-    document.getElementById("buy-panel")?.scrollIntoView({ behavior: "smooth" });
-  };
-  const scrollToAiWorkspace = () => {
-    document.getElementById("ai-workspace")?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBuyPanel = () => scrollToSection("buy-panel");
+  const scrollToAiWorkspace = () => scrollToSection("ai-workspace");
 
   const supplyDisplay =
     project?.token_supply != null && project.token_supply > 0
@@ -2793,12 +2796,12 @@ return (
                     : "Explore offers, ask the AI, and support this project."}
                 </p>
                 <div className="flex flex-col gap-2">
-                  <a href="#offers-section" className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
+                  <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
                     View Offers ↓
-                  </a>
-                  <a href="#ai-workspace" className="flex items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                  </button>
+                  <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
                     Ask AI
-                  </a>
+                  </button>
                 </div>
               </div>
             )}

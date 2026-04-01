@@ -890,7 +890,7 @@ export default function Home() {
 
         <div
           id="how-it-works"
-          className="mx-auto mt-20 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-16 sm:px-12 sm:py-20"
+          className="scroll-mt-28 mx-auto mt-20 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-16 sm:px-12 sm:py-20"
         >
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             How it works
