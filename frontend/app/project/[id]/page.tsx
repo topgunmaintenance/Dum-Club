@@ -227,22 +227,23 @@ function shortMint(value?: string | null) {
 
 /* ── Floating Section Navigator ── */
 const NAV_SECTIONS = [
-  { id: "section-top", label: "Top" },
-  { id: "section-about", label: "About" },
-  { id: "offers-section", label: "Offers" },
-  { id: "section-orders", label: "Orders" },
-  { id: "ai-workspace", label: "AI" },
-  { id: "section-tokens", label: "Tokens" },
-  { id: "section-memory", label: "Memory" },
+  { id: "section-top", label: "Top", mode: "both" as const },
+  { id: "section-about", label: "About", mode: "both" as const },
+  { id: "offers-section", label: "Offers", mode: "storefront" as const },
+  { id: "section-orders", label: "Orders", mode: "storefront" as const },
+  { id: "ai-workspace", label: "AI", mode: "storefront" as const },
+  { id: "section-tokens", label: "Token", mode: "analytics" as const },
+  { id: "section-memory", label: "Memory", mode: "analytics" as const },
 ];
 
-function SectionNav({ refreshKey = "" }: { refreshKey?: string }) {
+function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: string; mode?: string }) {
   const [active, setActive] = useState("");
   const [visible, setVisible] = useState<string[]>([]);
 
   useEffect(() => {
-    // Only show dots for sections that actually exist in the DOM
-    const present = NAV_SECTIONS.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+    // Filter by mode + check DOM presence
+    const forMode = NAV_SECTIONS.filter((s) => s.mode === "both" || s.mode === mode);
+    const present = forMode.filter((s) => document.getElementById(s.id)).map((s) => s.id);
     setVisible(present);
     if (!present.length) return;
 
@@ -263,13 +264,13 @@ function SectionNav({ refreshKey = "" }: { refreshKey?: string }) {
     }
 
     return () => observer.disconnect();
-  }, [refreshKey]);
+  }, [refreshKey, mode]);
 
   if (visible.length < 2) return null;
 
   return (
-    <nav className="fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
-      <div className="flex flex-col items-end gap-3">
+    <nav className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
+      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-zinc-800/40 bg-zinc-950/80 px-2.5 py-3 backdrop-blur-sm">
         {visible.map((id) => {
           const section = NAV_SECTIONS.find((s) => s.id === id);
           if (!section) return null;
@@ -280,23 +281,22 @@ function SectionNav({ refreshKey = "" }: { refreshKey?: string }) {
               onClick={() => {
                 document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="group flex items-center gap-2"
-              title={section.label}
+              className="flex items-center gap-2 transition-all duration-200"
             >
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest opacity-0 transition-all duration-200 group-hover:opacity-100 ${
+                className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
                   isActive
-                    ? "bg-emerald-400/10 text-emerald-400"
-                    : "bg-zinc-900 text-zinc-500"
+                    ? "text-emerald-400"
+                    : "text-zinc-600 hover:text-zinc-400"
                 }`}
               >
                 {section.label}
               </span>
               <span
-                className={`block rounded-full transition-all duration-300 ${
+                className={`block shrink-0 rounded-full transition-all duration-300 ${
                   isActive
-                    ? "h-3 w-3 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]"
-                    : "h-1.5 w-1.5 bg-zinc-700 group-hover:bg-zinc-500"
+                    ? "h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]"
+                    : "h-1.5 w-1.5 bg-zinc-700"
                 }`}
               />
             </button>
@@ -2338,7 +2338,7 @@ return (
     }`}
   >
     <Starfield count={50} />
-    <SectionNav refreshKey={projectView} />
+    <SectionNav refreshKey={projectView} mode={projectView} />
     <div className="relative z-[1] mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
@@ -2670,12 +2670,40 @@ return (
         </div>
       )}
 
-      <Link
-        href="/discover"
-        className="mb-8 inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
-      >
-        ← Back to Feed
-      </Link>
+      {/* ── Top Navigation Bar ── */}
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <Link
+          href="/discover"
+          className="inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
+        >
+          ← Back to Feed
+        </Link>
+
+        {isOwner && (
+          <div className="flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-950 p-1">
+            <button
+              onClick={() => setProjectView("storefront")}
+              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
+                projectView === "storefront"
+                  ? "bg-emerald-400 text-black"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Storefront
+            </button>
+            <button
+              onClick={() => setProjectView("analytics")}
+              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
+                projectView === "analytics"
+                  ? "bg-emerald-400 text-black"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Exchange
+            </button>
+          </div>
+        )}
+      </div>
 
       <div
         id="section-top"
@@ -2936,32 +2964,6 @@ return (
           </div>
         </div>
       </div>
-
-      {/* ── View Toggle (owner only) ── */}
-      {isOwner && (
-        <div className="mb-6 flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-950 p-1 w-fit">
-          <button
-            onClick={() => setProjectView("storefront")}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
-              projectView === "storefront"
-                ? "bg-emerald-400 text-black"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Storefront
-          </button>
-          <button
-            onClick={() => setProjectView("analytics")}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
-              projectView === "analytics"
-                ? "bg-emerald-400 text-black"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Analytics
-          </button>
-        </div>
-      )}
 
       <div id="section-about" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">About</div>

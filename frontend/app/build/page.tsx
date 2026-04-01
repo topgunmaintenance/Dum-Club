@@ -26,7 +26,7 @@ const EXAMPLES = [
 
 export default function BuildPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const { wallets, createWallet } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
   const [idea, setIdea] = useState("");
@@ -181,21 +181,37 @@ export default function BuildPage() {
             )}
           </button>
 
-          {!generating && !walletAddress && (
-            user ? (
-              <div className="mt-3 text-center">
-                <p className="text-xs text-amber-400/80">A Solana wallet is required to launch.</p>
-                <button
-                  type="button"
-                  onClick={() => createWallet()}
-                  className="mt-2 rounded-xl bg-purple-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-purple-500"
-                >
-                  Create wallet
-                </button>
-              </div>
-            ) : (
-              <p className="mt-2 text-center text-xs text-amber-400/80">Sign in to launch</p>
-            )
+          {!generating && !user && (
+            <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
+              <div className="mb-2 text-lg font-bold text-white">Ready to launch?</div>
+              <p className="mb-4 text-sm text-zinc-400">
+                Sign in with Google to create your project. It takes 5 seconds — no crypto knowledge needed.
+              </p>
+              <button
+                type="button"
+                onClick={() => login()}
+                className="w-full rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
+              >
+                Sign in with Google →
+              </button>
+            </div>
+          )}
+
+          {!generating && user && !walletAddress && (
+            <div className="mt-6 rounded-2xl border border-violet-500/20 bg-violet-500/[0.04] p-5 text-center">
+              <div className="mb-2 text-lg font-bold text-white">One more step</div>
+              <p className="mb-4 text-sm text-zinc-400">
+                Your project needs a wallet to go live. We&apos;ll create one for you automatically — no setup, no seed phrases, no hassle.
+              </p>
+              <button
+                type="button"
+                onClick={() => createWallet()}
+                className="w-full rounded-xl bg-violet-500 px-6 py-3 text-sm font-bold uppercase tracking-[0.12em] text-white transition hover:bg-violet-400"
+              >
+                Create Wallet →
+              </button>
+              <p className="mt-2 text-[11px] text-zinc-600">Powered by Privy · takes a few seconds</p>
+            </div>
           )}
 
           {generating && (
