@@ -296,26 +296,56 @@ function CreatorTicker({
 }: {
   onPick: (story: CreatorStory) => void;
 }) {
-  // Exactly 2x duplication + translateX(-50%) = the most reliable CSS marquee pattern
-  const renderSet = (offset: number) =>
-    CREATOR_STORIES.map((story, i) => (
-      <button
-        key={`${story.id}-${offset}-${i}`}
-        onClick={() => onPick(story)}
-        className="flex shrink-0 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-[13px] text-zinc-400 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-zinc-200 hover:shadow-[0_0_20px_rgba(0,255,163,0.08)]"
-      >
-        <span className="text-base">{story.emoji}</span>
-        <span className="font-medium">{story.name}</span>
-        <span className="text-zinc-600">·</span>
-        <span className="text-emerald-400/80">{story.tag}</span>
-      </button>
-    ));
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
+
+  // JS-driven marquee: measures actual track width and animates with CSS
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    // Wait for layout, then measure one set's width
+    const measure = () => {
+      const fullWidth = track.scrollWidth;
+      const halfWidth = fullWidth / 2;
+      // Set CSS custom property for the exact pixel shift
+      track.style.setProperty("--ticker-shift", `-${halfWidth}px`);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const renderPill = (story: CreatorStory, key: string) => (
+    <button
+      key={key}
+      onClick={() => onPick(story)}
+      className="flex shrink-0 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-[13px] text-zinc-400 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-zinc-200 hover:shadow-[0_0_20px_rgba(0,255,163,0.08)]"
+    >
+      <span className="text-base">{story.emoji}</span>
+      <span className="font-medium">{story.name}</span>
+      <span className="text-zinc-600">·</span>
+      <span className="text-emerald-400/80">{story.tag}</span>
+    </button>
+  );
 
   return (
-    <div className="overflow-hidden" style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}>
-      <div className="creator-ticker-track gap-4">
-        {renderSet(0)}
-        {renderSet(1)}
+    <div
+      className="overflow-hidden"
+      style={{ maskImage: "linear-gradient(to right, transparent, black 4%, black 96%, transparent)" }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div
+        ref={trackRef}
+        className="flex gap-4"
+        style={{
+          width: "max-content",
+          animation: "creator-ticker-px 15s linear infinite",
+          animationPlayState: paused ? "paused" : "running",
+        }}
+      >
+        {CREATOR_STORIES.map((s, i) => renderPill(s, `a-${s.id}-${i}`))}
+        {CREATOR_STORIES.map((s, i) => renderPill(s, `b-${s.id}-${i}`))}
       </div>
     </div>
   );

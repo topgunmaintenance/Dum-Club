@@ -268,10 +268,10 @@ body {
   }
 }
 
-/* Creator proof ticker */
-@keyframes creator-ticker {
+/* Creator proof ticker — pixel-based for reliability */
+@keyframes creator-ticker-px {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  100% { transform: translateX(var(--ticker-shift, -50%)); }
 }
 
 @keyframes creator-section-in {
@@ -279,23 +279,12 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.creator-ticker-track {
-  display: flex;
-  width: max-content;
-  animation: creator-ticker 15s linear infinite;
-  will-change: transform;
-}
-
-.creator-ticker-track:hover {
-  animation-play-state: paused;
-}
-
 .creator-section-fade {
   animation: creator-section-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .creator-ticker-track {
+  [style*="creator-ticker-px"] {
     animation: none !important;
   }
   .creator-section-fade {
