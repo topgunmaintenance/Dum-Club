@@ -242,7 +242,7 @@ const NAV_SECTIONS = [
   { id: "offers-section", label: "Offers", mode: "storefront" as const },
   { id: "section-orders", label: "Orders", mode: "storefront" as const },
   { id: "ai-workspace", label: "AI", mode: "storefront" as const },
-  { id: "section-tokens", label: "Token", mode: "analytics" as const },
+  { id: "section-tokens", label: "DUM Hub", mode: "analytics" as const },
   { id: "section-memory", label: "Memory", mode: "analytics" as const },
 ];
 
@@ -2732,7 +2732,7 @@ return (
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              Exchange
+              DUM Hub
             </button>
           </div>
         )}
@@ -4195,7 +4195,7 @@ return (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Token Activity
+              Advanced Analytics
             </div>
             <div className="mt-2 flex items-center gap-3">
               <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>

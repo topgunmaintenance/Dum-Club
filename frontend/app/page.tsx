@@ -1548,29 +1548,21 @@ export default function Home() {
                           {featured.project.description || "No description yet."}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 font-mono text-[10px] text-emerald-400">
-                            ${getTicker(featured.project)}
+                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] text-emerald-400">
+                            DUM Points accepted
                           </span>
-                          <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500">
-                            {featured.project.token_utility || "AI-powered access"}
+                          <span className="rounded-full border border-zinc-800 px-3 py-1 text-[10px] text-zinc-500">
+                            {featured.project.token_utility || "Member perks available"}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      {featured.market ? (
-                        <>
-                          <div className="font-mono text-3xl font-black text-white">
-                            ${formatPrice(featured.market.price)}
-                          </div>
-                          <div className="mt-1 font-mono text-sm text-emerald-400">
-                            ${formatNumber(featured.market.market_cap, 0)} mkt cap
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-sm text-zinc-500">Market loading…</div>
-                      )}
-                      <div className="mt-4 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition group-hover:bg-emerald-400">
+                      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1">
+                        <span className="text-[10px] font-bold text-emerald-400">DUM Points</span>
+                        <span className="text-[10px] text-emerald-400/60">for discounts</span>
+                      </div>
+                      <div className="mt-3 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition group-hover:bg-emerald-400">
                         View project →
                       </div>
                     </div>

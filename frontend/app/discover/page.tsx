@@ -681,11 +681,7 @@ export default function DiscoverPage() {
                       <span className="flex-1 truncate text-sm font-medium text-white">
                         {p.title || p.name || "Untitled"}
                       </span>
-                      {p.token_symbol && (
-                        <span className="font-mono text-[10px] uppercase text-zinc-600">
-                          ${getTicker(p)}
-                        </span>
-                      )}
+                      {/* token symbol hidden — DUM Points system */}
                       <span className={`font-mono text-sm font-bold ${rsColor}`}>
                         {p.readiness}
                       </span>

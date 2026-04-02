@@ -357,9 +357,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      {ticker && (
-                        <div className="mt-2 font-mono text-sm text-emerald-400/60">{ticker}</div>
-                      )}
+                      {/* ticker hidden — DUM Points replaces per-project tokens */}
 
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-zinc-600">
