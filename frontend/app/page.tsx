@@ -929,6 +929,118 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          {/* ── Visual Walkthrough: Before → After ── */}
+          <div className="mt-16 rounded-2xl border border-zinc-800/40 bg-zinc-950/60 p-6 sm:p-10">
+            <div className="mb-8 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+              See it in action
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-start">
+
+              {/* Step 1 — User types */}
+              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">1</span>
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">You describe</span>
+                </div>
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                  <div className="text-[10px] text-zinc-600 mb-1.5">Your idea</div>
+                  <div className="text-[13px] leading-relaxed text-zinc-300">
+                    &ldquo;Mobile car wash for busy professionals with premium detailing packages&rdquo;
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <div className="rounded-lg bg-emerald-400 px-3 py-1 text-[10px] font-bold text-black">
+                    Launch →
+                  </div>
+                </div>
+              </div>
+
+              {/* Arrow 1 */}
+              <div className="hidden items-center lg:flex">
+                <div className="text-xl text-emerald-400/40">→</div>
+              </div>
+              <div className="flex justify-center lg:hidden">
+                <div className="text-xl text-emerald-400/40">↓</div>
+              </div>
+
+              {/* Step 2 — AI generates */}
+              <div className="rounded-xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">2</span>
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">AI builds</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
+                    <span className="text-base">🚗</span>
+                    <div>
+                      <div className="text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
+                      <div className="text-[10px] text-zinc-500">AI-generated project name</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
+                    <span className="text-[12px] text-zinc-400">Basic Wash</span>
+                    <span className="text-[12px] font-bold text-emerald-400">$29</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
+                    <span className="text-[12px] text-zinc-400">Full Detail</span>
+                    <span className="text-[12px] font-bold text-emerald-400">$89</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
+                    <span className="text-[12px] text-zinc-400">Monthly Plan</span>
+                    <span className="text-[12px] font-bold text-emerald-400">$49/mo</span>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 font-mono text-[10px]">
+                  <div className="text-zinc-600">✓ Storefront created</div>
+                  <div className="text-zinc-600">✓ Offers generated</div>
+                  <div className="text-zinc-600">✓ Payments configured</div>
+                </div>
+              </div>
+
+              {/* Arrow 2 */}
+              <div className="hidden items-center lg:flex">
+                <div className="text-xl text-emerald-400/40">→</div>
+              </div>
+              <div className="flex justify-center lg:hidden">
+                <div className="text-xl text-emerald-400/40">↓</div>
+              </div>
+
+              {/* Step 3 — Live result */}
+              <div className="rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-violet-500/[0.03] p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">3</span>
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">You&apos;re live</span>
+                </div>
+                <div className="rounded-lg border border-emerald-400/15 bg-zinc-950/80 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
+                    <div className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      </span>
+                      <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-zinc-400 mb-3">Premium mobile detailing at your doorstep</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-extrabold text-emerald-400">3 offers</span>
+                    <span className="rounded-full bg-emerald-400 px-3 py-1 text-[10px] font-bold text-black">View Store</span>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2">
+                  <span className="text-sm">🎉</span>
+                  <div>
+                    <div className="text-[11px] font-semibold text-emerald-300">Ready for customers</div>
+                    <div className="text-[9px] text-emerald-400/50">Shareable link · Stripe payments · AI support</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
 
         {/* ── FEATURES ── */}
