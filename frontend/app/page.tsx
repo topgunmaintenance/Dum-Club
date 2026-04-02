@@ -397,254 +397,6 @@ function CreatorTicker({
   );
 }
 
-/* ─── (HeroWalkthrough removed — replaced by homepage textarea) ─── */
-/* @ts-ignore */ function _walkthrough_placeholder() { return null; } // eslint-disable-line
-function _removed_do_not_call() {
-  const [msg, setMsg] = useState(0);
-  const [userClicked, setUserClicked] = useState(false);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Start auto-animation for a phase: reveal messages from `from` to `to` with stagger
-  const animatePhase = useCallback((from: number, to: number) => {
-    // Clear any running timers
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-
-    // Show `from` immediately
-    setMsg(from);
-
-    // Stagger remaining messages
-    for (let i = from + 1; i <= to; i++) {
-      const delay = (i - from) * 1200;
-      timersRef.current.push(
-        setTimeout(() => setMsg(i), delay)
-      );
-    }
-  }, []);
-
-  // Initial auto-play: run through all phases with pauses between
-  useEffect(() => {
-    if (userClicked) return;
-
-    const allTimers: ReturnType<typeof setTimeout>[] = [];
-    // Phase timings: Describe starts at 0, Launch at 6.8s, Grow at 9s
-    const phaseDelays = [0, 6800, 9000];
-    const phases = [
-      [PHASE_DESCRIBE.start, PHASE_DESCRIBE.end],
-      [PHASE_LAUNCH.start, PHASE_LAUNCH.end],
-      [PHASE_GROW.start, PHASE_GROW.end],
-    ];
-
-    phases.forEach(([start, end], phaseIdx) => {
-      for (let i = start; i <= end; i++) {
-        const msgDelay = phaseDelays[phaseIdx] + (i - start) * 1200;
-        allTimers.push(
-          setTimeout(() => setMsg(i), msgDelay)
-        );
-      }
-    });
-
-    timersRef.current = allTimers;
-    return () => allTimers.forEach(clearTimeout);
-  }, [userClicked]);
-
-  // Auto-scroll to bottom when new messages appear
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-    }
-  }, [msg]);
-
-  // Determine which step tab is active based on current message
-  const activeTab = msg <= PHASE_DESCRIBE.end ? 0 : msg <= PHASE_LAUNCH.end ? 1 : 2;
-
-  // Clicking a tab: cancel auto-play, animate that phase from its start
-  const handleTabClick = (tabIdx: number) => {
-    setUserClicked(true);
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-    animatePhase(PHASE_STARTS[tabIdx], PHASE_ENDS[tabIdx]);
-  };
-
-  return (
-    <div className="w-full max-w-[360px]">
-      {/* Step tabs — clickable, highlight based on conversation progress */}
-      <div className="mb-3 flex items-center gap-1 rounded-full border border-zinc-800/50 bg-zinc-950/80 p-1 backdrop-blur-sm">
-        {[
-          { icon: "💬", label: "Describe" },
-          { icon: "🚀", label: "Launch" },
-          { icon: "💰", label: "Grow" },
-        ].map((step, i) => (
-          <button
-            key={step.label}
-            onClick={() => handleTabClick(i)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-all duration-500 cursor-pointer ${
-              i === activeTab
-                ? "bg-emerald-400/15 text-emerald-300 shadow-[0_0_12px_rgba(0,255,163,0.1)]"
-                : i < activeTab
-                ? "text-emerald-400/40 hover:text-emerald-400/60"
-                : "text-zinc-600 hover:text-zinc-400"
-            }`}
-          >
-            <span className="text-sm">{step.icon}</span>
-            {step.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Fixed container — content flows inside, box never moves */}
-      <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
-        {/* Title bar */}
-        <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
-          <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
-            <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
-          </div>
-          <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-            DUM CLUB AI
-          </div>
-          <div className="relative flex h-2 w-2">
-            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-          </div>
-        </div>
-
-        {/* Conversation — messages flow down, container stays fixed */}
-        <div ref={scrollRef} className="overflow-y-auto px-4 py-3 space-y-2.5" style={{ height: 340 }}>
-
-          {/* ── DESCRIBE phase — starts with AI chat ── */}
-
-          {/* AI greeting */}
-          {msg >= 0 && (
-            <div className="hero-chat-msg flex gap-2">
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[8px] font-extrabold text-black">D</div>
-              <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[12px] leading-relaxed text-zinc-300">
-                What do you want to build? Describe your idea and I&apos;ll create everything for you.
-              </div>
-            </div>
-          )}
-
-          {/* User types idea */}
-          {msg >= 1 && (
-            <div className="hero-chat-msg flex justify-end">
-              <div className="max-w-[85%] rounded-bl-2xl rounded-br-2xl rounded-tl-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[12px] leading-relaxed text-emerald-100">
-                I want to start a mobile car wash business with premium detailing packages
-              </div>
-            </div>
-          )}
-
-          {/* AI building */}
-          {msg >= 2 && (
-            <div className="hero-chat-msg flex gap-2">
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[8px] font-extrabold text-black">D</div>
-              <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 font-mono text-[10px] leading-[1.7] text-zinc-500">
-                {msg >= 3 ? (
-                  <>
-                    <div className="text-zinc-600">✓ Project created</div>
-                    <div className="text-zinc-600">✓ Offers generated</div>
-                    <div className="text-zinc-600">✓ Payments configured</div>
-                    <div className="text-emerald-400">✓ Live!</div>
-                  </>
-                ) : (
-                  <div className="text-emerald-400">Building your project<span className="hero-chat-typing inline-flex gap-0.5 ml-0.5"><span>.</span><span>.</span><span>.</span></span></div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Result card */}
-          {msg >= 4 && (
-            <div className="hero-chat-msg rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] p-2.5">
-              <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-emerald-400">✓ Project ready</div>
-              <div className="mt-0.5 text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
-              <div className="text-[10px] text-zinc-500">3 offers · payments active · live now</div>
-            </div>
-          )}
-
-          {/* ── LAUNCH phase ── */}
-
-          {/* Storefront with offers */}
-          {msg >= 5 && (
-            <div className="hero-chat-msg space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="text-[12px] font-bold text-white">Your storefront</div>
-                <div className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  </span>
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
-                </div>
-              </div>
-              {[
-                { name: "Basic Wash", price: "$29", tag: "Popular" },
-                { name: "Full Detail", price: "$89", tag: null },
-                { name: "Monthly Plan", price: "$49/mo", tag: "Sub" },
-              ].map((o) => (
-                <div key={o.name} className="flex items-center justify-between rounded-md border border-zinc-800/40 bg-zinc-900/30 px-2.5 py-1.5">
-                  <div>
-                    <span className="text-[11px] font-medium text-zinc-300">{o.name}</span>
-                    {o.tag && <span className="ml-1.5 text-[8px] font-bold uppercase text-emerald-400/60">{o.tag}</span>}
-                  </div>
-                  <span className="text-[12px] font-bold text-emerald-400">{o.price}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── GROW phase ── */}
-
-          {/* Sale notification */}
-          {msg >= 6 && (
-            <div className="hero-chat-msg flex items-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.07] px-3 py-2">
-              <span className="text-sm">🎉</span>
-              <div>
-                <div className="text-[11px] font-semibold text-emerald-300">+1 Sale — $89.00</div>
-                <div className="text-[9px] text-emerald-400/50">Payment processed · just now</div>
-              </div>
-            </div>
-          )}
-
-          {/* Stats */}
-          {msg >= 7 && (
-            <div className="hero-chat-msg grid grid-cols-3 gap-1.5">
-              {[
-                { val: "12", label: "Sales", color: "text-white" },
-                { val: "$847", label: "Revenue", color: "text-emerald-400" },
-                { val: "4.9", label: "Rating", color: "text-white" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-md border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
-                  <div className={`text-[14px] font-extrabold ${s.color}`}>{s.val}</div>
-                  <div className="text-[8px] text-zinc-600">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Bottom bar */}
-        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950 px-4 py-2">
-          <span className="font-mono text-[9px] text-zinc-700">
-            {activeTab === 0 ? "Describing..." : activeTab === 1 ? "Launching..." : "Growing"}
-          </span>
-          <div className="flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={`h-1 rounded-full transition-all duration-500 ${
-                  i <= activeTab ? "w-3 bg-emerald-400" : "w-1.5 bg-zinc-800"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Activity Ticker (rAF-driven for cross-browser reliability) ─── */
 function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -804,13 +556,14 @@ export default function Home() {
   // ── Auto-launch: when user + wallet + pendingIdea are all ready ──
   useEffect(() => {
     if (!pendingAutoLaunch) return;
+    if (heroLaunching) return; // prevent double-launch
     if (!user || !walletAddress) return;
     const idea = localStorage.getItem("pendingIdea");
     if (!idea?.trim()) { setPendingAutoLaunch(false); return; }
     // All conditions met — auto-launch
     setPendingAutoLaunch(false);
     doHeroLaunch(idea.trim());
-  }, [pendingAutoLaunch, user, walletAddress]);
+  }, [pendingAutoLaunch, user, walletAddress, heroLaunching]);
 
   // ── Auto-create wallet if user is authenticated but has no wallet ──
   useEffect(() => {
@@ -821,6 +574,11 @@ export default function Home() {
 
   // ── Core launch function ──
   async function doHeroLaunch(idea: string) {
+    if (heroLaunching) return; // guard against double-call
+    if (!walletAddress) {
+      setHeroError("Wallet not ready yet. Please try again in a moment.");
+      return;
+    }
     setHeroLaunching(true);
     setHeroError("");
     try {
