@@ -305,10 +305,16 @@ Return ONLY valid JSON — an array of objects with this structure:
 
 Category-Aware Pricing — adjust offers based on the type of idea:
 
-GAMING ideas (game, arcade, play, puzzle):
+GAMING ideas — SIMPLE (game, arcade, play, puzzle):
 - Offer examples: Game Access Pass, Premium Content Pack, Monthly Subscription, Tournament Entry
 - Price range: $2.99 - $19.99
 - offer_type: "digital_service"
+
+GAMING ideas — COMPLEX (GTA, FPS, open world, battle royale, MMO, multiplayer):
+- Offer examples: Early Access Pass, Founder Pack, Beta Membership, VIP Lifetime Access
+- Price range: $4.99 - $49.99
+- offer_type: "digital_service"
+- These are pre-launch / crowdfunding style offers for bigger game concepts
 
 APP/TOOL ideas (app, tool, platform, calculator, tracker):
 - Offer examples: Starter Plan, Pro Plan, Enterprise Access, API Credits

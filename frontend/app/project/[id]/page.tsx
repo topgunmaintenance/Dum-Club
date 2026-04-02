@@ -3396,7 +3396,28 @@ return (
       {(() => {
         const templateId = parsedAiOutput?.template_id || matchTemplate(`${project?.title || ""} ${project?.description || ""}`);
         const tmpl = templateId ? TEMPLATES[templateId] : null;
-        if (!tmpl) return null;
+        // Detect complex game ideas that have no template
+        const textForDetect = `${project?.title || ""} ${project?.description || ""}`.toLowerCase();
+        const isComplexGame = !tmpl && (
+          textForDetect.includes("gta") || textForDetect.includes("open world") ||
+          textForDetect.includes("first person") || textForDetect.includes("fps") ||
+          textForDetect.includes("battle royale") || textForDetect.includes("mmorpg") ||
+          textForDetect.includes("fortnite") || textForDetect.includes("minecraft") ||
+          textForDetect.includes("call of duty") || textForDetect.includes("3d game") ||
+          textForDetect.includes("multiplayer game") || textForDetect.includes("online game")
+        );
+        if (!tmpl && !isComplexGame) return null;
+        if (isComplexGame) return (
+          <div className="mb-8 rounded-3xl border border-zinc-800/40 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xl">🎮</span>
+              <span className="text-sm font-bold text-white">Gaming Storefront</span>
+            </div>
+            <p className="text-sm leading-relaxed text-zinc-400">
+              Large-scale games can&apos;t be auto-generated as interactive demos, but you can launch the business, sell early access, and build with your audience. Your storefront and offers are ready below.
+            </p>
+          </div>
+        );
         return (
           <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 overflow-hidden">
             <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
