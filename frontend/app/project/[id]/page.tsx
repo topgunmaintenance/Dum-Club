@@ -2684,12 +2684,12 @@ return (
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "Improve my offers", href: `/chat?project=${id}` },
-              { label: "Pricing strategy", href: `/chat?project=${id}` },
-              { label: "Marketing ideas", href: `/chat?project=${id}` },
-              { label: "Write better descriptions", href: `/chat?project=${id}` },
-              { label: "Generate ad copy", href: `/chat?project=${id}` },
-              { label: "Customer acquisition", href: `/chat?project=${id}` },
+              { label: "Improve my offers", href: `/chat?project_id=${id}` },
+              { label: "Pricing strategy", href: `/chat?project_id=${id}` },
+              { label: "Marketing ideas", href: `/chat?project_id=${id}` },
+              { label: "Write better descriptions", href: `/chat?project_id=${id}` },
+              { label: "Generate ad copy", href: `/chat?project_id=${id}` },
+              { label: "Customer acquisition", href: `/chat?project_id=${id}` },
             ].map((p) => (
               <Link
                 key={p.label}
