@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
+import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import {
   LineChart,
@@ -3389,6 +3390,44 @@ return (
           )}
         </div>
       )}
+
+      {/* ── Embedded Interactive Content ── */}
+      {(() => {
+        const templateId = parsedAiOutput?.template_id || matchTemplate(project?.description || project?.title || "");
+        const tmpl = templateId ? TEMPLATES[templateId] : null;
+        if (!tmpl) return null;
+        return (
+          <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{tmpl.emoji}</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Preview</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const iframe = document.getElementById("embed-frame") as HTMLIFrameElement;
+                  if (iframe?.requestFullscreen) iframe.requestFullscreen();
+                }}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200"
+              >
+                Full Screen
+              </button>
+            </div>
+            <iframe
+              id="embed-frame"
+              srcDoc={tmpl.html}
+              sandbox="allow-scripts"
+              className="w-full border-0"
+              style={{ height: 420, background: "#07071A" }}
+              title={`${tmpl.label} — interactive preview`}
+            />
+            <div className="border-t border-zinc-800/60 px-5 py-2 text-center">
+              <span className="text-[9px] text-zinc-700">Powered by DUM Club · Interactive template</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Offers (Public Storefront + Owner Tools) ── */}
       <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
