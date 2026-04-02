@@ -42,6 +42,7 @@ const DISCOVER_TABS = [
   { id: "live", label: "🟢 Live" },
   { id: "offers", label: "🛒 Has Offers" },
   { id: "business", label: "💼 Business" },
+  { id: "gaming", label: "🎮 Gaming" },
   { id: "all", label: "All" },
   { id: "ai", label: "AI" },
   { id: "health", label: "Health" },
@@ -68,9 +69,15 @@ function getAccent(index: number) {
   return accents[index % accents.length];
 }
 
-function getCategory(project: Project) {
-  const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
+function matchesGaming(project: Project): boolean {
+  const s = `${project.title || ""} ${project.name || ""} ${project.description || ""}`.toLowerCase();
+  return s.includes("game") || s.includes("arcade") || s.includes("play") || s.includes("tetris") || s.includes("snake") || s.includes("puzzle") || s.includes("pong") || s.includes("quiz");
+}
 
+function getCategory(project: Project) {
+  const source = `${project.title || project.name || ""} ${project.template_type || ""} ${project.description || ""}`.toLowerCase();
+
+  if (source.includes("game") || source.includes("arcade") || source.includes("tetris") || source.includes("snake") || source.includes("pong") || source.includes("quiz")) return "Gaming";
   if (source.includes("fitness") || source.includes("health")) return "Health";
   if (source.includes("movie") || source.includes("script")) return "Creative";
   if (source.includes("music") || source.includes("beat")) return "Music";
@@ -141,6 +148,8 @@ function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
       return hasOffers(project);
     case "business":
       return hasOffers(project) && !isPlaceholderDesc(project.description);
+    case "gaming":
+      return matchesGaming(project);
     case "health":
       return getCategory(project) === "Health";
     case "food":

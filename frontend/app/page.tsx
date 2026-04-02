@@ -460,7 +460,7 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
 }
 
 /* ─── Live Preview Generator (frontend-only, no API) ─── */
-function generatePreview(idea: string): { name: string; offers: { title: string; price: string }[]; desc: string } | null {
+function generatePreview(idea: string): { name: string; offers: { title: string; price: string }[]; desc: string; emoji: string; tag: string } | null {
   const t = idea.trim().toLowerCase();
   if (t.length < 10) return null;
 
@@ -475,31 +475,60 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     ? keyWords[0].charAt(0).toUpperCase() + keyWords[0].slice(1).toLowerCase() + " Pro"
     : "Your Business";
 
-  // Generate contextual offers based on keywords
+  // Detect category
+  const isGaming = t.includes("game") || t.includes("play") || t.includes("arcade") || t.includes("tetris") || t.includes("snake") || t.includes("puzzle") || t.includes("rpg") || t.includes("shooter") || t.includes("racing") || t.includes("chess") || t.includes("pong") || t.includes("quiz");
+  const isSaas = t.includes("app") || t.includes("tool") || t.includes("platform") || t.includes("dashboard") || t.includes("tracker") || t.includes("manager") || t.includes("calculator") || t.includes("scheduler");
+  const isCreator = t.includes("art") || t.includes("music") || t.includes("beat") || t.includes("photo") || t.includes("video") || t.includes("course") || t.includes("ebook") || t.includes("podcast") || t.includes("design");
   const isService = t.includes("service") || t.includes("coaching") || t.includes("consulting") || t.includes("training") || t.includes("repair") || t.includes("clean") || t.includes("wash");
-  const isDigital = t.includes("course") || t.includes("template") || t.includes("download") || t.includes("digital") || t.includes("ebook") || t.includes("design");
   const isFood = t.includes("food") || t.includes("bake") || t.includes("cake") || t.includes("cook") || t.includes("restaurant") || t.includes("catering");
 
   let offers: { title: string; price: string }[];
-  if (isService) {
+  let emoji: string;
+  let tag: string;
+
+  if (isGaming) {
+    emoji = "🎮";
+    tag = "Game + Storefront";
+    offers = [
+      { title: "Game Access Pass", price: "$4.99" },
+      { title: "Premium Content Pack", price: "$9.99" },
+      { title: "Monthly Subscription", price: "$2.99/mo" },
+    ];
+  } else if (isSaas) {
+    emoji = "💻";
+    tag = "Digital Product";
+    offers = [
+      { title: "Starter Plan", price: "$9/mo" },
+      { title: "Pro Plan", price: "$29/mo" },
+      { title: "Enterprise Access", price: "$99/mo" },
+    ];
+  } else if (isCreator) {
+    emoji = "🎨";
+    tag = "Creator Store";
+    offers = [
+      { title: "Single Download", price: "$5" },
+      { title: "Complete Bundle", price: "$29" },
+      { title: "Monthly Membership", price: "$9/mo" },
+    ];
+  } else if (isService) {
+    emoji = "⚡";
+    tag = "Service Business";
     offers = [
       { title: "Basic Session", price: "$29" },
       { title: "Full Package", price: "$89" },
       { title: "Monthly Plan", price: "$49/mo" },
     ];
-  } else if (isDigital) {
-    offers = [
-      { title: "Starter Pack", price: "$19" },
-      { title: "Complete Bundle", price: "$49" },
-      { title: "Premium Access", price: "$29/mo" },
-    ];
   } else if (isFood) {
+    emoji = "🍽️";
+    tag = "Food Business";
     offers = [
       { title: "Single Order", price: "$15" },
       { title: "Party Package", price: "$75" },
       { title: "Weekly Plan", price: "$45/wk" },
     ];
   } else {
+    emoji = "✨";
+    tag = "Storefront";
     offers = [
       { title: "Basic", price: "$29" },
       { title: "Professional", price: "$79" },
@@ -509,7 +538,7 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
 
   const desc = idea.trim().length > 60 ? idea.trim().slice(0, 57) + "..." : idea.trim();
 
-  return { name, offers, desc };
+  return { name, offers, desc, emoji, tag };
 }
 
 /* ─── Free Launch Limit ─── */
@@ -1249,10 +1278,10 @@ export default function Home() {
                     </div>
                     <div className="px-4 py-3 space-y-2.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm">✨</div>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm">{preview.emoji}</div>
                         <div>
                           <div className="text-[14px] font-bold text-white">{preview.name}</div>
-                          <div className="text-[10px] text-zinc-500">AI-generated storefront</div>
+                          <div className="text-[10px] text-emerald-400/60">{preview.tag}</div>
                         </div>
                       </div>
                       <div className="space-y-1">
