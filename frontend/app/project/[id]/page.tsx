@@ -551,9 +551,10 @@ export default function ProjectPage() {
     const privyId = authUser?.privyId;
     if (privyId) {
       try {
+        const dumToken = await getToken();
         const res = await fetch(`${API_BASE}/api/dum/spend`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(dumToken ? { Authorization: `Bearer ${dumToken}` } : {}) },
           body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "game_unlock", project_id: id }),
         });
         if (res.ok) {
@@ -998,9 +999,10 @@ export default function ProjectPage() {
       try {
         const privyId = authUser?.privyId;
         if (privyId) {
+          const dumToken = await getToken();
           const dumRes = await fetch(`${API_BASE}/api/dum/award`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...(dumToken ? { Authorization: `Bearer ${dumToken}` } : {}) },
             body: JSON.stringify({ privy_id: privyId, amount: 5, reason: "offer_created" }),
           });
           if (dumRes.ok) {
@@ -4066,9 +4068,10 @@ return (
                         const privyId = authUser?.privyId;
                         if (privyId) {
                           try {
+                            const dumToken = await getToken();
                             const res = await fetch(`${API_BASE}/api/dum/spend`, {
                               method: "POST",
-                              headers: { "Content-Type": "application/json" },
+                              headers: { "Content-Type": "application/json", ...(dumToken ? { Authorization: `Bearer ${dumToken}` } : {}) },
                               body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "discount", project_id: id }),
                             });
                             if (!res.ok) {

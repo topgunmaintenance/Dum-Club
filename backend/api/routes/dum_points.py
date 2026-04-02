@@ -7,10 +7,11 @@ Points are stored in users.dum_balance (integer).
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from db.supabase import get_client
+from auth.privy import get_current_user
 
 router = APIRouter()
 
@@ -57,7 +58,17 @@ async def get_balance(privy_id: str):
 # ── Award points ──────────────────────────────────────────────
 
 @router.post("/award", response_model=DumBalanceResponse)
-async def award_points(req: DumAwardRequest):
+async def award_points(
+    req: DumAwardRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    # Enforce: authenticated user can only award to themselves
+    auth_privy = current_user.get("sub")
+    if not auth_privy:
+        raise HTTPException(status_code=401, detail="Invalid auth token")
+    if auth_privy != req.privy_id:
+        raise HTTPException(status_code=403, detail="Cannot modify another user's DUM balance")
+
     if req.amount <= 0 or req.amount > 1000:
         raise HTTPException(status_code=400, detail="Invalid amount (1-1000)")
 
@@ -88,7 +99,17 @@ async def award_points(req: DumAwardRequest):
 # ── Spend points ──────────────────────────────────────────────
 
 @router.post("/spend", response_model=DumBalanceResponse)
-async def spend_points(req: DumSpendRequest):
+async def spend_points(
+    req: DumSpendRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    # Enforce: authenticated user can only spend their own points
+    auth_privy = current_user.get("sub")
+    if not auth_privy:
+        raise HTTPException(status_code=401, detail="Invalid auth token")
+    if auth_privy != req.privy_id:
+        raise HTTPException(status_code=403, detail="Cannot modify another user's DUM balance")
+
     if req.amount <= 0 or req.amount > 1000:
         raise HTTPException(status_code=400, detail="Invalid amount (1-1000)")
 
