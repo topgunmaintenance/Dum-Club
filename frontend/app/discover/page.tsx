@@ -37,11 +37,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TARGET_MARKET_CAP = 100_000;
 
 const DISCOVER_TABS = [
-  { id: "movers", label: "🔥 Movers" },
   { id: "new", label: "⚡ New" },
-  { id: "top", label: "🏆 Top Scored" },
+  { id: "top", label: "🏆 Popular" },
   { id: "live", label: "🟢 Live" },
   { id: "offers", label: "🛒 Has Offers" },
+  { id: "business", label: "💼 Business" },
   { id: "all", label: "All" },
   { id: "ai", label: "AI" },
   { id: "health", label: "Health" },
@@ -115,10 +115,15 @@ function offerCount(project: Project): number {
   return Array.isArray(project.store_items) ? project.store_items.length : 0;
 }
 
+function isPlaceholderDesc(d?: string | null): boolean {
+  if (!d?.trim()) return true;
+  const lower = d.trim().toLowerCase();
+  return lower.startsWith("auto-created") || lower.startsWith("project workspace");
+}
+
 function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
   switch (tab) {
     case "all":
-    case "movers":
     case "new":
     case "top":
       return true;
@@ -126,6 +131,8 @@ function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
       return (project.status || "live") === "live";
     case "offers":
       return hasOffers(project);
+    case "business":
+      return hasOffers(project) && !isPlaceholderDesc(project.description);
     case "health":
       return getCategory(project) === "Health";
     case "food":
@@ -219,7 +226,7 @@ export default function DiscoverPage() {
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
-  const [activeTab, setActiveTab] = useState<DiscoverTabId>("movers");
+  const [activeTab, setActiveTab] = useState<DiscoverTabId>("new");
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [priceFlashDirection, setPriceFlashDirection] = useState<
     Record<string, "up" | "down">
@@ -417,12 +424,7 @@ export default function DiscoverPage() {
   const sortedProjects = useMemo(() => {
     let list = projects.filter((p) => tabIncludesProject(p, activeTab));
 
-    if (activeTab === "movers") {
-      list = [...list].sort(
-        (a, b) =>
-          (marketByProject[b.id]?.volume_24h || 0) - (marketByProject[a.id]?.volume_24h || 0)
-      );
-    } else if (activeTab === "new") {
+    if (activeTab === "new") {
       list = [...list].sort(
         (a, b) =>
           new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
@@ -540,13 +542,10 @@ export default function DiscoverPage() {
           </div>
           <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              24h volume (est.)
+              With offers
             </div>
             <div className="font-mono text-2xl font-bold text-emerald-400/90">
-              $
-              {totalVolume24h >= 1e6
-                ? `${(totalVolume24h / 1e6).toFixed(2)}M`
-                : totalVolume24h.toFixed(0)}
+              {projects.filter((p) => hasOffers(p)).length}
             </div>
           </div>
           <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
@@ -648,7 +647,7 @@ export default function DiscoverPage() {
                         {(() => {
                           const rank = rankMap[project.id];
                           if (!rank) return null;
-                          const label = rank <= 3 ? `#${rank} Top Scored` : rank <= 10 ? "Top 10" : rank <= 50 ? "Top 50" : null;
+                          const label = rank <= 3 ? `#${rank} Trending` : rank <= 10 ? "Top 10" : rank <= 50 ? "Top 50" : null;
                           if (!label) return null;
                           const cls = rank <= 3
                             ? "border-emerald-400/30 text-emerald-400"
@@ -663,83 +662,24 @@ export default function DiscoverPage() {
                         })()}
                       </div>
 
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <span className="relative flex h-2 w-2">
-                            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                          </span>
-                          <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-500">
-                            LIVE
-                          </span>
-                        </div>
-                        <div
-                          className="mt-1 text-lg font-bold uppercase"
-                          style={{ color: accent }}
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                        </span>
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-500">
+                          LIVE
+                        </span>
+                        <span
+                          className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em]"
+                          style={{ borderColor: accent, color: accent }}
                         >
-                          ${ticker}
-                        </div>
-                        <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-                          {project.status || "live"}
-                        </div>
-                        <div className="mt-1">
-                          <RelativeCreatedAt dateStr={project.created_at} />
-                        </div>
-                        <div
-                          className={`mt-2 inline-block font-mono text-2xl font-black tabular-nums transition-all duration-200 ${
-                            flash && priceFlashDirection[project.id] === "down"
-                              ? "price-flash scale-105 text-red-300"
-                              : pulsing || flash
-                              ? "price-flash scale-105 text-emerald-300"
-                              : "text-white"
-                          }`}
-                        >
-                          {price != null && price > 0 ? `$${price.toFixed(6)}` : "—"}
-                          {(flash || pulsing) && (
-                            <span
-                              className={`ml-1 text-sm ${
-                                flash && priceFlashDirection[project.id] === "down"
-                                  ? "text-red-400"
-                                  : pulsing && !flash
-                                  ? "text-emerald-500/80"
-                                  : "text-emerald-400"
-                              }`}
-                            >
-                              {flash
-                                ? priceFlashDirection[project.id] === "down"
-                                  ? "↓"
-                                  : "↑"
-                                : "↑"}
-                            </span>
-                          )}
-                        </div>
+                          {category}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="mt-3">
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-600">
-                          Market cap
-                        </span>
-                        <span className="font-mono text-[10px] text-zinc-400">
-                          {snap?.market_cap != null ? `$${formatCompact(snap.market_cap)}` : "—"}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
-                        <div
-                          className="h-full rounded-full bg-emerald-400 transition-all duration-1000"
-                          style={{
-                            width: `${barPct}%`,
-                            minWidth: mcap > 0 ? "4px" : "0",
-                          }}
-                        />
-                      </div>
-                      <div className="mt-1 font-mono text-[9px] text-zinc-700">
-                        Target: $100K market cap
-                      </div>
-                    </div>
-
-                    <h3 className="mt-4 text-xl font-bold leading-snug text-white md:text-2xl">
+                    <h3 className="text-xl font-bold leading-snug text-white md:text-2xl">
                       {project.title || project.name || "Untitled Project"}
                     </h3>
 
@@ -761,7 +701,7 @@ export default function DiscoverPage() {
                       )}
                       {project.token_utility && (
                         <span className="rounded-full border border-purple-400/20 bg-purple-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-purple-400">
-                          Utility
+                          Perks
                         </span>
                       )}
                       {project.promo_copy && (
@@ -780,7 +720,7 @@ export default function DiscoverPage() {
                         <div className="mt-4">
                           <div className="mb-1 flex items-center justify-between">
                             <span className="text-[9px] uppercase tracking-widest text-zinc-600">
-                              Readiness
+                              Completeness
                             </span>
                             <span className={`font-mono text-[10px] font-bold ${rsText}`}>
                               {rs}/100
@@ -798,16 +738,7 @@ export default function DiscoverPage() {
 
                     <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-4">
                       <span className="text-xs font-medium text-zinc-400 transition group-hover:text-emerald-400">View Project →</span>
-
-                      <span
-                        className="rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]"
-                        style={{
-                          borderColor: accent,
-                          color: accent,
-                        }}
-                      >
-                        {category}
-                      </span>
+                      <RelativeCreatedAt dateStr={project.created_at} />
                     </div>
                   </div>
                 </Link>
