@@ -558,17 +558,14 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      <section id="section-top" className="mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
-          ◆ Discovery Feed
-        </div>
-
-        <div className="mb-6 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
-              Trending Projects
-            </h1>
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <div id="section-top" className="mb-6">
+          <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
+            ◆ Discovery Feed
           </div>
+          <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
+            Trending Projects
+          </h1>
         </div>
 
         <div id="section-filters" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1">
