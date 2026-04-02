@@ -2,21 +2,41 @@
 
 ## What We Are
 
-DUM Club is an AI-powered Solana launchpad for ideas.
+DUM Club is an AI-powered business creation platform on Solana.
 
-It feels like ChatGPT + Pump.fun + Shopify — but simpler and more guided.
+A user describes an idea. AI builds the storefront, generates offers, configures payments, and launches a live project page — all in under 60 seconds.
 
-A user describes an idea. AI helps generate the project. The project goes live on Solana with token activity so **demand can be discovered** before any deeper monetization is built.
+The surface experience is business-first: storefronts, offers, supporters, rewards.
+The underlying infrastructure is crypto-powered: tokens, trading, on-chain activity.
 
 ---
 
 ## Core Loop
 
 1. **Describe** — user types an idea (one sentence is enough)
-2. **Generate** — AI drafts the project shape, name, token story, and page
-3. **Launch** — project page goes live and is discoverable
-4. **Discover** — community finds it, trades the token, signals demand
-5. **Evolve** — successful projects can later unlock deeper offers, commerce, or services
+2. **Launch** — AI generates storefront, offers, payments, and token
+3. **Grow** — customers buy, supporters back the project, business scales
+
+---
+
+## Hybrid Model
+
+DUM Club uses a hybrid business/crypto model:
+
+### Storefront (Default — what everyone sees)
+- Business names, descriptions, offers, pricing
+- "Supporters" not "token holders"
+- "Perks" not "token utility"
+- "Back this project" not "Buy $TOKEN"
+- Payments via Stripe, no crypto knowledge needed
+
+### Exchange (Advanced — opt-in for power users)
+- Token price, market cap, volume, trading
+- Buy/sell panel, charts, candles
+- Full crypto-native experience
+- Accessed via "Exchange" tab on project page
+
+**Rule:** A normal user should be able to use Dum Club for weeks without ever knowing crypto is involved.
 
 ---
 
@@ -25,76 +45,91 @@ A user describes an idea. AI helps generate the project. The project goes live o
 - We are NOT a direct service redemption marketplace
 - We are NOT leading with "buy a token, receive a guaranteed service"
 - We are NOT making investment promises or securities-like claims
-- We are NOT a heavy legal marketplace
+- We are NOT a crypto dashboard disguised as a business tool
 
 ---
 
 ## Positioning
 
-**Primary:** AI-powered project creation — fastest path from idea to on-chain launch
+**Primary:** AI-powered business creation — fastest path from idea to live storefront with payments
 
-**Secondary:** Tokenized demand discovery — community and trading activity reveal what people want before you build more
+**Secondary:** Community-backed projects — supporters back ideas they believe in and unlock perks
 
-**Tertiary:** Future monetization layers — after traction, projects can evolve into commerce, subscriptions, or service offers
+**Tertiary:** Token-powered infrastructure — on-chain tokens provide the economic layer underneath
 
 ---
 
 ## Target User
 
 Someone with an idea who wants to:
-- Get it live fast without technical setup
-- See if people care (via token activity and community signals)
-- Build more only if there's real demand
+- Turn it into a business instantly without technical setup
+- Start accepting payments and customers the same day
+- Build community support around their idea
+- Scale with built-in rewards and loyalty mechanics
 
 ---
 
 ## Key Differentiators
 
-| vs ChatGPT | We make ideas launchable, not just answerable |
-| vs Pump.fun | We add structured project pages, AI, and guided creation |
-| vs Shopify | We don't require a finished product — demand discovery comes first |
+| vs Shopify | No finished product needed — describe and launch |
+| vs Base44 / Lovable | Output is a revenue-generating business, not just an app |
+| vs Venice.ai | Users make money, not just consume AI |
+| vs Pump.fun | Structured business pages with real offers and payments |
 
 ---
 
 ## Token Role
 
-Tokens are **demand signals**, not service vouchers.
+Tokens operate underneath the business layer:
 
-- Token price and volume = community interest in the idea
-- Holders = early believers and community members
-- Future utility (service access, governance, perks) can be layered in *after* traction is proven
+- **For supporters:** Holding tokens unlocks perks, discounts, and priority access
+- **For creators:** Token activity signals community interest and demand
+- **For the platform:** Transaction fees fund token burns, creating a value flywheel
+
+Tokens are NEVER the first thing a user sees. They are discovered through the Exchange tab or through deeper engagement.
 
 ---
 
 ## Language Guidelines
 
-**Use:**
+**Use (Storefront/default):**
 - "launch your idea"
-- "go live on-chain"
-- "project launches on Solana with token activity"
-- "discover demand"
-- "community activity"
-- "token holders"
-- "early supporters"
-- "evolve your project"
+- "build your storefront"
+- "supporters"
+- "back this project"
+- "perks" / "rewards"
+- "community"
+- "start selling"
 
-**Avoid:**
+**Use (Exchange/advanced):**
+- "token" / "trade" / "market"
+- "buy" / "sell"
+- "price" / "volume" / "market cap"
+
+**Avoid everywhere:**
 - "guaranteed service"
-- "redeem for a service"
-- "buy a service"
-- "investment"
-- "returns"
+- "investment" / "returns"
 - "securities"
 - "it's like stocks"
 - "tokenized human economy"
 
 ---
 
-## Monetization (Future)
+## Monetization
 
-After a project proves demand through token activity:
-- Creators can unlock service booking, subscriptions, or product offers
-- Platform takes a small fee on transactions
-- Premium AI features for active projects
+- Platform fee (7%) on every offer purchase via Stripe
+- Future: portion of fees used to buy and burn DUM tokens
+- Future: Pro tier unlocked by holding DUM tokens (no subscription needed)
+- Future: featured placement for projects with high activity
 
-This comes **after** launch and demand discovery — not before.
+---
+
+## Current Transition Priority
+
+We are moving toward an input-first experience:
+- Homepage textarea as the primary entry point
+- Zero onboarding — users become businesses by launching
+- Template starters to reduce blank-page anxiety
+- /build remains as a secondary dedicated launch page
+
+See `claude.md` for implementation rules.

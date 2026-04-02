@@ -13,10 +13,51 @@ Do not bypass these for speed.
 
 ## Product Context
 
-DUM Club is an AI-powered Solana launchpad for ideas.
+DUM Club is an AI-powered business creation platform on Solana.
 Read `product.md` for the full product direction before making any changes.
 
-The platform's core loop: **Describe → Generate → Launch → Discover → Evolve**
+The platform's core loop: **Describe → Launch → Grow**
+
+---
+
+## Current Transition Priority — Input-First Upgrade
+
+Dum Club is already largely built and functioning (~85% complete). The current goal is NOT to rebuild the system.
+
+We are transitioning the product toward a more input-first, minimal, faster UX model while preserving the existing architecture.
+
+### What Already Works (Do NOT Break)
+- AI launch flow: idea → AI generates → storefront with offers → live
+- Auth: Google sign-in via Privy + auto embedded wallet
+- Payments: Stripe checkout + order emails (buyer + seller)
+- Projects, dashboard, discover, project pages
+- Storefront/Exchange split (business-first default, crypto in Exchange)
+- Supporter/perks language (crypto hidden from storefront views)
+- Token auto-creation on project launch (simulated mint)
+- Shooting stars background, side navigation, premium UI
+
+### Hybrid Model (Active)
+- **Storefront** (default): supporters, rewards, perks, business language
+- **Exchange** (advanced): token, price, market, trade language
+- Users never see crypto unless they intentionally click Exchange
+
+### Critical Rules for This Transition
+- Do NOT rebuild the product from scratch
+- Do NOT replace working architecture unless explicitly asked
+- Do NOT modify backend endpoints unless absolutely required
+- Do NOT introduce new database tables or draft systems
+- Reuse the current /build launch logic whenever possible
+- Prefer small, isolated frontend changes over broad refactors
+- Preserve working flows: auth, wallet creation, project launch, dashboard, discover, Stripe checkout
+- The homepage may become the new fast entry point, but /build should remain usable as a fallback path
+- Users become businesses by launching — there is no separate business registration flow
+- Optimize for speed, clarity, and minimal break risk
+
+### Definition of Success
+The upgraded experience should reduce friction:
+type idea → authenticate → auto-wallet → launch → land on live project
+
+This is a transition and polish phase, not a rewrite phase.
 
 ---
 
@@ -63,10 +104,11 @@ The platform's core loop: **Describe → Generate → Launch → Discover → Ev
 
 ## UI/UX Rules
 
-### Language
+### Language (Hybrid Model)
 - Follow the language guidelines in `product.md`
-- Lead with "launch your idea" not "buy a service"
-- Tokens are demand signals first, utility second
+- **Storefront/default:** supporters, perks, rewards, back this project, storefront, offers
+- **Exchange/advanced:** token, trade, price, market cap, buy/sell
+- Never mix crypto language into the storefront experience
 - Never promise guaranteed fulfillment in UI copy
 
 ### Pages That Should Exist
