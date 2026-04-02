@@ -509,6 +509,54 @@ export default function ProjectPage() {
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
   const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
+  const [gameLocked, setGameLocked] = useState(false);
+  const [gamePlaysLeft, setGamePlaysLeft] = useState(3);
+  const [gameUnlocked, setGameUnlocked] = useState(false);
+  const gameInteracted = useRef(false);
+
+  // Initialize play count from localStorage on mount
+  useEffect(() => {
+    if (!id) return;
+    const key = `dum_plays_${id}`;
+    const plays = Number(localStorage.getItem(key) || "0");
+    const unlocked = localStorage.getItem(`dum_game_unlocked_${id}`) === "true";
+    if (unlocked) {
+      setGameUnlocked(true);
+      setGameLocked(false);
+      setGamePlaysLeft(Infinity);
+    } else if (plays >= 3) {
+      setGameLocked(true);
+      setGamePlaysLeft(0);
+    } else {
+      setGamePlaysLeft(3 - plays);
+    }
+  }, [id]);
+
+  function handleGameInteraction() {
+    if (gameUnlocked || gameInteracted.current || !id) return;
+    gameInteracted.current = true;
+    const key = `dum_plays_${id}`;
+    const plays = Number(localStorage.getItem(key) || "0") + 1;
+    localStorage.setItem(key, String(plays));
+    if (plays >= 3) {
+      setGameLocked(true);
+      setGamePlaysLeft(0);
+    } else {
+      setGamePlaysLeft(3 - plays);
+    }
+  }
+
+  function unlockGameWithDum() {
+    if (!id) return;
+    const pts = Number(localStorage.getItem("dum_points") || "0");
+    if (pts < 10) return;
+    localStorage.setItem("dum_points", String(pts - 10));
+    localStorage.setItem(`dum_game_unlocked_${id}`, "true");
+    window.dispatchEvent(new Event("dum-points-update"));
+    setGameUnlocked(true);
+    setGameLocked(false);
+    setGamePlaysLeft(Infinity);
+  }
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -3438,13 +3486,22 @@ return (
         );
         return (
           <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 overflow-hidden">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{tmpl.emoji}</span>
                 <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Demo + Storefront</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="hidden text-[9px] text-zinc-600 sm:inline">Arrow keys or touch to play</span>
+                {!gameUnlocked && gamePlaysLeft > 0 && gamePlaysLeft < 4 && (
+                  <span className="text-[10px] font-bold text-amber-400/70">
+                    {gamePlaysLeft} free play{gamePlaysLeft === 1 ? "" : "s"} left
+                  </span>
+                )}
+                {gameUnlocked && (
+                  <span className="text-[10px] font-bold text-emerald-400">◆ Unlimited</span>
+                )}
+                <span className="hidden text-[9px] text-zinc-600 sm:inline">Arrow keys or touch</span>
                 <button
                   type="button"
                   onClick={() => setEmbedExpanded((v) => !v)}
@@ -3454,13 +3511,60 @@ return (
                 </button>
               </div>
             </div>
-            <iframe
-              srcDoc={tmpl.html}
-              sandbox="allow-scripts"
-              className="w-full border-0 transition-all duration-300"
-              style={{ height: embedExpanded ? "80vh" : 420, background: "#07071A" }}
-              title={`${tmpl.label} — interactive demo`}
-            />
+
+            {/* Game area with lock overlay */}
+            <div
+              className="relative"
+              onClick={handleGameInteraction}
+              onTouchStart={handleGameInteraction}
+            >
+              <iframe
+                srcDoc={tmpl.html}
+                sandbox="allow-scripts"
+                className={`w-full border-0 transition-all duration-300 ${gameLocked ? "pointer-events-none blur-sm" : ""}`}
+                style={{ height: embedExpanded ? "80vh" : 420, background: "#07071A" }}
+                title={`${tmpl.label} — interactive demo`}
+              />
+
+              {/* Lock overlay */}
+              {gameLocked && !gameUnlocked && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm">
+                  <div className="mx-4 w-full max-w-sm rounded-2xl border border-emerald-400/20 bg-zinc-950 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+                    <div className="mb-3 text-3xl">🔒</div>
+                    <h3 className="text-lg font-extrabold text-white">Unlock to keep playing</h3>
+                    <p className="mt-2 text-sm text-zinc-400">
+                      You&apos;ve used your 3 free plays. Use DUM Points to unlock unlimited access.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const pts = Number(localStorage.getItem("dum_points") || "0");
+                        if (pts >= 10) {
+                          unlockGameWithDum();
+                        }
+                      }}
+                      className="mt-5 w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                    >
+                      ◆ Use 10 DUM Points
+                    </button>
+                    {Number(localStorage.getItem("dum_points") || "0") < 10 && (
+                      <p className="mt-2 text-[11px] text-amber-400/70">
+                        Not enough points. Earn more by launching projects and creating offers.
+                      </p>
+                    )}
+                    <Link
+                      href="/upgrade"
+                      className="mt-3 block w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Upgrade Membership
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
             <div className="border-t border-zinc-800/60 px-5 py-2 text-center">
               <span className="text-[9px] text-zinc-700">Powered by DUM Club</span>
             </div>
