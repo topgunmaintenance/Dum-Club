@@ -505,6 +505,7 @@ export default function ProjectPage() {
   const [feedbackComment, setFeedbackComment] = useState("");
 
   const [loadingProject, setLoadingProject] = useState(true);
+  const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
   const [projectView, setProjectView] = useState<"storefront" | "analytics">("storefront");
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
@@ -2118,6 +2119,21 @@ export default function ProjectPage() {
     loadRedemptions();
   }, [id]);
 
+  // Load business profile for the project owner (for verified badge)
+  useEffect(() => {
+    const ownerPrivyId = project?.privy_id || project?.owner_id;
+    if (!ownerPrivyId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/business/by-owner/${encodeURIComponent(ownerPrivyId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setOwnerBizProfile(data.profile || null);
+        }
+      } catch {}
+    })();
+  }, [project?.privy_id, project?.owner_id]);
+
   useEffect(() => {
     if (!project) {
       setIsOwner(false);
@@ -2862,9 +2878,17 @@ return (
               {loadingProject ? (
                 <div className="h-10 w-72 animate-pulse rounded-lg bg-zinc-800 sm:h-14" />
               ) : (
-                <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl">
-                  {projectName}
-                </h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl">
+                    {projectName}
+                  </h1>
+                  {ownerBizProfile?.verification_status === "verified" && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400" title={`Verified business: ${ownerBizProfile.business_name}`}>
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
+                      Verified
+                    </span>
+                  )}
+                </div>
               )}
 
               {loadingProject ? (
