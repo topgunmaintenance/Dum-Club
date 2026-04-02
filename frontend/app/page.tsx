@@ -459,6 +459,220 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
   );
 }
 
+/* ─── Animated Product Demo ─── */
+const DEMO_IDEA = "Mobile car wash for busy professionals with premium detailing packages";
+
+function ProductDemo() {
+  const [phase, setPhase] = useState(0); // 0=typing, 1=building, 2=live
+  const [typedLen, setTypedLen] = useState(0);
+  const [buildStep, setBuildStep] = useState(0);
+  const [liveStep, setLiveStep] = useState(0);
+
+  // Phase durations and auto-loop
+  useEffect(() => {
+    const schedule = [
+      { at: 0, fn: () => { setPhase(0); setTypedLen(0); setBuildStep(0); setLiveStep(0); } },
+      // Typing finishes around 3s, then pause
+      { at: 3800, fn: () => setPhase(1) },
+      // Build steps reveal
+      { at: 4200, fn: () => setBuildStep(1) },
+      { at: 4800, fn: () => setBuildStep(2) },
+      { at: 5400, fn: () => setBuildStep(3) },
+      { at: 6000, fn: () => setBuildStep(4) },
+      { at: 6600, fn: () => setBuildStep(5) },
+      { at: 7200, fn: () => setBuildStep(6) },
+      // Transition to live
+      { at: 7800, fn: () => setPhase(2) },
+      { at: 8200, fn: () => setLiveStep(1) },
+      { at: 8800, fn: () => setLiveStep(2) },
+      { at: 9400, fn: () => setLiveStep(3) },
+      { at: 10000, fn: () => setLiveStep(4) },
+      // Restart loop
+      { at: 13000, fn: () => { setPhase(0); setTypedLen(0); setBuildStep(0); setLiveStep(0); } },
+    ];
+    const timers = schedule.map((s) => setTimeout(s.fn, s.at));
+    const loop = setInterval(() => {
+      schedule.forEach((s) => setTimeout(s.fn, s.at));
+    }, 13000);
+    return () => { timers.forEach(clearTimeout); clearInterval(loop); };
+  }, []);
+
+  // Typing animation
+  useEffect(() => {
+    if (phase !== 0) return;
+    const t = setInterval(() => {
+      setTypedLen((l) => {
+        if (l >= DEMO_IDEA.length) { clearInterval(t); return l; }
+        return l + 1;
+      });
+    }, 35);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  // Progress indicator
+  const progressPct = phase === 0 ? 0 : phase === 1 ? 50 : 100;
+
+  return (
+    <div className="mt-16 rounded-2xl border border-zinc-800/40 bg-zinc-950/60 p-5 sm:p-8 overflow-hidden">
+      <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+        See it in action
+      </div>
+
+      {/* Progress bar */}
+      <div className="mx-auto mb-8 flex max-w-md items-center gap-3">
+        {["Describe", "Build", "Live"].map((label, i) => (
+          <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
+            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-500 ${
+              phase >= i ? "bg-emerald-400 text-black" : "border border-zinc-700 text-zinc-600"
+            }`}>
+              {phase > i ? "✓" : i + 1}
+            </div>
+            <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${
+              phase >= i ? "text-emerald-400" : "text-zinc-700"
+            }`}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Demo container — fixed height, content transitions */}
+      <div className="mx-auto max-w-2xl" style={{ minHeight: 280 }}>
+
+        {/* ── PHASE 0: Typing ── */}
+        {phase === 0 && (
+          <div className="hero-chat-msg">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 sm:p-5">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600">Your idea</div>
+              <div className="min-h-[48px] text-[15px] leading-relaxed text-zinc-300 sm:text-base">
+                {DEMO_IDEA.slice(0, typedLen)}
+                <span className="inline-block w-[2px] h-[18px] bg-emerald-400 ml-0.5 animate-pulse align-middle" />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <div className={`rounded-xl px-5 py-2.5 text-[12px] font-bold transition-all duration-300 ${
+                typedLen >= DEMO_IDEA.length
+                  ? "bg-emerald-400 text-black scale-[1.02] shadow-[0_0_20px_rgba(0,255,163,0.3)]"
+                  : "bg-zinc-800 text-zinc-600"
+              }`}>
+                Launch →
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── PHASE 1: AI Building ── */}
+        {phase === 1 && (
+          <div className="hero-chat-msg space-y-3">
+            {/* Project name */}
+            {buildStep >= 1 && (
+              <div className="hero-chat-msg flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4">
+                <span className="text-2xl">🚗</span>
+                <div>
+                  <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
+                  <div className="text-[10px] text-zinc-500">AI-generated project</div>
+                </div>
+              </div>
+            )}
+
+            {/* Offers */}
+            {buildStep >= 2 && (
+              <div className="hero-chat-msg space-y-1.5">
+                {[
+                  { name: "Basic Wash", price: "$29" },
+                  ...(buildStep >= 3 ? [{ name: "Full Detail Package", price: "$89" }] : []),
+                  ...(buildStep >= 4 ? [{ name: "Monthly Membership", price: "$49/mo" }] : []),
+                ].map((offer) => (
+                  <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2.5">
+                    <span className="text-[13px] text-zinc-300">{offer.name}</span>
+                    <span className="text-[13px] font-bold text-emerald-400">{offer.price}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Status checks */}
+            {buildStep >= 5 && (
+              <div className="hero-chat-msg font-mono text-[11px] space-y-1 pl-1">
+                <div className="text-zinc-600">✓ Storefront created</div>
+                {buildStep >= 6 && <div className="text-zinc-600">✓ Offers generated</div>}
+                {buildStep >= 6 && <div className="text-emerald-400">✓ Payments configured</div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── PHASE 2: Live Business (mini storefront card) ── */}
+        {phase === 2 && (
+          <div className="hero-chat-msg">
+            <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.05] to-violet-500/[0.03] p-5 sm:p-6">
+
+              {/* Header */}
+              {liveStep >= 1 && (
+                <div className="hero-chat-msg flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-xl border border-zinc-800">🚗</div>
+                    <div>
+                      <div className="text-[16px] font-bold text-white">Sparkle Mobile Wash</div>
+                      <div className="text-[11px] text-zinc-500">dum.club/sparkle-wash</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Description + offers */}
+              {liveStep >= 2 && (
+                <div className="hero-chat-msg mb-4">
+                  <div className="text-[12px] text-zinc-400 mb-3">Premium mobile car detailing at your doorstep</div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      { name: "Basic Wash", price: "$29" },
+                      { name: "Full Detail", price: "$89" },
+                      { name: "Monthly Plan", price: "$49/mo" },
+                    ].map((o) => (
+                      <div key={o.name} className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2.5 text-center">
+                        <div className="text-[11px] text-zinc-400">{o.name}</div>
+                        <div className="mt-0.5 text-[14px] font-bold text-emerald-400">{o.price}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action bar */}
+              {liveStep >= 3 && (
+                <div className="hero-chat-msg flex items-center justify-between border-t border-zinc-800/30 pt-3 mb-3">
+                  <div className="flex gap-2">
+                    <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">🔗 Share</span>
+                    <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">✏️ Edit</span>
+                  </div>
+                  <span className="rounded-lg bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">View Store →</span>
+                </div>
+              )}
+
+              {/* Ready signal */}
+              {liveStep >= 4 && (
+                <div className="hero-chat-msg flex items-center gap-2.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-2.5">
+                  <span className="text-base">🎉</span>
+                  <div>
+                    <div className="text-[12px] font-semibold text-emerald-300">Ready for customers</div>
+                    <div className="text-[9px] text-emerald-400/50">Shareable page · Stripe payments · AI support</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
@@ -930,117 +1144,8 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Visual Walkthrough: Before → After ── */}
-          <div className="mt-16 rounded-2xl border border-zinc-800/40 bg-zinc-950/60 p-6 sm:p-10">
-            <div className="mb-8 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
-              See it in action
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-start">
-
-              {/* Step 1 — User types */}
-              <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">1</span>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">You describe</span>
-                </div>
-                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
-                  <div className="text-[10px] text-zinc-600 mb-1.5">Your idea</div>
-                  <div className="text-[13px] leading-relaxed text-zinc-300">
-                    &ldquo;Mobile car wash for busy professionals with premium detailing packages&rdquo;
-                  </div>
-                </div>
-                <div className="mt-3 flex justify-end">
-                  <div className="rounded-lg bg-emerald-400 px-3 py-1 text-[10px] font-bold text-black">
-                    Launch →
-                  </div>
-                </div>
-              </div>
-
-              {/* Arrow 1 */}
-              <div className="hidden items-center lg:flex">
-                <div className="text-xl text-emerald-400/40">→</div>
-              </div>
-              <div className="flex justify-center lg:hidden">
-                <div className="text-xl text-emerald-400/40">↓</div>
-              </div>
-
-              {/* Step 2 — AI generates */}
-              <div className="rounded-xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">2</span>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">AI builds</span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
-                    <span className="text-base">🚗</span>
-                    <div>
-                      <div className="text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
-                      <div className="text-[10px] text-zinc-500">AI-generated project name</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
-                    <span className="text-[12px] text-zinc-400">Basic Wash</span>
-                    <span className="text-[12px] font-bold text-emerald-400">$29</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
-                    <span className="text-[12px] text-zinc-400">Full Detail</span>
-                    <span className="text-[12px] font-bold text-emerald-400">$89</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
-                    <span className="text-[12px] text-zinc-400">Monthly Plan</span>
-                    <span className="text-[12px] font-bold text-emerald-400">$49/mo</span>
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1 font-mono text-[10px]">
-                  <div className="text-zinc-600">✓ Storefront created</div>
-                  <div className="text-zinc-600">✓ Offers generated</div>
-                  <div className="text-zinc-600">✓ Payments configured</div>
-                </div>
-              </div>
-
-              {/* Arrow 2 */}
-              <div className="hidden items-center lg:flex">
-                <div className="text-xl text-emerald-400/40">→</div>
-              </div>
-              <div className="flex justify-center lg:hidden">
-                <div className="text-xl text-emerald-400/40">↓</div>
-              </div>
-
-              {/* Step 3 — Live result */}
-              <div className="rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-violet-500/[0.03] p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">3</span>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">You&apos;re live</span>
-                </div>
-                <div className="rounded-lg border border-emerald-400/15 bg-zinc-950/80 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[13px] font-bold text-white">Sparkle Mobile Wash</div>
-                    <div className="flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      </span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-zinc-400 mb-3">Premium mobile detailing at your doorstep</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-extrabold text-emerald-400">3 offers</span>
-                    <span className="rounded-full bg-emerald-400 px-3 py-1 text-[10px] font-bold text-black">View Store</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2">
-                  <span className="text-sm">🎉</span>
-                  <div>
-                    <div className="text-[11px] font-semibold text-emerald-300">Ready for customers</div>
-                    <div className="text-[9px] text-emerald-400/50">Shareable link · Stripe payments · AI support</div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
+          {/* ── Animated Product Demo ── */}
+          <ProductDemo />
         </div>
 
         {/* ── FEATURES ── */}
