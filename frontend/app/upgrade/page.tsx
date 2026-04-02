@@ -1,32 +1,66 @@
 "use client";
 
 import Link from "next/link";
+import { Starfield } from "../../components/Starfield";
 
-const FREE_FEATURES = [
-  "5 launches per day",
-  "Standard AI generation",
-  "Dashboard & project tools",
-  "Community discovery feed",
-  "Public project page",
-];
-
-const PRO_FEATURES = [
-  "25 launches per day",
-  "Priority AI generation",
-  "Featured project eligibility",
-  "Advanced dashboard analytics",
-  "Early access to new tools",
-  "Priority support",
-];
-
-const BUILDER_FEATURES = [
-  "Unlimited launches",
-  "Fastest AI generation",
-  "Guaranteed featured placement",
-  "Full analytics + token insights",
-  "Earliest access to everything",
-  "Dedicated creator support",
-  "Custom token branding",
+const TIERS = [
+  {
+    name: "Free",
+    requirement: "No tokens needed",
+    color: "text-zinc-400",
+    borderColor: "border-zinc-800",
+    features: [
+      "5 project launches",
+      "5 AI questions per project",
+      "Basic storefront",
+      "Community discovery",
+      "Stripe payments",
+    ],
+    cta: null,
+  },
+  {
+    name: "Supporter",
+    requirement: "Hold 100 DUM",
+    color: "text-emerald-400",
+    borderColor: "border-emerald-400/40",
+    highlight: true,
+    features: [
+      "Unlimited AI questions",
+      "Supporter badge on profile",
+      "Priority in Discover",
+      "10% off creator offers",
+      "Everything in Free",
+    ],
+    cta: "Get DUM Tokens",
+  },
+  {
+    name: "Pro",
+    requirement: "Hold 1,000 DUM",
+    color: "text-violet-400",
+    borderColor: "border-violet-400/40",
+    features: [
+      "Unlimited launches",
+      "Featured placement",
+      "Advanced analytics",
+      "Custom storefront branding",
+      "Everything in Supporter",
+    ],
+    cta: "Get DUM Tokens",
+  },
+  {
+    name: "Partner",
+    requirement: "Hold 10,000 DUM",
+    color: "text-amber-400",
+    borderColor: "border-amber-400/40",
+    features: [
+      "Revenue share from platform",
+      "Governance voting",
+      "White-label storefronts",
+      "Direct creator support",
+      "Everything in Pro",
+    ],
+    cta: "Get DUM Tokens",
+  },
 ];
 
 function Check() {
@@ -37,149 +71,108 @@ function Check() {
   );
 }
 
-export default function UpgradePage() {
+export default function TiersPage() {
   return (
-    <div className="min-h-screen bg-base px-4 py-20 text-white sm:px-6">
-      <div className="mx-auto max-w-5xl">
+    <div className="relative min-h-screen bg-base px-4 py-20 text-white sm:px-6">
+      <Starfield count={50} />
+      <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Hero */}
         <div className="text-center">
           <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
-            ◆ Creator Access
+            ◆ DUM Tiers
           </div>
-          <h1 className="mt-6 font-mono text-5xl font-black uppercase leading-tight tracking-[-0.03em] text-white sm:text-6xl">
-            Build more.<br />
-            <span className="text-emerald-400">Launch faster.</span>
+          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+            Hold DUM.
+            <br />
+            <span className="text-emerald-400">Unlock more.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-zinc-400">
-            Serious builders don&apos;t wait for their idea quota to reset.
-            Upgrade your access and keep the momentum going.
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+            No subscriptions. No monthly fees. Hold DUM tokens to unlock features permanently — the more you hold, the more you can do.
           </p>
         </div>
 
-        {/* Pricing cards */}
-        <div className="mt-16 grid gap-6 sm:grid-cols-3">
-
-          {/* Free */}
-          <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
-            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">Free</div>
-            <div className="mt-4 flex items-end gap-1">
-              <span className="text-4xl font-black text-white">$0</span>
-              <span className="mb-1 text-sm text-zinc-600">/mo</span>
-            </div>
-            <p className="mt-3 text-sm text-zinc-500">Get started and prove your idea has legs.</p>
-            <ul className="mt-8 flex-1 space-y-3">
-              {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm text-zinc-400">
-                  <Check />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 rounded-xl border border-zinc-700 px-5 py-3 text-center text-sm font-semibold text-zinc-500">
-              Current plan
-            </div>
-          </div>
-
-          {/* Pro — recommended */}
-          <div className="relative flex flex-col rounded-2xl border border-emerald-400/40 bg-zinc-950 p-8 shadow-[0_0_40px_-12px] shadow-emerald-500/20">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="rounded-full bg-emerald-400 px-4 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-black">
-                Most popular
-              </span>
-            </div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-emerald-400">Pro</div>
-            <div className="mt-4 flex items-end gap-1">
-              <span className="text-4xl font-black text-white">$19</span>
-              <span className="mb-1 text-sm text-zinc-400">/mo</span>
-            </div>
-            <p className="mt-3 text-sm text-zinc-400">For builders who ship ideas faster than most people plan.</p>
-            <ul className="mt-8 flex-1 space-y-3">
-              {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm text-zinc-300">
-                  <Check />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              className="mt-8 w-full rounded-xl bg-emerald-400 px-5 py-3.5 font-mono text-sm font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300"
-              onClick={() => alert("Payment coming soon — you'll be first to know.")}
+        {/* Tier cards */}
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {TIERS.map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative flex flex-col rounded-2xl border bg-zinc-950 p-6 ${tier.borderColor} ${
+                tier.highlight ? "shadow-[0_0_40px_-12px] shadow-emerald-500/20" : ""
+              }`}
             >
-              Upgrade to Pro
-            </button>
-          </div>
-
-          {/* Builder */}
-          <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
-            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-purple-400">Builder</div>
-            <div className="mt-4 flex items-end gap-1">
-              <span className="text-4xl font-black text-white">$49</span>
-              <span className="mb-1 text-sm text-zinc-600">/mo</span>
+              {tier.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="rounded-full bg-emerald-400 px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
+                    Recommended
+                  </span>
+                </div>
+              )}
+              <div className={`text-[10px] font-bold uppercase tracking-[0.3em] ${tier.color}`}>
+                {tier.name}
+              </div>
+              <div className="mt-3 text-sm font-semibold text-white">
+                {tier.requirement}
+              </div>
+              <ul className="mt-6 flex-1 space-y-2.5">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-400">
+                    <Check />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              {tier.cta ? (
+                <Link
+                  href="/discover"
+                  className={`mt-6 block w-full rounded-xl px-5 py-3 text-center text-sm font-bold transition ${
+                    tier.highlight
+                      ? "bg-emerald-400 text-black hover:bg-emerald-300"
+                      : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                  }`}
+                >
+                  {tier.cta}
+                </Link>
+              ) : (
+                <div className="mt-6 rounded-xl border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-600">
+                  Current tier
+                </div>
+              )}
             </div>
-            <p className="mt-3 text-sm text-zinc-500">For creators running multiple projects and chasing serious traction.</p>
-            <ul className="mt-8 flex-1 space-y-3">
-              {BUILDER_FEATURES.map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm text-zinc-400">
-                  <Check />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              className="mt-8 w-full rounded-xl border border-purple-500/50 bg-purple-500/10 px-5 py-3.5 font-mono text-sm font-bold uppercase tracking-[0.15em] text-purple-300 transition hover:border-purple-400 hover:bg-purple-500/20"
-              onClick={() => alert("Payment coming soon — you'll be first to know.")}
-            >
-              Upgrade to Builder
-            </button>
-          </div>
+          ))}
         </div>
 
-        {/* Earn your upgrade */}
-        <div className="mt-20 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-12 sm:px-12">
+        {/* How it works */}
+        <div className="mt-16 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 sm:px-12">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
-              ◆ Earn it
-            </div>
-            <h2 className="mt-4 font-mono text-3xl font-black uppercase leading-tight text-white sm:text-4xl">
-              Traction unlocks access.
+            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+              How it works
             </h2>
-            <p className="mt-5 text-base leading-relaxed text-zinc-400">
-              If your project gets real traction — token holders, trading volume,
-              community activity — your launch limits increase automatically.
-              No payment required.
+            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+              DUM tokens live on Solana. Hold them in your wallet and your tier activates automatically. No staking, no locking, no complexity — just hold and use.
             </p>
-            <p className="mt-4 text-sm text-zinc-500">
-              We reward builders who prove demand. That&apos;s the whole point.
-            </p>
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
               {[
-                { milestone: "50 token trades", reward: "Limit increases" },
-                { milestone: "$100 volume", reward: "Featured eligibility" },
-                { milestone: "25 holders", reward: "Pro-tier access" },
-              ].map(({ milestone, reward }) => (
-                <div key={milestone} className="rounded-xl border border-zinc-800 bg-base px-5 py-6">
-                  <div className="font-mono text-sm font-bold text-white">{milestone}</div>
-                  <div className="mt-2 text-xs text-emerald-400">{reward}</div>
+                { step: "01", label: "Get DUM", desc: "Buy on Exchange or earn through the platform" },
+                { step: "02", label: "Hold", desc: "Keep tokens in your connected wallet" },
+                { step: "03", label: "Unlock", desc: "Features activate based on your balance" },
+              ].map((s) => (
+                <div key={s.step} className="rounded-xl border border-zinc-800 bg-base p-5">
+                  <div className="font-mono text-lg font-bold text-emerald-400/40">{s.step}</div>
+                  <div className="mt-2 text-sm font-bold text-white">{s.label}</div>
+                  <div className="mt-1 text-xs text-zinc-500">{s.desc}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Trust / footer note */}
-        <div className="mt-16 text-center">
-          <p className="text-sm text-zinc-600">
-            Payments coming soon. Join the waitlist by trying to upgrade — we&apos;ll
-            notify you when billing goes live.
-          </p>
+        <div className="mt-12 text-center">
           <Link
-            href="/build"
-            className="mt-4 inline-block text-sm text-zinc-500 underline-offset-4 transition hover:text-zinc-300 hover:underline"
+            href="/"
+            className="text-sm text-zinc-500 transition hover:text-zinc-300"
           >
-            ← Back to builder
+            ← Back to home
           </Link>
         </div>
 

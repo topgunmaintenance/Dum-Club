@@ -115,6 +115,14 @@ function offerCount(project: Project): number {
   return Array.isArray(project.store_items) ? project.store_items.length : 0;
 }
 
+function lowestOfferPrice(project: Project): number | null {
+  if (!Array.isArray(project.store_items) || project.store_items.length === 0) return null;
+  const prices = project.store_items
+    .map((i: any) => Number(i.price_usd ?? i.price ?? 0))
+    .filter((p) => p > 0);
+  return prices.length > 0 ? Math.min(...prices) : null;
+}
+
 function isPlaceholderDesc(d?: string | null): boolean {
   if (!d?.trim()) return true;
   const lower = d.trim().toLowerCase();
@@ -281,6 +289,7 @@ export default function DiscoverPage() {
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [activeTab, setActiveTab] = useState<DiscoverTabId>("new");
+  const [searchQuery, setSearchQuery] = useState("");
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [priceFlashDirection, setPriceFlashDirection] = useState<
     Record<string, "up" | "down">
@@ -494,8 +503,18 @@ export default function DiscoverPage() {
       );
     }
 
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) =>
+          (p.title || p.name || "").toLowerCase().includes(q) ||
+          (p.description || "").toLowerCase().includes(q)
+      );
+    }
+
     return list;
-  }, [projects, activeTab, marketByProject]);
+  }, [projects, activeTab, marketByProject, searchQuery]);
 
   const totalPublicProjects = projects.length;
   const newestProject = projects[0];
@@ -566,6 +585,17 @@ export default function DiscoverPage() {
           <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
             Trending Projects
           </h1>
+        </div>
+
+        {/* Search */}
+        <div className="mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search projects..."
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/40 sm:max-w-xs"
+          />
         </div>
 
         <div id="section-filters" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1">
@@ -790,8 +820,21 @@ export default function DiscoverPage() {
                     })()}
 
                     <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-4">
-                      <span className="text-xs font-medium text-zinc-400 transition group-hover:text-emerald-400">View Project →</span>
-                      <RelativeCreatedAt dateStr={project.created_at} />
+                      <span className="text-xs font-medium text-zinc-400 transition group-hover:text-emerald-400">
+                        {hasOffers(project) ? "View Offers →" : "View Project →"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const price = lowestOfferPrice(project);
+                          if (price == null) return null;
+                          return (
+                            <span className="text-sm font-bold text-emerald-400">
+                              From ${price < 1 ? price.toFixed(2) : Math.round(price)}
+                            </span>
+                          );
+                        })()}
+                        <RelativeCreatedAt dateStr={project.created_at} />
+                      </div>
                     </div>
                   </div>
                 </Link>

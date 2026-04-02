@@ -214,6 +214,23 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Tier card */}
+        <div className="mb-6 rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Your tier</div>
+              <div className="mt-1 text-lg font-bold text-white">Free</div>
+              <p className="mt-1 text-xs text-zinc-500">Hold 100 DUM to unlock Supporter perks</p>
+            </div>
+            <Link
+              href="/upgrade"
+              className="shrink-0 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
+            >
+              View Tiers →
+            </Link>
+          </div>
+        </div>
+
         {/* Quick actions */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
           <Link
