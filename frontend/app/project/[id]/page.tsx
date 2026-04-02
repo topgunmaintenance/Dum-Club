@@ -507,6 +507,8 @@ export default function ProjectPage() {
   const [loadingProject, setLoadingProject] = useState(true);
   const [projectView, setProjectView] = useState<"storefront" | "analytics">("storefront");
   const [embedExpanded, setEmbedExpanded] = useState(false);
+  const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
+  const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -3912,19 +3914,61 @@ return (
                     </div>
                   )}
 
-                  {/* DUM Points discount badge */}
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-3 py-2">
-                    <span className="text-[11px] font-medium text-emerald-400">◆ Use 10 DUM Points for 10% off</span>
-                  </div>
+                  {/* DUM Points discount */}
+                  {dumDiscountApplied[offer.id] ? (
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/[0.08] px-3 py-2">
+                      <span className="text-[11px] font-bold text-emerald-400">◆ 10% DUM discount applied</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDumDiscountError(null);
+                        const pts = Number(localStorage.getItem("dum_points") || "0");
+                        if (pts < 10) {
+                          setDumDiscountError("Not enough DUM Points. Earn more by launching projects and creating offers.");
+                          setTimeout(() => setDumDiscountError(null), 4000);
+                          return;
+                        }
+                        localStorage.setItem("dum_points", String(pts - 10));
+                        // Credit 10 DUM to the business (project owner)
+                        const bizKey = `dum_received_${id}`;
+                        const bizPts = Number(localStorage.getItem(bizKey) || "0");
+                        localStorage.setItem(bizKey, String(bizPts + 10));
+                        window.dispatchEvent(new Event("dum-points-update"));
+                        setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
+                      }}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-3 py-2 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.08]"
+                    >
+                      <span className="text-[11px] font-medium text-emerald-400">◆ Use 10 DUM Points for 10% off</span>
+                    </button>
+                  )}
+                  {dumDiscountError && (
+                    <div className="mt-2 text-[11px] text-amber-400/80">{dumDiscountError}</div>
+                  )}
 
                   {/* Price + Action */}
                   {(() => {
                     const soldOut = !offer.unlimited_inventory && offer.quantity_available != null && (offer.quantity_available - (offer.quantity_sold || 0)) <= 0;
+                    const basePrice = Number(offer.price_usd);
+                    const finalPrice = dumDiscountApplied[offer.id] ? basePrice * 0.9 : basePrice;
                     return (
                       <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-800/60 mt-5">
                         <div>
-                          <div className="font-mono text-2xl font-bold text-white">${Number(offer.price_usd).toFixed(2)}</div>
-                          <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD · Secure checkout</div>
+                          {dumDiscountApplied[offer.id] ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <div className="font-mono text-2xl font-bold text-emerald-400">${finalPrice.toFixed(2)}</div>
+                                <div className="font-mono text-sm text-zinc-600 line-through">${basePrice.toFixed(2)}</div>
+                              </div>
+                              <div className="text-[10px] uppercase tracking-[0.15em] text-emerald-400/60 mt-0.5">DUM discount · Secure checkout</div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-mono text-2xl font-bold text-white">${basePrice.toFixed(2)}</div>
+                              <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD · Secure checkout</div>
+                            </>
+                          )}
                         </div>
                         {soldOut ? (
                           <span className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-2.5 text-xs font-semibold text-red-400 select-none">
