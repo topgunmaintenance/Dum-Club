@@ -35,7 +35,7 @@ function statusLabel(project: Project): { text: string; color: string } {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { wallets } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
@@ -133,7 +133,7 @@ export default function DashboardPage() {
     if (!user?.privyId) return;
     async function loadBiz() {
       try {
-        const token = await (user as any)?.getToken?.();
+        const token = await getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}/api/business/me`, { headers });
@@ -150,11 +150,13 @@ export default function DashboardPage() {
     if (!bizName.trim() || bizSaving) return;
     setBizSaving(true);
     try {
-      const { getToken } = await import("../../lib/auth/AuthContext").then(m => ({ getToken: null }));
-      // Use inline token fetch since we can't easily call getToken from dashboard
+      const token = await getToken();
       const res = await fetch(`${API_BASE}/api/business/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           business_name: bizName.trim(),
           category: bizCategory,
@@ -401,9 +403,13 @@ export default function DashboardPage() {
                       type="button"
                       onClick={async () => {
                         try {
+                          const token = await getToken();
                           const res = await fetch(`${API_BASE}/api/business/request-verification`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {
+                              "Content-Type": "application/json",
+                              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            },
                             body: JSON.stringify({ website: bizProfile.website, contact_email: bizProfile.contact_email }),
                           });
                           if (res.ok) {

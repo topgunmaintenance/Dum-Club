@@ -58,6 +58,7 @@ export function Navbar() {
   const links = [
     { href: "/discover", label: "Discover" },
     { href: "/build", label: "Build" },
+    { href: "/business", label: "For Business" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/chat", label: "AI Chat" },
   ];

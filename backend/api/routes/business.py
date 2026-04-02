@@ -58,6 +58,23 @@ async def get_my_business(current_user: dict = Depends(get_current_user)):
     return {"profile": res.data[0]}
 
 
+# ── Get business profile by owner privy_id (public, limited fields) ──
+
+@router.get("/by-owner/{owner_privy_id}")
+async def get_business_by_owner(owner_privy_id: str):
+    supabase = get_client()
+    res = (
+        supabase.table("business_profiles")
+        .select("id, business_name, category, short_description, logo_url, website, verification_status, created_at")
+        .eq("owner_privy_id", owner_privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        return {"profile": None}
+    return {"profile": res.data[0]}
+
+
 # ── Get business profile by ID (public) ──
 
 @router.get("/{business_id}")
