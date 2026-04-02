@@ -79,10 +79,13 @@ def _build_cors_origins() -> list[str]:
             origins.append(val)
     return origins
 
+# Regex to match all Vercel preview deployments for this project
+_VERCEL_PREVIEW_REGEX = r"https://dum-club[a-z0-9\-]*\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_build_cors_origins(),
+    allow_origin_regex=_VERCEL_PREVIEW_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
