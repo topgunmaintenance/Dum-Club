@@ -53,6 +53,8 @@ export default function DashboardPage() {
   const [bizEmail, setBizEmail] = useState("");
   const [bizWebsite, setBizWebsite] = useState("");
   const [bizSaving, setBizSaving] = useState(false);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   useEffect(() => {
     async function loadDum() {
@@ -145,6 +147,26 @@ export default function DashboardPage() {
     }
     loadBiz();
   }, [user?.privyId]);
+
+  // Load business analytics
+  useEffect(() => {
+    if (!bizProfile) return;
+    setAnalyticsLoading(true);
+    (async () => {
+      try {
+        const token = await (user as any)?.getToken?.();
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/api/business/analytics`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setAnalytics(data);
+        }
+      } catch {} finally {
+        setAnalyticsLoading(false);
+      }
+    })();
+  }, [bizProfile]);
 
   async function createBusiness() {
     if (!bizName.trim() || bizSaving) return;
@@ -352,8 +374,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* DUM Received from customers */}
-        {projects.length > 0 && (
+        {/* DUM Received from customers (uses backend analytics when available, localStorage fallback) */}
+        {projects.length > 0 && !analytics && (
           <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-zinc-950 p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -489,6 +511,127 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Business Analytics */}
+        {bizProfile && analytics && (
+          <div className="mb-6">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Business Performance</div>
+
+            {/* Headline metrics */}
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Page Views</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-white">{(analytics.total_views || 0).toLocaleString()}</div>
+                <div className="mt-1 text-[11px] text-zinc-600">across all projects</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Sales</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-emerald-400">{analytics.total_orders || 0}</div>
+                <div className="mt-1 text-[11px] text-zinc-600">completed purchases</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Revenue</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-white">
+                  ${(analytics.total_revenue_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="mt-1 text-[11px] text-zinc-600">total earned</div>
+              </div>
+              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-400/60">DUM Received</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-emerald-400">{analytics.total_dum_received || 0}</div>
+                <div className="mt-1 text-[11px] text-zinc-600">
+                  {analytics.dum_discount_orders > 0
+                    ? `${analytics.dum_discount_orders} order${analytics.dum_discount_orders !== 1 ? "s" : ""} used DUM discount`
+                    : "from customer DUM spending"}
+                </div>
+              </div>
+            </div>
+
+            {/* Per-project breakdown */}
+            {analytics.projects && analytics.projects.length > 0 && (
+              <div className="mb-4 rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="mb-3 text-xs font-bold text-white">Project Performance</div>
+                <div className="space-y-2">
+                  {analytics.projects.map((p: any) => (
+                    <Link
+                      key={p.id}
+                      href={`/project/${p.id}`}
+                      className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3 transition hover:border-zinc-700"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${p.status === "live" ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                        <span className="truncate text-sm font-medium text-white">{p.title}</span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-4 text-[11px] text-zinc-500">
+                        <span title="Views">{(p.views || 0).toLocaleString()} views</span>
+                        <span title="Sales">{p.orders || 0} sales</span>
+                        <span title="Revenue" className="font-medium text-zinc-300">${(p.revenue_usd || 0).toFixed(2)}</span>
+                        {(p.dum_received || 0) > 0 && (
+                          <span title="DUM received" className="text-emerald-400/70">+{p.dum_received} DUM</span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top offers */}
+            {analytics.top_offers && analytics.top_offers.length > 0 && analytics.top_offers.some((o: any) => (o.quantity_sold || 0) > 0) && (
+              <div className="mb-4 rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="mb-3 text-xs font-bold text-white">Top Offers</div>
+                <div className="space-y-2">
+                  {analytics.top_offers.filter((o: any) => (o.quantity_sold || 0) > 0).map((offer: any) => (
+                    <div key={offer.id} className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3">
+                      <span className="truncate text-sm text-zinc-300">{offer.title}</span>
+                      <div className="flex shrink-0 items-center gap-3 text-[11px]">
+                        <span className="text-zinc-500">${Number(offer.price_usd || 0).toFixed(2)}</span>
+                        <span className="font-medium text-emerald-400">{offer.quantity_sold} sold</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent orders */}
+            {analytics.recent_orders && analytics.recent_orders.length > 0 && (
+              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
+                <div className="mb-3 text-xs font-bold text-white">Recent Sales</div>
+                <div className="space-y-2">
+                  {analytics.recent_orders.slice(0, 5).map((order: any) => (
+                    <div key={order.id} className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-2.5">
+                      <div className="min-w-0">
+                        <span className="truncate text-sm text-zinc-300">{order.offer_title}</span>
+                        {order.dum_discount && (
+                          <span className="ml-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">DUM</span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3 text-[11px]">
+                        <span className="font-medium text-white">${order.amount.toFixed(2)}</span>
+                        <span className="text-zinc-600">{order.date ? new Date(order.date).toLocaleDateString() : ""}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {analytics.total_orders === 0 && analytics.total_views === 0 && (
+              <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-6 text-center">
+                <div className="text-sm font-medium text-zinc-400">No activity yet</div>
+                <p className="mt-1 text-xs text-zinc-600">Share your project links to start getting views and sales</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {bizProfile && analyticsLoading && !analytics && (
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-card p-6 text-center">
+            <div className="text-sm text-zinc-500">Loading analytics...</div>
           </div>
         )}
 

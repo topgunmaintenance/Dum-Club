@@ -678,6 +678,13 @@ async def get_project(project_id: str):
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Increment view count (fire-and-forget, non-blocking)
+    try:
+        current_views = project_res.data[0].get("view_count", 0) or 0
+        supabase.table("projects").update({"view_count": current_views + 1}).eq("id", project_id).execute()
+    except Exception:
+        pass  # Never block page load for analytics
+
     return project_res.data[0]
 
 
