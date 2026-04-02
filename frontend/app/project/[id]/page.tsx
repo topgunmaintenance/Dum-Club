@@ -3393,7 +3393,7 @@ return (
 
       {/* ── Embedded Interactive Content ── */}
       {(() => {
-        const templateId = parsedAiOutput?.template_id || matchTemplate(project?.description || project?.title || "");
+        const templateId = parsedAiOutput?.template_id || matchTemplate(`${project?.title || ""} ${project?.description || ""}`);
         const tmpl = templateId ? TEMPLATES[templateId] : null;
         if (!tmpl) return null;
         return (
@@ -3403,16 +3403,7 @@ return (
                 <span className="text-lg">{tmpl.emoji}</span>
                 <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Preview</span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const iframe = document.getElementById("embed-frame") as HTMLIFrameElement;
-                  if (iframe?.requestFullscreen) iframe.requestFullscreen();
-                }}
-                className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200"
-              >
-                Full Screen
-              </button>
+              <span className="text-[9px] text-zinc-600">Use arrow keys or touch to play</span>
             </div>
             <iframe
               id="embed-frame"
