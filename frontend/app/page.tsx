@@ -513,161 +513,224 @@ function ProductDemo() {
   const progressPct = phase === 0 ? 0 : phase === 1 ? 50 : 100;
 
   return (
-    <div className="mt-16 rounded-2xl border border-zinc-800/40 bg-zinc-950/60 p-5 sm:p-8 overflow-hidden">
+    <div className="mt-16">
       <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
         See it in action
       </div>
 
-      {/* Progress bar */}
-      <div className="mx-auto mb-8 flex max-w-md items-center gap-3">
+      {/* Progress dots */}
+      <div className="mx-auto mb-6 flex max-w-xs items-center gap-2 justify-center">
         {["Describe", "Build", "Live"].map((label, i) => (
-          <div key={label} className="flex flex-1 flex-col items-center gap-1.5">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-500 ${
-              phase >= i ? "bg-emerald-400 text-black" : "border border-zinc-700 text-zinc-600"
+          <div key={label} className="flex items-center gap-2">
+            <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold transition-all duration-500 ${
+              phase >= i ? "bg-emerald-400 text-black shadow-[0_0_10px_rgba(0,255,163,0.3)]" : "border border-zinc-800 text-zinc-700"
             }`}>
               {phase > i ? "✓" : i + 1}
             </div>
             <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${
               phase >= i ? "text-emerald-400" : "text-zinc-700"
             }`}>{label}</span>
+            {i < 2 && <span className={`text-sm transition-colors duration-300 ${phase > i ? "text-emerald-400/40" : "text-zinc-800"}`}>→</span>}
           </div>
         ))}
       </div>
 
-      {/* Demo container — fixed height, content transitions */}
-      <div className="mx-auto max-w-2xl" style={{ minHeight: 280 }}>
-
-        {/* ── PHASE 0: Typing ── */}
-        {phase === 0 && (
-          <div className="hero-chat-msg">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 sm:p-5">
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600">Your idea</div>
-              <div className="min-h-[48px] text-[15px] leading-relaxed text-zinc-300 sm:text-base">
-                {DEMO_IDEA.slice(0, typedLen)}
-                <span className="inline-block w-[2px] h-[18px] bg-emerald-400 ml-0.5 animate-pulse align-middle" />
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <div className={`rounded-xl px-5 py-2.5 text-[12px] font-bold transition-all duration-300 ${
-                typedLen >= DEMO_IDEA.length
-                  ? "bg-emerald-400 text-black scale-[1.02] shadow-[0_0_20px_rgba(0,255,163,0.3)]"
-                  : "bg-zinc-800 text-zinc-600"
-              }`}>
-                Launch →
-              </div>
-            </div>
+      {/* DUM CLUB AI Window — same chrome as the product */}
+      <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
+        {/* Title bar */}
+        <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
+          <div className="flex gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
           </div>
-        )}
+          <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            DUM CLUB AI
+          </div>
+          <div className="relative flex h-2 w-2">
+            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </div>
+        </div>
 
-        {/* ── PHASE 1: AI Building ── */}
-        {phase === 1 && (
-          <div className="hero-chat-msg space-y-3">
-            {/* Project name */}
-            {buildStep >= 1 && (
-              <div className="hero-chat-msg flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4">
-                <span className="text-2xl">🚗</span>
-                <div>
-                  <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
-                  <div className="text-[10px] text-zinc-500">AI-generated project</div>
+        {/* Content area */}
+        <div className="px-5 py-5 sm:px-6 sm:py-6" style={{ minHeight: 300 }}>
+
+          {/* ── PHASE 0: Typing ── */}
+          {phase === 0 && (
+            <div className="hero-chat-msg space-y-3">
+              {/* AI greeting */}
+              <div className="flex gap-2">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+                  What do you want to build?
                 </div>
               </div>
-            )}
-
-            {/* Offers */}
-            {buildStep >= 2 && (
-              <div className="hero-chat-msg space-y-1.5">
-                {[
-                  { name: "Basic Wash", price: "$29" },
-                  ...(buildStep >= 3 ? [{ name: "Full Detail Package", price: "$89" }] : []),
-                  ...(buildStep >= 4 ? [{ name: "Monthly Membership", price: "$49/mo" }] : []),
-                ].map((offer) => (
-                  <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2.5">
-                    <span className="text-[13px] text-zinc-300">{offer.name}</span>
-                    <span className="text-[13px] font-bold text-emerald-400">{offer.price}</span>
+              {/* User typing */}
+              <div className="flex justify-end">
+                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tl-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2">
+                  <div className="text-[13px] leading-relaxed text-emerald-100">
+                    {DEMO_IDEA.slice(0, typedLen)}
+                    <span className="inline-block w-[2px] h-[16px] bg-emerald-400 ml-0.5 animate-pulse align-middle" />
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+              {/* Launch button */}
+              {typedLen >= DEMO_IDEA.length && (
+                <div className="hero-chat-msg flex justify-end">
+                  <div className="rounded-xl bg-emerald-400 px-5 py-2 text-[12px] font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.3)]">
+                    Launch →
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
-            {/* Status checks */}
-            {buildStep >= 5 && (
-              <div className="hero-chat-msg font-mono text-[11px] space-y-1 pl-1">
-                <div className="text-zinc-600">✓ Storefront created</div>
-                {buildStep >= 6 && <div className="text-zinc-600">✓ Offers generated</div>}
-                {buildStep >= 6 && <div className="text-emerald-400">✓ Payments configured</div>}
+          {/* ── PHASE 1: AI Building ── */}
+          {phase === 1 && (
+            <div className="space-y-3">
+              {/* AI response */}
+              <div className="flex gap-2">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+                <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] text-zinc-300">
+                  Building your business now...
+                </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* ── PHASE 2: Live Business (mini storefront card) ── */}
-        {phase === 2 && (
-          <div className="hero-chat-msg">
-            <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.05] to-violet-500/[0.03] p-5 sm:p-6">
-
-              {/* Header */}
-              {liveStep >= 1 && (
-                <div className="hero-chat-msg flex items-center justify-between mb-4">
+              {/* Project name */}
+              {buildStep >= 1 && (
+                <div className="hero-chat-msg rounded-xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-transparent p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-xl border border-zinc-800">🚗</div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-xl shadow-inner">🚗</div>
                     <div>
-                      <div className="text-[16px] font-bold text-white">Sparkle Mobile Wash</div>
-                      <div className="text-[11px] text-zinc-500">dum.club/sparkle-wash</div>
+                      <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
+                      <div className="text-[10px] text-zinc-500">AI-generated project</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    </span>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
-                  </div>
                 </div>
               )}
 
-              {/* Description + offers */}
-              {liveStep >= 2 && (
-                <div className="hero-chat-msg mb-4">
-                  <div className="text-[12px] text-zinc-400 mb-3">Premium mobile car detailing at your doorstep</div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {[
-                      { name: "Basic Wash", price: "$29" },
-                      { name: "Full Detail", price: "$89" },
-                      { name: "Monthly Plan", price: "$49/mo" },
-                    ].map((o) => (
-                      <div key={o.name} className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-3 py-2.5 text-center">
-                        <div className="text-[11px] text-zinc-400">{o.name}</div>
-                        <div className="mt-0.5 text-[14px] font-bold text-emerald-400">{o.price}</div>
-                      </div>
-                    ))}
-                  </div>
+              {/* Offers */}
+              {buildStep >= 2 && (
+                <div className="hero-chat-msg space-y-1.5">
+                  {[
+                    { name: "Basic Wash", price: "$29", show: buildStep >= 2 },
+                    { name: "Full Detail Package", price: "$89", show: buildStep >= 3 },
+                    { name: "Monthly Membership", price: "$49/mo", show: buildStep >= 4 },
+                  ].filter(o => o.show).map((offer) => (
+                    <div key={offer.name} className="card-premium flex items-center justify-between rounded-lg border border-zinc-800/40 bg-gradient-to-r from-zinc-900/40 to-zinc-950 px-4 py-2.5">
+                      <span className="text-[13px] text-zinc-300">{offer.name}</span>
+                      <span className="text-[13px] font-bold text-emerald-400">{offer.price}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Action bar */}
-              {liveStep >= 3 && (
-                <div className="hero-chat-msg flex items-center justify-between border-t border-zinc-800/30 pt-3 mb-3">
-                  <div className="flex gap-2">
-                    <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">🔗 Share</span>
-                    <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">✏️ Edit</span>
-                  </div>
-                  <span className="rounded-lg bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black">View Store →</span>
-                </div>
-              )}
-
-              {/* Ready signal */}
-              {liveStep >= 4 && (
-                <div className="hero-chat-msg flex items-center gap-2.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-2.5">
-                  <span className="text-base">🎉</span>
-                  <div>
-                    <div className="text-[12px] font-semibold text-emerald-300">Ready for customers</div>
-                    <div className="text-[9px] text-emerald-400/50">Shareable page · Stripe payments · AI support</div>
+              {/* Status checks */}
+              {buildStep >= 5 && (
+                <div className="hero-chat-msg flex gap-2">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+                  <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2 font-mono text-[10px] leading-[1.8] text-zinc-500">
+                    <div className="text-zinc-600">✓ Storefront created</div>
+                    {buildStep >= 6 && <div className="text-zinc-600">✓ Offers generated</div>}
+                    {buildStep >= 6 && <div className="text-emerald-400">✓ Payments ready</div>}
                   </div>
                 </div>
               )}
             </div>
+          )}
+
+          {/* ── PHASE 2: Live Business (mini storefront) ── */}
+          {phase === 2 && (
+            <div className="hero-chat-msg">
+              <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.05] to-violet-500/[0.03] overflow-hidden">
+                {/* Storefront header — looks like a real project page */}
+                {liveStep >= 1 && (
+                  <div className="hero-chat-msg border-b border-zinc-800/30 px-5 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 text-xl shadow-inner">🚗</div>
+                        <div>
+                          <div className="text-[16px] font-bold text-white">Sparkle Mobile Wash</div>
+                          <div className="text-[11px] text-zinc-500">dum.club/sparkle-wash</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Storefront body */}
+                <div className="px-5 py-4">
+                  {/* Description */}
+                  {liveStep >= 2 && (
+                    <div className="hero-chat-msg mb-4">
+                      <div className="text-[12px] text-zinc-400 mb-3">Premium mobile car detailing at your doorstep</div>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {[
+                          { name: "Basic Wash", price: "$29", tag: "Popular" },
+                          { name: "Full Detail", price: "$89", tag: null },
+                          { name: "Monthly Plan", price: "$49/mo", tag: "Subscription" },
+                        ].map((o) => (
+                          <div key={o.name} className="card-premium rounded-xl border border-zinc-800/40 bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center">
+                            <div className="text-[11px] text-zinc-400">{o.name}</div>
+                            <div className="mt-1 text-[16px] font-extrabold text-emerald-400">{o.price}</div>
+                            {o.tag && <div className="mt-1 text-[8px] font-bold uppercase tracking-widest text-emerald-400/50">{o.tag}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {liveStep >= 3 && (
+                    <div className="hero-chat-msg flex items-center justify-between border-t border-zinc-800/30 pt-3 mb-3">
+                      <div className="flex gap-2">
+                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">🔗 Share</span>
+                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">✏️ Edit</span>
+                      </div>
+                      <span className="rounded-xl bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black shadow-[0_0_12px_rgba(0,255,163,0.2)]">View Store →</span>
+                    </div>
+                  )}
+
+                  {/* Ready signal */}
+                  {liveStep >= 4 && (
+                    <div className="hero-chat-msg flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3">
+                      <span className="text-base">🎉</span>
+                      <div>
+                        <div className="text-[12px] font-semibold text-emerald-300">Ready for customers</div>
+                        <div className="text-[9px] text-emerald-400/50">Shareable page · Stripe payments · AI support</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950 px-4 py-2">
+          <span className="font-mono text-[9px] text-zinc-700">
+            {phase === 0 ? "Describing..." : phase === 1 ? "Building..." : "Live ✓"}
+          </span>
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`h-1 rounded-full transition-all duration-500 ${
+                  i <= phase ? "w-3 bg-emerald-400" : "w-1.5 bg-zinc-800"
+                }`}
+              />
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
