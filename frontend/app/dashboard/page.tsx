@@ -46,12 +46,26 @@ export default function DashboardPage() {
   const [dumBalance, setDumBalance] = useState(0);
 
   useEffect(() => {
-    const val = Number(localStorage.getItem("dum_points") || "50");
-    setDumBalance(val);
+    async function loadDum() {
+      const privyId = user?.privyId;
+      if (privyId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/dum/balance/${encodeURIComponent(privyId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setDumBalance(data.balance ?? 50);
+            localStorage.setItem("dum_points", String(data.balance ?? 50));
+            return;
+          }
+        } catch {}
+      }
+      setDumBalance(Number(localStorage.getItem("dum_points") || "50"));
+    }
+    loadDum();
     const handler = () => setDumBalance(Number(localStorage.getItem("dum_points") || "0"));
     window.addEventListener("dum-points-update", handler);
     return () => window.removeEventListener("dum-points-update", handler);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!walletAddress) {

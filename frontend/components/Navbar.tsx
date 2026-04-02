@@ -19,15 +19,33 @@ export function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    // Initialize DUM Points from localStorage
-    const stored = localStorage.getItem("dum_points");
-    if (stored) {
-      setDumBalance(Number(stored));
-    } else {
-      // First-time user welcome bonus
-      localStorage.setItem("dum_points", "50");
-      setDumBalance(50);
+
+    // Try backend balance first, fall back to localStorage
+    async function loadBalance() {
+      const privyId = user?.privyId;
+      if (privyId) {
+        try {
+          const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const res = await fetch(`${API}/api/dum/balance/${encodeURIComponent(privyId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            setDumBalance(data.balance ?? 50);
+            localStorage.setItem("dum_points", String(data.balance ?? 50));
+            return;
+          }
+        } catch {}
+      }
+      // Fallback: localStorage
+      const stored = localStorage.getItem("dum_points");
+      if (stored) {
+        setDumBalance(Number(stored));
+      } else {
+        localStorage.setItem("dum_points", "50");
+        setDumBalance(50);
+      }
     }
+    loadBalance();
+
     // Listen for balance updates from other components
     const handler = () => {
       const val = Number(localStorage.getItem("dum_points") || "0");
@@ -35,7 +53,7 @@ export function Navbar() {
     };
     window.addEventListener("dum-points-update", handler);
     return () => window.removeEventListener("dum-points-update", handler);
-  }, []);
+  }, [user]);
 
   const links = [
     { href: "/discover", label: "Discover" },
