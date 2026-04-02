@@ -1174,7 +1174,7 @@ export default function Home() {
         <div id="section-stats" className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl">
             <div className="mb-10 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-              Platform pulse
+              Platform
             </div>
             <div className="grid grid-cols-2 gap-10 lg:grid-cols-4">
               {[
@@ -1238,13 +1238,13 @@ export default function Home() {
       <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Latest on DUM Club
+            Recently Launched
           </div>
           {latestProjectsNews.length === 0 && !loadingProjects ? (
             <p className="text-sm text-zinc-500">
               {allPublicProjects.length === 0
-                ? "No public projects yet — launch one and it will show up here."
-                : "Projects with real descriptions (not placeholders) will appear here."}
+                ? "No projects yet — be the first to launch."
+                : "New projects will appear here as they launch."}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-3">
