@@ -237,11 +237,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* DUM Points card */}
+        {/* DUM Points + Tier Progress */}
         <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</span>
+                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${
+                  dumBalance >= 500 ? "bg-amber-400/10 text-amber-400 border border-amber-400/20" :
+                  dumBalance >= 150 ? "bg-violet-400/10 text-violet-400 border border-violet-400/20" :
+                  dumBalance >= 50 ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20" :
+                  "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                }`}>
+                  {dumBalance >= 500 ? "Mogul" : dumBalance >= 150 ? "Operator" : dumBalance >= 50 ? "Builder" : "Starter"}
+                </span>
+              </div>
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-2xl font-extrabold text-emerald-400">{dumBalance}</span>
                 <span className="text-sm text-zinc-500">points</span>
@@ -254,6 +264,32 @@ export default function DashboardPage() {
             >
               Get More →
             </Link>
+          </div>
+          {/* Tier progress */}
+          <div className="mt-4 border-t border-zinc-800/30 pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-zinc-500">Progress to next tier</span>
+              <span className="text-[10px] font-bold text-zinc-400">
+                {dumBalance >= 500 ? "Max tier reached" :
+                 dumBalance >= 150 ? `${500 - dumBalance} to Mogul` :
+                 dumBalance >= 50 ? `${150 - dumBalance} to Operator` :
+                 `${50 - dumBalance} to Builder`}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all duration-700"
+                style={{
+                  width: `${dumBalance >= 500 ? 100 :
+                    dumBalance >= 150 ? ((dumBalance - 150) / 350) * 100 :
+                    dumBalance >= 50 ? ((dumBalance - 50) / 100) * 100 :
+                    (dumBalance / 50) * 100}%`
+                }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[8px] text-zinc-700">
+              <span>Starter</span><span>Builder</span><span>Operator</span><span>Mogul</span>
+            </div>
           </div>
         </div>
 
@@ -274,6 +310,47 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Next best action */}
+        <div className="mb-6 rounded-2xl border border-zinc-800/40 bg-zinc-900/20 p-5">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">What to do next</div>
+          <div className="space-y-2">
+            {projects.length === 0 && (
+              <Link href="/build" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
+                <span className="text-base">🚀</span>
+                <div>
+                  <div className="text-sm font-bold text-white">Launch your first project</div>
+                  <div className="text-[11px] text-zinc-500">Earn +25 DUM Points</div>
+                </div>
+              </Link>
+            )}
+            {projects.length > 0 && projects.some(p => p.status === "live") && (
+              <Link href={`/project/${projects.find(p => p.status === "live")?.id}#offers-section`} className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+                <span className="text-base">🏷️</span>
+                <div>
+                  <div className="text-sm font-bold text-white">Add or improve offers</div>
+                  <div className="text-[11px] text-zinc-500">Earn +5 DUM Points per offer</div>
+                </div>
+              </Link>
+            )}
+            {dumBalance < 50 && (
+              <Link href="/" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+                <span className="text-base">💡</span>
+                <div>
+                  <div className="text-sm font-bold text-white">Launch another project</div>
+                  <div className="text-[11px] text-zinc-500">Earn +25 DUM Points to reach Builder tier</div>
+                </div>
+              </Link>
+            )}
+            <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+              <span className="text-base">🔍</span>
+              <div>
+                <div className="text-sm font-bold text-white">Explore & support other businesses</div>
+                <div className="text-[11px] text-zinc-500">Earn +2 DUM Points per purchase</div>
+              </div>
+            </Link>
+          </div>
+        </div>
 
         {/* Quick actions */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
