@@ -142,6 +142,62 @@ export default function TiersPage() {
           ))}
         </div>
 
+        {/* Get More DUM Points */}
+        <div className="mt-16 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 px-8 py-10 sm:px-12">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+              Get More DUM Points
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+              Add DUM Points to your account. Use them for discounts at every business, game unlocks, AI boosts, and more.
+            </p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              {[
+                { amount: 50, price: "$4.99", popular: false },
+                { amount: 150, price: "$9.99", popular: true },
+                { amount: 500, price: "$24.99", popular: false },
+              ].map((pkg) => (
+                <div key={pkg.amount} className={`relative rounded-xl border p-5 text-center ${pkg.popular ? "border-emerald-400/40 shadow-[0_0_30px_-8px] shadow-emerald-500/20" : "border-zinc-800"}`}>
+                  {pkg.popular && (
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                      <span className="rounded-full bg-emerald-400 px-3 py-0.5 text-[8px] font-bold uppercase tracking-widest text-black">Best Value</span>
+                    </div>
+                  )}
+                  <div className="text-3xl font-extrabold text-white">{pkg.amount}</div>
+                  <div className="mt-1 text-[11px] text-zinc-500">DUM Points</div>
+                  <div className="mt-3 text-lg font-bold text-emerald-400">{pkg.price}</div>
+                  <button
+                    type="button"
+                    onClick={() => alert("DUM Points purchase coming soon! For now, earn points by launching projects and creating offers.")}
+                    className={`mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-bold transition ${pkg.popular ? "bg-emerald-400 text-black hover:bg-emerald-300" : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"}`}
+                  >
+                    Get {pkg.amount} DUM
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-[11px] text-zinc-600">
+              Coming soon: direct purchase via credit card. For now, earn DUM Points by building and selling on the platform.
+            </p>
+          </div>
+        </div>
+
+        {/* What DUM Points unlock */}
+        <div className="mt-10 grid gap-3 sm:grid-cols-4">
+          {[
+            { icon: "🏷️", title: "Discounts", desc: "10% off at any business" },
+            { icon: "🎮", title: "Game Access", desc: "Unlock unlimited play" },
+            { icon: "🚀", title: "Boosts", desc: "Feature your project" },
+            { icon: "🤖", title: "AI Power", desc: "Enhanced AI generation" },
+          ].map((perk) => (
+            <div key={perk.title} className="rounded-xl border border-zinc-800/40 bg-zinc-900/20 p-4 text-center">
+              <div className="text-xl">{perk.icon}</div>
+              <div className="mt-2 text-sm font-bold text-white">{perk.title}</div>
+              <div className="mt-1 text-[11px] text-zinc-500">{perk.desc}</div>
+            </div>
+          ))}
+        </div>
+
         {/* How it works */}
         <div className="mt-16 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 sm:px-12">
           <div className="mx-auto max-w-2xl text-center">
