@@ -221,6 +221,61 @@ function RelativeCreatedAt({ dateStr }: { dateStr?: string | null }) {
   );
 }
 
+/* ─── Discover Section Nav ─── */
+const DISCOVER_NAV = [
+  { id: "section-top", label: "Top" },
+  { id: "section-filters", label: "Filters" },
+  { id: "section-grid", label: "Projects" },
+];
+
+function DiscoverSectionNav() {
+  const [active, setActive] = useState("");
+
+  useEffect(() => {
+    const ids = DISCOVER_NAV.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+    if (ids.length < 2) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" });
+  };
+
+  return (
+    <nav className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
+      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-zinc-800/40 bg-zinc-950/80 px-2.5 py-3 backdrop-blur-sm">
+        {DISCOVER_NAV.map((s) => {
+          const isActive = active === s.id;
+          return (
+            <button key={s.id} onClick={() => scrollTo(s.id)} className="flex items-center gap-2 transition-all duration-200">
+              <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${isActive ? "text-emerald-400" : "text-zinc-600 hover:text-zinc-400"}`}>
+                {s.label}
+              </span>
+              <span className={`block shrink-0 rounded-full transition-all duration-300 ${isActive ? "h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]" : "h-1.5 w-1.5 bg-zinc-700"}`} />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export default function DiscoverPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
@@ -469,6 +524,7 @@ export default function DiscoverPage() {
   return (
     <main className="relative min-h-screen bg-base text-white">
       <Starfield count={100} />
+      <DiscoverSectionNav />
       {/* Live activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
         {recentTrades.length === 0 ? (
@@ -504,7 +560,7 @@ export default function DiscoverPage() {
       </div>
 
       <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
+        <div id="section-top" className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
           ◆ Discovery Feed
         </div>
 
@@ -516,7 +572,7 @@ export default function DiscoverPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1">
+        <div id="section-filters" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1">
           {DISCOVER_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -606,6 +662,7 @@ export default function DiscoverPage() {
           </div>
         )}
 
+        <div id="section-grid">
         {loading ? (
           <div className="border border-zinc-900 bg-zinc-950 p-8 text-zinc-400">
             Loading public projects...
@@ -746,6 +803,7 @@ export default function DiscoverPage() {
             })}
           </div>
         )}
+        </div>
       </section>
     </main>
   );

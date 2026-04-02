@@ -630,6 +630,64 @@ function HeroWalkthrough() {
   );
 }
 
+/* ─── Homepage Section Nav ─── */
+const HOME_SECTIONS = [
+  { id: "section-hero", label: "Hero" },
+  { id: "section-how", label: "How It Works" },
+  { id: "section-features", label: "Features" },
+  { id: "section-projects", label: "Projects" },
+  { id: "section-stats", label: "Stats" },
+  { id: "section-cta", label: "Get Started" },
+];
+
+function HomeSectionNav() {
+  const [active, setActive] = useState("");
+
+  useEffect(() => {
+    const ids = HOME_SECTIONS.filter((s) => document.getElementById(s.id)).map((s) => s.id);
+    if (ids.length < 2) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" });
+  };
+
+  return (
+    <nav className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
+      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-zinc-800/40 bg-zinc-950/80 px-2.5 py-3 backdrop-blur-sm">
+        {HOME_SECTIONS.map((s) => {
+          const isActive = active === s.id;
+          return (
+            <button key={s.id} onClick={() => scrollTo(s.id)} className="flex items-center gap-2 transition-all duration-200">
+              <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${isActive ? "text-emerald-400" : "text-zinc-600 hover:text-zinc-400"}`}>
+                {s.label}
+              </span>
+              <span className={`block shrink-0 rounded-full transition-all duration-300 ${isActive ? "h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]" : "h-1.5 w-1.5 bg-zinc-700"}`} />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export default function Home() {
   const [creatorModal, setCreatorModal] = useState<CreatorStory | null>(null);
   const [allPublicProjects, setAllPublicProjects] = useState<Project[]>([]);
@@ -781,9 +839,10 @@ export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-base text-white">
       <Starfield count={130} />
+      <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
-        <div className="relative rounded-2xl border border-zinc-800/60 bg-base">
+        <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base">
           {/* Ambient background — layered gradient + animated orbs */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
@@ -889,7 +948,7 @@ export default function Home() {
         </div>
 
         <div
-          id="how-it-works"
+          id="section-how"
           className="scroll-mt-28 mx-auto mt-20 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-16 sm:px-12 sm:py-20"
         >
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
@@ -921,7 +980,7 @@ export default function Home() {
         </div>
 
         {/* ── FEATURES ── */}
-        <div className="mx-auto mt-20 max-w-6xl px-2">
+        <div id="section-features" className="mx-auto mt-20 max-w-6xl px-2">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             Platform
           </div>
@@ -1011,7 +1070,7 @@ export default function Home() {
         </div>
 
         {/* Featured project spotlight */}
-        <div className="border-t border-zinc-900 px-4 py-20 sm:py-24">
+        <div id="section-projects" className="border-t border-zinc-900 px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-5xl">
             <div className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               Featured project
@@ -1074,7 +1133,7 @@ export default function Home() {
         </div>
 
         {/* Platform stats */}
-        <div className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
+        <div id="section-stats" className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl">
             <div className="mb-10 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
               Platform pulse
@@ -1086,10 +1145,7 @@ export default function Home() {
                   value: allPublicProjects.length.toString(),
                 },
                 { label: "AI questions answered", value: "∞" },
-                {
-                  label: "Storefronts active",
-                  value: allPublicProjects.length.toString(),
-                },
+                { label: "Categories", value: "5+" },
                 { label: "Built on Solana", value: "✓" },
               ].map((stat) => (
                 <div
@@ -1109,7 +1165,7 @@ export default function Home() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
+        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               Ready?
@@ -1288,7 +1344,7 @@ export default function Home() {
               </div>
               <ul className="space-y-3">
                 {[
-                  { label: "How it works", href: "/#how-it-works" },
+                  { label: "How it works", href: "/#section-how" },
                   { label: "How rewards work", href: "#" },
                   { label: "Creator guide", href: "#" },
                   {
