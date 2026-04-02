@@ -459,6 +459,74 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
   );
 }
 
+/* ─── Live Preview Generator (frontend-only, no API) ─── */
+function generatePreview(idea: string): { name: string; offers: { title: string; price: string }[]; desc: string } | null {
+  const t = idea.trim().toLowerCase();
+  if (t.length < 10) return null;
+
+  // Extract keywords to generate a plausible name
+  const words = idea.trim().split(/\s+/).filter((w) => w.length > 2);
+  const keyWords = words
+    .filter((w) => !["the", "and", "for", "with", "that", "this", "from", "into", "about", "have", "will", "can", "are", "was", "been"].includes(w.toLowerCase()))
+    .slice(0, 3);
+  const name = keyWords.length >= 2
+    ? keyWords.slice(0, 2).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : keyWords.length === 1
+    ? keyWords[0].charAt(0).toUpperCase() + keyWords[0].slice(1).toLowerCase() + " Pro"
+    : "Your Business";
+
+  // Generate contextual offers based on keywords
+  const isService = t.includes("service") || t.includes("coaching") || t.includes("consulting") || t.includes("training") || t.includes("repair") || t.includes("clean") || t.includes("wash");
+  const isDigital = t.includes("course") || t.includes("template") || t.includes("download") || t.includes("digital") || t.includes("ebook") || t.includes("design");
+  const isFood = t.includes("food") || t.includes("bake") || t.includes("cake") || t.includes("cook") || t.includes("restaurant") || t.includes("catering");
+
+  let offers: { title: string; price: string }[];
+  if (isService) {
+    offers = [
+      { title: "Basic Session", price: "$29" },
+      { title: "Full Package", price: "$89" },
+      { title: "Monthly Plan", price: "$49/mo" },
+    ];
+  } else if (isDigital) {
+    offers = [
+      { title: "Starter Pack", price: "$19" },
+      { title: "Complete Bundle", price: "$49" },
+      { title: "Premium Access", price: "$29/mo" },
+    ];
+  } else if (isFood) {
+    offers = [
+      { title: "Single Order", price: "$15" },
+      { title: "Party Package", price: "$75" },
+      { title: "Weekly Plan", price: "$45/wk" },
+    ];
+  } else {
+    offers = [
+      { title: "Basic", price: "$29" },
+      { title: "Professional", price: "$79" },
+      { title: "Unlimited", price: "$49/mo" },
+    ];
+  }
+
+  const desc = idea.trim().length > 60 ? idea.trim().slice(0, 57) + "..." : idea.trim();
+
+  return { name, offers, desc };
+}
+
+/* ─── Free Launch Limit ─── */
+const FREE_LAUNCH_LIMIT = 3;
+const LAUNCH_COUNT_KEY = "dumclub_launch_count";
+
+function getLaunchCount(): number {
+  if (typeof window === "undefined") return 0;
+  return Number(localStorage.getItem(LAUNCH_COUNT_KEY) || "0");
+}
+
+function incrementLaunchCount(): number {
+  const next = getLaunchCount() + 1;
+  localStorage.setItem(LAUNCH_COUNT_KEY, String(next));
+  return next;
+}
+
 /* ─── Animated Product Demo ─── */
 const DEMO_IDEA = "Mobile car wash for busy professionals with premium detailing packages";
 
@@ -806,6 +874,14 @@ export default function Home() {
   const [heroError, setHeroError] = useState("");
   const [heroProgress, setHeroProgress] = useState(0);
   const [pendingAutoLaunch, setPendingAutoLaunch] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [launchCount, setLaunchCount] = useState(0);
+
+  // Load launch count on mount
+  useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
+
+  // Live preview (debounced)
+  const preview = useMemo(() => generatePreview(heroIdea), [heroIdea]);
 
   // ── Existing state ──
   const [creatorModal, setCreatorModal] = useState<CreatorStory | null>(null);
@@ -879,6 +955,8 @@ export default function Home() {
       }
       const data = await res.json();
       localStorage.removeItem("pendingIdea");
+      const newCount = incrementLaunchCount();
+      setLaunchCount(newCount);
       router.push(`/project/${data.project_id}?launched=1`);
     } catch (err) {
       setHeroLaunching(false);
@@ -889,6 +967,11 @@ export default function Home() {
   // ── Handle Launch button click ──
   function handleHeroLaunch() {
     if (!heroIdea.trim() || heroLaunching) return;
+    // Check free limit
+    if (getLaunchCount() >= FREE_LAUNCH_LIMIT) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (!user) {
       // Save idea, trigger login, set pending flag
       localStorage.setItem("pendingIdea", heroIdea.trim());
@@ -1049,6 +1132,32 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-base text-white">
+      {/* ── Upgrade Modal ── */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-emerald-400/20 bg-zinc-950 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 text-3xl">🚀</div>
+            <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free launches</h2>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              You&apos;ve launched {FREE_LAUNCH_LIMIT} projects for free. Upgrade to continue building unlimited storefronts.
+            </p>
+            <Link
+              href="/upgrade"
+              className="mt-6 block w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
+            >
+              See Upgrade Options →
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(false)}
+              className="mt-3 w-full rounded-xl px-6 py-2 text-sm text-zinc-600 transition hover:text-zinc-400"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
       <Starfield count={130} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
@@ -1124,6 +1233,52 @@ export default function Home() {
                   </p>
                 )}
               </div>
+
+              {/* ── LIVE PREVIEW ── */}
+              {preview && !heroLaunching && (
+                <div className="hero-entrance-delay-2 mx-auto mt-5 max-w-2xl">
+                  <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 overflow-hidden">
+                    <div className="flex items-center gap-2 border-b border-zinc-800/50 bg-zinc-950/80 px-4 py-2">
+                      <div className="flex gap-1">
+                        <div className="h-2 w-2 rounded-full bg-red-500/50" />
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/50" />
+                        <div className="h-2 w-2 rounded-full bg-green-500/50" />
+                      </div>
+                      <span className="flex-1 text-center font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-600">Preview</span>
+                      <span className="text-[9px] text-emerald-400/50">AI</span>
+                    </div>
+                    <div className="px-4 py-3 space-y-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm">✨</div>
+                        <div>
+                          <div className="text-[14px] font-bold text-white">{preview.name}</div>
+                          <div className="text-[10px] text-zinc-500">AI-generated storefront</div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {preview.offers.map((o) => (
+                          <div key={o.title} className="flex items-center justify-between rounded-lg border border-zinc-800/30 bg-zinc-900/20 px-3 py-1.5">
+                            <span className="text-[12px] text-zinc-400">{o.title}</span>
+                            <span className="text-[12px] font-bold text-emerald-400">{o.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[9px] text-zinc-600">
+                        <span className="text-emerald-400/60">●</span> Storefront + Offers + Stripe payments
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── LAUNCH LIMIT INDICATOR ── */}
+              {!heroLaunching && launchCount > 0 && launchCount < FREE_LAUNCH_LIMIT && (
+                <div className="mx-auto mt-3 max-w-2xl text-center">
+                  <span className="text-[11px] text-zinc-600">
+                    {FREE_LAUNCH_LIMIT - launchCount} free launch{FREE_LAUNCH_LIMIT - launchCount === 1 ? "" : "es"} remaining
+                  </span>
+                </div>
+              )}
 
               {/* ── TEMPLATE STARTERS ── */}
               {!heroLaunching && (
