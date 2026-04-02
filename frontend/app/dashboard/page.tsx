@@ -44,6 +44,15 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [dumBalance, setDumBalance] = useState(0);
+  const [bizProfile, setBizProfile] = useState<any>(null);
+  const [bizLoading, setBizLoading] = useState(false);
+  const [showBizForm, setShowBizForm] = useState(false);
+  const [bizName, setBizName] = useState("");
+  const [bizCategory, setBizCategory] = useState("General");
+  const [bizDesc, setBizDesc] = useState("");
+  const [bizEmail, setBizEmail] = useState("");
+  const [bizWebsite, setBizWebsite] = useState("");
+  const [bizSaving, setBizSaving] = useState(false);
 
   useEffect(() => {
     async function loadDum() {
@@ -118,6 +127,56 @@ export default function DashboardPage() {
       .catch(() => {})
       .finally(() => loadProjects());
   }, [user?.privyId, loadProjects]);
+
+  // Load business profile
+  useEffect(() => {
+    if (!user?.privyId) return;
+    async function loadBiz() {
+      try {
+        const token = await (user as any)?.getToken?.();
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/api/business/me`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setBizProfile(data.profile || null);
+        }
+      } catch {}
+    }
+    loadBiz();
+  }, [user?.privyId]);
+
+  async function createBusiness() {
+    if (!bizName.trim() || bizSaving) return;
+    setBizSaving(true);
+    try {
+      const { getToken } = await import("../../lib/auth/AuthContext").then(m => ({ getToken: null }));
+      // Use inline token fetch since we can't easily call getToken from dashboard
+      const res = await fetch(`${API_BASE}/api/business/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_name: bizName.trim(),
+          category: bizCategory,
+          short_description: bizDesc.trim() || null,
+          contact_email: bizEmail.trim() || null,
+          website: bizWebsite.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBizProfile(data.profile);
+        setShowBizForm(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || "Failed to create business profile");
+      }
+    } catch (err) {
+      alert("Failed to create business profile");
+    } finally {
+      setBizSaving(false);
+    }
+  }
 
   async function deleteProject(project: Project) {
     if (!user?.privyId) return;
@@ -308,6 +367,128 @@ export default function DashboardPage() {
                 <p className="mt-1 text-xs text-zinc-500">DUM Points spent at your businesses come to you</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Business Profile */}
+        {user && (
+          <div className="mb-6">
+            {bizProfile ? (
+              <div className="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-lg">
+                      🏢
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">{bizProfile.business_name}</span>
+                        {bizProfile.verification_status === "verified" && (
+                          <span className="rounded-full bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-emerald-400">✓ Verified</span>
+                        )}
+                        {bizProfile.verification_status === "pending" && (
+                          <span className="rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400">Pending</span>
+                        )}
+                        {bizProfile.verification_status === "unverified" && (
+                          <span className="rounded-full bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-zinc-500">Unverified</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-zinc-500">{bizProfile.category} · Accepts DUM Points</div>
+                    </div>
+                  </div>
+                  {bizProfile.verification_status === "unverified" && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`${API_BASE}/api/business/request-verification`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ website: bizProfile.website, contact_email: bizProfile.contact_email }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            setBizProfile(data.profile);
+                          }
+                        } catch {}
+                      }}
+                      className="shrink-0 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
+                    >
+                      Request Verification
+                    </button>
+                  )}
+                </div>
+                {bizProfile.short_description && (
+                  <p className="mt-3 text-xs text-zinc-400">{bizProfile.short_description}</p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-5">
+                {showBizForm ? (
+                  <div className="space-y-3">
+                    <div className="text-sm font-bold text-white">Create your business profile</div>
+                    <input
+                      value={bizName}
+                      onChange={(e) => setBizName(e.target.value)}
+                      placeholder="Business name"
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <select
+                        value={bizCategory}
+                        onChange={(e) => setBizCategory(e.target.value)}
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white outline-none"
+                      >
+                        {["General", "Food & Beverage", "Health & Fitness", "Technology", "Creative", "Services", "Retail", "Gaming", "Education"].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={bizEmail}
+                        onChange={(e) => setBizEmail(e.target.value)}
+                        placeholder="Contact email (optional)"
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                      />
+                    </div>
+                    <textarea
+                      value={bizDesc}
+                      onChange={(e) => setBizDesc(e.target.value)}
+                      placeholder="Short description of your business"
+                      rows={2}
+                      className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={createBusiness}
+                        disabled={!bizName.trim() || bizSaving}
+                        className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:opacity-50"
+                      >
+                        {bizSaving ? "Creating..." : "Create Business"}
+                      </button>
+                      <button
+                        onClick={() => setShowBizForm(false)}
+                        className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-400 transition hover:text-white"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-white">Set up your business profile</div>
+                      <p className="mt-1 text-xs text-zinc-500">Add your business identity, get verified, and accept DUM Points</p>
+                    </div>
+                    <button
+                      onClick={() => setShowBizForm(true)}
+                      className="shrink-0 rounded-lg bg-emerald-400 px-4 py-2 text-xs font-bold text-black transition hover:bg-emerald-300"
+                    >
+                      Create Business Profile
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
