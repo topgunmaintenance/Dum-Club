@@ -923,6 +923,12 @@ export default function ProjectPage() {
       }
       const created = await res.json();
       console.log("[saveOffer] success, offer id:", created?.id);
+      // Award DUM Points for creating an offer
+      try {
+        const pts = Number(localStorage.getItem("dum_points") || "50");
+        localStorage.setItem("dum_points", String(pts + 5));
+        window.dispatchEvent(new Event("dum-points-update"));
+      } catch {}
       await loadOffers();
       setOfferFormOpen(false);
       setOfferEditing(null);
@@ -2675,6 +2681,14 @@ return (
         </div>
       )}
 
+      {/* ── DUM Points earned banner (post-launch) ── */}
+      {isOwner && showLiveBanner && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] py-2.5 animate-fade-slide-down">
+          <span className="text-emerald-400 font-bold text-sm">◆ +25 DUM Points earned</span>
+          <span className="text-[11px] text-emerald-400/50">for launching this project</span>
+        </div>
+      )}
+
       {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ── */}
       {isOwner && projectView === "storefront" && (
         <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-5">
@@ -3897,6 +3911,11 @@ return (
                       })()}
                     </div>
                   )}
+
+                  {/* DUM Points discount badge */}
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-3 py-2">
+                    <span className="text-[11px] font-medium text-emerald-400">◆ Use 10 DUM Points for 10% off</span>
+                  </div>
 
                   {/* Price + Action */}
                   {(() => {

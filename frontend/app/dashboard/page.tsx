@@ -43,6 +43,15 @@ export default function DashboardPage() {
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [dumBalance, setDumBalance] = useState(0);
+
+  useEffect(() => {
+    const val = Number(localStorage.getItem("dum_points") || "50");
+    setDumBalance(val);
+    const handler = () => setDumBalance(Number(localStorage.getItem("dum_points") || "0"));
+    window.addEventListener("dum-points-update", handler);
+    return () => window.removeEventListener("dum-points-update", handler);
+  }, []);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -214,19 +223,22 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Tier card */}
-        <div className="mb-6 rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
+        {/* DUM Points card */}
+        <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Your tier</div>
-              <div className="mt-1 text-lg font-bold text-white">Free</div>
-              <p className="mt-1 text-xs text-zinc-500">Hold 100 DUM to unlock Supporter perks</p>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</div>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-2xl font-extrabold text-emerald-400">{dumBalance}</span>
+                <span className="text-sm text-zinc-500">points</span>
+              </div>
+              <p className="mt-1 text-xs text-zinc-500">Use for discounts, boosts, and features across all businesses</p>
             </div>
             <Link
               href="/upgrade"
               className="shrink-0 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
             >
-              View Tiers →
+              Get More →
             </Link>
           </div>
         </div>

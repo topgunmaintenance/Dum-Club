@@ -584,6 +584,21 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
   return { name, offers, desc, emoji, tag };
 }
 
+/* ─── DUM Points Helpers ─── */
+function getDumPoints(): number {
+  if (typeof window === "undefined") return 0;
+  return Number(localStorage.getItem("dum_points") || "50");
+}
+
+function awardDumPoints(amount: number): number {
+  const current = getDumPoints();
+  const next = current + amount;
+  localStorage.setItem("dum_points", String(next));
+  // Notify other components (Navbar, Dashboard)
+  window.dispatchEvent(new Event("dum-points-update"));
+  return next;
+}
+
 /* ─── Free Launch Limit ─── */
 const FREE_LAUNCH_LIMIT = 3;
 const LAUNCH_COUNT_KEY = "dumclub_launch_count";
@@ -1029,6 +1044,8 @@ export default function Home() {
       localStorage.removeItem("pendingIdea");
       const newCount = incrementLaunchCount();
       setLaunchCount(newCount);
+      // Award DUM Points for launching
+      awardDumPoints(25);
       router.push(`/project/${data.project_id}?launched=1`);
     } catch (err) {
       setHeroLaunching(false);

@@ -15,8 +15,27 @@ export function Navbar() {
   const [navHover, setNavHover] = useState(false);
   const [brandHover, setBrandHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dumBalance, setDumBalance] = useState(0);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    // Initialize DUM Points from localStorage
+    const stored = localStorage.getItem("dum_points");
+    if (stored) {
+      setDumBalance(Number(stored));
+    } else {
+      // First-time user welcome bonus
+      localStorage.setItem("dum_points", "50");
+      setDumBalance(50);
+    }
+    // Listen for balance updates from other components
+    const handler = () => {
+      const val = Number(localStorage.getItem("dum_points") || "0");
+      setDumBalance(val);
+    };
+    window.addEventListener("dum-points-update", handler);
+    return () => window.removeEventListener("dum-points-update", handler);
+  }, []);
 
   const links = [
     { href: "/discover", label: "Discover" },
@@ -327,12 +346,34 @@ export function Navbar() {
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
+            /* DUM Points badge is prepended inside this container */
             gap: "14px",
             minHeight: "52px",
           }}
         >
           {mounted && (
             <>
+              {user && dumBalance > 0 && (
+                <div
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "11px",
+                    color: "#00FFB2",
+                    letterSpacing: "0.1em",
+                    border: "1px solid rgba(0,255,178,0.2)",
+                    background: "rgba(0,255,178,0.05)",
+                    borderRadius: "10px",
+                    padding: "8px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ fontSize: "13px" }}>◆</span>
+                  {dumBalance} DUM
+                </div>
+              )}
               {loading ? (
                 <button
                   type="button"

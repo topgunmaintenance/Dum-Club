@@ -6,7 +6,7 @@ import { Starfield } from "../../components/Starfield";
 const TIERS = [
   {
     name: "Free",
-    requirement: "No tokens needed",
+    requirement: "No points needed",
     color: "text-zinc-400",
     borderColor: "border-zinc-800",
     features: [
@@ -31,7 +31,7 @@ const TIERS = [
       "10% off creator offers",
       "Everything in Free",
     ],
-    cta: "Get DUM Tokens",
+    cta: "Get DUM Points",
   },
   {
     name: "Pro",
@@ -45,7 +45,7 @@ const TIERS = [
       "Custom storefront branding",
       "Everything in Supporter",
     ],
-    cta: "Get DUM Tokens",
+    cta: "Get DUM Points",
   },
   {
     name: "Partner",
@@ -59,7 +59,7 @@ const TIERS = [
       "Direct creator support",
       "Everything in Pro",
     ],
-    cta: "Get DUM Tokens",
+    cta: "Get DUM Points",
   },
 ];
 
@@ -88,7 +88,7 @@ export default function TiersPage() {
             <span className="text-emerald-400">Unlock more.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-            No subscriptions. No monthly fees. Hold DUM tokens to unlock features permanently — the more you hold, the more you can do.
+            No subscriptions. No monthly fees. Earn DUM Points to unlock features — the more you earn, the more you can do.
           </p>
         </div>
 
@@ -149,12 +149,12 @@ export default function TiersPage() {
               How it works
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-              DUM tokens live on Solana. Hold them in your wallet and your tier activates automatically. No staking, no locking, no complexity — just hold and use.
+              DUM Points are your membership level. Earn them by building, selling, and using the platform. Your tier activates automatically.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               {[
-                { step: "01", label: "Get DUM", desc: "Buy on Exchange or earn through the platform" },
-                { step: "02", label: "Hold", desc: "Keep tokens in your connected wallet" },
+                { step: "01", label: "Earn", desc: "Launch projects, make sales, use the platform" },
+                { step: "02", label: "Grow", desc: "Your balance grows as you build and sell" },
                 { step: "03", label: "Unlock", desc: "Features activate based on your balance" },
               ].map((s) => (
                 <div key={s.step} className="rounded-xl border border-zinc-800 bg-base p-5">
