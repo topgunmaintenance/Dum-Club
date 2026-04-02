@@ -31,6 +31,15 @@ export default function BuildPage() {
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
   const [idea, setIdea] = useState("");
   const [state, setState] = useState<LaunchState>("idle");
+
+  // Prefill from homepage pending idea
+  useEffect(() => {
+    const pending = localStorage.getItem("pendingIdea");
+    if (pending) {
+      setIdea(pending);
+      localStorage.removeItem("pendingIdea");
+    }
+  }, []);
   const [error, setError] = useState("");
   const [progressStep, setProgressStep] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);

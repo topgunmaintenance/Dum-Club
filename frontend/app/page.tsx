@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Starfield } from "../components/Starfield";
+import { useAuth } from "../lib/auth/AuthContext";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 type Project = {
   id: string;
@@ -31,6 +34,25 @@ type MarketSnapshot = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const TEMPLATE_STARTERS = [
+  { label: "Personal Trainer", prompt: "A personal training business with coaching packages and meal plans" },
+  { label: "Car Wash", prompt: "A mobile car wash and detailing service with tiered packages" },
+  { label: "Bakery", prompt: "A local bakery selling custom cakes, pastries, and catering" },
+  { label: "Consulting", prompt: "A business consulting firm offering strategy sessions and audits" },
+  { label: "Jewelry", prompt: "A handmade silver jewelry store with custom and ready-made pieces" },
+  { label: "Design Studio", prompt: "A freelance design studio offering logo, brand, and web packages" },
+  { label: "HVAC", prompt: "An HVAC repair and installation service with maintenance plans" },
+  { label: "Digital Products", prompt: "A creator selling online courses, templates, and digital downloads" },
+];
+
+const LAUNCH_PROGRESS = [
+  "Reading your idea...",
+  "Building your storefront...",
+  "Setting up offers...",
+  "Configuring payments...",
+  "Almost there...",
+];
 
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
@@ -375,16 +397,9 @@ function CreatorTicker({
   );
 }
 
-/* ─── Hero Walkthrough — Describe / Launch / Grow ─── */
-
-// Phase definitions: which messages belong to each phase
-const PHASE_DESCRIBE = { start: 0, end: 4 }; // msgs 0-4
-const PHASE_LAUNCH = { start: 5, end: 5 };    // msg 5
-const PHASE_GROW = { start: 6, end: 7 };      // msgs 6-7
-const PHASE_STARTS = [PHASE_DESCRIBE.start, PHASE_LAUNCH.start, PHASE_GROW.start];
-const PHASE_ENDS = [PHASE_DESCRIBE.end, PHASE_LAUNCH.end, PHASE_GROW.end];
-
-function HeroWalkthrough() {
+/* ─── (HeroWalkthrough removed — replaced by homepage textarea) ─── */
+/* @ts-ignore */ function _walkthrough_placeholder() { return null; } // eslint-disable-line
+function _removed_do_not_call() {
   const [msg, setMsg] = useState(0);
   const [userClicked, setUserClicked] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -751,12 +766,111 @@ function HomeSectionNav() {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const { user, login } = useAuth();
+  const { wallets, createWallet } = useSolanaWallets();
+  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
+
+  // ── Launch state ──
+  const [heroIdea, setHeroIdea] = useState("");
+  const [heroLaunching, setHeroLaunching] = useState(false);
+  const [heroError, setHeroError] = useState("");
+  const [heroProgress, setHeroProgress] = useState(0);
+  const [pendingAutoLaunch, setPendingAutoLaunch] = useState(false);
+
+  // ── Existing state ──
   const [creatorModal, setCreatorModal] = useState<CreatorStory | null>(null);
   const [allPublicProjects, setAllPublicProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const marketPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Progress step animation ──
+  useEffect(() => {
+    if (!heroLaunching) { setHeroProgress(0); return; }
+    const timers = LAUNCH_PROGRESS.map((_, i) =>
+      window.setTimeout(() => setHeroProgress(i), i * 5000)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [heroLaunching]);
+
+  // ── Check localStorage for pending idea on mount ──
+  useEffect(() => {
+    const pending = localStorage.getItem("pendingIdea");
+    if (pending) setHeroIdea(pending);
+  }, []);
+
+  // ── Auto-launch: when user + wallet + pendingIdea are all ready ──
+  useEffect(() => {
+    if (!pendingAutoLaunch) return;
+    if (!user || !walletAddress) return;
+    const idea = localStorage.getItem("pendingIdea");
+    if (!idea?.trim()) { setPendingAutoLaunch(false); return; }
+    // All conditions met — auto-launch
+    setPendingAutoLaunch(false);
+    doHeroLaunch(idea.trim());
+  }, [pendingAutoLaunch, user, walletAddress]);
+
+  // ── Auto-create wallet if user is authenticated but has no wallet ──
+  useEffect(() => {
+    if (user && !walletAddress && pendingAutoLaunch) {
+      createWallet().catch(() => {});
+    }
+  }, [user, walletAddress, pendingAutoLaunch]);
+
+  // ── Core launch function ──
+  async function doHeroLaunch(idea: string) {
+    setHeroLaunching(true);
+    setHeroError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/launch/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idea,
+          owner_id: user?.privyId ?? null,
+          wallet_address: walletAddress,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          setHeroLaunching(false);
+          setHeroError("Daily launch limit reached. Try again tomorrow or upgrade.");
+          return;
+        }
+        throw new Error(data?.detail || "Launch failed — please try again.");
+      }
+      const data = await res.json();
+      localStorage.removeItem("pendingIdea");
+      router.push(`/project/${data.project_id}?launched=1`);
+    } catch (err) {
+      setHeroLaunching(false);
+      setHeroError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
+
+  // ── Handle Launch button click ──
+  function handleHeroLaunch() {
+    if (!heroIdea.trim() || heroLaunching) return;
+    if (!user) {
+      // Save idea, trigger login, set pending flag
+      localStorage.setItem("pendingIdea", heroIdea.trim());
+      setPendingAutoLaunch(true);
+      login();
+      return;
+    }
+    if (!walletAddress) {
+      // Save idea, create wallet, set pending flag
+      localStorage.setItem("pendingIdea", heroIdea.trim());
+      setPendingAutoLaunch(true);
+      createWallet().catch(() => {});
+      return;
+    }
+    // Ready — launch immediately
+    doHeroLaunch(heroIdea.trim());
+  }
 
   const latestProjectsNews = useMemo(
     () =>
@@ -903,93 +1017,111 @@ export default function Home() {
       <Starfield count={130} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
-        {/* ── HERO ── */}
+        {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
-          {/* Ambient background — layered gradient + animated orbs */}
+          {/* Ambient background */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
-            {/* Floating orb 1 — emerald, top-left */}
             <div
               className="absolute pointer-events-none"
-              style={{
-                left: "-8%", top: "5%",
-                width: 500, height: 500, borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(0,255,163,0.07), transparent 65%)",
-                filter: "blur(80px)",
-                animation: "orb-drift 22s ease-in-out infinite",
-              }}
+              style={{ left: "-8%", top: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,255,163,0.07), transparent 65%)", filter: "blur(80px)", animation: "orb-drift 22s ease-in-out infinite" }}
             />
-            {/* Floating orb 2 — violet, bottom-right */}
             <div
               className="absolute pointer-events-none"
-              style={{
-                right: "-5%", bottom: "0%",
-                width: 420, height: 420, borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(123,97,255,0.09), transparent 65%)",
-                filter: "blur(80px)",
-                animation: "orb-drift-reverse 28s ease-in-out infinite",
-              }}
+              style={{ right: "-5%", bottom: "0%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(123,97,255,0.09), transparent 65%)", filter: "blur(80px)", animation: "orb-drift-reverse 28s ease-in-out infinite" }}
             />
           </div>
 
-          <div className="relative px-6 py-16 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
-            <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-20">
+          <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
+            <div className="mx-auto max-w-3xl text-center">
 
-              {/* LEFT — Message */}
-              <div>
-                <h1 className="hero-entrance text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  Describe it.
-                  <br />
-                  <span className="text-emerald-400" style={{ textShadow: "0 0 40px rgba(0,255,163,0.3)" }}>
-                    AI launches it.
-                  </span>
-                </h1>
+              <h1 className="hero-entrance text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Describe your idea.
+                <br />
+                <span className="text-emerald-400" style={{ textShadow: "0 0 40px rgba(0,255,163,0.3)" }}>
+                  AI builds your business.
+                </span>
+              </h1>
 
-                <div className="hero-entrance-delay-1 mt-3 flex items-center gap-2 text-[12px] font-medium tracking-wide text-zinc-600 sm:text-[13px]">
-                  <span className="text-emerald-400/70">Describe</span>
-                  <span className="text-zinc-700">→</span>
-                  <span className="text-emerald-400/70">Launch</span>
-                  <span className="text-zinc-700">→</span>
-                  <span className="text-emerald-400/70">Grow</span>
-                </div>
+              <p className="hero-entrance-delay-1 mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+                Type what you want to offer. AI creates your storefront, offers, and payments — you go live instantly.
+              </p>
 
-                <p className="hero-entrance-delay-1 mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                  DUM Club gives creators an AI-powered storefront, a community, and a loyalty system that rewards your best customers automatically.
-                </p>
+              {/* ── LAUNCH INPUT ── */}
+              <div className="hero-entrance-delay-2 mx-auto mt-10 max-w-2xl">
+                <textarea
+                  value={heroIdea}
+                  onChange={(e) => setHeroIdea(e.target.value)}
+                  placeholder="Describe your business idea..."
+                  rows={3}
+                  disabled={heroLaunching}
+                  className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950/80 px-5 py-4 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
+                />
 
-                <div className="hero-entrance-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
-                  <Link
-                    href="/build"
-                    className="group inline-flex items-center justify-center rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] hover:scale-[1.02] sm:w-auto"
-                  >
-                    Start Building
-                    <span className="ml-2 inline-block transition-transform duration-200 ease-out group-hover:translate-x-1">
-                      →
+                <button
+                  type="button"
+                  onClick={handleHeroLaunch}
+                  disabled={!heroIdea.trim() || heroLaunching}
+                  className="mt-3 w-full rounded-2xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {heroLaunching ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                      <span key={heroProgress} className="animate-fade-in">
+                        {LAUNCH_PROGRESS[heroProgress]}
+                      </span>
                     </span>
-                  </Link>
-
-                  <Link
-                    href={allPublicProjects.length > 0 ? `/project/${allPublicProjects[0].id}` : "/discover"}
-                    className="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-300 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-emerald-400/30 hover:text-white hover:shadow-[0_0_20px_rgba(0,255,163,0.08)] sm:w-auto"
-                  >
-                    See Live Example
-                  </Link>
-                </div>
-
-                <p className="hero-entrance-delay-2 mt-5 text-[13px] text-zinc-500">
-                  {allPublicProjects.length > 0 && (
-                    <span className="text-emerald-400/70">{allPublicProjects.length} projects live</span>
+                  ) : (
+                    "Launch →"
                   )}
-                  {allPublicProjects.length > 0 && " · "}
-                  No website needed · No developer required
-                </p>
+                </button>
+
+                {heroError && (
+                  <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    {heroError}
+                  </div>
+                )}
+
+                {heroLaunching && (
+                  <p className="mt-3 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+                    Step {heroProgress + 1} of {LAUNCH_PROGRESS.length} · usually under 30s
+                  </p>
+                )}
               </div>
 
-              {/* RIGHT — 3-Step Walkthrough */}
-              <div className="hero-chat-entrance hero-demo-float flex justify-center lg:justify-end">
-                <HeroWalkthrough />
-              </div>
+              {/* ── TEMPLATE STARTERS ── */}
+              {!heroLaunching && (
+                <div className="hero-entrance-delay-2 mx-auto mt-6 max-w-2xl">
+                  <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+                    Start from an example
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {TEMPLATE_STARTERS.map((t) => (
+                      <button
+                        key={t.label}
+                        type="button"
+                        onClick={() => setHeroIdea(t.prompt)}
+                        className="rounded-full border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-[12px] text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300"
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Trust line ── */}
+              <p className="hero-entrance-delay-2 mx-auto mt-6 text-[13px] text-zinc-600">
+                {allPublicProjects.length > 0 && (
+                  <span className="text-emerald-400/70">{allPublicProjects.length} projects live</span>
+                )}
+                {allPublicProjects.length > 0 && " · "}
+                No website needed · No developer required ·{" "}
+                <Link href={allPublicProjects.length > 0 ? `/project/${allPublicProjects[0].id}` : "/discover"} className="text-zinc-500 underline decoration-zinc-700 transition hover:text-zinc-300">
+                  See live example
+                </Link>
+              </p>
 
             </div>
           </div>
