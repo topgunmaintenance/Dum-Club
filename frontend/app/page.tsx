@@ -612,7 +612,7 @@ function ProductDemo() {
   return (
     <div className="mt-16">
       <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
-        See it in action
+        Interactive Demo + Storefront
       </div>
 
       {/* Progress dots */}

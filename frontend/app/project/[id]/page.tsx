@@ -506,6 +506,7 @@ export default function ProjectPage() {
 
   const [loadingProject, setLoadingProject] = useState(true);
   const [projectView, setProjectView] = useState<"storefront" | "analytics">("storefront");
+  const [embedExpanded, setEmbedExpanded] = useState(false);
   const [loadingMemory, setLoadingMemory] = useState(false);
   const [loadingAsk, setLoadingAsk] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -3401,20 +3402,28 @@ return (
             <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{tmpl.emoji}</span>
-                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Preview</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Demo + Storefront</span>
               </div>
-              <span className="text-[9px] text-zinc-600">Use arrow keys or touch to play</span>
+              <div className="flex items-center gap-3">
+                <span className="hidden text-[9px] text-zinc-600 sm:inline">Arrow keys or touch to play</span>
+                <button
+                  type="button"
+                  onClick={() => setEmbedExpanded((v) => !v)}
+                  className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200"
+                >
+                  {embedExpanded ? "Collapse" : "Expand"}
+                </button>
+              </div>
             </div>
             <iframe
-              id="embed-frame"
               srcDoc={tmpl.html}
               sandbox="allow-scripts"
-              className="w-full border-0"
-              style={{ height: 420, background: "#07071A" }}
-              title={`${tmpl.label} — interactive preview`}
+              className="w-full border-0 transition-all duration-300"
+              style={{ height: embedExpanded ? "80vh" : 420, background: "#07071A" }}
+              title={`${tmpl.label} — interactive demo`}
             />
             <div className="border-t border-zinc-800/60 px-5 py-2 text-center">
-              <span className="text-[9px] text-zinc-700">Powered by DUM Club · Interactive template</span>
+              <span className="text-[9px] text-zinc-700">Powered by DUM Club</span>
             </div>
           </div>
         );

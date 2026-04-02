@@ -438,14 +438,14 @@ def _generate_offers_from_idea(idea: str, title: str) -> Optional[list]:
 # ── Template matching ──────────────────────────────────────────────────────
 
 _TEMPLATE_KEYWORDS: dict[str, list[str]] = {
-    "tetris": ["tetris", "block stacking", "falling blocks"],
-    "snake": ["snake game", "snake"],
-    "memory": ["memory game", "card matching", "memory match"],
-    "2048": ["2048", "number puzzle", "sliding puzzle"],
-    "pong": ["pong", "paddle game"],
-    "calculator": ["calculator", "calc tool"],
-    "timer": ["timer", "stopwatch", "countdown"],
-    "quiz": ["quiz", "trivia"],
+    "tetris": ["tetris", "block stack", "falling block", "brick game", "block game", "block puzzle"],
+    "snake": ["snake", "slither"],
+    "memory": ["memory game", "memory match", "card match", "matching game", "card game", "flip card"],
+    "2048": ["2048", "number tile", "tile merge", "sliding number", "number merge"],
+    "pong": ["pong", "paddle", "ping pong", "table tennis"],
+    "calculator": ["calculator", "calc"],
+    "timer": ["timer", "stopwatch", "countdown", "time tracker"],
+    "quiz": ["quiz", "trivia", "question game", "knowledge test"],
 }
 
 

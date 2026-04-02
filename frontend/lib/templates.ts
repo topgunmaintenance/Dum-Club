@@ -195,14 +195,14 @@ export const TEMPLATES: Record<string, { html: string; label: string; emoji: str
 export function matchTemplate(idea: string): string | null {
   const t = idea.toLowerCase();
   const keywords: Record<string, string[]> = {
-    tetris: ["tetris", "block stacking", "falling blocks"],
-    snake: ["snake game", "snake"],
-    memory: ["memory game", "card matching", "memory match"],
-    "2048": ["2048", "number puzzle", "sliding puzzle"],
-    pong: ["pong", "paddle game"],
-    calculator: ["calculator", "calc tool"],
-    timer: ["timer", "stopwatch", "countdown"],
-    quiz: ["quiz", "trivia"],
+    tetris: ["tetris", "block stack", "falling block", "brick game", "block game", "block puzzle"],
+    snake: ["snake", "slither"],
+    memory: ["memory game", "memory match", "card match", "matching game", "card game", "flip card"],
+    "2048": ["2048", "number tile", "tile merge", "sliding number", "number merge"],
+    pong: ["pong", "paddle", "ping pong", "table tennis"],
+    calculator: ["calculator", "calc"],
+    timer: ["timer", "stopwatch", "countdown", "time tracker"],
+    quiz: ["quiz", "trivia", "question game", "knowledge test"],
   };
   for (const [id, kws] of Object.entries(keywords)) {
     if (kws.some((kw) => t.includes(kw))) return id;
