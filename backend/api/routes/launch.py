@@ -446,6 +446,9 @@ _TEMPLATE_KEYWORDS: dict[str, list[str]] = {
     "calculator": ["calculator", "calc"],
     "timer": ["timer", "stopwatch", "countdown", "time tracker"],
     "quiz": ["quiz", "trivia", "question game", "knowledge test"],
+    "target": ["target", "aim", "sniper", "shoot target", "target practice", "aim trainer"],
+    "topdown": ["zombie", "survival game", "top down shoot", "arena shoot", "zombie shoot", "shooting game", "shooter game", "shoot em"],
+    "defense": ["tower defense", "defend", "base defense", "turret"],
 }
 
 
