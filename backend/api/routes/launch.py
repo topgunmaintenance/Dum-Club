@@ -46,7 +46,7 @@ DEFAULT_STARTING_PRICE = 0.001
 LAUNCH_DAILY_LIMIT = 5
 
 _SYSTEM_PROMPT = """
-You are an AI product strategist for DUM Club, an AI-powered Solana launchpad for ideas.
+You are an AI product strategist for DUM Club, a platform that turns ideas into live business storefronts.
 
 A user will give you a project idea. Return ONLY valid JSON with this exact structure:
 
@@ -54,14 +54,36 @@ A user will give you a project idea. Return ONLY valid JSON with this exact stru
   "title": "Short project title",
   "description": "Clear one-paragraph description of the project",
   "template_type": "ai_app",
-  "token_utility": "Why early supporters and token holders benefit from this project"
+  "token_utility": "Why supporters benefit from this project"
 }
 
-Rules:
+Category Rules — detect the type of idea and adjust your output:
+
+GAMING (keywords: game, play, arcade, puzzle, rpg, shooter, racing, tetris, snake, chess):
+- Title: catchy gaming brand name (e.g. "RetroBlock Arcade", "SnakeQuest")
+- Description: sell the EXPERIENCE, not the code. Focus on gameplay, competition, fun.
+- token_utility: "Supporters unlock exclusive content, early access to new levels, and tournament entry"
+
+APP/TOOL (keywords: app, tool, platform, dashboard, tracker, calculator, scheduler):
+- Title: clean SaaS-style name (e.g. "TaskFlow Pro", "CalcMaster")
+- Description: focus on what problem it solves and who it helps
+- token_utility: "Supporters get premium features, priority support, and early access to updates"
+
+CREATOR (keywords: art, music, beat, photo, video, course, ebook, podcast, design):
+- Title: creator brand name (e.g. "BeatVault Studio", "DesignForge")
+- Description: focus on the creative value and what customers get
+- token_utility: "Supporters get exclusive content, behind-the-scenes access, and early drops"
+
+DEFAULT (service, product, business):
+- Title: 3-5 words, brandable business name
+- Description: what the business does and who it helps
+- token_utility: "Supporters get perks, discounts, and priority access"
+
+General Rules:
 - Return only JSON, no markdown, no code fences, no extra text
 - Title: 3-5 words, brandable
-- Description: one clear paragraph, what the project does and who it helps
-- token_utility: community and holder value — do NOT promise guaranteed services or returns
+- Description: one clear paragraph that SELLS the idea, not describes code
+- NEVER describe technical implementation — describe the customer experience
 """
 
 
@@ -269,7 +291,7 @@ def _try_hosted_llm(idea: str) -> Optional[dict]:
 _OFFERS_SYSTEM_PROMPT = """
 You are helping a new business create their first product/service offers.
 
-Given a business idea, generate 1 to 3 realistic offers this business could sell.
+Given a business idea, generate 2 to 3 realistic offers this business could sell.
 Return ONLY valid JSON — an array of objects with this structure:
 
 [
@@ -281,13 +303,39 @@ Return ONLY valid JSON — an array of objects with this structure:
   }
 ]
 
+Category-Aware Pricing — adjust offers based on the type of idea:
+
+GAMING ideas (game, arcade, play, puzzle):
+- Offer examples: Game Access Pass, Premium Content Pack, Monthly Subscription, Tournament Entry
+- Price range: $2.99 - $19.99
+- offer_type: "digital_service"
+
+APP/TOOL ideas (app, tool, platform, calculator, tracker):
+- Offer examples: Starter Plan, Pro Plan, Enterprise Access, API Credits
+- Price range: $9 - $99/mo
+- offer_type: "digital_service"
+
+CREATOR ideas (art, music, course, ebook, design, photo):
+- Offer examples: Single Download, Complete Bundle, Monthly Membership, Commission Slot
+- Price range: $5 - $149
+- offer_type: "digital_service"
+
+SERVICE ideas (coaching, training, consulting, repair, cleaning):
+- Offer examples: Single Session, Full Package, Monthly Retainer
+- Price range: $29 - $297
+- offer_type: "digital_service"
+
+FOOD ideas (restaurant, bakery, catering, meal prep):
+- Offer examples: Single Order, Party Package, Weekly Meal Plan
+- Price range: $15 - $149
+- offer_type: "physical_product"
+
 Rules:
 - Return only a JSON array, no markdown, no code fences, no extra text
 - offer_type must be "digital_service" or "physical_product"
-- price_usd must be realistic (between 5 and 500)
-- Keep titles short and action-oriented
-- Descriptions should be one clear sentence about the deliverable
-- Generate 2-3 offers at different price points when possible
+- Generate 2-3 offers at different price points
+- Titles should be short and action-oriented
+- Descriptions should be one clear sentence about what the customer gets
 """
 
 
@@ -384,6 +432,29 @@ def _generate_offers_from_idea(idea: str, title: str) -> Optional[list]:
         except Exception:
             pass
 
+    return None
+
+
+# ── Template matching ──────────────────────────────────────────────────────
+
+_TEMPLATE_KEYWORDS: dict[str, list[str]] = {
+    "tetris": ["tetris", "block stacking", "falling blocks"],
+    "snake": ["snake game", "snake"],
+    "memory": ["memory game", "card matching", "memory match"],
+    "2048": ["2048", "number puzzle", "sliding puzzle"],
+    "pong": ["pong", "paddle game"],
+    "calculator": ["calculator", "calc tool"],
+    "timer": ["timer", "stopwatch", "countdown"],
+    "quiz": ["quiz", "trivia"],
+}
+
+
+def _match_template(idea: str) -> Optional[str]:
+    """Match an idea to a known interactive template. Returns template_id or None."""
+    idea_lower = idea.lower()
+    for template_id, keywords in _TEMPLATE_KEYWORDS.items():
+        if any(kw in idea_lower for kw in keywords):
+            return template_id
     return None
 
 
@@ -495,6 +566,7 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
             "template_type": template_type,
             "token_utility": token_utility,
             "raw_output": raw_output,
+            "template_id": _match_template(req.idea.strip()),
         },
         "wallet_address": req.wallet_address,
         "created_at": now,
