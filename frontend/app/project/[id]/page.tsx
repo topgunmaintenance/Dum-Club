@@ -2673,6 +2673,32 @@ return (
         </div>
       )}
 
+      {/* ── AI Co-pilot Prompts (post-launch) ── */}
+      {isOwner && showLiveBanner && (
+        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-5 animate-fade-slide-down">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+            <span className="text-sm font-bold text-white">Grow your business with AI</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Improve my offers", href: `/chat?project=${id}` },
+              { label: "Pricing strategy", href: `/chat?project=${id}` },
+              { label: "Marketing ideas", href: `/chat?project=${id}` },
+              { label: "Write better descriptions", href: `/chat?project=${id}` },
+            ].map((p) => (
+              <Link
+                key={p.label}
+                href={p.href}
+                className="rounded-lg border border-violet-500/20 bg-violet-500/[0.06] px-3 py-1.5 text-[11px] font-medium text-violet-300 transition hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-violet-200"
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Top Navigation Bar ── */}
       <div className="mb-8 flex items-center justify-between gap-3">
         <Link
