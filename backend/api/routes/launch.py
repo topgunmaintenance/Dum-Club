@@ -445,15 +445,15 @@ def _generate_offers_from_idea(idea: str, title: str) -> Optional[list]:
 
 _TEMPLATE_KEYWORDS: dict[str, list[str]] = {
     "tetris": ["tetris", "block stack", "falling block", "brick game", "block game", "block puzzle"],
-    "snake": ["snake", "slither"],
+    "snake": ["snake game", "snake arcade", "slither"],
     "memory": ["memory game", "memory match", "card match", "matching game", "card game", "flip card"],
     "2048": ["2048", "number tile", "tile merge", "sliding number", "number merge"],
-    "pong": ["pong", "paddle", "ping pong", "table tennis"],
+    "pong": ["pong", "ping pong", "table tennis", "pong game", "paddle game"],
     "calculator": ["calculator", "calc"],
     "timer": ["timer", "stopwatch", "countdown", "time tracker"],
     "quiz": ["quiz", "trivia", "question game", "knowledge test"],
-    "target": ["target", "aim", "sniper", "shoot target", "target practice", "aim trainer"],
-    "topdown": ["zombie", "survival game", "top down shoot", "arena shoot", "zombie shoot", "shooting game", "shooter game", "shoot em"],
+    "target": ["target practice", "aim trainer", "sniper game", "shoot target", "target shoot"],
+    "topdown": ["zombie game", "zombie shoot", "survival shooter", "top down shoot", "arena shoot", "shooting game", "shooter game", "shoot em"],
     "defense": ["tower defense", "defend", "base defense", "turret"],
 }
 
