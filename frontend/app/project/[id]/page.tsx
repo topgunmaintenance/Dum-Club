@@ -546,8 +546,29 @@ export default function ProjectPage() {
     }
   }
 
-  function unlockGameWithDum() {
+  async function unlockGameWithDum() {
     if (!id) return;
+    const privyId = authUser?.privyId;
+    if (privyId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/dum/spend`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "game_unlock", project_id: id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("dum_points", String(data.balance));
+          localStorage.setItem(`dum_game_unlocked_${id}`, "true");
+          window.dispatchEvent(new Event("dum-points-update"));
+          setGameUnlocked(true);
+          setGameLocked(false);
+          setGamePlaysLeft(Infinity);
+          return;
+        }
+      } catch {}
+    }
+    // Fallback: localStorage
     const pts = Number(localStorage.getItem("dum_points") || "0");
     if (pts < 10) return;
     localStorage.setItem("dum_points", String(pts - 10));
@@ -975,8 +996,22 @@ export default function ProjectPage() {
       console.log("[saveOffer] success, offer id:", created?.id);
       // Award DUM Points for creating an offer
       try {
-        const pts = Number(localStorage.getItem("dum_points") || "50");
-        localStorage.setItem("dum_points", String(pts + 5));
+        const privyId = authUser?.privyId;
+        if (privyId) {
+          const dumRes = await fetch(`${API_BASE}/api/dum/award`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ privy_id: privyId, amount: 5, reason: "offer_created" }),
+          });
+          if (dumRes.ok) {
+            const dumData = await dumRes.json();
+            localStorage.setItem("dum_points", String(dumData.balance));
+          }
+        } else {
+          // Fallback: localStorage only
+          const pts = Number(localStorage.getItem("dum_points") || "50");
+          localStorage.setItem("dum_points", String(pts + 5));
+        }
         window.dispatchEvent(new Event("dum-points-update"));
       } catch {}
       await loadOffers();
@@ -4026,8 +4061,30 @@ return (
                   ) : (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setDumDiscountError(null);
+                        const privyId = authUser?.privyId;
+                        if (privyId) {
+                          try {
+                            const res = await fetch(`${API_BASE}/api/dum/spend`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "discount", project_id: id }),
+                            });
+                            if (!res.ok) {
+                              const err = await res.json().catch(() => ({}));
+                              setDumDiscountError(err.detail || "Not enough DUM Points.");
+                              setTimeout(() => setDumDiscountError(null), 4000);
+                              return;
+                            }
+                            const data = await res.json();
+                            localStorage.setItem("dum_points", String(data.balance));
+                            window.dispatchEvent(new Event("dum-points-update"));
+                            setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
+                            return;
+                          } catch {}
+                        }
+                        // Fallback: localStorage
                         const pts = Number(localStorage.getItem("dum_points") || "0");
                         if (pts < 10) {
                           setDumDiscountError("Not enough DUM Points. Earn more by launching projects and creating offers.");
@@ -4035,10 +4092,6 @@ return (
                           return;
                         }
                         localStorage.setItem("dum_points", String(pts - 10));
-                        // Credit 10 DUM to the business (project owner)
-                        const bizKey = `dum_received_${id}`;
-                        const bizPts = Number(localStorage.getItem(bizKey) || "0");
-                        localStorage.setItem(bizKey, String(bizPts + 10));
                         window.dispatchEvent(new Event("dum-points-update"));
                         setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
                       }}
