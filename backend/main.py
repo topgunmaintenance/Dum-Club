@@ -37,6 +37,7 @@ from api.routes import (
     offers,
     checkout,
     health,
+    dum_points,
 )
 
 from db.supabase import init_supabase
@@ -118,6 +119,9 @@ app.include_router(checkout.router, prefix="/api/checkout", tags=["Checkout"])
 
 # System Health
 app.include_router(health.router, prefix="/api/health", tags=["Health"])
+
+# DUM Points
+app.include_router(dum_points.router, prefix="/api/dum", tags=["DUM Points"])
 
 # Token Creation (NO PREFIX so route stays clean)
 app.include_router(token.router, tags=["Token"])

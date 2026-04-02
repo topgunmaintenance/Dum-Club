@@ -688,6 +688,19 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
     except Exception as exc:
         print(f"[launch] offer auto-generation failed (non-fatal): {exc!r}")
 
+    # ── 8. Award DUM Points for launching ────────────────────────────────
+    try:
+        if req.owner_id or req.wallet_address:
+            privy_id = req.owner_id if req.owner_id and not _UUID_RE.match(req.owner_id) else None
+            if privy_id:
+                user_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
+                if user_res.data:
+                    current_dum = user_res.data[0].get("dum_balance", 50)
+                    supabase.table("users").update({"dum_balance": current_dum + 25}).eq("privy_id", privy_id).execute()
+                    print(f"[launch] awarded 25 DUM to {privy_id} → {current_dum + 25}")
+    except Exception as exc:
+        print(f"[launch] DUM award failed (non-fatal): {exc!r}")
+
     return LaunchResponse(
         status="success",
         project_id=project_id,
