@@ -630,9 +630,71 @@ function HeroWalkthrough() {
   );
 }
 
+/* ─── Activity Ticker (rAF-driven for cross-browser reliability) ─── */
+function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const offsetRef = useRef(0);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let halfWidth = 0;
+    const measure = () => { halfWidth = track.scrollWidth / 2; };
+    const timer = setTimeout(measure, 100);
+    window.addEventListener("resize", measure);
+
+    let lastTime = 0;
+    const speed = 50;
+
+    const tick = (time: number) => {
+      if (lastTime === 0) lastTime = time;
+      const delta = time - lastTime;
+      lastTime = time;
+      if (halfWidth > 0) {
+        offsetRef.current -= (speed * delta) / 1000;
+        if (Math.abs(offsetRef.current) >= halfWidth) offsetRef.current += halfWidth;
+        track.style.transform = `translateX(${offsetRef.current}px)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(timer);
+      window.removeEventListener("resize", measure);
+    };
+  }, [trades]);
+
+  const items = [...trades, ...trades, ...trades, ...trades];
+
+  return (
+    <div className="overflow-hidden py-3">
+      <div ref={trackRef} className="flex gap-8" style={{ width: "max-content", willChange: "transform" }}>
+        {items.map((trade, i) => {
+          const side = trade.side === "sell" ? "sell" : "buy";
+          const price = Number(trade.price ?? 0);
+          const sym = trade.token_symbol || "—";
+          return (
+            <span key={`t-${i}`} className="flex shrink-0 items-center font-mono text-xs text-zinc-500">
+              <span className={side === "buy" ? "text-emerald-400" : "text-red-400"}>
+                {side === "buy" ? "↑" : "↓"}
+              </span>{" "}
+              {sym} · ${formatPrice(price)} · {formatTimeAgo(trade.created_at)}
+              <span className="mx-4 text-zinc-800">|</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
-  { id: "section-hero", label: "Hero" },
+  { id: "section-hero", label: "Top" },
   { id: "section-how", label: "How It Works" },
   { id: "section-features", label: "Features" },
   { id: "section-projects", label: "Projects" },
@@ -893,7 +955,7 @@ export default function Home() {
                 </div>
 
                 <p className="hero-entrance-delay-1 mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                  DUM Club gives creators an AI-powered storefront, a community, and a loyalty system that rewards your best customers — automatically.
+                  DUM Club gives creators an AI-powered storefront, a community, and a loyalty system that rewards your best customers automatically.
                 </p>
 
                 <div className="hero-entrance-delay-2 mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
@@ -1041,31 +1103,7 @@ export default function Home() {
               No activity yet — launch a project and make the first move.
             </div>
           ) : (
-            <div className="overflow-hidden py-3">
-              <div className="home-marquee-track gap-8">
-                {[...recentTrades, ...recentTrades, ...recentTrades, ...recentTrades].map((trade, i) => {
-                  const side = trade.side === "sell" ? "sell" : "buy";
-                  const price = Number(trade.price ?? 0);
-                  const sym = trade.token_symbol || "—";
-                  return (
-                    <span
-                      key={`t-${i}`}
-                      className="flex shrink-0 items-center font-mono text-xs text-zinc-500"
-                    >
-                      <span
-                        className={
-                          side === "buy" ? "text-emerald-400" : "text-red-400"
-                        }
-                      >
-                        {side === "buy" ? "↑" : "↓"}
-                      </span>{" "}
-                      {sym} · ${formatPrice(price)} · {formatTimeAgo(trade.created_at)}
-                      <span className="mx-4 text-zinc-800">|</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
+            <ActivityTicker trades={recentTrades} />
           )}
         </div>
 

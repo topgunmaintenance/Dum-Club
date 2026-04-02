@@ -241,7 +241,7 @@ function DiscoverSectionNav() {
           if (entry.isIntersecting) setActive(entry.target.id);
         }
       },
-      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+      { rootMargin: "-20% 0px -50% 0px", threshold: 0 }
     );
 
     for (const id of ids) {
@@ -559,8 +559,8 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div id="section-top" className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
+      <section id="section-top" className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
           ◆ Discovery Feed
         </div>
 
