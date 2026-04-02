@@ -1099,6 +1099,7 @@ export default function ProjectPage() {
           offer_id: oid,
           success_url: cleanUrl,
           cancel_url: cleanUrl,
+          use_dum_discount: !!dumDiscountApplied[oid],
         }),
       });
 

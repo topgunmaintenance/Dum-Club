@@ -47,6 +47,7 @@ class PaymentIntentRequest(BaseModel):
     notes: Optional[str] = None
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
+    use_dum_discount: bool = False
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -124,8 +125,34 @@ async def create_payment_intent(
     base_price = float(offer["price_usd"])
     token_discount_applied = False
 
-    # TODO: Phase 10 — check actual token balance for discount eligibility
-    # For now, discount is not applied automatically
+    # ── DUM Points discount: verify balance, deduct, reduce price ──
+    if body.use_dum_discount and privy_id:
+        try:
+            dum_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
+            dum_bal = dum_res.data[0].get("dum_balance", 0) if dum_res.data else 0
+            if dum_bal >= 10:
+                # Deduct 10 DUM Points
+                supabase.table("users").update(
+                    {"dum_balance": dum_bal - 10}
+                ).eq("privy_id", privy_id).execute()
+                # Credit business
+                proj_id = offer.get("project_id")
+                if proj_id:
+                    try:
+                        pr = supabase.table("projects").select("dum_received").eq("id", proj_id).limit(1).execute()
+                        cur_recv = pr.data[0].get("dum_received", 0) if pr.data else 0
+                        supabase.table("projects").update({"dum_received": cur_recv + 10}).eq("id", proj_id).execute()
+                    except Exception:
+                        pass
+                # Apply 10% discount
+                base_price = round(base_price * 0.9, 2)
+                token_discount_applied = True
+                print(f"[checkout] DUM discount applied: 10% off, new price=${base_price}, buyer={privy_id}")
+            else:
+                print(f"[checkout] DUM discount rejected: balance={dum_bal} < 10, buyer={privy_id}")
+        except Exception as exc:
+            print(f"[checkout] DUM discount check failed (proceeding without discount): {exc!r}")
+
     final_price = base_price
 
     platform_fee = round(final_price * PLATFORM_FEE_RATE, 2)
