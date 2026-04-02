@@ -904,7 +904,7 @@ export default function Home() {
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO ── */}
-        <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base">
+        <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
           {/* Ambient background — layered gradient + animated orbs */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
