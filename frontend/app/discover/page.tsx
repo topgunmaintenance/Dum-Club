@@ -223,8 +223,7 @@ function RelativeCreatedAt({ dateStr }: { dateStr?: string | null }) {
 
 /* ─── Discover Section Nav ─── */
 const DISCOVER_NAV = [
-  { id: "section-top", label: "Top" },
-  { id: "section-filters", label: "Filters" },
+  { id: "section-top", label: "Trending" },
   { id: "section-grid", label: "Projects" },
 ];
 
