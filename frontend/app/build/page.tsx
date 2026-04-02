@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Starfield } from "../../components/Starfield";
@@ -138,29 +139,27 @@ export default function BuildPage() {
       <div className="w-full max-w-2xl">
 
         {/* Eyebrow */}
-        <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
-          ◆ Powered by Solana
+        <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.35em] text-violet-400">
+          ◆ Advanced Builder
         </div>
 
         {/* Headline */}
         <h1 className="font-mono text-4xl font-black uppercase leading-tight tracking-[-0.03em] text-white sm:text-5xl">
-          Describe your idea.
+          Build with
           <br />
-          <span className="text-emerald-400">We launch it.</span>
+          <span className="text-emerald-400">more control.</span>
         </h1>
 
-        <div className="mt-3 flex items-center gap-2 text-[12px] font-medium tracking-wide text-zinc-600">
-          <span className="text-emerald-400/70">Describe</span>
-          <span className="text-zinc-700">→</span>
-          <span className="text-emerald-400/70">Launch</span>
-          <span className="text-zinc-700">→</span>
-          <span className="text-emerald-400/70">Grow</span>
-        </div>
-
         <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-500">
-          One sentence is enough. AI generates your storefront, offers, and payments —
-          then you land on a live page instantly.
+          Write a detailed description of your idea. The more context you give, the better AI builds your storefront, offers, and pricing.
         </p>
+
+        <div className="mt-4 flex items-center gap-3 rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2.5">
+          <span className="text-sm">💡</span>
+          <span className="text-[12px] text-zinc-500">
+            Want to launch fast? Use the <Link href="/" className="text-emerald-400 underline decoration-emerald-400/30 hover:text-emerald-300">homepage launcher</Link> instead.
+          </span>
+        </div>
 
         {/* Launch form */}
         <form onSubmit={handleLaunch} className="mt-10">

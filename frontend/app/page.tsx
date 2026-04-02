@@ -459,6 +459,49 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
   );
 }
 
+/* ─── Platform Activity Feed ─── */
+const ACTIVITY_MESSAGES = [
+  { icon: "🎮", text: "Someone launched a gaming storefront" },
+  { icon: "💪", text: "New fitness coaching business created" },
+  { icon: "🚗", text: "Mobile car wash went live" },
+  { icon: "🎨", text: "A design studio just launched" },
+  { icon: "📄", text: "Resume service got its first order" },
+  { icon: "🧁", text: "Custom bakery storefront created" },
+  { icon: "💻", text: "SaaS tool went live with 3 offers" },
+  { icon: "📸", text: "Photography business launched" },
+  { icon: "🎵", text: "Beat producer storefront is live" },
+  { icon: "❄️", text: "HVAC service launched with booking" },
+];
+
+function PlatformActivity({ projectCount }: { projectCount: number }) {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % ACTIVITY_MESSAGES.length), 3000);
+    return () => clearInterval(t);
+  }, []);
+
+  const msg = ACTIVITY_MESSAGES[idx];
+
+  return (
+    <div className="flex items-center justify-center gap-3 rounded-full border border-zinc-800/40 bg-zinc-950/60 px-5 py-2.5 backdrop-blur-sm">
+      <span className="relative flex h-2 w-2 shrink-0">
+        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+      </span>
+      <span key={idx} className="animate-fade-in text-[12px] text-zinc-400">
+        <span className="mr-1.5">{msg.icon}</span>
+        {msg.text}
+      </span>
+      {projectCount > 0 && (
+        <span className="ml-2 text-[10px] text-zinc-600">
+          · {projectCount} live
+        </span>
+      )}
+    </div>
+  );
+}
+
 /* ─── Live Preview Generator (frontend-only, no API) ─── */
 function generatePreview(idea: string): { name: string; offers: { title: string; price: string }[]; desc: string; emoji: string; tag: string } | null {
   const t = idea.trim().toLowerCase();
@@ -1168,13 +1211,25 @@ export default function Home() {
             <div className="mb-3 text-3xl">🚀</div>
             <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free launches</h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              You&apos;ve launched {FREE_LAUNCH_LIMIT} projects for free. Upgrade to continue building unlimited storefronts.
+              You&apos;ve launched {FREE_LAUNCH_LIMIT} projects for free. Hold DUM tokens to unlock unlimited launches, priority placement, and more.
             </p>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[
+                { icon: "♾️", label: "Unlimited launches" },
+                { icon: "⭐", label: "Featured placement" },
+                { icon: "🤖", label: "Unlimited AI" },
+              ].map((p) => (
+                <div key={p.label} className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-2 text-center">
+                  <div className="text-base">{p.icon}</div>
+                  <div className="mt-1 text-[9px] text-zinc-500">{p.label}</div>
+                </div>
+              ))}
+            </div>
             <Link
               href="/upgrade"
-              className="mt-6 block w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
+              className="mt-5 block w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
             >
-              See Upgrade Options →
+              View DUM Tiers →
             </Link>
             <button
               type="button"
@@ -1218,7 +1273,7 @@ export default function Home() {
               </h1>
 
               <p className="hero-entrance-delay-1 mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-                Type what you want to offer. AI creates your storefront, offers, and payments — you go live instantly.
+                Turn any idea into a live product and business in seconds. AI handles the storefront, offers, and payments.
               </p>
 
               {/* ── LAUNCH INPUT ── */}
@@ -1358,6 +1413,11 @@ export default function Home() {
             Creators building right now
           </div>
           <CreatorTicker onPick={setCreatorModal} />
+        </div>
+
+        {/* ── Platform Activity ── */}
+        <div className="mx-auto mt-10 max-w-4xl">
+          <PlatformActivity projectCount={allPublicProjects.length} />
         </div>
 
         <div
@@ -1568,7 +1628,7 @@ export default function Home() {
               <span className="text-emerald-400">Live today.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Tell the AI what you offer. We handle the storefront, payments, and loyalty — you just share the link.
+              Describe any idea — a game, a service, a product. AI builds the storefront, offers, and payments. You share the link and start earning.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link

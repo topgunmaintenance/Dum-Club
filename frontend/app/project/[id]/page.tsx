@@ -2675,9 +2675,9 @@ return (
         </div>
       )}
 
-      {/* ── AI Co-pilot Prompts (post-launch) ── */}
-      {isOwner && showLiveBanner && (
-        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-5 animate-fade-slide-down">
+      {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ── */}
+      {isOwner && projectView === "storefront" && (
+        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-5">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
             <span className="text-sm font-bold text-white">Grow your business with AI</span>
@@ -2688,6 +2688,8 @@ return (
               { label: "Pricing strategy", href: `/chat?project=${id}` },
               { label: "Marketing ideas", href: `/chat?project=${id}` },
               { label: "Write better descriptions", href: `/chat?project=${id}` },
+              { label: "Generate ad copy", href: `/chat?project=${id}` },
+              { label: "Customer acquisition", href: `/chat?project=${id}` },
             ].map((p) => (
               <Link
                 key={p.label}
