@@ -7,21 +7,21 @@ import { Navbar } from "../components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DUM Club — Launch AI Projects on Solana",
+  title: "DUM Club — Launch Your Business in 60 Seconds",
   description:
-    "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+    "Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
   openGraph: {
-    title: "DUM Club — Launch AI Projects on Solana",
+    title: "DUM Club — Launch Your Business in 60 Seconds",
     description:
-      "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+      "Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
     siteName: "DUM Club",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DUM Club — Launch AI Projects on Solana",
+    title: "DUM Club — Launch Your Business in 60 Seconds",
     description:
-      "Describe an idea, launch it on-chain. AI generates the project, token, and live market instantly.",
+      "Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
   },
 };
 

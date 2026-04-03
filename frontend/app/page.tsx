@@ -36,14 +36,14 @@ type MarketSnapshot = {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const TEMPLATE_STARTERS = [
-  { label: "Personal Trainer", prompt: "A personal training business with coaching packages and meal plans" },
-  { label: "Car Wash", prompt: "A mobile car wash and detailing service with tiered packages" },
-  { label: "Bakery", prompt: "A local bakery selling custom cakes, pastries, and catering" },
-  { label: "Consulting", prompt: "A business consulting firm offering strategy sessions and audits" },
-  { label: "Jewelry", prompt: "A handmade silver jewelry store with custom and ready-made pieces" },
-  { label: "Design Studio", prompt: "A freelance design studio offering logo, brand, and web packages" },
-  { label: "HVAC", prompt: "An HVAC repair and installation service with maintenance plans" },
-  { label: "Digital Products", prompt: "A creator selling online courses, templates, and digital downloads" },
+  { label: "Sell coaching", prompt: "A personal training service selling custom workout plans and meal prep packages" },
+  { label: "Sell services", prompt: "A mobile car wash and detailing service with tiered packages" },
+  { label: "Sell products", prompt: "A local bakery selling custom cakes, pastries, and catering" },
+  { label: "Sell consulting", prompt: "A business consulting firm offering strategy sessions and audits" },
+  { label: "Sell handmade", prompt: "A handmade silver jewelry store with custom and ready-made pieces" },
+  { label: "Sell design", prompt: "A freelance design studio offering logo, brand, and web packages" },
+  { label: "Sell maintenance", prompt: "An HVAC repair and installation service with maintenance plans" },
+  { label: "Sell digital goods", prompt: "A creator selling online courses, templates, and digital downloads" },
 ];
 
 const LAUNCH_PROGRESS = [
@@ -731,7 +731,7 @@ function ProductDemo() {
               {typedLen >= DEMO_IDEA.length && (
                 <div className="hero-chat-msg flex justify-end">
                   <div className="rounded-xl bg-emerald-400 px-5 py-2 text-[12px] font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.3)]">
-                    Launch →
+                    Start Selling →
                   </div>
                 </div>
               )}
@@ -985,9 +985,9 @@ function ComparisonTabs() {
               {[
                 { f: "What it builds", b: "Web apps", l: "Web apps", v: "AI models", d: "Revenue businesses" },
                 { f: "Revenue on day one", b: "No", l: "No", v: "No", d: "Yes — Stripe built in" },
-                { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points (Solana)" },
+                { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
                 { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
-                { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana SPL tokens" },
+                { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana wallets" },
                 { f: "Token ecosystem", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — on-chain loyalty" },
                 { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
                 { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
@@ -1059,7 +1059,7 @@ function ComparisonTabs() {
             </span>
           </div>
           <div className="mt-2 text-center text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
-            On-chain transparency · Every transaction verifiable on Solana
+            Solana wallet infrastructure · Stripe-powered payments
           </div>
         </div>
       )}
@@ -1392,7 +1392,7 @@ export default function Home() {
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-emerald-400/20 bg-zinc-950 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 text-3xl">🚀</div>
-            <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free launches</h2>
+            <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free businesses</h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
               You&apos;ve launched {FREE_LAUNCH_LIMIT} projects for free. Hold DUM tokens to unlock unlimited launches, priority placement, and more.
             </p>
@@ -1471,7 +1471,7 @@ export default function Home() {
                 <textarea
                   value={heroIdea}
                   onChange={(e) => setHeroIdea(e.target.value)}
-                  placeholder="Describe your business idea..."
+                  placeholder="What does your business sell?"
                   rows={3}
                   disabled={heroLaunching}
                   className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950/80 px-5 py-4 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
@@ -1491,7 +1491,7 @@ export default function Home() {
                       </span>
                     </span>
                   ) : (
-                    "Launch →"
+                    "Start Selling →"
                   )}
                 </button>
 
@@ -1549,7 +1549,7 @@ export default function Home() {
               {!heroLaunching && launchCount > 0 && launchCount < FREE_LAUNCH_LIMIT && (
                 <div className="mx-auto mt-3 max-w-2xl text-center">
                   <span className="text-[11px] text-zinc-600">
-                    {FREE_LAUNCH_LIMIT - launchCount} free launch{FREE_LAUNCH_LIMIT - launchCount === 1 ? "" : "es"} remaining
+                    {FREE_LAUNCH_LIMIT - launchCount} free business{FREE_LAUNCH_LIMIT - launchCount === 1 ? "" : "es"} remaining
                   </span>
                 </div>
               )}

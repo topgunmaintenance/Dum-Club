@@ -242,7 +242,15 @@ async def submit_review(
 
     project = project_res.data[0]
 
-    if project.get("owner_id") != user_id:
+    # Resolve ownership: match by owner_id OR privy_id (Privy-authenticated users
+    # may only have privy_id set if wallet hasn't been linked yet).
+    resolved_owner = _resolve_owner_uuid(supabase, user_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == user_id) or
+        (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner) or
+        (project.get("privy_id") and project["privy_id"] == user_id)
+    )
+    if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
     symbol_res = (

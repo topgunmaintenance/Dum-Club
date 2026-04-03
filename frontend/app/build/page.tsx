@@ -13,16 +13,16 @@ type LaunchState = "idle" | "generating" | "error";
 
 const PROGRESS_STEPS = [
   "Reading your idea...",
-  "Generating project metadata...",
-  "Setting up your brand...",
+  "Setting up your storefront...",
+  "Creating your offers...",
   "Configuring payments...",
   "Almost there...",
 ];
 
 const EXAMPLES = [
-  "An AI fitness coach that builds custom workout plans",
-  "A community-run recipe vault powered by local chefs",
-  "A music discovery tool that learns your taste over time",
+  "A personal training service selling custom workout plans",
+  "A local chef selling weekly meal prep and catering",
+  "A music producer selling beat packs and mixing services",
 ];
 
 export default function BuildPage() {
@@ -166,7 +166,7 @@ export default function BuildPage() {
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            placeholder="An AI fitness coach that builds custom workout plans..."
+            placeholder="A personal training service selling custom workout plans..."
             rows={4}
             disabled={generating}
             className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
@@ -185,7 +185,7 @@ export default function BuildPage() {
                 </span>
               </span>
             ) : (
-              "Launch →"
+              "Start Selling →"
             )}
           </button>
 

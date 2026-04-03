@@ -1150,11 +1150,11 @@ export default function BusinessPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "380px", margin: "0 auto 20px" }}>
               {"href" in heroAction ? (
                 <Link href={heroAction.href} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
-                  Start Building →
+                  Start Selling →
                 </Link>
               ) : (
                 <button onClick={heroAction.onClick} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
-                  Start Building →
+                  Start Selling →
                 </button>
               )}
               <Link href="/discover" className="biz-cta-secondary">
