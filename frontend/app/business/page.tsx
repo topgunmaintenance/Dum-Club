@@ -798,44 +798,158 @@ export default function BusinessPage() {
       </div></section>
 
 
-      {/* ═══════════════ S6: COMPARISON ═══════════════ */}
-      <section style={{ margin: "0 auto 72px", maxWidth: "680px", padding: "0 20px", position: "relative", zIndex: 1 }}><div style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "20px", padding: "24px" }}>
+      {/* ═══════════════ S6: BUSINESS DOMINATION — COMPARISON ═══════════════ */}
+      <section style={{ margin: "0 auto 72px", maxWidth: "780px", padding: "0 20px", position: "relative", zIndex: 1 }}>
         <Reveal>
-          <h3 style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-0.01em", marginBottom: "16px" }}>Why DUM Club wins</h3>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Space Mono', monospace", fontSize: "11px" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  <th style={{ textAlign: "left", padding: "8px 0", fontSize: "9px", letterSpacing: "0.1em", color: "#444", minWidth: "90px" }}> </th>
-                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87" }}>DUM CLUB</th>
-                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>BASE44</th>
-                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>VENICE</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Business storefront", "\u2713", "apps only", "\u2717"],
-                  ["Accept payments", "\u2713", "via app", "\u2717"],
-                  ["Built-in loyalty", "\u2713", "\u2717", "\u2717"],
-                  ["Cross-business rewards", "\u2713", "\u2717", "\u2717"],
-                  ["Verified badge", "\u2713", "\u2717", "\u2717"],
-                  ["Discover marketplace", "\u2713", "\u2717", "\u2717"],
-                  ["No monthly fee to start", "\u2713", "limited", "limited"],
-                ].map(([feature, dum, b44, ven], i) => (
-                  <tr key={i} style={{ borderBottom: i < 6 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                    <td style={{ padding: "10px 0", color: "#888", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>{feature}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", color: dum === "\u2713" ? "#00FF87" : "#444" }}>{dum}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", color: b44 === "\u2717" ? "#444" : "#F5A623" }}>{b44}</td>
-                    <td style={{ padding: "10px 8px", textAlign: "center", color: ven === "\u2717" ? "#444" : "#F5A623" }}>{ven}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ textAlign: "center", marginBottom: "32px" }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.22em", color: "#00FF87", textTransform: "uppercase", marginBottom: "16px" }}>◆ THE REAL DIFFERENCE</div>
+            <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(26px, 7vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "12px" }}>
+              AI tools build <span style={{ color: "#555" }}>apps.</span><br />
+              DUM Club builds <span className="biz-hero-glow" style={{ color: "#00FF87" }}>businesses that make money.</span>
+            </h2>
+            <p style={{ fontSize: "15px", color: "#888", maxWidth: "520px", margin: "0 auto", lineHeight: 1.6 }}>
+              From idea → storefront → payments → customers → repeat revenue. <strong style={{ color: "#f0f0f0" }}>Instantly.</strong>
+            </p>
           </div>
         </Reveal>
-      </div></section>
+
+        {/* Interactive Comparison Table */}
+        <Reveal delay={0.15}>
+          <div style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "20px", padding: "24px", position: "relative", overflow: "hidden" }}>
+            {/* Top glow bar */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, transparent, #00FF87, transparent)" }} />
+
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Space Mono', monospace", fontSize: "11px", minWidth: "580px" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                    <th style={{ textAlign: "left", padding: "12px 0", fontSize: "9px", letterSpacing: "0.1em", color: "#444", minWidth: "120px" }}> </th>
+                    <th style={{ textAlign: "center", padding: "12px 8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>BASE44</th>
+                    <th style={{ textAlign: "center", padding: "12px 8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>LOVABLE</th>
+                    <th style={{ textAlign: "center", padding: "12px 8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>VENICE.AI</th>
+                    <th style={{
+                      textAlign: "center", padding: "12px 12px", fontSize: "9px", letterSpacing: "0.14em", color: "#00FF87",
+                      background: "rgba(0,255,135,0.04)", borderRadius: "12px 12px 0 0",
+                      border: "1px solid rgba(0,255,135,0.15)", borderBottom: "none",
+                      boxShadow: "0 0 20px rgba(0,255,135,0.05)",
+                    }}>
+                      DUM CLUB ★
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: "What it builds", b44: "Web apps", lov: "Web apps", ven: "AI models", dum: "Revenue businesses" },
+                    { feature: "Time to launch", b44: "Hours", lov: "Hours", ven: "N/A", dum: "Under 60 seconds" },
+                    { feature: "Revenue on day one", b44: "No", lov: "No", ven: "No", dum: "Yes — Stripe built in" },
+                    { feature: "Payments included", b44: "DIY setup", lov: "Not included", ven: "Not included", dum: "Ready at launch" },
+                    { feature: "Customer retention", b44: "None", lov: "None", ven: "None", dum: "DUM Points loyalty" },
+                    { feature: "AI utility", b44: "Code gen", lov: "Code gen", ven: "Chat / models", dum: "Builds & runs business" },
+                    { feature: "Token / rewards", b44: "None", lov: "None", ven: "VEN token", dum: "DUM Points ecosystem" },
+                    { feature: "Marketplace", b44: "None", lov: "None", ven: "None", dum: "Discover — built in" },
+                    { feature: "Target user", b44: "Developers", lov: "Developers", ven: "AI power users", dum: "Business owners" },
+                    { feature: "End result", b44: "An app prototype", lov: "An app prototype", ven: "AI output", dum: "A running business" },
+                  ].map((row, i) => (
+                    <tr key={i} style={{ borderBottom: i < 9 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      <td style={{ padding: "12px 0", color: "#888", fontSize: "12px", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{row.feature}</td>
+                      <td style={{ padding: "12px 8px", textAlign: "center", color: "#555", fontSize: "11px" }}>{row.b44}</td>
+                      <td style={{ padding: "12px 8px", textAlign: "center", color: "#555", fontSize: "11px" }}>{row.lov}</td>
+                      <td style={{ padding: "12px 8px", textAlign: "center", color: "#555", fontSize: "11px" }}>{row.ven}</td>
+                      <td style={{
+                        padding: "12px 12px", textAlign: "center", color: "#00FF87", fontSize: "11px", fontWeight: 600,
+                        background: "rgba(0,255,135,0.04)",
+                        borderLeft: "1px solid rgba(0,255,135,0.15)",
+                        borderRight: "1px solid rgba(0,255,135,0.15)",
+                        ...(i === 9 ? { borderBottom: "1px solid rgba(0,255,135,0.15)", borderRadius: "0 0 12px 12px" } : {}),
+                      }}>{row.dum}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* "Why DUM Club Wins" Cards */}
+        <Reveal delay={0.25}>
+          <div style={{ marginTop: "32px" }}>
+            <h3 style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "16px", textAlign: "center" }}>Why DUM Club wins</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {[
+                { icon: "🚫", accent: "#FF6B6B", title: "You don't need a developer", desc: "Describe your business in one sentence. AI handles everything else — storefront, offers, pricing, copy." },
+                { icon: "💰", accent: "#00FF87", title: "You get paid on day one", desc: "Stripe checkout is live the moment your page goes up. No merchant account. No approval process." },
+                { icon: "🤖", accent: "#A78BFA", title: "AI doesn't just build — it runs your business", desc: "AI writes your descriptions, sets your pricing, and helps you manage everything from one dashboard." },
+                { icon: "🔁", accent: "#38BDF8", title: "Customers come back (not just visit once)", desc: "DUM Points reward every purchase. Customers earn loyalty across the entire network — and spend it at your store." },
+              ].map((card, i) => (
+                <Reveal key={i} delay={0.3 + i * 0.08}>
+                  <div className="biz-feature-card" style={{ borderLeft: `3px solid ${card.accent}`, borderRadius: "0 14px 14px 0" }}>
+                    <div style={{ fontSize: "20px", marginBottom: "10px" }}>{card.icon}</div>
+                    <div style={{ fontWeight: 700, fontSize: "14px", color: "#f0f0f0", marginBottom: "6px" }}>{card.title}</div>
+                    <div style={{ fontSize: "12px", color: "#888", lineHeight: 1.55 }}>{card.desc}</div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Business Flow Visual */}
+        <Reveal delay={0.4}>
+          <div style={{ marginTop: "36px", padding: "28px 20px", background: "linear-gradient(135deg, rgba(0,255,135,0.03), rgba(79,158,255,0.02))", border: "1px solid rgba(0,255,135,0.1)", borderRadius: "20px" }}>
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#00FF87", textTransform: "uppercase", marginBottom: "8px" }}>YOUR BUSINESS JOURNEY</div>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#f0f0f0" }}>From zero to revenue in minutes</h3>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", flexWrap: "wrap" }}>
+              {[
+                { step: "💡", label: "Your Idea", sub: "One sentence" },
+                { step: "🤖", label: "AI Builds", sub: "Instant" },
+                { step: "🏪", label: "Storefront Live", sub: "Ready to sell" },
+                { step: "💳", label: "Offers Selling", sub: "Stripe powered" },
+                { step: "🔁", label: "Customers Return", sub: "DUM Points" },
+                { step: "📈", label: "Revenue Growing", sub: "Every day" },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                  <div style={{ textAlign: "center", minWidth: "80px", padding: "8px 4px" }}>
+                    <div style={{
+                      width: "44px", height: "44px", margin: "0 auto 6px",
+                      borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "20px",
+                      background: "rgba(0,255,135,0.08)", border: "1px solid rgba(0,255,135,0.2)",
+                      boxShadow: i === 5 ? "0 0 16px rgba(0,255,135,0.15)" : "none",
+                    }}>{item.step}</div>
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "#f0f0f0" }}>{item.label}</div>
+                    <div style={{ fontSize: "9px", color: "#555", fontFamily: "'Space Mono', monospace" }}>{item.sub}</div>
+                  </div>
+                  {i < 5 && (
+                    <div style={{ color: "#00FF87", fontSize: "14px", opacity: 0.4, margin: "0 2px", marginBottom: "20px" }}>→</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Live Stats Integration */}
+        {liveStats && (liveStats.live_projects > 0 || liveStats.businesses > 0) && (
+          <Reveal delay={0.5}>
+            <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#00FF87", lineHeight: 1 }}>{liveStats.live_projects}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>LIVE BUSINESSES</div>
+              </div>
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(245,166,35,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#F5A623", lineHeight: 1 }}>{liveStats.active_offers}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>ACTIVE OFFERS</div>
+              </div>
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(79,158,255,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#4F9EFF", lineHeight: 1 }}>{liveStats.businesses}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED BUSINESSES</div>
+              </div>
+            </div>
+          </Reveal>
+        )}
+      </section>
 
       {/* ═══════════════ S7: USE CASES ═══════════════ */}
       <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -1017,29 +1131,35 @@ export default function BusinessPage() {
       <section style={{ padding: "48px 20px 40px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{
-            background: "linear-gradient(180deg, rgba(0,255,135,0.04), transparent)",
-            borderRadius: "24px", padding: "48px 24px",
+            background: "linear-gradient(180deg, rgba(0,255,135,0.06), rgba(0,255,135,0.01), transparent)",
+            border: "1px solid rgba(0,255,135,0.12)",
+            borderRadius: "24px", padding: "52px 28px", position: "relative", overflow: "hidden",
           }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", letterSpacing: "0.16em", color: "#00FF87", marginBottom: "16px" }}>THE QUESTION IS SIMPLE</div>
+            {/* Corner glow */}
+            <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: "-60px", left: "-60px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(79,158,255,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", letterSpacing: "0.2em", color: "#00FF87", marginBottom: "20px" }}>START YOUR BUSINESS IN 60 SECONDS</div>
             <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 8vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
-              Your business could be <span className="biz-hero-glow" style={{ color: "#00FF87" }}>earning customers</span> today.
+              Stop building apps.<br />Start <span className="biz-hero-glow" style={{ color: "#00FF87" }}>making money.</span>
             </h2>
-            <p style={{ fontSize: "15px", color: "#888", marginBottom: "12px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 12px" }}>
-              Right now, someone is searching for exactly what you sell.
+            <p style={{ fontSize: "15px", color: "#888", marginBottom: "32px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 32px" }}>
+              Your next customer is looking for what you sell right now.<br />
+              <span style={{ color: "#FF5555", fontWeight: 500 }}>Without a page, they{"'"}ll never find you.</span>
             </p>
-            <p style={{ fontSize: "14px", color: "#FF5555", marginBottom: "32px", fontWeight: 500 }}>
-              Without a page, they{"'"}ll never find you.
-            </p>
-            <div style={{ maxWidth: "400px", margin: "0 auto 16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "380px", margin: "0 auto 20px" }}>
               {"href" in heroAction ? (
                 <Link href={heroAction.href} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
-                  {heroAction.label} →
+                  Start Building →
                 </Link>
               ) : (
                 <button onClick={heroAction.onClick} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
-                  {heroAction.label} →
+                  Start Building →
                 </button>
               )}
+              <Link href="/discover" className="biz-cta-secondary">
+                View Live Businesses ↓
+              </Link>
             </div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>
               No credit card · No crypto wallet · No developer needed · Live in minutes

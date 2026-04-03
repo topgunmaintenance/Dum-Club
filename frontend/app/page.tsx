@@ -896,6 +896,7 @@ const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
   { id: "section-how", label: "How It Works" },
   { id: "section-features", label: "Features" },
+  { id: "section-compare", label: "Why Us" },
   { id: "section-projects", label: "Projects" },
   { id: "section-stats", label: "Stats" },
   { id: "section-cta", label: "Get Started" },
@@ -1536,6 +1537,86 @@ export default function Home() {
           ) : (
             <ActivityTicker trades={recentTrades} />
           )}
+        </div>
+
+        {/* ── CONDENSED: WHY DUM CLUB WINS ── */}
+        <div id="section-compare" className="border-t border-zinc-900 px-4 py-16 sm:py-20">
+          <div className="mx-auto max-w-5xl text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
+              The real difference
+            </div>
+            <h2 className="mx-auto max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
+              AI tools build apps.{" "}
+              <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.25)" }}>
+                DUM Club builds businesses that make money.
+              </span>
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-500">
+              From idea → storefront → payments → customers → repeat revenue. Instantly.
+            </p>
+          </div>
+
+          {/* Compact comparison grid */}
+          <div className="mx-auto mt-10 max-w-4xl overflow-x-auto">
+            <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "560px" }}>
+              <thead>
+                <tr className="border-b border-zinc-800">
+                  <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600"> </th>
+                  <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Base44</th>
+                  <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Lovable</th>
+                  <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Venice.ai</th>
+                  <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-emerald-400" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { f: "What it builds", b: "Web apps", l: "Web apps", v: "AI models", d: "Revenue businesses" },
+                  { f: "Revenue on day one", b: "No", l: "No", v: "No", d: "Yes — Stripe built in" },
+                  { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
+                  { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
+                  { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
+                  { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
+                ].map((row, i) => (
+                  <tr key={i} className="border-b border-zinc-800/40">
+                    <td className="py-3 pr-4 text-[12px] font-medium text-zinc-500" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
+                    <td className="px-3 py-3 text-center text-zinc-600">{row.b}</td>
+                    <td className="px-3 py-3 text-center text-zinc-600">{row.l}</td>
+                    <td className="px-3 py-3 text-center text-zinc-600">{row.v}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-emerald-400" style={{
+                      background: "rgba(0,255,135,0.04)",
+                      borderLeft: "1px solid rgba(0,255,135,0.12)",
+                      borderRight: "1px solid rgba(0,255,135,0.12)",
+                      ...(i === 5 ? { borderBottom: "1px solid rgba(0,255,135,0.12)", borderRadius: "0 0 8px 8px" } : {}),
+                    }}>{row.d}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Compact win cards */}
+          <div className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { icon: "🚫", title: "No developer needed", color: "#FF6B6B" },
+              { icon: "💰", title: "Paid on day one", color: "#00FF87" },
+              { icon: "🤖", title: "AI runs your business", color: "#A78BFA" },
+              { icon: "🔁", title: "Customers come back", color: "#38BDF8" },
+            ].map((c) => (
+              <div key={c.title} className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4 text-center transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.02]">
+                <div className="mb-2 text-xl">{c.icon}</div>
+                <div className="text-[12px] font-bold text-zinc-300">{c.title}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/business"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-6 py-3 text-[13px] font-bold text-emerald-400 transition hover:bg-emerald-400/10 hover:border-emerald-400/40"
+            >
+              See full comparison →
+            </Link>
+          </div>
         </div>
 
         {/* Featured project spotlight */}
