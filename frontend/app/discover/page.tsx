@@ -770,11 +770,7 @@ export default function DiscoverPage() {
                           Subscription
                         </span>
                       )}
-                      {project.token_utility && (
-                        <span className="rounded-full border border-purple-400/20 bg-purple-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-purple-400">
-                          Perks
-                        </span>
-                      )}
+                      {/* Perks badge removed — universal, adds noise */}
                       {project.promo_copy && (
                         <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-400">
                           Promo

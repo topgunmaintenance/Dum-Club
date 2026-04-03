@@ -356,23 +356,27 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* DUM Received from customers (uses backend analytics when available, localStorage fallback) */}
-        {projects.length > 0 && !analytics && (
-          <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-zinc-950 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60">DUM Received</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-xl font-extrabold text-violet-400">
-                    {projects.reduce((sum, p) => sum + Number(localStorage.getItem(`dum_received_${p.id}`) || "0"), 0)}
-                  </span>
-                  <span className="text-sm text-zinc-500">from customers</span>
+        {/* DUM Received from customers */}
+        {projects.length > 0 && !analytics && (() => {
+          const received = projects.reduce((sum, p) => sum + Number(localStorage.getItem(`dum_received_${p.id}`) || "0"), 0);
+          return (
+            <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-zinc-950 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60">DUM from Customers</div>
+                  {received > 0 ? (
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-xl font-extrabold text-violet-400">{received}</span>
+                      <span className="text-sm text-zinc-500">earned from purchases</span>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-sm text-zinc-500">Earn DUM when customers purchase your offers</p>
+                  )}
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">DUM Points spent at your businesses come to you</p>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Business Profile */}
         {user && (
