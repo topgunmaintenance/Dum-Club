@@ -2918,7 +2918,7 @@ return (
               {projectView === "analytics" && (
               <div className="mt-5 rounded-2xl border border-zinc-800 bg-base/40 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                  Why hold this token
+                  Supporter perks
                 </p>
                 <ul className="space-y-2">
                   {utilityBullets.map((item, i) => (
@@ -3031,12 +3031,7 @@ return (
                   </div>
                 </div>
                 <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-400">
-                  {isApprovedProject
-                    ? "Approved — completing token launch"
-                    : "Pending review before market launch"}
-                </div>
-                <div className="mt-3 text-xs text-zinc-500">
-                  Early stage — supply and liquidity still forming.
+                  DUM Points accepted · Stripe payments active
                 </div>
               </div>
             ) : null}
