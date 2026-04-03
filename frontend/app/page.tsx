@@ -305,7 +305,7 @@ function CreatorProofModal({
             href="/build"
             className="rounded-lg bg-emerald-400 px-4 py-2 text-[12px] font-bold text-black transition hover:bg-emerald-300"
           >
-            Start Building →
+            Start Selling →
           </Link>
         </div>
       </div>
@@ -1936,7 +1936,7 @@ export default function Home() {
                 href="/discover"
                 className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                Browse Creator Stores
+                Browse Live Businesses
               </Link>
             </div>
           </div>
@@ -2017,11 +2017,8 @@ export default function Home() {
                   EARLY ACCESS
                 </span>
               </div>
-              <p className="mb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                DIGITAL UTILITY MOVEMENT
-              </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
-                Build AI-powered projects on Solana. Supporters back ideas early. Communities grow with demand.
+                Turn any idea into a live business with payments, loyalty, and a storefront — in 60 seconds. Built on Solana.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
@@ -2041,7 +2038,7 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "Discover", href: "/discover" },
-                  { label: "Build a project", href: "/build" },
+                  { label: "Start a business", href: "/build" },
                   { label: "Dashboard", href: "/dashboard" },
                   { label: "AI Chat", href: "/chat" },
                 ].map((link) => (
@@ -2063,12 +2060,13 @@ export default function Home() {
               </div>
               <ul className="space-y-3">
                 {[
-                  { label: "Twitter / X", href: "https://x.com" },
-                  { label: "Discord", href: "#" },
-                  { label: "Telegram", href: "#" },
                   {
                     label: "Instagram @julez_future",
                     href: "https://instagram.com/julez_future",
+                  },
+                  {
+                    label: "Contact",
+                    href: "mailto:julian@topgunmaintenance.com",
                   },
                 ].map((link) => (
                   <li key={link.label}>
@@ -2092,12 +2090,8 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "How it works", href: "/#section-how" },
-                  { label: "How rewards work", href: "#" },
-                  { label: "Creator guide", href: "#" },
-                  {
-                    label: "Contact",
-                    href: "mailto:julian@topgunmaintenance.com",
-                  },
+                  { label: "For Business", href: "/business" },
+                  { label: "Discover", href: "/discover" },
                 ].map((link) => (
                   <li key={link.label}>
                     <a
@@ -2118,22 +2112,16 @@ export default function Home() {
               constitute financial, legal, or investment advice. Token prices are determined by
               market activity and may be volatile. You assume sole responsibility for evaluating any
               risks associated with participating in DUM Club projects or purchasing tokens. DUM Club
-              is built on Solana and operates in an experimental capacity as a beta product.
+              is built on Solana and operates in early access.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="text-[10px] text-zinc-700">
                 © {new Date().getFullYear()} DUM Club. All rights reserved.
               </div>
               <div className="flex gap-6">
-                {["Terms of Use", "Privacy Policy", "Token Disclaimer"].map((item) => (
-                  <a
-                    key={item}
-                    href="#"
-                    className="text-[10px] text-zinc-700 transition hover:text-zinc-400"
-                  >
-                    {item}
-                  </a>
-                ))}
+                <span className="text-[10px] text-zinc-700">
+                  Terms of Use · Privacy Policy · Token Disclaimer
+                </span>
               </div>
             </div>
           </div>
