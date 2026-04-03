@@ -412,6 +412,30 @@ export default function HubPage() {
           </div>
         </div>
 
+        {/* ── Wallet Connection ── */}
+        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            Solana Wallet
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            </span>
+            <span className="text-sm font-medium text-emerald-400">Connected via Privy</span>
+          </div>
+          <p className="mt-2 text-[11px] text-zinc-600">
+            Your Solana wallet is automatically created and managed. DUM Points are tracked on-platform with Solana verification available.
+          </p>
+          <div className="mt-3 flex items-center gap-2 text-[10px] text-zinc-700">
+            <span>Powered by Solana</span>
+            <span>·</span>
+            <span>Stripe payments</span>
+            <span>·</span>
+            <span>SOL/USDC coming soon</span>
+          </div>
+        </div>
+
         {/* ── CTAs ── */}
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link

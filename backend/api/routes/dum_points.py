@@ -265,3 +265,19 @@ async def purchase_points(
         "tier": req.tier_id,
         "points": tier["points"],
     }
+
+
+# ── SOL/USDC purchase (STUB — not implemented yet) ──────────
+
+@router.post("/purchase-crypto")
+async def purchase_with_crypto(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Placeholder for future SOL/USDC → DUM Points purchase.
+    Will accept SOL or USDC via Solana transaction and award DUM Points.
+    """
+    raise HTTPException(
+        status_code=501,
+        detail="SOL/USDC purchase coming soon. Use Stripe for now."
+    )

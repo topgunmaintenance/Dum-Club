@@ -489,6 +489,17 @@ async def stripe_webhook(request: Request):
                             "balance_after": new_balance,
                         }).execute()
                         print(f"[webhook] ✓ DUM Points purchased: {points_amount} to {privy_id} → {new_balance}")
+
+                        # Best-effort: mint SPL tokens on-chain
+                        try:
+                            from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
+                            if is_solana_enabled():
+                                wallet_res = supabase.table("users").select("wallet_address").eq("privy_id", privy_id).limit(1).execute()
+                                wallet = wallet_res.data[0].get("wallet_address") if wallet_res.data else None
+                                if wallet:
+                                    mint_dum_to_wallet(wallet, points_amount)
+                        except Exception as mint_err:
+                            print(f"[webhook] on-chain mint failed (non-fatal): {mint_err}")
                     else:
                         print(f"[webhook] ✗ User not found for DUM Points: {privy_id}")
                 except Exception as exc:
