@@ -140,7 +140,7 @@ export default function BuildPage() {
 
         {/* Eyebrow */}
         <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.35em] text-violet-400">
-          ◆ Advanced Builder
+          ◆ Business Builder
         </div>
 
         {/* Headline */}
@@ -260,7 +260,7 @@ export default function BuildPage() {
         <div className="mt-12 grid grid-cols-1 gap-4 border-t border-zinc-900 pt-8 sm:grid-cols-3">
           {[
             { step: "01", label: "Describe", desc: "One sentence is enough" },
-            { step: "02", label: "Generate", desc: "AI builds your storefront and offers" },
+            { step: "02", label: "We Build It", desc: "AI creates your storefront and offers" },
             { step: "03", label: "Live", desc: "Land on a live project page" },
           ].map((s) => (
             <div key={s.step}>

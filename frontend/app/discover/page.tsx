@@ -78,7 +78,7 @@ function matchesGaming(project: Project): boolean {
 function getCategory(project: Project) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""} ${project.description || ""}`.toLowerCase();
 
-  if (source.includes("game") || source.includes("arcade") || source.includes("tetris") || source.includes("snake") || source.includes("pong") || source.includes("quiz")) return "Gaming";
+  if (source.includes("game") || source.includes("arcade") || source.includes("tetris") || source.includes("snake") || source.includes("pong") || source.includes("quiz")) return "Entertainment";
   if (source.includes("fitness") || source.includes("health")) return "Health";
   if (source.includes("movie") || source.includes("script")) return "Creative";
   if (source.includes("music") || source.includes("beat")) return "Music";
@@ -555,38 +555,16 @@ export default function DiscoverPage() {
     <main className="relative min-h-screen bg-base text-white">
       <Starfield count={100} />
       <DiscoverSectionNav />
-      {/* Live activity strip */}
+      {/* Branded activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
-        {recentTrades.length === 0 ? (
-          <p className="text-center font-mono text-[10px] text-zinc-600">
-            No recent trades yet — markets are warming up.
-          </p>
-        ) : (
-          <div className="overflow-hidden">
-            <div className="home-marquee-track gap-6">
-              {[...recentTrades, ...recentTrades, ...recentTrades, ...recentTrades].map((trade, i) => {
-                const side = trade.side === "sell" ? "sell" : "buy";
-                const price = Number(trade.price ?? 0);
-                const sym = trade.token_symbol || "—";
-                return (
-                  <span
-                    key={`d-${i}`}
-                    className="flex shrink-0 items-center font-mono text-[10px]"
-                  >
-                    <span
-                      className={side === "buy" ? "text-emerald-400" : "text-red-400"}
-                    >
-                      {side === "buy" ? "↑" : "↓"}
-                    </span>
-                    <span className="ml-1 text-zinc-400">{sym}</span>
-                    <span className="ml-1 text-zinc-600">${formatPrice(price)}</span>
-                    <span className="ml-2 text-zinc-800">·</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <p className="text-center font-mono text-[10px] text-zinc-500">
+          <span className="text-emerald-400">↑</span>{" "}
+          <span className="font-bold text-emerald-400/80">DUM</span>{" "}
+          <span className="text-zinc-700">·</span>{" "}
+          Activity rising{" "}
+          <span className="text-zinc-700">·</span>{" "}
+          Businesses launching on DUM Club
+        </p>
       </div>
 
       <section className="mx-auto max-w-7xl px-6 py-10">
@@ -650,12 +628,14 @@ export default function DiscoverPage() {
               {getProjectLabel(newestProject)}
             </div>
           </div>
-          <div className="min-w-[100px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              New today
+          {newTodayCount > 0 && (
+            <div className="min-w-[100px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+                New today
+              </div>
+              <div className="font-mono text-2xl font-bold text-white">{newTodayCount}</div>
             </div>
-            <div className="font-mono text-2xl font-bold text-white">{newTodayCount}</div>
-          </div>
+          )}
         </div>
 
         {/* Leaderboard strip */}
@@ -811,7 +791,7 @@ export default function DiscoverPage() {
                         <div className="mt-4">
                           <div className="mb-1 flex items-center justify-between">
                             <span className="text-[9px] uppercase tracking-widest text-zinc-600">
-                              Completeness
+                              Profile strength
                             </span>
                             <span className={`font-mono text-[10px] font-bold ${rsText}`}>
                               {rs}/100

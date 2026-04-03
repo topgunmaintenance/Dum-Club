@@ -1891,8 +1891,8 @@ export default function Home() {
                   label: "Projects live",
                   value: allPublicProjects.length.toString(),
                 },
-                { label: "AI questions answered", value: "∞" },
-                { label: "Categories", value: "5+" },
+                { label: "Stripe payments", value: "✓" },
+                { label: "Business categories", value: "5+" },
                 { label: "Built on Solana", value: "✓" },
               ].map((stat) => (
                 <div

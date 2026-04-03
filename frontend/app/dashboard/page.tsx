@@ -290,29 +290,8 @@ export default function DashboardPage() {
                     <span className="ml-1 text-xs font-normal text-zinc-500">balance</span>
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={copyAddress}
-                    className="rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
-                  >
-                    {copied ? "Copied ✓" : "Copy address"}
-                  </button>
-                  <a
-                    href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
-                  >
-                    Explorer ↗
-                  </a>
-                  <a
-                    href="https://faucet.solana.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-400"
-                  >
-                    Get test SOL ↗
-                  </a>
+                <div className="mt-1 text-[11px] text-zinc-600">
+                  Payments and ownership secured
                 </div>
               </div>
             ) : (
@@ -690,7 +669,7 @@ export default function DashboardPage() {
             className="group flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-6 transition hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
           >
             <span className="text-2xl">🚀</span>
-            <span className="text-lg font-bold text-emerald-400">Generate Project</span>
+            <span className="text-lg font-bold text-emerald-400">Create Business</span>
           </Link>
           <Link
             href="/orders"
@@ -812,9 +791,7 @@ export default function DashboardPage() {
                       {/* ticker hidden — DUM Points replaces per-project tokens */}
 
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-zinc-600">
-                          {project.template_type || "General"}
-                        </span>
+                        <span className="text-xs text-zinc-600"> </span>
                         <span className="text-xs text-zinc-600 opacity-0 transition group-hover:opacity-100">View →</span>
                       </div>
                     </Link>

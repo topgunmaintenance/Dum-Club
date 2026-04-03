@@ -1060,7 +1060,7 @@ export default function BusinessPage() {
             { cross: true, t: "No payment gateway setup or approval" },
             { cross: true, t: "No monthly software stack ($500+/mo)" },
             { cross: true, t: "No punch cards that get lost" },
-            { cross: true, t: "No crypto knowledge required" },
+            { cross: true, t: "No complex setup or approvals" },
             { cross: false, t: "One page. Payments. Loyalty. Analytics. Done." },
           ].map((item, i) => (
             <Reveal key={i} delay={i * 0.05}>
@@ -1141,7 +1141,7 @@ export default function BusinessPage() {
 
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", letterSpacing: "0.2em", color: "#00FF87", marginBottom: "20px" }}>START YOUR BUSINESS IN 60 SECONDS</div>
             <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 8vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
-              Stop building apps.<br />Start <span className="biz-hero-glow" style={{ color: "#00FF87" }}>making money.</span>
+              Stop building apps.<br />Start <span className="biz-hero-glow" style={{ color: "#00FF87" }}>selling.</span>
             </h2>
             <p style={{ fontSize: "15px", color: "#888", marginBottom: "32px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 32px" }}>
               Your next customer is looking for what you sell right now.<br />
