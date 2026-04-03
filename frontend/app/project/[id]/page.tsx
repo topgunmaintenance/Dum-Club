@@ -2354,7 +2354,7 @@ export default function ProjectPage() {
 const heroUtility =
   parsedAiOutput?.token_utility ||
   project?.token_utility ||
-  `Hold ${project?.token_symbol || tokenMeta.symbol || "this token"} to unlock deeper project access and utility inside DUM Club.`;
+  `Support this business to unlock exclusive perks, priority access, and rewards on DUM Club.`;
  
  const uniqueTradeSources = useMemo(() => {
    const keys = new Set<string>();

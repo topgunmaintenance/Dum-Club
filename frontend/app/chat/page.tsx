@@ -665,7 +665,7 @@ function ChatPageInner() {
             <div className="dc-input-wrap">
               <div className="dc-limit-inline">
                 <div className="dc-limit-inline-title">You&apos;ve used your free AI messages.</div>
-                <div className="dc-limit-inline-sub">Upgrade or hold the token to keep going.</div>
+                <div className="dc-limit-inline-sub">Upgrade or purchase an offer to keep going.</div>
                 <div className="dc-limit-inline-btns">
                   <button
                     className="dc-btn-primary"
@@ -721,7 +721,7 @@ function ChatPageInner() {
             <div className="dc-modal-eyebrow">You&apos;re building fast.</div>
             <h2 className="dc-modal-title">You&apos;ve used your free AI messages.</h2>
             <p className="dc-modal-desc">
-              Upgrade for unlimited access, or hold this project&apos;s token to continue.
+              Upgrade for unlimited access, or purchase an offer to continue.
             </p>
             <button
               className="dc-btn-primary"

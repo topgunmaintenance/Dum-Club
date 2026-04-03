@@ -976,7 +976,7 @@ function LiveSaleToast() {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 transition-all duration-500 ${
+      className={`fixed bottom-4 left-4 z-50 transition-all duration-500 ${
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
     >
