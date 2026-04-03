@@ -1507,16 +1507,11 @@ export default function Home() {
           <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
             <div className="mx-auto max-w-3xl text-center">
 
-              {/* Line 1 — thin, understated */}
-              <div className="hero-entrance text-[clamp(15px,4vw,20px)] font-light uppercase tracking-[0.25em] text-zinc-500">
-                One sentence is all it takes
-              </div>
-
-              {/* Line 2 — the MONEY line */}
-              <h1 className="hero-entrance-delay-1 mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
-                <span className="text-white">Idea to</span>
+              {/* Line 1 — the HERO line */}
+              <h1 className="hero-entrance mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
+                <span className="text-white">Sell anything.</span>
                 <br />
-                <span className="hero-text-glow">live business.</span>
+                <span className="hero-text-glow">Reward everyone.</span>
               </h1>
 
               {/* Line 3 — supporting detail */}
