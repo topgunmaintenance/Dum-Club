@@ -1526,12 +1526,12 @@ export default function ProjectPage() {
           locked: true,
           lock_message:
             detail?.message ||
-            "You’ve reached the free question limit. Back this project to unlock unlimited AI access.",
+            "You’ve reached the free question limit. Purchase an offer to unlock unlimited AI access.",
         }));
 
         setResponse(
           detail?.message ||
-            "You’ve reached the free question limit. Back this project to unlock unlimited AI access."
+            "You’ve reached the free question limit. Purchase an offer to unlock unlimited AI access."
         );
         return;
       }
@@ -3012,7 +3012,7 @@ return (
                   <p className="mt-1 text-sm text-zinc-300">
                     {chatMeta.holder_unlimited
                       ? "Supporters get unlimited AI access and exclusive project perks."
-                      : "Back this project to unlock perks, access, and participation."}
+                      : "Purchase an offer to unlock perks and exclusive access."}
                   </p>
                 </div>
               </div>
@@ -4420,7 +4420,7 @@ return (
           <div className="text-sm text-zinc-300">
             {chatMeta.is_holder && chatMeta.holder_unlimited
               ? `Supporter recognized. You have unlimited AI access on this project.`
-              : `This project gives ${chatMeta.free_limit} free AI questions. Back this project to unlock unlimited access.`}
+              : `This project gives ${chatMeta.free_limit} free AI questions. Purchase an offer to unlock unlimited access.`}
           </div>
         </div>
 
@@ -4428,7 +4428,7 @@ return (
 
         <p className="mt-3 text-zinc-500">
           This project includes {chatMeta.free_limit} free AI question
-          {chatMeta.free_limit === 1 ? "" : "s"}. Back this project to unlock
+          {chatMeta.free_limit === 1 ? "" : "s"}. Purchase an offer to unlock
           unlimited AI access.
         </p>
 
@@ -4441,7 +4441,7 @@ return (
                 onClick={scrollToBuyPanel}
                 className="mt-3 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
               >
-                Back this project to unlock →
+                Purchase an offer to unlock →
               </button>
             )}
           </div>
@@ -4462,7 +4462,7 @@ return (
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
             className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
           >
-            {loadingAsk ? "Asking..." : chatMeta.locked ? "Hold Token to Unlock" : "Ask AI"}
+            {loadingAsk ? "Asking..." : chatMeta.locked ? "Support to Unlock" : "Ask AI"}
           </button>
         </form>
 
@@ -5564,7 +5564,7 @@ return (
 
           <div className="flex flex-shrink-0 items-center gap-3">
             <span className="hidden text-xs text-zinc-500 xl:inline">
-              Holders unlock unlimited AI access
+              Customers get unlimited AI access
             </span>
             <button
               type="button"

@@ -112,10 +112,10 @@ export default function BuildPage() {
               Daily limit reached
             </div>
             <h2 className="mt-3 text-xl font-black text-white">
-              You&apos;ve hit your launch limit.
+              You&apos;ve hit your creation limit.
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              Upgrade for more launches, or grow your existing project to
+              Upgrade for more businesses, or grow your existing storefront to
               unlock unlimited access.
             </p>
             <button
@@ -157,7 +157,7 @@ export default function BuildPage() {
         <div className="mt-4 flex items-center gap-3 rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2.5">
           <span className="text-sm">💡</span>
           <span className="text-[12px] text-zinc-500">
-            Want to launch fast? Use the <Link href="/" className="text-emerald-400 underline decoration-emerald-400/30 hover:text-emerald-300">homepage launcher</Link> instead.
+            Want to start fast? Use the <Link href="/" className="text-emerald-400 underline decoration-emerald-400/30 hover:text-emerald-300">homepage builder</Link> instead.
           </span>
         </div>
 

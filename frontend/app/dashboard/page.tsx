@@ -248,7 +248,7 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">Manage your projects and business</p>
+          <p className="mt-2 text-sm text-zinc-500">Manage your businesses</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}

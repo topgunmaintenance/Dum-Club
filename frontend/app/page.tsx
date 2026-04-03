@@ -1454,11 +1454,11 @@ export default function Home() {
             <div className="mb-3 text-3xl">🚀</div>
             <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free businesses</h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              You&apos;ve launched {FREE_LAUNCH_LIMIT} projects for free. Hold DUM tokens to unlock unlimited launches, priority placement, and more.
+              You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points to unlock unlimited businesses, priority placement, and more.
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {[
-                { icon: "♾️", label: "Unlimited launches" },
+                { icon: "♾️", label: "Unlimited businesses" },
                 { icon: "⭐", label: "Featured placement" },
                 { icon: "🤖", label: "Unlimited AI" },
               ].map((p) => (
@@ -1828,7 +1828,7 @@ export default function Home() {
         <div id="section-projects" className="border-t border-zinc-900 px-4 py-20 sm:py-24">
           <div className="mx-auto max-w-5xl">
             <div className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Featured project
+              Featured business
             </div>
             {featured?.project && (
               <Link href={`/project/${featured.project.id}`}>
@@ -1947,13 +1947,13 @@ export default function Home() {
       <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Recently Launched
+            Recently Added
           </div>
           {latestProjectsNews.length === 0 && !loadingProjects ? (
             <p className="text-sm text-zinc-500">
               {allPublicProjects.length === 0
-                ? "No projects yet — be the first to launch."
-                : "New projects will appear here as they launch."}
+                ? "No businesses yet — be the first to go live."
+                : "New businesses will appear here as they go live."}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-3">
@@ -1974,7 +1974,7 @@ export default function Home() {
                         {formatNewsDate(p.created_at)}
                       </div>
                       <div className="mb-2 text-base font-bold leading-tight text-white">
-                        {p.title || p.name || "Untitled project"}
+                        {p.title || p.name || "Untitled business"}
                       </div>
                       <div className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
                         {p.description?.trim() || "Live on DUM Club with AI and community features."}

@@ -563,7 +563,7 @@ export default function DiscoverPage() {
           <span className="text-zinc-700">·</span>{" "}
           Activity rising{" "}
           <span className="text-zinc-700">·</span>{" "}
-          Businesses launching on DUM Club
+          Businesses going live on DUM Club
         </p>
       </div>
 
