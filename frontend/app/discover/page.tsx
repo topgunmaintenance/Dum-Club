@@ -583,7 +583,7 @@ export default function DiscoverPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects..."
+            placeholder="Search businesses..."
             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/40 sm:max-w-xs"
           />
         </div>

@@ -396,7 +396,7 @@ function MarketTab() {
         </div>
       </div>
 
-      {/* Simple visual chart placeholder */}
+      {/* Price visualization */}
       <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Price History</div>
