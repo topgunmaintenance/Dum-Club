@@ -2264,7 +2264,7 @@ export default function ProjectPage() {
   const isPending = reviewStatus === "pending";
   const isApprovedProject = reviewStatus === "approved";
   const isTradingLive = tokenStatus === "trading_live";
-  const canShowMarketUi = isTradingLive;
+  const canShowMarketUi = false; // DUM Hub replaces per-project trading UI
 
   const emoji = useMemo(() => getProjectEmoji(project), [project]);
   const category = useMemo(() => getCategory(project), [project]);
@@ -2517,26 +2517,19 @@ return (
                 {parsedAiOutput?.description || project?.description || ""}
               </p>
 
-              {/* Token badge */}
-              {displaySymbol && displaySymbol !== "TOKEN" && (
-                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
-                  <span className="text-sm font-bold text-emerald-400">${displaySymbol}</span>
-                  {hasMarketSnapshot && (
-                    <span className={`text-sm font-medium ${heroPriceUp ? "text-emerald-400" : "text-red-400"}`}>
-                      {heroPriceUp ? "+" : ""}{heroPriceChangePct.toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* DUM Points badge */}
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
+                <span className="text-sm font-bold text-emerald-400">◆ DUM Points accepted</span>
+              </div>
             </div>
           </div>
 
           {/* Pitch content grid */}
           <div className="mb-10 grid gap-6 md:grid-cols-2">
-            {/* Token Utility */}
+            {/* Rewards & Perks */}
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
               <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
-                Token Utility
+                Rewards &amp; Perks
               </div>
               <p className="text-sm leading-relaxed text-zinc-300">
                 {heroUtility}
