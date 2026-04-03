@@ -34,7 +34,7 @@ router = APIRouter()
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-_ollama = ollama.Client(host=OLLAMA_HOST, timeout=30)
+_ollama = ollama.Client(host=OLLAMA_HOST, timeout=5)
 
 _OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY", "")
 _OPENAI_MODEL     = os.getenv("OPENAI_MODEL", "gpt-4o-mini")

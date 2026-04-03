@@ -938,6 +938,58 @@ const HOME_SECTIONS = [
   { id: "section-cta", label: "Get Started" },
 ];
 
+/* ─── Live Sale Toast (cycles realistic sale notifications) ─── */
+const SALE_NOTIFICATIONS = [
+  { item: "Full Detail Package", price: "$89.00", time: "2m ago" },
+  { item: "Monthly Membership", price: "$49.00", time: "5m ago" },
+  { item: "8-Week Coaching Program", price: "$149.00", time: "8m ago" },
+  { item: "Basic Exterior Wash", price: "$29.00", time: "12m ago" },
+  { item: "Brand Design Package", price: "$299.00", time: "15m ago" },
+  { item: "Resume Review Session", price: "$35.00", time: "22m ago" },
+];
+
+function LiveSaleToast() {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Show first toast after 4s, then cycle every 18s
+    const initialDelay = setTimeout(() => setVisible(true), 4000);
+    const cycle = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % SALE_NOTIFICATIONS.length);
+        setVisible(true);
+      }, 400);
+    }, 18000);
+    return () => { clearTimeout(initialDelay); clearInterval(cycle); };
+  }, []);
+
+  const sale = SALE_NOTIFICATIONS[idx];
+
+  return (
+    <div
+      className={`fixed bottom-4 right-4 z-50 transition-all duration-500 ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+      }`}
+    >
+      <div className="flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-zinc-950/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_12px_rgba(0,255,163,0.06)] backdrop-blur-sm">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-sm">
+          💳
+        </div>
+        <div>
+          <div className="text-[12px] font-semibold text-white">{sale.item}</div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="font-bold text-emerald-400">{sale.price}</span>
+            <span className="text-zinc-600">·</span>
+            <span className="text-zinc-500">{sale.time}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Comparison Tabs: Features vs Cost ─── */
 function ComparisonTabs() {
   const [tab, setTab] = useState<"features" | "cost">("features");
@@ -1387,6 +1439,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-base text-white">
+      <LiveSaleToast />
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
@@ -1880,7 +1933,7 @@ export default function Home() {
                 href="/build"
                 className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
-                Start Building Free →
+                Start Selling Free →
               </Link>
               <Link
                 href="/discover"
@@ -1943,7 +1996,7 @@ export default function Home() {
             Built with
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
-            {["Solana", "Supabase", "Next.js"].map((name) => (
+            {["Solana", "Stripe", "Supabase", "Next.js"].map((name) => (
               <span
                 key={name}
                 className="text-sm font-bold tracking-wide text-zinc-400"
@@ -1964,7 +2017,7 @@ export default function Home() {
                   DUM<span className="text-emerald-400">CLUB</span>
                 </span>
                 <span className="rounded border border-zinc-800 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
-                  BETA
+                  EARLY ACCESS
                 </span>
               </div>
               <p className="mb-4 text-[10px] uppercase tracking-[0.2em] text-zinc-500">

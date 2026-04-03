@@ -511,8 +511,8 @@ export default function ProjectPage() {
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
   const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
   const [gameLocked, setGameLocked] = useState(false);
-  const [gamePlaysLeft, setGamePlaysLeft] = useState(3);
-  const [gameUnlocked, setGameUnlocked] = useState(false);
+  const [gamePlaysLeft, setGamePlaysLeft] = useState(999);
+  const [gameUnlocked, setGameUnlocked] = useState(true);
   const gameInteracted = useRef(false);
 
   // Initialize play count from localStorage on mount
