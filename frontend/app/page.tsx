@@ -1318,17 +1318,9 @@ export default function Home() {
           <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
             <div className="mx-auto max-w-3xl text-center">
 
-              <h1 className="hero-entrance text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Describe your idea.
-                <br />
-                <span className="text-emerald-400" style={{ textShadow: "0 0 40px rgba(0,255,163,0.3)" }}>
-                  AI builds your business.
-                </span>
-              </h1>
-
-              <p className="hero-entrance-delay-1 mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+              <h1 className="hero-entrance mx-auto max-w-xl text-2xl font-extrabold leading-[1.25] tracking-tight text-zinc-300 sm:text-3xl lg:text-4xl">
                 Turn any idea into a live product and business in seconds. AI handles the storefront, offers, and payments.
-              </p>
+              </h1>
 
               {/* ── LAUNCH INPUT ── */}
               <div className="hero-entrance-delay-2 mx-auto mt-10 max-w-2xl">
