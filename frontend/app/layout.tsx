@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "../components/AppProviders";
 import { Navbar } from "../components/Navbar";
+import { DumPill } from "../components/DumPill";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,6 +40,7 @@ export default function RootLayout({
         <AppProviders>
           <Navbar />
           {children}
+          <DumPill />
           {/* Deploy indicator — low-visibility, bottom-right */}
           {commitSha && (
             <div
