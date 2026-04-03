@@ -281,3 +281,60 @@ async def purchase_with_crypto(
         status_code=501,
         detail="SOL/USDC purchase coming soon. Use Stripe for now."
     )
+
+
+# ── DUM Market data ──────────────────────────────────────────
+
+DUM_SOL_RATE = float(os.getenv("DUM_SOL_RATE", "1000"))  # 1 SOL = 1000 DUM
+DUM_USD_PRICE = 0.01  # Fixed price for display: $0.01 per DUM Point
+
+
+@router.get("/market")
+async def get_market_data():
+    """Global DUM market overview — price, supply, volume."""
+    supabase = get_client()
+
+    # Total supply: sum of all user balances
+    try:
+        users_res = supabase.table("users").select("dum_balance").execute()
+        total_supply = sum(row.get("dum_balance", 0) for row in (users_res.data or []))
+    except Exception:
+        total_supply = 0
+
+    # 24h volume: sum of positive transactions in last 24h
+    try:
+        from datetime import datetime, timezone, timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        vol_res = (
+            supabase.table("dum_transactions")
+            .select("amount")
+            .gt("amount", 0)
+            .gte("created_at", cutoff)
+            .execute()
+        )
+        volume_24h = sum(row.get("amount", 0) for row in (vol_res.data or []))
+    except Exception:
+        volume_24h = 0
+
+    return {
+        "price_usd": DUM_USD_PRICE,
+        "sol_rate": DUM_SOL_RATE,
+        "total_supply": total_supply,
+        "market_cap_usd": round(total_supply * DUM_USD_PRICE, 2),
+        "volume_24h": volume_24h,
+        "volume_24h_usd": round(volume_24h * DUM_USD_PRICE, 2),
+    }
+
+
+@router.get("/recent-swaps")
+async def get_recent_swaps(limit: int = 15):
+    """Recent DUM Point transactions (platform-wide)."""
+    supabase = get_client()
+    res = (
+        supabase.table("dum_transactions")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(min(limit, 50))
+        .execute()
+    )
+    return {"swaps": res.data or []}
