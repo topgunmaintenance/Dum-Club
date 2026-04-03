@@ -570,10 +570,10 @@ export default function DiscoverPage() {
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div id="section-top" className="mb-6">
           <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
-            ◆ Discovery Feed
+            ◆ Marketplace
           </div>
           <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
-            Trending Projects
+            Live Businesses
           </h1>
         </div>
 
@@ -608,7 +608,7 @@ export default function DiscoverPage() {
         <div className="mb-8 grid grid-cols-2 gap-4 border border-zinc-900 bg-zinc-950/50 px-4 py-5 sm:flex sm:flex-wrap sm:px-6">
           <div className="min-w-[140px] flex-1">
             <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              Public projects
+              Live businesses
             </div>
             <div className="font-mono text-2xl font-bold text-white">{totalPublicProjects}</div>
           </div>
@@ -643,7 +643,7 @@ export default function DiscoverPage() {
           <div className="mb-8 rounded-2xl border border-zinc-900 bg-zinc-950 p-5">
             <div className="mb-4 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
-                Top Projects
+                Top Businesses
               </span>
               <Link
                 href="/leaderboard"
@@ -687,7 +687,7 @@ export default function DiscoverPage() {
           </div>
         ) : sortedProjects.length === 0 ? (
           <div className="border border-zinc-900 bg-zinc-950 p-8 text-zinc-400">
-            No public projects match this tab.
+            No businesses match this category yet.
           </div>
         ) : (
           <div className="grid gap-0 border border-zinc-900 md:grid-cols-2 xl:grid-cols-3">
@@ -695,13 +695,7 @@ export default function DiscoverPage() {
               const accent = getAccent(index);
               const emoji = getProjectEmoji(project, index);
               const category = getCategory(project);
-              const ticker = getTicker(project);
-              const snap = marketByProject[project.id];
-              const price = snap?.price;
-              const flash = flashingProjectIds[project.id];
               const pulsing = pulseId === project.id;
-              const mcap = snap?.market_cap ?? 0;
-              const barPct = Math.min((mcap / TARGET_MARKET_CAP) * 100, 100);
 
               return (
                 <Link key={project.id} href={`/project/${project.id}`} className="group">
