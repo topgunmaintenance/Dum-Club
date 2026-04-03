@@ -228,6 +228,33 @@ body {
   animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
+.hero-entrance-delay-3 {
+  animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+/* Hero gradient text shimmer */
+@keyframes hero-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.hero-text-glow {
+  background: linear-gradient(
+    90deg,
+    #00FFA3 0%,
+    #00FFD5 25%,
+    #7BFFCE 50%,
+    #00FFA3 75%,
+    #00FFA3 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-shimmer 6s linear infinite;
+  filter: drop-shadow(0 0 30px rgba(0, 255, 163, 0.3));
+}
+
 .hero-chat-entrance {
   animation: hero-slide-in-right 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }

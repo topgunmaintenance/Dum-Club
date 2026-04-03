@@ -1318,12 +1318,27 @@ export default function Home() {
           <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
             <div className="mx-auto max-w-3xl text-center">
 
-              <h1 className="hero-entrance mx-auto max-w-xl text-2xl font-extrabold leading-[1.25] tracking-tight text-zinc-300 sm:text-3xl lg:text-4xl">
-                Turn any idea into a live product and business in seconds. AI handles the storefront, offers, and payments.
+              {/* Line 1 — thin, understated */}
+              <div className="hero-entrance text-[clamp(15px,4vw,20px)] font-light uppercase tracking-[0.25em] text-zinc-500">
+                One sentence is all it takes
+              </div>
+
+              {/* Line 2 — the MONEY line */}
+              <h1 className="hero-entrance-delay-1 mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
+                <span className="text-white">Idea to</span>
+                <br />
+                <span className="hero-text-glow">live business.</span>
               </h1>
 
+              {/* Line 3 — supporting detail */}
+              <p className="hero-entrance-delay-2 mx-auto mt-5 max-w-md text-[clamp(14px,3.5vw,18px)] font-normal leading-relaxed text-zinc-500">
+                AI builds your storefront, offers, and payments.
+                <br className="hidden sm:block" />
+                You share the link. You get paid.
+              </p>
+
               {/* ── LAUNCH INPUT ── */}
-              <div className="hero-entrance-delay-2 mx-auto mt-10 max-w-2xl">
+              <div className="hero-entrance-delay-3 mx-auto mt-10 max-w-2xl">
                 <textarea
                   value={heroIdea}
                   onChange={(e) => setHeroIdea(e.target.value)}
