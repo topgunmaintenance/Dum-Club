@@ -169,7 +169,7 @@ function getCategory(project: Project | null) {
     return "Food";
   }
 
-  return "AI Project";
+  return "Business";
 }
 
 function getAccent(project: Project | null) {
@@ -2918,15 +2918,21 @@ return (
               {projectView === "analytics" && (
               <div className="mt-5 rounded-2xl border border-zinc-800 bg-base/40 p-4">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                  Supporter perks
+                  DUM Hub benefits
                 </p>
                 <ul className="space-y-2">
-                  {utilityBullets.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                      <span className="mt-0.5 text-emerald-400">✦</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
+                  <li className="flex items-start gap-2 text-sm text-zinc-300">
+                    <span className="mt-0.5 text-emerald-400">✦</span>
+                    <span>Earn DUM Points with every purchase</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-300">
+                    <span className="mt-0.5 text-emerald-400">✦</span>
+                    <span>Use points for discounts at any business</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-300">
+                    <span className="mt-0.5 text-emerald-400">✦</span>
+                    <span>Supporters get unlimited AI access</span>
+                  </li>
                 </ul>
               </div>
               )}
@@ -3017,21 +3023,22 @@ return (
                 </div>
               </div>
             ) : projectView === "analytics" ? (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-                <div className="mb-1 text-xs text-zinc-500">Token</div>
-                <div className="text-2xl font-black text-white">${displaySymbol}</div>
-                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
-                  <div>
-                    <div className="text-xs text-zinc-500">Supply</div>
-                    <div className="text-sm font-semibold text-white">{supplyDisplay}</div>
+              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900 p-5">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">DUM Hub</div>
+                <div className="text-lg font-black text-white">Rewards &amp; Perks</div>
+                <div className="mt-3 space-y-2.5 border-t border-zinc-800 pt-3">
+                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
+                    <span className="text-emerald-400">💳</span> Stripe checkout active
                   </div>
-                  <div>
-                    <div className="text-xs text-zinc-500">Launch stage</div>
-                    <div className="text-sm font-semibold text-zinc-300">{displayStatusLabel}</div>
+                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
+                    <span className="text-emerald-400">◆</span> DUM Points accepted
+                  </div>
+                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
+                    <span className="text-emerald-400">%</span> 10% off with points
                   </div>
                 </div>
-                <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-400">
-                  DUM Points accepted · Stripe payments active
+                <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500">
+                  Powered by Solana · Stripe payments
                 </div>
               </div>
             ) : null}
@@ -3229,7 +3236,7 @@ return (
             </button>
           </div>
           <h2 className="text-xl font-bold text-white tracking-tight">
-            DUM AI Project Builder
+            DUM AI Business Builder
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
             Improve your project page and promo copy with AI

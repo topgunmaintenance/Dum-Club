@@ -1740,7 +1740,7 @@ export default function Home() {
             {[
               {
                 tag: "AI",
-                title: "AI Project Builder",
+                title: "AI Business Builder",
                 desc: "Describe your idea. The AI builds your storefront, pricing, and offers instantly.",
               },
               {
