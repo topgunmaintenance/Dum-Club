@@ -398,7 +398,7 @@ function CreatorTicker({
 }
 
 /* ─── Activity Ticker (rAF-driven for cross-browser reliability) ─── */
-function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
+function DumActivityStrip({ projectCount, tradeCount }: { projectCount: number; tradeCount: number }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef(0);
   const rafRef = useRef<number>(0);
@@ -413,7 +413,7 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
     window.addEventListener("resize", measure);
 
     let lastTime = 0;
-    const speed = 50;
+    const speed = 40;
 
     const tick = (time: number) => {
       if (lastTime === 0) lastTime = time;
@@ -433,27 +433,34 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
       clearTimeout(timer);
       window.removeEventListener("resize", measure);
     };
-  }, [trades]);
+  }, [projectCount, tradeCount]);
 
-  const items = [...trades, ...trades, ...trades, ...trades];
+  const item = (key: string) => (
+    <span key={key} className="flex shrink-0 items-center gap-3 font-mono text-xs text-zinc-500">
+      <span className="text-emerald-400">↑</span>
+      <span className="font-bold text-emerald-400/80">DUM</span>
+      <span className="text-zinc-700">·</span>
+      <span>Activity rising</span>
+      <span className="text-zinc-700">·</span>
+      {projectCount > 0 ? (
+        <span><span className="text-zinc-400">{projectCount}</span> businesses live</span>
+      ) : (
+        <span>Businesses launching now</span>
+      )}
+      <span className="text-zinc-700">·</span>
+      {tradeCount > 0 ? (
+        <span><span className="text-zinc-400">{tradeCount}</span> sales on DUM Club</span>
+      ) : (
+        <span>Sales happening on DUM Club</span>
+      )}
+      <span className="mx-6 text-zinc-800">|</span>
+    </span>
+  );
 
   return (
     <div className="overflow-hidden py-3">
-      <div ref={trackRef} className="flex gap-8" style={{ width: "max-content", willChange: "transform" }}>
-        {items.map((trade, i) => {
-          const side = trade.side === "sell" ? "sell" : "buy";
-          const price = Number(trade.price ?? 0);
-          const sym = trade.token_symbol || "—";
-          return (
-            <span key={`t-${i}`} className="flex shrink-0 items-center font-mono text-xs text-zinc-500">
-              <span className={side === "buy" ? "text-emerald-400" : "text-red-400"}>
-                {side === "buy" ? "↑" : "↓"}
-              </span>{" "}
-              {sym} · ${formatPrice(price)} · {formatTimeAgo(trade.created_at)}
-              <span className="mx-4 text-zinc-800">|</span>
-            </span>
-          );
-        })}
+      <div ref={trackRef} className="flex" style={{ width: "max-content", willChange: "transform" }}>
+        {Array.from({ length: 6 }).map((_, i) => item(`strip-${i}`))}
       </div>
     </div>
   );
@@ -1767,24 +1774,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Live activity ticker */}
+        {/* DUM Club activity strip */}
         <div className="mx-auto mt-20 max-w-7xl border-t border-zinc-900">
-          <div className="border-b border-zinc-900/80 py-2 text-center">
-            <span className="font-mono text-[10px] text-zinc-600">
-              {tradesInLast24h} trades in the last 24h across {liveProjectCount}{" "}
-              live project{liveProjectCount === 1 ? "" : "s"}
-            </span>
-          </div>
-          <div className="mb-2 px-4 pt-3 text-center text-[10px] uppercase tracking-[0.3em] text-zinc-600">
-            Live activity
-          </div>
-          {recentTrades.length === 0 ? (
-            <div className="py-4 text-center text-xs text-zinc-600">
-              No activity yet — launch a project and make the first move.
-            </div>
-          ) : (
-            <ActivityTicker trades={recentTrades} />
-          )}
+          <DumActivityStrip projectCount={liveProjectCount} tradeCount={tradesInLast24h} />
         </div>
 
         {/* ── CONDENSED: WHY DUM CLUB WINS ── */}
