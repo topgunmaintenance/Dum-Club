@@ -16,7 +16,7 @@ import subprocess
 import json
 
 
-DUM_MINT = os.getenv("DUM_MINT", "")
+DUM_MINT = os.getenv("DUM_MINT", "") or os.getenv("DUM_MINT_ADDRESS", "")
 DUM_TREASURY_KEYPAIR = os.getenv("DUM_TREASURY_KEYPAIR", "")
 
 
