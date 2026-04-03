@@ -59,6 +59,7 @@ export function Navbar() {
     { href: "/discover", label: "Discover" },
     { href: "/build", label: "Build" },
     { href: "/business", label: "For Business" },
+    { href: "/hub", label: "DUM Hub" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/chat", label: "AI Chat" },
   ];
@@ -373,7 +374,8 @@ export function Navbar() {
           {mounted && (
             <>
               {user && dumBalance > 0 && (
-                <div
+                <Link
+                  href="/hub"
                   style={{
                     fontFamily: "'Space Mono', monospace",
                     fontSize: "11px",
@@ -387,11 +389,13 @@ export function Navbar() {
                     alignItems: "center",
                     gap: "6px",
                     whiteSpace: "nowrap",
+                    textDecoration: "none",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   <span style={{ fontSize: "13px" }}>◆</span>
                   {dumBalance} DUM
-                </div>
+                </Link>
               )}
               {loading ? (
                 <button
