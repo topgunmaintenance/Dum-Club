@@ -118,7 +118,7 @@ export function Navbar() {
               color: "#666",
             }}
           >
-            BETA
+            EARLY ACCESS
           </span>
         </Link>
 
@@ -302,7 +302,7 @@ export function Navbar() {
               transition: "all 0.18s ease",
             }}
           >
-            BETA
+            EARLY ACCESS
           </span>
         </Link>
 

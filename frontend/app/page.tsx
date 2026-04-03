@@ -985,8 +985,10 @@ function ComparisonTabs() {
               {[
                 { f: "What it builds", b: "Web apps", l: "Web apps", v: "AI models", d: "Revenue businesses" },
                 { f: "Revenue on day one", b: "No", l: "No", v: "No", d: "Yes — Stripe built in" },
-                { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
+                { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points (Solana)" },
                 { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
+                { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana SPL tokens" },
+                { f: "Token ecosystem", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — on-chain loyalty" },
                 { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
                 { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
               ].map((row, i) => (
@@ -999,7 +1001,7 @@ function ComparisonTabs() {
                     background: "rgba(0,255,135,0.04)",
                     borderLeft: "1px solid rgba(0,255,135,0.12)",
                     borderRight: "1px solid rgba(0,255,135,0.12)",
-                    ...(i === 5 ? { borderBottom: "1px solid rgba(0,255,135,0.12)", borderRadius: "0 0 8px 8px" } : {}),
+                    ...(i === 7 ? { borderBottom: "1px solid rgba(0,255,135,0.12)", borderRadius: "0 0 8px 8px" } : {}),
                   }}>{row.d}</td>
                 </tr>
               ))}
@@ -1055,6 +1057,9 @@ function ComparisonTabs() {
               They burn millions to operate.{" "}
               <span className="font-bold text-emerald-400">DUM Club scales from $100 — and you keep the revenue.</span>
             </span>
+          </div>
+          <div className="mt-2 text-center text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
+            On-chain transparency · Every transaction verifiable on Solana
           </div>
         </div>
       )}
@@ -1571,16 +1576,34 @@ export default function Home() {
               )}
 
               {/* ── Trust line ── */}
-              <p className="hero-entrance-delay-2 mx-auto mt-6 text-[13px] text-zinc-600">
-                {allPublicProjects.length > 0 && (
-                  <span className="text-emerald-400/70">{allPublicProjects.length} projects live</span>
-                )}
-                {allPublicProjects.length > 0 && " · "}
-                No website needed · No developer required ·{" "}
-                <Link href={allPublicProjects.length > 0 ? `/project/${allPublicProjects[0].id}` : "/discover"} className="text-zinc-500 underline decoration-zinc-700 transition hover:text-zinc-300">
-                  See live example
-                </Link>
-              </p>
+              <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
+                <p className="text-[13px] text-zinc-600">
+                  {allPublicProjects.length > 0 && (
+                    <span className="text-emerald-400/70">{allPublicProjects.length} businesses live</span>
+                  )}
+                  {allPublicProjects.length > 0 && " · "}
+                  Stripe checkout · Built on Solana · Live in 60 seconds
+                </p>
+                {/* Payment + chain icons */}
+                <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
+                  <span className="flex items-center gap-1.5">
+                    <svg width="20" height="13" viewBox="0 0 24 16" fill="none" className="text-zinc-600"><rect x="0.5" y="0.5" width="23" height="15" rx="2" stroke="currentColor"/><rect x="0" y="4" width="24" height="4" fill="currentColor" opacity="0.3"/></svg>
+                    Visa
+                  </span>
+                  <span className="text-zinc-800">·</span>
+                  <span className="flex items-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-zinc-600"><circle cx="9" cy="12" r="7" stroke="currentColor" opacity="0.5"/><circle cx="15" cy="12" r="7" stroke="currentColor" opacity="0.5"/></svg>
+                    Mastercard
+                  </span>
+                  <span className="text-zinc-800">·</span>
+                  <span className="flex items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-zinc-600"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                    Solana
+                  </span>
+                  <span className="text-zinc-800">·</span>
+                  <span className="text-zinc-600">Apple Pay</span>
+                </div>
+              </div>
 
             </div>
           </div>
