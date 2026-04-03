@@ -3643,6 +3643,28 @@ return (
         );
       })()}
 
+      {/* ── DUM Hub Card ── */}
+      <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">DUM Hub</span>
+              <span className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">· Powered by Solana</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-[12px] text-zinc-400">
+              <span className="flex items-center gap-1.5"><span className="text-emerald-400">💳</span> Stripe checkout</span>
+              <span className="text-zinc-700">·</span>
+              <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Earn DUM Points</span>
+              <span className="text-zinc-700">·</span>
+              <span className="flex items-center gap-1.5"><span className="text-emerald-400">%</span> 10% off with points</span>
+            </div>
+          </div>
+          <div className="text-[10px] text-zinc-600 leading-relaxed max-w-[220px]">
+            Pay by card. Earn loyalty points. Use them for discounts across DUM Club.
+          </div>
+        </div>
+      </div>
+
       {/* ── Offers (Public Storefront + Owner Tools) ── */}
       <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
         <div className="mb-1 flex items-center justify-between">
