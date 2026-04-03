@@ -206,19 +206,19 @@ export default function BuildPage() {
           )}
 
           {!generating && user && !walletAddress && (
-            <div className="mt-6 rounded-2xl border border-violet-500/20 bg-violet-500/[0.04] p-5 text-center">
-              <div className="mb-2 text-lg font-bold text-white">One more step</div>
+            <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
+              <div className="mb-2 text-lg font-bold text-white">Setting up your account</div>
               <p className="mb-4 text-sm text-zinc-400">
-                Your project needs a wallet to go live. We&apos;ll create one for you automatically — no setup, no seed phrases, no hassle.
+                We automatically create a secure account for payments and ownership. No crypto knowledge needed — just one click.
               </p>
               <button
                 type="button"
                 onClick={() => createWallet()}
-                className="w-full rounded-xl bg-violet-500 px-6 py-3 text-sm font-bold uppercase tracking-[0.12em] text-white transition hover:bg-violet-400"
+                className="w-full rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
               >
-                Create Wallet →
+                Activate Account →
               </button>
-              <p className="mt-2 text-[11px] text-zinc-600">Powered by Privy · takes a few seconds</p>
+              <p className="mt-2 text-[11px] text-zinc-600">Secure · Instant · No setup required</p>
             </div>
           )}
 

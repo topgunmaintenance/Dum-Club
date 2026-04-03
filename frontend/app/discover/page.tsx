@@ -43,7 +43,7 @@ const DISCOVER_TABS = [
   { id: "live", label: "🟢 Live" },
   { id: "offers", label: "🛒 Has Offers" },
   { id: "business", label: "💼 Business" },
-  { id: "gaming", label: "🎮 Gaming" },
+  { id: "gaming", label: "🎮 Entertainment" },
   { id: "all", label: "All" },
   { id: "ai", label: "AI" },
   { id: "health", label: "Health" },

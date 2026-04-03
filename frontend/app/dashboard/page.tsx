@@ -248,7 +248,7 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">Manage your projects and wallet</p>
+          <p className="mt-2 text-sm text-zinc-500">Manage your projects and business</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}
@@ -273,20 +273,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Wallet + Balance */}
+          {/* Account + Balance */}
           <div className="rounded-2xl border border-zinc-800 bg-card p-6 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
-              Wallet
+              Account
             </div>
             {walletAddress ? (
               <div className="mt-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm text-zinc-300" title={walletAddress}>
-                    {shortAddress(walletAddress)}
+                  <span className="flex items-center gap-2">
+                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="text-sm font-medium text-emerald-400">Active</span>
                   </span>
                   <span className="font-mono text-lg font-bold text-white">
                     {solBalance !== null ? `${solBalance.toFixed(4)}` : "—"}
-                    <span className="ml-1 text-xs font-normal text-zinc-500">SOL</span>
+                    <span className="ml-1 text-xs font-normal text-zinc-500">balance</span>
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">

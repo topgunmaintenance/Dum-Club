@@ -249,7 +249,7 @@ function CreatorProofModal({
         {/* Label */}
         <div className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
           <span className="inline-block h-px w-4 bg-emerald-400" />
-          Creator Story
+          Example Scenario
         </div>
 
         {/* Avatar + name */}
@@ -461,16 +461,16 @@ function ActivityTicker({ trades }: { trades: RecentTrade[] }) {
 
 /* ─── Platform Activity Feed ─── */
 const ACTIVITY_MESSAGES = [
-  { icon: "🎮", text: "Someone launched a gaming storefront" },
-  { icon: "💪", text: "New fitness coaching business created" },
-  { icon: "🚗", text: "Mobile car wash went live" },
-  { icon: "🎨", text: "A design studio just launched" },
-  { icon: "📄", text: "Resume service got its first order" },
-  { icon: "🧁", text: "Custom bakery storefront created" },
-  { icon: "💻", text: "SaaS tool went live with 3 offers" },
-  { icon: "📸", text: "Photography business launched" },
-  { icon: "🎵", text: "Beat producer storefront is live" },
-  { icon: "❄️", text: "HVAC service launched with booking" },
+  { icon: "🟢", text: "New business storefront went live" },
+  { icon: "💳", text: "Offer purchased via Stripe checkout" },
+  { icon: "⚡", text: "AI built a storefront in under 60s" },
+  { icon: "✓", text: "Business verified by review team" },
+  { icon: "🔁", text: "Returning customer used DUM Points" },
+  { icon: "📦", text: "New service offer published" },
+  { icon: "🟢", text: "Storefront launched with 3 offers" },
+  { icon: "💳", text: "Subscription offer purchased" },
+  { icon: "⚡", text: "Business created from single sentence" },
+  { icon: "✓", text: "Offer fulfilled — seller paid out" },
 ];
 
 function PlatformActivity({ projectCount }: { projectCount: number }) {
@@ -531,11 +531,11 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
 
   if (isGaming) {
     emoji = "🎮";
-    tag = "Game + Storefront";
+    tag = "Entertainment Business";
     offers = [
-      { title: "Game Access Pass", price: "$4.99" },
-      { title: "Premium Content Pack", price: "$9.99" },
-      { title: "Monthly Subscription", price: "$2.99/mo" },
+      { title: "Access Pass", price: "$4.99" },
+      { title: "Premium Experience", price: "$9.99" },
+      { title: "Monthly Membership", price: "$2.99/mo" },
     ];
   } else if (isSaas) {
     emoji = "💻";
@@ -618,39 +618,36 @@ function incrementLaunchCount(): number {
 const DEMO_IDEA = "Mobile car wash for busy professionals with premium detailing packages";
 
 function ProductDemo() {
-  const [phase, setPhase] = useState(0); // 0=typing, 1=building, 2=live
+  const [phase, setPhase] = useState(0); // 0=typing, 1=building, 2=live, 3=purchase
   const [typedLen, setTypedLen] = useState(0);
   const [buildStep, setBuildStep] = useState(0);
   const [liveStep, setLiveStep] = useState(0);
+  const [loopKey, setLoopKey] = useState(0);
 
-  // Phase durations and auto-loop
+  // Phase durations and auto-loop (clean restart via loopKey)
   useEffect(() => {
     const schedule = [
       { at: 0, fn: () => { setPhase(0); setTypedLen(0); setBuildStep(0); setLiveStep(0); } },
-      // Typing finishes around 3s, then pause
       { at: 3800, fn: () => setPhase(1) },
-      // Build steps reveal
       { at: 4200, fn: () => setBuildStep(1) },
       { at: 4800, fn: () => setBuildStep(2) },
       { at: 5400, fn: () => setBuildStep(3) },
       { at: 6000, fn: () => setBuildStep(4) },
       { at: 6600, fn: () => setBuildStep(5) },
       { at: 7200, fn: () => setBuildStep(6) },
-      // Transition to live
       { at: 7800, fn: () => setPhase(2) },
       { at: 8200, fn: () => setLiveStep(1) },
       { at: 8800, fn: () => setLiveStep(2) },
       { at: 9400, fn: () => setLiveStep(3) },
       { at: 10000, fn: () => setLiveStep(4) },
-      // Restart loop
-      { at: 13000, fn: () => { setPhase(0); setTypedLen(0); setBuildStep(0); setLiveStep(0); } },
+      // Purchase simulation
+      { at: 11500, fn: () => setPhase(3) },
+      // Clean restart
+      { at: 14500, fn: () => setLoopKey((k) => k + 1) },
     ];
     const timers = schedule.map((s) => setTimeout(s.fn, s.at));
-    const loop = setInterval(() => {
-      schedule.forEach((s) => setTimeout(s.fn, s.at));
-    }, 13000);
-    return () => { timers.forEach(clearTimeout); clearInterval(loop); };
-  }, []);
+    return () => timers.forEach(clearTimeout);
+  }, [loopKey]);
 
   // Typing animation
   useEffect(() => {
@@ -670,12 +667,12 @@ function ProductDemo() {
   return (
     <div className="mt-16">
       <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
-        Interactive Demo + Storefront
+        Watch it happen — idea to revenue
       </div>
 
       {/* Progress dots */}
       <div className="mx-auto mb-6 flex max-w-xs items-center gap-2 justify-center">
-        {["Describe", "Build", "Live"].map((label, i) => (
+        {["Describe", "Build", "Live", "Revenue"].map((label, i) => (
           <div key={label} className="flex items-center gap-2">
             <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold transition-all duration-500 ${
               phase >= i ? "bg-emerald-400 text-black shadow-[0_0_10px_rgba(0,255,163,0.3)]" : "border border-zinc-800 text-zinc-700"
@@ -685,7 +682,7 @@ function ProductDemo() {
             <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${
               phase >= i ? "text-emerald-400" : "text-zinc-700"
             }`}>{label}</span>
-            {i < 2 && <span className={`text-sm transition-colors duration-300 ${phase > i ? "text-emerald-400/40" : "text-zinc-800"}`}>→</span>}
+            {i < 3 && <span className={`text-sm transition-colors duration-300 ${phase > i ? "text-emerald-400/40" : "text-zinc-800"}`}>→</span>}
           </div>
         ))}
       </div>
@@ -868,15 +865,54 @@ function ProductDemo() {
               </div>
             </div>
           )}
+
+          {/* ── PHASE 3: Purchase happens ── */}
+          {phase === 3 && (
+            <div className="hero-chat-msg space-y-3">
+              <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.08] to-zinc-950 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">New Sale</span>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-[14px] font-bold text-white">Full Detail Package</div>
+                    <div className="text-[11px] text-zinc-500">Purchased just now</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-[18px] font-bold text-emerald-400">+$89.00</div>
+                    <div className="text-[9px] text-emerald-400/50">Revenue</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
+                    <div className="font-mono text-[14px] font-bold text-white">$89</div>
+                    <div className="text-[8px] text-zinc-600">This sale</div>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
+                    <div className="font-mono text-[14px] font-bold text-emerald-400">+2</div>
+                    <div className="text-[8px] text-zinc-600">DUM Points</div>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
+                    <div className="font-mono text-[14px] font-bold text-white">✓</div>
+                    <div className="text-[8px] text-zinc-600">Paid via Stripe</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom bar */}
         <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950 px-4 py-2">
           <span className="font-mono text-[9px] text-zinc-700">
-            {phase === 0 ? "Describing..." : phase === 1 ? "Building..." : "Live ✓"}
+            {phase === 0 ? "Describing..." : phase === 1 ? "Building..." : phase === 2 ? "Live ✓" : "Revenue ✓"}
           </span>
           <div className="flex gap-1">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
                 className={`h-1 rounded-full transition-all duration-500 ${
@@ -1428,7 +1464,7 @@ export default function Home() {
         )}
         <div className="creator-section-fade mx-auto mt-14 max-w-6xl">
           <div className="mb-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Creators building right now
+            Example business scenarios
           </div>
           <CreatorTicker onPick={setCreatorModal} />
         </div>
@@ -1718,7 +1754,7 @@ export default function Home() {
               <span className="text-emerald-400">Live today.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Describe any idea — a game, a service, a product. AI builds the storefront, offers, and payments. You share the link and start earning.
+              Describe any idea — a service, a product, an experience. AI builds the storefront, offers, and payments. You share the link and start earning.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link

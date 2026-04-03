@@ -28,12 +28,12 @@ const DEMO_OFFERS = [
 
 /* ── Activity messages (generic, not fake) ── */
 const ACTIVITY_MESSAGES = [
-  "New business page created",
-  "Offer purchased via Stripe",
-  "Business submitted for verification",
+  "New storefront went live",
+  "Offer purchased via Stripe checkout",
+  "Business verified by review team",
   "DUM Points earned on purchase",
-  "New storefront launched",
-  "Verification approved",
+  "Service offer published",
+  "Returning customer used DUM Points",
 ];
 
 /* ── Scroll reveal hook ── */
@@ -601,7 +601,7 @@ export default function BusinessPage() {
               ))}
             </div>
             <div style={{ marginTop: "12px", textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#444" }}>
-              SIMULATED DATA · YOUR REAL DASHBOARD UPDATES IN REAL TIME
+              EXAMPLE PREVIEW · YOUR DASHBOARD SHOWS REAL-TIME DATA
             </div>
           </div>
         </Reveal>

@@ -646,6 +646,9 @@ export default function ProjectPage() {
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
   const [buyError, setBuyError] = useState<Record<string, string>>({});
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
+  const [simulatedPurchase, setSimulatedPurchase] = useState<string | null>(null);
+  const [simulatedRevenue, setSimulatedRevenue] = useState(0);
+  const [simPurchaseCount, setSimPurchaseCount] = useState(0);
   interface Order {
     id: string;
     offer_id: string;
@@ -1065,9 +1068,22 @@ export default function ProjectPage() {
       return;
     }
     if (isDemo) {
-      setBuyStep((p) => ({ ...p, [oid]: "blocked_demo" }));
-      setDemoClickedId(oid);
-      setTimeout(() => setDemoClickedId(null), 5000);
+      // Simulate a real purchase flow for demo/hackathon
+      setBuyingOfferId(oid);
+      setBuyStep((p) => ({ ...p, [oid]: "processing_demo" }));
+      await new Promise((r) => setTimeout(r, 1200));
+      const price = Number(offer.price_usd || 0);
+      setSimulatedPurchase(offer.title);
+      setSimulatedRevenue((prev) => prev + price);
+      setSimPurchaseCount((prev) => prev + 1);
+      setCheckoutResult("success");
+      setBuyingOfferId(null);
+      setBuyStep((p) => ({ ...p, [oid]: "demo_success" }));
+      // Award DUM Points locally
+      const pts = Number(localStorage.getItem("dum_points") || "0");
+      localStorage.setItem("dum_points", String(pts + 2));
+      window.dispatchEvent(new Event("dum-points-update"));
+      setTimeout(() => { setSimulatedPurchase(null); setBuyStep((p) => ({ ...p, [oid]: "" })); }, 6000);
       return;
     }
 
@@ -3539,10 +3555,10 @@ return (
           <div className="mb-8 rounded-3xl border border-zinc-800/40 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-6">
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xl">🎮</span>
-              <span className="text-sm font-bold text-white">Gaming Storefront</span>
+              <span className="text-sm font-bold text-white">Entertainment Business</span>
             </div>
             <p className="text-sm leading-relaxed text-zinc-400">
-              Large-scale games can&apos;t be auto-generated as interactive demos, but you can launch the business, sell early access, and build with your audience. Your storefront and offers are ready below.
+              This is a premium experience business. Sell access passes, memberships, and exclusive content to your audience. Your storefront and offers are ready below.
             </p>
           </div>
         );
@@ -3552,7 +3568,7 @@ return (
             <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{tmpl.emoji}</span>
-                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Demo + Storefront</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Experience + Storefront</span>
               </div>
               <div className="flex items-center gap-3">
                 {!gameUnlocked && gamePlaysLeft > 0 && gamePlaysLeft < 4 && (
@@ -3642,8 +3658,8 @@ return (
               Creator Offers
             </span>
             {isDemo && (
-              <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-amber-400/60">
-                Demo
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400/60">
+                Live Preview
               </span>
             )}
           </div>
@@ -3669,14 +3685,29 @@ return (
 
         {/* Demo mode indicator (section-level) */}
 
-        {/* Checkout result banner (only in live mode) */}
-        {!isDemo && checkoutResult === "success" && (
-          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-emerald-300">Payment successful — thank you for your purchase!</span>
-            <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
+        {/* Checkout result banner */}
+        {checkoutResult === "success" && (
+          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-emerald-300">
+                {simulatedPurchase
+                  ? `✓ New sale: "${simulatedPurchase}" — $${simulatedRevenue.toFixed(2)} total revenue`
+                  : "Payment successful — thank you for your purchase!"}
+              </span>
+              <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
+            </div>
+            {simPurchaseCount > 0 && (
+              <div className="mt-2 flex items-center gap-4 text-[11px] text-emerald-400/70">
+                <span>{simPurchaseCount} sale{simPurchaseCount > 1 ? "s" : ""}</span>
+                <span>·</span>
+                <span>${simulatedRevenue.toFixed(2)} revenue</span>
+                <span>·</span>
+                <span>+{simPurchaseCount * 2} DUM Points earned</span>
+              </div>
+            )}
           </div>
         )}
-        {!isDemo && checkoutResult === "cancelled" && (
+        {checkoutResult === "cancelled" && (
           <div className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-zinc-400">Checkout was cancelled</span>
             <button onClick={() => setCheckoutResult(null)} className="text-xs text-zinc-600 hover:text-zinc-300">Dismiss</button>
@@ -4169,10 +4200,11 @@ return (
                           </button>
                         ) : isDemo ? (
                           <button
+                            disabled={buyingOfferId === offer.id}
                             onClick={() => buyOffer(offer)}
-                            className="rounded-xl border border-emerald-400/40 px-5 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-400/10 active:scale-95"
+                            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
                           >
-                            {demoClickedId === offer.id ? "⚠ Demo" : "Demo Checkout"}
+                            {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : "Buy Now"}
                           </button>
                         ) : (
                           <button
@@ -4187,10 +4219,10 @@ return (
                     );
                   })()}
 
-                  {/* Demo inline feedback */}
-                  {demoClickedId === offer.id && (
-                    <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-300/80">
-                      Checkout is disabled in demo mode.
+                  {/* Demo purchase success feedback */}
+                  {buyStep[offer.id] === "demo_success" && (
+                    <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-300">
+                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +2 DUM Points earned
                     </div>
                   )}
 

@@ -254,7 +254,7 @@ export function Navbar() {
                     textTransform: "uppercase",
                   }}
                 >
-                  {shortAddress}
+                  Account Active
                 </div>
               )}
             </div>
@@ -487,7 +487,7 @@ export function Navbar() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {shortAddress}
+                  Account Active
                 </div>
               )}
             </>
