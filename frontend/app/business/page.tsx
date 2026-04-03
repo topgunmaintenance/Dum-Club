@@ -466,6 +466,154 @@ export default function BusinessPage() {
       </section>
 
 
+      {/* ═══════════════ HOW IT WORKS (moved up — conversion moment) ═══════════════ */}
+      <section style={{ padding: "0 20px 48px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px", textAlign: "center" }}>
+            Live in 4 steps. <span style={{ color: "#00FF87" }}>No friction.</span>
+          </h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px", textAlign: "center" }}>From idea to customers paying you — the same afternoon.</p>
+        </Reveal>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+          {[
+            { n: "01", t: "Sign in with Google", time: "3 sec", icon: "→" },
+            { n: "02", t: "Describe your business", time: "2 min", icon: "→" },
+            { n: "03", t: "AI builds your storefront", time: "Instant", icon: "→" },
+            { n: "04", t: "Start selling & grow", time: "Same day", icon: "✓" },
+          ].map((s, i) => (
+            <Reveal key={i} delay={i * 0.1}>
+              <div style={{
+                background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "12px", padding: "18px 16px", textAlign: "center",
+                transition: "all 0.2s",
+              }}>
+                <div style={{
+                  width: "28px", height: "28px", margin: "0 auto 10px",
+                  borderRadius: "8px", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#00FF87",
+                }}>{s.n}</div>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "6px" }}>{s.t}</div>
+                <div style={{
+                  fontFamily: "'Space Mono', monospace", fontSize: "11px", fontWeight: 700,
+                  color: "#00FF87", letterSpacing: "0.06em",
+                }}>{s.time}</div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════ MID-PAGE CTA + SOCIAL PROOF ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(0,255,135,0.06), rgba(0,255,135,0.02))",
+            border: "1px solid rgba(0,255,135,0.15)", borderRadius: "20px",
+            padding: "32px 24px", textAlign: "center",
+          }}>
+            <h3 style={{ fontFamily: "'Space Mono', monospace", fontSize: "20px", fontWeight: 800, marginBottom: "8px" }}>
+              You just watched AI build a business in 10 seconds.
+            </h3>
+            <p style={{ fontSize: "14px", color: "#888", marginBottom: "20px", lineHeight: 1.6 }}>
+              Imagine what it does with <strong style={{ color: "#f0f0f0" }}>your</strong> idea. Storefronts, offers, payments, loyalty — all generated and live before your coffee gets cold.
+            </p>
+            <div style={{ maxWidth: "320px", margin: "0 auto 20px" }}>
+              {"href" in heroAction ? (
+                <Link href={heroAction.href} className="biz-cta-primary">{heroAction.label} →</Link>
+              ) : (
+                <button onClick={heroAction.onClick} className="biz-cta-primary">{heroAction.label} →</button>
+              )}
+            </div>
+
+            {/* Real stats row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "24px", flexWrap: "wrap" }}>
+              {liveStats && (
+                <>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "20px", fontWeight: 800, color: "#00FF87" }}>{liveStats.live_projects}</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555" }}>LIVE STOREFRONTS</div>
+                  </div>
+                  <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.06)" }} />
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "20px", fontWeight: 800, color: "#F5A623" }}>{liveStats.active_offers}</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555" }}>ACTIVE OFFERS</div>
+                  </div>
+                  <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.06)" }} />
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "20px", fontWeight: 800, color: "#4F9EFF" }}>{liveStats.businesses}</div>
+                    <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555" }}>BUSINESSES</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ═══════════════ DASHBOARD PREVIEW ═══════════════ */}
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Your command center</div>
+            <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              Know exactly what{"'"}s working
+            </h2>
+          </div>
+        </Reveal>
+        <Reveal delay={0.15}>
+          <div style={{
+            background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "16px", padding: "24px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #00FF87, #4F9EFF, #C084FC, #00FF87)", backgroundSize: "300%" }} />
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#444", textTransform: "uppercase", marginBottom: "16px" }}>Business Dashboard Preview</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+              {[
+                { label: "Page Views", val: "1,247", color: "#f0f0f0" },
+                { label: "Sales", val: "23", color: "#00FF87" },
+                { label: "Revenue", val: "$1,840", color: "#f0f0f0" },
+                { label: "DUM Received", val: "180", color: "#00FF87" },
+              ].map((m, i) => (
+                <div key={i} style={{ background: "#161616", borderRadius: "10px", padding: "12px 10px", textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.08em", color: "#555", marginBottom: "6px" }}>{m.label}</div>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "16px", fontWeight: 800, color: m.color }}>{m.val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {[
+                { name: "Full Detail Package", sales: "12 sold", rev: "$1,068" },
+                { name: "Basic Exterior Wash", sales: "8 sold", rev: "$232" },
+                { name: "Monthly Membership", sales: "3 sold", rev: "$147/mo" },
+              ].map((o, i) => (
+                <div key={i} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  background: "#161616", borderRadius: "8px", padding: "10px 14px",
+                }}>
+                  <span style={{ fontSize: "12px", color: "#ccc" }}>{o.name}</span>
+                  <div style={{ display: "flex", gap: "16px", fontFamily: "'Space Mono', monospace", fontSize: "11px" }}>
+                    <span style={{ color: "#888" }}>{o.sales}</span>
+                    <span style={{ color: "#00FF87", fontWeight: 600 }}>{o.rev}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "12px", textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#444" }}>
+              SIMULATED DATA · YOUR REAL DASHBOARD UPDATES IN REAL TIME
+            </div>
+          </div>
+        </Reveal>
+        <Reveal delay={0.25}>
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <Link href="/discover" className="biz-cta-secondary" style={{ display: "inline-flex" }}>
+              Browse real storefronts on Discover →
+            </Link>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ═══════════════ S2: PAIN ═══════════════ */}
       <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
@@ -548,6 +696,19 @@ export default function BusinessPage() {
         ))}
       </section>
 
+
+      {/* ═══════════════ URGENCY BREAK ═══════════════ */}
+      <section style={{ padding: "0 20px 48px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1, textAlign: "center" }}>
+        <Reveal>
+          <div style={{
+            fontFamily: "'Space Mono', monospace", fontSize: "13px", color: "#888",
+            padding: "20px 0", borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)",
+          }}>
+            Every day without a retention system = <strong style={{ color: "#FF5555" }}>a customer who forgot about you.</strong><br />
+            <span style={{ color: "#555", fontSize: "12px" }}>You{"'"}re already paying for ads. Why not keep the customers they bring?</span>
+          </div>
+        </Reveal>
+      </section>
 
       {/* ═══════════════ S4: FEATURES ═══════════════ */}
       <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -773,8 +934,8 @@ export default function BusinessPage() {
       <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Pain removal</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "6px" }}>Why businesses switch to DUM Club</h2>
-          <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>Everything they stopped paying for.</p>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "6px" }}>Why businesses switch to DUM Club</h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>Everything they stopped paying for. <span style={{ color: "#FF5555" }}>And wish they{"'"}d stopped sooner.</span></p>
         </Reveal>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -810,41 +971,7 @@ export default function BusinessPage() {
       </section>
 
 
-      {/* ═══════════════ S10: HOW IT WORKS ═══════════════ */}
-      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
-        <Reveal>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Simple process</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>Live in 4 steps.<br />No friction.</h2>
-          <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>From idea to customers paying you — the same afternoon.</p>
-        </Reveal>
-
-        {[
-          { n: "01", t: "Sign in with Google", b: "One click. No wallet setup, no crypto, no form. Your account is tied to your email.", time: "3 SECONDS" },
-          { n: "02", t: "Describe your business", b: "Name it. Pick a category. Write two sentences. AI fills in the rest — offers, descriptions, layout.", time: "2 MINUTES" },
-          { n: "03", t: "Launch your storefront", b: "Review what AI built. Adjust anything. Hit Publish. Your page is live with checkout and DUM rewards active.", time: "INSTANT" },
-          { n: "04", t: "Start selling. Get verified. Grow.", b: "Share your link. Submit for verification. Watch customers earn DUM Points and come back.", time: "SAME DAY" },
-        ].map((s, i) => (
-          <Reveal key={i} delay={i * 0.1}>
-            <div style={{ display: "flex", gap: "16px", padding: "20px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none", position: "relative" }}>
-              {i < 3 && (
-                <div style={{ position: "absolute", left: "15px", top: "52px", width: "1px", bottom: "-20px", background: "linear-gradient(to bottom, rgba(0,255,135,0.2), transparent)" }} />
-              )}
-              <div style={{
-                width: "32px", height: "32px", flexShrink: 0, borderRadius: "8px",
-                background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "'Space Mono', monospace", fontSize: "12px", fontWeight: 500, color: "#00FF87",
-                position: "relative", zIndex: 1,
-              }}>{s.n}</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: "15px", color: "#f0f0f0", marginBottom: "5px" }}>{s.t}</div>
-                <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.5 }}>{s.b}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#00FF87", marginTop: "6px" }}>{"\u2192"} {s.time}</div>
-              </div>
-            </div>
-          </Reveal>
-        ))}
-      </section>
+      {/* S10 moved to after hero demo */}
 
       {/* ═══════════════ BUSINESS CREATE FORM (modal-like) ═══════════════ */}
       {showForm && user && !bizProfile && (
@@ -887,31 +1014,36 @@ export default function BusinessPage() {
       )}
 
       {/* ═══════════════ S11: FINAL CTA ═══════════════ */}
-      <section style={{ padding: "48px 20px 80px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+      <section style={{ padding: "48px 20px 40px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
         <Reveal>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em", color: "#444", marginBottom: "16px" }}>READY?</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 8vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "14px" }}>
-            Your business could be <span className="biz-hero-glow" style={{ color: "#00FF87" }}>earning customers</span> today.
-          </h2>
-          <p style={{ fontSize: "14px", color: "#888", marginBottom: "28px", lineHeight: 1.6 }}>
-            Every day without a retention system is a customer who forgot about you.
-            DUM Club fixes that in minutes — for free.
-          </p>
-        </Reveal>
-        <Reveal delay={0.15}>
-          <div style={{ maxWidth: "400px", margin: "0 auto 14px" }}>
-            {"href" in heroAction ? (
-              <Link href={heroAction.href} className="biz-cta-primary">
-                {heroAction.label} →
-              </Link>
-            ) : (
-              <button onClick={heroAction.onClick} className="biz-cta-primary">
-                {heroAction.label} →
-              </button>
-            )}
-          </div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#444" }}>
-            No credit card · No crypto wallet · No developer needed
+          <div style={{
+            background: "linear-gradient(180deg, rgba(0,255,135,0.04), transparent)",
+            borderRadius: "24px", padding: "48px 24px",
+          }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", letterSpacing: "0.16em", color: "#00FF87", marginBottom: "16px" }}>THE QUESTION IS SIMPLE</div>
+            <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 8vw, 44px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
+              Your business could be <span className="biz-hero-glow" style={{ color: "#00FF87" }}>earning customers</span> today.
+            </h2>
+            <p style={{ fontSize: "15px", color: "#888", marginBottom: "12px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 12px" }}>
+              Right now, someone is searching for exactly what you sell.
+            </p>
+            <p style={{ fontSize: "14px", color: "#FF5555", marginBottom: "32px", fontWeight: 500 }}>
+              Without a page, they{"'"}ll never find you.
+            </p>
+            <div style={{ maxWidth: "400px", margin: "0 auto 16px" }}>
+              {"href" in heroAction ? (
+                <Link href={heroAction.href} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
+                  {heroAction.label} →
+                </Link>
+              ) : (
+                <button onClick={heroAction.onClick} className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
+                  {heroAction.label} →
+                </button>
+              )}
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>
+              No credit card · No crypto wallet · No developer needed · Live in minutes
+            </div>
           </div>
         </Reveal>
       </section>
