@@ -1015,19 +1015,18 @@ function ComparisonTabs() {
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600">Platform</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Setup Cost</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Monthly Cost</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Energy Use</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Operating Cost</th>
                 <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Model</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Time to Sell</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { p: "Amazon (AWS)", setup: "$10K+", monthly: "$100M+", model: "Infra provider", time: "Months", accent: false },
-                { p: "Shopify", setup: "$0–$2K", monthly: "$39–$399/mo", model: "Commerce infra", time: "Weeks", accent: false },
-                { p: "Venice / AI builders", setup: "$0–$500", monthly: "$20–$200/mo", model: "AI compute", time: "Days–Weeks", accent: false },
-                { p: "Base44 / Lovable", setup: "$0–$200", monthly: "$20–$100/mo", model: "AI + builder", time: "Hours–Days", accent: false },
-                { p: "DUM Club", setup: "$0", monthly: "$0", model: "Marketplace + AI", time: "60 seconds", accent: true },
+                { p: "Amazon (AWS)", energy: "Power plant level", cost: "$100M+", model: "Infra provider", accent: false },
+                { p: "Shopify", energy: "Very high", cost: "$10M+", model: "Commerce infra", accent: false },
+                { p: "Venice / AI builders", energy: "High (AI-heavy)", cost: "$100K–$10M", model: "AI compute", accent: false },
+                { p: "Base44 / Lovable", energy: "Medium-high", cost: "$50K–$1M", model: "AI + builder", accent: false },
+                { p: "DUM Club (you)", energy: "LOW → Medium", cost: "$100 → $300K", model: "Marketplace + AI", accent: true },
               ].map((row, i) => (
                 <tr key={i} className={`border-b border-zinc-800/40 ${row.accent ? "" : ""}`}
                   style={row.accent ? { background: "rgba(0,255,135,0.04)" } : {}}
@@ -1037,16 +1036,13 @@ function ComparisonTabs() {
                     {row.p}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.setup}
+                    {row.energy}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.monthly}
+                    {row.cost}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-semibold" : "text-zinc-600"}`}>
                     {row.model}
-                  </td>
-                  <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.time}
                   </td>
                 </tr>
               ))}
@@ -1056,8 +1052,8 @@ function ComparisonTabs() {
           {/* Bottom callout */}
           <div className="mt-4 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-5 py-3 text-center">
             <span className="text-[12px] text-zinc-400">
-              Other platforms charge you before you make a single sale.{" "}
-              <span className="font-bold text-emerald-400">DUM Club is free until you succeed.</span>
+              They burn millions to operate.{" "}
+              <span className="font-bold text-emerald-400">DUM Club scales from $100 — and you keep the revenue.</span>
             </span>
           </div>
         </div>
