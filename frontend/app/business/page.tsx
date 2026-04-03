@@ -194,6 +194,12 @@ export default function BusinessPage() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
         @keyframes borderGlow { 0%,100% { border-color: rgba(0,255,135,0.15) } 50% { border-color: rgba(0,255,135,0.5) } }
         @keyframes heroFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+        .biz-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .biz-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        @media (max-width: 640px) {
+          .biz-grid-2col { grid-template-columns: 1fr; }
+          .biz-grid-3col { grid-template-columns: 1fr 1fr; }
+        }
       `}</style>
 
       {/* ═══════════════ SECTION 1: HERO ═══════════════ */}
@@ -267,7 +273,7 @@ export default function BusinessPage() {
           <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px", textAlign: "center" }}>From idea to customers paying you — the same afternoon.</p>
         </Reveal>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div className="biz-grid-2col">
           {[
             { n: "01", t: "Sign in with Google", time: "3 sec" },
             { n: "02", t: "Describe your business", time: "2 min" },
@@ -302,14 +308,14 @@ export default function BusinessPage() {
           </h2>
         </Reveal>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div className="biz-grid-2col">
           {[
-            { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page with offers, pricing, and descriptions. Hit publish." },
-            { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account setup required." },
-            { icon: "🔁", tag: "LOYALTY", title: "DUM Points rewards", body: "Every purchase earns customers DUM Points automatically. They return without you doing anything." },
-            { icon: "🤖", tag: "AI ASSISTANT", title: "AI writes your offers", body: "AI generates descriptions, pricing, and copy. Ask it questions about your business anytime." },
-            { icon: "📊", tag: "ANALYTICS", title: "See what works", body: "Views, sales, and DUM Point activity in one dashboard. No spreadsheets needed." },
-            { icon: "✓", tag: "VERIFICATION", title: "Verified business badge", body: "Get reviewed and earn a trust badge. Verified businesses rank higher in Discover." },
+            { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page with offers, pricing, and descriptions — ready for customers instantly." },
+            { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account, no gateway setup, no approval wait." },
+            { icon: "🔁", tag: "LOYALTY", title: "Customers keep coming back", body: "Every purchase earns customers DUM Points automatically. Built-in repeat business without extra work." },
+            { icon: "🤖", tag: "AI POWERED", title: "Your storefront writes itself", body: "AI generates your offers, descriptions, and pricing. You can edit anything or let it handle the details." },
+            { icon: "📊", tag: "ANALYTICS", title: "See what sells", body: "Track views, sales, and customer activity in one simple dashboard. Know exactly what works." },
+            { icon: "✓", tag: "TRUST", title: "Verified business badge", body: "Get reviewed by our team and earn a trust badge. Verified businesses rank higher and convert better." },
           ].map((f, i) => (
             <Reveal key={i} delay={i * 0.06}>
               <div className="biz-feature-card">
@@ -333,7 +339,7 @@ export default function BusinessPage() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div className="biz-grid-3col">
             {[
               { cat: "Auto Detail", name: "Mobile Car Wash", dum: "+2 DUM/wash" },
               { cat: "Food & Drink", name: "Local Pizza Shop", dum: "+2 DUM/order" },
@@ -354,7 +360,7 @@ export default function BusinessPage() {
         {/* Live stats */}
         {liveStats && (liveStats.live_projects > 0 || liveStats.businesses > 0) && (
           <Reveal delay={0.2}>
-            <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+            <div style={{ marginTop: "24px" }} className="biz-grid-3col">
               <div style={{ background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#00FF87", lineHeight: 1 }}>{liveStats.live_projects}</div>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>LIVE BUSINESSES</div>
@@ -365,7 +371,7 @@ export default function BusinessPage() {
               </div>
               <div style={{ background: "#0b0b0b", border: "1px solid rgba(79,158,255,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
                 <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#4F9EFF", lineHeight: 1 }}>{liveStats.businesses}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED BUSINESSES</div>
               </div>
             </div>
           </Reveal>
