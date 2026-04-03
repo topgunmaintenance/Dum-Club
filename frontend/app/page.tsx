@@ -519,7 +519,7 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     : "Your Business";
 
   // Detect category
-  const isGaming = t.includes("game") || t.includes("play") || t.includes("arcade") || t.includes("tetris") || t.includes("snake") || t.includes("puzzle") || t.includes("rpg") || t.includes("shooter") || t.includes("racing") || t.includes("chess") || t.includes("pong") || t.includes("quiz");
+  const isGaming = t.includes("game") || t.includes("play") || t.includes("arcade") || t.includes("tetris") || t.includes("snake") || t.includes("puzzle") || t.includes("rpg") || t.includes("shooter") || t.includes("racing") || t.includes("chess") || t.includes("pong") || t.includes("quiz") || t.includes("simulator") || t.includes("tycoon") || t.includes("strategy") || t.includes("platformer") || t.includes("battle") || t.includes("horror") || t.includes("idle") || t.includes("clicker") || t.includes("multiplayer");
   const isSaas = t.includes("app") || t.includes("tool") || t.includes("platform") || t.includes("dashboard") || t.includes("tracker") || t.includes("manager") || t.includes("calculator") || t.includes("scheduler");
   const isCreator = t.includes("art") || t.includes("music") || t.includes("beat") || t.includes("photo") || t.includes("video") || t.includes("course") || t.includes("ebook") || t.includes("podcast") || t.includes("design");
   const isService = t.includes("service") || t.includes("coaching") || t.includes("consulting") || t.includes("training") || t.includes("repair") || t.includes("clean") || t.includes("wash");
@@ -533,9 +533,9 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     emoji = "🎮";
     tag = "Entertainment Business";
     offers = [
-      { title: "Access Pass", price: "$4.99" },
-      { title: "Premium Experience", price: "$9.99" },
-      { title: "Monthly Membership", price: "$2.99/mo" },
+      { title: "Early Access Pass", price: "$9.99" },
+      { title: "Founder Pack", price: "$29.99" },
+      { title: "Community Membership", price: "$4.99/mo" },
     ];
   } else if (isSaas) {
     emoji = "💻";
@@ -1593,6 +1593,11 @@ export default function Home() {
                       <div className="flex items-center gap-1.5 text-[9px] text-zinc-600">
                         <span className="text-emerald-400/60">●</span> Storefront + Offers + Stripe payments
                       </div>
+                      {preview.tag === "Entertainment Business" && (
+                        <div className="mt-1.5 text-[9px] text-zinc-600 italic">
+                          We turn your game concept into a business storefront with monetization built in.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -46,7 +46,9 @@ DEFAULT_STARTING_PRICE = 0.001
 LAUNCH_DAILY_LIMIT = 5
 
 _SYSTEM_PROMPT = """
-You are an AI product strategist for DUM Club, a platform that turns ideas into live business storefronts.
+You are an AI product strategist for DUM Club, a platform that turns ideas into live business storefronts with real payments.
+
+IMPORTANT: DUM Club does NOT build apps or playable games. It creates BUSINESS STOREFRONTS that sell products, services, and access passes. Every idea must be interpreted as a monetizable business.
 
 A user will give you a project idea. Return ONLY valid JSON with this exact structure:
 
@@ -59,10 +61,12 @@ A user will give you a project idea. Return ONLY valid JSON with this exact stru
 
 Category Rules — detect the type of idea and adjust your output:
 
-GAMING (keywords: game, play, arcade, puzzle, rpg, shooter, racing, tetris, snake, chess):
-- Title: catchy gaming brand name (e.g. "RetroBlock Arcade", "SnakeQuest")
-- Description: sell the EXPERIENCE, not the code. Focus on gameplay, competition, fun.
-- token_utility: "Supporters unlock exclusive content, early access to new levels, and tournament entry"
+GAMING / ENTERTAINMENT (keywords: game, play, arcade, puzzle, rpg, shooter, racing, tetris, snake, chess, simulator, tycoon, strategy, platformer, battle, horror, idle, clicker, multiplayer):
+- CRITICAL: Reinterpret as a BUSINESS selling around the game concept. Do NOT describe building the game itself.
+- Title: premium entertainment brand name (e.g. "BlockDrop Arena", "ZombieStrike Studios", "PuzzleVault")
+- Description: describe the business that sells access, memberships, early access passes, founder packs, tournament entry, and premium content around this game concept. Frame it as an entertainment brand, not a software product.
+- Example: "zombie shooter" → "A premium zombie survival entertainment brand offering early access passes, founder packs, competitive tournament entry, and exclusive content drops for the gaming community."
+- token_utility: "Supporters unlock founder-tier access, exclusive content, tournament entry, and early access to new releases"
 
 APP/TOOL (keywords: app, tool, platform, dashboard, tracker, calculator, scheduler):
 - Title: clean SaaS-style name (e.g. "TaskFlow Pro", "CalcMaster")
@@ -84,6 +88,7 @@ General Rules:
 - Title: 3-5 words, brandable
 - Description: one clear paragraph that SELLS the idea, not describes code
 - NEVER describe technical implementation — describe the customer experience
+- NEVER promise that DUM Club builds a playable game or app — it builds the BUSINESS around the concept
 """
 
 
@@ -305,16 +310,12 @@ Return ONLY valid JSON — an array of objects with this structure:
 
 Category-Aware Pricing — adjust offers based on the type of idea:
 
-GAMING ideas — SIMPLE (game, arcade, play, puzzle):
-- Offer examples: Game Access Pass, Premium Content Pack, Monthly Subscription, Tournament Entry
-- Price range: $2.99 - $19.99
-- offer_type: "digital_service"
-
-GAMING ideas — COMPLEX (GTA, FPS, open world, battle royale, MMO, multiplayer):
-- Offer examples: Early Access Pass, Founder Pack, Beta Membership, VIP Lifetime Access
+GAMING / ENTERTAINMENT ideas (game, arcade, play, puzzle, shooter, racing, rpg, simulator, tycoon, strategy, platformer, battle, horror, idle, clicker, multiplayer):
+- Frame as an entertainment BUSINESS selling around the game concept
+- Offer examples: Early Access Pass, Founder Pack, VIP Membership, Tournament Pass, Beta Access, Community Pass, Cosmetic Pack, Lifetime Access, Supporter Tier
 - Price range: $4.99 - $49.99
 - offer_type: "digital_service"
-- These are pre-launch / crowdfunding style offers for bigger game concepts
+- Descriptions should sound premium: "Get founder-tier access with exclusive perks and priority content drops" NOT "Play the game"
 
 APP/TOOL ideas (app, tool, platform, calculator, tracker):
 - Offer examples: Starter Plan, Pro Plan, Enterprise Access, API Credits
@@ -467,6 +468,66 @@ def _match_template(idea: str) -> Optional[str]:
     return None
 
 
+# ── Game-business detection + reframing ───────────────────────────────────────
+
+_GAME_KEYWORDS = [
+    "game", "games", "gaming", "play", "arcade", "puzzle", "rpg", "shooter",
+    "racing", "tetris", "snake", "chess", "pong", "platformer", "simulator",
+    "tycoon", "strategy", "battle", "horror", "idle", "clicker", "multiplayer",
+    "mmorpg", "fps", "moba", "roguelike", "sandbox", "survival", "fortnite",
+    "minecraft", "call of duty", "gta", "open world", "battle royale",
+    "tower defense", "card game", "board game", "quiz",
+]
+
+_GAME_PHRASES = [
+    "make a game", "build a game", "create a game", "launch a game",
+    "game business", "game app", "mobile game", "video game", "online game",
+    "game idea", "game concept", "sell a game", "game studio",
+]
+
+
+def _is_game_idea(idea: str) -> bool:
+    """Check if the idea is game/entertainment related."""
+    lower = idea.lower()
+    if any(phrase in lower for phrase in _GAME_PHRASES):
+        return True
+    words = set(re.split(r"\W+", lower))
+    return bool(words & set(_GAME_KEYWORDS))
+
+
+def _reframe_game_idea(idea: str) -> str:
+    """Enrich a game idea with business context so the LLM generates a business storefront."""
+    return (
+        f"{idea.strip()} — Interpret this as an entertainment BUSINESS concept. "
+        f"Create a premium brand/storefront that sells access passes, founder packs, "
+        f"memberships, and exclusive content around this idea. "
+        f"Do NOT describe building the game itself."
+    )
+
+
+# Fallback offers when LLM fails for game-business ideas
+_GAME_BUSINESS_FALLBACK_OFFERS = [
+    {
+        "title": "Early Access Pass",
+        "description": "Get in before everyone else with exclusive early access and founder perks",
+        "price_usd": 9.99,
+        "offer_type": "digital_service",
+    },
+    {
+        "title": "Founder Pack",
+        "description": "Premium supporter tier with lifetime access, exclusive content, and VIP status",
+        "price_usd": 29.99,
+        "offer_type": "digital_service",
+    },
+    {
+        "title": "Community Membership",
+        "description": "Monthly access to premium content drops, tournaments, and community events",
+        "price_usd": 4.99,
+        "offer_type": "digital_service",
+    },
+]
+
+
 # ── Main endpoint ──────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=LaunchResponse)
@@ -510,6 +571,11 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
             )
 
     # ── 1. Generate project metadata via Ollama → hosted LLM fallback ──────────
+    is_game = _is_game_idea(req.idea.strip())
+    llm_idea = _reframe_game_idea(req.idea.strip()) if is_game else req.idea.strip()
+    if is_game:
+        print(f"[launch] game idea detected — reframing as business concept")
+
     raw_output = ""
     _llm_used = "raw-idea fallback"
     try:
@@ -517,7 +583,7 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
             model=OLLAMA_MODEL,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": f"Project idea: {req.idea.strip()}"},
+                {"role": "user", "content": f"Project idea: {llm_idea}"},
             ],
         )
         raw_output = response["message"]["content"].strip()
@@ -529,7 +595,7 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
 
     if parsed is None:
         print("[launch] Ollama unavailable or returned invalid JSON — trying hosted LLM")
-        parsed = _try_hosted_llm(req.idea.strip())
+        parsed = _try_hosted_llm(llm_idea)
         if parsed:
             _llm_used = "hosted LLM"  # specific provider already logged inside _try_hosted_llm
 
@@ -662,7 +728,11 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
     # ── 7. Auto-generate draft offers ──────────────────────────────────────
     # Best-effort: if LLM fails, the project still launches without offers.
     try:
-        offer_list = _generate_offers_from_idea(req.idea.strip(), title)
+        offer_list = _generate_offers_from_idea(llm_idea, title)
+        # Fallback to curated game-business offers if LLM fails for game ideas
+        if not offer_list and is_game:
+            offer_list = _GAME_BUSINESS_FALLBACK_OFFERS
+            print("[launch] using curated game-business fallback offers")
         if offer_list:
             for offer in offer_list[:3]:  # cap at 3
                 offer_title = (offer.get("title") or "")[:120]
