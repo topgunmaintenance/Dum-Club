@@ -554,7 +554,7 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     ];
   } else if (isCreator) {
     emoji = "🎨";
-    tag = "Creator Store";
+    tag = "Creator Business";
     offers = [
       { title: "Single Download", price: "$5" },
       { title: "Complete Bundle", price: "$29" },
@@ -2119,9 +2119,14 @@ export default function Home() {
                 © {new Date().getFullYear()} DUM Club. All rights reserved.
               </div>
               <div className="flex gap-6">
-                <span className="text-[10px] text-zinc-700">
-                  Terms of Use · Privacy Policy · Token Disclaimer
-                </span>
+                <div className="flex gap-6">
+                  <Link href="/terms" className="text-[10px] text-zinc-700 transition hover:text-zinc-400">
+                    Terms of Use
+                  </Link>
+                  <Link href="/privacy" className="text-[10px] text-zinc-700 transition hover:text-zinc-400">
+                    Privacy Policy
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

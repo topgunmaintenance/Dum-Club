@@ -696,7 +696,7 @@ export default function DashboardPage() {
                   href="/build"
                   className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                 >
-                  Start Building →
+                  Start Selling →
                 </Link>
               </div>
             ) : (
