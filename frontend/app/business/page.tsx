@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { Starfield } from "../../components/Starfield";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -214,12 +215,7 @@ function HeroDemo() {
         </div>
       )}
 
-      <style>{`
-        @keyframes blink { 0%,50% { opacity: 1 } 51%,100% { opacity: 0 } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
-        .pulse-dot { animation: pulse 1.5s infinite !important; }
-        @keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.3) } }
-      `}</style>
+      {/* keyframes defined in global style block above */}
     </div>
   );
 }
@@ -321,10 +317,69 @@ export default function BusinessPage() {
 
 
   return (
-    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
+    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
+      <Starfield count={90} />
+      <style>{`
+        .biz-cta-primary {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          background: #00FF87; color: #000; font-weight: 700; font-size: 14px;
+          letter-spacing: 0.04em; padding: 16px 32px; border-radius: 10px;
+          border: none; cursor: pointer; width: 100%; text-decoration: none;
+          transition: all 0.22s ease; position: relative; overflow: hidden;
+          box-shadow: 0 0 0 rgba(0,255,135,0);
+        }
+        .biz-cta-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(0,255,135,0.3);
+        }
+        .biz-cta-secondary {
+          display: flex; align-items: center; justify-content: center;
+          background: transparent; color: #f0f0f0; font-size: 13px;
+          padding: 13px 24px; border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.08); text-decoration: none;
+          transition: all 0.22s ease; cursor: pointer;
+        }
+        .biz-cta-secondary:hover {
+          border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.04); color: #00FF87;
+        }
+        .biz-feature-card {
+          background: #0b0b0b; border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px; padding: 22px; margin-bottom: 10px;
+          transition: all 0.25s ease; cursor: default;
+        }
+        .biz-feature-card:hover {
+          border-color: rgba(0,255,135,0.25); transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,255,135,0.06);
+        }
+        .biz-pain-card {
+          transition: all 0.2s ease;
+        }
+        .biz-pain-card:hover {
+          border-color: rgba(255,85,85,0.3); transform: translateX(4px);
+        }
+        .biz-fixed-card:hover {
+          border-color: rgba(0,255,135,0.4); transform: translateX(4px);
+        }
+        .biz-switch-item {
+          transition: all 0.18s ease;
+        }
+        .biz-switch-item:hover {
+          border-color: rgba(0,255,135,0.2) !important; color: #f0f0f0 !important;
+          transform: translateX(4px);
+        }
+        .biz-hero-glow {
+          text-shadow: 0 0 40px rgba(0,255,135,0.25), 0 0 80px rgba(0,255,135,0.1);
+        }
+        .pulse-dot { animation: pulse 1.5s infinite !important; }
+        @keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.4) } }
+        @keyframes blink { 0%,50% { opacity: 1 } 51%,100% { opacity: 0 } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+        @keyframes borderGlow { 0%,100% { border-color: rgba(0,255,135,0.15) } 50% { border-color: rgba(0,255,135,0.5) } }
+        @keyframes heroFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+      `}</style>
 
       {/* ═══════════════ S1: HERO ═══════════════ */}
-      <section style={{ padding: "60px 20px 48px", maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+      <section style={{ padding: "72px 20px 48px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
@@ -337,48 +392,33 @@ export default function BusinessPage() {
 
         <Reveal delay={0.1}>
           <h1 style={{
-            fontFamily: "'Space Mono', Syne, monospace", fontSize: "clamp(28px, 7vw, 40px)",
-            fontWeight: 800, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: "16px",
+            fontFamily: "'Space Mono', Syne, monospace", fontSize: "clamp(34px, 9vw, 56px)",
+            fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: "20px",
           }}>
-            Your customers are<br />forgetting <span style={{ color: "#00FF87" }}>you exist.</span>
+            Your customers are<br />forgetting <span className="biz-hero-glow" style={{ color: "#00FF87" }}>you exist.</span>
           </h1>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <p style={{ fontSize: "15px", color: "#888", lineHeight: 1.65, marginBottom: "28px", maxWidth: "380px", margin: "0 auto 28px" }}>
+          <p style={{ fontSize: "16px", color: "#999", lineHeight: 1.65, marginBottom: "32px", maxWidth: "480px", margin: "0 auto 32px" }}>
             DUM Club gives every business — from <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>pizza shops to mobile car washes</strong> —
-            a storefront, payments, and built-in loyalty rewards. No code. No crypto. Live in minutes.
+            a storefront, payments, and built-in loyalty rewards.<br />
+            <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>No code. No crypto. Live in minutes.</strong>
           </p>
         </Reveal>
 
         <Reveal delay={0.3}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "28px", maxWidth: "360px", margin: "0 auto 28px" }}>
             {"href" in heroAction ? (
-              <Link href={heroAction.href} style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "13px",
-                letterSpacing: "0.04em", padding: "14px 24px", borderRadius: "8px", textDecoration: "none",
-                transition: "all 0.18s", border: "none",
-              }}>
+              <Link href={heroAction.href} className="biz-cta-primary">
                 {heroAction.label} →
               </Link>
             ) : (
-              <button onClick={heroAction.onClick} style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "13px",
-                letterSpacing: "0.04em", padding: "14px 24px", borderRadius: "8px",
-                border: "none", cursor: "pointer", transition: "all 0.18s",
-              }}>
+              <button onClick={heroAction.onClick} className="biz-cta-primary">
                 {heroAction.label} →
               </button>
             )}
-            <Link href="/discover" style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "transparent", color: "#f0f0f0", fontSize: "13px",
-              padding: "13px 24px", borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.06)", textDecoration: "none",
-              transition: "all 0.18s",
-            }}>
+            <Link href="/discover" className="biz-cta-secondary">
               Browse live businesses ↓
             </Link>
           </div>
@@ -413,18 +453,24 @@ export default function BusinessPage() {
       </section>
 
       {/* ═══ Hero Demo ═══ */}
-      <section style={{ padding: "0 20px 56px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 64px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal delay={0.2}>
-          <HeroDemo />
+          <div style={{ animation: "heroFloat 6s ease-in-out infinite", maxWidth: "460px", margin: "0 auto" }}>
+            <div style={{ borderRadius: "18px", padding: "2px", background: "linear-gradient(135deg, rgba(0,255,135,0.3), rgba(79,158,255,0.15), rgba(0,255,135,0.3))", backgroundSize: "200% 200%", animation: "borderGlow 4s ease infinite" }}>
+              <div style={{ borderRadius: "16px", overflow: "hidden" }}>
+                <HeroDemo />
+              </div>
+            </div>
+          </div>
         </Reveal>
       </section>
 
 
       {/* ═══════════════ S2: PAIN ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>The problem</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
             Loyalty is broken.<br />We fixed it.
           </h2>
         </Reveal>
@@ -435,13 +481,13 @@ export default function BusinessPage() {
           { title: "Small businesses can\u2019t compete on experience", body: "Big chains win on retention infrastructure, not product quality. A barber with a better haircut loses to a chain with an app." },
         ].map((c, i) => (
           <Reveal key={i} delay={i * 0.1}>
-            <div style={{
+            <div className="biz-pain-card" style={{
               background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
               borderLeft: "3px solid #FF5555", borderRadius: "0 12px 12px 0",
               padding: "18px 20px", marginBottom: "10px",
             }}>
-              <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "6px" }}>{"\u2715"} {c.title}</div>
-              <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.55 }}>{c.body}</div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "#f0f0f0", marginBottom: "6px" }}>{"\u2715"} {c.title}</div>
+              <div style={{ fontSize: "13px", color: "#888", lineHeight: 1.55 }}>{c.body}</div>
             </div>
           </Reveal>
         ))}
@@ -455,12 +501,12 @@ export default function BusinessPage() {
         </Reveal>
 
         <Reveal delay={0.5}>
-          <div style={{
+          <div className="biz-fixed-card" style={{
             background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)",
             borderLeft: "3px solid #00FF87", borderRadius: "0 12px 12px 0",
-            padding: "18px 20px",
+            padding: "18px 20px", transition: "all 0.2s ease",
           }}>
-            <div style={{ fontWeight: 700, fontSize: "13px", color: "#00FF87", marginBottom: "6px" }}>{"\u2713"} One network. Every business.</div>
+            <div style={{ fontWeight: 700, fontSize: "14px", color: "#00FF87", marginBottom: "6px" }}>{"\u2713"} One network. Every business.</div>
             <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.55 }}>
               Any business creates a page, sets their rewards, and taps into a shared customer loyalty network. DUM Points earned anywhere can be spent everywhere on the platform.
             </div>
@@ -469,10 +515,10 @@ export default function BusinessPage() {
       </section>
 
       {/* ═══════════════ S3: REVENUE ENGINE ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Revenue engine</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>
             How DUM Club grows your business
           </h2>
           <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>Not a tool. A system.</p>
@@ -504,10 +550,10 @@ export default function BusinessPage() {
 
 
       {/* ═══════════════ S4: FEATURES ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>What you get</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
             Everything you need.<br />Nothing you don{"'"}t.
           </h2>
         </Reveal>
@@ -518,14 +564,10 @@ export default function BusinessPage() {
           { icon: "\uD83D\uDD01", bg: "rgba(0,255,135,0.1)", bc: "rgba(0,255,135,0.2)", tag: "RETENTION", title: "Built-in loyalty that actually works", body: "DUM Points reward every purchase automatically. No setup, no maintenance, no loyalty app to manage." },
           { icon: "\uD83D\uDEE1\uFE0F", bg: "rgba(79,158,255,0.1)", bc: "rgba(79,158,255,0.2)", tag: "TRUST", title: "Verified badge \u2014 rank higher, win more", body: "Verified businesses rank higher in Discover, get a trust badge, and convert browsers into buyers at a higher rate." },
           { icon: "\uD83D\uDCCA", bg: "rgba(192,132,252,0.1)", bc: "rgba(192,132,252,0.2)", tag: "INSIGHT", title: "Know what\u2019s working \u2014 in real time", body: "Page views, sales, revenue, DUM point redemptions. One dashboard replaces your spreadsheet and guesswork." },
-          { icon: "\uD83E\uDD16", bg: "rgba(245,166,35,0.1)", bc: "rgba(245,166,35,0.2)", tag: "GROWTH", title: "AI that helps you sell better", body: "AI Co-Pilot suggests better offer wording, pricing, and descriptions based on what converts in your category." },
+          { icon: "\uD83E\uDD16", bg: "rgba(245,166,35,0.1)", bc: "rgba(245,166,35,0.2)", tag: "GROWTH", title: "AI builds and refines your business", body: "AI generates your storefront, writes offer descriptions, and sets pricing. Ask it questions about your business anytime via AI Chat." },
         ].map((f, i) => (
           <Reveal key={i} delay={i * 0.08}>
-            <div style={{
-              background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "14px", padding: "20px", marginBottom: "10px",
-              transition: "all 0.2s", cursor: "default",
-            }}>
+            <div className="biz-feature-card">
               <div style={{
                 width: "36px", height: "36px", borderRadius: "8px",
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -541,7 +583,7 @@ export default function BusinessPage() {
       </section>
 
       {/* ═══════════════ S5: DUM POINTS ═══════════════ */}
-      <section style={{ margin: "0 20px 64px", background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "32px 24px", position: "relative", overflow: "hidden" }}>
+      <section style={{ margin: "0 auto 72px", maxWidth: "680px", padding: "0 20px", position: "relative", zIndex: 1 }}><div style={{ background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "32px 24px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(0,255,135,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
         <Reveal>
           <div style={{
@@ -592,11 +634,11 @@ export default function BusinessPage() {
             </div>
           </div>
         </Reveal>
-      </section>
+      </div></section>
 
 
       {/* ═══════════════ S6: COMPARISON ═══════════════ */}
-      <section style={{ margin: "0 20px 64px", background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "20px", padding: "24px" }}>
+      <section style={{ margin: "0 auto 72px", maxWidth: "680px", padding: "0 20px", position: "relative", zIndex: 1 }}><div style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "20px", padding: "24px" }}>
         <Reveal>
           <h3 style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-0.01em", marginBottom: "16px" }}>Why DUM Club wins</h3>
         </Reveal>
@@ -632,10 +674,10 @@ export default function BusinessPage() {
             </table>
           </div>
         </Reveal>
-      </section>
+      </div></section>
 
       {/* ═══════════════ S7: USE CASES ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>Built for every business</div>
           <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "16px" }}>See yourself here</h2>
@@ -668,7 +710,7 @@ export default function BusinessPage() {
 
 
       {/* ═══════════════ S8: VERIFICATION ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Trust & credibility</div>
         </Reveal>
@@ -728,7 +770,7 @@ export default function BusinessPage() {
       </section>
 
       {/* ═══════════════ S9: WHY SWITCH ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Pain removal</div>
           <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "6px" }}>Why businesses switch to DUM Club</h2>
@@ -747,7 +789,7 @@ export default function BusinessPage() {
             { cross: false, t: "One page. Payments. Loyalty. Analytics. Done." },
           ].map((item, i) => (
             <Reveal key={i} delay={i * 0.05}>
-              <div style={{
+              <div className="biz-switch-item" style={{
                 display: "flex", alignItems: "center", gap: "12px",
                 padding: "13px 16px", background: "#0b0b0b",
                 border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px",
@@ -769,7 +811,7 @@ export default function BusinessPage() {
 
 
       {/* ═══════════════ S10: HOW IT WORKS ═══════════════ */}
-      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Simple process</div>
           <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>Live in 4 steps.<br />No friction.</h2>
@@ -806,7 +848,7 @@ export default function BusinessPage() {
 
       {/* ═══════════════ BUSINESS CREATE FORM (modal-like) ═══════════════ */}
       {showForm && user && !bizProfile && (
-        <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{
             background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)",
             borderRadius: "20px", padding: "28px 24px",
@@ -845,11 +887,11 @@ export default function BusinessPage() {
       )}
 
       {/* ═══════════════ S11: FINAL CTA ═══════════════ */}
-      <section style={{ padding: "48px 20px 72px", maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+      <section style={{ padding: "48px 20px 80px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em", color: "#444", marginBottom: "16px" }}>READY?</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(24px, 7vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "14px" }}>
-            Your business could be <span style={{ color: "#00FF87" }}>earning customers</span> today.
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 8vw, 42px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "14px" }}>
+            Your business could be <span className="biz-hero-glow" style={{ color: "#00FF87" }}>earning customers</span> today.
           </h2>
           <p style={{ fontSize: "14px", color: "#888", marginBottom: "28px", lineHeight: 1.6 }}>
             Every day without a retention system is a customer who forgot about you.
@@ -857,25 +899,17 @@ export default function BusinessPage() {
           </p>
         </Reveal>
         <Reveal delay={0.15}>
-          {"href" in heroAction ? (
-            <Link href={heroAction.href} style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-              background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "14px",
-              letterSpacing: "0.04em", padding: "16px 32px", borderRadius: "8px",
-              border: "none", width: "100%", textDecoration: "none", marginBottom: "14px",
-            }}>
-              {heroAction.label} →
-            </Link>
-          ) : (
-            <button onClick={heroAction.onClick} style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-              background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "14px",
-              letterSpacing: "0.04em", padding: "16px 32px", borderRadius: "8px",
-              border: "none", cursor: "pointer", width: "100%", marginBottom: "14px",
-            }}>
-              {heroAction.label} →
-            </button>
-          )}
+          <div style={{ maxWidth: "400px", margin: "0 auto 14px" }}>
+            {"href" in heroAction ? (
+              <Link href={heroAction.href} className="biz-cta-primary">
+                {heroAction.label} →
+              </Link>
+            ) : (
+              <button onClick={heroAction.onClick} className="biz-cta-primary">
+                {heroAction.label} →
+              </button>
+            )}
+          </div>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#444" }}>
             No credit card · No crypto wallet · No developer needed
           </div>
