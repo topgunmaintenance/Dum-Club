@@ -532,7 +532,42 @@ async def list_public_projects():
         .execute()
     )
 
-    return res.data or []
+    projects = res.data or []
+
+    # Attach owner verification status for ranking/badge display
+    owner_ids = list(set(p.get("privy_id") for p in projects if p.get("privy_id")))
+    verification_map: dict[str, str] = {}
+    if owner_ids:
+        for oid in owner_ids:
+            try:
+                biz_res = supabase.table("business_profiles").select("verification_status").eq("owner_privy_id", oid).limit(1).execute()
+                if biz_res.data:
+                    verification_map[oid] = biz_res.data[0].get("verification_status", "unverified")
+            except Exception:
+                pass
+
+    for p in projects:
+        p["owner_verified"] = verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
+
+    return projects
+
+
+@router.get("/live-stats")
+async def live_stats():
+    """Public endpoint: real counts for the /business landing page."""
+    supabase = get_client()
+    try:
+        projects_res = supabase.table("projects").select("id", count="exact").eq("status", "live").eq("is_deleted", False).execute()
+        offers_res = supabase.table("offers").select("id", count="exact").eq("is_active", True).execute()
+        biz_res = supabase.table("business_profiles").select("id", count="exact").execute()
+    except Exception:
+        return {"live_projects": 0, "active_offers": 0, "businesses": 0}
+
+    return {
+        "live_projects": projects_res.count or len(projects_res.data or []),
+        "active_offers": offers_res.count or len(offers_res.data or []),
+        "businesses": biz_res.count or len(biz_res.data or []),
+    }
 
 # -----------------------------
 # List Projects

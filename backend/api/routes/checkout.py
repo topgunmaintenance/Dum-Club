@@ -122,10 +122,12 @@ async def create_payment_intent(
     seller_user_id = project_res.data[0].get("owner_id") or ""
 
     # 3. Calculate price
-    base_price = float(offer["price_usd"])
+    original_price = float(offer["price_usd"])
+    base_price = original_price
     token_discount_applied = False
 
     # ── DUM Points discount: verify balance, deduct, reduce price ──
+    # SUBSIDY MODEL: customer pays discounted price, business gets paid on original price
     if body.use_dum_discount and privy_id:
         try:
             dum_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
@@ -144,10 +146,10 @@ async def create_payment_intent(
                         supabase.table("projects").update({"dum_received": cur_recv + 10}).eq("id", proj_id).execute()
                     except Exception:
                         pass
-                # Apply 10% discount
-                base_price = round(base_price * 0.9, 2)
+                # Apply 10% discount to what customer pays
+                base_price = round(original_price * 0.9, 2)
                 token_discount_applied = True
-                print(f"[checkout] DUM discount applied: 10% off, new price=${base_price}, buyer={privy_id}")
+                print(f"[checkout] DUM discount applied: 10% off, customer pays=${base_price}, seller based on=${original_price}, buyer={privy_id}")
             else:
                 print(f"[checkout] DUM discount rejected: balance={dum_bal} < 10, buyer={privy_id}")
         except Exception as exc:
@@ -155,8 +157,10 @@ async def create_payment_intent(
 
     final_price = base_price
 
-    platform_fee = round(final_price * PLATFORM_FEE_RATE, 2)
-    seller_receives = round(final_price - platform_fee, 2)
+    # Seller payout based on ORIGINAL price (platform subsidizes DUM discount)
+    seller_payout_base = original_price if token_discount_applied else final_price
+    platform_fee = round(seller_payout_base * PLATFORM_FEE_RATE, 2)
+    seller_receives = round(seller_payout_base - platform_fee, 2)
     amount_cents = int(round(final_price * 100))
 
     if amount_cents < 50:

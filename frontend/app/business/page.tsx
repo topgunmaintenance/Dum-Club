@@ -1,79 +1,258 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { Starfield } from "../../components/Starfield";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const CATEGORIES = [
-  "General",
-  "Food & Beverage",
-  "Health & Fitness",
-  "Technology",
-  "Creative",
-  "Services",
-  "Retail",
-  "Gaming",
-  "Education",
+  "General", "Food & Beverage", "Health & Fitness", "Technology",
+  "Creative", "Services", "Retail", "Gaming", "Education",
 ];
 
-const BENEFITS = [
-  {
-    icon: "🏪",
-    title: "AI-Built Storefront",
-    desc: "Describe your business and get a live page with offers in under 60 seconds",
-  },
-  {
-    icon: "💳",
-    title: "Accept Payments",
-    desc: "Stripe-powered checkout — your customers pay with credit card, you get paid",
-  },
-  {
-    icon: "◆",
-    title: "DUM Points Rewards",
-    desc: "Your customers earn and spend DUM Points at your business for discounts",
-  },
-  {
-    icon: "✓",
-    title: "Verified Badge",
-    desc: "Get verified to build trust — verified businesses rank higher in Discover",
-  },
-  {
-    icon: "📊",
-    title: "Analytics",
-    desc: "See who visits, what sells, and how DUM Points drive repeat customers",
-  },
-  {
-    icon: "🤖",
-    title: "AI Co-Pilot",
-    desc: "Get AI suggestions to improve your offers, descriptions, and pricing",
-  },
+/* ── Simulated hero demo phases ── */
+const DEMO_PHASES = [
+  { label: "Typing your idea...", text: "mobile car wash business" },
+  { label: "AI is building your storefront...", text: "" },
+  { label: "Generating offers and pricing...", text: "" },
+  { label: "Your business is live!", text: "" },
 ];
 
-const STEPS = [
-  { num: "01", title: "Sign in", desc: "Use Google — takes 3 seconds, no crypto needed" },
-  { num: "02", title: "Create your business", desc: "Name, category, and a short description" },
-  { num: "03", title: "Launch a storefront", desc: "AI builds your page with offers automatically" },
-  { num: "04", title: "Get verified", desc: "Submit for review to earn a verified badge" },
+const DEMO_OFFERS = [
+  { title: "Basic Exterior Wash", price: "$29", tag: "Popular" },
+  { title: "Full Detail Package", price: "$89", tag: "Best Value" },
+  { title: "Monthly Membership", price: "$49/mo", tag: "Recurring" },
 ];
 
-function Check() {
+/* ── Activity messages (generic, not fake) ── */
+const ACTIVITY_MESSAGES = [
+  "New business page created",
+  "Offer purchased via Stripe",
+  "Business submitted for verification",
+  "DUM Points earned on purchase",
+  "New storefront launched",
+  "Verification approved",
+];
+
+/* ── Scroll reveal hook ── */
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return { ref, visible };
+}
+
+function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, visible } = useReveal();
   return (
-    <svg className="h-4 w-4 shrink-0 text-emerald-400" fill="none" viewBox="0 0 16 16">
-      <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" />
-    </svg>
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "translateY(20px)",
+        transition: `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── Hero Product Demo (simulated, no API calls) ── */
+function HeroDemo() {
+  const [phase, setPhase] = useState(0);
+  const [typed, setTyped] = useState("");
+  const target = DEMO_PHASES[0].text;
+
+  useEffect(() => {
+    if (phase === 0) {
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setTyped(target.slice(0, i));
+        if (i >= target.length) {
+          clearInterval(interval);
+          setTimeout(() => setPhase(1), 800);
+        }
+      }, 50);
+      return () => clearInterval(interval);
+    }
+    if (phase === 1) {
+      const t = setTimeout(() => setPhase(2), 1500);
+      return () => clearTimeout(t);
+    }
+    if (phase === 2) {
+      const t = setTimeout(() => setPhase(3), 1500);
+      return () => clearTimeout(t);
+    }
+    if (phase === 3) {
+      const t = setTimeout(() => setPhase(0), 4000);
+      return () => { clearTimeout(t); setTyped(""); };
+    }
+  }, [phase]);
+
+  return (
+    <div style={{
+      background: "#0b0b0b",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "16px",
+      padding: "20px",
+      maxWidth: "420px",
+      width: "100%",
+      margin: "0 auto",
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* Glow */}
+      <div style={{
+        position: "absolute", top: "-40px", right: "-40px",
+        width: "160px", height: "160px",
+        background: "radial-gradient(circle, rgba(0,255,135,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Phase 0-1: Input */}
+      {phase <= 1 && (
+        <div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>
+            Describe your business
+          </div>
+          <div style={{
+            background: "#161616", border: "1px solid rgba(0,255,135,0.15)",
+            borderRadius: "10px", padding: "14px 16px",
+            fontFamily: "'Space Mono', monospace", fontSize: "14px",
+            color: phase === 0 ? "#f0f0f0" : "#888",
+            minHeight: "48px",
+          }}>
+            {phase === 0 ? (
+              <>{typed}<span style={{ opacity: 0.6, animation: "blink 1s infinite" }}>|</span></>
+            ) : (
+              target
+            )}
+          </div>
+          {phase === 1 && (
+            <div style={{
+              marginTop: "12px", display: "flex", alignItems: "center", gap: "8px",
+              fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#00FF87",
+            }}>
+              <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%", display: "inline-block" }} className="pulse-dot" />
+              AI is building your storefront...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phase 2: Offers generating */}
+      {phase === 2 && (
+        <div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#00FF87", textTransform: "uppercase", marginBottom: "12px" }}>
+            Generating offers
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {DEMO_OFFERS.map((o, i) => (
+              <div key={i} style={{
+                background: "#161616", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "10px", padding: "12px 14px",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                opacity: 1, animation: `fadeUp 0.3s ease ${i * 0.15}s both`,
+              }}>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#f0f0f0" }}>{o.title}</div>
+                  <div style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}>{o.tag}</div>
+                </div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "14px", fontWeight: 700, color: "#00FF87" }}>{o.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Phase 3: Live storefront */}
+      {phase === 3 && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+            <div>
+              <div style={{ fontSize: "16px", fontWeight: 800, color: "#f0f0f0" }}>Sparkle Mobile Wash</div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", color: "#888", marginTop: "2px" }}>SERVICES · DUM CLUB</div>
+            </div>
+            <div style={{
+              background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+              borderRadius: "20px", padding: "4px 10px",
+              fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#00FF87", letterSpacing: "0.1em",
+            }}>
+              LIVE
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {DEMO_OFFERS.map((o, i) => (
+              <div key={i} style={{
+                background: "#161616", borderRadius: "8px", padding: "10px 12px",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <span style={{ fontSize: "12px", color: "#ccc" }}>{o.title}</span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", fontWeight: 600, color: "#00FF87" }}>{o.price}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            marginTop: "12px", textAlign: "center",
+            fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444", letterSpacing: "0.1em",
+          }}>
+            PAYMENTS · REWARDS · ANALYTICS — ALL ACTIVE
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes blink { 0%,50% { opacity: 1 } 51%,100% { opacity: 0 } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+        .pulse-dot { animation: pulse 1.5s infinite !important; }
+        @keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.3) } }
+      `}</style>
+    </div>
+  );
+}
+
+
+/* ── Activity Ticker ── */
+function ActivityTicker() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % ACTIVITY_MESSAGES.length), 3500);
+    return () => clearInterval(t);
+  }, []);
+  const timeAgo = `${Math.floor(Math.random() * 8) + 1}m ago`;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "10px",
+      background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+      borderLeft: "2px solid #00FF87", borderRadius: "0 8px 8px 0",
+      padding: "10px 14px", fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#888",
+    }}>
+      <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%", flexShrink: 0 }} className="pulse-dot" />
+      <span style={{ flex: 1 }}>{ACTIVITY_MESSAGES[idx]}</span>
+      <span style={{ color: "#444", fontSize: "10px", flexShrink: 0 }}>{timeAgo}</span>
+    </div>
   );
 }
 
 export default function BusinessPage() {
   const { user, login, getToken } = useAuth();
-  const router = useRouter();
 
   const [bizProfile, setBizProfile] = useState<any>(null);
   const [loadingBiz, setLoadingBiz] = useState(false);
+  const [liveStats, setLiveStats] = useState<{ live_projects: number; active_offers: number; businesses: number } | null>(null);
 
   // Create form state
   const [showForm, setShowForm] = useState(false);
@@ -85,7 +264,7 @@ export default function BusinessPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Load existing business profile
+  // Load business profile
   useEffect(() => {
     if (!user?.privyId) return;
     setLoadingBiz(true);
@@ -99,11 +278,14 @@ export default function BusinessPage() {
           const data = await res.json();
           setBizProfile(data.profile || null);
         }
-      } catch {} finally {
-        setLoadingBiz(false);
-      }
+      } catch {} finally { setLoadingBiz(false); }
     })();
   }, [user?.privyId]);
+
+  // Load live stats (real data, non-blocking)
+  useEffect(() => {
+    fetch(`${API_BASE}/api/projects/live-stats`).then(r => r.json()).then(setLiveStats).catch(() => {});
+  }, []);
 
   async function handleCreate() {
     if (!bizName.trim() || saving) return;
@@ -113,15 +295,10 @@ export default function BusinessPage() {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/business/create`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
-          business_name: bizName.trim(),
-          category: bizCategory,
-          short_description: bizDesc.trim() || null,
-          contact_email: bizEmail.trim() || null,
+          business_name: bizName.trim(), category: bizCategory,
+          short_description: bizDesc.trim() || null, contact_email: bizEmail.trim() || null,
           website: bizWebsite.trim() || null,
         }),
       });
@@ -133,356 +310,578 @@ export default function BusinessPage() {
         const err = await res.json().catch(() => ({}));
         setError(err.detail || "Failed to create business profile");
       }
-    } catch {
-      setError("Network error — please try again");
-    } finally {
-      setSaving(false);
-    }
+    } catch { setError("Network error"); } finally { setSaving(false); }
   }
 
-  async function handleRequestVerification() {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/business/request-verification`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          website: bizProfile?.website,
-          contact_email: bizProfile?.contact_email,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBizProfile(data.profile);
-      }
-    } catch {}
-  }
+  const heroAction = user
+    ? bizProfile
+      ? { label: "Go to Dashboard", href: "/dashboard" }
+      : { label: "Create My Business Page", onClick: () => setShowForm(true) }
+    : { label: "Get Started Free", onClick: login };
+
 
   return (
-    <div className="relative min-h-screen bg-base px-4 py-20 text-white sm:px-6">
-      <Starfield count={50} />
-      <div className="relative z-[1] mx-auto max-w-5xl">
+    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
 
-        {/* Hero */}
-        <div className="text-center">
-          <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
-            For Business
+      {/* ═══════════════ S1: HERO ═══════════════ */}
+      <section style={{ padding: "60px 20px 48px", maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+        <Reveal>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em",
+            color: "#444", border: "1px solid rgba(255,255,255,0.06)", padding: "5px 14px", borderRadius: "20px", marginBottom: "24px",
+          }}>
+            <span style={{ color: "#00FF87" }}>★</span> FOR BUSINESS OWNERS
           </div>
-          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-            Turn your idea into a
-            <br />
-            <span className="text-emerald-400">live business.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Create your storefront, accept payments, and reward customers with DUM Points — all powered by AI. No coding, no crypto knowledge required.
-          </p>
+        </Reveal>
 
-          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            {user ? (
-              bizProfile ? (
-                <Link
-                  href="/dashboard"
-                  className="rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-                >
-                  Go to Dashboard
-                </Link>
-              ) : (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-                >
-                  Create Your Business
-                </button>
-              )
+        <Reveal delay={0.1}>
+          <h1 style={{
+            fontFamily: "'Space Mono', Syne, monospace", fontSize: "clamp(28px, 7vw, 40px)",
+            fontWeight: 800, lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: "16px",
+          }}>
+            Your customers are<br />forgetting <span style={{ color: "#00FF87" }}>you exist.</span>
+          </h1>
+        </Reveal>
+
+        <Reveal delay={0.2}>
+          <p style={{ fontSize: "15px", color: "#888", lineHeight: 1.65, marginBottom: "28px", maxWidth: "380px", margin: "0 auto 28px" }}>
+            DUM Club gives every business — from <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>pizza shops to mobile car washes</strong> —
+            a storefront, payments, and built-in loyalty rewards. No code. No crypto. Live in minutes.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.3}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+            {"href" in heroAction ? (
+              <Link href={heroAction.href} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "13px",
+                letterSpacing: "0.04em", padding: "14px 24px", borderRadius: "8px", textDecoration: "none",
+                transition: "all 0.18s", border: "none",
+              }}>
+                {heroAction.label} →
+              </Link>
             ) : (
-              <button
-                onClick={login}
-                className="rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-              >
-                Get Started with Google
+              <button onClick={heroAction.onClick} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "13px",
+                letterSpacing: "0.04em", padding: "14px 24px", borderRadius: "8px",
+                border: "none", cursor: "pointer", transition: "all 0.18s",
+              }}>
+                {heroAction.label} →
               </button>
             )}
-            <Link
-              href="/discover"
-              className="rounded-xl border border-zinc-700 px-8 py-3.5 text-sm font-bold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Browse Businesses
+            <Link href="/discover" style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: "transparent", color: "#f0f0f0", fontSize: "13px",
+              padding: "13px 24px", borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.06)", textDecoration: "none",
+              transition: "all 0.18s",
+            }}>
+              Browse live businesses ↓
             </Link>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Existing Business Profile Card */}
-        {user && bizProfile && (
-          <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-xl">
-                🏢
+        <Reveal delay={0.4}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", fontSize: "10px", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: "#444" }}>
+            <span><span style={{ color: "#00FF87" }}>✓</span> Free to start</span>
+            <span><span style={{ color: "#00FF87" }}>✓</span> No crypto needed</span>
+            <span><span style={{ color: "#00FF87" }}>✓</span> Live in minutes</span>
+          </div>
+        </Reveal>
+
+        {/* Live stats from real data */}
+        <Reveal delay={0.5}>
+          <div style={{ marginTop: "20px" }}>
+            {liveStats && (liveStats.live_projects > 0 || liveStats.businesses > 0) ? (
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+                fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#888",
+                background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderLeft: "2px solid #00FF87",
+                borderRadius: "0 8px 8px 0", padding: "10px 14px",
+              }}>
+                <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%" }} className="pulse-dot" />
+                <span><strong style={{ color: "#00FF87" }}>{liveStats.live_projects}</strong> live storefronts · <strong style={{ color: "#00FF87" }}>{liveStats.active_offers}</strong> active offers</span>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-white">{bizProfile.business_name}</span>
-                  {bizProfile.verification_status === "verified" && (
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-emerald-400">
-                      ✓ Verified
-                    </span>
-                  )}
-                  {bizProfile.verification_status === "pending" && (
-                    <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400">
-                      Pending Review
-                    </span>
-                  )}
-                  {bizProfile.verification_status === "unverified" && (
-                    <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-zinc-500">
-                      Unverified
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-zinc-500">{bizProfile.category}</div>
-              </div>
-            </div>
-            {bizProfile.short_description && (
-              <p className="mt-3 text-sm text-zinc-400">{bizProfile.short_description}</p>
+            ) : (
+              <ActivityTicker />
             )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/dashboard"
-                className="rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/"
-                className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-400 transition hover:border-zinc-500 hover:text-white"
-              >
-                Launch a Storefront
-              </Link>
-              {bizProfile.verification_status === "unverified" && (
-                <button
-                  onClick={handleRequestVerification}
-                  className="rounded-lg border border-amber-400/30 bg-amber-400/5 px-4 py-2 text-xs font-bold text-amber-400 transition hover:border-amber-400/50 hover:bg-amber-400/10"
-                >
-                  Request Verification
-                </button>
-              )}
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ═══ Hero Demo ═══ */}
+      <section style={{ padding: "0 20px 56px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal delay={0.2}>
+          <HeroDemo />
+        </Reveal>
+      </section>
+
+
+      {/* ═══════════════ S2: PAIN ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>The problem</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+            Loyalty is broken.<br />We fixed it.
+          </h2>
+        </Reveal>
+
+        {[
+          { title: "Enterprise loyalty costs $500\u2013$2,000/month", body: "Your local competitor \u2014 the roofing company, the salon, the mobile wash \u2014 has zero loyalty infrastructure. They lose customers and don\u2019t know why." },
+          { title: "Points are siloed and die with the app", body: "Starbucks points only work at Starbucks. That\u2019s not loyalty \u2014 that\u2019s a coupon with extra steps." },
+          { title: "Small businesses can\u2019t compete on experience", body: "Big chains win on retention infrastructure, not product quality. A barber with a better haircut loses to a chain with an app." },
+        ].map((c, i) => (
+          <Reveal key={i} delay={i * 0.1}>
+            <div style={{
+              background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+              borderLeft: "3px solid #FF5555", borderRadius: "0 12px 12px 0",
+              padding: "18px 20px", marginBottom: "10px",
+            }}>
+              <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "6px" }}>{"\u2715"} {c.title}</div>
+              <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.55 }}>{c.body}</div>
+            </div>
+          </Reveal>
+        ))}
+
+        <Reveal delay={0.4}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#444", letterSpacing: "0.1em", margin: "20px 0" }}>
+            <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+            DUM CLUB CHANGES THIS
+            <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.5}>
+          <div style={{
+            background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)",
+            borderLeft: "3px solid #00FF87", borderRadius: "0 12px 12px 0",
+            padding: "18px 20px",
+          }}>
+            <div style={{ fontWeight: 700, fontSize: "13px", color: "#00FF87", marginBottom: "6px" }}>{"\u2713"} One network. Every business.</div>
+            <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.55 }}>
+              Any business creates a page, sets their rewards, and taps into a shared customer loyalty network. DUM Points earned anywhere can be spent everywhere on the platform.
             </div>
           </div>
-        )}
+        </Reveal>
+      </section>
 
-        {/* Create Business Form Modal */}
-        {showForm && user && !bizProfile && (
-          <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-emerald-400/20 bg-zinc-950 p-6">
-            <h2 className="text-lg font-bold text-white">Create your business profile</h2>
-            <p className="mt-1 text-sm text-zinc-500">This is your identity on Dum Club. You can update it anytime.</p>
+      {/* ═══════════════ S3: REVENUE ENGINE ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Revenue engine</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>
+            How DUM Club grows your business
+          </h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>Not a tool. A system.</p>
+        </Reveal>
 
-            <div className="mt-5 space-y-3">
-              <input
-                value={bizName}
-                onChange={(e) => setBizName(e.target.value)}
-                placeholder="Business name *"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <select
-                  value={bizCategory}
-                  onChange={(e) => setBizCategory(e.target.value)}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <input
-                  value={bizEmail}
-                  onChange={(e) => setBizEmail(e.target.value)}
-                  placeholder="Contact email (optional)"
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                />
+        {[
+          { n: "01", t: "Customer discovers your page", b: "Your DUM Club page shows up in Discover. Customers see your services, offers, and rewards before they click." },
+          { n: "02", t: "They buy. You get paid instantly.", b: "Stripe-powered checkout. Customers pay with card. Money hits your account. No setup calls." },
+          { n: "03", t: "They earn DUM Points automatically", b: "Every purchase earns them +2 points. No loyalty card, no app, no punch card. Their points are theirs." },
+          { n: "04", t: "They return. And bring others.", b: "Customers with DUM Points have a reason to come back. Businesses with more activity rank higher in Discover." },
+          { n: "05", t: "You see everything in one dashboard", b: "Views, sales, DUM point activity, top offers. Not five tools \u2014 one screen." },
+        ].map((s, i) => (
+          <Reveal key={i} delay={i * 0.08}>
+            <div style={{ display: "flex", gap: "16px", padding: "18px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+              <div style={{
+                width: "32px", height: "32px", flexShrink: 0, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "'Space Mono', monospace", fontSize: "11px", fontWeight: 500,
+                color: "#00FF87", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+              }}>{s.n}</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "14px", color: "#f0f0f0", marginBottom: "4px" }}>{s.t}</div>
+                <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.5 }}>{s.b}</div>
               </div>
-              <input
-                value={bizWebsite}
-                onChange={(e) => setBizWebsite(e.target.value)}
-                placeholder="Website URL (optional)"
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
-              <textarea
-                value={bizDesc}
-                onChange={(e) => setBizDesc(e.target.value)}
-                placeholder="Short description of your business"
-                rows={2}
-                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-              />
+            </div>
+          </Reveal>
+        ))}
+      </section>
 
-              {error && (
-                <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-red-400">
-                  {error}
+
+      {/* ═══════════════ S4: FEATURES ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>What you get</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+            Everything you need.<br />Nothing you don{"'"}t.
+          </h2>
+        </Reveal>
+
+        {[
+          { icon: "\u26A1", bg: "rgba(0,255,135,0.1)", bc: "rgba(0,255,135,0.2)", tag: "LAUNCH", title: "Your storefront, live in under 60 seconds", body: "Tell us what you offer. AI builds a full page \u2014 services, pricing, offers, descriptions. Hit publish. Done." },
+          { icon: "\uD83D\uDCB3", bg: "rgba(245,166,35,0.1)", bc: "rgba(245,166,35,0.2)", tag: "REVENUE", title: "Get paid without setting anything up", body: "Stripe checkout is built in. Customers pay by card. You get paid. No merchant account applications." },
+          { icon: "\uD83D\uDD01", bg: "rgba(0,255,135,0.1)", bc: "rgba(0,255,135,0.2)", tag: "RETENTION", title: "Built-in loyalty that actually works", body: "DUM Points reward every purchase automatically. No setup, no maintenance, no loyalty app to manage." },
+          { icon: "\uD83D\uDEE1\uFE0F", bg: "rgba(79,158,255,0.1)", bc: "rgba(79,158,255,0.2)", tag: "TRUST", title: "Verified badge \u2014 rank higher, win more", body: "Verified businesses rank higher in Discover, get a trust badge, and convert browsers into buyers at a higher rate." },
+          { icon: "\uD83D\uDCCA", bg: "rgba(192,132,252,0.1)", bc: "rgba(192,132,252,0.2)", tag: "INSIGHT", title: "Know what\u2019s working \u2014 in real time", body: "Page views, sales, revenue, DUM point redemptions. One dashboard replaces your spreadsheet and guesswork." },
+          { icon: "\uD83E\uDD16", bg: "rgba(245,166,35,0.1)", bc: "rgba(245,166,35,0.2)", tag: "GROWTH", title: "AI that helps you sell better", body: "AI Co-Pilot suggests better offer wording, pricing, and descriptions based on what converts in your category." },
+        ].map((f, i) => (
+          <Reveal key={i} delay={i * 0.08}>
+            <div style={{
+              background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "14px", padding: "20px", marginBottom: "10px",
+              transition: "all 0.2s", cursor: "default",
+            }}>
+              <div style={{
+                width: "36px", height: "36px", borderRadius: "8px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "16px", marginBottom: "12px",
+                background: f.bg, border: `1px solid ${f.bc}`,
+              }}>{f.icon}</div>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87", textTransform: "uppercase", marginBottom: "5px" }}>{f.tag}</div>
+              <div style={{ fontWeight: 700, fontSize: "15px", color: "#f0f0f0", marginBottom: "7px" }}>{f.title}</div>
+              <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.55 }}>{f.body}</div>
+            </div>
+          </Reveal>
+        ))}
+      </section>
+
+      {/* ═══════════════ S5: DUM POINTS ═══════════════ */}
+      <section style={{ margin: "0 20px 64px", background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "32px 24px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(0,255,135,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <Reveal>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "6px",
+            fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.12em",
+            color: "#00FF87", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+            padding: "5px 12px", borderRadius: "20px", marginBottom: "16px",
+          }}>
+            <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%" }} /> YOUR SECRET WEAPON
+          </div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: "12px" }}>
+            DUM Points = <span style={{ color: "#00FF87" }}>built-in loyalty</span> you never have to manage
+          </h2>
+          <p style={{ fontSize: "13px", color: "#888", lineHeight: 1.6, marginBottom: "24px" }}>
+            Every DUM Club user already has a points balance. When they spend points at your business,
+            they get a discount — and you still get paid on the full price. The platform covers the reward during beta.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "20px" }}>
+            {[
+              { n: "10%", l: "Discount for customers using DUM", c: "#00FF87" },
+              { n: "+2", l: "DUM earned per purchase by buyers", c: "#F5A623" },
+              { n: "$0", l: "Setup cost \u2014 platform funded (beta)", c: "#4F9EFF" },
+            ].map((s, i) => (
+              <div key={i} style={{ background: "#030303", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "14px 10px", textAlign: "center" }}>
+                <div style={{ fontWeight: 800, fontSize: "22px", lineHeight: 1, marginBottom: "5px", color: s.c }}>{s.n}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.08em", color: "#444" }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.25}>
+          <div style={{ background: "#030303", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ width: "28px", height: "28px", flexShrink: 0, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)" }}>{"\uD83D\uDED2"}</div>
+              <div style={{ fontSize: "13px", color: "#888" }}><strong style={{ color: "#f0f0f0", fontWeight: 500 }}>Customer buys $80 service</strong> with DUM Points {"\u2192"} they pay $72. You receive $74.40 (full price minus 7% platform fee).</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ width: "28px", height: "28px", flexShrink: 0, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", background: "rgba(245,166,35,0.1)", border: "1px solid rgba(245,166,35,0.2)" }}>{"\uD83D\uDCC8"}</div>
+              <div style={{ fontSize: "13px", color: "#888" }}>Businesses accepting DUM Points rank <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>higher in Discover</strong> {"\u2014"} more visibility, more clicks, more customers.</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0" }}>
+              <div style={{ width: "28px", height: "28px", flexShrink: 0, borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", background: "rgba(79,158,255,0.1)", border: "1px solid rgba(79,158,255,0.2)" }}>{"\uD83D\uDD17"}</div>
+              <div style={{ fontSize: "13px", color: "#888" }}>Points earned at <em>any</em> business can be spent at <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>any</strong> business on the platform.</div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+
+      {/* ═══════════════ S6: COMPARISON ═══════════════ */}
+      <section style={{ margin: "0 20px 64px", background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "20px", padding: "24px" }}>
+        <Reveal>
+          <h3 style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-0.01em", marginBottom: "16px" }}>Why DUM Club wins</h3>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Space Mono', monospace", fontSize: "11px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <th style={{ textAlign: "left", padding: "8px 0", fontSize: "9px", letterSpacing: "0.1em", color: "#444", minWidth: "90px" }}> </th>
+                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87" }}>DUM CLUB</th>
+                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>BASE44</th>
+                  <th style={{ textAlign: "center", padding: "8px", fontSize: "9px", letterSpacing: "0.12em", color: "#444" }}>VENICE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["Business storefront", "\u2713", "apps only", "\u2717"],
+                  ["Accept payments", "\u2713", "via app", "\u2717"],
+                  ["Built-in loyalty", "\u2713", "\u2717", "\u2717"],
+                  ["Cross-business rewards", "\u2713", "\u2717", "\u2717"],
+                  ["Verified badge", "\u2713", "\u2717", "\u2717"],
+                  ["Discover marketplace", "\u2713", "\u2717", "\u2717"],
+                  ["No monthly fee to start", "\u2713", "limited", "limited"],
+                ].map(([feature, dum, b44, ven], i) => (
+                  <tr key={i} style={{ borderBottom: i < 6 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    <td style={{ padding: "10px 0", color: "#888", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>{feature}</td>
+                    <td style={{ padding: "10px 8px", textAlign: "center", color: dum === "\u2713" ? "#00FF87" : "#444" }}>{dum}</td>
+                    <td style={{ padding: "10px 8px", textAlign: "center", color: b44 === "\u2717" ? "#444" : "#F5A623" }}>{b44}</td>
+                    <td style={{ padding: "10px 8px", textAlign: "center", color: ven === "\u2717" ? "#444" : "#F5A623" }}>{ven}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ═══════════════ S7: USE CASES ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>Built for every business</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "16px" }}>See yourself here</h2>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            {[
+              { cat: "Auto Detail", name: "Mobile Car Wash", dum: "+2 DUM/wash" },
+              { cat: "Food & Drink", name: "Local Pizza Shop", dum: "+2 DUM/order" },
+              { cat: "Salon", name: "Hair & Beauty Studio", dum: "+2 DUM/visit" },
+              { cat: "Services", name: "Roofing Company", dum: "+2 DUM/job" },
+              { cat: "Fitness", name: "Personal Training", dum: "+2 DUM/session" },
+              { cat: "Digital", name: "Brand Design Studio", dum: "+2 DUM/project" },
+            ].map((u, i) => (
+              <div key={i} style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "16px" }}>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#00FF87", marginBottom: "6px", textTransform: "uppercase" }}>{u.cat}</div>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "3px" }}>{u.name}</div>
+                <div style={{ fontSize: "11px", color: "#888" }}>{u.dum}</div>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: "3px", marginTop: "8px",
+                  fontFamily: "'Space Mono', monospace", fontSize: "8px", letterSpacing: "0.06em",
+                  color: "#888", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+                  padding: "3px 7px", borderRadius: "10px",
+                }}>EXAMPLE PAGE</div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
+
+      {/* ═══════════════ S8: VERIFICATION ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Trust & credibility</div>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <div style={{
+            background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "20px", padding: "28px 22px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, #00FF87, #4F9EFF, #00FF87)", backgroundSize: "200%" }} />
+
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "20px" }}>
+              <div style={{ width: "52px", height: "52px", borderRadius: "12px", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>{"\u2713"}</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "15px", color: "#f0f0f0" }}>DUM Club Verified Business</div>
+                <div style={{ fontSize: "12px", color: "#888" }}>Reviewed and approved by our team</div>
+              </div>
+            </div>
+
+            <h3 style={{ fontWeight: 800, fontSize: "20px", letterSpacing: "-0.02em", marginBottom: "8px", lineHeight: 1.2 }}>Verified businesses win more customers</h3>
+            <p style={{ fontSize: "13px", color: "#888", marginBottom: "22px", lineHeight: 1.55 }}>
+              A badge tells every customer: this business is real, reviewed, and accountable. Verified businesses rank higher in Discover.
+            </p>
+
+            {[
+              "Create your business profile \u2014 name, category, description",
+              "Launch at least one storefront with real offers",
+              "Submit for verification from your dashboard",
+              "Our team reviews within 48 hours",
+              "Your verified badge appears on all your storefronts",
+            ].map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "12px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                <div style={{
+                  width: "24px", height: "24px", flexShrink: 0, borderRadius: "50%",
+                  background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#00FF87", marginTop: "2px",
+                }}>{i + 1}</div>
+                <div style={{ fontSize: "13px", color: "#888", lineHeight: 1.5 }}>{step}</div>
+              </div>
+            ))}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "16px" }}>
+              {[
+                { l: "Discover ranking", v: "Verified rank higher" },
+                { l: "Trust signal", v: "Badge on every page" },
+                { l: "Conversion", v: "More clicks, more sales" },
+                { l: "Cost", v: "Free \u2014 always", green: true },
+              ].map((p, i) => (
+                <div key={i} style={{ background: "#030303", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "10px 12px" }}>
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#00FF87", letterSpacing: "0.06em", marginBottom: "2px" }}>{p.l}</div>
+                  <div style={{ fontSize: "12px", color: p.green ? "#00FF87" : "#888" }}>{p.v}</div>
                 </div>
-              )}
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </section>
 
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleCreate}
-                  disabled={!bizName.trim() || saving}
-                  className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:opacity-50"
-                >
+      {/* ═══════════════ S9: WHY SWITCH ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Pain removal</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: "6px" }}>Why businesses switch to DUM Club</h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>Everything they stopped paying for.</p>
+        </Reveal>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {[
+            { cross: true, t: "No website to design or maintain" },
+            { cross: true, t: "No developer to hire" },
+            { cross: true, t: "No separate loyalty app to manage" },
+            { cross: true, t: "No payment gateway setup or approval" },
+            { cross: true, t: "No monthly software stack ($500+/mo)" },
+            { cross: true, t: "No punch cards that get lost" },
+            { cross: true, t: "No crypto knowledge required" },
+            { cross: false, t: "One page. Payments. Loyalty. Analytics. Done." },
+          ].map((item, i) => (
+            <Reveal key={i} delay={i * 0.05}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: "12px",
+                padding: "13px 16px", background: "#0b0b0b",
+                border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px",
+                fontSize: "13px", color: item.cross ? "#888" : "#f0f0f0",
+              }}>
+                <div style={{
+                  width: "20px", height: "20px", flexShrink: 0, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px",
+                  ...(item.cross
+                    ? { background: "rgba(255,85,85,0.1)", border: "1px solid rgba(255,85,85,0.2)", color: "#FF5555" }
+                    : { background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)", color: "#00FF87" }),
+                }}>{item.cross ? "\u2717" : "\u2713"}</div>
+                <span>{item.cross ? item.t : <><span style={{ color: "#00FF87" }}>{item.t}</span></>}</span>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+
+      {/* ═══════════════ S10: HOW IT WORKS ═══════════════ */}
+      <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>Simple process</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px" }}>Live in 4 steps.<br />No friction.</h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>From idea to customers paying you — the same afternoon.</p>
+        </Reveal>
+
+        {[
+          { n: "01", t: "Sign in with Google", b: "One click. No wallet setup, no crypto, no form. Your account is tied to your email.", time: "3 SECONDS" },
+          { n: "02", t: "Describe your business", b: "Name it. Pick a category. Write two sentences. AI fills in the rest — offers, descriptions, layout.", time: "2 MINUTES" },
+          { n: "03", t: "Launch your storefront", b: "Review what AI built. Adjust anything. Hit Publish. Your page is live with checkout and DUM rewards active.", time: "INSTANT" },
+          { n: "04", t: "Start selling. Get verified. Grow.", b: "Share your link. Submit for verification. Watch customers earn DUM Points and come back.", time: "SAME DAY" },
+        ].map((s, i) => (
+          <Reveal key={i} delay={i * 0.1}>
+            <div style={{ display: "flex", gap: "16px", padding: "20px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none", position: "relative" }}>
+              {i < 3 && (
+                <div style={{ position: "absolute", left: "15px", top: "52px", width: "1px", bottom: "-20px", background: "linear-gradient(to bottom, rgba(0,255,135,0.2), transparent)" }} />
+              )}
+              <div style={{
+                width: "32px", height: "32px", flexShrink: 0, borderRadius: "8px",
+                background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "'Space Mono', monospace", fontSize: "12px", fontWeight: 500, color: "#00FF87",
+                position: "relative", zIndex: 1,
+              }}>{s.n}</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "15px", color: "#f0f0f0", marginBottom: "5px" }}>{s.t}</div>
+                <div style={{ fontSize: "12.5px", color: "#888", lineHeight: 1.5 }}>{s.b}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#00FF87", marginTop: "6px" }}>{"\u2192"} {s.time}</div>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+      </section>
+
+      {/* ═══════════════ BUSINESS CREATE FORM (modal-like) ═══════════════ */}
+      {showForm && user && !bizProfile && (
+        <section style={{ padding: "0 20px 64px", maxWidth: "520px", margin: "0 auto" }}>
+          <div style={{
+            background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.2)",
+            borderRadius: "20px", padding: "28px 24px",
+          }}>
+            <h3 style={{ fontWeight: 800, fontSize: "18px", marginBottom: "4px" }}>Create your business profile</h3>
+            <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>This is your identity on DUM Club. Update anytime.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <input value={bizName} onChange={(e) => setBizName(e.target.value)} placeholder="Business name *"
+                style={{ width: "100%", background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: "#f0f0f0", outline: "none" }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <select value={bizCategory} onChange={(e) => setBizCategory(e.target.value)}
+                  style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: "#f0f0f0", outline: "none" }}>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <input value={bizEmail} onChange={(e) => setBizEmail(e.target.value)} placeholder="Contact email (optional)"
+                  style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: "#f0f0f0", outline: "none" }} />
+              </div>
+              <input value={bizWebsite} onChange={(e) => setBizWebsite(e.target.value)} placeholder="Website (optional)"
+                style={{ width: "100%", background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: "#f0f0f0", outline: "none" }} />
+              <textarea value={bizDesc} onChange={(e) => setBizDesc(e.target.value)} placeholder="Short description" rows={2}
+                style={{ width: "100%", background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", color: "#f0f0f0", outline: "none", resize: "none" }} />
+              {error && <div style={{ background: "rgba(255,85,85,0.05)", border: "1px solid rgba(255,85,85,0.2)", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#FF5555" }}>{error}</div>}
+              <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                <button onClick={handleCreate} disabled={!bizName.trim() || saving}
+                  style={{ background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "13px", padding: "12px 24px", borderRadius: "8px", border: "none", cursor: "pointer", opacity: !bizName.trim() || saving ? 0.5 : 1 }}>
                   {saving ? "Creating..." : "Create Business"}
                 </button>
-                <button
-                  onClick={() => { setShowForm(false); setError(""); }}
-                  className="rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-400 transition hover:text-white"
-                >
+                <button onClick={() => { setShowForm(false); setError(""); }}
+                  style={{ background: "transparent", color: "#888", fontSize: "13px", padding: "12px 24px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                   Cancel
                 </button>
               </div>
             </div>
           </div>
-        )}
+        </section>
+      )}
 
-        {/* Loading state */}
-        {user && loadingBiz && !bizProfile && (
-          <div className="mt-12 text-center text-sm text-zinc-600">Loading your business profile...</div>
-        )}
-
-        {/* Benefits grid */}
-        <div className="mt-20">
-          <div className="text-center">
-            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
-              Everything you need to sell online
-            </h2>
-            <p className="mt-3 text-sm text-zinc-400">
-              No monthly fees. No code. Just describe what you do.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {BENEFITS.map((b) => (
-              <div
-                key={b.title}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
-              >
-                <div className="text-2xl">{b.icon}</div>
-                <div className="mt-3 text-sm font-bold text-white">{b.title}</div>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">{b.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* How it works */}
-        <div className="mt-20 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 sm:px-12">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
-              How it works
-            </h2>
-            <p className="mt-3 text-sm text-zinc-400">
-              Go from idea to live business in 4 steps.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map((s) => (
-                <div key={s.num} className="rounded-xl border border-zinc-800 bg-base p-5 text-left">
-                  <div className="font-mono text-lg font-bold text-emerald-400/40">{s.num}</div>
-                  <div className="mt-2 text-sm font-bold text-white">{s.title}</div>
-                  <div className="mt-1 text-xs text-zinc-500">{s.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* DUM Points for business */}
-        <div className="mt-12 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 px-8 py-10 sm:px-12">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
-              DUM Points = built-in loyalty
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              Every Dum Club user has DUM Points. When they spend points at your business,
-              they get 10% off and you receive the points. It&apos;s automatic loyalty — no setup, no extra cost.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                <div className="text-2xl font-extrabold text-emerald-400">10%</div>
-                <div className="mt-1 text-xs text-zinc-500">Discount for customers using DUM</div>
-              </div>
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                <div className="text-2xl font-extrabold text-violet-400">+2</div>
-                <div className="mt-1 text-xs text-zinc-500">DUM earned per purchase by buyers</div>
-              </div>
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                <div className="text-2xl font-extrabold text-amber-400">Free</div>
-                <div className="mt-1 text-xs text-zinc-500">No cost — points come from the platform</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Verification trust */}
-        <div className="mt-12 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 sm:px-12">
-          <div className="mx-auto max-w-2xl">
-            <h2 className="text-center text-2xl font-extrabold text-white sm:text-3xl">
-              Get verified, build trust
-            </h2>
-            <p className="mt-3 text-center text-sm text-zinc-400">
-              Verified businesses get a badge, higher ranking in Discover, and more customer confidence.
-            </p>
-
-            <div className="mt-8 space-y-3">
-              {[
-                "Create your business profile (name, category, description)",
-                "Launch at least one storefront with offers",
-                "Submit for verification from your dashboard",
-                "Our team reviews and approves within 48 hours",
-                "Your verified badge appears on all your storefronts",
-              ].map((step, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border border-zinc-800/50 bg-base px-4 py-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/5 text-[10px] font-bold text-emerald-400">
-                    {i + 1}
-                  </div>
-                  <span className="text-sm text-zinc-300">{step}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="mt-16 text-center">
-          {user ? (
-            bizProfile ? (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-              >
-                Go to Dashboard
-              </Link>
-            ) : (
-              <button
-                onClick={() => { setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="inline-flex items-center rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-              >
-                Create Your Business
-              </button>
-            )
+      {/* ═══════════════ S11: FINAL CTA ═══════════════ */}
+      <section style={{ padding: "48px 20px 72px", maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+        <Reveal>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em", color: "#444", marginBottom: "16px" }}>READY?</div>
+          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(24px, 7vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: "14px" }}>
+            Your business could be <span style={{ color: "#00FF87" }}>earning customers</span> today.
+          </h2>
+          <p style={{ fontSize: "14px", color: "#888", marginBottom: "28px", lineHeight: 1.6 }}>
+            Every day without a retention system is a customer who forgot about you.
+            DUM Club fixes that in minutes — for free.
+          </p>
+        </Reveal>
+        <Reveal delay={0.15}>
+          {"href" in heroAction ? (
+            <Link href={heroAction.href} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "14px",
+              letterSpacing: "0.04em", padding: "16px 32px", borderRadius: "8px",
+              border: "none", width: "100%", textDecoration: "none", marginBottom: "14px",
+            }}>
+              {heroAction.label} →
+            </Link>
           ) : (
-            <button
-              onClick={login}
-              className="inline-flex items-center rounded-xl bg-emerald-400 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
-            >
-              Get Started Free
+            <button onClick={heroAction.onClick} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              background: "#00FF87", color: "#000", fontWeight: 700, fontSize: "14px",
+              letterSpacing: "0.04em", padding: "16px 32px", borderRadius: "8px",
+              border: "none", cursor: "pointer", width: "100%", marginBottom: "14px",
+            }}>
+              {heroAction.label} →
             </button>
           )}
-          <div className="mt-4">
-            <Link href="/" className="text-sm text-zinc-500 transition hover:text-zinc-300">
-              ← Back to home
-            </Link>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#444" }}>
+            No credit card · No crypto wallet · No developer needed
           </div>
-        </div>
+        </Reveal>
+      </section>
 
-      </div>
     </div>
   );
 }

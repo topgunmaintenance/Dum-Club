@@ -16,6 +16,7 @@ type Project = {
   token_utility?: string | null;
   promo_copy?: string | null;
   store_items?: any[] | null;
+  owner_verified?: boolean;
 };
 
 type MarketSnapshot = {
@@ -490,6 +491,8 @@ export default function DiscoverPage() {
     if (hasOffers(p)) s += 20;
     if (hasSubscription(p)) s += 10;
     if ((marketByProject[p.id]?.volume_24h || 0) > 0) s += 10;
+    // Verified businesses rank higher
+    if (p.owner_verified) s += 15;
     return s;
   }
 
