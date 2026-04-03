@@ -466,6 +466,27 @@ async def stripe_webhook(request: Request):
             print(f"[webhook] Payment not confirmed yet (status={payment_status}), skipping")
             return JSONResponse(content={"received": True}, status_code=200)
 
+        # ── DUM Points purchase (not an offer order) ──
+        if metadata.get("purchase_type") == "dum_points":
+            privy_id = metadata.get("privy_id")
+            points_amount = int(metadata.get("points_amount", "0"))
+            if privy_id and points_amount > 0:
+                try:
+                    user_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
+                    if user_res.data:
+                        current = user_res.data[0].get("dum_balance", 0)
+                        new_balance = current + points_amount
+                        supabase.table("users").update({"dum_balance": new_balance}).eq("privy_id", privy_id).execute()
+                        print(f"[webhook] ✓ DUM Points awarded: {points_amount} to {privy_id} → {new_balance}")
+                    else:
+                        print(f"[webhook] ✗ User not found for DUM Points: {privy_id}")
+                except Exception as exc:
+                    print(f"[webhook] ✗ DUM Points award failed: {exc!r}")
+            else:
+                print(f"[webhook] ✗ Invalid DUM Points metadata: privy_id={privy_id}, points={points_amount}")
+            return JSONResponse(content={"received": True}, status_code=200)
+
+        # ── Regular offer order ──
         order = _find_order(session_id, pi_id, metadata)
         if order:
             _process_paid(order, session_id, pi_id, "checkout.session.completed")

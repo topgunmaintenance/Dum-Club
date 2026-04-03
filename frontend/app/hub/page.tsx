@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { Starfield } from "../../components/Starfield";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const TIERS = [
   { name: "Starter", min: 0, color: "#666" },
   { name: "Builder", min: 50, color: "#00FF87" },
@@ -27,8 +29,11 @@ function getNextTier(pts: number) {
 }
 
 export default function HubPage() {
-  const { user, login } = useAuth();
+  const { user, login, getToken } = useAuth();
   const [balance, setBalance] = useState(0);
+  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
 
   useEffect(() => {
     const read = () => setBalance(Number(localStorage.getItem("dum_points") || "0"));
@@ -36,6 +41,36 @@ export default function HubPage() {
     window.addEventListener("dum-points-update", read);
     return () => window.removeEventListener("dum-points-update", read);
   }, []);
+
+  // Detect successful purchase return from Stripe
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("dum_purchase") === "success") {
+      setPurchaseSuccess(true);
+      // Refresh balance from backend after webhook processes
+      const refreshBalance = async () => {
+        if (!user?.privyId) return;
+        try {
+          const res = await fetch(`${API_BASE}/api/dum/balance/${user.privyId}`);
+          if (res.ok) {
+            const data = await res.json();
+            const newBal = data.balance || 0;
+            setBalance(newBal);
+            localStorage.setItem("dum_points", String(newBal));
+            window.dispatchEvent(new Event("dum-points-update"));
+          }
+        } catch {}
+      };
+      // Poll a few times to catch webhook processing delay
+      setTimeout(refreshBalance, 1000);
+      setTimeout(refreshBalance, 3000);
+      setTimeout(refreshBalance, 7000);
+      // Clean URL
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("dum_purchase");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }
+  }, [user?.privyId]);
 
   const tier = getTier(balance);
   const next = getNextTier(balance);
@@ -149,6 +184,86 @@ export default function HubPage() {
           >
             Browse businesses to start earning →
           </Link>
+        </div>
+
+        {/* ── SECTION 2.5: Add Points ── */}
+        <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">
+            Add DUM Points
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { id: "tier_100", points: 100, price: "$10", bonus: null },
+              { id: "tier_275", points: 275, price: "$25", bonus: "10% bonus", best: true },
+              { id: "tier_600", points: 600, price: "$50", bonus: "20% bonus" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={async () => {
+                  setPurchasing(t.id);
+                  try {
+                    const token = await getToken();
+                    const res = await fetch(`${API_BASE}/api/dum/purchase`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify({
+                        tier_id: t.id,
+                        success_url: window.location.origin + "/hub",
+                        cancel_url: window.location.origin + "/hub",
+                      }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      setPurchaseError(err.detail || "Purchase failed");
+                      setPurchasing(null);
+                      return;
+                    }
+                    const data = await res.json();
+                    if (data.checkout_url) {
+                      window.location.href = data.checkout_url;
+                    }
+                  } catch {
+                    setPurchaseError("Network error");
+                    setPurchasing(null);
+                  }
+                }}
+                disabled={!!purchasing}
+                className={`relative rounded-xl border p-5 text-center transition hover:-translate-y-1 ${
+                  t.best
+                    ? "border-emerald-400/30 bg-emerald-400/[0.06] shadow-[0_0_16px_rgba(0,255,163,0.06)]"
+                    : "border-zinc-800 bg-zinc-900/50"
+                } ${purchasing === t.id ? "opacity-60" : ""}`}
+              >
+                {t.best && (
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-400 px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-black">
+                    Best Value
+                  </div>
+                )}
+                <div className="mb-1 text-2xl font-black text-white">{t.points}</div>
+                <div className="mb-2 text-[11px] text-zinc-500">points</div>
+                <div className="text-lg font-bold text-emerald-400">{t.price}</div>
+                {t.bonus && (
+                  <div className="mt-1 text-[10px] font-semibold text-emerald-400/70">{t.bonus}</div>
+                )}
+                <div className="mt-3 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[11px] font-bold text-emerald-400">
+                  {purchasing === t.id ? "Processing..." : "Add Points"}
+                </div>
+              </button>
+            ))}
+          </div>
+          {purchaseError && (
+            <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">
+              {purchaseError}
+            </div>
+          )}
+          {purchaseSuccess && (
+            <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-xs text-emerald-300">
+              ✓ Points added successfully!
+            </div>
+          )}
+          <p className="mt-3 text-[10px] text-zinc-600 text-center">
+            Secure checkout via Stripe · Points added instantly after payment
+          </p>
         </div>
 
         {/* ── SECTION 3: How to Spend ── */}
