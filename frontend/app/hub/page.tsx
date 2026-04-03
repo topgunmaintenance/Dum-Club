@@ -28,6 +28,75 @@ function getNextTier(pts: number) {
   return null;
 }
 
+const REASON_LABELS: Record<string, string> = {
+  purchase_reward: "Purchase reward",
+  launch_bonus: "Business created",
+  offer_created: "Offer added",
+  discount_spend: "Discount used",
+  stripe_purchase: "Points purchased",
+  discount: "Discount applied",
+};
+
+function RecentActivity({ privyId }: { privyId?: string }) {
+  const [txns, setTxns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!privyId) return;
+    setLoading(true);
+    fetch(`${API_BASE}/api/dum/transactions/${privyId}`)
+      .then((r) => r.json())
+      .then((d) => setTxns(d.transactions || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [privyId]);
+
+  if (!privyId) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+        Recent Activity
+      </div>
+      {loading ? (
+        <div className="py-4 text-center text-xs text-zinc-600">Loading...</div>
+      ) : txns.length === 0 ? (
+        <div className="py-4 text-center text-xs text-zinc-600">
+          No activity yet. Earn DUM Points by creating businesses and making purchases.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {txns.slice(0, 10).map((tx) => {
+            const isEarn = tx.amount > 0;
+            const ago = tx.created_at ? formatTimeAgo(tx.created_at) : "";
+            return (
+              <div key={tx.id} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className={`font-mono text-sm font-bold ${isEarn ? "text-emerald-400" : "text-red-400"}`}>
+                    {isEarn ? "+" : ""}{tx.amount}
+                  </span>
+                  <span className="text-[12px] text-zinc-400">
+                    {REASON_LABELS[tx.reason] || tx.reason}
+                  </span>
+                </div>
+                <span className="text-[10px] text-zinc-600">{ago}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatTimeAgo(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
 export default function HubPage() {
   const { user, login, getToken } = useAuth();
   const [balance, setBalance] = useState(0);
@@ -301,6 +370,9 @@ export default function HubPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Recent Activity ── */}
+        <RecentActivity privyId={user?.privyId} />
 
         {/* ── Tiers overview ── */}
         <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">

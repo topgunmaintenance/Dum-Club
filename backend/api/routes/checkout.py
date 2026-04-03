@@ -424,15 +424,21 @@ async def stripe_webhook(request: Request):
             send_buyer_payment_confirmed(buyer_email or "", offer_title, amount, proj_name)
             print(f"[webhook] Buyer email: {'sent' if buyer_email else 'skipped (no email)'}")
 
-            # Award +2 DUM Points to buyer for purchase
+            # Award +2 DUM Points to buyer for purchase (with transaction log)
             buyer_uid = od.get("buyer_user_id")
             if buyer_uid:
                 try:
                     dum_res = supabase.table("users").select("dum_balance").eq("privy_id", buyer_uid).limit(1).execute()
                     if dum_res.data:
                         cur_dum = dum_res.data[0].get("dum_balance", 50)
-                        supabase.table("users").update({"dum_balance": cur_dum + 2}).eq("privy_id", buyer_uid).execute()
-                        print(f"[webhook] awarded 2 DUM to buyer {buyer_uid} → {cur_dum + 2}")
+                        new_dum = cur_dum + 2
+                        supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", buyer_uid).execute()
+                        supabase.table("dum_transactions").insert({
+                            "privy_id": buyer_uid, "amount": 2,
+                            "reason": "purchase_reward", "reference_id": od.get("offer_id"),
+                            "balance_after": new_dum,
+                        }).execute()
+                        print(f"[webhook] awarded 2 DUM to buyer {buyer_uid} → {new_dum}")
                 except Exception as dum_err:
                     print(f"[webhook] DUM award failed (non-fatal): {dum_err}")
 
@@ -477,7 +483,12 @@ async def stripe_webhook(request: Request):
                         current = user_res.data[0].get("dum_balance", 0)
                         new_balance = current + points_amount
                         supabase.table("users").update({"dum_balance": new_balance}).eq("privy_id", privy_id).execute()
-                        print(f"[webhook] ✓ DUM Points awarded: {points_amount} to {privy_id} → {new_balance}")
+                        supabase.table("dum_transactions").insert({
+                            "privy_id": privy_id, "amount": points_amount,
+                            "reason": "stripe_purchase", "reference_id": session_id,
+                            "balance_after": new_balance,
+                        }).execute()
+                        print(f"[webhook] ✓ DUM Points purchased: {points_amount} to {privy_id} → {new_balance}")
                     else:
                         print(f"[webhook] ✗ User not found for DUM Points: {privy_id}")
                 except Exception as exc:

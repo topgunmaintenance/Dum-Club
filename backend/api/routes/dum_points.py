@@ -61,6 +61,48 @@ class DumSpendRequest(BaseModel):
     project_id: Optional[str] = None  # for business credit
 
 
+# ── Shared helper: update balance + log transaction ──────────
+
+def _update_balance_and_log(
+    supabase, privy_id: str, delta: int, reason: str, reference_id: str | None = None
+) -> int:
+    """
+    Atomically update dum_balance and insert a dum_transactions row.
+    Returns the new balance. `delta` is positive for earning, negative for spending.
+    """
+    res = (
+        supabase.table("users")
+        .select("dum_balance")
+        .eq("privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    current = res.data[0].get("dum_balance", 0)
+    new_balance = max(current + delta, 0)
+
+    supabase.table("users").update(
+        {"dum_balance": new_balance}
+    ).eq("privy_id", privy_id).execute()
+
+    # Log transaction
+    try:
+        supabase.table("dum_transactions").insert({
+            "privy_id": privy_id,
+            "amount": delta,
+            "reason": reason,
+            "reference_id": reference_id,
+            "balance_after": new_balance,
+        }).execute()
+    except Exception as exc:
+        print(f"[dum] transaction log failed (non-fatal): {exc!r}")
+
+    print(f"[dum] {'+' if delta > 0 else ''}{delta} to {privy_id} ({reason}) → {new_balance}")
+    return new_balance
+
+
 # ── Read balance ──────────────────────────────────────────────
 
 @router.get("/balance/{privy_id}", response_model=DumBalanceResponse)
@@ -82,6 +124,22 @@ async def get_balance(privy_id: str):
     )
 
 
+# ── Transaction history ──────────────────────────────────────
+
+@router.get("/transactions/{privy_id}")
+async def get_transactions(privy_id: str, limit: int = 20):
+    supabase = get_client()
+    res = (
+        supabase.table("dum_transactions")
+        .select("*")
+        .eq("privy_id", privy_id)
+        .order("created_at", desc=True)
+        .limit(min(limit, 50))
+        .execute()
+    )
+    return {"transactions": res.data or []}
+
+
 # ── Award points ──────────────────────────────────────────────
 
 @router.post("/award", response_model=DumBalanceResponse)
@@ -89,7 +147,6 @@ async def award_points(
     req: DumAwardRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    # Enforce: authenticated user can only award to themselves
     auth_privy = current_user.get("sub")
     if not auth_privy:
         raise HTTPException(status_code=401, detail="Invalid auth token")
@@ -100,26 +157,7 @@ async def award_points(
         raise HTTPException(status_code=400, detail="Invalid amount (1-1000)")
 
     supabase = get_client()
-
-    # Read current balance
-    res = (
-        supabase.table("users")
-        .select("privy_id, dum_balance")
-        .eq("privy_id", req.privy_id)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    current = res.data[0].get("dum_balance", 50)
-    new_balance = current + req.amount
-
-    supabase.table("users").update(
-        {"dum_balance": new_balance}
-    ).eq("privy_id", req.privy_id).execute()
-
-    print(f"[dum] awarded {req.amount} to {req.privy_id} ({req.reason}) → {new_balance}")
+    new_balance = _update_balance_and_log(supabase, req.privy_id, req.amount, req.reason)
     return DumBalanceResponse(privy_id=req.privy_id, balance=new_balance)
 
 
@@ -130,7 +168,6 @@ async def spend_points(
     req: DumSpendRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    # Enforce: authenticated user can only spend their own points
     auth_privy = current_user.get("sub")
     if not auth_privy:
         raise HTTPException(status_code=401, detail="Invalid auth token")
@@ -142,47 +179,29 @@ async def spend_points(
 
     supabase = get_client()
 
-    # Read current balance
-    res = (
-        supabase.table("users")
-        .select("privy_id, dum_balance")
-        .eq("privy_id", req.privy_id)
-        .limit(1)
-        .execute()
-    )
+    # Check sufficient balance before spending
+    res = supabase.table("users").select("dum_balance").eq("privy_id", req.privy_id).limit(1).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="User not found")
-
-    current = res.data[0].get("dum_balance", 50)
-    if current < req.amount:
+    if res.data[0].get("dum_balance", 0) < req.amount:
         raise HTTPException(status_code=400, detail="Insufficient DUM Points")
 
-    new_balance = current - req.amount
-
-    supabase.table("users").update(
-        {"dum_balance": new_balance}
-    ).eq("privy_id", req.privy_id).execute()
+    new_balance = _update_balance_and_log(
+        supabase, req.privy_id, -req.amount, req.reason, req.project_id
+    )
 
     # Credit business if project_id provided
     if req.project_id:
         try:
-            proj_res = (
-                supabase.table("projects")
-                .select("dum_received")
-                .eq("id", req.project_id)
-                .limit(1)
-                .execute()
-            )
+            proj_res = supabase.table("projects").select("dum_received").eq("id", req.project_id).limit(1).execute()
             if proj_res.data:
                 current_received = proj_res.data[0].get("dum_received", 0)
                 supabase.table("projects").update(
                     {"dum_received": current_received + req.amount}
                 ).eq("id", req.project_id).execute()
-                print(f"[dum] credited {req.amount} to project {req.project_id}")
         except Exception as exc:
             print(f"[dum] business credit failed (non-fatal): {exc!r}")
 
-    print(f"[dum] spent {req.amount} from {req.privy_id} ({req.reason}) → {new_balance}")
     return DumBalanceResponse(privy_id=req.privy_id, balance=new_balance)
 
 

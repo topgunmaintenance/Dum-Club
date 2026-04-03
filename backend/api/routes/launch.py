@@ -766,8 +766,17 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
                 user_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
                 if user_res.data:
                     current_dum = user_res.data[0].get("dum_balance", 50)
-                    supabase.table("users").update({"dum_balance": current_dum + 25}).eq("privy_id", privy_id).execute()
-                    print(f"[launch] awarded 25 DUM to {privy_id} → {current_dum + 25}")
+                    new_dum = current_dum + 25
+                    supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", privy_id).execute()
+                    try:
+                        supabase.table("dum_transactions").insert({
+                            "privy_id": privy_id, "amount": 25,
+                            "reason": "launch_bonus", "reference_id": project_id,
+                            "balance_after": new_dum,
+                        }).execute()
+                    except Exception:
+                        pass
+                    print(f"[launch] awarded 25 DUM to {privy_id} → {new_dum}")
     except Exception as exc:
         print(f"[launch] DUM award failed (non-fatal): {exc!r}")
 
