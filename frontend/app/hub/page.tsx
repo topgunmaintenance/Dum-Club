@@ -248,12 +248,28 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const [swapState, setSwapState] = useState<"idle" | "signing" | "verifying" | "success" | "error">("idle");
   const [swapError, setSwapError] = useState<string | null>(null);
   const [swapResult, setSwapResult] = useState<{ dum: number; sol: number } | null>(null);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+
+  // Fetch SOL balance on mount / when wallet changes
+  useEffect(() => {
+    if (!publicKey || !connection) { setSolBalance(null); return; }
+    connection.getBalance(publicKey).then((b) => setSolBalance(b / LAMPORTS_PER_SOL)).catch(() => setSolBalance(null));
+  }, [publicKey, connection]);
+
+  const MIN_SOL = 0.01;
+  const MAX_SOL = 5;
 
   const numAmount = Number(amount) || 0;
   const dumAmount = numAmount * solRate;
 
+  // Validation helpers
+  const isBelowMin = numAmount > 0 && numAmount < MIN_SOL;
+  const isAboveMax = numAmount > MAX_SOL;
+  const isInsufficientSol = solBalance !== null && numAmount > solBalance;
+  const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!publicKey && swapState === "idle";
+
   async function handleSwap() {
-    if (!publicKey || numAmount <= 0) return;
+    if (!publicKey || !canSwap) return;
 
     if (!DUM_TREASURY) {
       setSwapError("Treasury wallet not configured. Contact support.");
@@ -377,21 +393,32 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
           <div className="mt-2 text-[10px] text-zinc-600">Current balance: {balance.toLocaleString()} DUM</div>
         </div>
 
-        {/* Rate */}
+        {/* Rate + limits */}
         <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-600">
           <span>Rate: 1 SOL = {solRate.toLocaleString()} DUM</span>
           <span>~${(numAmount > 0 ? dumAmount * 0.01 : 0).toFixed(2)} USD value</span>
         </div>
+        <div className="mt-1 text-[9px] text-zinc-700 text-center">
+          Min: {MIN_SOL} SOL · Max: {MAX_SOL} SOL per swap
+          {solBalance !== null && <> · Wallet: {solBalance.toFixed(4)} SOL</>}
+        </div>
+
+        {/* Validation warnings */}
+        {isBelowMin && <div className="mt-2 text-[10px] text-amber-400/80">Minimum swap is {MIN_SOL} SOL</div>}
+        {isAboveMax && <div className="mt-2 text-[10px] text-amber-400/80">Maximum swap is {MAX_SOL} SOL per transaction</div>}
+        {isInsufficientSol && <div className="mt-2 text-[10px] text-red-400/80">Insufficient SOL balance ({solBalance?.toFixed(4)} SOL available)</div>}
 
         {/* Swap button */}
         <button
           onClick={handleSwap}
-          disabled={numAmount <= 0 || !publicKey || swapState === "signing" || swapState === "verifying"}
-          className="mt-5 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!canSwap}
+          className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {swapState === "signing" ? "Approve in wallet..." :
            swapState === "verifying" ? "Verifying on Solana..." :
+           swapState === "success" ? "✓ Swap confirmed" :
            !publicKey ? "Connect wallet to swap" :
+           isInsufficientSol ? "Insufficient SOL balance" :
            `Swap SOL → ${dumAmount > 0 ? dumAmount.toLocaleString() : "0"} DUM`}
         </button>
 

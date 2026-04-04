@@ -270,10 +270,19 @@ async def purchase_points(
 # ── SOL → DUM Swap ──────────────────────────────────────────
 
 import requests as http_requests
+import time as _time
 
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
 LAMPORTS_PER_SOL = 1_000_000_000
+
+# Swap limits
+SWAP_MIN_SOL = 0.01
+SWAP_MAX_SOL = 5.0
+SWAP_COOLDOWN_SECONDS = 30  # minimum seconds between swaps per user
+
+# Simple in-memory rate limiter (per-user last swap timestamp)
+_swap_last_time: dict[str, float] = {}
 
 
 class SwapRequest(BaseModel):
@@ -282,8 +291,11 @@ class SwapRequest(BaseModel):
     wallet_address: str  # Sender's wallet
 
 
-def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: str) -> bool:
-    """Verify a SOL transfer landed in the treasury wallet via Solana RPC."""
+def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: str) -> bool | str:
+    """
+    Verify a SOL transfer landed in the treasury wallet via Solana RPC.
+    Returns True on success, or an error string on failure.
+    """
     try:
         payload = {
             "jsonrpc": "2.0",
@@ -291,17 +303,17 @@ def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: st
             "method": "getTransaction",
             "params": [signature, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}],
         }
-        resp = http_requests.post(SOLANA_RPC_URL, json=payload, timeout=20)
+        resp = http_requests.post(SOLANA_RPC_URL, json=payload, timeout=30)
         resp.raise_for_status()
         data = resp.json()
         result = data.get("result")
         if not result:
-            return False
+            return "Transaction not found on Solana. It may still be processing — wait a moment and try again."
 
         # Check transaction was successful
         meta = result.get("meta", {})
         if meta.get("err") is not None:
-            return False
+            return "Transaction failed on-chain. The SOL transfer was not completed."
 
         # Check post-balances for treasury receiving SOL
         account_keys = result.get("transaction", {}).get("message", {}).get("accountKeys", [])
@@ -315,10 +327,12 @@ def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: st
                 if received >= expected_lamports * 0.95:  # 5% tolerance for fees
                     return True
 
-        return False
+        return "SOL was not received by the DUM Club treasury. Check the destination address."
+    except http_requests.Timeout:
+        return "Solana network is slow. Please wait a moment and try again."
     except Exception as exc:
         print(f"[swap] verification error: {exc!r}")
-        return False
+        return f"Verification failed: {type(exc).__name__}"
 
 
 @router.post("/swap")
@@ -331,32 +345,38 @@ async def swap_sol_to_dum(
     if not privy_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
+    # ── Input validation ──
     if req.sol_amount <= 0:
         raise HTTPException(status_code=400, detail="SOL amount must be positive")
+
+    if req.sol_amount < SWAP_MIN_SOL:
+        raise HTTPException(status_code=400, detail=f"Minimum swap is {SWAP_MIN_SOL} SOL")
+
+    if req.sol_amount > SWAP_MAX_SOL:
+        raise HTTPException(status_code=400, detail=f"Maximum swap is {SWAP_MAX_SOL} SOL per transaction")
 
     if not req.tx_signature or len(req.tx_signature) < 20:
         raise HTTPException(status_code=400, detail="Invalid transaction signature")
 
+    if not req.wallet_address or len(req.wallet_address) < 20:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
     if not DUM_TREASURY_WALLET:
         raise HTTPException(status_code=503, detail="Treasury wallet not configured")
 
-    # Calculate DUM points to award
+    # ── Rate limiting ──
+    now = _time.time()
+    last = _swap_last_time.get(privy_id, 0)
+    if now - last < SWAP_COOLDOWN_SECONDS:
+        wait = int(SWAP_COOLDOWN_SECONDS - (now - last))
+        raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
+
+    # ── Calculate DUM ──
     dum_amount = int(req.sol_amount * DUM_SOL_RATE)
     if dum_amount <= 0:
-        raise HTTPException(status_code=400, detail="Amount too small")
+        raise HTTPException(status_code=400, detail="Amount too small to convert")
 
-    # Verify the SOL transaction on-chain
-    expected_lamports = int(req.sol_amount * LAMPORTS_PER_SOL)
-    verified = _verify_sol_transaction(req.tx_signature, expected_lamports, DUM_TREASURY_WALLET)
-
-    if not verified:
-        print(f"[swap] ✗ verification failed for tx={req.tx_signature}")
-        raise HTTPException(
-            status_code=400,
-            detail="Transaction could not be verified. Make sure the SOL was sent to the DUM Club treasury."
-        )
-
-    # Check for duplicate — prevent same tx from being used twice
+    # ── Check for duplicate FIRST (before expensive RPC call) ──
     supabase = get_client()
     dup_check = (
         supabase.table("dum_transactions")
@@ -368,10 +388,21 @@ async def swap_sol_to_dum(
     if dup_check.data:
         raise HTTPException(status_code=409, detail="This transaction has already been processed")
 
-    # Award DUM Points
+    # ── Verify the SOL transaction on-chain ──
+    expected_lamports = int(req.sol_amount * LAMPORTS_PER_SOL)
+    verification = _verify_sol_transaction(req.tx_signature, expected_lamports, DUM_TREASURY_WALLET)
+
+    if verification is not True:
+        print(f"[swap] ✗ verification failed for tx={req.tx_signature}: {verification}")
+        raise HTTPException(status_code=400, detail=verification)
+
+    # ── Award DUM Points ──
     new_balance = _update_balance_and_log(
         supabase, privy_id, dum_amount, "swap_buy", req.tx_signature
     )
+
+    # Update rate limiter
+    _swap_last_time[privy_id] = _time.time()
 
     # Best-effort: mint SPL tokens on-chain
     try:
