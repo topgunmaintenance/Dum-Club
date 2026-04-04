@@ -366,9 +366,19 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       tx.feePayer = fromPubkey;
       tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
 
-      // 2. Send via Privy wallet (works on mobile + desktop)
-      const signedTx = await privyWallet.signTransaction(tx);
-      const sig = await conn.sendRawTransaction(signedTx.serialize());
+      // 2. Send via Privy embedded wallet
+      //    Privy wallets use sendTransaction (signs + sends internally)
+      //    signTransaction throws "Recovery method not supported" on embedded wallets
+      console.log("[swap] sending transaction via Privy wallet...");
+      let sig: string;
+      try {
+        const txSig = await privyWallet.sendTransaction(tx, conn);
+        sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || String(txSig);
+        console.log("[swap] transaction sent, sig:", sig);
+      } catch (sendErr: any) {
+        console.error("[swap] sendTransaction error:", sendErr);
+        throw new Error(sendErr?.message || "Wallet transaction failed. Please try again.");
+      }
       setSwapState("verifying");
 
       // 3. Wait for confirmation
@@ -406,13 +416,22 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       setSwapState("success");
       setAmount("");
     } catch (err: any) {
+      console.error("[swap] error:", err);
       const msg = err?.message || "Swap failed";
-      // User rejected = not an error
-      if (msg.includes("User rejected") || msg.includes("cancelled")) {
+      // User rejected = not an error, just reset
+      if (msg.includes("User rejected") || msg.includes("cancelled") || msg.includes("user denied") || msg.includes("User denied")) {
         setSwapState("idle");
         return;
       }
-      setSwapError(msg);
+      // Privy-specific errors — make user-friendly
+      const friendlyMsg = msg.includes("Recovery method")
+        ? "Wallet transaction failed. Please try again."
+        : msg.includes("blockhash")
+        ? "Solana network is busy. Please try again in a moment."
+        : msg.includes("insufficient")
+        ? "Insufficient SOL balance for this transaction."
+        : msg;
+      setSwapError(friendlyMsg);
       setSwapState("error");
     }
   }
