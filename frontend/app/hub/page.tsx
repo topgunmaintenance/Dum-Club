@@ -684,8 +684,8 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             <div className="mt-3 text-center text-[10px] text-zinc-700">
               Powered by Solana · Verified on-chain · ~$0.001 fee
             </div>
-            <div className="mt-2 rounded-lg bg-amber-400/5 border border-amber-400/10 px-3 py-2 text-center text-[10px] text-amber-400/70">
-              💻 Desktop recommended for SOL swaps · Use the Points tab to add DUM via Stripe on mobile
+            <div className="mt-2 rounded-lg bg-zinc-800/30 border border-zinc-800 px-3 py-2 text-center text-[10px] text-zinc-500">
+              SOL swaps work best on desktop · You can also add DUM instantly via Stripe on the Points tab
             </div>
           </div>
 
