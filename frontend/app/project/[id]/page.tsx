@@ -1586,7 +1586,7 @@ export default function ProjectPage() {
       field: "title",
       group: "project",
       prompt: (p) =>
-        `You are a startup branding expert. Improve this project headline to be more compelling, memorable, and clear.\n\nCurrent headline: "${p.title || p.name || "Untitled"}"\nProject description: "${p.description || "N/A"}"\nCategory: ${p.template_type || "General"}\nToken: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved headline text, nothing else. Keep it under 60 characters.`,
+        `You are a business branding expert. Improve this business headline to be more compelling, memorable, and clear.\n\nCurrent headline: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nReturn ONLY the improved headline text, nothing else. Keep it under 60 characters.`,
     },
     {
       key: "description",
@@ -1610,7 +1610,7 @@ export default function ProjectPage() {
       field: null,
       group: "project",
       prompt: (p) =>
-        `You are a crypto marketing copywriter. Create short, punchy promotional copy for this project that could be used on social media or a landing page.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nReturn 2-3 lines of promotional copy. Be bold and engaging. No hashtags.`,
+        `You are a business marketing copywriter. Create short, punchy promotional copy for this business that could be used on social media or a landing page.\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nReturn 2-3 lines of promotional copy. Be bold and engaging. No hashtags.`,
     },
     {
       key: "roast",
@@ -1618,7 +1618,7 @@ export default function ProjectPage() {
       field: null,
       group: "project",
       prompt: (p) =>
-        `You are a brutally honest startup critic known for sharp, useful roasts. Roast this project — be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be funny but not abusive.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
+        `You are a brutally honest business critic known for sharp, useful feedback. Review this business — be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be helpful but direct.\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
     },
     // ── Store Intelligence ──
     {
@@ -1954,7 +1954,7 @@ export default function ProjectPage() {
     e?.preventDefault();
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !tokenSupply.trim()) {
-      alert("Please complete token name, symbol, and supply.");
+      alert("Please complete your business setup before submitting.");
       return;
     }
 
@@ -2369,47 +2369,47 @@ const heroUtility =
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
   const statusBanner = canShowMarketUi
-    ? "Approved / Live - trading enabled"
+    ? "Approved / Live"
     : isApprovedProject
-    ? "Approved - ready to launch token trading"
+    ? "Approved — business is live"
     : isRejected
-    ? "Rejected - needs changes before resubmission"
+    ? "Needs changes before resubmission"
     : isSubmitted
-    ? "Submitted for Review - awaiting admin review"
+    ? "Under review"
     : isPending
-    ? "Pending - created but not submitted"
-    : "Draft - continue setting up your project";
+    ? "Created — not yet submitted"
+    : "Draft — continue setting up your business";
   const nextTokenActionLabel =
     tokenStatus === "draft"
-      ? "Create Token"
+      ? "Set Up Business"
       : tokenStatus === "mint_created"
-      ? "Mint Token Supply"
+      ? "Configure Rewards"
       : tokenStatus === "tokens_minted"
-      ? "Add Liquidity"
+      ? "Finalize Setup"
       : tokenStatus === "liquidity_added"
       ? "Go Live"
       : "Live";
 
   const launchSectionHeading =
     tokenStatus === "draft"
-      ? "Create Your Token"
+      ? "Set Up Your Business"
       : tokenStatus === "mint_created"
-      ? "Token Initialized"
+      ? "Business Configured"
       : tokenStatus === "tokens_minted"
-      ? "Supply Minted"
+      ? "Rewards Active"
       : tokenStatus === "liquidity_added"
-      ? "Liquidity Ready"
+      ? "Almost Live"
       : "Live on DUM Club";
 
   const nextStepHint =
     tokenStatus === "draft"
-      ? "Initialize on-chain token infrastructure for this project."
+      ? "Set up your business on the DUM Club platform."
       : tokenStatus === "mint_created"
-      ? "Next: mint the full token supply to the project treasury."
+      ? "Next: configure your rewards and offers."
       : tokenStatus === "tokens_minted"
-      ? "Next: add market liquidity to enable live pricing."
+      ? "Next: finalize your storefront setup."
       : tokenStatus === "liquidity_added"
-      ? "Next: open live trading on DUM Club."
+      ? "Next: go live on DUM Club."
       : null;
   const averageRating = feedbackEntries.length
     ? feedbackEntries.reduce((acc, item) => acc + item.rating, 0) / feedbackEntries.length
