@@ -642,6 +642,7 @@ export default function ProjectPage() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
   const [buyError, setBuyError] = useState<Record<string, string>>({});
@@ -2970,9 +2971,24 @@ return (
                   <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
                     View Offers ↓
                   </button>
-                  <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
-                    Ask AI
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                      Ask AI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = window.location.href.split("?")[0];
+                        navigator.clipboard.writeText(url).then(() => {
+                          setShareCopied(true);
+                          setTimeout(() => setShareCopied(false), 2000);
+                        });
+                      }}
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      {shareCopied ? "✓ Copied!" : "🔗 Share"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
