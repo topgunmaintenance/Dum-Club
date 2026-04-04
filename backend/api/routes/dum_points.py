@@ -267,20 +267,128 @@ async def purchase_points(
     }
 
 
-# ── SOL/USDC purchase (STUB — not implemented yet) ──────────
+# ── SOL → DUM Swap ──────────────────────────────────────────
 
-@router.post("/purchase-crypto")
-async def purchase_with_crypto(
+import requests as http_requests
+
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
+LAMPORTS_PER_SOL = 1_000_000_000
+
+
+class SwapRequest(BaseModel):
+    sol_amount: float  # SOL amount sent
+    tx_signature: str  # Solana transaction signature
+    wallet_address: str  # Sender's wallet
+
+
+def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: str) -> bool:
+    """Verify a SOL transfer landed in the treasury wallet via Solana RPC."""
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTransaction",
+            "params": [signature, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}],
+        }
+        resp = http_requests.post(SOLANA_RPC_URL, json=payload, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        result = data.get("result")
+        if not result:
+            return False
+
+        # Check transaction was successful
+        meta = result.get("meta", {})
+        if meta.get("err") is not None:
+            return False
+
+        # Check post-balances for treasury receiving SOL
+        account_keys = result.get("transaction", {}).get("message", {}).get("accountKeys", [])
+        pre_balances = meta.get("preBalances", [])
+        post_balances = meta.get("postBalances", [])
+
+        for i, key in enumerate(account_keys):
+            pubkey = key if isinstance(key, str) else key.get("pubkey", "")
+            if pubkey == treasury:
+                received = (post_balances[i] if i < len(post_balances) else 0) - (pre_balances[i] if i < len(pre_balances) else 0)
+                if received >= expected_lamports * 0.95:  # 5% tolerance for fees
+                    return True
+
+        return False
+    except Exception as exc:
+        print(f"[swap] verification error: {exc!r}")
+        return False
+
+
+@router.post("/swap")
+async def swap_sol_to_dum(
+    req: SwapRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Placeholder for future SOL/USDC → DUM Points purchase.
-    Will accept SOL or USDC via Solana transaction and award DUM Points.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="SOL/USDC purchase coming soon. Use Stripe for now."
+    """Swap SOL for DUM Points. Verifies on-chain transaction then awards points."""
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    if req.sol_amount <= 0:
+        raise HTTPException(status_code=400, detail="SOL amount must be positive")
+
+    if not req.tx_signature or len(req.tx_signature) < 20:
+        raise HTTPException(status_code=400, detail="Invalid transaction signature")
+
+    if not DUM_TREASURY_WALLET:
+        raise HTTPException(status_code=503, detail="Treasury wallet not configured")
+
+    # Calculate DUM points to award
+    dum_amount = int(req.sol_amount * DUM_SOL_RATE)
+    if dum_amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount too small")
+
+    # Verify the SOL transaction on-chain
+    expected_lamports = int(req.sol_amount * LAMPORTS_PER_SOL)
+    verified = _verify_sol_transaction(req.tx_signature, expected_lamports, DUM_TREASURY_WALLET)
+
+    if not verified:
+        print(f"[swap] ✗ verification failed for tx={req.tx_signature}")
+        raise HTTPException(
+            status_code=400,
+            detail="Transaction could not be verified. Make sure the SOL was sent to the DUM Club treasury."
+        )
+
+    # Check for duplicate — prevent same tx from being used twice
+    supabase = get_client()
+    dup_check = (
+        supabase.table("dum_transactions")
+        .select("id")
+        .eq("reference_id", req.tx_signature)
+        .limit(1)
+        .execute()
     )
+    if dup_check.data:
+        raise HTTPException(status_code=409, detail="This transaction has already been processed")
+
+    # Award DUM Points
+    new_balance = _update_balance_and_log(
+        supabase, privy_id, dum_amount, "swap_buy", req.tx_signature
+    )
+
+    # Best-effort: mint SPL tokens on-chain
+    try:
+        from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
+        if is_solana_enabled() and req.wallet_address:
+            mint_dum_to_wallet(req.wallet_address, dum_amount)
+    except Exception as mint_err:
+        print(f"[swap] on-chain mint failed (non-fatal): {mint_err}")
+
+    print(f"[swap] ✓ {req.sol_amount} SOL → {dum_amount} DUM for {privy_id}")
+    return {
+        "status": "success",
+        "sol_amount": req.sol_amount,
+        "dum_received": dum_amount,
+        "new_balance": new_balance,
+        "tx_signature": req.tx_signature,
+    }
 
 
 # ── DUM Market data ──────────────────────────────────────────

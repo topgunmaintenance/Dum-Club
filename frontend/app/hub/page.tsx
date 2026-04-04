@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Starfield } from "../../components/Starfield";
+
+const DUM_TREASURY = process.env.NEXT_PUBLIC_DUM_TREASURY_WALLET || "";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -235,34 +239,106 @@ function RecentActivity() {
 /* ════════════════════════════════════════════════════════════════
    SWAP TAB
    ════════════════════════════════════════════════════════════════ */
-function SwapTab({ balance }: { balance: number }) {
-  const [direction, setDirection] = useState<"buy" | "sell">("buy");
+function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+  const { getToken } = useAuth();
   const [amount, setAmount] = useState("");
-  const [solRate] = useState(1000); // 1 SOL = 1000 DUM
+  const [solRate] = useState(1000);
+  const [swapState, setSwapState] = useState<"idle" | "signing" | "verifying" | "success" | "error">("idle");
+  const [swapError, setSwapError] = useState<string | null>(null);
+  const [swapResult, setSwapResult] = useState<{ dum: number; sol: number } | null>(null);
 
   const numAmount = Number(amount) || 0;
-  const dumAmount = direction === "buy" ? numAmount * solRate : numAmount;
-  const solAmount = direction === "buy" ? numAmount : numAmount / solRate;
+  const dumAmount = numAmount * solRate;
+
+  async function handleSwap() {
+    if (!publicKey || numAmount <= 0) return;
+
+    if (!DUM_TREASURY) {
+      setSwapError("Treasury wallet not configured. Contact support.");
+      setSwapState("error");
+      return;
+    }
+
+    setSwapState("signing");
+    setSwapError(null);
+    setSwapResult(null);
+
+    try {
+      // 1. Build SOL transfer transaction
+      const treasury = new PublicKey(DUM_TREASURY);
+      const lamports = Math.floor(numAmount * LAMPORTS_PER_SOL);
+
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: treasury,
+          lamports,
+        })
+      );
+
+      // 2. Send via wallet (user approves in Privy popup)
+      const sig = await sendTransaction(tx, connection);
+      setSwapState("verifying");
+
+      // 3. Wait for confirmation
+      await connection.confirmTransaction(sig, "confirmed");
+
+      // 4. Send signature to backend for verification + DUM award
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/dum/swap`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          sol_amount: numAmount,
+          tx_signature: sig,
+          wallet_address: publicKey.toBase58(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Swap failed (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      // 5. Update balance everywhere
+      const newBal = data.new_balance || balance + (data.dum_received || 0);
+      localStorage.setItem("dum_points", String(newBal));
+      window.dispatchEvent(new Event("dum-points-update"));
+      onBalanceUpdate(newBal);
+
+      setSwapResult({ dum: data.dum_received, sol: numAmount });
+      setSwapState("success");
+      setAmount("");
+    } catch (err: any) {
+      const msg = err?.message || "Swap failed";
+      // User rejected = not an error
+      if (msg.includes("User rejected") || msg.includes("cancelled")) {
+        setSwapState("idle");
+        return;
+      }
+      setSwapError(msg);
+      setSwapState("error");
+    }
+  }
 
   return (
     <div className="mx-auto max-w-md">
-      {/* Swap card */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-5 flex items-center justify-between">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Swap</div>
-          <div className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900/50 p-0.5">
-            <button
-              onClick={() => { setDirection("buy"); setAmount(""); }}
-              className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition ${direction === "buy" ? "bg-emerald-400/10 text-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              Buy DUM
-            </button>
-            <button
-              onClick={() => { setDirection("sell"); setAmount(""); }}
-              className={`rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] transition ${direction === "sell" ? "bg-red-400/10 text-red-400" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              Sell DUM
-            </button>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Swap SOL → DUM</div>
+          <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </span>
+            Solana {publicKey ? "Connected" : "Not connected"}
           </div>
         </div>
 
@@ -277,25 +353,16 @@ function SwapTab({ balance }: { balance: number }) {
               placeholder="0.00"
               min="0"
               step="any"
-              className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-zinc-700 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              disabled={swapState === "signing" || swapState === "verifying"}
+              className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-zinc-700 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">
-              {direction === "buy" ? "SOL" : "DUM"}
-            </div>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">SOL</div>
           </div>
-          {direction === "sell" && (
-            <div className="mt-2 text-[10px] text-zinc-600">Balance: {balance} DUM</div>
-          )}
         </div>
 
         {/* Arrow */}
         <div className="flex justify-center -my-1.5 relative z-10">
-          <button
-            onClick={() => { setDirection(direction === "buy" ? "sell" : "buy"); setAmount(""); }}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-400"
-          >
-            ↕
-          </button>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-emerald-400">↓</div>
         </div>
 
         {/* You Receive */}
@@ -303,27 +370,42 @@ function SwapTab({ balance }: { balance: number }) {
           <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You receive</div>
           <div className="flex items-center gap-3">
             <div className="flex-1 text-2xl font-bold text-emerald-400">
-              {numAmount > 0 ? (direction === "buy" ? dumAmount.toLocaleString() : solAmount.toFixed(4)) : "0"}
+              {numAmount > 0 ? dumAmount.toLocaleString() : "0"}
             </div>
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">
-              {direction === "buy" ? "DUM" : "SOL"}
-            </div>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">DUM</div>
           </div>
+          <div className="mt-2 text-[10px] text-zinc-600">Current balance: {balance.toLocaleString()} DUM</div>
         </div>
 
         {/* Rate */}
         <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-600">
           <span>Rate: 1 SOL = {solRate.toLocaleString()} DUM</span>
-          <span>~${(numAmount > 0 ? (direction === "buy" ? dumAmount * 0.01 : solAmount * 150) : 0).toFixed(2)} USD</span>
+          <span>~${(numAmount > 0 ? dumAmount * 0.01 : 0).toFixed(2)} USD value</span>
         </div>
 
         {/* Swap button */}
         <button
-          disabled={numAmount <= 0}
+          onClick={handleSwap}
+          disabled={numAmount <= 0 || !publicKey || swapState === "signing" || swapState === "verifying"}
           className="mt-5 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {direction === "buy" ? `Swap SOL → ${dumAmount > 0 ? dumAmount.toLocaleString() : "0"} DUM` : `Swap ${numAmount > 0 ? numAmount : "0"} DUM → SOL`}
+          {swapState === "signing" ? "Approve in wallet..." :
+           swapState === "verifying" ? "Verifying on Solana..." :
+           !publicKey ? "Connect wallet to swap" :
+           `Swap SOL → ${dumAmount > 0 ? dumAmount.toLocaleString() : "0"} DUM`}
         </button>
+
+        {/* Status messages */}
+        {swapState === "success" && swapResult && (
+          <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-xs text-emerald-300">
+            ✓ Swapped {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM · Balance updated
+          </div>
+        )}
+        {swapState === "error" && swapError && (
+          <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
+            {swapError}
+          </div>
+        )}
 
         <div className="mt-3 text-center text-[10px] text-zinc-700">
           Powered by Solana · Instant settlement · ~$0.001 network fee
@@ -339,12 +421,11 @@ function SwapTab({ balance }: { balance: number }) {
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
           <div className="mb-2 text-lg">🔒</div>
-          <div className="text-sm font-bold text-white">Non-custodial</div>
-          <div className="mt-1 text-[11px] text-zinc-500">Your wallet is yours. DUM goes directly to your address.</div>
+          <div className="text-sm font-bold text-white">Verified on-chain</div>
+          <div className="mt-1 text-[11px] text-zinc-500">Every swap is verified on the Solana blockchain before DUM is awarded.</div>
         </div>
       </div>
 
-      {/* Recent swaps */}
       <RecentActivity />
     </div>
   );
@@ -579,7 +660,7 @@ export default function HubPage() {
             purchaseSuccess={purchaseSuccess}
           />
         )}
-        {tab === "swap" && <SwapTab balance={balance} />}
+        {tab === "swap" && <SwapTab balance={balance} onBalanceUpdate={setBalance} />}
         {tab === "market" && <MarketTab />}
 
         {/* Bottom CTAs */}
