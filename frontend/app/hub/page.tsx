@@ -409,128 +409,185 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
     }
   }
 
+  const dumMint = process.env.NEXT_PUBLIC_DUM_MINT || process.env.NEXT_PUBLIC_DUM_MINT_ADDRESS || "";
+  const shortWallet = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : "";
+
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Swap SOL → DUM</div>
-          <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </span>
-            Solana {walletAddress ? "Connected" : "Setting up..."}
-          </div>
-        </div>
-
-        {/* You Pay */}
-        <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-          <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You pay</div>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="any"
-              disabled={swapState === "signing" || swapState === "verifying"}
-              className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-zinc-700 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">SOL</div>
-          </div>
-        </div>
-
-        {/* Arrow */}
-        <div className="flex justify-center -my-1.5 relative z-10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-emerald-400">↓</div>
-        </div>
-
-        {/* You Receive */}
-        <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-          <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You receive</div>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 text-2xl font-bold text-emerald-400">
-              {numAmount > 0 ? dumAmount.toLocaleString() : "0"}
+      {/* ── Success panel (replaces form after swap) ── */}
+      {swapState === "success" && swapResult ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
+            <div className="mb-3 text-3xl">✓</div>
+            <div className="text-xl font-black text-white">DUM Added</div>
+            <div className="mt-2 flex items-baseline justify-center gap-2">
+              <span className="text-3xl font-black text-emerald-400">+{swapResult.dum.toLocaleString()}</span>
+              <span className="text-sm text-zinc-400">DUM Points</span>
             </div>
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">DUM</div>
-          </div>
-          <div className="mt-2 text-[10px] text-zinc-600">Current balance: {balance.toLocaleString()} DUM</div>
-        </div>
-
-        {/* Rate + limits */}
-        <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-600">
-          <span>Rate: 1 SOL = {solRate.toLocaleString()} DUM</span>
-          <span>~${(numAmount > 0 ? dumAmount * 0.01 : 0).toFixed(2)} USD value</span>
-        </div>
-        <div className="mt-1 text-[9px] text-zinc-700 text-center">
-          Min: {MIN_SOL} SOL · Max: {MAX_SOL} SOL per swap
-          {solBalance !== null && <> · Wallet: {solBalance.toFixed(4)} SOL</>}
-        </div>
-
-        {/* Validation warnings */}
-        {isBelowMin && <div className="mt-2 text-[10px] text-amber-400/80">Minimum swap is {MIN_SOL} SOL</div>}
-        {isAboveMax && <div className="mt-2 text-[10px] text-amber-400/80">Maximum swap is {MAX_SOL} SOL per transaction</div>}
-        {isInsufficientSol && <div className="mt-2 text-[10px] text-red-400/80">Insufficient SOL balance ({solBalance?.toFixed(4)} SOL available)</div>}
-
-        {/* Swap button */}
-        <button
-          onClick={handleSwap}
-          disabled={!canSwap}
-          className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {swapState === "signing" ? "Approve in wallet..." :
-           swapState === "verifying" ? "Verifying on Solana..." :
-           swapState === "success" ? "✓ Swap confirmed" :
-           !walletAddress ? "Setting up wallet..." :
-           isInsufficientSol ? "Insufficient SOL balance" :
-           `Swap SOL → ${dumAmount > 0 ? dumAmount.toLocaleString() : "0"} DUM`}
-        </button>
-
-        {/* Status messages */}
-        {swapState === "success" && swapResult && (
-          <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-3">
-            <div className="text-xs text-emerald-300">
-              ✓ Swapped {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM · Balance updated
+            <div className="mt-1 text-[11px] text-zinc-500">
+              from {swapResult.sol} SOL · verified on Solana
             </div>
+            {walletAddress && (
+              <div className="mt-3 text-[10px] text-zinc-600">
+                Wallet: <span className="font-mono text-zinc-400">{shortWallet}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Explorer links */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">On-chain proof</div>
             {swapResult.sig && (
               <a
                 href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-emerald-400/70 transition hover:text-emerald-400"
+                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
               >
-                View on Solana Explorer → <span className="font-mono text-zinc-600">{swapResult.sig.slice(0, 8)}...{swapResult.sig.slice(-6)}</span>
+                <div>
+                  <div className="text-[12px] font-semibold text-white">View transaction</div>
+                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{swapResult.sig.slice(0, 12)}...{swapResult.sig.slice(-8)}</div>
+                </div>
+                <span className="text-[10px] text-emerald-400">Explorer →</span>
+              </a>
+            )}
+            {dumMint && (
+              <a
+                href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
+              >
+                <div>
+                  <div className="text-[12px] font-semibold text-white">View DUM token</div>
+                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{dumMint.slice(0, 12)}...{dumMint.slice(-8)}</div>
+                </div>
+                <span className="text-[10px] text-emerald-400">Explorer →</span>
+              </a>
+            )}
+            {walletAddress && (
+              <a
+                href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
+              >
+                <div>
+                  <div className="text-[12px] font-semibold text-white">View wallet</div>
+                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{shortWallet}</div>
+                </div>
+                <span className="text-[10px] text-emerald-400">Explorer →</span>
               </a>
             )}
           </div>
-        )}
-        {swapState === "error" && swapError && (
-          <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
-            {swapError}
+
+          <button
+            onClick={() => { setSwapState("idle"); setSwapResult(null); }}
+            className="w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-white"
+          >
+            Swap again
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* ── Swap form ── */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Add DUM Points</div>
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                {!walletAddress ? "Preparing wallet..." : "Wallet ready"}
+              </div>
+            </div>
+
+            {/* You Pay */}
+            <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You pay</div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="any"
+                  disabled={swapState !== "idle"}
+                  className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-zinc-700 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">SOL</div>
+              </div>
+              {solBalance !== null && (
+                <div className="mt-2 text-[10px] text-zinc-600">{solBalance.toFixed(4)} SOL available</div>
+              )}
+            </div>
+
+            {/* Arrow */}
+            <div className="flex justify-center -my-1.5 relative z-10">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-emerald-400">↓</div>
+            </div>
+
+            {/* You Receive */}
+            <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You receive</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 text-2xl font-bold text-emerald-400">
+                  {numAmount > 0 ? dumAmount.toLocaleString() : "0"}
+                </div>
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">DUM</div>
+              </div>
+              <div className="mt-2 text-[10px] text-zinc-600">Current balance: {balance.toLocaleString()} DUM</div>
+            </div>
+
+            {/* Rate */}
+            <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-600">
+              <span>1 SOL = {solRate.toLocaleString()} DUM</span>
+              <span>Min {MIN_SOL} · Max {MAX_SOL} SOL</span>
+            </div>
+
+            {/* Validation */}
+            {isBelowMin && <div className="mt-2 text-[10px] text-amber-400/80">Minimum is {MIN_SOL} SOL</div>}
+            {isAboveMax && <div className="mt-2 text-[10px] text-amber-400/80">Maximum is {MAX_SOL} SOL per swap</div>}
+            {isInsufficientSol && <div className="mt-2 text-[10px] text-red-400/80">Insufficient balance ({solBalance?.toFixed(4)} SOL available)</div>}
+
+            {/* Swap button */}
+            <button
+              onClick={handleSwap}
+              disabled={!canSwap}
+              className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {swapState === "signing" ? "Swapping..." :
+               swapState === "verifying" ? "Confirming on-chain..." :
+               !walletAddress ? "Preparing wallet..." :
+               isInsufficientSol ? "Insufficient SOL" :
+               numAmount > 0 ? `Add ${dumAmount.toLocaleString()} DUM` : "Enter amount"}
+            </button>
+
+            {/* Error */}
+            {swapState === "error" && swapError && (
+              <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
+                {swapError}
+                <button onClick={() => setSwapState("idle")} className="ml-2 text-red-300 underline">Try again</button>
+              </div>
+            )}
+
+            <div className="mt-3 text-center text-[10px] text-zinc-700">
+              Powered by Solana · Verified on-chain · ~$0.001 fee
+            </div>
           </div>
-        )}
 
-        <div className="mt-3 text-center text-[10px] text-zinc-700">
-          Powered by Solana · Instant settlement · ~$0.001 network fee
-        </div>
-      </div>
-
-      {/* Info cards */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <div className="mb-2 text-lg">⚡</div>
-          <div className="text-sm font-bold text-white">Instant settlement</div>
-          <div className="mt-1 text-[11px] text-zinc-500">Swaps settle on Solana in under 1 second.</div>
-        </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <div className="mb-2 text-lg">🔒</div>
-          <div className="text-sm font-bold text-white">Verified on-chain</div>
-          <div className="mt-1 text-[11px] text-zinc-500">Every swap is verified on the Solana blockchain before DUM is awarded.</div>
-        </div>
-      </div>
-
-      <RecentActivity />
+          {/* Single info row — no duplicate cards */}
+          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Instant</span>
+            <span className="text-zinc-800">·</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔒</span> Verified on-chain</span>
+            <span className="text-zinc-800">·</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Solana SPL</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
