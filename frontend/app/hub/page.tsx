@@ -312,16 +312,28 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
   // Auto-create wallet if user is logged in but has no wallet
   useEffect(() => {
+    console.log("[swap] wallet state:", { user: !!user, privyWallet: !!privyWallet, walletAddress, walletsCount: privyWallets.length });
     if (user && !privyWallet) {
-      createWallet().catch(() => {});
+      console.log("[swap] auto-creating wallet...");
+      createWallet().catch((e) => console.error("[swap] createWallet failed:", e));
     }
   }, [user, privyWallet]);
 
   // Fetch SOL balance using RPC directly
   useEffect(() => {
-    if (!walletAddress) { setSolBalance(null); return; }
-    const conn = new Connection(SOLANA_RPC);
-    conn.getBalance(new PublicKey(walletAddress)).then((b) => setSolBalance(b / LAMPORTS_PER_SOL)).catch(() => setSolBalance(null));
+    if (!walletAddress) { console.log("[swap] no wallet address, skipping balance fetch"); setSolBalance(null); return; }
+    console.log("[swap] fetching SOL balance for:", walletAddress);
+    const conn = new Connection(SOLANA_RPC, "confirmed");
+    conn.getBalance(new PublicKey(walletAddress))
+      .then((b) => {
+        const sol = b / LAMPORTS_PER_SOL;
+        console.log("[swap] SOL balance:", sol);
+        setSolBalance(sol);
+      })
+      .catch((e) => {
+        console.error("[swap] balance fetch failed:", e);
+        setSolBalance(null);
+      });
   }, [walletAddress]);
 
   const MIN_SOL = 0.01;
@@ -337,10 +349,19 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!walletAddress && swapState === "idle";
 
   async function handleSwap() {
-    if (!walletAddress || !privyWallet || !canSwap) return;
+    console.log("[swap] handleSwap called", {
+      walletAddress, privyWallet: !!privyWallet, canSwap, numAmount,
+      DUM_TREASURY: DUM_TREASURY ? DUM_TREASURY.slice(0, 8) + "..." : "EMPTY",
+      SOLANA_RPC,
+    });
+
+    if (!walletAddress || !privyWallet || !canSwap) {
+      console.log("[swap] blocked by guard:", { walletAddress: !!walletAddress, privyWallet: !!privyWallet, canSwap });
+      return;
+    }
 
     if (!DUM_TREASURY) {
-      setSwapError("Treasury wallet not configured. Contact support.");
+      setSwapError("Treasury wallet not configured. Set NEXT_PUBLIC_DUM_TREASURY_WALLET.");
       setSwapState("error");
       return;
     }
@@ -351,55 +372,53 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
     try {
       // 1. Build SOL transfer transaction
-      const conn = new Connection(SOLANA_RPC);
+      console.log("[swap] step 1: building transaction...");
+      const conn = new Connection(SOLANA_RPC, "confirmed");
       const fromPubkey = new PublicKey(walletAddress);
       const treasury = new PublicKey(DUM_TREASURY);
       const lamports = Math.floor(numAmount * LAMPORTS_PER_SOL);
+      console.log("[swap] from:", walletAddress, "to:", DUM_TREASURY, "lamports:", lamports);
+
+      const { blockhash } = await conn.getLatestBlockhash("confirmed");
+      console.log("[swap] blockhash:", blockhash);
 
       const tx = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey,
-          toPubkey: treasury,
-          lamports,
-        })
+        SystemProgram.transfer({ fromPubkey, toPubkey: treasury, lamports })
       );
       tx.feePayer = fromPubkey;
-      tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+      tx.recentBlockhash = blockhash;
 
       // 2. Send via Privy embedded wallet
-      console.log("[swap] sending transaction via Privy wallet...");
+      console.log("[swap] step 2: sending transaction...");
       let sig: string;
       try {
-        // Try sendTransaction first (standard wallet adapter method)
         const txSig = await privyWallet.sendTransaction(tx, conn);
         sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || (txSig as any)?.hash || String(txSig);
-        console.log("[swap] transaction sent, sig:", sig);
+        console.log("[swap] sendTransaction succeeded, sig:", sig);
       } catch (sendErr: any) {
-        console.error("[swap] sendTransaction failed, trying signTransaction fallback:", sendErr);
-        // Fallback: try signTransaction + manual send
+        console.error("[swap] sendTransaction failed:", sendErr?.message || sendErr);
         try {
+          console.log("[swap] trying signTransaction fallback...");
           const signed = await privyWallet.signTransaction(tx);
           sig = await conn.sendRawTransaction(signed.serialize());
-          console.log("[swap] fallback signTransaction succeeded, sig:", sig);
+          console.log("[swap] signTransaction fallback succeeded, sig:", sig);
         } catch (signErr: any) {
-          console.error("[swap] both paths failed:", signErr);
-          throw new Error("Wallet transaction failed. Please try again.");
+          console.error("[swap] signTransaction also failed:", signErr?.message || signErr);
+          throw new Error(signErr?.message || "Wallet transaction failed. Please try again.");
         }
       }
       setSwapState("verifying");
 
       // 3. Wait for confirmation with timeout
-      console.log("[swap] waiting for confirmation...");
+      console.log("[swap] step 3: confirming...", sig);
       try {
-        const confirmPromise = conn.confirmTransaction(sig, "confirmed");
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 30000)
-        );
-        await Promise.race([confirmPromise, timeoutPromise]);
-        console.log("[swap] transaction confirmed");
+        await Promise.race([
+          conn.confirmTransaction(sig, "confirmed"),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000)),
+        ]);
+        console.log("[swap] confirmed!");
       } catch (confirmErr: any) {
-        // If confirmation times out but tx was sent, still try to verify via backend
-        console.warn("[swap] confirmation slow/failed, proceeding to backend verification:", confirmErr?.message);
+        console.warn("[swap] confirmation slow/failed, proceeding:", confirmErr?.message);
       }
 
       // 4. Send signature to backend for verification + DUM award
@@ -651,8 +670,17 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             </div>
           </div>
 
-          {/* Single info row — no duplicate cards */}
-          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
+          {/* Debug info — remove after swap is confirmed working */}
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[9px] font-mono text-zinc-700 space-y-0.5">
+            <div>wallet: {walletAddress ? walletAddress.slice(0, 8) + "..." : "none"}</div>
+            <div>sol: {solBalance !== null ? solBalance.toFixed(4) : "loading..."}</div>
+            <div>treasury: {DUM_TREASURY ? DUM_TREASURY.slice(0, 8) + "..." : "NOT SET"}</div>
+            <div>rpc: {SOLANA_RPC.includes("devnet") ? "devnet" : SOLANA_RPC.slice(0, 30)}</div>
+            <div>state: {swapState} | canSwap: {String(canSwap)}</div>
+          </div>
+
+          {/* Single info row */}
+          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
             <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Instant</span>
             <span className="text-zinc-800">·</span>
             <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔒</span> Verified on-chain</span>
