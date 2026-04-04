@@ -1994,6 +1994,9 @@ export default function Home() {
                 Browse Live Businesses
               </Link>
             </div>
+            <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
+              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — redeemable at <strong className="text-zinc-300">any</strong> business on the platform.
+            </div>
           </div>
         </div>
       </section>

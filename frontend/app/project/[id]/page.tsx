@@ -3678,8 +3678,12 @@ return (
             </div>
           </div>
           <div className="text-[10px] text-zinc-600 leading-relaxed max-w-[220px]">
-            Pay by card. Earn loyalty points. Use them for discounts across DUM Club.
+            Pay by card. Earn loyalty points. Use them for discounts at any business on DUM Club.
           </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-900/50 px-3 py-2 text-[10px] text-zinc-500">
+          <span className="text-emerald-400">↔</span>
+          Points earned here work at every business on the platform — and points from other businesses work here.
         </div>
       </div>
 
