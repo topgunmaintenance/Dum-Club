@@ -157,13 +157,8 @@ export default function LeaderboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-semibold text-white">
-                          {p.title || p.name || "Untitled"}
+                          {p.title || p.name || "New Business"}
                         </span>
-                        {ticker && (
-                          <span className="shrink-0 font-mono text-[10px] uppercase text-zinc-600">
-                            ${ticker}
-                          </span>
-                        )}
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {p.token_utility && (

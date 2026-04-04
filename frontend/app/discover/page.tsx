@@ -162,20 +162,7 @@ function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
   }
 }
 
-function getTicker(project: Project) {
-  if (project.token_symbol?.trim()) {
-    return project.token_symbol.replace(/^\$/, "").toUpperCase().slice(0, 10);
-  }
-  const raw = (project.title || project.name || "")
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .split(" ")
-    .filter(Boolean)
-    .map((w) => w.slice(0, 2).toUpperCase())
-    .join("")
-    .slice(0, 6);
 
-  return raw || "";
-}
 
 function getProjectLabel(project?: Project) {
   return project?.title || project?.name || "—";

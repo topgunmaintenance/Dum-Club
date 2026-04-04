@@ -774,9 +774,6 @@ export default function DashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               {projects.map((project) => {
                 const st = statusLabel(project);
-                const ticker = project.token_symbol
-                  ? `$${project.token_symbol.replace(/^\$/, "").toUpperCase()}`
-                  : null;
                 return (
                   <div
                     key={project.id}
@@ -792,7 +789,6 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      {/* ticker hidden — DUM Points replaces per-project tokens */}
 
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-zinc-600"> </span>

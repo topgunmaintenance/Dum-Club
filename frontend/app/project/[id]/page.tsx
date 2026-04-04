@@ -5229,89 +5229,24 @@ return (
           </div>
         </div>
       ) : projectView === "analytics" && isApprovedProject ? (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">Token Launch Pipeline</div>
-            {isSimulated && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-zinc-400">Simulation Mode</span>
-                <span className="text-[10px] text-zinc-600">· off-chain</span>
-              </div>
-            )}
-          </div>
-
+        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Business Overview</div>
           <h2 className="text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-            {getStatusExplanation(tokenStatus)}
-          </p>
+          <p className="mt-2 text-sm text-zinc-500">{nextStepHint || "Your business is live on DUM Club."}</p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token</div>
-              <div className="mt-2 font-mono text-white">${(tokenMeta.symbol || project?.token_symbol || "-").toUpperCase()}</div>
-              <div className="mt-0.5 text-xs text-zinc-500">{tokenMeta.name || project?.token_name || "-"}</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
+              <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
-              <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+              <div className="mt-2 text-white">DUM Points</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Stage</div>
-              <div className="mt-2 text-white">{formatTokenStatus(tokenStatus)}</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
+              <div className="mt-2 text-white">Stripe + DUM</div>
             </div>
-          </div>
-
-          <div className="mt-6 grid gap-2 md:grid-cols-5">
-            {tokenStages.map((stage, index) => {
-              const isCompleted = index <= tokenStage;
-              const isCurrent = index === tokenStage;
-              return (
-                <div
-                  key={`launch-${stage}`}
-                  className={`rounded-2xl border p-3 text-center ${
-                    isCurrent
-                      ? "border-emerald-400/50 bg-emerald-400/10"
-                      : isCompleted
-                      ? "border-zinc-700 bg-zinc-900/50"
-                      : "border-zinc-800 bg-base"
-                  }`}
-                >
-                  <div className={`font-mono text-xs ${isCurrent ? "text-emerald-500" : isCompleted ? "text-zinc-600" : "text-zinc-800"}`}>
-                    0{index + 1}
-                  </div>
-                  <div
-                    className={`mt-1 text-[11px] uppercase tracking-[0.18em] ${
-                      isCurrent ? "text-emerald-300" : isCompleted ? "text-zinc-400" : "text-zinc-700"
-                    }`}
-                  >
-                    {stage}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-5">
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                disabled={loadingAction || tokenStatus === "trading_live"}
-                onClick={tokenStatus === "draft" ? createToken : advanceTokenStatus}
-                className="rounded-xl px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ background: tokenStatus === "trading_live" ? "#52525b" : accent }}
-              >
-                {loadingAction ? "Working..." : nextTokenActionLabel}
-              </button>
-              {actionMessage && (
-                <p className={`text-xs leading-relaxed ${actionIsError ? "text-red-400" : "text-emerald-400"}`}>
-                  {actionMessage}
-                </p>
-              )}
-            </div>
-            {nextStepHint && !loadingAction && (
-              <p className="mt-3 text-xs text-zinc-600">{nextStepHint}</p>
-            )}
           </div>
         </div>
       ) : (
