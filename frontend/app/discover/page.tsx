@@ -570,7 +570,7 @@ export default function DiscoverPage() {
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div id="section-top" className="mb-6">
           <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
-            ◆ Marketplace
+            ◆ DUM Club · Digital Utility Market
           </div>
           <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
             Live Businesses

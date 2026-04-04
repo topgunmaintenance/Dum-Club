@@ -21,7 +21,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold text-white">2. Platform Description</h2>
             <p>
-              DUM Club is a platform that enables users to create business storefronts, list offers, and accept payments. The platform uses AI to generate storefront content and integrates with Stripe for payment processing. DUM Club does not guarantee any sales, revenue, or business outcomes.
+              DUM Club (Digital Utility Market) is a platform that enables users to create business storefronts, list offers, and accept payments. The platform uses AI to generate storefront content and integrates with Stripe for payment processing. DUM Club does not guarantee any sales, revenue, or business outcomes.
             </p>
           </section>
 

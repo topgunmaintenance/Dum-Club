@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold text-white">1. Information We Collect</h2>
             <p>
-              We collect information you provide when creating an account (email, name), business information you enter (business name, descriptions, offers), and usage data (page views, interactions). Authentication is handled through Privy, which may collect additional data per their privacy policy.
+              DUM Club (Digital Utility Market) collects information you provide when creating an account (email, name), business information you enter (business name, descriptions, offers), and usage data (page views, interactions). Authentication is handled through Privy, which may collect additional data per their privacy policy.
             </p>
           </section>
 

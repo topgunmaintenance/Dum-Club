@@ -542,7 +542,7 @@ export default function HubPage() {
       <div className="relative z-10 mx-auto max-w-2xl px-4 py-16">
         {/* Header */}
         <div className="mb-6 text-center">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Powered by Solana</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Digital Utility Market · Powered by Solana</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DUM Hub</h1>
           <p className="mt-2 text-sm text-zinc-500">Points · Swap · Market</p>
         </div>

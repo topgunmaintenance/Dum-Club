@@ -210,7 +210,7 @@ export default function BusinessPage() {
             fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em",
             color: "#444", border: "1px solid rgba(255,255,255,0.06)", padding: "5px 14px", borderRadius: "20px", marginBottom: "24px",
           }}>
-            <span style={{ color: "#00FF87" }}>★</span> FOR BUSINESS OWNERS
+            <span style={{ color: "#00FF87" }}>★</span> DUM CLUB · DIGITAL UTILITY MARKET
           </div>
         </Reveal>
 

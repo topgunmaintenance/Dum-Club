@@ -1578,6 +1578,11 @@ export default function Home() {
           <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
             <div className="mx-auto max-w-3xl text-center">
 
+              {/* Eyebrow */}
+              <div className="hero-entrance mb-4 text-[clamp(10px,2.5vw,13px)] font-bold uppercase tracking-[0.3em] text-zinc-500">
+                Digital Utility Market
+              </div>
+
               {/* Line 1 — the HERO line */}
               <h1 className="hero-entrance mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
                 <span className="text-white">Sell anything.</span>
@@ -2071,10 +2076,10 @@ export default function Home() {
                 <span className="text-xl font-black tracking-tight text-white">
                   DUM<span className="text-emerald-400">CLUB</span>
                 </span>
-                <span className="rounded border border-zinc-800 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
-                  EARLY ACCESS
-                </span>
               </div>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                Digital Utility Market
+              </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
                 Turn any idea into a live business with payments, loyalty, and a storefront — in 60 seconds. Built on Solana.
               </p>
