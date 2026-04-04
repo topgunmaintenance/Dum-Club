@@ -70,6 +70,7 @@ _PRODUCTION_ORIGINS = [
     "https://www.dum-club.vercel.app",
     "https://dum.club",
     "https://www.dum.club",
+    "https://dum-club-production.up.railway.app",
 ]
 
 
@@ -82,7 +83,7 @@ def _build_cors_origins() -> list[str]:
     return origins
 
 # Regex to match all Vercel preview deployments for this project
-_VERCEL_PREVIEW_REGEX = r"https://dum-club[a-z0-9\-]*\.vercel\.app"
+_VERCEL_PREVIEW_REGEX = r"https://dum-club[a-z0-9\-]*\.vercel\.app|https://dum-club[a-z0-9\-]*\.up\.railway\.app"
 
 app.add_middleware(
     CORSMiddleware,

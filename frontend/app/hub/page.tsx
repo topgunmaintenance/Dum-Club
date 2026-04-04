@@ -430,9 +430,19 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         ? "Solana network is busy. Please try again in a moment."
         : msg.includes("insufficient")
         ? "Insufficient SOL balance for this transaction."
+        : msg.includes("CORS") || msg.includes("NetworkError") || msg.includes("Failed to fetch") || msg.includes("ERR_FAILED")
+        ? "Could not reach the server. Please try again."
+        : msg.includes("timeout") || msg.includes("Timeout")
+        ? "Request timed out. Please try again."
         : msg;
       setSwapError(friendlyMsg);
       setSwapState("error");
+    } finally {
+      // Safety net: if state is still signing/verifying after 60s, force reset
+      setTimeout(() => {
+        setSwapState((s) => (s === "signing" || s === "verifying") ? "error" : s);
+        setSwapError((e) => e || "Swap timed out. Please try again.");
+      }, 60000);
     }
   }
 
