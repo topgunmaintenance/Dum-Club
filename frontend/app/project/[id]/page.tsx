@@ -2960,16 +2960,50 @@ return (
                   </span>
                   <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Live Project</span>
                 </div>
-                <p className="mb-4 text-sm leading-relaxed text-zinc-300">
+                <p className="mb-3 text-sm leading-relaxed text-zinc-300">
                   {project?.description
-                    ? project.description.length > 120
-                      ? project.description.slice(0, 120) + "..."
+                    ? project.description.length > 100
+                      ? project.description.slice(0, 100) + "..."
                       : project.description
-                    : "Explore offers, ask the AI, and support this project."}
+                    : "Browse offers and start buying from this business."}
                 </p>
+
+                {/* Quick stats */}
+                {offers.length > 0 && (
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-emerald-400">◆</span>
+                      {offers.length} offer{offers.length > 1 ? "s" : ""} available
+                    </span>
+                    {(() => {
+                      const totalSold = offers.reduce((sum, o) => sum + (o.quantity_sold || 0), 0);
+                      return totalSold > 0 ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-emerald-400">●</span>
+                          {totalSold} purchased
+                        </span>
+                      ) : null;
+                    })()}
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-emerald-400">%</span>
+                      DUM Points accepted
+                    </span>
+                  </div>
+                )}
+
+                {/* Price anchor — show cheapest offer */}
+                {offers.length > 0 && (
+                  <div className="mb-4 flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-white">
+                      From ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
+                    </span>
+                    <span className="text-sm text-zinc-500">USD</span>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-2">
-                  <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
-                    View Offers ↓
+                  <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]">
+                    {offers.length > 0 ? `Browse ${offers.length} Offer${offers.length > 1 ? "s" : ""} ↓` : "View Offers ↓"}
                   </button>
                   <div className="grid grid-cols-2 gap-2">
                     <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
@@ -3663,27 +3697,15 @@ return (
 
       {/* ── DUM Hub Card ── */}
       <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">DUM Hub</span>
-              <span className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">· Powered by Solana</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-[12px] text-zinc-400">
-              <span className="flex items-center gap-1.5"><span className="text-emerald-400">💳</span> Stripe checkout</span>
-              <span className="text-zinc-700">·</span>
-              <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Earn DUM Points</span>
-              <span className="text-zinc-700">·</span>
-              <span className="flex items-center gap-1.5"><span className="text-emerald-400">%</span> 10% off with points</span>
-            </div>
-          </div>
-          <div className="text-[10px] text-zinc-600 leading-relaxed max-w-[220px]">
-            Pay by card. Earn loyalty points. Use them for discounts at any business on DUM Club.
-          </div>
-        </div>
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-900/50 px-3 py-2 text-[10px] text-zinc-500">
-          <span className="text-emerald-400">↔</span>
-          Points earned here work at every business on the platform — and points from other businesses work here.
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-400">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">DUM Hub</span>
+          <span className="flex items-center gap-1.5">💳 Stripe checkout</span>
+          <span className="text-zinc-700">·</span>
+          <span className="flex items-center gap-1.5">◆ Earn DUM Points</span>
+          <span className="text-zinc-700">·</span>
+          <span className="flex items-center gap-1.5">% 10% off with points</span>
+          <span className="text-zinc-700">·</span>
+          <span className="text-zinc-600">Works at every business</span>
         </div>
       </div>
 
@@ -3710,10 +3732,20 @@ return (
           )}
         </div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-2xl font-bold text-white">Offers</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-white">What&apos;s for sale</h2>
+            {(() => {
+              const totalSold = offers.reduce((sum, o) => sum + (o.quantity_sold || 0), 0);
+              return totalSold > 0 ? (
+                <p className="mt-1 text-[12px] text-zinc-500">{totalSold} purchases · Stripe checkout · DUM Points accepted</p>
+              ) : (
+                <p className="mt-1 text-[12px] text-zinc-500">Stripe checkout · DUM Points accepted</p>
+              );
+            })()}
+          </div>
           <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-zinc-500">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/60"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Secure checkout via Stripe
+            Secure
           </span>
         </div>
         <p className="mt-2 text-sm text-zinc-500">
@@ -4135,18 +4167,21 @@ return (
                     </div>
                   )}
 
-                  {/* Inventory info */}
-                  {!offer.unlimited_inventory && offer.quantity_available != null && (
-                    <div className="mt-2 text-xs text-zinc-600">
-                      {(offer.quantity_sold || 0) > 0 && <span>{offer.quantity_sold} sold</span>}
-                      {(() => {
+                  {/* Inventory + social proof */}
+                  <div className="mt-2 flex items-center gap-2 text-xs text-zinc-600">
+                    {(offer.quantity_sold || 0) > 0 && (
+                      <span className="flex items-center gap-1 text-emerald-400/70">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400/50" />
+                        {offer.quantity_sold} purchased
+                      </span>
+                    )}
+                    {!offer.unlimited_inventory && offer.quantity_available != null && (() => {
                         const remaining = offer.quantity_available - (offer.quantity_sold || 0);
-                        if (remaining <= 0) return <span className="ml-1 text-red-400">· Sold out</span>;
-                        if (remaining <= 5) return <span className="ml-1 text-amber-400">· {remaining} left</span>;
-                        return <span className="ml-1">· {remaining} available</span>;
+                        if (remaining <= 0) return <span className="text-red-400">Sold out</span>;
+                        if (remaining <= 5) return <span className="text-amber-400">{remaining} left</span>;
+                        return <span>{remaining} available</span>;
                       })()}
-                    </div>
-                  )}
+                  </div>
 
                   {/* DUM Points discount */}
                   {dumDiscountApplied[offer.id] ? (
