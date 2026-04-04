@@ -1331,7 +1331,7 @@ export default function Home() {
         const data = await res.json().catch(() => ({}));
         if (res.status === 429) {
           setHeroLaunching(false);
-          setHeroError("Daily launch limit reached. Try again tomorrow or upgrade.");
+          setHeroError("Daily creation limit reached. Try again tomorrow or upgrade.");
           return;
         }
         throw new Error(data?.detail || "Launch failed — please try again.");

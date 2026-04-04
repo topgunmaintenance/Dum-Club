@@ -193,7 +193,7 @@ export default function BuildPage() {
             <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
               <div className="mb-2 text-lg font-bold text-white">Ready to launch?</div>
               <p className="mb-4 text-sm text-zinc-400">
-                Sign in with Google to create your project. It takes 5 seconds — no technical knowledge needed.
+                Sign in with Google to create your business. It takes 5 seconds — no technical knowledge needed.
               </p>
               <button
                 type="button"

@@ -291,8 +291,8 @@ function ChatPageInner() {
       prompt: "Create a detailed growth strategy for my project. Include user acquisition channels, community building tactics, key milestones for the first 90 days, and metrics to track progress.",
     },
     {
-      label: "Token Utility",
-      prompt: "Design a token utility framework for my project. Cover core use cases, holder benefits, staking or governance mechanics, and how the token drives long-term value within the ecosystem.",
+      label: "Rewards Strategy",
+      prompt: "Design a DUM Points rewards strategy for my business. Cover how to attract customers, encourage repeat purchases, structure offer tiers, and use loyalty rewards to grow long-term value.",
     },
     {
       label: "Launch Strategy",
@@ -561,7 +561,7 @@ function ChatPageInner() {
               <div className="dc-context">
                 <span className="dc-context-dot" />
                 <span className="dc-context-label">DUM AI — Powered by Claude</span>
-                <span className="dc-context-sub">Built to help you launch and grow your project</span>
+                <span className="dc-context-sub">Built to help you grow your business</span>
               </div>
             </div>
             <div className="dc-topbar-right">
@@ -603,9 +603,9 @@ function ChatPageInner() {
             {messages.length === 0 ? (
               <div className="dc-empty">
                 <div className="dc-empty-icon">&#x26A1;</div>
-                <div className="dc-empty-title">What are you building?</div>
+                <div className="dc-empty-title">What does your business need?</div>
                 <div className="dc-empty-sub">
-                  <span className="dc-empty-sub-full">DUM AI is your project co-pilot &mdash; powered by Claude. It understands tokenomics, launch strategy, growth, and marketing so you can move faster and build smarter.</span>
+                  <span className="dc-empty-sub-full">DUM AI is your business co-pilot &mdash; powered by Claude. It understands offers, pricing, growth strategy, and marketing so you can sell smarter and grow faster.</span>
                   <span className="dc-empty-sub-short">DUM AI helps with launch strategy, growth, monetization, and tokenomics.</span>
                 </div>
                 <div className="dc-suggestions">

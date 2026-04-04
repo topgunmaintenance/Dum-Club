@@ -198,6 +198,7 @@ function PointsTab({
 function RecentActivity() {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<"all" | "earned" | "spent" | "swaps">("all");
   const { user } = useAuth();
 
   useEffect(() => {
@@ -210,23 +211,57 @@ function RecentActivity() {
       .finally(() => setLoading(false));
   }, [user?.privyId]);
 
+  const filtered = txns.filter((tx) => {
+    if (filter === "earned") return tx.amount > 0 && tx.reason !== "swap_buy";
+    if (filter === "spent") return tx.amount < 0;
+    if (filter === "swaps") return tx.reason === "swap_buy" || tx.reason === "swap_sell";
+    return true;
+  });
+
   return (
     <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Activity</div>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Activity</div>
+        <div className="flex gap-1">
+          {([
+            { id: "all" as const, label: "All" },
+            { id: "earned" as const, label: "Earned" },
+            { id: "spent" as const, label: "Spent" },
+            { id: "swaps" as const, label: "Swaps" },
+          ]).map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition ${
+                filter === f.id
+                  ? "bg-emerald-400/10 text-emerald-400"
+                  : "text-zinc-600 hover:text-zinc-400"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {loading ? (
         <div className="py-4 text-center text-xs text-zinc-600">Loading...</div>
-      ) : txns.length === 0 ? (
-        <div className="py-4 text-center text-xs text-zinc-600">No activity yet. Earn DUM Points by creating businesses and making purchases.</div>
+      ) : filtered.length === 0 ? (
+        <div className="py-4 text-center text-xs text-zinc-600">
+          {filter === "all" ? "No activity yet. Earn DUM Points by creating businesses and making purchases." : `No ${filter} activity yet.`}
+        </div>
       ) : (
         <div className="space-y-2">
-          {txns.slice(0, 10).map((tx) => (
+          {filtered.slice(0, 15).map((tx) => (
             <div key={tx.id} className="rounded-xl bg-zinc-900/50 px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className={`font-mono text-sm font-bold ${tx.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {tx.amount > 0 ? "+" : ""}{tx.amount}
                   </span>
-                  <span className="text-[12px] text-zinc-400">{REASON_LABELS[tx.reason] || tx.reason}</span>
+                  <div>
+                    <span className="text-[12px] text-zinc-300">{REASON_LABELS[tx.reason] || tx.reason}</span>
+                    <span className="ml-2 rounded-full bg-emerald-400/5 px-1.5 py-0.5 text-[8px] font-bold uppercase text-emerald-400/50">confirmed</span>
+                  </div>
                 </div>
                 <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
               </div>
@@ -525,16 +560,16 @@ function MarketTab() {
 
         <div className="flex items-baseline gap-3">
           <span className="text-4xl font-black text-white">${market?.price_usd?.toFixed(4) || "0.0100"}</span>
-          <span className="text-sm font-bold text-emerald-400">per point</span>
+          <span className="text-sm font-bold text-emerald-400">platform rate</span>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-4">
           <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Market Cap</div>
+            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total Value</div>
             <div className="mt-1 font-mono text-sm font-bold text-white">${market?.market_cap_usd?.toLocaleString() || "—"}</div>
           </div>
           <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">24h Volume</div>
+            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">24h Activity</div>
             <div className="mt-1 font-mono text-sm font-bold text-emerald-400">{market?.volume_24h?.toLocaleString() || "0"} DUM</div>
           </div>
           <div>
@@ -547,7 +582,7 @@ function MarketTab() {
       {/* Activity Chart — real data */}
       <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Activity History</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Activity</div>
           <div className="flex gap-1">
             {(["24h", "7d", "30d"] as const).map((r) => (
               <button
@@ -613,7 +648,7 @@ function MarketTab() {
 
       {/* Recent platform activity */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Platform Activity</div>
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Swaps</div>
         {swaps.length === 0 ? (
           <div className="py-4 text-center text-xs text-zinc-600">No activity yet.</div>
         ) : (

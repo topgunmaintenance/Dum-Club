@@ -613,7 +613,7 @@ export default function DashboardPage() {
             {analytics.total_orders === 0 && analytics.total_views === 0 && (
               <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-6 text-center">
                 <div className="text-sm font-medium text-zinc-400">No activity yet</div>
-                <p className="mt-1 text-xs text-zinc-600">Share your project links to start getting views and sales</p>
+                <p className="mt-1 text-xs text-zinc-600">Share your storefront links to start getting views and sales</p>
               </div>
             )}
           </div>
@@ -633,7 +633,7 @@ export default function DashboardPage() {
               <Link href="/build" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
                 <span className="text-base">🚀</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Launch your first project</div>
+                  <div className="text-sm font-bold text-white">Create your first business</div>
                   <div className="text-[11px] text-zinc-500">Earn +25 DUM Points</div>
                 </div>
               </Link>
@@ -690,8 +690,8 @@ export default function DashboardPage() {
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
                 <div className="mb-2 text-2xl">💡</div>
-                <div className="mb-1 text-base font-bold text-white">Launch your first project</div>
-                <p className="mb-4 text-sm text-zinc-400">Describe your idea and AI will build your project page with offers in under 60 seconds.</p>
+                <div className="mb-1 text-base font-bold text-white">Create your first business</div>
+                <p className="mb-4 text-sm text-zinc-400">Describe what you sell and AI will build your storefront with offers in under 60 seconds.</p>
                 <Link
                   href="/build"
                   className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
@@ -717,7 +717,7 @@ export default function DashboardPage() {
                     <span className="text-xl">🔗</span>
                     <div>
                       <div className="text-sm font-bold text-white">Share your page</div>
-                      <div className="text-xs text-zinc-500">Copy your project link</div>
+                      <div className="text-xs text-zinc-500">Copy your storefront link</div>
                     </div>
                   </button>
                 )}
@@ -752,7 +752,7 @@ export default function DashboardPage() {
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Your Projects
+              Your Businesses
             </h2>
             <span className="text-xs text-zinc-700">
               {projects.length} project{projects.length !== 1 ? "s" : ""}
@@ -761,7 +761,7 @@ export default function DashboardPage() {
 
           {!user ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
-              <p className="text-sm text-zinc-500">Sign in to view your projects.</p>
+              <p className="text-sm text-zinc-500">Sign in to view your businesses.</p>
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center">

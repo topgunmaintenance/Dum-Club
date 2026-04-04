@@ -187,7 +187,7 @@ export default function TiersPage() {
           {[
             { icon: "🏷️", title: "Discounts", desc: "10% off at any business" },
             { icon: "🎮", title: "Game Access", desc: "Unlock unlimited play" },
-            { icon: "🚀", title: "Boosts", desc: "Feature your project" },
+            { icon: "🚀", title: "Boosts", desc: "Feature your business" },
             { icon: "🤖", title: "AI Power", desc: "Enhanced AI generation" },
           ].map((perk) => (
             <div key={perk.title} className="rounded-xl border border-zinc-800/40 bg-zinc-900/20 p-4 text-center">
