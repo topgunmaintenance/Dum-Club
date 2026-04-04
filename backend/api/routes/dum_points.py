@@ -270,8 +270,6 @@ async def purchase_points(
 # ── SOL → DUM Swap ──────────────────────────────────────────
 
 import requests as http_requests
-import time as _time
-
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
 LAMPORTS_PER_SOL = 1_000_000_000
@@ -280,9 +278,7 @@ LAMPORTS_PER_SOL = 1_000_000_000
 SWAP_MIN_SOL = 0.01
 SWAP_MAX_SOL = 5.0
 SWAP_COOLDOWN_SECONDS = 30  # minimum seconds between swaps per user
-
-# Simple in-memory rate limiter (per-user last swap timestamp)
-_swap_last_time: dict[str, float] = {}
+SWAP_DAILY_MAX_SOL = 20.0   # max total SOL swapped per user per 24 hours
 
 
 class SwapRequest(BaseModel):
@@ -364,12 +360,46 @@ async def swap_sol_to_dum(
     if not DUM_TREASURY_WALLET:
         raise HTTPException(status_code=503, detail="Treasury wallet not configured")
 
-    # ── Rate limiting ──
-    now = _time.time()
-    last = _swap_last_time.get(privy_id, 0)
-    if now - last < SWAP_COOLDOWN_SECONDS:
-        wait = int(SWAP_COOLDOWN_SECONDS - (now - last))
-        raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
+    # ── Rate limiting + daily cap (DB-backed, survives restart) ──
+    from datetime import datetime, timezone, timedelta
+
+    supabase = get_client()
+    cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    recent_swaps = (
+        supabase.table("dum_transactions")
+        .select("amount, created_at")
+        .eq("privy_id", privy_id)
+        .eq("reason", "swap_buy")
+        .gte("created_at", cutoff_24h)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    swap_rows = recent_swaps.data or []
+
+    # Cooldown: check last swap timestamp
+    if swap_rows:
+        last_swap_time = swap_rows[0].get("created_at", "")
+        if last_swap_time:
+            try:
+                last_dt = datetime.fromisoformat(last_swap_time.replace("Z", "+00:00"))
+                elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+                if elapsed < SWAP_COOLDOWN_SECONDS:
+                    wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
+                    raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
+            except (ValueError, TypeError):
+                pass
+
+    # Daily cap: sum SOL swapped in last 24h
+    # DUM amount / rate = SOL equivalent
+    total_dum_24h = sum(row.get("amount", 0) for row in swap_rows)
+    total_sol_24h = total_dum_24h / DUM_SOL_RATE if DUM_SOL_RATE > 0 else 0
+    if total_sol_24h + req.sol_amount > SWAP_DAILY_MAX_SOL:
+        remaining = max(SWAP_DAILY_MAX_SOL - total_sol_24h, 0)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily swap limit reached. You can swap up to {remaining:.2f} more SOL today (max {SWAP_DAILY_MAX_SOL} SOL/day)."
+        )
 
     # ── Calculate DUM ──
     dum_amount = int(req.sol_amount * DUM_SOL_RATE)
@@ -377,7 +407,6 @@ async def swap_sol_to_dum(
         raise HTTPException(status_code=400, detail="Amount too small to convert")
 
     # ── Check for duplicate FIRST (before expensive RPC call) ──
-    supabase = get_client()
     dup_check = (
         supabase.table("dum_transactions")
         .select("id")
@@ -400,9 +429,6 @@ async def swap_sol_to_dum(
     new_balance = _update_balance_and_log(
         supabase, privy_id, dum_amount, "swap_buy", req.tx_signature
     )
-
-    # Update rate limiter
-    _swap_last_time[privy_id] = _time.time()
 
     # Best-effort: mint SPL tokens on-chain
     try:

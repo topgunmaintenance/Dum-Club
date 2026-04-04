@@ -220,14 +220,26 @@ function RecentActivity() {
       ) : (
         <div className="space-y-2">
           {txns.slice(0, 10).map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span className={`font-mono text-sm font-bold ${tx.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {tx.amount > 0 ? "+" : ""}{tx.amount}
-                </span>
-                <span className="text-[12px] text-zinc-400">{REASON_LABELS[tx.reason] || tx.reason}</span>
+            <div key={tx.id} className="rounded-xl bg-zinc-900/50 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`font-mono text-sm font-bold ${tx.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    {tx.amount > 0 ? "+" : ""}{tx.amount}
+                  </span>
+                  <span className="text-[12px] text-zinc-400">{REASON_LABELS[tx.reason] || tx.reason}</span>
+                </div>
+                <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
               </div>
-              <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
+              {tx.reason === "swap_buy" && tx.reference_id && tx.reference_id.length > 30 && (
+                <a
+                  href={`https://explorer.solana.com/tx/${tx.reference_id}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1 text-[9px] text-emerald-400/50 transition hover:text-emerald-400"
+                >
+                  View on Solana Explorer → <span className="font-mono text-zinc-700">{tx.reference_id.slice(0, 8)}...{tx.reference_id.slice(-4)}</span>
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -247,7 +259,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const [solRate] = useState(1000);
   const [swapState, setSwapState] = useState<"idle" | "signing" | "verifying" | "success" | "error">("idle");
   const [swapError, setSwapError] = useState<string | null>(null);
-  const [swapResult, setSwapResult] = useState<{ dum: number; sol: number } | null>(null);
+  const [swapResult, setSwapResult] = useState<{ dum: number; sol: number; sig: string } | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
 
   // Fetch SOL balance on mount / when wallet changes
@@ -329,7 +341,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       window.dispatchEvent(new Event("dum-points-update"));
       onBalanceUpdate(newBal);
 
-      setSwapResult({ dum: data.dum_received, sol: numAmount });
+      setSwapResult({ dum: data.dum_received, sol: numAmount, sig });
       setSwapState("success");
       setAmount("");
     } catch (err: any) {
@@ -424,8 +436,20 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
         {/* Status messages */}
         {swapState === "success" && swapResult && (
-          <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-xs text-emerald-300">
-            ✓ Swapped {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM · Balance updated
+          <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-3">
+            <div className="text-xs text-emerald-300">
+              ✓ Swapped {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM · Balance updated
+            </div>
+            {swapResult.sig && (
+              <a
+                href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-emerald-400/70 transition hover:text-emerald-400"
+              >
+                View on Solana Explorer → <span className="font-mono text-zinc-600">{swapResult.sig.slice(0, 8)}...{swapResult.sig.slice(-6)}</span>
+              </a>
+            )}
           </div>
         )}
         {swapState === "error" && swapError && (
