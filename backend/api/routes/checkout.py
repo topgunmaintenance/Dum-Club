@@ -563,6 +563,39 @@ async def stripe_webhook(request: Request):
     return JSONResponse(content={"received": True}, status_code=200)
 
 
+# ── Public: Recent Sales Feed ─────────────────────────────────
+
+@router.get("/recent-sales")
+async def recent_sales(limit: int = 10):
+    """Public endpoint: recent paid/fulfilled orders for social proof."""
+    supabase = get_client()
+    try:
+        res = (
+            supabase.table("orders")
+            .select("id, amount_paid_usd, status, created_at, offers(title, project_id, projects(title))")
+            .in_("status", ["paid", "fulfilled"])
+            .order("created_at", desc=True)
+            .limit(min(limit, 20))
+            .execute()
+        )
+        sales = []
+        for row in (res.data or []):
+            offer = row.get("offers") or {}
+            project = offer.get("projects") or {}
+            sales.append({
+                "id": row["id"],
+                "amount": float(row.get("amount_paid_usd", 0)),
+                "offer_title": offer.get("title", ""),
+                "business_name": project.get("title", ""),
+                "status": row.get("status", ""),
+                "created_at": row.get("created_at", ""),
+            })
+        return {"sales": sales}
+    except Exception as exc:
+        print(f"[checkout] recent-sales error: {exc!r}")
+        return {"sales": []}
+
+
 # ── Order Queries ─────────────────────────────────────────────
 
 @router.get("/orders/buyer")

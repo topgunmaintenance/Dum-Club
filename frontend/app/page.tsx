@@ -466,6 +466,77 @@ function DumActivityStrip({ projectCount, tradeCount }: { projectCount: number; 
   );
 }
 
+/* ─── Recent Sales Proof Feed ─── */
+function RecentSalesFeed() {
+  const [sales, setSales] = useState<any[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/checkout/recent-sales`)
+      .then((r) => r.json())
+      .then((d) => setSales(d.sales || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (sales.length === 0) return;
+    const t = setInterval(() => setCurrentIdx((i) => (i + 1) % sales.length), 4000);
+    return () => clearInterval(t);
+  }, [sales.length]);
+
+  if (sales.length === 0) return null;
+
+  return (
+    <div className="mx-auto mt-10 max-w-4xl">
+      <div className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+        Recent sales on DUM Club
+      </div>
+      <div className="space-y-2">
+        {sales.slice(0, 5).map((sale, i) => {
+          const isActive = i === currentIdx % Math.min(sales.length, 5);
+          const ago = sale.created_at ? formatSaleTimeAgo(sale.created_at) : "";
+          return (
+            <div
+              key={sale.id}
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-500 ${
+                isActive
+                  ? "border-emerald-400/20 bg-emerald-400/[0.04] shadow-[0_0_12px_rgba(0,255,163,0.04)]"
+                  : "border-zinc-800/40 bg-zinc-950/40"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {isActive && (
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                )}
+                <div>
+                  <span className="text-[13px] font-semibold text-white">{sale.business_name || "Business"}</span>
+                  <span className="mx-2 text-zinc-700">·</span>
+                  <span className="text-[12px] text-zinc-400">{sale.offer_title}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-[13px] font-bold text-emerald-400">+${sale.amount?.toFixed(2)}</span>
+                <span className="text-[10px] text-zinc-600">{ago}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function formatSaleTimeAgo(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
 /* ─── Platform Activity Feed ─── */
 const ACTIVITY_MESSAGES = [
   { icon: "🟢", text: "New business storefront went live" },
@@ -1669,19 +1740,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── CREATOR PROOF ── */}
-        {creatorModal && (
-          <CreatorProofModal
-            story={creatorModal}
-            onClose={() => setCreatorModal(null)}
-          />
-        )}
-        <div className="creator-section-fade mx-auto mt-14 max-w-6xl">
-          <div className="mb-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Example business scenarios
-          </div>
-          <CreatorTicker onPick={setCreatorModal} />
-        </div>
+        {/* ── Recent Sales Proof ── */}
+        <RecentSalesFeed />
 
         {/* ── Platform Activity ── */}
         <div className="mx-auto mt-10 max-w-4xl">
