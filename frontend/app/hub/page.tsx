@@ -301,6 +301,14 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const [swapError, setSwapError] = useState<string | null>(null);
   const [swapResult, setSwapResult] = useState<{ dum: number; sol: number; sig: string } | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function copyToClipboard(value: string, label: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
 
   // Auto-create wallet if user is logged in but has no wallet
   useEffect(() => {
@@ -427,6 +435,9 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             <div className="mt-1 text-[11px] text-zinc-500">
               from {swapResult.sol} SOL · verified on Solana
             </div>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
+              ✓ Balance updated instantly
+            </div>
             {walletAddress && (
               <div className="mt-3 text-[10px] text-zinc-600">
                 Wallet: <span className="font-mono text-zinc-400">{shortWallet}</span>
@@ -434,58 +445,73 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             )}
           </div>
 
-          {/* Explorer links */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-3">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">On-chain proof</div>
+          {/* On-chain proof with copy buttons */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">On-chain proof</div>
             {swapResult.sig && (
-              <a
-                href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
-              >
-                <div>
-                  <div className="text-[12px] font-semibold text-white">View transaction</div>
-                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{swapResult.sig.slice(0, 12)}...{swapResult.sig.slice(-8)}</div>
-                </div>
-                <span className="text-[10px] text-emerald-400">Explorer →</span>
-              </a>
+              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+                <a
+                  href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 transition hover:opacity-80"
+                >
+                  <div className="text-[12px] font-semibold text-white">Transaction</div>
+                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{swapResult.sig.slice(0, 12)}...{swapResult.sig.slice(-8)}</div>
+                </a>
+                <button onClick={() => copyToClipboard(swapResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
+                  {copied === "tx" ? "✓" : "Copy"}
+                </button>
+                <a href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
+                  View →
+                </a>
+              </div>
             )}
             {dumMint && (
-              <a
-                href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
-              >
-                <div>
-                  <div className="text-[12px] font-semibold text-white">View DUM token</div>
-                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{dumMint.slice(0, 12)}...{dumMint.slice(-8)}</div>
-                </div>
-                <span className="text-[10px] text-emerald-400">Explorer →</span>
-              </a>
+              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+                <a
+                  href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 transition hover:opacity-80"
+                >
+                  <div className="text-[12px] font-semibold text-white">DUM Token</div>
+                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{dumMint.slice(0, 12)}...{dumMint.slice(-8)}</div>
+                </a>
+                <button onClick={() => copyToClipboard(dumMint, "mint")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
+                  {copied === "mint" ? "✓" : "Copy"}
+                </button>
+                <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
+                  View →
+                </a>
+              </div>
             )}
             {walletAddress && (
-              <a
-                href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3 transition hover:bg-zinc-900"
-              >
-                <div>
-                  <div className="text-[12px] font-semibold text-white">View wallet</div>
-                  <div className="mt-0.5 font-mono text-[10px] text-zinc-600">{shortWallet}</div>
-                </div>
-                <span className="text-[10px] text-emerald-400">Explorer →</span>
-              </a>
+              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+                <a
+                  href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 transition hover:opacity-80"
+                >
+                  <div className="text-[12px] font-semibold text-white">Wallet</div>
+                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{shortWallet}</div>
+                </a>
+                <button onClick={() => copyToClipboard(walletAddress, "wallet")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
+                  {copied === "wallet" ? "✓" : "Copy"}
+                </button>
+                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
+                  View →
+                </a>
+              </div>
             )}
           </div>
 
           <button
-            onClick={() => { setSwapState("idle"); setSwapResult(null); }}
+            onClick={() => { setSwapState("idle"); setSwapResult(null); setCopied(null); }}
             className="w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-white"
           >
-            Swap again
+            Add more DUM
           </button>
         </div>
       ) : (
