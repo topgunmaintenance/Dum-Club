@@ -1594,15 +1594,15 @@ export default function ProjectPage() {
       field: "description",
       group: "project",
       prompt: (p) =>
-        `You are a startup copywriter. Improve this project description to be more engaging, clear, and professional.\n\nCurrent description: "${p.description || "N/A"}"\nProject title: "${p.title || p.name || "Untitled"}"\nCategory: ${p.template_type || "General"}\nToken utility: "${p.token_utility || "N/A"}"\n\nReturn ONLY the improved description text, nothing else. Keep it under 300 characters.`,
+        `You are a business copywriter. Improve this business description to be more engaging, clear, and professional.\n\nCurrent description: "${p.description || "N/A"}"\nBusiness: "${p.title || p.name || "Untitled"}"\nCategory: ${p.template_type || "General"}\nRewards: "${p.token_utility || "N/A"}"\n\nReturn ONLY the improved description text, nothing else. Keep it under 300 characters.`,
     },
     {
       key: "token_utility",
-      label: "Improve Token Utility",
+      label: "Improve Rewards & Perks",
       field: "token_utility",
       group: "project",
       prompt: (p) =>
-        `You are a tokenomics expert. Improve this token utility description to be clearer, more compelling, and specific about the value proposition.\n\nCurrent token utility: "${p.token_utility || "N/A"}"\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken symbol: ${p.token_symbol || "N/A"}\n\nReturn ONLY the improved token utility text, nothing else. Keep it under 250 characters.`,
+        `You are a business rewards expert. Improve this rewards description to be clearer, more compelling, and specific about customer benefits.\n\nCurrent rewards: "${p.token_utility || "N/A"}"\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\n\nReturn ONLY the improved rewards text, nothing else. Keep it under 250 characters. Focus on customer discounts, loyalty perks, and repeat purchase benefits.`,
     },
     {
       key: "promo",
@@ -3515,7 +3515,7 @@ return (
                           const tips: Record<string, string> = {
                             virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
                             trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
-                            utility: "How can I improve my token utility and product value? Give me 3 concrete suggestions.",
+                            utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
                           };
                           const action = builderActions.find((a) => a.key === "roast")!;
                           const improveAction: BuilderActionDef = {
@@ -4949,9 +4949,9 @@ return (
   )}
 
   <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-3">
-    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Unlocked Utility</div>
+    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Rewards &amp; Perks</div>
     <div className="mt-2 text-sm text-zinc-300">
-      {parsedAiOutput?.token_utility || project?.token_utility || "Utility details are not configured yet."}
+      {parsedAiOutput?.token_utility || project?.token_utility || "Rewards details are not configured yet."}
     </div>
   </div>
 
@@ -5279,7 +5279,7 @@ return (
         </div>
       ) : (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Pre-live Project</div>
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Setup</div>
           <h2 className="text-3xl font-bold text-white">{projectName}</h2>
           <p className="mt-3 max-w-3xl text-zinc-400">
             {project?.description || parsedAiOutput?.description || "No description available yet."}
@@ -5289,18 +5289,14 @@ return (
             {category}
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
-              <div className="mt-2 text-white">{tokenMeta.name || project?.token_name || "-"}</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business</div>
+              <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
-              <div className="mt-2 text-white">{tokenMeta.symbol || project?.token_symbol || "-"}</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
-              <div className="mt-2 text-white">{tokenMeta.supply || project?.token_supply || "-"}</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+              <div className="mt-2 text-emerald-400">DUM Points</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
@@ -5340,98 +5336,25 @@ return (
       )}
 
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Token Details</div>
-
-          {!isApprovedProject && (
-            <div className="mb-6 grid gap-2 md:grid-cols-5">
-              {tokenStages.map((stage, index) => {
-                const isCompleted = index <= tokenStage;
-                const isCurrent = index === tokenStage;
-                return (
-                  <div
-                    key={stage}
-                    className={`rounded-2xl border p-3 text-center ${
-                      isCurrent
-                        ? "border-emerald-400/50 bg-emerald-400/10"
-                        : isCompleted
-                        ? "border-zinc-700 bg-zinc-900/50"
-                        : "border-zinc-800 bg-base"
-                    }`}
-                  >
-                    <div className={`font-mono text-xs ${isCurrent ? "text-emerald-500" : isCompleted ? "text-zinc-600" : "text-zinc-800"}`}>
-                      0{index + 1}
-                    </div>
-                    <div
-                      className={`mt-1 text-[11px] uppercase tracking-[0.18em] ${
-                        isCurrent ? "text-emerald-300" : isCompleted ? "text-zinc-400" : "text-zinc-700"
-                      }`}
-                    >
-                      {stage}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {!isApprovedProject && (
-            <div className="mb-6 rounded-2xl border border-zinc-800 bg-base p-4 text-sm text-zinc-400">
-              {getStatusExplanation(tokenStatus)}
-            </div>
-          )}
-
+          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Status</div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Token Name</div>
-              <div className="mt-2 break-words text-lg text-white">
-                {tokenMeta.name || project?.token_name || "-"}
-              </div>
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Rewards</div>
+              <div className="mt-2 text-lg text-emerald-400">DUM Points</div>
             </div>
-
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Symbol</div>
-              <div className="mt-2 break-words text-lg text-white">
-                {tokenMeta.symbol || project?.token_symbol || "-"}
-              </div>
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Discounts</div>
+              <div className="mt-2 text-lg text-white">10% off with DUM Points</div>
             </div>
-
             <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Supply</div>
-              <div className="mt-2 break-words text-lg text-white">
-                {tokenMeta.supply || project?.token_supply || "-"}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Decimals</div>
-              <div className="mt-2 break-words text-lg text-white">
-                {tokenMeta.decimals || project?.token_decimals || "-"}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Launch stage</div>
-              <div className="mt-2 break-words text-lg text-white">
-                {formatTokenStatus(tokenStatus)}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Created At</div>
-              <div className="mt-2 break-words text-sm text-white">{project?.token_created_at || "-"}</div>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
-            <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Mint Address</div>
-            <div className="mt-2 break-all text-sm text-white">
-              {tokenMeta.mint_address || project?.token_mint_address || "-"}
+              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Status</div>
+              <div className="mt-2 text-lg text-emerald-400">Live</div>
             </div>
           </div>
         </div>
 
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Blueprint</div>
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Blueprint</div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-zinc-800 bg-base p-5">
@@ -5440,9 +5363,9 @@ return (
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-              <h2 className="text-2xl font-bold text-white">Token Utility</h2>
+              <h2 className="text-2xl font-bold text-white">Rewards &amp; Perks</h2>
               <p className="mt-3 text-zinc-400">
-                {parsedAiOutput?.token_utility || project?.token_utility || "No token utility available yet."}
+                {parsedAiOutput?.token_utility || project?.token_utility || "Rewards details are not configured yet."}
               </p>
             </div>
           </div>
@@ -5481,37 +5404,28 @@ return (
 
             <p className="mt-3 max-w-3xl text-zinc-500">
               This section shows the project details used during review. Submit action is available
-              from the pre-live panel above.
+              from the business setup panel above.
             </p>
 
             <p className="mt-3 text-sm text-zinc-400">
               Review: {reviewStatus} · Publication: {project?.status || "draft"}
             </p>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Token Name</div>
-                <div className="mt-2 text-white">{tokenName || project?.token_name || "-"}</div>
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business Name</div>
+                <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
               </div>
               <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Symbol</div>
-                <div className="mt-2 text-white">{tokenSymbol || project?.token_symbol || "-"}</div>
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                <div className="mt-2 text-emerald-400">DUM Points</div>
               </div>
               <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Supply</div>
-                <div className="mt-2 text-white">{tokenSupply || project?.token_supply || "-"}</div>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Utility</div>
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Perks</div>
                 <div className="mt-2 text-white">
-                  {parsedAiOutput?.token_utility || project?.token_utility || "-"}
+                  {parsedAiOutput?.token_utility || project?.token_utility || "Discounts and rewards for customers"}
                 </div>
               </div>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4 text-sm text-zinc-300">
-              <div className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">Launch Checklist</div>
-              <div>{nextStepMessage}</div>
             </div>
           </div>
         )}

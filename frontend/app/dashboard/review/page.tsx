@@ -130,12 +130,12 @@ export default function ReviewDashboardPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border border-zinc-800 bg-base p-3">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Token Symbol</div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Business ID</div>
                     <div className="mt-1 text-white">{project.token_symbol || "-"}</div>
                   </div>
                   <div className="rounded-xl border border-zinc-800 bg-base p-3">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Supply</div>
-                    <div className="mt-1 text-white">{project.token_supply || "-"}</div>
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                    <div className="mt-1 text-emerald-400">DUM Points</div>
                   </div>
                   <div className="rounded-xl border border-zinc-800 bg-base p-3">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Utility</div>
