@@ -388,23 +388,39 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       tx.feePayer = fromPubkey;
       tx.recentBlockhash = blockhash;
 
-      // 2. Send via Privy embedded wallet
+      // 2. Send via Privy embedded wallet (with 45s timeout to prevent hang)
       console.log("[swap] step 2: sending transaction...");
       let sig: string;
+
+      const sendWithTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+        Promise.race([
+          promise,
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)),
+        ]);
+
       try {
-        const txSig = await privyWallet.sendTransaction(tx, conn);
+        console.log("[swap] trying sendTransaction...");
+        const txSig = await sendWithTimeout(
+          privyWallet.sendTransaction(tx, conn, { skipPreflight: true }),
+          45000, "sendTransaction"
+        );
         sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || (txSig as any)?.hash || String(txSig);
         console.log("[swap] sendTransaction succeeded, sig:", sig);
       } catch (sendErr: any) {
         console.error("[swap] sendTransaction failed:", sendErr?.message || sendErr);
         try {
           console.log("[swap] trying signTransaction fallback...");
-          const signed = await privyWallet.signTransaction(tx);
-          sig = await conn.sendRawTransaction(signed.serialize());
+          const signed = await sendWithTimeout(
+            privyWallet.signTransaction(tx),
+            30000, "signTransaction"
+          );
+          sig = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: true });
           console.log("[swap] signTransaction fallback succeeded, sig:", sig);
         } catch (signErr: any) {
           console.error("[swap] signTransaction also failed:", signErr?.message || signErr);
-          throw new Error(signErr?.message || "Wallet transaction failed. Please try again.");
+          throw new Error(sendErr?.message?.includes("timeout")
+            ? "Wallet did not respond. Check for a Privy approval popup."
+            : (signErr?.message || "Wallet transaction failed. Please try again."));
         }
       }
       setSwapState("verifying");
