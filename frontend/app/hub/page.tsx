@@ -367,22 +367,40 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
 
       // 2. Send via Privy embedded wallet
-      //    Privy wallets use sendTransaction (signs + sends internally)
-      //    signTransaction throws "Recovery method not supported" on embedded wallets
       console.log("[swap] sending transaction via Privy wallet...");
       let sig: string;
       try {
+        // Try sendTransaction first (standard wallet adapter method)
         const txSig = await privyWallet.sendTransaction(tx, conn);
-        sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || String(txSig);
+        sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || (txSig as any)?.hash || String(txSig);
         console.log("[swap] transaction sent, sig:", sig);
       } catch (sendErr: any) {
-        console.error("[swap] sendTransaction error:", sendErr);
-        throw new Error(sendErr?.message || "Wallet transaction failed. Please try again.");
+        console.error("[swap] sendTransaction failed, trying signTransaction fallback:", sendErr);
+        // Fallback: try signTransaction + manual send
+        try {
+          const signed = await privyWallet.signTransaction(tx);
+          sig = await conn.sendRawTransaction(signed.serialize());
+          console.log("[swap] fallback signTransaction succeeded, sig:", sig);
+        } catch (signErr: any) {
+          console.error("[swap] both paths failed:", signErr);
+          throw new Error("Wallet transaction failed. Please try again.");
+        }
       }
       setSwapState("verifying");
 
-      // 3. Wait for confirmation
-      await conn.confirmTransaction(sig, "confirmed");
+      // 3. Wait for confirmation with timeout
+      console.log("[swap] waiting for confirmation...");
+      try {
+        const confirmPromise = conn.confirmTransaction(sig, "confirmed");
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 30000)
+        );
+        await Promise.race([confirmPromise, timeoutPromise]);
+        console.log("[swap] transaction confirmed");
+      } catch (confirmErr: any) {
+        // If confirmation times out but tx was sent, still try to verify via backend
+        console.warn("[swap] confirmation slow/failed, proceeding to backend verification:", confirmErr?.message);
+      }
 
       // 4. Send signature to backend for verification + DUM award
       const token = await getToken();
