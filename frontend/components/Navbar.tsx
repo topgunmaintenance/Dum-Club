@@ -152,8 +152,16 @@ export function Navbar() {
         <div
           className="lg:hidden"
           style={{
+            position: "fixed",
+            top: "73px",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(3,3,3,0.98)",
+            backdropFilter: "blur(12px)",
+            zIndex: 49,
+            overflowY: "auto",
             borderTop: "1px solid #1c1c1c",
-            background: "rgba(6,6,6,0.97)",
             paddingBottom: "16px",
           }}
         >

@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Connection } from "@solana/web3.js";
 import { Starfield } from "../../components/Starfield";
+
+const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
 const DUM_TREASURY = process.env.NEXT_PUBLIC_DUM_TREASURY_WALLET || "";
 
@@ -287,9 +290,11 @@ function RecentActivity() {
    SWAP TAB
    ════════════════════════════════════════════════════════════════ */
 function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { wallets: privyWallets, createWallet } = useSolanaWallets();
+  const privyWallet = privyWallets[0] || null;
+  const walletAddress = privyWallet?.address || null;
   const { getToken } = useAuth();
+  const { user } = useAuth();
   const [amount, setAmount] = useState("");
   const [solRate] = useState(1000);
   const [swapState, setSwapState] = useState<"idle" | "signing" | "verifying" | "success" | "error">("idle");
@@ -297,11 +302,19 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const [swapResult, setSwapResult] = useState<{ dum: number; sol: number; sig: string } | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
 
-  // Fetch SOL balance on mount / when wallet changes
+  // Auto-create wallet if user is logged in but has no wallet
   useEffect(() => {
-    if (!publicKey || !connection) { setSolBalance(null); return; }
-    connection.getBalance(publicKey).then((b) => setSolBalance(b / LAMPORTS_PER_SOL)).catch(() => setSolBalance(null));
-  }, [publicKey, connection]);
+    if (user && !privyWallet) {
+      createWallet().catch(() => {});
+    }
+  }, [user, privyWallet]);
+
+  // Fetch SOL balance using RPC directly
+  useEffect(() => {
+    if (!walletAddress) { setSolBalance(null); return; }
+    const conn = new Connection(SOLANA_RPC);
+    conn.getBalance(new PublicKey(walletAddress)).then((b) => setSolBalance(b / LAMPORTS_PER_SOL)).catch(() => setSolBalance(null));
+  }, [walletAddress]);
 
   const MIN_SOL = 0.01;
   const MAX_SOL = 5;
@@ -313,10 +326,10 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const isBelowMin = numAmount > 0 && numAmount < MIN_SOL;
   const isAboveMax = numAmount > MAX_SOL;
   const isInsufficientSol = solBalance !== null && numAmount > solBalance;
-  const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!publicKey && swapState === "idle";
+  const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!walletAddress && swapState === "idle";
 
   async function handleSwap() {
-    if (!publicKey || !canSwap) return;
+    if (!walletAddress || !privyWallet || !canSwap) return;
 
     if (!DUM_TREASURY) {
       setSwapError("Treasury wallet not configured. Contact support.");
@@ -330,23 +343,28 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
     try {
       // 1. Build SOL transfer transaction
+      const conn = new Connection(SOLANA_RPC);
+      const fromPubkey = new PublicKey(walletAddress);
       const treasury = new PublicKey(DUM_TREASURY);
       const lamports = Math.floor(numAmount * LAMPORTS_PER_SOL);
 
       const tx = new Transaction().add(
         SystemProgram.transfer({
-          fromPubkey: publicKey,
+          fromPubkey,
           toPubkey: treasury,
           lamports,
         })
       );
+      tx.feePayer = fromPubkey;
+      tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
 
-      // 2. Send via wallet (user approves in Privy popup)
-      const sig = await sendTransaction(tx, connection);
+      // 2. Send via Privy wallet (works on mobile + desktop)
+      const signedTx = await privyWallet.signTransaction(tx);
+      const sig = await conn.sendRawTransaction(signedTx.serialize());
       setSwapState("verifying");
 
       // 3. Wait for confirmation
-      await connection.confirmTransaction(sig, "confirmed");
+      await conn.confirmTransaction(sig, "confirmed");
 
       // 4. Send signature to backend for verification + DUM award
       const token = await getToken();
@@ -359,7 +377,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         body: JSON.stringify({
           sol_amount: numAmount,
           tx_signature: sig,
-          wallet_address: publicKey.toBase58(),
+          wallet_address: walletAddress,
         }),
       });
 
@@ -401,7 +419,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
-            Solana {publicKey ? "Connected" : "Not connected"}
+            Solana {walletAddress ? "Connected" : "Setting up..."}
           </div>
         </div>
 
@@ -464,7 +482,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
           {swapState === "signing" ? "Approve in wallet..." :
            swapState === "verifying" ? "Verifying on Solana..." :
            swapState === "success" ? "✓ Swap confirmed" :
-           !publicKey ? "Connect wallet to swap" :
+           !walletAddress ? "Setting up wallet..." :
            isInsufficientSol ? "Insufficient SOL balance" :
            `Swap SOL → ${dumAmount > 0 ? dumAmount.toLocaleString() : "0"} DUM`}
         </button>
