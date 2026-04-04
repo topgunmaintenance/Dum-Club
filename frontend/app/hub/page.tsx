@@ -437,11 +437,28 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 function MarketTab() {
   const [market, setMarket] = useState<any>(null);
   const [swaps, setSwaps] = useState<any[]>([]);
+  const [chartRange, setChartRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [chartData, setChartData] = useState<{ time: string; volume: number; cumulative: number }[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/dum/market`).then(r => r.json()).then(setMarket).catch(() => {});
     fetch(`${API_BASE}/api/dum/recent-swaps`).then(r => r.json()).then(d => setSwaps(d.swaps || [])).catch(() => {});
   }, []);
+
+  // Fetch chart data when range changes
+  useEffect(() => {
+    setChartLoading(true);
+    fetch(`${API_BASE}/api/dum/price-history?range=${chartRange}`)
+      .then(r => r.json())
+      .then(d => setChartData(d.points || []))
+      .catch(() => setChartData([]))
+      .finally(() => setChartLoading(false));
+  }, [chartRange]);
+
+  // Calculate chart bar heights from real data
+  const maxVol = Math.max(...chartData.map(p => p.cumulative), 1);
+  const rangeLabels = { "24h": "24 hours ago", "7d": "7 days ago", "30d": "30 days ago" };
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -451,7 +468,7 @@ function MarketTab() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-2xl font-black text-emerald-400">◆</div>
           <div>
             <div className="text-xl font-black text-white">DUM</div>
-            <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">DUM Club Points</div>
+            <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Digital Utility Market</div>
           </div>
         </div>
 
@@ -460,7 +477,6 @@ function MarketTab() {
           <span className="text-sm font-bold text-emerald-400">per point</span>
         </div>
 
-        {/* Stats grid */}
         <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-4">
           <div>
             <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Market Cap</div>
@@ -477,38 +493,55 @@ function MarketTab() {
         </div>
       </div>
 
-      {/* Price visualization */}
+      {/* Activity Chart — real data */}
       <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Price History</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Activity History</div>
           <div className="flex gap-1">
-            {["24h", "7d", "30d"].map((r) => (
-              <button key={r} className="rounded-md border border-zinc-800 bg-zinc-900/50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition hover:border-emerald-400/20 hover:text-emerald-400">
+            {(["24h", "7d", "30d"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setChartRange(r)}
+                className={`rounded-md border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition ${
+                  chartRange === r
+                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                    : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-emerald-400/20 hover:text-emerald-400"
+                }`}
+              >
                 {r}
               </button>
             ))}
           </div>
         </div>
-        {/* Area chart visualization */}
-        <div className="flex h-32 items-end gap-[2px]">
-          {Array.from({ length: 40 }).map((_, i) => {
-            const h = 30 + Math.sin(i * 0.3) * 20 + Math.random() * 15;
-            return (
-              <div
-                key={i}
-                className="flex-1 rounded-t bg-gradient-to-t from-emerald-400/20 to-emerald-400/5"
-                style={{ height: `${h}%` }}
-              />
-            );
-          })}
-        </div>
-        <div className="mt-2 flex justify-between text-[9px] text-zinc-700">
-          <span>30d ago</span>
-          <span>Now</span>
-        </div>
+
+        {chartLoading ? (
+          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">Loading...</div>
+        ) : chartData.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">No activity data for this range.</div>
+        ) : (
+          <>
+            <div className="flex h-32 items-end gap-[2px]">
+              {chartData.map((point, i) => {
+                const h = maxVol > 0 ? Math.max((point.cumulative / maxVol) * 100, 2) : 2;
+                return (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-t bg-gradient-to-t from-emerald-400/30 to-emerald-400/5 transition-all duration-300"
+                    style={{ height: `${h}%` }}
+                    title={`${point.volume} DUM · ${new Date(point.time).toLocaleDateString()}`}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-2 flex justify-between text-[9px] text-zinc-700">
+              <span>{rangeLabels[chartRange]}</span>
+              <span>Now</span>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* DUM token info */}
+      {/* DUM info */}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
           <div className="text-lg">🔗</div>
@@ -518,7 +551,7 @@ function MarketTab() {
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
           <div className="text-lg">💳</div>
           <div className="mt-2 text-sm font-bold text-white">Stripe + SOL</div>
-          <div className="mt-1 text-[10px] text-zinc-600">Buy with card or crypto</div>
+          <div className="mt-1 text-[10px] text-zinc-600">Add points with card or crypto</div>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
           <div className="text-lg">🏪</div>

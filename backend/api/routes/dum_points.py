@@ -446,3 +446,65 @@ async def get_recent_swaps(limit: int = 15):
         .execute()
     )
     return {"swaps": res.data or []}
+
+
+@router.get("/price-history")
+async def get_price_history(range: str = "7d"):
+    """
+    DUM Points activity over time — aggregated from dum_transactions.
+    Returns data points for charting: timestamp + cumulative volume.
+    Price is fixed at $0.01/DUM so chart shows activity volume, not price swings.
+    """
+    from datetime import datetime, timezone, timedelta
+
+    range_map = {
+        "24h": (timedelta(hours=24), timedelta(hours=1)),    # 24 points, 1 per hour
+        "7d":  (timedelta(days=7), timedelta(hours=6)),      # 28 points, 1 per 6 hours
+        "30d": (timedelta(days=30), timedelta(days=1)),      # 30 points, 1 per day
+    }
+
+    span, bucket_size = range_map.get(range, range_map["7d"])
+    cutoff = datetime.now(timezone.utc) - span
+    supabase = get_client()
+
+    try:
+        res = (
+            supabase.table("dum_transactions")
+            .select("amount, created_at")
+            .gt("amount", 0)
+            .gte("created_at", cutoff.isoformat())
+            .order("created_at", desc=False)
+            .execute()
+        )
+        txns = res.data or []
+    except Exception:
+        txns = []
+
+    # Bucket transactions into time periods
+    now = datetime.now(timezone.utc)
+    num_buckets = max(int(span / bucket_size), 1)
+    points = []
+    cumulative = 0
+
+    for i in range(num_buckets):
+        bucket_start = cutoff + (bucket_size * i)
+        bucket_end = bucket_start + bucket_size
+
+        bucket_vol = sum(
+            t.get("amount", 0) for t in txns
+            if bucket_start.isoformat() <= (t.get("created_at") or "") < bucket_end.isoformat()
+        )
+        cumulative += bucket_vol
+
+        points.append({
+            "time": bucket_start.isoformat(),
+            "volume": bucket_vol,
+            "cumulative": cumulative,
+            "price": DUM_USD_PRICE,
+        })
+
+    return {
+        "range": range,
+        "points": points,
+        "price": DUM_USD_PRICE,
+    }
