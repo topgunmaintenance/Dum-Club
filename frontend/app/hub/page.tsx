@@ -601,7 +601,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
           {/* ── Swap form ── */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-5 flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Add DUM Points</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Swap SOL → DUM</div>
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
@@ -684,15 +684,9 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             <div className="mt-3 text-center text-[10px] text-zinc-700">
               Powered by Solana · Verified on-chain · ~$0.001 fee
             </div>
-          </div>
-
-          {/* Debug info — remove after swap is confirmed working */}
-          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[9px] font-mono text-zinc-700 space-y-0.5">
-            <div>wallet: {walletAddress ? walletAddress.slice(0, 8) + "..." : "none"}</div>
-            <div>sol: {solBalance !== null ? solBalance.toFixed(4) : "loading..."}</div>
-            <div>treasury: {DUM_TREASURY ? DUM_TREASURY.slice(0, 8) + "..." : "NOT SET"}</div>
-            <div>rpc: {SOLANA_RPC.includes("devnet") ? "devnet" : SOLANA_RPC.slice(0, 30)}</div>
-            <div>state: {swapState} | canSwap: {String(canSwap)}</div>
+            <div className="mt-2 rounded-lg bg-amber-400/5 border border-amber-400/10 px-3 py-2 text-center text-[10px] text-amber-400/70">
+              💻 Desktop recommended for SOL swaps · Use the Points tab to add DUM via Stripe on mobile
+            </div>
           </div>
 
           {/* Single info row */}
