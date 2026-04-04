@@ -765,7 +765,7 @@ export default function DashboardPage() {
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center">
-              <p className="text-base font-semibold text-zinc-300">No projects yet</p>
+              <p className="text-base font-semibold text-zinc-300">No businesses yet — create your first one below</p>
               <p className="mt-2 text-sm text-zinc-600">
                 Generate your first project to get started.
               </p>

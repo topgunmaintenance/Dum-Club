@@ -1398,10 +1398,12 @@ export default function Home() {
   }, [allPublicProjects]);
 
   const featured = useMemo(() => {
-    if (!allPublicProjects.length) return null;
+    const quality = allPublicProjects.filter((p) => !isPlaceholderDescription(p.description));
+    const pool = quality.length > 0 ? quality : allPublicProjects;
+    if (!pool.length) return null;
     let best: Project | null = null;
     let bestVol = -1;
-    for (const p of allPublicProjects) {
+    for (const p of pool) {
       const m = marketByProject[p.id];
       const vol = Number(m?.volume_24h ?? 0);
       if (vol > bestVol) {
@@ -1412,8 +1414,7 @@ export default function Home() {
     if (best && bestVol > 0) {
       return { project: best, market: marketByProject[best.id] };
     }
-    const first = allPublicProjects[0];
-    return { project: first, market: marketByProject[first.id] };
+    return { project: pool[0], market: marketByProject[pool[0].id] };
   }, [allPublicProjects, marketByProject]);
 
   async function loadPublicProjects() {
@@ -1905,7 +1906,7 @@ export default function Home() {
                       </div>
                       <div>
                         <div className="text-2xl font-black text-white">
-                          {featured.project.title || featured.project.name || "Untitled"}
+                          {featured.project.title || featured.project.name || "New Business"}
                         </div>
                         <div className="mt-1 max-w-lg text-sm leading-relaxed text-zinc-300">
                           {featured.project.description || "No description yet."}
@@ -2037,7 +2038,7 @@ export default function Home() {
                         {formatNewsDate(p.created_at)}
                       </div>
                       <div className="mb-2 text-base font-bold leading-tight text-white">
-                        {p.title || p.name || "Untitled business"}
+                        {p.title || p.name || "New Business"}
                       </div>
                       <div className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
                         {p.description?.trim() || "Live on DUM Club with AI and community features."}

@@ -554,7 +554,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 </span>
-                {!walletAddress ? "Preparing wallet..." : "Wallet ready"}
+                {!walletAddress ? "Setting up wallet..." : "● Wallet ready"}
               </div>
             </div>
 
@@ -615,7 +615,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             >
               {swapState === "signing" ? "Swapping..." :
                swapState === "verifying" ? "Confirming on-chain..." :
-               !walletAddress ? "Preparing wallet..." :
+               !walletAddress ? "Create wallet to swap" :
                isInsufficientSol ? "Insufficient SOL" :
                numAmount > 0 ? `Add ${dumAmount.toLocaleString()} DUM` : "Enter amount"}
             </button>
@@ -653,6 +653,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 function MarketTab() {
   const [market, setMarket] = useState<any>(null);
   const [swaps, setSwaps] = useState<any[]>([]);
+  const [liveStats, setLiveStats] = useState<any>(null);
   const [chartRange, setChartRange] = useState<"24h" | "7d" | "30d">("7d");
   const [chartData, setChartData] = useState<{ time: string; volume: number; cumulative: number }[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
@@ -660,6 +661,7 @@ function MarketTab() {
   useEffect(() => {
     fetch(`${API_BASE}/api/dum/market`).then(r => r.json()).then(setMarket).catch(() => {});
     fetch(`${API_BASE}/api/dum/recent-swaps`).then(r => r.json()).then(d => setSwaps(d.swaps || [])).catch(() => {});
+    fetch(`${API_BASE}/api/projects/live-stats`).then(r => r.json()).then(setLiveStats).catch(() => {});
   }, []);
 
   // Fetch chart data when range changes
@@ -707,6 +709,22 @@ function MarketTab() {
             <div className="mt-1 font-mono text-sm font-bold text-white">{market?.total_supply?.toLocaleString() || "—"}</div>
           </div>
         </div>
+        {liveStats && (
+          <div className="mt-3 grid grid-cols-3 gap-3 border-t border-zinc-800/50 pt-3">
+            <div>
+              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Live Businesses</div>
+              <div className="mt-1 font-mono text-sm font-bold text-white">{liveStats.live_projects || 0}</div>
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Active Offers</div>
+              <div className="mt-1 font-mono text-sm font-bold text-white">{liveStats.active_offers || 0}</div>
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Verified</div>
+              <div className="mt-1 font-mono text-sm font-bold text-emerald-400">{liveStats.businesses || 0}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Activity Chart — real data */}

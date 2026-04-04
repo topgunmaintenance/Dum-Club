@@ -689,8 +689,22 @@ export default function DiscoverPage() {
             {error}
           </div>
         ) : sortedProjects.length === 0 ? (
-          <div className="border border-zinc-900 bg-zinc-950 p-8 text-zinc-400">
-            No businesses match this category yet.
+          <div className="border border-zinc-900 bg-zinc-950 p-8 text-center">
+            {searchQuery.trim() ? (
+              <div>
+                <p className="text-zinc-400">No results for &quot;{searchQuery}&quot;</p>
+                <button onClick={() => setSearchQuery("")} className="mt-3 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400">
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-zinc-400">No businesses in this category yet.</p>
+                <Link href="/build" className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300">
+                  Be the first — Create a business →
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid gap-0 border border-zinc-900 md:grid-cols-2 xl:grid-cols-3">

@@ -1277,7 +1277,7 @@ export default function ProjectPage() {
     if (!id) return;
 
     if (!tradeAmount.trim() || Number(tradeAmount) <= 0) {
-      setTradeMessage("Enter a token amount to trade.");
+      setTradeMessage("Enter an amount to continue.");
       setTradeIsError(true);
       return;
     }
@@ -2958,7 +2958,9 @@ return (
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Live Project</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+                    {isOwner ? "Your Business · Live" : "Live Business"}
+                  </span>
                 </div>
                 <p className="mb-3 text-sm leading-relaxed text-zinc-300">
                   {project?.description
@@ -4073,7 +4075,7 @@ return (
                 />
                 <input
                   type="text"
-                  placeholder="Supporter price (e.g. 0.25 SOL or Free)"
+                  placeholder="Member price (e.g. Free or $9.99)"
                   value={storeEditing.token_holder_price ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
                   className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
@@ -4744,7 +4746,7 @@ return (
             )}
 
             <div id="buy-panel" className="rounded-3xl border border-emerald-500/10 bg-base p-5 sm:p-6 shadow-[0_0_40px_rgba(0,255,163,0.03)]">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-emerald-400/50">{displaySymbol} · Support this project</div>
+              <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-emerald-400/50">DUM Club · Support this business</div>
 
               <h2 className="text-xl font-bold text-white">Buy / Sell</h2>
 
@@ -4763,7 +4765,7 @@ return (
               {!authUser ? (
                 /* Not signed in */
                 <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                  <p className="text-sm text-zinc-400">Sign in to trade {displaySymbol}.</p>
+                  <p className="text-sm text-zinc-400">Sign in to support this business.</p>
                   <button
                     type="button"
                     onClick={login}
@@ -4795,7 +4797,7 @@ return (
                     <input
                       value={tradeAmount}
                       onChange={(e) => setTradeAmount(e.target.value)}
-                      placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+                      placeholder="Enter amount"
                       className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
                       type="number"
                       min="0"
@@ -4876,21 +4878,21 @@ return (
 </div>
 <details className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950">
   <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
-    Holder access ▸
+    Member access ▸
   </summary>
   <div className="p-4 pt-0">
   <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-    Holder Access
+    Member Access
   </div>
 
   <div className="mb-3 text-sm text-zinc-400">
-    Use tokens to signal support and unlock holder access.
+    Support this business to unlock member access and perks.
   </div>
 
   <input
     value={redeemAmount}
     onChange={(e) => setRedeemAmount(e.target.value)}
-    placeholder={`Enter ${project?.token_symbol || tokenMeta.symbol || "token"} amount`}
+    placeholder="Enter amount"
     className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
     type="number"
     min="0"
@@ -4950,7 +4952,7 @@ return (
                   : process.env.NEXT_PUBLIC_SITE_URL || "https://dumclub.xyz";
               const projectUrl = `${base.replace(/\/$/, "")}/project/${id}`;
               await navigator.clipboard.writeText(
-                `Just unlocked $${sym} holder access on DUM Club.\n\nCode: ${redeemCode}\nProject: ${projectName}\n\n${projectUrl}`
+                `Just unlocked member access on DUM Club.\n\nCode: ${redeemCode}\nBusiness: ${projectName}\n\n${projectUrl}`
               );
               setShareFlash(true);
               window.setTimeout(() => setShareFlash(false), 800);
