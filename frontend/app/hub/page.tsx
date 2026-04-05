@@ -280,7 +280,6 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
   const privyWallet = privyWallets[0] || null;
   const walletAddress = privyWallet?.address || null;
   const { getToken, user } = useAuth();
-  const [claimAmount, setClaimAmount] = useState("100");
   const [claimState, setClaimState] = useState<ClaimState>("idle");
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string; mode: string } | null>(null);
@@ -339,9 +338,9 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
       .catch(() => setOnChainBalance(null));
   }, [walletAddress, claimState]);
 
-  const numAmount = Number(claimAmount) || 0;
   const claimableNow = claimable?.claimable ?? null;
-  const canClaim = numAmount > 0 && numAmount <= 10000 && !!walletAddress && claimState === "idle" && (claimableNow === null || numAmount <= claimableNow);
+  const claimAmount = claimableNow !== null ? claimableNow : 0;
+  const canClaim = claimAmount > 0 && !!walletAddress && claimState === "idle";
 
   async function handleClaim() {
     if (!walletAddress || !canClaim) return;
@@ -363,7 +362,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
         },
         body: JSON.stringify({
           wallet_address: walletAddress,
-          amount: numAmount,
+          amount: claimAmount,
         }),
       });
 
@@ -406,7 +405,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
 
   // Claim button label based on state
   const claimButtonLabel = {
-    idle: `Claim ${numAmount.toLocaleString()} DUM`,
+    idle: `Claim All ${claimAmount.toLocaleString()} DUM`,
     preparing: "Preparing...",
     submitting: "Submitting to Solana...",
     confirming: "Confirming...",
@@ -535,37 +534,16 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
               </div>
             ) : (
               <>
-                {/* Amount selection */}
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Select amount to claim</div>
-                  {claimableNow !== null && (
-                    <div className="text-[10px] font-mono text-emerald-400/60">{claimableNow.toLocaleString()} available</div>
-                  )}
-                </div>
-                <div className="mb-4 grid grid-cols-3 gap-2">
-                  {[100, 500, 1000].map((amt) => {
-                    const exceeds = claimableNow !== null && amt > claimableNow;
-                    return (
-                      <button
-                        key={amt}
-                        onClick={() => !exceeds && setClaimAmount(String(amt))}
-                        disabled={exceeds}
-                        className={`rounded-xl border p-3 text-center transition ${
-                          exceeds
-                            ? "border-zinc-800/50 bg-zinc-900/20 text-zinc-700 cursor-not-allowed"
-                            : claimAmount === String(amt)
-                            ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-                            : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-600"
-                        }`}
-                      >
-                        <div className="text-lg font-black">{amt}</div>
-                        <div className="text-[9px] text-zinc-600">DUM</div>
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Claimable amount display */}
+                {claimableNow !== null && (
+                  <div className="mb-4 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400/60">Available to claim</div>
+                    <div className="mt-1 font-mono text-3xl font-black text-emerald-400">{claimableNow.toLocaleString()}</div>
+                    <div className="mt-0.5 text-[10px] text-zinc-600">DUM earned from activity</div>
+                  </div>
+                )}
 
-                {/* Claim button */}
+                {/* Claim All button */}
                 <button
                   onClick={claimState === "error" ? () => setClaimState("idle") : handleClaim}
                   disabled={!canClaim}
@@ -1121,6 +1099,7 @@ export default function HubPage() {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [tab, setTab] = useState<"points" | "claim" | "use" | "market" | "refer">("points");
+  const [hubClaimable, setHubClaimable] = useState(0);
 
   useEffect(() => {
     const read = () => setBalance(Number(localStorage.getItem("dum_points") || "0"));
@@ -1128,6 +1107,15 @@ export default function HubPage() {
     window.addEventListener("dum-points-update", read);
     return () => window.removeEventListener("dum-points-update", read);
   }, []);
+
+  // Fetch claimable amount for tab badge
+  useEffect(() => {
+    if (!user?.privyId) return;
+    fetch(`${API_BASE}/api/dum/claimable/${user.privyId}`)
+      .then((r) => r.json())
+      .then((d) => setHubClaimable(d.claimable || 0))
+      .catch(() => {});
+  }, [user?.privyId, tab]);
 
   // Detect successful purchase return from Stripe
   useEffect(() => {
@@ -1222,6 +1210,9 @@ export default function HubPage() {
             >
               <span>{t.icon}</span>
               {t.label}
+              {t.id === "claim" && hubClaimable > 0 && (
+                <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />
+              )}
             </button>
           ))}
         </div>
