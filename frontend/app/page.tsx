@@ -1503,7 +1503,7 @@ export default function Home() {
   }, [allPublicProjects]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-base text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-base text-white">
       <LiveSaleToast />
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
@@ -1549,7 +1549,7 @@ export default function Home() {
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
           {/* Ambient background */}
-          <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
             <div

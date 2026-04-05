@@ -87,7 +87,8 @@ export function Navbar() {
           ? "rgba(0,255,178,0.035)"
           : "rgba(6,6,6,0.92)",
         backdropFilter: "blur(16px)",
-        zIndex: 50,
+        zIndex: 9999,
+        pointerEvents: "auto" as const,
         transition: "all 0.22s ease",
       }}
     >
@@ -159,7 +160,7 @@ export function Navbar() {
             bottom: 0,
             background: "rgba(3,3,3,0.98)",
             backdropFilter: "blur(12px)",
-            zIndex: 49,
+            zIndex: 9998,
             overflowY: "auto",
             borderTop: "1px solid #1c1c1c",
             paddingBottom: "16px",
