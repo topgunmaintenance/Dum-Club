@@ -69,8 +69,6 @@ async function mintTokens(walletAddress, amount) {
   const mint = new PublicKey(mintAddress);
   const destination = new PublicKey(walletAddress);
 
-  console.log(`Minting ${amount} DUM to ${walletAddress}...`);
-
   // Get or create the user's Associated Token Account
   const ata = await getOrCreateAssociatedTokenAccount(
     connection,
@@ -81,7 +79,7 @@ async function mintTokens(walletAddress, amount) {
 
   // Mint tokens (amount is in raw units with decimals)
   const rawAmount = BigInt(amount) * BigInt(10 ** DECIMALS);
-  await mintTo(
+  const txSignature = await mintTo(
     connection,
     treasury,           // payer
     mint,               // token mint
@@ -90,8 +88,16 @@ async function mintTokens(walletAddress, amount) {
     rawAmount
   );
 
-  console.log(`✓ Minted ${amount} DUM to ${ata.address.toBase58()}`);
-  return { ata: ata.address.toBase58(), amount };
+  // Output JSON for backend parsing
+  const result = {
+    signature: txSignature,
+    ata: ata.address.toBase58(),
+    mint: mintAddress,
+    recipient: walletAddress,
+    amount: Number(amount),
+  };
+  console.log(JSON.stringify(result));
+  return result;
 }
 
 // ── CLI ──

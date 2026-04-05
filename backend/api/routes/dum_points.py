@@ -590,6 +590,100 @@ async def demo_swap_sol_to_dum(
     }
 
 
+# ── Claim DUM (REAL on-chain SPL mint) ──────────────────────
+
+class ClaimRequest(BaseModel):
+    wallet_address: str
+    amount: int = 100  # default claim amount
+
+
+@router.post("/claim")
+async def claim_dum_tokens(
+    req: ClaimRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Claim DUM tokens via REAL on-chain SPL transfer.
+    Mints tokens from treasury to user's wallet.
+    Returns the Solana transaction signature.
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    if not req.wallet_address or len(req.wallet_address) < 20:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    if req.amount <= 0 or req.amount > 10000:
+        raise HTTPException(status_code=400, detail="Amount must be between 1 and 10,000")
+
+    # Rate limiting (same cooldown as swap)
+    from datetime import datetime, timezone, timedelta
+    supabase = get_client()
+    cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    recent_claims = (
+        supabase.table("dum_transactions")
+        .select("created_at")
+        .eq("privy_id", privy_id)
+        .eq("reason", "claim")
+        .gte("created_at", cutoff_24h)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if recent_claims.data:
+        last_time = recent_claims.data[0].get("created_at", "")
+        try:
+            last_dt = datetime.fromisoformat(last_time.replace("Z", "+00:00"))
+            elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+            if elapsed < SWAP_COOLDOWN_SECONDS:
+                wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
+                raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before claiming again")
+        except (ValueError, TypeError):
+            pass
+
+    # Mint real DUM SPL tokens on-chain
+    from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
+
+    if not is_solana_enabled():
+        raise HTTPException(status_code=503, detail="On-chain minting not configured. Set DUM_MINT and DUM_TREASURY_KEYPAIR.")
+
+    mint_result = mint_dum_to_wallet(req.wallet_address, req.amount)
+    if not mint_result:
+        raise HTTPException(status_code=500, detail="On-chain minting failed. Please try again.")
+
+    tx_signature = mint_result.get("signature", "")
+
+    # Log in DB for tracking
+    new_balance = _update_balance_and_log(
+        supabase, privy_id, req.amount, "claim", tx_signature or req.wallet_address
+    )
+
+    print(f"[claim] ✓ {req.amount} DUM minted to {req.wallet_address} | tx: {tx_signature}")
+    return {
+        "status": "success",
+        "dum_received": req.amount,
+        "new_balance": new_balance,
+        "tx_signature": tx_signature,
+        "mint": os.getenv("DUM_MINT", ""),
+        "wallet": req.wallet_address,
+        "mode": "on-chain",
+    }
+
+
+# ── On-chain DUM balance ──────────────────────────────────
+
+@router.get("/balance-onchain/{wallet_address}")
+async def get_onchain_balance(wallet_address: str):
+    """Read DUM token balance directly from Solana blockchain."""
+    from services.solana_mint import get_dum_balance
+    balance = get_dum_balance(wallet_address)
+    if balance is None:
+        return {"wallet": wallet_address, "balance": 0, "source": "unavailable"}
+    return {"wallet": wallet_address, "balance": balance, "source": "on-chain"}
+
+
 @router.get("/price-history")
 async def get_price_history(range: str = "7d"):
     """

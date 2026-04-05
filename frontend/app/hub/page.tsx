@@ -288,7 +288,7 @@ function RecentActivity() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SWAP TAB
+   CLAIM TAB — Real on-chain DUM token minting
    ════════════════════════════════════════════════════════════════ */
 function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
   const { wallets: privyWallets, createWallet } = useSolanaWallets();
@@ -296,12 +296,11 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const walletAddress = privyWallet?.address || null;
   const { getToken } = useAuth();
   const { user } = useAuth();
-  const [amount, setAmount] = useState("");
-  const [solRate] = useState(1000);
-  const [swapState, setSwapState] = useState<"idle" | "signing" | "verifying" | "success" | "error">("idle");
-  const [swapError, setSwapError] = useState<string | null>(null);
-  const [swapResult, setSwapResult] = useState<{ dum: number; sol: number; sig: string } | null>(null);
-  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [claimAmount, setClaimAmount] = useState("100");
+  const [claimState, setClaimState] = useState<"idle" | "minting" | "success" | "error">("idle");
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string } | null>(null);
+  const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   function copyToClipboard(value: string, label: string) {
@@ -313,224 +312,138 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
   // Auto-create wallet if user is logged in but has no wallet
   useEffect(() => {
-    console.log("[swap] wallet state:", { user: !!user, privyWallet: !!privyWallet, walletAddress, walletsCount: privyWallets.length });
     if (user && !privyWallet) {
-      console.log("[swap] auto-creating wallet...");
-      createWallet().catch((e) => console.error("[swap] createWallet failed:", e));
+      createWallet().catch(() => {});
     }
   }, [user, privyWallet]);
 
-  // Fetch SOL balance using RPC directly
+  // Fetch on-chain DUM balance
   useEffect(() => {
-    if (!walletAddress) { console.log("[swap] no wallet address, skipping balance fetch"); setSolBalance(null); return; }
-    console.log("[swap] fetching SOL balance for:", walletAddress);
-    const conn = new Connection(SOLANA_RPC, "confirmed");
-    conn.getBalance(new PublicKey(walletAddress))
-      .then((b) => {
-        const sol = b / LAMPORTS_PER_SOL;
-        console.log("[swap] SOL balance:", sol);
-        setSolBalance(sol);
-      })
-      .catch((e) => {
-        console.error("[swap] balance fetch failed:", e);
-        setSolBalance(null);
-      });
-  }, [walletAddress]);
+    if (!walletAddress) { setOnChainBalance(null); return; }
+    fetch(`${API_BASE}/api/dum/balance-onchain/${walletAddress}`)
+      .then((r) => r.json())
+      .then((d) => setOnChainBalance(d.balance ?? null))
+      .catch(() => setOnChainBalance(null));
+  }, [walletAddress, claimState]);
 
-  const MIN_SOL = 0.01;
-  const MAX_SOL = 5;
+  const numAmount = Number(claimAmount) || 0;
+  const canClaim = numAmount > 0 && numAmount <= 10000 && !!walletAddress && claimState === "idle";
 
-  const numAmount = Number(amount) || 0;
-  const dumAmount = numAmount * solRate;
+  async function handleClaim() {
+    if (!walletAddress || !canClaim) return;
 
-  // Validation helpers
-  const isBelowMin = numAmount > 0 && numAmount < MIN_SOL;
-  const isAboveMax = numAmount > MAX_SOL;
-  const isInsufficientSol = solBalance !== null && numAmount > solBalance;
-  const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!walletAddress && swapState === "idle";
-
-  async function handleSwap() {
-    console.log("[swap] handleSwap called", { walletAddress, canSwap, numAmount });
-
-    if (!walletAddress || !canSwap) {
-      console.log("[swap] blocked:", { walletAddress: !!walletAddress, canSwap, numAmount, swapState });
-      if (!walletAddress) setSwapError("Wallet not ready. Please wait a moment.");
-      return;
-    }
-
-    setSwapState("signing");
-    setSwapError(null);
-    setSwapResult(null);
+    setClaimState("minting");
+    setClaimError(null);
+    setClaimResult(null);
 
     try {
-      // Demo swap: calls backend directly without on-chain transaction.
-      // ROOT CAUSE FIX: Privy embedded wallet sendTransaction/signTransaction
-      // hangs on mobile browsers (and sometimes desktop) because the approval
-      // popup doesn't render reliably. This demo path bypasses on-chain signing
-      // while preserving rate limits, daily caps, and balance tracking.
-      console.log("[swap] using demo swap path...");
-
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/dum/swap-demo`, {
+      const res = await fetch(`${API_BASE}/api/dum/claim`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          sol_amount: numAmount,
           wallet_address: walletAddress,
+          amount: numAmount,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Swap failed (${res.status})`);
+        throw new Error(err.detail || `Claim failed (${res.status})`);
       }
 
       const data = await res.json();
-      console.log("[swap] demo swap succeeded:", data);
 
-      // Update balance everywhere
+      // Update DB balance everywhere
       const newBal = data.new_balance || balance + (data.dum_received || 0);
       localStorage.setItem("dum_points", String(newBal));
       window.dispatchEvent(new Event("dum-points-update"));
       onBalanceUpdate(newBal);
 
-      setSwapResult({ dum: data.dum_received, sol: numAmount, sig: "demo" });
-      setSwapState("success");
-      setAmount("");
+      // Refresh on-chain balance
+      fetch(`${API_BASE}/api/dum/balance-onchain/${walletAddress}`)
+        .then((r) => r.json())
+        .then((d) => setOnChainBalance(d.balance ?? null))
+        .catch(() => {});
+
+      setClaimResult({ dum: data.dum_received, sig: data.tx_signature || "", mint: data.mint || "" });
+      setClaimState("success");
     } catch (err: any) {
-      console.error("[swap] error:", err);
-      const msg = err?.message || "Swap failed";
-      const friendlyMsg = msg.includes("CORS") || msg.includes("Failed to fetch")
-        ? "Could not reach the server. Please try again."
-        : msg.includes("429") || msg.includes("wait")
-        ? msg
-        : msg;
-      setSwapError(friendlyMsg);
-      setSwapState("error");
-    } finally {
-      setTimeout(() => {
-        setSwapState((s) => {
-          if (s === "signing" || s === "verifying") {
-            setSwapError("Swap timed out. Please try again.");
-            return "error";
-          }
-          return s;
-        });
-      }, 30000);
+      setClaimError(err?.message || "Claim failed");
+      setClaimState("error");
     }
   }
 
-  const dumMint = process.env.NEXT_PUBLIC_DUM_MINT || process.env.NEXT_PUBLIC_DUM_MINT_ADDRESS || "";
+  const dumMint = process.env.NEXT_PUBLIC_DUM_MINT || process.env.NEXT_PUBLIC_DUM_MINT_ADDRESS || "J5hiqRLs9Cnj2Yr5q98XN9e2ZeEcmyXabC5dXfQGzq3U";
   const shortWallet = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : "";
 
   return (
     <div className="mx-auto max-w-md">
-      {/* ── Success panel (replaces form after swap) ── */}
-      {swapState === "success" && swapResult ? (
+      {/* ── Success panel ── */}
+      {claimState === "success" && claimResult ? (
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
             <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Points Added</div>
+            <div className="text-xl font-black text-white">DUM Tokens Minted</div>
             <div className="mt-2 flex items-baseline justify-center gap-2">
-              <span className="text-3xl font-black text-emerald-400">+{swapResult.dum.toLocaleString()}</span>
-              <span className="text-sm text-zinc-400">DUM Points</span>
-            </div>
-            <div className="mt-1 text-[11px] text-zinc-500">
-              Demo conversion · {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM Points
+              <span className="text-3xl font-black text-emerald-400">+{claimResult.dum.toLocaleString()}</span>
+              <span className="text-sm text-zinc-400">DUM</span>
             </div>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
-              ✓ Balance updated instantly
+              ✓ Minted on Solana Devnet
             </div>
-            {walletAddress && (
-              <div className="mt-3 text-[10px] text-zinc-600">
-                Wallet: <span className="font-mono text-zinc-400">{shortWallet}</span>
-              </div>
+            {onChainBalance !== null && (
+              <div className="mt-2 text-[11px] text-zinc-500">On-chain balance: {onChainBalance.toLocaleString()} DUM</div>
             )}
           </div>
 
-          {/* Conversion details */}
+          {/* On-chain proof */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">Conversion Details</div>
-            {swapResult.sig && swapResult.sig !== "demo" && (
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">On-chain Proof</div>
+            {claimResult.sig && (
               <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                <a
-                  href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 transition hover:opacity-80"
-                >
+                <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
                   <div className="text-[12px] font-semibold text-white">Transaction</div>
-                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{swapResult.sig.slice(0, 12)}...{swapResult.sig.slice(-8)}</div>
+                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{claimResult.sig.slice(0, 16)}...{claimResult.sig.slice(-8)}</div>
                 </a>
-                <button onClick={() => copyToClipboard(swapResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
-                  {copied === "tx" ? "✓" : "Copy"}
-                </button>
-                <a href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
-                  View →
-                </a>
+                <button onClick={() => copyToClipboard(claimResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 hover:text-emerald-400">{copied === "tx" ? "✓" : "Copy"}</button>
+                <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
               </div>
             )}
-            {dumMint && (
-              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                <a
-                  href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 transition hover:opacity-80"
-                >
-                  <div className="text-[12px] font-semibold text-white">DUM Token</div>
-                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{dumMint.slice(0, 12)}...{dumMint.slice(-8)}</div>
-                </a>
-                <button onClick={() => copyToClipboard(dumMint, "mint")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
-                  {copied === "mint" ? "✓" : "Copy"}
-                </button>
-                <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
-                  View →
-                </a>
-              </div>
-            )}
+            <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+              <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                <div className="text-[12px] font-semibold text-white">DUM Token Mint</div>
+                <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{dumMint.slice(0, 16)}...{dumMint.slice(-8)}</div>
+              </a>
+              <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
+            </div>
             {walletAddress && (
               <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                <a
-                  href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 transition hover:opacity-80"
-                >
-                  <div className="text-[12px] font-semibold text-white">Wallet</div>
+                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <div className="text-[12px] font-semibold text-white">Your Wallet</div>
                   <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{shortWallet}</div>
                 </a>
-                <button onClick={() => copyToClipboard(walletAddress, "wallet")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400">
-                  {copied === "wallet" ? "✓" : "Copy"}
-                </button>
-                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 transition hover:text-emerald-400">
-                  View →
-                </a>
-              </div>
-            )}
-            {swapResult.sig === "demo" && (
-              <div className="rounded-xl bg-zinc-900/50 px-4 py-3 text-[11px] text-zinc-500">
-                Demo conversion — DUM Points credited to your balance. No SOL was transferred.
+                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
               </div>
             )}
           </div>
 
           <button
-            onClick={() => { setSwapState("idle"); setSwapResult(null); setCopied(null); }}
+            onClick={() => { setClaimState("idle"); setClaimResult(null); setCopied(null); }}
             className="w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-white"
           >
-            Convert more
+            Claim more
           </button>
         </div>
       ) : (
         <>
-          {/* ── Swap form ── */}
+          {/* ── Claim form ── */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-5 flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Convert SOL → DUM Points</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim DUM Tokens</div>
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
@@ -540,91 +453,66 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
               </div>
             </div>
 
-            {/* You Pay */}
-            <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">SOL Amount</div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="any"
-                  disabled={swapState !== "idle"}
-                  className="flex-1 bg-transparent text-2xl font-bold text-white outline-none placeholder-zinc-700 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">SOL</div>
+            <p className="mb-4 text-[12px] text-zinc-500">
+              Claim free DUM tokens on Solana devnet. Real SPL tokens minted directly to your wallet.
+            </p>
+
+            {/* Amount selection */}
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              {[100, 500, 1000].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setClaimAmount(String(amt))}
+                  className={`rounded-xl border p-3 text-center transition ${
+                    claimAmount === String(amt)
+                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                      : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-600"
+                  }`}
+                >
+                  <div className="text-lg font-black">{amt}</div>
+                  <div className="text-[9px] text-zinc-600">DUM</div>
+                </button>
+              ))}
+            </div>
+
+            {/* On-chain balance */}
+            {onChainBalance !== null && (
+              <div className="mb-4 flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-3">
+                <span className="text-[11px] text-zinc-500">On-chain balance</span>
+                <span className="font-mono text-sm font-bold text-emerald-400">{onChainBalance.toLocaleString()} DUM</span>
               </div>
-              {solBalance !== null && (
-                <div className="mt-2 text-[10px] text-zinc-600">Wallet: {solBalance.toFixed(4)} SOL (demo — not deducted)</div>
-              )}
-            </div>
+            )}
 
-            {/* Arrow */}
-            <div className="flex justify-center -my-1.5 relative z-10">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-emerald-400">↓</div>
-            </div>
-
-            {/* You Receive */}
-            <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">DUM Points you receive</div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 text-2xl font-bold text-emerald-400">
-                  {numAmount > 0 ? dumAmount.toLocaleString() : "0"}
-                </div>
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">DUM</div>
-              </div>
-              <div className="mt-2 text-[10px] text-zinc-600">Current balance: {balance.toLocaleString()} DUM</div>
-            </div>
-
-            {/* Rate */}
-            <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-600">
-              <span>1 SOL = {solRate.toLocaleString()} DUM</span>
-              <span>Min {MIN_SOL} · Max {MAX_SOL} SOL</span>
-            </div>
-
-            {/* Validation */}
-            {isBelowMin && <div className="mt-2 text-[10px] text-amber-400/80">Minimum is {MIN_SOL} SOL</div>}
-            {isAboveMax && <div className="mt-2 text-[10px] text-amber-400/80">Maximum is {MAX_SOL} SOL per swap</div>}
-            {isInsufficientSol && <div className="mt-2 text-[10px] text-red-400/80">Insufficient balance ({solBalance?.toFixed(4)} SOL available)</div>}
-
-            {/* Swap button */}
+            {/* Claim button */}
             <button
-              onClick={handleSwap}
-              disabled={!canSwap}
+              onClick={handleClaim}
+              disabled={!canClaim}
               className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {swapState === "signing" ? "Converting..." :
-               swapState === "verifying" ? "Adding DUM Points..." :
-               !walletAddress ? "Create wallet to swap" :
-               isInsufficientSol ? "Insufficient SOL" :
-               numAmount > 0 ? `Add ${dumAmount.toLocaleString()} DUM` : "Enter amount"}
+              {claimState === "minting" ? "Minting on Solana..." :
+               !walletAddress ? "Setting up wallet..." :
+               `Claim ${numAmount.toLocaleString()} DUM`}
             </button>
 
-            {/* Error */}
-            {swapState === "error" && swapError && (
+            {claimState === "error" && claimError && (
               <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
-                {swapError}
-                <button onClick={() => setSwapState("idle")} className="ml-2 text-red-300 underline">Try again</button>
+                {claimError}
+                <button onClick={() => setClaimState("idle")} className="ml-2 text-red-300 underline">Try again</button>
               </div>
             )}
 
             <div className="mt-3 text-center text-[10px] text-zinc-700">
-              Demo mode · DUM Points credited instantly · Powered by Solana
-            </div>
-            <div className="mt-2 text-center text-[9px] text-zinc-600">
-              Demo mode · DUM Points added to your balance instantly
+              Real SPL tokens · Solana Devnet · Verified on Explorer
             </div>
           </div>
 
-          {/* Single info row */}
+          {/* Info row */}
           <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Instant</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔗</span> On-chain</span>
             <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> DUM Points</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Real SPL tokens</span>
             <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔗</span> Solana ready</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Solana Devnet</span>
           </div>
         </>
       )}
@@ -884,7 +772,7 @@ export default function HubPage() {
         <div className="mb-8 flex items-center justify-center gap-1 rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-sm mx-auto">
           {[
             { id: "points" as const, label: "Points", icon: "◆" },
-            { id: "swap" as const, label: "Swap", icon: "⇄" },
+            { id: "swap" as const, label: "Claim", icon: "◆" },
             { id: "market" as const, label: "Market", icon: "📊" },
           ].map((t) => (
             <button
