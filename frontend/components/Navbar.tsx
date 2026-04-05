@@ -81,12 +81,15 @@ export function Navbar() {
         borderBottom: navHover
           ? "1px solid rgba(0,255,178,0.30)"
           : "1px solid #1c1c1c",
-        position: "sticky",
+        position: "fixed",
         top: 0,
+        left: 0,
+        right: 0,
         background: navHover
           ? "rgba(0,255,178,0.035)"
           : "rgba(6,6,6,0.92)",
         backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         zIndex: 9999,
         pointerEvents: "auto" as const,
         transition: "all 0.22s ease",

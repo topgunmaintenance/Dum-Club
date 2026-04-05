@@ -151,7 +151,7 @@ export default function BusinessPage() {
   }, []);
 
   return (
-    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
+    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "clip" as any, position: "relative" }}>
       <Starfield count={90} />
       <style>{`
         .biz-cta-primary {

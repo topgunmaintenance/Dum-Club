@@ -1503,7 +1503,7 @@ export default function Home() {
   }, [allPublicProjects]);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-base text-white">
+    <div className="relative min-h-screen bg-base text-white" style={{ overflowX: "clip" }}>
       <LiveSaleToast />
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
