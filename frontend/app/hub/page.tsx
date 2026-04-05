@@ -287,6 +287,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
   const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [claimHistory, setClaimHistory] = useState<{ amount: number; reference_id: string; created_at: string }[]>([]);
+  const [claimable, setClaimable] = useState<{ claimable: number; total_earned: number; total_claimed: number } | null>(null);
 
   function copyToClipboard(value: string, label: string) {
     navigator.clipboard.writeText(value).then(() => {
@@ -313,7 +314,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
     }
   }, [user, privyWallet]);
 
-  // Load claim history
+  // Load claim history + claimable amount
   useEffect(() => {
     if (!user?.privyId) return;
     fetch(`${API_BASE}/api/dum/transactions/${user.privyId}`)
@@ -322,6 +323,10 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
         const claims = (d.transactions || []).filter((t: any) => t.reason === "claim").slice(0, 5);
         setClaimHistory(claims);
       })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/dum/claimable/${user.privyId}`)
+      .then((r) => r.json())
+      .then((d) => setClaimable(d))
       .catch(() => {});
   }, [user?.privyId, claimState]);
 
@@ -335,7 +340,8 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
   }, [walletAddress, claimState]);
 
   const numAmount = Number(claimAmount) || 0;
-  const canClaim = numAmount > 0 && numAmount <= 10000 && !!walletAddress && claimState === "idle";
+  const claimableNow = claimable?.claimable ?? null;
+  const canClaim = numAmount > 0 && numAmount <= 10000 && !!walletAddress && claimState === "idle" && (claimableNow === null || numAmount <= claimableNow);
 
   async function handleClaim() {
     if (!walletAddress || !canClaim) return;
@@ -489,14 +495,20 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
               )}
             </div>
             {/* Balance row */}
-            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+            <div className="mt-3 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-3">
               <div>
-                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">In-app Points</div>
+                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total Balance</div>
                 <div className="mt-0.5 font-mono text-sm font-bold text-white">{balance.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">On-chain Balance</div>
+                <div className="text-[9px] uppercase tracking-[0.15em] text-emerald-400/60">Claimable</div>
                 <div className="mt-0.5 font-mono text-sm font-bold text-emerald-400">
+                  {claimableNow !== null ? claimableNow.toLocaleString() : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">On-chain</div>
+                <div className="mt-0.5 font-mono text-sm font-bold text-zinc-400">
                   {onChainBalance !== null ? onChainBalance.toLocaleString() : "—"}
                 </div>
               </div>
@@ -510,37 +522,63 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
               Release earned DUM to your Solana wallet. Minted as real SPL tokens on devnet.
             </p>
 
-            {/* Amount selection */}
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Select amount to claim</div>
-            <div className="mb-4 grid grid-cols-3 gap-2">
-              {[100, 500, 1000].map((amt) => (
+            {/* Claimable zero state */}
+            {claimableNow !== null && claimableNow === 0 ? (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5 text-center">
+                <div className="text-sm font-bold text-zinc-400">Nothing to claim yet</div>
+                <p className="mt-2 text-[12px] text-zinc-600">
+                  Earn DUM by creating businesses, adding offers, making purchases, or referring friends.
+                </p>
+                <div className="mt-3 text-[10px] text-zinc-700">
+                  Earned: {claimable?.total_earned?.toLocaleString() || 0} · Claimed: {claimable?.total_claimed?.toLocaleString() || 0}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Amount selection */}
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Select amount to claim</div>
+                  {claimableNow !== null && (
+                    <div className="text-[10px] font-mono text-emerald-400/60">{claimableNow.toLocaleString()} available</div>
+                  )}
+                </div>
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  {[100, 500, 1000].map((amt) => {
+                    const exceeds = claimableNow !== null && amt > claimableNow;
+                    return (
+                      <button
+                        key={amt}
+                        onClick={() => !exceeds && setClaimAmount(String(amt))}
+                        disabled={exceeds}
+                        className={`rounded-xl border p-3 text-center transition ${
+                          exceeds
+                            ? "border-zinc-800/50 bg-zinc-900/20 text-zinc-700 cursor-not-allowed"
+                            : claimAmount === String(amt)
+                            ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                            : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-600"
+                        }`}
+                      >
+                        <div className="text-lg font-black">{amt}</div>
+                        <div className="text-[9px] text-zinc-600">DUM</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Claim button */}
                 <button
-                  key={amt}
-                  onClick={() => setClaimAmount(String(amt))}
-                  className={`rounded-xl border p-3 text-center transition ${
-                    claimAmount === String(amt)
-                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-                      : "border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:border-zinc-600"
+                  onClick={claimState === "error" ? () => setClaimState("idle") : handleClaim}
+                  disabled={!canClaim}
+                  className={`w-full rounded-xl px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                    claimState === "error"
+                      ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                      : "bg-emerald-400 text-black hover:bg-emerald-300"
                   }`}
                 >
-                  <div className="text-lg font-black">{amt}</div>
-                  <div className="text-[9px] text-zinc-600">DUM</div>
+                  {!walletAddress ? "Setting up wallet..." : claimButtonLabel}
                 </button>
-              ))}
-            </div>
-
-            {/* Claim button */}
-            <button
-              onClick={claimState === "error" ? () => setClaimState("idle") : handleClaim}
-              disabled={claimState !== "idle" && claimState !== "error"}
-              className={`w-full rounded-xl px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                claimState === "error"
-                  ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                  : "bg-emerald-400 text-black hover:bg-emerald-300"
-              }`}
-            >
-              {!walletAddress ? "Setting up wallet..." : claimButtonLabel}
-            </button>
+              </>
+            )}
 
             {claimState === "error" && claimError && (
               <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">

@@ -694,6 +694,52 @@ async def get_onchain_balance(wallet_address: str):
     return {"wallet": wallet_address, "balance": balance, "source": "on-chain"}
 
 
+# ── Claimable amount ──────────────────────────────────────
+
+EARNED_REASONS = {"purchase_reward", "launch_bonus", "offer_created", "referral_bonus", "referral_welcome"}
+
+
+@router.get("/claimable/{privy_id}")
+async def get_claimable(privy_id: str):
+    """
+    How much earned DUM is eligible to claim on-chain.
+    claimable = total earned (activity rewards) - total already claimed.
+    Stripe purchases are NOT claimable — they are instant balance top-ups.
+    """
+    supabase = get_client()
+
+    # Total earned from activity
+    earned_res = (
+        supabase.table("dum_transactions")
+        .select("amount")
+        .eq("privy_id", privy_id)
+        .gt("amount", 0)
+        .in_("reason", list(EARNED_REASONS))
+        .execute()
+    )
+    total_earned = sum(row.get("amount", 0) for row in (earned_res.data or []))
+
+    # Total already claimed
+    claimed_res = (
+        supabase.table("dum_transactions")
+        .select("amount")
+        .eq("privy_id", privy_id)
+        .eq("reason", "claim")
+        .gt("amount", 0)
+        .execute()
+    )
+    total_claimed = sum(row.get("amount", 0) for row in (claimed_res.data or []))
+
+    claimable = max(total_earned - total_claimed, 0)
+
+    return {
+        "privy_id": privy_id,
+        "claimable": claimable,
+        "total_earned": total_earned,
+        "total_claimed": total_claimed,
+    }
+
+
 @router.get("/price-history")
 async def get_price_history(range: str = "7d"):
     """
