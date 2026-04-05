@@ -1104,7 +1104,7 @@ function ComparisonTabs() {
                 { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
                 { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
                 { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana wallets" },
-                { f: "Token ecosystem", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — on-chain loyalty" },
+                { f: "Token rewards", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — on-chain loyalty" },
                 { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
                 { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
               ].map((row, i) => (
@@ -1523,7 +1523,7 @@ export default function Home() {
             <div className="mb-3 text-3xl">🚀</div>
             <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free businesses</h2>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points to unlock unlimited businesses, priority placement, and more.
+              You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points for unlimited businesses, priority placement, and more.
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {[
@@ -1768,7 +1768,7 @@ export default function Home() {
             {[
               { n: "01", title: "Describe It", desc: "Tell the AI what you offer in plain English — coaching, services, products, anything." },
               { n: "02", title: "We Launch It", desc: "Your storefront, pricing, and offers go live automatically. No setup needed." },
-              { n: "03", title: "Your Fans Buy It", desc: "Customers pay by card. Loyalty perks unlock automatically for your best supporters." },
+              { n: "03", title: "Your Fans Buy It", desc: "Customers pay by card. Loyalty rewards kick in automatically." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -1809,7 +1809,7 @@ export default function Home() {
               {
                 tag: "Loyalty",
                 title: "Automatic Rewards",
-                desc: "Your best customers unlock perks automatically. No extra work.",
+                desc: "Repeat customers earn rewards automatically. No extra work.",
               },
               {
                 tag: "Payments",

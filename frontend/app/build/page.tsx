@@ -151,7 +151,7 @@ export default function BuildPage() {
         </h1>
 
         <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-500">
-          Write a detailed description of your idea. The more context you give, the better AI builds your storefront, offers, and pricing.
+          Describe your idea in detail. AI builds your storefront, offers, and pricing from what you write.
         </p>
 
         <div className="mt-4 flex items-center gap-3 rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2.5">
@@ -193,7 +193,7 @@ export default function BuildPage() {
             <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
               <div className="mb-2 text-lg font-bold text-white">Ready to launch?</div>
               <p className="mb-4 text-sm text-zinc-400">
-                Sign in with Google to create your business. It takes 5 seconds — no technical knowledge needed.
+                Sign in with Google to create your business. Takes 5 seconds.
               </p>
               <button
                 type="button"
@@ -209,7 +209,7 @@ export default function BuildPage() {
             <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center">
               <div className="mb-2 text-lg font-bold text-white">Setting up your account</div>
               <p className="mb-4 text-sm text-zinc-400">
-                We automatically create a secure account for payments and ownership. No crypto knowledge needed — just one click.
+                Creating your account for payments and ownership. One click.
               </p>
               <button
                 type="button"

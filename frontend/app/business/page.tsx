@@ -310,12 +310,12 @@ export default function BusinessPage() {
 
         <div className="biz-grid-2col">
           {[
-            { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page with offers, pricing, and descriptions — ready for customers instantly." },
-            { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account, no gateway setup, no approval wait." },
-            { icon: "🔁", tag: "LOYALTY", title: "Customers keep coming back", body: "Every purchase earns customers DUM Points automatically. Built-in repeat business without extra work." },
-            { icon: "🤖", tag: "AI POWERED", title: "Your storefront writes itself", body: "AI generates your offers, descriptions, and pricing. You can edit anything or let it handle the details." },
-            { icon: "📊", tag: "ANALYTICS", title: "See what sells", body: "Track views, sales, and customer activity in one simple dashboard. Know exactly what works." },
-            { icon: "✓", tag: "TRUST", title: "Verified business badge", body: "Get reviewed by our team and earn a trust badge. Verified businesses rank higher and convert better." },
+            { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page — offers, pricing, descriptions." },
+            { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account needed." },
+            { icon: "🔁", tag: "LOYALTY", title: "Customers keep coming back", body: "Every purchase earns DUM Points automatically. Built-in repeat business." },
+            { icon: "🤖", tag: "AI POWERED", title: "Your storefront writes itself", body: "AI generates offers, descriptions, and pricing. Edit anything, or don't." },
+            { icon: "📊", tag: "ANALYTICS", title: "See what sells", body: "Views, sales, and customer activity. One dashboard." },
+            { icon: "✓", tag: "TRUST", title: "Verified business badge", body: "Get reviewed. Earn a trust badge. Rank higher." },
           ].map((f, i) => (
             <Reveal key={i} delay={i * 0.06}>
               <div className="biz-feature-card">

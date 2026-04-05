@@ -150,7 +150,7 @@ function PointsTab({
         </div>
         {purchaseError && <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">{purchaseError}</div>}
         {purchaseSuccess && <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-xs text-emerald-300">✓ Points added successfully!</div>}
-        <p className="mt-3 text-center text-[10px] text-zinc-600">Secure checkout via Stripe · Points added instantly after payment</p>
+        <p className="mt-3 text-center text-[10px] text-zinc-600">Stripe checkout · Instant delivery</p>
       </div>
 
       {/* Recent Activity */}
@@ -476,7 +476,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
             <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim DUM to Wallet</div>
 
             <p className="mb-4 text-[12px] text-zinc-500">
-              Mint DUM tokens directly to your Solana wallet. These are real SPL tokens on Solana devnet.
+              Claim DUM tokens to your Solana wallet. Real SPL tokens on devnet.
             </p>
 
             {/* Amount selection */}
@@ -540,9 +540,9 @@ function UseTab() {
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">Spend Your DUM Points</div>
         <div className="space-y-4">
           {[
-            { icon: "%", title: "10% off any offer", desc: "Use 10 DUM Points at checkout for an instant 10% discount on any offer, at any business." },
-            { icon: "🌐", title: "Works everywhere", desc: "DUM Points are not tied to one business. Earn at any storefront, spend at any storefront." },
-            { icon: "⬆", title: "Higher tiers, more perks", desc: "As your points grow, you unlock higher tiers with priority placement, more AI access, and exclusive features." },
+            { icon: "%", title: "10% off any offer", desc: "Spend 10 points at checkout. Instant discount, any business." },
+            { icon: "🌐", title: "Works everywhere", desc: "Earn at any storefront, spend at any storefront." },
+            { icon: "⬆", title: "Higher tiers, more perks", desc: "More points, better tier. Priority placement, more AI, exclusive features." },
           ].map((f) => (
             <div key={f.title} className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{f.icon}</div>
@@ -556,8 +556,8 @@ function UseTab() {
       </div>
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
-        <div className="mb-2 text-lg font-black text-white">Ready to save?</div>
-        <p className="mb-4 text-sm text-zinc-500">Browse businesses and use your DUM Points for instant discounts at checkout.</p>
+        <div className="mb-2 text-lg font-black text-white">Use DUM. Save money.</div>
+        <p className="mb-4 text-sm text-zinc-500">Instant discounts at checkout, across every business.</p>
         <Link href="/discover" className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
           Browse Businesses →
         </Link>
@@ -607,10 +607,10 @@ function MarketComingSoonTab() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">What is the DUM Market?</div>
         <p className="text-sm leading-relaxed text-zinc-400">
-          The DUM Market is the next phase of DUM Club: a real exchange where DUM holders can trade, transfer, and put their rewards to work.
+          A real exchange where DUM holders trade, transfer, and put their rewards to work.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          DUM is not a token-first project. It is a reward system that becomes tradable only after real commerce backs it. The market will give DUM a transparent, user-driven price — set by actual supply and demand, not by us.
+          DUM is not a token-first project. It becomes tradable only after real commerce backs it. The price is set by supply and demand — not by us.
         </p>
       </div>
 
@@ -618,7 +618,7 @@ function MarketComingSoonTab() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
         <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-          Most reward systems are closed. Your airline miles, credit card points, and in-game currencies are locked inside one platform. You can&apos;t transfer them, trade them, or use them anywhere else.
+          Most rewards are closed. Airline miles, credit card points, in-game currency — locked to one platform, non-transferable, often worthless.
         </p>
         <div className="space-y-2">
           {[
@@ -632,16 +632,16 @@ function MarketComingSoonTab() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-[12px] leading-relaxed text-zinc-500">
-          DUM unlocks what closed systems never could: open value, transferability, and real exchange between users.
+        <p className="mt-4 text-[12px] text-zinc-500">
+          Open value. Transferable. Tradable between real users.
         </p>
       </div>
 
       {/* ── 4. How Value Flows ── */}
       <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">How Value Flows</div>
-        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-          DUM rewards come from real revenue — not artificial inflation. Every transaction on the platform funds the reward pool.
+        <p className="mb-4 text-sm text-zinc-400">
+          Rewards come from real revenue, not inflation. Every transaction funds the pool.
         </p>
         {/* Transaction breakdown */}
         <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-5">
@@ -670,24 +670,24 @@ function MarketComingSoonTab() {
           ))}
         </div>
         <p className="mt-3 text-center text-[10px] text-zinc-600">
-          Every transaction contributes to the DUM economy. Nothing is manufactured.
+          Nothing is manufactured. Every DUM is earned.
         </p>
       </div>
 
       {/* ── 5. How We Get There (Mechanism) ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How We Get There</div>
-        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
-          Markets are not switched on — they are grown. Each step causes the next:
+        <p className="mb-5 text-sm text-zinc-400">
+          Markets are grown, not switched on. Each step causes the next.
         </p>
         <div className="space-y-3">
           {[
-            { phase: "1", title: "Transactions create rewards", desc: "Every purchase generates DUM Points — funded by real platform revenue, not token printing.", cause: "More purchases → more DUM distributed" },
-            { phase: "2", title: "Rewards create demand", desc: "Users earn DUM and want to use it for discounts and perks. This creates natural demand for the token.", cause: "More users earning → more people wanting DUM" },
-            { phase: "3", title: "Spending creates circulation", desc: "When users spend DUM at businesses, it circulates through the ecosystem instead of sitting idle.", cause: "More spending → healthier token velocity" },
-            { phase: "4", title: "Activity builds value", desc: "As DUM moves through more businesses and more users, it accumulates real utility and trust.", cause: "More activity → stronger network effect" },
-            { phase: "5", title: "Liquidity is introduced", desc: "Treasury-backed liquidity and user participation create the depth needed for fair price discovery.", cause: "Real depth → meaningful prices" },
-            { phase: "6", title: "Trading unlocks", desc: "With real supply, real demand, and real stability — the market opens. Not before.", cause: "Real fundamentals → real market" },
+            { phase: "1", title: "Transactions create rewards", desc: "Every purchase generates DUM — funded by revenue, not printing.", cause: "More purchases → more DUM distributed" },
+            { phase: "2", title: "Rewards create demand", desc: "Users earn DUM and spend it on discounts. Natural demand follows.", cause: "More users → more demand" },
+            { phase: "3", title: "Spending creates circulation", desc: "DUM moves through businesses instead of sitting idle.", cause: "More spending → healthier velocity" },
+            { phase: "4", title: "Activity builds value", desc: "More businesses, more users, more utility, more trust.", cause: "More activity → stronger network" },
+            { phase: "5", title: "Liquidity is introduced", desc: "Treasury and user participation create depth for fair pricing.", cause: "Real depth → real prices" },
+            { phase: "6", title: "Trading unlocks", desc: "Real supply, real demand, real stability. Then the market opens.", cause: "Fundamentals first" },
           ].map((step) => {
             const isActive = Number(step.phase) <= 3;
             return (
@@ -713,8 +713,8 @@ function MarketComingSoonTab() {
       {/* ── 6. How Transactions Create Stability ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How Transactions Create Stability</div>
-        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
-          Every action on DUM Club feeds a reinforcing loop. More usage creates more stability — not hype.
+        <p className="mb-5 text-sm text-zinc-400">
+          Every action feeds a reinforcing loop. More usage, more stability.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[
@@ -743,8 +743,8 @@ function MarketComingSoonTab() {
       {/* ── 7. Customer-First Market Model ── */}
       <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Customer-First Market</div>
-        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-          DUM is built from customers, not wallets. Active users matter more than empty holders. Markets form from engaged people, not speculation.
+        <p className="mb-4 text-sm text-zinc-400">
+          Built from customers, not wallets. Active users matter more than empty holders.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-zinc-800/60 bg-zinc-950/80 px-3 py-4">
           {["Customers", "Activity", "Demand", "Holders", "Market"].map((step, i) => (
@@ -768,8 +768,8 @@ function MarketComingSoonTab() {
       {/* ── 8. When the Market Unlocks ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">When the Market Unlocks</div>
-        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-          The market is a result of activity, not a starting feature. It unlocks when these conditions are met:
+        <p className="mb-4 text-sm text-zinc-400">
+          The market is a result of activity, not a starting feature.
         </p>
         <div className="space-y-2">
           {[
@@ -785,7 +785,7 @@ function MarketComingSoonTab() {
           ))}
         </div>
         <p className="mt-4 text-[11px] text-zinc-600">
-          No exact dates. No artificial deadlines. The market opens when the fundamentals support it.
+          No dates. No artificial deadlines. Fundamentals first.
         </p>
       </div>
 
@@ -815,8 +815,8 @@ function MarketComingSoonTab() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
         <p className="text-sm font-semibold text-zinc-300">Markets without usage are unstable.</p>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-          Launching a market before there are real users, real transactions, and real demand creates artificial price action that helps no one. We are building real demand first — not launching empty trading.
+        <p className="mt-3 text-sm text-zinc-500">
+          We are building real demand first — not launching empty trading.
         </p>
         <div className="mt-4 space-y-2">
           {[
@@ -1064,7 +1064,7 @@ export default function HubPage() {
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-4 text-4xl">◆</div>
           <h1 className="text-2xl font-black tracking-tight">DUM Hub</h1>
-          <p className="mt-3 text-sm text-zinc-400">Sign in to view your DUM Points, claim rewards, and unlock discounts across DUM Club.</p>
+          <p className="mt-3 text-sm text-zinc-400">Sign in to view your points, claim rewards, and save at checkout.</p>
           <button onClick={() => login()} className="mt-6 w-full rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
             Sign In to Continue →
           </button>
