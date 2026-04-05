@@ -153,45 +153,9 @@ function PointsTab({
         <p className="mt-3 text-center text-[10px] text-zinc-600">Secure checkout via Stripe · Points added instantly after payment</p>
       </div>
 
-      {/* How to Spend */}
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How to Spend</div>
-        <div className="space-y-4">
-          {[
-            { icon: "%", title: "10% off any offer", desc: "Use 10 DUM Points at checkout for an instant 10% discount on any offer, at any business." },
-            { icon: "🌐", title: "Works everywhere", desc: "DUM Points are not tied to one business. Earn at any storefront, spend at any storefront." },
-            { icon: "⬆", title: "Higher tiers, more perks", desc: "As your points grow, you unlock higher tiers with priority placement, more AI access, and exclusive features." },
-          ].map((f) => (
-            <div key={f.title} className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{f.icon}</div>
-              <div>
-                <div className="text-sm font-bold text-white">{f.title}</div>
-                <div className="text-[12px] text-zinc-500">{f.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Recent Activity */}
       <RecentActivity />
 
-      {/* Tiers */}
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Tiers</div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {TIERS.map((t) => {
-            const active = tier.name === t.name;
-            return (
-              <div key={t.name} className={`rounded-xl border p-4 text-center transition ${active ? "border-emerald-400/30 bg-emerald-400/[0.04]" : "border-zinc-800 bg-zinc-900/30"}`}>
-                <div className="mb-1 text-lg font-black" style={{ color: active ? t.color : "#555" }}>{t.min === 0 ? "0" : t.min.toLocaleString()}+</div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: active ? t.color : "#666" }}>{t.name}</div>
-                {active && <div className="mt-1 text-[9px] text-emerald-400/60">Current</div>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </>
   );
 }
@@ -290,16 +254,17 @@ function RecentActivity() {
 /* ════════════════════════════════════════════════════════════════
    CLAIM TAB — Real on-chain DUM token minting
    ════════════════════════════════════════════════════════════════ */
-function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
+type ClaimState = "idle" | "preparing" | "submitting" | "confirming" | "success" | "error";
+
+function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
   const { wallets: privyWallets, createWallet } = useSolanaWallets();
   const privyWallet = privyWallets[0] || null;
   const walletAddress = privyWallet?.address || null;
-  const { getToken } = useAuth();
-  const { user } = useAuth();
+  const { getToken, user } = useAuth();
   const [claimAmount, setClaimAmount] = useState("100");
-  const [claimState, setClaimState] = useState<"idle" | "minting" | "success" | "error">("idle");
+  const [claimState, setClaimState] = useState<ClaimState>("idle");
   const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string } | null>(null);
+  const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string; mode: string } | null>(null);
   const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -308,6 +273,17 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       setCopied(label);
       setTimeout(() => setCopied(null), 2000);
     });
+  }
+
+  // Friendly error messages
+  function friendlyError(msg: string): string {
+    if (msg.includes("wait") && msg.includes("seconds")) return msg;
+    if (msg.includes("wallet")) return "Wallet not connected. Please wait for your wallet to set up or refresh the page.";
+    if (msg.includes("401") || msg.includes("auth") || msg.includes("Auth")) return "Please sign in to claim DUM tokens.";
+    if (msg.includes("429") || msg.includes("limit")) return msg;
+    if (msg.includes("insufficient") || msg.includes("gas") || msg.includes("lamport")) return "You need devnet SOL for gas fees. Visit a Solana faucet to get free devnet SOL.";
+    if (msg.includes("network") || msg.includes("Network")) return "Network error. Check your connection and try again.";
+    return msg || "Something went wrong. Please try again.";
   }
 
   // Auto-create wallet if user is logged in but has no wallet
@@ -332,17 +308,20 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   async function handleClaim() {
     if (!walletAddress || !canClaim) return;
 
-    setClaimState("minting");
+    setClaimState("preparing");
     setClaimError(null);
     setClaimResult(null);
 
     try {
       const token = await getToken();
+      if (!token) throw new Error("Please sign in to claim DUM tokens.");
+
+      setClaimState("submitting");
       const res = await fetch(`${API_BASE}/api/dum/claim`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           wallet_address: walletAddress,
@@ -355,6 +334,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         throw new Error(err.detail || `Claim failed (${res.status})`);
       }
 
+      setClaimState("confirming");
       const data = await res.json();
 
       // Update DB balance everywhere
@@ -369,16 +349,32 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         .then((d) => setOnChainBalance(d.balance ?? null))
         .catch(() => {});
 
-      setClaimResult({ dum: data.dum_received, sig: data.tx_signature || "", mint: data.mint || "" });
+      setClaimResult({
+        dum: data.dum_received,
+        sig: data.tx_signature || "",
+        mint: data.mint || "",
+        mode: data.mode || "db-only",
+      });
       setClaimState("success");
     } catch (err: any) {
-      setClaimError(err?.message || "Claim failed");
+      setClaimError(friendlyError(err?.message || "Claim failed"));
       setClaimState("error");
     }
   }
 
   const dumMint = process.env.NEXT_PUBLIC_DUM_MINT || process.env.NEXT_PUBLIC_DUM_MINT_ADDRESS || "J5hiqRLs9Cnj2Yr5q98XN9e2ZeEcmyXabC5dXfQGzq3U";
   const shortWallet = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : "";
+  const hasTxSig = claimResult?.sig && claimResult.sig.length > 20;
+
+  // Claim button label based on state
+  const claimButtonLabel = {
+    idle: `Claim ${numAmount.toLocaleString()} DUM`,
+    preparing: "Preparing...",
+    submitting: "Submitting to Solana...",
+    confirming: "Confirming...",
+    success: "Claimed!",
+    error: "Try Again",
+  }[claimState] || "Claim";
 
   return (
     <div className="mx-auto max-w-md">
@@ -387,49 +383,46 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
             <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Points Claimed</div>
+            <div className="text-xl font-black text-white">DUM Claimed</div>
             <div className="mt-2 flex items-baseline justify-center gap-2">
               <span className="text-3xl font-black text-emerald-400">+{claimResult.dum.toLocaleString()}</span>
               <span className="text-sm text-zinc-400">DUM</span>
             </div>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
-              {claimResult.sig ? "✓ Verified on Solana Devnet" : "✓ DUM Points added to balance"}
+              {hasTxSig ? "Minted on Solana Devnet" : "Added to your DUM balance"}
             </div>
             {onChainBalance !== null && (
-              <div className="mt-2 text-[11px] text-zinc-500">On-chain balance: {onChainBalance.toLocaleString()} DUM</div>
+              <div className="mt-2 text-[11px] text-zinc-500">On-chain wallet balance: {onChainBalance.toLocaleString()} DUM</div>
             )}
           </div>
 
-          {/* On-chain proof */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">On-chain Proof</div>
-            {claimResult.sig && (
-              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <div className="text-[12px] font-semibold text-white">Transaction</div>
-                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{claimResult.sig.slice(0, 16)}...{claimResult.sig.slice(-8)}</div>
-                </a>
-                <button onClick={() => copyToClipboard(claimResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 hover:text-emerald-400">{copied === "tx" ? "✓" : "Copy"}</button>
-                <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
+          {/* On-chain proof — only show if we have real data */}
+          {(hasTxSig || walletAddress) && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">
+                {hasTxSig ? "On-chain Proof" : "Wallet Info"}
               </div>
-            )}
-            <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-              <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                <div className="text-[12px] font-semibold text-white">DUM Token Mint</div>
-                <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{dumMint.slice(0, 16)}...{dumMint.slice(-8)}</div>
-              </a>
-              <a href={`https://explorer.solana.com/address/${dumMint}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
+              {hasTxSig && (
+                <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+                  <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <div className="text-[12px] font-semibold text-white">Transaction</div>
+                    <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{claimResult.sig.slice(0, 16)}...{claimResult.sig.slice(-8)}</div>
+                  </a>
+                  <button onClick={() => copyToClipboard(claimResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 hover:text-emerald-400">{copied === "tx" ? "✓" : "Copy"}</button>
+                  <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
+                </div>
+              )}
+              {walletAddress && (
+                <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
+                  <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <div className="text-[12px] font-semibold text-white">Your Wallet</div>
+                    <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{shortWallet}</div>
+                  </a>
+                  <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
+                </div>
+              )}
             </div>
-            {walletAddress && (
-              <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <div className="text-[12px] font-semibold text-white">Your Wallet</div>
-                  <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{shortWallet}</div>
-                </a>
-                <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
-              </div>
-            )}
-          </div>
+          )}
 
           <button
             onClick={() => { setClaimState("idle"); setClaimResult(null); setCopied(null); }}
@@ -440,21 +433,50 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         </div>
       ) : (
         <>
-          {/* ── Claim form ── */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim DUM Tokens</div>
-              <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </span>
-                {!walletAddress ? "Setting up wallet..." : "● Wallet ready"}
+          {/* ── Wallet + Network status ── */}
+          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Wallet</div>
+              <div className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-2.5 py-1 text-[9px] font-bold text-zinc-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                Solana Devnet
               </div>
             </div>
+            <div className="mt-3 flex items-center justify-between">
+              <div>
+                {walletAddress ? (
+                  <div className="font-mono text-sm text-white">{shortWallet}</div>
+                ) : (
+                  <div className="text-sm text-zinc-500">Connecting wallet...</div>
+                )}
+              </div>
+              {walletAddress && (
+                <button onClick={() => copyToClipboard(walletAddress, "wallet")} className="text-[9px] text-zinc-600 hover:text-emerald-400">
+                  {copied === "wallet" ? "✓ Copied" : "Copy address"}
+                </button>
+              )}
+            </div>
+            {/* Balance row */}
+            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+              <div>
+                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">In-app Points</div>
+                <div className="mt-0.5 font-mono text-sm font-bold text-white">{balance.toLocaleString()}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">On-chain Balance</div>
+                <div className="mt-0.5 font-mono text-sm font-bold text-emerald-400">
+                  {onChainBalance !== null ? onChainBalance.toLocaleString() : "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Claim form ── */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim DUM to Wallet</div>
 
             <p className="mb-4 text-[12px] text-zinc-500">
-              Claim free DUM tokens on Solana devnet. Real SPL tokens minted directly to your wallet.
+              Mint DUM tokens directly to your Solana wallet. These are real SPL tokens on Solana devnet.
             </p>
 
             {/* Amount selection */}
@@ -475,44 +497,32 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
               ))}
             </div>
 
-            {/* On-chain balance */}
-            {onChainBalance !== null && (
-              <div className="mb-4 flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-3">
-                <span className="text-[11px] text-zinc-500">On-chain balance</span>
-                <span className="font-mono text-sm font-bold text-emerald-400">{onChainBalance.toLocaleString()} DUM</span>
-              </div>
-            )}
-
             {/* Claim button */}
             <button
-              onClick={handleClaim}
-              disabled={!canClaim}
-              className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={claimState === "error" ? () => setClaimState("idle") : handleClaim}
+              disabled={claimState !== "idle" && claimState !== "error"}
+              className={`w-full rounded-xl px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                claimState === "error"
+                  ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  : "bg-emerald-400 text-black hover:bg-emerald-300"
+              }`}
             >
-              {claimState === "minting" ? "Minting on Solana..." :
-               !walletAddress ? "Setting up wallet..." :
-               `Claim ${numAmount.toLocaleString()} DUM`}
+              {!walletAddress ? "Setting up wallet..." : claimButtonLabel}
             </button>
 
             {claimState === "error" && claimError && (
               <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
                 {claimError}
-                <button onClick={() => setClaimState("idle")} className="ml-2 text-red-300 underline">Try again</button>
               </div>
             )}
 
-            <div className="mt-3 text-center text-[10px] text-zinc-700">
-              Real SPL tokens · Solana Devnet · Verified on Explorer
-            </div>
-          </div>
-
-          {/* Info row */}
-          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔗</span> On-chain</span>
-            <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Real SPL tokens</span>
-            <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Solana Devnet</span>
+            {claimState !== "idle" && claimState !== "error" && claimState !== "success" && (
+              <div className="mt-3 text-center text-[10px] text-zinc-600">
+                {claimState === "preparing" && "Preparing your claim..."}
+                {claimState === "submitting" && "Submitting transaction to Solana devnet..."}
+                {claimState === "confirming" && "Confirming on-chain..."}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -521,175 +531,138 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MARKET TAB
+   USE TAB — How to spend DUM Points
    ════════════════════════════════════════════════════════════════ */
-function MarketTab() {
-  const [market, setMarket] = useState<any>(null);
-  const [swaps, setSwaps] = useState<any[]>([]);
-  const [liveStats, setLiveStats] = useState<any>(null);
-  const [chartRange, setChartRange] = useState<"24h" | "7d" | "30d">("7d");
-  const [chartData, setChartData] = useState<{ time: string; volume: number; cumulative: number }[]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/api/dum/market`).then(r => r.json()).then(setMarket).catch(() => {});
-    fetch(`${API_BASE}/api/dum/recent-swaps`).then(r => r.json()).then(d => setSwaps(d.swaps || [])).catch(() => {});
-    fetch(`${API_BASE}/api/projects/live-stats`).then(r => r.json()).then(setLiveStats).catch(() => {});
-  }, []);
-
-  // Fetch chart data when range changes
-  useEffect(() => {
-    setChartLoading(true);
-    fetch(`${API_BASE}/api/dum/price-history?range=${chartRange}`)
-      .then(r => r.json())
-      .then(d => setChartData(d.points || []))
-      .catch(() => setChartData([]))
-      .finally(() => setChartLoading(false));
-  }, [chartRange]);
-
-  // Calculate chart bar heights from real data
-  const maxVol = Math.max(...chartData.map(p => p.cumulative), 1);
-  const rangeLabels = { "24h": "24 hours ago", "7d": "7 days ago", "30d": "30 days ago" };
-
+function UseTab() {
   return (
-    <div className="mx-auto max-w-2xl">
-      {/* Price hero */}
-      <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-2xl font-black text-emerald-400">◆</div>
-          <div>
-            <div className="text-xl font-black text-white">DUM</div>
-            <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-500">Digital Utility Market</div>
-          </div>
-        </div>
-
-        <div className="flex items-baseline gap-3">
-          <span className="text-4xl font-black text-white">${market?.price_usd?.toFixed(4) || "0.0100"}</span>
-          <span className="text-sm font-bold text-emerald-400">platform rate</span>
-        </div>
-
-        <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-4">
-          <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total DUM Earned</div>
-            <div className="mt-1 font-mono text-sm font-bold text-white">{market?.total_supply?.toLocaleString() || "0"}</div>
-          </div>
-          <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">24h Activity</div>
-            <div className="mt-1 font-mono text-sm font-bold text-emerald-400">{market?.volume_24h?.toLocaleString() || "0"} DUM</div>
-          </div>
-          <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">DUM Value</div>
-            <div className="mt-1 font-mono text-sm font-bold text-white">${market?.market_cap_usd?.toLocaleString() || "—"}</div>
-          </div>
-        </div>
-        {liveStats && (
-          <div className="mt-3 grid grid-cols-3 gap-3 border-t border-zinc-800/50 pt-3">
-            <div>
-              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Live Businesses</div>
-              <div className="mt-1 font-mono text-sm font-bold text-white">{liveStats.live_projects || 0}</div>
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Active Offers</div>
-              <div className="mt-1 font-mono text-sm font-bold text-white">{liveStats.active_offers || 0}</div>
-            </div>
-            <div>
-              <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Verified</div>
-              <div className="mt-1 font-mono text-sm font-bold text-emerald-400">{liveStats.businesses || 0}</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Activity Chart — real data */}
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Activity</div>
-          <div className="flex gap-1">
-            {(["24h", "7d", "30d"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setChartRange(r)}
-                className={`rounded-md border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition ${
-                  chartRange === r
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-                    : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-emerald-400/20 hover:text-emerald-400"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {chartLoading ? (
-          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">Loading activity...</div>
-        ) : chartData.length === 0 ? (
-          <div className="flex h-32 flex-col items-center justify-center gap-2 text-xs text-zinc-600">
-            <span>Activity builds as DUM Points are earned and claimed.</span>
-            <Link href="/discover" className="text-emerald-400/70 hover:text-emerald-400">Browse businesses to start earning →</Link>
-          </div>
-        ) : (
-          <>
-            <div className="flex h-32 items-end gap-[2px]">
-              {chartData.map((point, i) => {
-                const h = maxVol > 0 ? Math.max((point.cumulative / maxVol) * 100, 2) : 2;
-                return (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-t bg-gradient-to-t from-emerald-400/30 to-emerald-400/5 transition-all duration-300"
-                    style={{ height: `${h}%` }}
-                    title={`${point.volume} DUM · ${new Date(point.time).toLocaleDateString()}`}
-                  />
-                );
-              })}
-            </div>
-            <div className="mt-2 flex justify-between text-[9px] text-zinc-700">
-              <span>{rangeLabels[chartRange]}</span>
-              <span>Now</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* How DUM works */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">◆</div>
-          <div className="mt-2 text-sm font-bold text-white">Earn</div>
-          <div className="mt-1 text-[10px] text-zinc-600">+2 DUM with every purchase</div>
-        </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">%</div>
-          <div className="mt-2 text-sm font-bold text-white">Save</div>
-          <div className="mt-1 text-[10px] text-zinc-600">10% off at any business</div>
-        </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">🌐</div>
-          <div className="mt-2 text-sm font-bold text-white">Everywhere</div>
-          <div className="mt-1 text-[10px] text-zinc-600">Works across all businesses</div>
-        </div>
-      </div>
-
-      {/* Recent platform activity */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Activity</div>
-        {swaps.length === 0 ? (
-          <div className="py-4 text-center text-xs text-zinc-600">No activity yet.</div>
-        ) : (
-          <div className="space-y-2">
-            {swaps.slice(0, 10).map((s: any) => (
-              <div key={s.id} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className={`font-mono text-sm font-bold ${s.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    {s.amount > 0 ? "+" : ""}{s.amount} DUM
-                  </span>
-                  <span className="text-[12px] text-zinc-400">{REASON_LABELS[s.reason] || s.reason}</span>
-                </div>
-                <span className="text-[10px] text-zinc-600">{s.created_at ? formatTimeAgo(s.created_at) : ""}</span>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">Spend Your DUM Points</div>
+        <div className="space-y-4">
+          {[
+            { icon: "%", title: "10% off any offer", desc: "Use 10 DUM Points at checkout for an instant 10% discount on any offer, at any business." },
+            { icon: "🌐", title: "Works everywhere", desc: "DUM Points are not tied to one business. Earn at any storefront, spend at any storefront." },
+            { icon: "⬆", title: "Higher tiers, more perks", desc: "As your points grow, you unlock higher tiers with priority placement, more AI access, and exclusive features." },
+          ].map((f) => (
+            <div key={f.title} className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{f.icon}</div>
+              <div>
+                <div className="text-sm font-bold text-white">{f.title}</div>
+                <div className="text-[12px] text-zinc-500">{f.desc}</div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
+        <div className="mb-2 text-lg font-black text-white">Ready to save?</div>
+        <p className="mb-4 text-sm text-zinc-500">Browse businesses and use your DUM Points for instant discounts at checkout.</p>
+        <Link href="/discover" className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
+          Browse Businesses →
+        </Link>
+      </div>
+
+      {/* Tiers */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Tiers</div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {TIERS.map((t) => (
+            <div key={t.name} className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center">
+              <div className="mb-1 text-lg font-black" style={{ color: t.color }}>{t.min === 0 ? "0" : t.min.toLocaleString()}+</div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: t.color }}>{t.name}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MARKET TAB — Coming Soon positioning screen
+   ════════════════════════════════════════════════════════════════ */
+function MarketComingSoonTab() {
+  return (
+    <div className="mx-auto max-w-lg space-y-6">
+      {/* Hero */}
+      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] via-zinc-950 to-violet-500/[0.03] p-8 text-center">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400">
+          Coming Soon
+        </div>
+        <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">DUM Market</h2>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+          A peer-to-peer marketplace where DUM holders can trade, exchange, and put their rewards to work — all on Solana.
+        </p>
+      </div>
+
+      {/* What is the DUM Market */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">What is the DUM Market?</div>
+        <p className="text-sm leading-relaxed text-zinc-400">
+          The DUM Market will be a dedicated exchange for DUM tokens — built directly into DUM Club. It will allow users to trade DUM with each other, view real-time activity, and see the actual value of their earned rewards.
+        </p>
+      </div>
+
+      {/* Why a Market */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
+        <div className="space-y-3">
+          {[
+            { title: "Real value for real work", desc: "When you earn DUM, it should mean something. A market gives your rewards a real price." },
+            { title: "Reward the early builders", desc: "Early users who create businesses, refer friends, and earn DUM will benefit the most when the market opens." },
+            { title: "Complete the loop", desc: "Earn it, claim it, use it, trade it. The market is the final piece that makes DUM a fully functional reward token." },
+          ].map((item) => (
+            <div key={item.title}>
+              <div className="text-sm font-bold text-white">{item.title}</div>
+              <div className="mt-0.5 text-[12px] text-zinc-500">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Why not live yet */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
+        <p className="text-sm leading-relaxed text-zinc-400">
+          We are building each layer of DUM Club in order — and we are not rushing it.
+          Right now we are focused on making the core experience rock-solid: earning, claiming, and using DUM Points across real businesses.
+          The market launches once there is enough real activity to support it, not before.
+        </p>
+      </div>
+
+      {/* Vision roadmap */}
+      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">The Path Forward</div>
+        <div className="flex items-center justify-between gap-1">
+          {[
+            { label: "Earn", active: true },
+            { label: "Claim", active: true },
+            { label: "Use", active: true },
+            { label: "Trade", active: false },
+          ].map((step, i) => (
+            <div key={step.label} className="flex flex-1 flex-col items-center gap-1.5">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${
+                step.active
+                  ? "bg-emerald-400/15 text-emerald-400 border border-emerald-400/30"
+                  : "bg-zinc-800 text-zinc-500 border border-zinc-700 border-dashed"
+              }`}>
+                {step.active ? "✓" : i + 1}
+              </div>
+              <span className={`text-[10px] font-bold ${step.active ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTAs */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
+          Start Earning DUM →
+        </Link>
+        <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+          Browse Businesses
+        </Link>
       </div>
     </div>
   );
@@ -833,7 +806,7 @@ export default function HubPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [tab, setTab] = useState<"points" | "swap" | "market" | "refer">("points");
+  const [tab, setTab] = useState<"points" | "claim" | "use" | "market" | "refer">("points");
 
   useEffect(() => {
     const read = () => setBalance(Number(localStorage.getItem("dum_points") || "0"));
@@ -880,7 +853,7 @@ export default function HubPage() {
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-4 text-4xl">◆</div>
           <h1 className="text-2xl font-black tracking-tight">DUM Hub</h1>
-          <p className="mt-3 text-sm text-zinc-400">Sign in to view your DUM Points, swap tokens, and unlock discounts across DUM Club.</p>
+          <p className="mt-3 text-sm text-zinc-400">Sign in to view your DUM Points, claim rewards, and unlock discounts across DUM Club.</p>
           <button onClick={() => login()} className="mt-6 w-full rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
             Sign In to Continue →
           </button>
@@ -897,14 +870,30 @@ export default function HubPage() {
         <div className="mb-6 text-center">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Digital Utility Market · Powered by Solana</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DUM Hub</h1>
-          <p className="mt-2 text-sm text-zinc-500">Points · Swap · Market</p>
+          <p className="mt-2 text-sm text-zinc-500">Earn · Claim · Use · Trade</p>
+        </div>
+
+        {/* How DUM works — explainer strip */}
+        <div className="mb-6 grid grid-cols-3 gap-2 text-center">
+          {[
+            { step: "1", label: "Earn", desc: "Get DUM Points from purchases and businesses" },
+            { step: "2", label: "Claim", desc: "Claim eligible DUM to your Solana wallet" },
+            { step: "3", label: "Use", desc: "Spend DUM for discounts and perks" },
+          ].map((s) => (
+            <div key={s.step} className="rounded-xl border border-zinc-800/50 bg-zinc-950/60 px-2 py-3">
+              <div className="text-[9px] font-bold text-emerald-400/50">{s.step}</div>
+              <div className="text-xs font-bold text-white">{s.label}</div>
+              <div className="mt-1 text-[9px] leading-tight text-zinc-600">{s.desc}</div>
+            </div>
+          ))}
         </div>
 
         {/* Tab bar */}
-        <div className="mb-8 flex items-center justify-center gap-1 rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-sm mx-auto">
+        <div className="mb-8 flex items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-lg mx-auto">
           {[
             { id: "points" as const, label: "Points", icon: "◆" },
-            { id: "swap" as const, label: "Claim", icon: "◆" },
+            { id: "claim" as const, label: "Claim", icon: "⬇" },
+            { id: "use" as const, label: "Use", icon: "%" },
             { id: "market" as const, label: "Market", icon: "📊" },
             { id: "refer" as const, label: "Refer", icon: "🔗" },
           ].map((t) => (
@@ -933,8 +922,9 @@ export default function HubPage() {
             purchaseSuccess={purchaseSuccess}
           />
         )}
-        {tab === "swap" && <SwapTab balance={balance} onBalanceUpdate={setBalance} />}
-        {tab === "market" && <MarketTab />}
+        {tab === "claim" && <ClaimTab balance={balance} onBalanceUpdate={setBalance} />}
+        {tab === "use" && <UseTab />}
+        {tab === "market" && <MarketComingSoonTab />}
         {tab === "refer" && <ReferTab getToken={getToken} />}
 
         {/* Bottom CTAs */}

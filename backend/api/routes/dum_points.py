@@ -676,7 +676,7 @@ async def claim_dum_tokens(
         "tx_signature": tx_signature,
         "mint": os.getenv("DUM_MINT", ""),
         "wallet": req.wallet_address,
-        "mode": "on-chain",
+        "mode": mode,
     }
 
 
