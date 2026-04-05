@@ -155,7 +155,7 @@ function PointsTab({
         </div>
         {purchaseError && <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">{purchaseError}</div>}
         {purchaseSuccess && (
-          <div className="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/5 px-4 py-3">
+          <div className="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/5 px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sky-400">✓</span>
@@ -163,11 +163,23 @@ function PointsTab({
               </div>
               <span className="text-[9px] text-zinc-500">just now</span>
             </div>
-            <div className="mt-1 text-[10px] text-zinc-500">DUM added to your balance. Paid via Stripe.</div>
+            {purchaseSuccess.added > 0 && (
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="font-mono text-lg font-black text-sky-400">+{purchaseSuccess.added.toLocaleString()}</span>
+                <span className="text-[11px] text-zinc-500">DUM added</span>
+              </div>
+            )}
+            <div className="mt-1.5 flex items-center justify-between text-[10px] text-zinc-600">
+              <span>Paid via Stripe</span>
+              <span className="font-mono text-zinc-500">Balance: {purchaseSuccess.newBalance.toLocaleString()}</span>
+            </div>
           </div>
         )}
         <p className="mt-3 text-center text-[10px] text-zinc-600">💳 Stripe checkout · Instant delivery · No waiting</p>
       </div>
+
+      {/* Purchase History */}
+      <PurchaseHistory purchaseSuccess={purchaseSuccess} />
 
       {/* Recent Activity */}
       <RecentActivity />
@@ -177,12 +189,50 @@ function PointsTab({
 }
 
 /* ════════════════════════════════════════════════════════════════
+   PURCHASE HISTORY (Points tab)
+   ════════════════════════════════════════════════════════════════ */
+function PurchaseHistory({ purchaseSuccess }: { purchaseSuccess: any }) {
+  const [purchases, setPurchases] = useState<{ amount: number; created_at: string }[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.privyId) return;
+    fetch(`${API_BASE}/api/dum/transactions/${user.privyId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const buys = (d.transactions || []).filter((t: any) => t.reason === "stripe_purchase").slice(0, 5);
+        setPurchases(buys);
+      })
+      .catch(() => {});
+  }, [user?.privyId, purchaseSuccess]);
+
+  if (purchases.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Purchase History</div>
+      <div className="space-y-2">
+        {purchases.map((p, i) => (
+          <div key={i} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-sm font-bold text-sky-400">+{p.amount}</span>
+              <span className="text-[11px] text-zinc-400">Purchased via Stripe</span>
+            </div>
+            <span className="text-[10px] text-zinc-600">{p.created_at ? formatTimeAgo(p.created_at) : ""}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    RECENT ACTIVITY (shared)
    ════════════════════════════════════════════════════════════════ */
 function RecentActivity() {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<"all" | "earned" | "spent" | "swaps">("all");
+  const [filter, setFilter] = useState<"all" | "earned" | "spent" | "purchased">("all");
   const { user } = useAuth();
 
   useEffect(() => {
@@ -196,9 +246,9 @@ function RecentActivity() {
   }, [user?.privyId]);
 
   const filtered = txns.filter((tx) => {
-    if (filter === "earned") return tx.amount > 0 && tx.reason !== "swap_buy";
+    if (filter === "earned") return tx.amount > 0 && !["swap_buy", "stripe_purchase", "demo_swap"].includes(tx.reason);
     if (filter === "spent") return tx.amount < 0;
-    if (filter === "swaps") return tx.reason === "swap_buy" || tx.reason === "swap_sell";
+    if (filter === "purchased") return ["swap_buy", "stripe_purchase", "demo_swap"].includes(tx.reason);
     return true;
   });
 
@@ -211,7 +261,7 @@ function RecentActivity() {
             { id: "all" as const, label: "All" },
             { id: "earned" as const, label: "Earned" },
             { id: "spent" as const, label: "Spent" },
-            { id: "swaps" as const, label: "Swaps" },
+            { id: "purchased" as const, label: "Purchased" },
           ]).map((f) => (
             <button
               key={f.id}
@@ -1097,7 +1147,7 @@ export default function HubPage() {
   const [balance, setBalance] = useState(0);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<{ added: number; newBalance: number } | null>(null);
   const [tab, setTab] = useState<"points" | "claim" | "use" | "market" | "refer">("points");
   const [hubClaimable, setHubClaimable] = useState(0);
 
@@ -1121,7 +1171,7 @@ export default function HubPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("dum_purchase") === "success") {
-      setPurchaseSuccess(true);
+      const balanceBefore = balance;
       const refreshBalance = async () => {
         if (!user?.privyId) return;
         try {
@@ -1132,9 +1182,14 @@ export default function HubPage() {
             setBalance(newBal);
             localStorage.setItem("dum_points", String(newBal));
             window.dispatchEvent(new Event("dum-points-update"));
+            const added = newBal - balanceBefore;
+            if (added > 0) setPurchaseSuccess({ added, newBalance: newBal });
+            else if (!purchaseSuccess) setPurchaseSuccess({ added: 0, newBalance: newBal });
           }
         } catch {}
       };
+      // Set immediate receipt (amount fills in when balance refreshes)
+      if (!purchaseSuccess) setPurchaseSuccess({ added: 0, newBalance: balance });
       setTimeout(refreshBalance, 1000);
       setTimeout(refreshBalance, 3000);
       setTimeout(refreshBalance, 7000);
