@@ -63,6 +63,7 @@ const REASON_LABELS: Record<string, string> = {
 function PointsTab({
   balance, tier, next, progressPct, user, getToken,
   purchasing, setPurchasing, purchaseError, setPurchaseError, purchaseSuccess,
+  hubClaimable, onNavigateClaim,
 }: any) {
   // Balance count-up animation on purchase success
   const [displayBalance, setDisplayBalance] = useState(balance);
@@ -119,6 +120,12 @@ function PointsTab({
               )}
             </div>
             <div className="mt-1 text-[10px] text-zinc-600">Earned + purchased. Use for discounts or claim to wallet.</div>
+            {hubClaimable > 0 && (
+              <button onClick={onNavigateClaim} className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 transition hover:text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />
+                {hubClaimable.toLocaleString()} DUM ready to claim →
+              </button>
+            )}
           </div>
           <div className="rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ borderColor: tier.color, color: tier.color }}>
             {tier.name}
@@ -1309,7 +1316,9 @@ export default function HubPage() {
               <span>{t.icon}</span>
               {t.label}
               {t.id === "claim" && hubClaimable > 0 && (
-                <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />
+                <span className="ml-0.5 min-w-[16px] rounded-full bg-emerald-400/15 px-1 py-0.5 text-center text-[8px] font-bold leading-none text-emerald-400">
+                  {hubClaimable > 99 ? "99+" : hubClaimable}
+                </span>
               )}
             </button>
           ))}
@@ -1323,6 +1332,7 @@ export default function HubPage() {
             purchasing={purchasing} setPurchasing={setPurchasing}
             purchaseError={purchaseError} setPurchaseError={setPurchaseError}
             purchaseSuccess={purchaseSuccess}
+            hubClaimable={hubClaimable} onNavigateClaim={() => setTab("claim")}
           />
         )}
         {tab === "claim" && <ClaimTab balance={balance} onBalanceUpdate={setBalance} />}
