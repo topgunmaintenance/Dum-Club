@@ -1249,6 +1249,17 @@ export default function Home() {
   // Load launch count on mount
   useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
 
+  // Referral tracking: store ref code and track click
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && ref.startsWith("DUM-")) {
+      localStorage.setItem("dum_referral_code", ref);
+      fetch(`${API_BASE}/api/referrals/click/${ref}`, { method: "POST" }).catch(() => {});
+    }
+  }, []);
+
   // Live preview (debounced)
   const preview = useMemo(() => generatePreview(heroIdea), [heroIdea]);
 

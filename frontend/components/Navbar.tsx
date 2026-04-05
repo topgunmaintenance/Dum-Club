@@ -157,7 +157,7 @@ export function Navbar() {
           className="lg:hidden"
           style={{
             position: "fixed",
-            top: "73px",
+            top: "72px",
             left: 0,
             right: 0,
             bottom: 0,

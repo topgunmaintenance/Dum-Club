@@ -696,6 +696,135 @@ function MarketTab() {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   REFER TAB
+   ════════════════════════════════════════════════════════════════ */
+function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
+  const [referral, setReferral] = useState<{ code: string; clicks: number; signups: number; points_earned: number } | null>(null);
+  const [loadingRef, setLoadingRef] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        if (!token) { setLoadingRef(false); return; }
+        const res = await fetch(`${API_BASE}/api/referrals/mine`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setReferral(await res.json());
+        }
+      } catch {} finally { setLoadingRef(false); }
+    })();
+  }, []);
+
+  if (loadingRef) {
+    return <div className="text-center text-sm text-zinc-500 py-12">Loading referral info...</div>;
+  }
+
+  const referralUrl = referral
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://dum-club.vercel.app"}?ref=${referral.code}`
+    : "";
+
+  return (
+    <div className="space-y-6">
+      {/* Referral link */}
+      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Your Referral Link</div>
+        <p className="mt-2 text-sm text-zinc-400">Share your link. When someone signs up, you both earn DUM Points.</p>
+
+        {referral && (
+          <>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex-1 truncate rounded-xl border border-zinc-700 bg-base px-3 py-2.5 font-mono text-sm text-zinc-300">
+                {referralUrl}
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(referralUrl).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  });
+                }}
+                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                  copied
+                    ? "bg-emerald-400/20 text-emerald-400 border border-emerald-400/30"
+                    : "bg-emerald-400 text-black hover:bg-emerald-300"
+                }`}
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Join me on DUM Club — build a business, earn rewards.\n\n")}&url=${encodeURIComponent(referralUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-700 py-2.5 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Share on X
+              </a>
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: "Join DUM Club",
+                      text: "Build a business, earn rewards on DUM Club",
+                      url: referralUrl,
+                    }).catch(() => {});
+                  }
+                }}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-700 py-2.5 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                More options
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Stats */}
+      {referral && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 text-center">
+            <div className="text-2xl font-black text-white">{referral.clicks}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">Clicks</div>
+          </div>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 text-center">
+            <div className="text-2xl font-black text-white">{referral.signups}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">Signups</div>
+          </div>
+          <div className="rounded-xl border border-emerald-400/15 bg-emerald-400/5 p-4 text-center">
+            <div className="text-2xl font-black text-emerald-400">{referral.points_earned}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">DUM Earned</div>
+          </div>
+        </div>
+      )}
+
+      {/* How it works */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
+        <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">How It Works</div>
+        <div className="space-y-3">
+          {[
+            { step: "1", text: "Share your link with friends or on social media" },
+            { step: "2", text: "They sign up using your link" },
+            { step: "3", text: "You earn 25 DUM Points, they get 10 welcome points" },
+          ].map((s) => (
+            <div key={s.step} className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">
+                {s.step}
+              </span>
+              <span className="text-sm text-zinc-300">{s.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    MAIN HUB PAGE
    ════════════════════════════════════════════════════════════════ */
 export default function HubPage() {
@@ -704,7 +833,7 @@ export default function HubPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [tab, setTab] = useState<"points" | "swap" | "market">("points");
+  const [tab, setTab] = useState<"points" | "swap" | "market" | "refer">("points");
 
   useEffect(() => {
     const read = () => setBalance(Number(localStorage.getItem("dum_points") || "0"));
@@ -777,6 +906,7 @@ export default function HubPage() {
             { id: "points" as const, label: "Points", icon: "◆" },
             { id: "swap" as const, label: "Claim", icon: "◆" },
             { id: "market" as const, label: "Market", icon: "📊" },
+            { id: "refer" as const, label: "Refer", icon: "🔗" },
           ].map((t) => (
             <button
               key={t.id}
@@ -805,6 +935,7 @@ export default function HubPage() {
         )}
         {tab === "swap" && <SwapTab balance={balance} onBalanceUpdate={setBalance} />}
         {tab === "market" && <MarketTab />}
+        {tab === "refer" && <ReferTab getToken={getToken} />}
 
         {/* Bottom CTAs */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

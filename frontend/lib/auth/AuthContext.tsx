@@ -120,6 +120,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAdmin,
           accessToken: accessToken || null,
         });
+
+        // Referral conversion: if user signed up via a referral link
+        if (accessToken) {
+          try {
+            const refCode = localStorage.getItem("dum_referral_code");
+            if (refCode) {
+              await fetch(`${API_BASE}/api/referrals/convert/${refCode}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              localStorage.removeItem("dum_referral_code");
+            }
+          } catch {}
+        }
       } catch (err) {
         console.error("Auth sync failed", err);
         setDumUser(null);
