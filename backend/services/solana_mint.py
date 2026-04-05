@@ -59,6 +59,13 @@ def mint_dum_to_wallet(wallet_address: str, amount: int) -> dict | None:
 
         print(f"[solana] using script: {script_path}")
 
+        # Verify node_modules exist near the script
+        node_modules_dir = os.path.join(os.path.dirname(script_path), "..", "node_modules")
+        if not os.path.isdir(node_modules_dir):
+            alt_dir = os.path.join(os.path.dirname(script_path), "node_modules")
+            if not os.path.isdir(alt_dir):
+                print(f"[solana] WARNING: node_modules not found at {node_modules_dir} or {alt_dir}")
+
         result = subprocess.run(
             ["node", script_path, "mint-to", wallet_address, str(amount)],
             cwd=os.path.dirname(script_path),
