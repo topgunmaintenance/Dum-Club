@@ -52,6 +52,9 @@ const REASON_LABELS: Record<string, string> = {
   swap_buy: "Swapped SOL → DUM",
   swap_sell: "Swapped DUM → SOL",
   demo_swap: "Demo swap SOL → DUM",
+  claim: "Claimed to wallet",
+  referral_bonus: "Referral reward",
+  referral_welcome: "Welcome bonus",
 };
 
 /* ════════════════════════════════════════════════════════════════
@@ -67,11 +70,12 @@ function PointsTab({
       <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Balance</div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Your DUM Balance</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-5xl font-black text-white">{balance}</span>
               <span className="text-lg text-zinc-500">points</span>
             </div>
+            <div className="mt-1 text-[10px] text-zinc-600">Earned + purchased. Use for discounts or claim to wallet.</div>
           </div>
           <div className="rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ borderColor: tier.color, color: tier.color }}>
             {tier.name}
@@ -150,7 +154,18 @@ function PointsTab({
           ))}
         </div>
         {purchaseError && <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">{purchaseError}</div>}
-        {purchaseSuccess && <div className="mt-3 rounded-lg border border-sky-400/20 bg-sky-400/5 px-4 py-2 text-xs text-sky-300">✓ Purchased. DUM added to your balance.</div>}
+        {purchaseSuccess && (
+          <div className="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/5 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sky-400">✓</span>
+                <span className="text-xs font-bold text-sky-300">Purchase complete</span>
+              </div>
+              <span className="text-[9px] text-zinc-500">just now</span>
+            </div>
+            <div className="mt-1 text-[10px] text-zinc-500">DUM added to your balance. Paid via Stripe.</div>
+          </div>
+        )}
         <p className="mt-3 text-center text-[10px] text-zinc-600">💳 Stripe checkout · Instant delivery · No waiting</p>
       </div>
 
@@ -234,15 +249,18 @@ function RecentActivity() {
                 </div>
                 <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
               </div>
-              {tx.reason === "swap_buy" && tx.reference_id && tx.reference_id.length > 30 && (
+              {(tx.reason === "swap_buy" || tx.reason === "claim") && tx.reference_id && tx.reference_id.length > 30 && (
                 <a
                   href={`https://explorer.solana.com/tx/${tx.reference_id}?cluster=devnet`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1.5 inline-flex items-center gap-1 text-[9px] text-emerald-400/50 transition hover:text-emerald-400"
                 >
-                  View on Solana Explorer → <span className="font-mono text-zinc-700">{tx.reference_id.slice(0, 8)}...{tx.reference_id.slice(-4)}</span>
+                  View on Explorer → <span className="font-mono text-zinc-700">{tx.reference_id.slice(0, 8)}...{tx.reference_id.slice(-4)}</span>
                 </a>
+              )}
+              {tx.reason === "stripe_purchase" && (
+                <div className="mt-1 text-[9px] text-sky-400/50">💳 Stripe purchase · Instant</div>
               )}
             </div>
           ))}
@@ -268,6 +286,7 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
   const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string; mode: string } | null>(null);
   const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [claimHistory, setClaimHistory] = useState<{ amount: number; reference_id: string; created_at: string }[]>([]);
 
   function copyToClipboard(value: string, label: string) {
     navigator.clipboard.writeText(value).then(() => {
@@ -293,6 +312,18 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
       createWallet().catch(() => {});
     }
   }, [user, privyWallet]);
+
+  // Load claim history
+  useEffect(() => {
+    if (!user?.privyId) return;
+    fetch(`${API_BASE}/api/dum/transactions/${user.privyId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const claims = (d.transactions || []).filter((t: any) => t.reason === "claim").slice(0, 5);
+        setClaimHistory(claims);
+      })
+      .catch(() => {});
+  }, [user?.privyId, claimState]);
 
   // Fetch on-chain DUM balance
   useEffect(() => {
@@ -526,6 +557,39 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
             )}
           </div>
         </>
+      )}
+
+      {/* ── Claim History ── */}
+      {claimHistory.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim History</div>
+          <div className="space-y-2">
+            {claimHistory.map((c, i) => {
+              const hasSig = c.reference_id && c.reference_id.length > 30;
+              return (
+                <div key={i} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm font-bold text-emerald-400">+{c.amount}</span>
+                    <span className="text-[11px] text-zinc-400">Claimed to wallet</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-zinc-600">{c.created_at ? formatTimeAgo(c.created_at) : ""}</span>
+                    {hasSig && (
+                      <a
+                        href={`https://explorer.solana.com/tx/${c.reference_id}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-[8px] font-bold text-emerald-400/70 transition hover:text-emerald-400"
+                      >
+                        Tx →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
