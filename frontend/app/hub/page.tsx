@@ -109,9 +109,10 @@ function PointsTab({
         </div>
       </div>
 
-      {/* Add Points (Stripe) */}
-      <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">Add DUM Points</div>
+      {/* Buy Points (Stripe) */}
+      <div className="mb-6 rounded-2xl border border-sky-400/15 bg-gradient-to-br from-sky-400/[0.03] to-zinc-950 p-6">
+        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-sky-400/70">Buy DUM Points</div>
+        <p className="mb-4 text-[12px] text-zinc-500">Card payment via Stripe. Added to your balance immediately.</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { id: "tier_100", points: 100, price: "$10", bonus: null, best: false },
@@ -135,22 +136,22 @@ function PointsTab({
                 } catch { setPurchaseError("Network error"); setPurchasing(null); }
               }}
               disabled={!!purchasing}
-              className={`relative rounded-xl border p-5 text-center transition hover:-translate-y-1 ${t.best ? "border-emerald-400/30 bg-emerald-400/[0.06] shadow-[0_0_16px_rgba(0,255,163,0.06)]" : "border-zinc-800 bg-zinc-900/50"} ${purchasing === t.id ? "opacity-60" : ""}`}
+              className={`relative rounded-xl border p-5 text-center transition hover:-translate-y-1 ${t.best ? "border-sky-400/30 bg-sky-400/[0.06] shadow-[0_0_16px_rgba(56,189,248,0.06)]" : "border-zinc-800 bg-zinc-900/50"} ${purchasing === t.id ? "opacity-60" : ""}`}
             >
-              {t.best && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-400 px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-black">Best Value</div>}
+              {t.best && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-sky-400 px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-black">Best Value</div>}
               <div className="mb-1 text-2xl font-black text-white">{t.points}</div>
               <div className="mb-2 text-[11px] text-zinc-500">points</div>
-              <div className="text-lg font-bold text-emerald-400">{t.price}</div>
-              {t.bonus && <div className="mt-1 text-[10px] font-semibold text-emerald-400/70">{t.bonus}</div>}
-              <div className="mt-3 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[11px] font-bold text-emerald-400">
-                {purchasing === t.id ? "Processing..." : "Add Points"}
+              <div className="text-lg font-bold text-sky-400">{t.price}</div>
+              {t.bonus && <div className="mt-1 text-[10px] font-semibold text-sky-400/70">{t.bonus}</div>}
+              <div className="mt-3 rounded-lg bg-sky-400/10 px-3 py-1.5 text-[11px] font-bold text-sky-400">
+                {purchasing === t.id ? "Processing..." : "Buy Now"}
               </div>
             </button>
           ))}
         </div>
         {purchaseError && <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">{purchaseError}</div>}
-        {purchaseSuccess && <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-xs text-emerald-300">✓ Points added successfully!</div>}
-        <p className="mt-3 text-center text-[10px] text-zinc-600">Stripe checkout · Instant delivery</p>
+        {purchaseSuccess && <div className="mt-3 rounded-lg border border-sky-400/20 bg-sky-400/5 px-4 py-2 text-xs text-sky-300">✓ Purchased. DUM added to your balance.</div>}
+        <p className="mt-3 text-center text-[10px] text-zinc-600">💳 Stripe checkout · Instant delivery · No waiting</p>
       </div>
 
       {/* Recent Activity */}
@@ -383,13 +384,13 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
             <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Claimed</div>
+            <div className="text-xl font-black text-white">DUM Claimed to Wallet</div>
             <div className="mt-2 flex items-baseline justify-center gap-2">
               <span className="text-3xl font-black text-emerald-400">+{claimResult.dum.toLocaleString()}</span>
               <span className="text-sm text-zinc-400">DUM</span>
             </div>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
-              {hasTxSig ? "Minted on Solana Devnet" : "Added to your DUM balance"}
+              {hasTxSig ? "Minted on Solana Devnet" : "Earned DUM released to balance"}
             </div>
             {onChainBalance !== null && (
               <div className="mt-2 text-[11px] text-zinc-500">On-chain wallet balance: {onChainBalance.toLocaleString()} DUM</div>
@@ -473,13 +474,13 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
 
           {/* ── Claim form ── */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim DUM to Wallet</div>
-
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim Earned DUM</div>
             <p className="mb-4 text-[12px] text-zinc-500">
-              Claim DUM tokens to your Solana wallet. Real SPL tokens on devnet.
+              Release earned DUM to your Solana wallet. Minted as real SPL tokens on devnet.
             </p>
 
             {/* Amount selection */}
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Select amount to claim</div>
             <div className="mb-4 grid grid-cols-3 gap-2">
               {[100, 500, 1000].map((amt) => (
                 <button
