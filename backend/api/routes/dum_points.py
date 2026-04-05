@@ -774,7 +774,6 @@ async def get_price_history(range: str = "7d"):
             "cumulative": cumulative,
             "price": DUM_USD_PRICE,
         })
-        })
 
     return {
         "range": range,
