@@ -24,13 +24,33 @@ const bs58 = bs58Module.default || bs58Module;
 const RPC_URL = process.env.SOLANA_RPC_URL || clusterApiUrl("devnet");
 const DECIMALS = 9; // Standard Solana token decimals
 
+// IMPORTANT: DUM_TREASURY_KEYPAIR must be a BASE58-encoded secret string.
+// Railway env var must NOT be a JSON array like [118,103,...].
+// To convert: use base58.encode(Uint8Array.from(jsonArray))
+
 function loadKeypair() {
   const secret = process.env.DUM_TREASURY_KEYPAIR;
   if (!secret) {
     console.error("ERROR: DUM_TREASURY_KEYPAIR env var required (base58 secret key)");
     process.exit(1);
   }
-  return Keypair.fromSecretKey(bs58.decode(secret));
+  const trimmed = secret.trim();
+  if (trimmed.startsWith("[")) {
+    console.error("ERROR: DUM_TREASURY_KEYPAIR is JSON-array formatted; expected base58 secret string.");
+    console.error("Convert with: base58.encode(Uint8Array.from(JSON.parse(key)))");
+    process.exit(1);
+  }
+  try {
+    const decoded = bs58.decode(trimmed);
+    if (decoded.length !== 64) {
+      console.error(`ERROR: DUM_TREASURY_KEYPAIR decoded to ${decoded.length} bytes; expected 64`);
+      process.exit(1);
+    }
+    return Keypair.fromSecretKey(decoded);
+  } catch (err) {
+    console.error(`ERROR: DUM_TREASURY_KEYPAIR is not valid base58: ${err.message}`);
+    process.exit(1);
+  }
 }
 
 async function createDumToken() {

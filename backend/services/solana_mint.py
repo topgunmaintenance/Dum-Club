@@ -15,13 +15,23 @@ import subprocess
 import json
 
 
+# IMPORTANT: DUM_TREASURY_KEYPAIR must be a BASE58-encoded secret string.
+# Do NOT store it as a JSON array like [118,103,...] in Railway.
+# Convert with: base58.b58encode(bytes(json_array)).decode()
 DUM_MINT = os.getenv("DUM_MINT", "") or os.getenv("DUM_MINT_ADDRESS", "")
 DUM_TREASURY_KEYPAIR = os.getenv("DUM_TREASURY_KEYPAIR", "")
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "")
 
+# Validate key format at import time so bad config is caught immediately
+if DUM_TREASURY_KEYPAIR and DUM_TREASURY_KEYPAIR.strip().startswith("["):
+    print("[solana] FATAL CONFIG ERROR: DUM_TREASURY_KEYPAIR is JSON-array formatted.")
+    print("[solana] It must be a base58-encoded secret string, NOT a JSON array.")
+    print("[solana] On-chain minting will be DISABLED until this is fixed.")
+    DUM_TREASURY_KEYPAIR = ""  # force disable to prevent repeated decode failures
+
 
 def is_solana_enabled() -> bool:
-    """Check if Solana minting is configured."""
+    """Check if Solana minting is configured with valid env vars."""
     return bool(DUM_MINT and DUM_TREASURY_KEYPAIR)
 
 
