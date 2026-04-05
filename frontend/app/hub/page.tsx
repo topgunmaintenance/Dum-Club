@@ -570,16 +570,16 @@ function MarketTab() {
 
         <div className="mt-5 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-4">
           <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total Value</div>
-            <div className="mt-1 font-mono text-sm font-bold text-white">${market?.market_cap_usd?.toLocaleString() || "—"}</div>
+            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total DUM Earned</div>
+            <div className="mt-1 font-mono text-sm font-bold text-white">{market?.total_supply?.toLocaleString() || "0"}</div>
           </div>
           <div>
             <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">24h Activity</div>
             <div className="mt-1 font-mono text-sm font-bold text-emerald-400">{market?.volume_24h?.toLocaleString() || "0"} DUM</div>
           </div>
           <div>
-            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total Supply</div>
-            <div className="mt-1 font-mono text-sm font-bold text-white">{market?.total_supply?.toLocaleString() || "—"}</div>
+            <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">DUM Value</div>
+            <div className="mt-1 font-mono text-sm font-bold text-white">${market?.market_cap_usd?.toLocaleString() || "—"}</div>
           </div>
         </div>
         {liveStats && (
@@ -622,9 +622,12 @@ function MarketTab() {
         </div>
 
         {chartLoading ? (
-          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">Loading...</div>
+          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">Loading activity...</div>
         ) : chartData.length === 0 ? (
-          <div className="flex h-32 items-center justify-center text-xs text-zinc-600">No activity data for this range.</div>
+          <div className="flex h-32 flex-col items-center justify-center gap-2 text-xs text-zinc-600">
+            <span>Activity builds as DUM Points are earned and claimed.</span>
+            <Link href="/discover" className="text-emerald-400/70 hover:text-emerald-400">Browse businesses to start earning →</Link>
+          </div>
         ) : (
           <>
             <div className="flex h-32 items-end gap-[2px]">
@@ -648,22 +651,22 @@ function MarketTab() {
         )}
       </div>
 
-      {/* DUM info */}
+      {/* How DUM works */}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">🔗</div>
-          <div className="mt-2 text-sm font-bold text-white">Solana SPL</div>
-          <div className="mt-1 text-[10px] text-zinc-600">Built on Solana blockchain</div>
+          <div className="text-lg">◆</div>
+          <div className="mt-2 text-sm font-bold text-white">Earn</div>
+          <div className="mt-1 text-[10px] text-zinc-600">+2 DUM with every purchase</div>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">💳</div>
-          <div className="mt-2 text-sm font-bold text-white">Stripe + SOL</div>
-          <div className="mt-1 text-[10px] text-zinc-600">Add points with card or crypto</div>
+          <div className="text-lg">%</div>
+          <div className="mt-2 text-sm font-bold text-white">Save</div>
+          <div className="mt-1 text-[10px] text-zinc-600">10% off at any business</div>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-center">
-          <div className="text-lg">🏪</div>
-          <div className="mt-2 text-sm font-bold text-white">Real utility</div>
-          <div className="mt-1 text-[10px] text-zinc-600">Discounts at every business</div>
+          <div className="text-lg">🌐</div>
+          <div className="mt-2 text-sm font-bold text-white">Everywhere</div>
+          <div className="mt-1 text-[10px] text-zinc-600">Works across all businesses</div>
         </div>
       </div>
 

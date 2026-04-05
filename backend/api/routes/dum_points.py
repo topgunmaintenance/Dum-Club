@@ -697,14 +697,14 @@ async def get_price_history(range: str = "7d"):
     """
     DUM Points activity over time — aggregated from dum_transactions.
     Returns data points for charting: timestamp + cumulative volume.
-    Price is fixed at $0.01/DUM so chart shows activity volume, not price swings.
+    ALWAYS returns data points (never empty) — uses all-time data as fallback.
     """
     from datetime import datetime, timezone, timedelta
 
     range_map = {
-        "24h": (timedelta(hours=24), timedelta(hours=1)),    # 24 points, 1 per hour
-        "7d":  (timedelta(days=7), timedelta(hours=6)),      # 28 points, 1 per 6 hours
-        "30d": (timedelta(days=30), timedelta(days=1)),      # 30 points, 1 per day
+        "24h": (timedelta(hours=24), timedelta(hours=1)),
+        "7d":  (timedelta(days=7), timedelta(hours=6)),
+        "30d": (timedelta(days=30), timedelta(days=1)),
     }
 
     span, bucket_size = range_map.get(range, range_map["7d"])
@@ -712,6 +712,7 @@ async def get_price_history(range: str = "7d"):
     supabase = get_client()
 
     try:
+        # First try: get transactions in the requested range
         res = (
             supabase.table("dum_transactions")
             .select("amount, created_at")
@@ -721,12 +722,34 @@ async def get_price_history(range: str = "7d"):
             .execute()
         )
         txns = res.data or []
-    except Exception:
+
+        # Fallback: if no data in range, get ALL transactions
+        if not txns:
+            res = (
+                supabase.table("dum_transactions")
+                .select("amount, created_at")
+                .gt("amount", 0)
+                .order("created_at", desc=False)
+                .limit(100)
+                .execute()
+            )
+            txns = res.data or []
+            # Adjust cutoff to cover the full data range
+            if txns:
+                earliest = txns[0].get("created_at", "")
+                try:
+                    cutoff = datetime.fromisoformat(earliest.replace("Z", "+00:00")) - timedelta(hours=1)
+                    span = datetime.now(timezone.utc) - cutoff
+                    bucket_size = span / 20  # 20 buckets for all-time view
+                except (ValueError, TypeError):
+                    pass
+    except Exception as exc:
+        print(f"[price-history] query error: {exc!r}")
         txns = []
 
     # Bucket transactions into time periods
-    now = datetime.now(timezone.utc)
-    num_buckets = max(int(span / bucket_size), 1)
+    num_buckets = max(int(span / bucket_size), 1) if bucket_size.total_seconds() > 0 else 20
+    num_buckets = min(num_buckets, 40)  # cap at 40 bars
     points = []
     cumulative = 0
 
@@ -734,17 +757,23 @@ async def get_price_history(range: str = "7d"):
         bucket_start = cutoff + (bucket_size * i)
         bucket_end = bucket_start + bucket_size
 
-        bucket_vol = sum(
-            t.get("amount", 0) for t in txns
-            if bucket_start.isoformat() <= (t.get("created_at") or "") < bucket_end.isoformat()
-        )
-        cumulative += bucket_vol
+        # Compare using parsed datetime objects instead of string comparison
+        bucket_vol = 0
+        for t in txns:
+            try:
+                t_time = datetime.fromisoformat((t.get("created_at") or "").replace("Z", "+00:00"))
+                if bucket_start <= t_time < bucket_end:
+                    bucket_vol += t.get("amount", 0)
+            except (ValueError, TypeError):
+                continue
 
+        cumulative += bucket_vol
         points.append({
             "time": bucket_start.isoformat(),
             "volume": bucket_vol,
             "cumulative": cumulative,
             "price": DUM_USD_PRICE,
+        })
         })
 
     return {
