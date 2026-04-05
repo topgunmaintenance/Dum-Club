@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -64,6 +64,46 @@ function PointsTab({
   balance, tier, next, progressPct, user, getToken,
   purchasing, setPurchasing, purchaseError, setPurchaseError, purchaseSuccess,
 }: any) {
+  // Balance count-up animation on purchase success
+  const [displayBalance, setDisplayBalance] = useState(balance);
+  const [deltaAccent, setDeltaAccent] = useState<number | null>(null);
+  const prevBalanceRef = useRef(balance);
+  const animFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    const prev = prevBalanceRef.current;
+    prevBalanceRef.current = balance;
+
+    // Only animate when balance increases AND we have a purchase success with a real amount
+    if (balance > prev && purchaseSuccess?.added > 0) {
+      const from = prev;
+      const to = balance;
+      const duration = 700;
+      const start = performance.now();
+      setDeltaAccent(to - from);
+
+      const step = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setDisplayBalance(Math.round(from + (to - from) * eased));
+        if (progress < 1) {
+          animFrameRef.current = requestAnimationFrame(step);
+        } else {
+          setDisplayBalance(to);
+          // Fade out delta accent after a pause
+          setTimeout(() => setDeltaAccent(null), 1500);
+        }
+      };
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = requestAnimationFrame(step);
+      return () => cancelAnimationFrame(animFrameRef.current);
+    } else {
+      setDisplayBalance(balance);
+    }
+  }, [balance, purchaseSuccess?.added]);
+
   return (
     <>
       {/* Balance */}
@@ -72,8 +112,11 @@ function PointsTab({
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Your DUM Balance</div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-5xl font-black text-white">{balance}</span>
+              <span className="text-5xl font-black text-white">{displayBalance.toLocaleString()}</span>
               <span className="text-lg text-zinc-500">points</span>
+              {deltaAccent !== null && deltaAccent > 0 && (
+                <span className="animate-pulse font-mono text-sm font-bold text-sky-400">+{deltaAccent.toLocaleString()}</span>
+              )}
             </div>
             <div className="mt-1 text-[10px] text-zinc-600">Earned + purchased. Use for discounts or claim to wallet.</div>
           </div>
