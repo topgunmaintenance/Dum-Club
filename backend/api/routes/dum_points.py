@@ -643,24 +643,32 @@ async def claim_dum_tokens(
         except (ValueError, TypeError):
             pass
 
-    # Mint real DUM SPL tokens on-chain
+    # Attempt real on-chain SPL mint, fall back to DB-only if unavailable
     from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
 
-    if not is_solana_enabled():
-        raise HTTPException(status_code=503, detail="On-chain minting not configured. Set DUM_MINT and DUM_TREASURY_KEYPAIR.")
+    tx_signature = ""
+    mode = "db-only"
 
-    mint_result = mint_dum_to_wallet(req.wallet_address, req.amount)
-    if not mint_result:
-        raise HTTPException(status_code=500, detail="On-chain minting failed. Please try again.")
+    if is_solana_enabled():
+        try:
+            mint_result = mint_dum_to_wallet(req.wallet_address, req.amount)
+            if mint_result and mint_result.get("signature"):
+                tx_signature = mint_result["signature"]
+                mode = "on-chain"
+                print(f"[claim] ✓ on-chain mint: {req.amount} DUM to {req.wallet_address} | tx: {tx_signature}")
+            else:
+                print(f"[claim] on-chain mint returned no result, using DB fallback")
+        except Exception as exc:
+            print(f"[claim] on-chain mint failed ({exc!r}), using DB fallback")
+    else:
+        print(f"[claim] Solana not configured, using DB-only mode")
 
-    tx_signature = mint_result.get("signature", "")
-
-    # Log in DB for tracking
+    # Always award points in DB (source of truth for UX)
     new_balance = _update_balance_and_log(
-        supabase, privy_id, req.amount, "claim", tx_signature or req.wallet_address
+        supabase, privy_id, req.amount, "claim", tx_signature or f"claim_{req.wallet_address[:8]}"
     )
 
-    print(f"[claim] ✓ {req.amount} DUM minted to {req.wallet_address} | tx: {tx_signature}")
+    print(f"[claim] ✓ {req.amount} DUM claimed by {privy_id} | mode: {mode}")
     return {
         "status": "success",
         "dum_received": req.amount,

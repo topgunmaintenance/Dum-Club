@@ -387,13 +387,13 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
             <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Tokens Minted</div>
+            <div className="text-xl font-black text-white">DUM Points Claimed</div>
             <div className="mt-2 flex items-baseline justify-center gap-2">
               <span className="text-3xl font-black text-emerald-400">+{claimResult.dum.toLocaleString()}</span>
               <span className="text-sm text-zinc-400">DUM</span>
             </div>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
-              ✓ Minted on Solana Devnet
+              {claimResult.sig ? "✓ Verified on Solana Devnet" : "✓ DUM Points added to balance"}
             </div>
             {onChainBalance !== null && (
               <div className="mt-2 text-[11px] text-zinc-500">On-chain balance: {onChainBalance.toLocaleString()} DUM</div>
