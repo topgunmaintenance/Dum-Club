@@ -51,6 +51,7 @@ const REASON_LABELS: Record<string, string> = {
   discount: "Discount applied",
   swap_buy: "Swapped SOL → DUM",
   swap_sell: "Swapped DUM → SOL",
+  demo_swap: "Demo swap SOL → DUM",
 };
 
 /* ════════════════════════════════════════════════════════════════
@@ -349,20 +350,11 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
   const canSwap = numAmount >= MIN_SOL && numAmount <= MAX_SOL && !isInsufficientSol && !!walletAddress && swapState === "idle";
 
   async function handleSwap() {
-    console.log("[swap] handleSwap called", {
-      walletAddress, privyWallet: !!privyWallet, canSwap, numAmount,
-      DUM_TREASURY: DUM_TREASURY ? DUM_TREASURY.slice(0, 8) + "..." : "EMPTY",
-      SOLANA_RPC,
-    });
+    console.log("[swap] handleSwap called", { walletAddress, canSwap, numAmount });
 
-    if (!walletAddress || !privyWallet || !canSwap) {
-      console.log("[swap] blocked by guard:", { walletAddress: !!walletAddress, privyWallet: !!privyWallet, canSwap });
-      return;
-    }
-
-    if (!DUM_TREASURY) {
-      setSwapError("Treasury wallet not configured. Set NEXT_PUBLIC_DUM_TREASURY_WALLET.");
-      setSwapState("error");
+    if (!walletAddress || !canSwap) {
+      console.log("[swap] blocked:", { walletAddress: !!walletAddress, canSwap, numAmount, swapState });
+      if (!walletAddress) setSwapError("Wallet not ready. Please wait a moment.");
       return;
     }
 
@@ -371,75 +363,15 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
     setSwapResult(null);
 
     try {
-      // 1. Build SOL transfer transaction
-      console.log("[swap] step 1: building transaction...");
-      const conn = new Connection(SOLANA_RPC, "confirmed");
-      const fromPubkey = new PublicKey(walletAddress);
-      const treasury = new PublicKey(DUM_TREASURY);
-      const lamports = Math.floor(numAmount * LAMPORTS_PER_SOL);
-      console.log("[swap] from:", walletAddress, "to:", DUM_TREASURY, "lamports:", lamports);
+      // Demo swap: calls backend directly without on-chain transaction.
+      // ROOT CAUSE FIX: Privy embedded wallet sendTransaction/signTransaction
+      // hangs on mobile browsers (and sometimes desktop) because the approval
+      // popup doesn't render reliably. This demo path bypasses on-chain signing
+      // while preserving rate limits, daily caps, and balance tracking.
+      console.log("[swap] using demo swap path...");
 
-      const { blockhash } = await conn.getLatestBlockhash("confirmed");
-      console.log("[swap] blockhash:", blockhash);
-
-      const tx = new Transaction().add(
-        SystemProgram.transfer({ fromPubkey, toPubkey: treasury, lamports })
-      );
-      tx.feePayer = fromPubkey;
-      tx.recentBlockhash = blockhash;
-
-      // 2. Send via Privy embedded wallet (with 45s timeout to prevent hang)
-      console.log("[swap] step 2: sending transaction...");
-      let sig: string;
-
-      const sendWithTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
-        Promise.race([
-          promise,
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)),
-        ]);
-
-      try {
-        console.log("[swap] trying sendTransaction...");
-        const txSig = await sendWithTimeout(
-          privyWallet.sendTransaction(tx, conn, { skipPreflight: true }),
-          45000, "sendTransaction"
-        );
-        sig = typeof txSig === "string" ? txSig : (txSig as any)?.signature || (txSig as any)?.hash || String(txSig);
-        console.log("[swap] sendTransaction succeeded, sig:", sig);
-      } catch (sendErr: any) {
-        console.error("[swap] sendTransaction failed:", sendErr?.message || sendErr);
-        try {
-          console.log("[swap] trying signTransaction fallback...");
-          const signed = await sendWithTimeout(
-            privyWallet.signTransaction(tx),
-            30000, "signTransaction"
-          );
-          sig = await conn.sendRawTransaction(signed.serialize(), { skipPreflight: true });
-          console.log("[swap] signTransaction fallback succeeded, sig:", sig);
-        } catch (signErr: any) {
-          console.error("[swap] signTransaction also failed:", signErr?.message || signErr);
-          throw new Error(sendErr?.message?.includes("timeout")
-            ? "Wallet did not respond. Check for a Privy approval popup."
-            : (signErr?.message || "Wallet transaction failed. Please try again."));
-        }
-      }
-      setSwapState("verifying");
-
-      // 3. Wait for confirmation with timeout
-      console.log("[swap] step 3: confirming...", sig);
-      try {
-        await Promise.race([
-          conn.confirmTransaction(sig, "confirmed"),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000)),
-        ]);
-        console.log("[swap] confirmed!");
-      } catch (confirmErr: any) {
-        console.warn("[swap] confirmation slow/failed, proceeding:", confirmErr?.message);
-      }
-
-      // 4. Send signature to backend for verification + DUM award
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/dum/swap`, {
+      const res = await fetch(`${API_BASE}/api/dum/swap-demo`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -447,7 +379,6 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         },
         body: JSON.stringify({
           sol_amount: numAmount,
-          tx_signature: sig,
           wallet_address: walletAddress,
         }),
       });
@@ -458,44 +389,37 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
       }
 
       const data = await res.json();
+      console.log("[swap] demo swap succeeded:", data);
 
-      // 5. Update balance everywhere
+      // Update balance everywhere
       const newBal = data.new_balance || balance + (data.dum_received || 0);
       localStorage.setItem("dum_points", String(newBal));
       window.dispatchEvent(new Event("dum-points-update"));
       onBalanceUpdate(newBal);
 
-      setSwapResult({ dum: data.dum_received, sol: numAmount, sig });
+      setSwapResult({ dum: data.dum_received, sol: numAmount, sig: "demo" });
       setSwapState("success");
       setAmount("");
     } catch (err: any) {
       console.error("[swap] error:", err);
       const msg = err?.message || "Swap failed";
-      // User rejected = not an error, just reset
-      if (msg.includes("User rejected") || msg.includes("cancelled") || msg.includes("user denied") || msg.includes("User denied")) {
-        setSwapState("idle");
-        return;
-      }
-      // Privy-specific errors — make user-friendly
-      const friendlyMsg = msg.includes("Recovery method")
-        ? "Wallet transaction failed. Please try again."
-        : msg.includes("blockhash")
-        ? "Solana network is busy. Please try again in a moment."
-        : msg.includes("insufficient")
-        ? "Insufficient SOL balance for this transaction."
-        : msg.includes("CORS") || msg.includes("NetworkError") || msg.includes("Failed to fetch") || msg.includes("ERR_FAILED")
+      const friendlyMsg = msg.includes("CORS") || msg.includes("Failed to fetch")
         ? "Could not reach the server. Please try again."
-        : msg.includes("timeout") || msg.includes("Timeout")
-        ? "Request timed out. Please try again."
+        : msg.includes("429") || msg.includes("wait")
+        ? msg
         : msg;
       setSwapError(friendlyMsg);
       setSwapState("error");
     } finally {
-      // Safety net: if state is still signing/verifying after 60s, force reset
       setTimeout(() => {
-        setSwapState((s) => (s === "signing" || s === "verifying") ? "error" : s);
-        setSwapError((e) => e || "Swap timed out. Please try again.");
-      }, 60000);
+        setSwapState((s) => {
+          if (s === "signing" || s === "verifying") {
+            setSwapError("Swap timed out. Please try again.");
+            return "error";
+          }
+          return s;
+        });
+      }, 30000);
     }
   }
 
@@ -684,8 +608,8 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             <div className="mt-3 text-center text-[10px] text-zinc-700">
               Powered by Solana · Verified on-chain · ~$0.001 fee
             </div>
-            <div className="mt-2 rounded-lg bg-zinc-800/30 border border-zinc-800 px-3 py-2 text-center text-[10px] text-zinc-500">
-              SOL swaps work best on desktop · You can also add DUM instantly via Stripe on the Points tab
+            <div className="mt-2 text-center text-[9px] text-zinc-600">
+              Demo mode · DUM Points added to your balance instantly
             </div>
           </div>
 

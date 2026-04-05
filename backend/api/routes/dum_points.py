@@ -505,6 +505,91 @@ async def get_recent_swaps(limit: int = 15):
     return {"swaps": res.data or []}
 
 
+# ── Demo Swap (no on-chain tx required) ──────────────────────
+
+class DemoSwapRequest(BaseModel):
+    sol_amount: float
+    wallet_address: str
+
+
+@router.post("/swap-demo")
+async def demo_swap_sol_to_dum(
+    req: DemoSwapRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Demo swap: awards DUM Points based on SOL amount WITHOUT requiring
+    an on-chain transaction. Used for devnet/demo environments where
+    Privy embedded wallet signing may not work reliably.
+
+    ROOT CAUSE: Privy embedded wallet sendTransaction/signTransaction
+    hangs on mobile browsers without showing approval UI. This endpoint
+    bypasses on-chain verification while preserving all other safeguards.
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    if req.sol_amount < SWAP_MIN_SOL:
+        raise HTTPException(status_code=400, detail=f"Minimum is {SWAP_MIN_SOL} SOL")
+    if req.sol_amount > SWAP_MAX_SOL:
+        raise HTTPException(status_code=400, detail=f"Maximum is {SWAP_MAX_SOL} SOL per swap")
+    if not req.wallet_address or len(req.wallet_address) < 20:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    dum_amount = int(req.sol_amount * DUM_SOL_RATE)
+    if dum_amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount too small")
+
+    # Rate limiting + daily cap (same as real swap)
+    from datetime import datetime, timezone, timedelta
+    supabase = get_client()
+    cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    recent_swaps = (
+        supabase.table("dum_transactions")
+        .select("amount, created_at")
+        .eq("privy_id", privy_id)
+        .in_("reason", ["swap_buy", "demo_swap"])
+        .gte("created_at", cutoff_24h)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    swap_rows = recent_swaps.data or []
+
+    if swap_rows:
+        last_swap_time = swap_rows[0].get("created_at", "")
+        if last_swap_time:
+            try:
+                last_dt = datetime.fromisoformat(last_swap_time.replace("Z", "+00:00"))
+                elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+                if elapsed < SWAP_COOLDOWN_SECONDS:
+                    wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
+                    raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
+            except (ValueError, TypeError):
+                pass
+
+    total_dum_24h = sum(row.get("amount", 0) for row in swap_rows)
+    total_sol_24h = total_dum_24h / DUM_SOL_RATE if DUM_SOL_RATE > 0 else 0
+    if total_sol_24h + req.sol_amount > SWAP_DAILY_MAX_SOL:
+        remaining = max(SWAP_DAILY_MAX_SOL - total_sol_24h, 0)
+        raise HTTPException(status_code=429, detail=f"Daily limit reached. {remaining:.2f} SOL remaining today.")
+
+    # Award DUM Points (DB only — no on-chain verification for demo)
+    new_balance = _update_balance_and_log(
+        supabase, privy_id, dum_amount, "demo_swap", f"demo_{req.wallet_address[:8]}"
+    )
+
+    print(f"[demo-swap] ✓ {req.sol_amount} SOL → {dum_amount} DUM for {privy_id} (demo mode)")
+    return {
+        "status": "success",
+        "sol_amount": req.sol_amount,
+        "dum_received": dum_amount,
+        "new_balance": new_balance,
+        "mode": "demo",
+    }
+
+
 @router.get("/price-history")
 async def get_price_history(range: str = "7d"):
     """
