@@ -585,84 +585,199 @@ function UseTab() {
 function MarketComingSoonTab() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      {/* Hero */}
+
+      {/* ── 1. Hero — Title + Hook ── */}
       <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] via-zinc-950 to-violet-500/[0.03] p-8 text-center">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400">
-          Coming Soon
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="text-2xl font-black text-white sm:text-3xl">DUM Market</h2>
+          <span className="rounded-full border border-zinc-700 bg-zinc-900/80 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">
+            Coming Soon
+          </span>
         </div>
-        <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">DUM Market</h2>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          A peer-to-peer marketplace where DUM holders can trade, exchange, and put their rewards to work — all on Solana.
+        <p className="mx-auto mt-4 max-w-sm text-lg font-semibold leading-snug text-zinc-300">
+          You don&apos;t trade DUM yet.<br />
+          <span className="text-emerald-400">You earn it first.</span>
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-zinc-500">
+          DUM starts as a reward. It becomes a market when real usage, real demand, and real businesses back it.
         </p>
       </div>
 
-      {/* What is the DUM Market */}
+      {/* ── 2. What is the DUM Market ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">What is the DUM Market?</div>
         <p className="text-sm leading-relaxed text-zinc-400">
-          The DUM Market will be a dedicated exchange for DUM tokens — built directly into DUM Club. It will allow users to trade DUM with each other, view real-time activity, and see the actual value of their earned rewards.
+          The DUM Market is the next phase of DUM Club: a real exchange where DUM holders can trade, transfer, and put their rewards to work.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+          Unlike traditional reward points that are trapped inside one company, DUM is an open token on Solana. The market will give it a real, transparent, user-driven price — not set by us, but by actual supply and demand.
         </p>
       </div>
 
-      {/* Why a Market */}
+      {/* ── 3. Why a Market — Comparison ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
-        <div className="space-y-3">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
+        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          Most reward systems are closed. Your airline miles, credit card points, and in-game currencies are locked inside one platform. You can&apos;t transfer them, trade them, or use them anywhere else.
+        </p>
+        <div className="space-y-2">
           {[
-            { title: "Real value for real work", desc: "When you earn DUM, it should mean something. A market gives your rewards a real price." },
-            { title: "Reward the early builders", desc: "Early users who create businesses, refer friends, and earn DUM will benefit the most when the market opens." },
-            { title: "Complete the loop", desc: "Earn it, claim it, use it, trade it. The market is the final piece that makes DUM a fully functional reward token." },
-          ].map((item) => (
-            <div key={item.title}>
-              <div className="text-sm font-bold text-white">{item.title}</div>
-              <div className="mt-0.5 text-[12px] text-zinc-500">{item.desc}</div>
+            { old: "Airline miles expire", dum: "DUM is yours permanently on-chain" },
+            { old: "Credit card points locked to one issuer", dum: "DUM works across every DUM Club business" },
+            { old: "In-game currency has no real value", dum: "DUM becomes tradable between real users" },
+          ].map((row) => (
+            <div key={row.old} className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-900/40 px-4 py-3">
+              <div className="text-[11px] text-zinc-600 line-through decoration-zinc-700">{row.old}</div>
+              <div className="text-[11px] font-medium text-emerald-400/80">{row.dum}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Why not live yet */}
+      {/* ── 4. How DUM Becomes a Market ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
-        <p className="text-sm leading-relaxed text-zinc-400">
-          We are building each layer of DUM Club in order — and we are not rushing it.
-          Right now we are focused on making the core experience rock-solid: earning, claiming, and using DUM Points across real businesses.
-          The market launches once there is enough real activity to support it, not before.
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How DUM Becomes a Market</div>
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
+          Markets are not switched on — they are grown. DUM follows a deliberate progression:
+        </p>
+        <div className="space-y-4">
+          {[
+            { phase: "1", title: "Users earn DUM", desc: "Every purchase, every business created, every referral generates real DUM Points backed by real activity.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
+            { phase: "2", title: "Users use DUM", desc: "DUM Points unlock discounts, perks, and higher tiers across every business on the platform.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
+            { phase: "3", title: "Demand increases", desc: "As more businesses accept DUM and more users spend it, natural demand grows from real utility.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
+            { phase: "4", title: "Liquidity forms", desc: "With enough users and activity, DUM accumulates real depth — enough for price discovery to be meaningful.", color: "text-zinc-500", border: "border-zinc-700", bg: "bg-zinc-800" },
+            { phase: "5", title: "Trading unlocks", desc: "The market opens when there is real supply, real demand, and real price stability — not before.", color: "text-zinc-600", border: "border-zinc-800", bg: "bg-zinc-800/50" },
+          ].map((step) => (
+            <div key={step.phase} className="flex gap-4">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${step.border} ${step.bg} text-[11px] font-bold ${step.color}`}>
+                {step.phase}
+              </div>
+              <div className="flex-1">
+                <div className={`text-sm font-bold ${step.color === "text-zinc-600" ? "text-zinc-500" : "text-white"}`}>{step.title}</div>
+                <div className="mt-0.5 text-[12px] leading-relaxed text-zinc-500">{step.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 5. How Transactions Create Stability ── */}
+      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">How Transactions Create Stability</div>
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
+          Every action on DUM Club contributes to the health of the future market. Nothing is wasted.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { action: "Purchases", result: "Generate rewards", icon: "🛒" },
+            { action: "Rewards", result: "Distribute DUM", icon: "◆" },
+            { action: "Spending", result: "Creates demand", icon: "%" },
+            { action: "Business adoption", result: "Creates real utility", icon: "🏪" },
+          ].map((item) => (
+            <div key={item.action} className="rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-4">
+              <div className="mb-2 text-base">{item.icon}</div>
+              <div className="text-xs font-bold text-white">{item.action}</div>
+              <div className="mt-0.5 text-[10px] text-zinc-500">{item.result}</div>
+            </div>
+          ))}
+        </div>
+        {/* Cycle */}
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-4 py-3">
+          {["Usage", "Demand", "Liquidity", "Stability"].map((step, i) => (
+            <span key={step} className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-emerald-400">{step}</span>
+              {i < 3 && <span className="text-zinc-700">→</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 6. The Flywheel ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">The Flywheel</div>
+        <div className="flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/30 px-4 py-4">
+          {["Earn", "Use", "Demand", "Liquidity", "Trade"].map((step, i) => (
+            <div key={step} className="flex items-center gap-1.5 sm:gap-2">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-full border text-[10px] font-bold sm:h-10 sm:w-10 sm:text-[11px] ${
+                i < 3
+                  ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-400"
+                  : "border-zinc-700 bg-zinc-800 text-zinc-500"
+              }`}>
+                {step.slice(0, 2)}
+              </div>
+              {i < 4 && <span className="text-[10px] text-zinc-700">→</span>}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-center text-[11px] text-zinc-600">
+          Each step feeds the next. No step is skipped.
         </p>
       </div>
 
-      {/* Vision roadmap */}
+      {/* ── 7. Why It's Not Live Yet ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
+        <p className="text-sm font-semibold text-zinc-300">Markets without usage are unstable.</p>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+          Launching a market before there are real users, real transactions, and real demand creates artificial price action that helps no one.
+          We are building in order:
+        </p>
+        <div className="mt-4 space-y-2">
+          {[
+            { label: "Real users", desc: "People who actually use DUM Club to run businesses and buy services" },
+            { label: "Real transactions", desc: "Purchases, discounts, and rewards flowing through the system daily" },
+            { label: "Real value", desc: "DUM backed by utility across a growing ecosystem of businesses" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-start gap-3 rounded-xl bg-zinc-900/40 px-4 py-3">
+              <span className="mt-0.5 text-emerald-400/60">&#10003;</span>
+              <div>
+                <span className="text-xs font-bold text-white">{item.label}</span>
+                <span className="ml-1.5 text-[11px] text-zinc-500">— {item.desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 8. Vision ── */}
       <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">The Path Forward</div>
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">The Vision</div>
         <div className="flex items-center justify-between gap-1">
           {[
-            { label: "Earn", active: true },
-            { label: "Claim", active: true },
-            { label: "Use", active: true },
-            { label: "Trade", active: false },
+            { label: "Reward System", active: true },
+            { label: "Marketplace", active: true },
+            { label: "Market", active: false },
+            { label: "Economy", active: false },
           ].map((step, i) => (
             <div key={step.label} className="flex flex-1 flex-col items-center gap-1.5">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold ${
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold ${
                 step.active
                   ? "bg-emerald-400/15 text-emerald-400 border border-emerald-400/30"
-                  : "bg-zinc-800 text-zinc-500 border border-zinc-700 border-dashed"
+                  : "bg-zinc-800 text-zinc-600 border border-zinc-700 border-dashed"
               }`}>
                 {step.active ? "✓" : i + 1}
               </div>
-              <span className={`text-[10px] font-bold ${step.active ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</span>
+              <span className={`text-center text-[9px] font-bold leading-tight ${step.active ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</span>
             </div>
           ))}
         </div>
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-500">
+          DUM is not a token looking for a use case. It is a use case becoming a token.
+        </p>
       </div>
 
-      {/* CTAs */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
-          Start Earning DUM →
-        </Link>
-        <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
-          Browse Businesses
-        </Link>
+      {/* ── 9. CTA ── */}
+      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-950 p-8 text-center">
+        <div className="mb-2 text-lg font-black text-white">The market starts with you.</div>
+        <p className="mb-5 text-sm text-zinc-500">Every DUM Point you earn today brings the market closer to launch.</p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
+            Start Earning DUM →
+          </Link>
+          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+            Browse Businesses
+          </Link>
+        </div>
       </div>
     </div>
   );
