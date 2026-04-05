@@ -39,6 +39,9 @@ from api.routes import (
     health,
     dum_points,
     business,
+    favorites,
+    reviews,
+    referrals,
 )
 
 from db.supabase import init_supabase
@@ -130,6 +133,11 @@ app.include_router(business.router, prefix="/api/business", tags=["Business"])
 
 # Token Creation (NO PREFIX so route stays clean)
 app.include_router(token.router, tags=["Token"])
+
+# Phase 4: Growth & Social
+app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
+app.include_router(reviews.router, prefix="/api/reviews", tags=["Reviews"])
+app.include_router(referrals.router, prefix="/api/referrals", tags=["Referrals"])
 
 
 @app.get("/health")

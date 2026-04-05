@@ -81,13 +81,17 @@ export function Navbar() {
         borderBottom: navHover
           ? "1px solid rgba(0,255,178,0.30)"
           : "1px solid #1c1c1c",
-        position: "sticky",
+        position: "fixed",
         top: 0,
+        left: 0,
+        right: 0,
         background: navHover
           ? "rgba(0,255,178,0.035)"
           : "rgba(6,6,6,0.92)",
         backdropFilter: "blur(16px)",
-        zIndex: 50,
+        WebkitBackdropFilter: "blur(16px)",
+        zIndex: 9999,
+        pointerEvents: "auto" as const,
         transition: "all 0.22s ease",
       }}
     >
@@ -153,13 +157,13 @@ export function Navbar() {
           className="lg:hidden"
           style={{
             position: "fixed",
-            top: "73px",
+            top: "72px",
             left: 0,
             right: 0,
             bottom: 0,
             background: "rgba(3,3,3,0.98)",
             backdropFilter: "blur(12px)",
-            zIndex: 49,
+            zIndex: 9998,
             overflowY: "auto",
             borderTop: "1px solid #1c1c1c",
             paddingBottom: "16px",

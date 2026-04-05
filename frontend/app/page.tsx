@@ -1249,6 +1249,17 @@ export default function Home() {
   // Load launch count on mount
   useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
 
+  // Referral tracking: store ref code and track click
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && ref.startsWith("DUM-")) {
+      localStorage.setItem("dum_referral_code", ref);
+      fetch(`${API_BASE}/api/referrals/click/${ref}`, { method: "POST" }).catch(() => {});
+    }
+  }, []);
+
   // Live preview (debounced)
   const preview = useMemo(() => generatePreview(heroIdea), [heroIdea]);
 
@@ -1503,7 +1514,7 @@ export default function Home() {
   }, [allPublicProjects]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-base text-white">
+    <div className="relative min-h-screen bg-base text-white" style={{ overflowX: "clip" }}>
       <LiveSaleToast />
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
@@ -1549,7 +1560,7 @@ export default function Home() {
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
           {/* Ambient background */}
-          <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
             <div

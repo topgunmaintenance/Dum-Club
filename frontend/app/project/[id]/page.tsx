@@ -503,6 +503,15 @@ export default function ProjectPage() {
   const [feedbackEntries, setFeedbackEntries] = useState<ProjectFeedback[]>([]);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackComment, setFeedbackComment] = useState("");
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
+  const [backendReviews, setBackendReviews] = useState<{ id: number; rating: number; comment: string; created_at: string }[]>([]);
+  const [backendAvgRating, setBackendAvgRating] = useState(0);
+  const [backendReviewCount, setBackendReviewCount] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const [loadingProject, setLoadingProject] = useState(true);
   const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
@@ -1440,20 +1449,41 @@ export default function ProjectPage() {
     }
   }
 
-  function submitFeedback(e: React.FormEvent) {
+  async function submitFeedback(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
 
-    const entry: ProjectFeedback = {
-      rating: Math.min(5, Math.max(1, Number(feedbackRating) || 5)),
-      comment: feedbackComment.trim(),
-      created_at: new Date().toISOString(),
-    };
+    const rating = Math.min(5, Math.max(1, Number(feedbackRating) || 5));
+    const comment = feedbackComment.trim();
 
+    const entry: ProjectFeedback = { rating, comment, created_at: new Date().toISOString() };
     const next = [entry, ...feedbackEntries].slice(0, 20);
     setFeedbackEntries(next);
     setFeedbackComment("");
     setFeedbackRating(5);
+
+    // Persist to backend
+    setSubmittingReview(true);
+    try {
+      const token = await getToken();
+      if (token) {
+        const res = await fetch(`${API_BASE}/api/reviews/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ project_id: id, rating, comment }),
+        });
+        if (res.ok) {
+          // Refresh backend reviews
+          const reviewsRes = await fetch(`${API_BASE}/api/reviews/project/${id}`);
+          if (reviewsRes.ok) {
+            const data = await reviewsRes.json();
+            setBackendReviews(data.reviews || []);
+            setBackendAvgRating(data.average_rating || 0);
+            setBackendReviewCount(data.count || 0);
+          }
+        }
+      }
+    } catch {} finally { setSubmittingReview(false); }
   }
 
   async function saveMemory(e: React.FormEvent) {
@@ -2256,6 +2286,74 @@ export default function ProjectPage() {
     localStorage.setItem(`project-feedback:${id}`, JSON.stringify(feedbackEntries));
   }, [id, feedbackEntries]);
 
+  // Close share menu on outside click
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [shareMenuOpen]);
+
+  // Load backend reviews
+  useEffect(() => {
+    if (!id) return;
+    fetch(`${API_BASE}/api/reviews/project/${id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) {
+          setBackendReviews(data.reviews || []);
+          setBackendAvgRating(data.average_rating || 0);
+          setBackendReviewCount(data.count || 0);
+        }
+      })
+      .catch(() => {});
+  }, [id]);
+
+  // Load favorite status
+  useEffect(() => {
+    if (!id) return;
+    // Public count
+    fetch(`${API_BASE}/api/favorites/count/${id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setFavoriteCount(data.count || 0); })
+      .catch(() => {});
+    // Auth check
+    if (authUser) {
+      getToken().then((token) => {
+        if (!token) return;
+        fetch(`${API_BASE}/api/favorites/check/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => { if (data) setIsFavorited(data.favorited); })
+          .catch(() => {});
+      });
+    }
+  }, [id, authUser]);
+
+  // Toggle favorite
+  async function toggleFavorite() {
+    if (!authUser) { login(); return; }
+    setTogglingFavorite(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/favorites/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ project_id: id }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsFavorited(data.favorited);
+        setFavoriteCount((c) => data.favorited ? c + 1 : Math.max(0, c - 1));
+      }
+    } catch {} finally { setTogglingFavorite(false); }
+  }
+
   const reviewStatus = projectStatus || "draft";
   const tokenStatus = normalizeTokenLifecycleStatus(
     tokenMeta.status || project?.token_status
@@ -2411,9 +2509,12 @@ const heroUtility =
       : tokenStatus === "liquidity_added"
       ? "Next: go live on DUM Club."
       : null;
-  const averageRating = feedbackEntries.length
+  const localAvgRating = feedbackEntries.length
     ? feedbackEntries.reduce((acc, item) => acc + item.rating, 0) / feedbackEntries.length
     : 0;
+  // Prefer backend reviews if available, fall back to local
+  const averageRating = backendReviewCount > 0 ? backendAvgRating : localAvgRating;
+  const totalReviewCount = backendReviewCount > 0 ? backendReviewCount : feedbackEntries.length;
   const nextStepMessage = isRejected
     ? "Make edits and resubmit"
     : isSubmitted
@@ -2914,6 +3015,24 @@ return (
                 >
                   {category}
                 </span>
+                {backendReviewCount > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                    <span className="text-amber-400">{"★".repeat(Math.round(backendAvgRating))}</span>
+                    {backendAvgRating.toFixed(1)} ({backendReviewCount})
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); toggleFavorite(); }}
+                  disabled={togglingFavorite}
+                  className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${
+                    isFavorited
+                      ? "border-rose-400/30 bg-rose-400/10 text-rose-400"
+                      : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {isFavorited ? "♥" : "♡"} {favoriteCount > 0 ? favoriteCount : "Save"}
+                </button>
               </div>
 
               {projectView === "analytics" && (
@@ -3019,19 +3138,61 @@ return (
                     <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
                       Ask AI
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const url = window.location.href.split("?")[0];
-                        navigator.clipboard.writeText(url).then(() => {
-                          setShareCopied(true);
-                          setTimeout(() => setShareCopied(false), 2000);
-                        });
-                      }}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {shareCopied ? "✓ Copied!" : "🔗 Share"}
-                    </button>
+                    <div className="relative" ref={shareMenuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShareMenuOpen((o) => !o)}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                      >
+                        {shareCopied ? "✓ Copied!" : "Share"}
+                      </button>
+                      {shareMenuOpen && (
+                        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-zinc-700 bg-zinc-950 p-1.5 shadow-xl">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = window.location.href.split("?")[0];
+                              navigator.clipboard.writeText(url).then(() => {
+                                setShareCopied(true);
+                                setShareMenuOpen(false);
+                                setTimeout(() => setShareCopied(false), 2000);
+                              });
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                          >
+                            Copy link
+                          </button>
+                          <a
+                            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${projectName} on DUM Club`)}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href.split("?")[0] : "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShareMenuOpen(false)}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                          >
+                            Share on X
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = window.location.href.split("?")[0];
+                              const text = `Check out ${projectName} on DUM Club\n${url}`;
+                              if (navigator.share) {
+                                navigator.share({ title: projectName, text, url }).catch(() => {});
+                              } else {
+                                navigator.clipboard.writeText(text).then(() => {
+                                  setShareCopied(true);
+                                  setTimeout(() => setShareCopied(false), 2000);
+                                });
+                              }
+                              setShareMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                          >
+                            More options
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5047,9 +5208,9 @@ return (
     <div className="mb-3 flex items-center justify-between gap-3">
       <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Trust Layer</div>
       <div className="text-xs text-zinc-500">
-        {feedbackEntries.length
-          ? `${averageRating.toFixed(1)} / 5 (${feedbackEntries.length} review${
-              feedbackEntries.length === 1 ? "" : "s"
+        {totalReviewCount > 0
+          ? `${averageRating.toFixed(1)} / 5 (${totalReviewCount} review${
+              totalReviewCount === 1 ? "" : "s"
             })`
           : "No ratings yet"}
       </div>

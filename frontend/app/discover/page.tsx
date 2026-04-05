@@ -296,6 +296,7 @@ export default function DiscoverPage() {
   const marketPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const flashTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pulseClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reviewSummaries, setReviewSummaries] = useState<Record<string, { count: number; average_rating: number }>>({});
 
   async function loadMarketSnapshots(projectIds: string[]) {
     if (!projectIds.length) {
@@ -402,6 +403,27 @@ export default function DiscoverPage() {
     loadProjects();
     loadRecentTrades();
   }, []);
+
+  // Load review summaries for all projects
+  useEffect(() => {
+    if (!projects.length) return;
+    Promise.all(
+      projects.map(async (p) => {
+        try {
+          const res = await fetch(`${API_BASE}/api/reviews/summary/${p.id}`);
+          if (!res.ok) return null;
+          const data = await res.json();
+          return { id: p.id, count: data.count || 0, average_rating: data.average_rating || 0 };
+        } catch { return null; }
+      })
+    ).then((results) => {
+      const map: Record<string, { count: number; average_rating: number }> = {};
+      for (const r of results) {
+        if (r && r.count > 0) map[r.id] = { count: r.count, average_rating: r.average_rating };
+      }
+      setReviewSummaries(map);
+    });
+  }, [projects]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -782,6 +804,11 @@ export default function DiscoverPage() {
                       {project.promo_copy && (
                         <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-amber-400">
                           Promo
+                        </span>
+                      )}
+                      {reviewSummaries[project.id] && (
+                        <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold tracking-[0.1em] text-amber-400">
+                          {"★"} {reviewSummaries[project.id].average_rating.toFixed(1)} ({reviewSummaries[project.id].count})
                         </span>
                       )}
                     </div>

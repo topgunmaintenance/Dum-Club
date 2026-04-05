@@ -39,6 +39,8 @@ export default function RootLayout({
       <body className={`${inter.className} bg-zinc-950 text-white min-h-screen`}>
         <AppProviders>
           <Navbar />
+          {/* Spacer to offset fixed navbar: 72px mobile, 92px desktop */}
+          <div className="h-[72px] lg:h-[92px]" />
           {children}
           <DumPill />
           {/* Deploy indicator — low-visibility, bottom-right */}
