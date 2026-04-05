@@ -433,13 +433,13 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
         <div className="space-y-4">
           <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
             <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Added</div>
+            <div className="text-xl font-black text-white">DUM Points Added</div>
             <div className="mt-2 flex items-baseline justify-center gap-2">
               <span className="text-3xl font-black text-emerald-400">+{swapResult.dum.toLocaleString()}</span>
               <span className="text-sm text-zinc-400">DUM Points</span>
             </div>
             <div className="mt-1 text-[11px] text-zinc-500">
-              from {swapResult.sol} SOL · verified on Solana
+              Demo conversion · {swapResult.sol} SOL → {swapResult.dum.toLocaleString()} DUM Points
             </div>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
               ✓ Balance updated instantly
@@ -451,10 +451,10 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             )}
           </div>
 
-          {/* On-chain proof with copy buttons */}
+          {/* Conversion details */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">On-chain proof</div>
-            {swapResult.sig && (
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">Conversion Details</div>
+            {swapResult.sig && swapResult.sig !== "demo" && (
               <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
                 <a
                   href={`https://explorer.solana.com/tx/${swapResult.sig}?cluster=devnet`}
@@ -511,13 +511,18 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
                 </a>
               </div>
             )}
+            {swapResult.sig === "demo" && (
+              <div className="rounded-xl bg-zinc-900/50 px-4 py-3 text-[11px] text-zinc-500">
+                Demo conversion — DUM Points credited to your balance. No SOL was transferred.
+              </div>
+            )}
           </div>
 
           <button
             onClick={() => { setSwapState("idle"); setSwapResult(null); setCopied(null); }}
             className="w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-white"
           >
-            Add more DUM
+            Convert more
           </button>
         </div>
       ) : (
@@ -525,7 +530,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
           {/* ── Swap form ── */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-5 flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Swap SOL → DUM</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Convert SOL → DUM Points</div>
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-400/60">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
@@ -537,7 +542,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
             {/* You Pay */}
             <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You pay</div>
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">SOL Amount</div>
               <div className="flex items-center gap-3">
                 <input
                   type="number"
@@ -552,7 +557,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
                 <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-bold text-zinc-300">SOL</div>
               </div>
               {solBalance !== null && (
-                <div className="mt-2 text-[10px] text-zinc-600">{solBalance.toFixed(4)} SOL available</div>
+                <div className="mt-2 text-[10px] text-zinc-600">Wallet: {solBalance.toFixed(4)} SOL (demo — not deducted)</div>
               )}
             </div>
 
@@ -563,7 +568,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
 
             {/* You Receive */}
             <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/30 p-4">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">You receive</div>
+              <div className="mb-2 text-[10px] uppercase tracking-[0.15em] text-zinc-600">DUM Points you receive</div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 text-2xl font-bold text-emerald-400">
                   {numAmount > 0 ? dumAmount.toLocaleString() : "0"}
@@ -590,8 +595,8 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
               disabled={!canSwap}
               className="mt-4 w-full rounded-xl bg-emerald-400 px-6 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {swapState === "signing" ? "Swapping..." :
-               swapState === "verifying" ? "Confirming on-chain..." :
+              {swapState === "signing" ? "Converting..." :
+               swapState === "verifying" ? "Adding DUM Points..." :
                !walletAddress ? "Create wallet to swap" :
                isInsufficientSol ? "Insufficient SOL" :
                numAmount > 0 ? `Add ${dumAmount.toLocaleString()} DUM` : "Enter amount"}
@@ -606,7 +611,7 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
             )}
 
             <div className="mt-3 text-center text-[10px] text-zinc-700">
-              Powered by Solana · Verified on-chain · ~$0.001 fee
+              Demo mode · DUM Points credited instantly · Powered by Solana
             </div>
             <div className="mt-2 text-center text-[9px] text-zinc-600">
               Demo mode · DUM Points added to your balance instantly
@@ -617,9 +622,9 @@ function SwapTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdat
           <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-zinc-600">
             <span className="flex items-center gap-1.5"><span className="text-emerald-400">⚡</span> Instant</span>
             <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔒</span> Verified on-chain</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> DUM Points</span>
             <span className="text-zinc-800">·</span>
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">◆</span> Solana SPL</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔗</span> Solana ready</span>
           </div>
         </>
       )}
@@ -776,7 +781,7 @@ function MarketTab() {
 
       {/* Recent platform activity */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Swaps</div>
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recent Activity</div>
         {swaps.length === 0 ? (
           <div className="py-4 text-center text-xs text-zinc-600">No activity yet.</div>
         ) : (
