@@ -503,6 +503,14 @@ export default function ProjectPage() {
   const [feedbackEntries, setFeedbackEntries] = useState<ProjectFeedback[]>([]);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackComment, setFeedbackComment] = useState("");
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
+  const [backendReviews, setBackendReviews] = useState<{ id: number; rating: number; comment: string; created_at: string }[]>([]);
+  const [backendAvgRating, setBackendAvgRating] = useState(0);
+  const [backendReviewCount, setBackendReviewCount] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   const [loadingProject, setLoadingProject] = useState(true);
   const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
