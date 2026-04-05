@@ -586,7 +586,7 @@ function MarketComingSoonTab() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
 
-      {/* ── 1. Hero — Title + Hook ── */}
+      {/* ── 1. Header + Hook ── */}
       <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] via-zinc-950 to-violet-500/[0.03] p-8 text-center">
         <div className="flex items-center justify-center gap-2">
           <h2 className="text-2xl font-black text-white sm:text-3xl">DUM Market</h2>
@@ -599,7 +599,7 @@ function MarketComingSoonTab() {
           <span className="text-emerald-400">You earn it first.</span>
         </p>
         <p className="mt-3 text-[13px] leading-relaxed text-zinc-500">
-          DUM starts as a reward. It becomes a market when real usage, real demand, and real businesses back it.
+          DUM starts as a reward. It becomes a market when real usage, real demand, and real businesses back it — not before.
         </p>
       </div>
 
@@ -610,11 +610,11 @@ function MarketComingSoonTab() {
           The DUM Market is the next phase of DUM Club: a real exchange where DUM holders can trade, transfer, and put their rewards to work.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          Unlike traditional reward points that are trapped inside one company, DUM is an open token on Solana. The market will give it a real, transparent, user-driven price — not set by us, but by actual supply and demand.
+          DUM is not a token-first project. It is a reward system that becomes tradable only after real commerce backs it. The market will give DUM a transparent, user-driven price — set by actual supply and demand, not by us.
         </p>
       </div>
 
-      {/* ── 3. Why a Market — Comparison ── */}
+      {/* ── 3. Why a Market ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
         <p className="mb-4 text-sm leading-relaxed text-zinc-400">
@@ -632,72 +632,169 @@ function MarketComingSoonTab() {
             </div>
           ))}
         </div>
+        <p className="mt-4 text-[12px] leading-relaxed text-zinc-500">
+          DUM unlocks what closed systems never could: open value, transferability, and real exchange between users.
+        </p>
       </div>
 
-      {/* ── 4. How DUM Becomes a Market ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How DUM Becomes a Market</div>
-        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
-          Markets are not switched on — they are grown. DUM follows a deliberate progression:
+      {/* ── 4. How Value Flows ── */}
+      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">How Value Flows</div>
+        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          DUM rewards come from real revenue — not artificial inflation. Every transaction on the platform funds the reward pool.
         </p>
-        <div className="space-y-4">
-          {[
-            { phase: "1", title: "Users earn DUM", desc: "Every purchase, every business created, every referral generates real DUM Points backed by real activity.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
-            { phase: "2", title: "Users use DUM", desc: "DUM Points unlock discounts, perks, and higher tiers across every business on the platform.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
-            { phase: "3", title: "Demand increases", desc: "As more businesses accept DUM and more users spend it, natural demand grows from real utility.", color: "text-emerald-400", border: "border-emerald-400/20", bg: "bg-emerald-400/10" },
-            { phase: "4", title: "Liquidity forms", desc: "With enough users and activity, DUM accumulates real depth — enough for price discovery to be meaningful.", color: "text-zinc-500", border: "border-zinc-700", bg: "bg-zinc-800" },
-            { phase: "5", title: "Trading unlocks", desc: "The market opens when there is real supply, real demand, and real price stability — not before.", color: "text-zinc-600", border: "border-zinc-800", bg: "bg-zinc-800/50" },
-          ].map((step) => (
-            <div key={step.phase} className="flex gap-4">
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${step.border} ${step.bg} text-[11px] font-bold ${step.color}`}>
-                {step.phase}
+        {/* Transaction breakdown */}
+        <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-5">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Example: $100 purchase</div>
+          <div className="space-y-2">
+            {[
+              { label: "Customer pays", value: "$100", color: "text-white" },
+              { label: "Business receives", value: "~$93", color: "text-white" },
+              { label: "Platform fee", value: "~$7", color: "text-zinc-400" },
+              { label: "Portion funds DUM rewards", value: "2–5%", color: "text-emerald-400" },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between border-b border-zinc-800/40 pb-2 last:border-0 last:pb-0">
+                <span className="text-[12px] text-zinc-500">{row.label}</span>
+                <span className={`font-mono text-sm font-bold ${row.color}`}>{row.value}</span>
               </div>
-              <div className="flex-1">
-                <div className={`text-sm font-bold ${step.color === "text-zinc-600" ? "text-zinc-500" : "text-white"}`}>{step.title}</div>
-                <div className="mt-0.5 text-[12px] leading-relaxed text-zinc-500">{step.desc}</div>
-              </div>
-            </div>
+            ))}
+          </div>
+        </div>
+        {/* Flow */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-3">
+          {["Customer", "Platform", "Business", "Rewards", "Back to User"].map((step, i) => (
+            <span key={step} className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-emerald-400">{step}</span>
+              {i < 4 && <span className="text-zinc-700">→</span>}
+            </span>
           ))}
+        </div>
+        <p className="mt-3 text-center text-[10px] text-zinc-600">
+          Every transaction contributes to the DUM economy. Nothing is manufactured.
+        </p>
+      </div>
+
+      {/* ── 5. How We Get There (Mechanism) ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How We Get There</div>
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400">
+          Markets are not switched on — they are grown. Each step causes the next:
+        </p>
+        <div className="space-y-3">
+          {[
+            { phase: "1", title: "Transactions create rewards", desc: "Every purchase generates DUM Points — funded by real platform revenue, not token printing.", cause: "More purchases → more DUM distributed" },
+            { phase: "2", title: "Rewards create demand", desc: "Users earn DUM and want to use it for discounts and perks. This creates natural demand for the token.", cause: "More users earning → more people wanting DUM" },
+            { phase: "3", title: "Spending creates circulation", desc: "When users spend DUM at businesses, it circulates through the ecosystem instead of sitting idle.", cause: "More spending → healthier token velocity" },
+            { phase: "4", title: "Activity builds value", desc: "As DUM moves through more businesses and more users, it accumulates real utility and trust.", cause: "More activity → stronger network effect" },
+            { phase: "5", title: "Liquidity is introduced", desc: "Treasury-backed liquidity and user participation create the depth needed for fair price discovery.", cause: "Real depth → meaningful prices" },
+            { phase: "6", title: "Trading unlocks", desc: "With real supply, real demand, and real stability — the market opens. Not before.", cause: "Real fundamentals → real market" },
+          ].map((step) => {
+            const isActive = Number(step.phase) <= 3;
+            return (
+              <div key={step.phase} className="flex gap-4">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
+                  isActive
+                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
+                    : "border-zinc-700 bg-zinc-800 text-zinc-500"
+                }`}>
+                  {step.phase}
+                </div>
+                <div className="flex-1">
+                  <div className={`text-sm font-bold ${isActive ? "text-white" : "text-zinc-500"}`}>{step.title}</div>
+                  <div className="mt-0.5 text-[12px] leading-relaxed text-zinc-500">{step.desc}</div>
+                  <div className="mt-1 text-[10px] font-medium text-emerald-400/50">{step.cause}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── 5. How Transactions Create Stability ── */}
-      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">How Transactions Create Stability</div>
+      {/* ── 6. How Transactions Create Stability ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How Transactions Create Stability</div>
         <p className="mb-5 text-sm leading-relaxed text-zinc-400">
-          Every action on DUM Club contributes to the health of the future market. Nothing is wasted.
+          Every action on DUM Club feeds a reinforcing loop. More usage creates more stability — not hype.
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[
             { action: "Purchases", result: "Generate rewards", icon: "🛒" },
             { action: "Rewards", result: "Distribute DUM", icon: "◆" },
-            { action: "Spending", result: "Creates demand", icon: "%" },
+            { action: "Spending DUM", result: "Creates demand", icon: "%" },
             { action: "Business adoption", result: "Creates real utility", icon: "🏪" },
           ].map((item) => (
-            <div key={item.action} className="rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-4">
+            <div key={item.action} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4">
               <div className="mb-2 text-base">{item.icon}</div>
               <div className="text-xs font-bold text-white">{item.action}</div>
               <div className="mt-0.5 text-[10px] text-zinc-500">{item.result}</div>
             </div>
           ))}
         </div>
-        {/* Cycle */}
         <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-4 py-3">
-          {["Usage", "Demand", "Liquidity", "Stability"].map((step, i) => (
-            <span key={step} className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-emerald-400">{step}</span>
-              {i < 3 && <span className="text-zinc-700">→</span>}
+          {["Purchases", "Rewards", "Spending", "Demand", "Liquidity", "Stability"].map((step, i) => (
+            <span key={step} className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-emerald-400">{step}</span>
+              {i < 5 && <span className="text-[10px] text-zinc-700">→</span>}
             </span>
           ))}
         </div>
       </div>
 
-      {/* ── 6. The Flywheel ── */}
+      {/* ── 7. Customer-First Market Model ── */}
+      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Customer-First Market</div>
+        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          DUM is built from customers, not wallets. Active users matter more than empty holders. Markets form from engaged people, not speculation.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-zinc-800/60 bg-zinc-950/80 px-3 py-4">
+          {["Customers", "Activity", "Demand", "Holders", "Market"].map((step, i) => (
+            <span key={step} className="flex items-center gap-1.5">
+              <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                i < 3
+                  ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20"
+                  : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+              }`}>
+                {step}
+              </span>
+              {i < 4 && <span className="text-zinc-700">→</span>}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-center text-[11px] text-zinc-600">
+          The sequence matters. Customers come first. Market comes last.
+        </p>
+      </div>
+
+      {/* ── 8. When the Market Unlocks ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">When the Market Unlocks</div>
+        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          The market is a result of activity, not a starting feature. It unlocks when these conditions are met:
+        </p>
+        <div className="space-y-2">
+          {[
+            "Active customers are consistently using DUM across businesses",
+            "Multiple businesses accept and integrate DUM into their storefronts",
+            "Transactions are recurring, not one-time",
+            "A meaningful portion of users choose to hold DUM beyond immediate use",
+          ].map((cond) => (
+            <div key={cond} className="flex items-start gap-3 rounded-xl bg-zinc-900/40 px-4 py-3">
+              <span className="mt-0.5 shrink-0 text-[10px] text-zinc-600">○</span>
+              <span className="text-[12px] leading-relaxed text-zinc-400">{cond}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-[11px] text-zinc-600">
+          No exact dates. No artificial deadlines. The market opens when the fundamentals support it.
+        </p>
+      </div>
+
+      {/* ── 9. The Flywheel ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">The Flywheel</div>
-        <div className="flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/30 px-4 py-4">
+        <div className="flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/30 px-3 py-4 sm:px-4">
           {["Earn", "Use", "Demand", "Liquidity", "Trade"].map((step, i) => (
-            <div key={step} className="flex items-center gap-1.5 sm:gap-2">
+            <div key={step} className="flex items-center gap-1 sm:gap-2">
               <div className={`flex h-9 w-9 items-center justify-center rounded-full border text-[10px] font-bold sm:h-10 sm:w-10 sm:text-[11px] ${
                 i < 3
                   ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-400"
@@ -714,17 +811,16 @@ function MarketComingSoonTab() {
         </p>
       </div>
 
-      {/* ── 7. Why It's Not Live Yet ── */}
+      {/* ── 10. Why It's Not Live Yet ── */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
         <p className="text-sm font-semibold text-zinc-300">Markets without usage are unstable.</p>
         <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-          Launching a market before there are real users, real transactions, and real demand creates artificial price action that helps no one.
-          We are building in order:
+          Launching a market before there are real users, real transactions, and real demand creates artificial price action that helps no one. We are building real demand first — not launching empty trading.
         </p>
         <div className="mt-4 space-y-2">
           {[
-            { label: "Real users", desc: "People who actually use DUM Club to run businesses and buy services" },
+            { label: "Real users", desc: "People who use DUM Club to run businesses and buy services" },
             { label: "Real transactions", desc: "Purchases, discounts, and rewards flowing through the system daily" },
             { label: "Real value", desc: "DUM backed by utility across a growing ecosystem of businesses" },
           ].map((item) => (
@@ -739,7 +835,7 @@ function MarketComingSoonTab() {
         </div>
       </div>
 
-      {/* ── 8. Vision ── */}
+      {/* ── 11. Vision ── */}
       <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-6">
         <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">The Vision</div>
         <div className="flex items-center justify-between gap-1">
@@ -766,16 +862,16 @@ function MarketComingSoonTab() {
         </p>
       </div>
 
-      {/* ── 9. CTA ── */}
+      {/* ── 12. CTA ── */}
       <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-950 p-8 text-center">
         <div className="mb-2 text-lg font-black text-white">The market starts with you.</div>
         <p className="mb-5 text-sm text-zinc-500">Every DUM Point you earn today brings the market closer to launch.</p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
-            Start Earning DUM →
+          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
+            Browse Businesses →
           </Link>
-          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
-            Browse Businesses
+          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+            Create a Business
           </Link>
         </div>
       </div>
