@@ -55,6 +55,11 @@ export function Navbar() {
     return () => window.removeEventListener("dum-points-update", handler);
   }, [user]);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [path]);
+
   const links = [
     { href: "/discover", label: "Discover" },
     { href: "/build", label: "Build" },
@@ -74,6 +79,8 @@ export function Navbar() {
       : user?.email ?? null;
 
   return (
+    <>
+    {/* ── Fixed header bar ─────────────────────────────────── */}
     <nav
       onMouseEnter={() => setNavHover(true)}
       onMouseLeave={() => setNavHover(false)}
@@ -150,130 +157,6 @@ export function Navbar() {
           {menuOpen ? "✕" : "≡"}
         </button>
       </div>
-
-      {/* ── Mobile dropdown (hidden on lg+, shown when open) ─ */}
-      {menuOpen && (
-        <div
-          className="lg:hidden"
-          style={{
-            position: "fixed",
-            top: "72px",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(3,3,3,0.98)",
-            backdropFilter: "blur(12px)",
-            zIndex: 9998,
-            overflowY: "auto",
-            borderTop: "1px solid #1c1c1c",
-            paddingBottom: "16px",
-          }}
-        >
-          {links.map((l) => {
-            const active = path === l.href;
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMenuOpen(false)}
-                style={{
-                  display: "block",
-                  padding: "14px 20px",
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  color: active ? "#00FFB2" : "#9a9a9a",
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  borderBottom: "1px solid #111",
-                }}
-              >
-                {l.label}
-              </Link>
-            );
-          })}
-
-          {mounted && (
-            <div
-              style={{
-                padding: "14px 20px 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-              }}
-            >
-              {loading ? (
-                <div
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "12px",
-                    color: "#777",
-                    padding: "4px 0",
-                  }}
-                >
-                  Loading...
-                </div>
-              ) : user ? (
-                <button
-                  type="button"
-                  onClick={() => { logout(); setMenuOpen(false); }}
-                  title="Sign out"
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "12px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.08em",
-                    border: "1px solid rgba(0,255,178,0.22)",
-                    background: "rgba(0,255,178,0.06)",
-                    borderRadius: "14px",
-                    padding: "14px 18px",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    width: "100%",
-                  }}
-                >
-                  {shortEmail}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => { login(); setMenuOpen(false); }}
-                  style={{
-                    background: "none",
-                    border: "1px solid #2a2a2a",
-                    color: "#e8e8e8",
-                    padding: "14px 18px",
-                    fontSize: "12px",
-                    letterSpacing: "0.13em",
-                    cursor: "pointer",
-                    fontFamily: "'Space Mono', monospace",
-                    textTransform: "uppercase",
-                    borderRadius: "14px",
-                    width: "100%",
-                  }}
-                >
-                  Continue with Google
-                </button>
-              )}
-
-              {connected && (
-                <div
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "11px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Account Active
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── Desktop nav (hidden below lg) ─────────────────── */}
       <div
@@ -511,5 +394,134 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+
+    {/* ── Mobile dropdown — OUTSIDE nav to escape backdrop-filter
+         containing block. Rendered as a viewport-fixed overlay. ── */}
+    {menuOpen && (
+      <div
+        className="lg:hidden"
+        style={{
+          position: "fixed",
+          top: "72px",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(3,3,3,0.98)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          zIndex: 9998,
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          borderTop: "1px solid #1c1c1c",
+          paddingBottom: "16px",
+          pointerEvents: "auto" as const,
+        }}
+      >
+        {links.map((l) => {
+          const active = path === l.href;
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                display: "block",
+                padding: "14px 20px",
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "13px",
+                fontWeight: 700,
+                textDecoration: "none",
+                color: active ? "#00FFB2" : "#9a9a9a",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                borderBottom: "1px solid #111",
+              }}
+            >
+              {l.label}
+            </Link>
+          );
+        })}
+
+        {mounted && (
+          <div
+            style={{
+              padding: "14px 20px 0",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            {loading ? (
+              <div
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "12px",
+                  color: "#777",
+                  padding: "4px 0",
+                }}
+              >
+                Loading...
+              </div>
+            ) : user ? (
+              <button
+                type="button"
+                onClick={() => { logout(); setMenuOpen(false); }}
+                title="Sign out"
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "12px",
+                  color: "#00FFB2",
+                  letterSpacing: "0.08em",
+                  border: "1px solid rgba(0,255,178,0.22)",
+                  background: "rgba(0,255,178,0.06)",
+                  borderRadius: "14px",
+                  padding: "14px 18px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  width: "100%",
+                }}
+              >
+                {shortEmail}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { login(); setMenuOpen(false); }}
+                style={{
+                  background: "none",
+                  border: "1px solid #2a2a2a",
+                  color: "#e8e8e8",
+                  padding: "14px 18px",
+                  fontSize: "12px",
+                  letterSpacing: "0.13em",
+                  cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace",
+                  textTransform: "uppercase",
+                  borderRadius: "14px",
+                  width: "100%",
+                }}
+              >
+                Continue with Google
+              </button>
+            )}
+
+            {connected && (
+              <div
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "11px",
+                  color: "#00FFB2",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Account Active
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+    </>
   );
 }
