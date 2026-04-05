@@ -18,7 +18,8 @@
 
 const { Connection, Keypair, PublicKey, clusterApiUrl } = require("@solana/web3.js");
 const { createMint, getOrCreateAssociatedTokenAccount, mintTo } = require("@solana/spl-token");
-const bs58 = require("bs58");
+const bs58Module = require("bs58");
+const bs58 = bs58Module.default || bs58Module;
 
 const RPC_URL = process.env.SOLANA_RPC_URL || clusterApiUrl("devnet");
 const DECIMALS = 9; // Standard Solana token decimals
