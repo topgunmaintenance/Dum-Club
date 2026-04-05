@@ -2953,7 +2953,7 @@ return (
 
             {projectView === "storefront" && (
               <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-900 p-5">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-3 flex items-center gap-2 flex-wrap">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -2961,6 +2961,14 @@ return (
                   <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
                     {isOwner ? "Your Business · Live" : "Live Business"}
                   </span>
+                  <span className="rounded-full border border-zinc-700 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-zinc-400">
+                    {category}
+                  </span>
+                  {ownerBizProfile?.verification_status === "verified" && (
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-0.5 text-[9px] font-semibold text-emerald-400">
+                      ✓ Verified
+                    </span>
+                  )}
                 </div>
                 <p className="mb-3 text-sm leading-relaxed text-zinc-300">
                   {project?.description
@@ -5522,6 +5530,28 @@ return (
       />
     </div>
   )}
+
+  {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop */}
+  {!isOwner && offers.length > 0 && (
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md px-4 py-3 lg:hidden">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs text-zinc-500">From</div>
+          <div className="text-lg font-black text-white">
+            ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => scrollToSection("offers-section")}
+          className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300"
+        >
+          Browse Offers ↓
+        </button>
+      </div>
+    </div>
+  )}
+
   </div>
   );
 }

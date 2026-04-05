@@ -763,6 +763,16 @@ export default function DiscoverPage() {
                           {offerCount(project)} offer{offerCount(project) > 1 ? "s" : ""}
                         </span>
                       )}
+                      {(() => {
+                        const totalSold = Array.isArray(project.store_items)
+                          ? project.store_items.reduce((sum: number, i: any) => sum + (Number(i.quantity_sold) || 0), 0)
+                          : 0;
+                        return totalSold > 0 ? (
+                          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
+                            {totalSold} purchased
+                          </span>
+                        ) : null;
+                      })()}
                       {hasSubscription(project) && (
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-400">
                           Subscription
