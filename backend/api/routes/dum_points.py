@@ -650,18 +650,20 @@ async def claim_dum_tokens(
     mode = "db-only"
 
     if is_solana_enabled():
+        print(f"[claim] Solana enabled — attempting on-chain mint of {req.amount} DUM to {req.wallet_address}")
         try:
             mint_result = mint_dum_to_wallet(req.wallet_address, req.amount)
             if mint_result and mint_result.get("signature"):
                 tx_signature = mint_result["signature"]
                 mode = "on-chain"
-                print(f"[claim] ✓ on-chain mint: {req.amount} DUM to {req.wallet_address} | tx: {tx_signature}")
+                print(f"[claim] ✓ ON-CHAIN MINT SUCCESS: {req.amount} DUM to {req.wallet_address} | tx: {tx_signature}")
             else:
-                print(f"[claim] on-chain mint returned no result, using DB fallback")
+                print(f"[claim] ✗ on-chain mint returned no result (mint_result={mint_result}), using DB fallback")
         except Exception as exc:
-            print(f"[claim] on-chain mint failed ({exc!r}), using DB fallback")
+            print(f"[claim] ✗ on-chain mint EXCEPTION: {type(exc).__name__}: {exc}, using DB fallback")
     else:
-        print(f"[claim] Solana not configured, using DB-only mode")
+        from services.solana_mint import DUM_MINT as _mint, DUM_TREASURY_KEYPAIR as _key
+        print(f"[claim] Solana NOT configured — DUM_MINT={'SET' if _mint else 'EMPTY'}, KEYPAIR={'SET' if _key else 'EMPTY'}")
 
     # Always award points in DB (source of truth for UX)
     new_balance = _update_balance_and_log(

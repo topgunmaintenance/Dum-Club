@@ -45,9 +45,23 @@ def mint_dum_to_wallet(wallet_address: str, amount: int) -> dict | None:
             "DUM_MINT": DUM_MINT,
         }
 
+        # Resolve script path — works both locally (repo root) and in Docker (/app)
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_path = os.path.join(backend_dir, "scripts", "create_dum_token.js")
+        if not os.path.exists(script_path):
+            # Fallback: try repo root (local dev)
+            repo_root = os.path.join(backend_dir, "..")
+            script_path = os.path.join(repo_root, "scripts", "create_dum_token.js")
+
+        if not os.path.exists(script_path):
+            print(f"[solana] mint FAILED: script not found. Checked: {backend_dir}/scripts/ and parent")
+            return None
+
+        print(f"[solana] using script: {script_path}")
+
         result = subprocess.run(
-            ["node", "scripts/create_dum_token.js", "mint-to", wallet_address, str(amount)],
-            cwd=os.path.join(os.path.dirname(__file__), ".."),
+            ["node", script_path, "mint-to", wallet_address, str(amount)],
+            cwd=os.path.dirname(script_path),
             capture_output=True,
             text=True,
             timeout=30,
@@ -55,7 +69,10 @@ def mint_dum_to_wallet(wallet_address: str, amount: int) -> dict | None:
         )
 
         if result.returncode != 0:
-            print(f"[solana] mint failed: {result.stderr.strip()}")
+            stderr = result.stderr.strip()
+            print(f"[solana] mint FAILED (exit {result.returncode}): {stderr}")
+            if "Cannot find module" in stderr:
+                print(f"[solana] HINT: npm dependencies not installed. Run 'npm install' in {os.path.dirname(script_path)}")
             return None
 
         # Parse JSON output from the Node.js script
