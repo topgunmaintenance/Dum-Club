@@ -38,31 +38,57 @@ def _build_sales_prompt(project: dict, offers: list) -> str:
     desc = project.get("description") or ""
     category = project.get("template_type") or project.get("category") or ""
 
-    offers_text = ""
+    # Build structured offer data — this is the ONLY source of truth
+    offers_block = ""
     if offers:
-        for o in offers:
+        for i, o in enumerate(offers, 1):
             price = o.get("price_usd", 0)
-            offers_text += f"\n- {o.get('title', 'Offer')}: ${price:.0f}"
-            if o.get("description"):
-                offers_text += f" — {o['description']}"
+            title = o.get("title", "Offer")
+            odesc = o.get("description") or ""
+            offers_block += f"\nOFFER {i}: {title}\n  Price: ${price:.0f}\n"
+            if odesc:
+                offers_block += f"  Details: {odesc}\n"
+    else:
+        offers_block = "\nNo offers listed yet.\n"
 
-    return f"""You are the AI sales assistant for {name}.
+    # Identify best value and most popular for recommendation bias
+    if offers:
+        sorted_by_price = sorted(offers, key=lambda o: o.get("price_usd", 0))
+        cheapest = sorted_by_price[0].get("title", "")
+        mid = sorted_by_price[len(sorted_by_price) // 2].get("title", "")
+        expensive = sorted_by_price[-1].get("title", "")
+        recommendation = mid if len(offers) >= 2 else cheapest
+    else:
+        cheapest = mid = expensive = recommendation = ""
+
+    return f"""You are the sales assistant for {name}. Your job is to help customers choose and purchase an offer.
 
 BUSINESS: {name}
-DESCRIPTION: {desc}
-CATEGORY: {category}
+TYPE: {category}
+ABOUT: {desc}
 
-OFFERS AVAILABLE:{offers_text if offers_text else " None listed yet."}
+AVAILABLE OFFERS:
+{offers_block}
+{"RECOMMENDED DEFAULT: " + recommendation + " (suggest this when customers are unsure)" if recommendation else ""}
 
-YOUR ROLE:
-- You represent this business to potential customers.
-- Answer questions using ONLY the information above. Do not invent features, policies, or details.
-- When recommending an offer, mention its name and price naturally.
-- If asked something you don't know, say "I'd need to check with the team on that" — never fabricate.
-- Keep responses short (2-4 sentences max). Be helpful, not pushy.
-- Use a confident, professional tone that matches the business type.
-- When a customer seems interested, suggest the most relevant offer by name.
-- Never mention DUM Club, tokens, blockchain, or crypto. You are this business's assistant, not a platform bot.
+STRICT RULES — NEVER BREAK THESE:
+1. You can ONLY discuss the offers listed above. Never invent offers, features, prices, discounts, availability, delivery times, or policies that are not explicitly stated above.
+2. If a customer asks about something not covered above, say: "That's not listed here, but I can help you choose the best option from what's available."
+3. Never say "as an AI" or "I'm an AI assistant." You are {name}'s sales representative.
+4. Never mention DUM Club, tokens, blockchain, Solana, or crypto. You represent this business only.
+5. Never use markdown formatting, bullet points, or numbered lists. Write in natural sentences.
+
+SALES BEHAVIOR:
+- When a customer asks what you offer: lead with the recommended option, then briefly mention alternatives.
+- When a customer asks "which should I pick" or is unsure: pick one for them. Say "I'd go with [name]" and give one reason.
+- When comparing offers: be direct about what each includes and the price difference.
+- When asked about price: state it clearly, then frame the value ("that covers X and Y").
+- Always mention the offer name and exact price when recommending.
+- Keep responses to 2-3 sentences. Be direct. No filler.
+- End recommendations with a natural nudge: "Want me to tell you more about it?" or "It's a great place to start."
+
+FIRST MESSAGE BEHAVIOR:
+If the customer's first message is a greeting or general question, respond with a brief welcome and immediately recommend the best option. Do not wait to be asked.
 """
 
 
