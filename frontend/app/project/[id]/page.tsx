@@ -5693,8 +5693,8 @@ return (
     </div>
   )}
 
-  {/* AI Sales Assistant */}
-  {!isOwner && offers.length > 0 && (
+  {/* AI Sales Assistant — visible to all visitors */}
+  {offers.length > 0 && (
     <AiSalesChat
       projectId={id}
       businessName={projectName}

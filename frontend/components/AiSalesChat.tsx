@@ -138,7 +138,7 @@ export function AiSalesChat({
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className={`fixed bottom-6 right-6 z-[80] flex items-center gap-2.5 rounded-full border ${accent.border} bg-zinc-950/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)]`}
+          className={`fixed bottom-20 right-4 z-[80] flex items-center gap-2.5 rounded-full border lg:bottom-6 lg:right-6 ${accent.border} bg-zinc-950/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)]`}
         >
           <span className={`flex h-8 w-8 items-center justify-center rounded-full ${accent.bg} text-[11px] font-black ${accent.text} border ${accent.border}`}>
             {monogram}
@@ -149,7 +149,7 @@ export function AiSalesChat({
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-[80] flex w-[340px] flex-col rounded-2xl border border-zinc-800 bg-zinc-950/98 shadow-[0_16px_64px_rgba(0,0,0,0.6)] backdrop-blur-md sm:w-[380px]">
+        <div className="fixed bottom-20 right-4 z-[80] flex w-[calc(100vw-2rem)] max-w-[380px] flex-col rounded-2xl border border-zinc-800 bg-zinc-950/98 shadow-[0_16px_64px_rgba(0,0,0,0.6)] backdrop-blur-md lg:bottom-6 lg:right-6">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
             <div className="flex items-center gap-2.5">
