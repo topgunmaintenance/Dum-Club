@@ -529,16 +529,20 @@ async def list_redemptions(project_id: str):
 async def list_public_projects():
     supabase = get_client()
 
-    res = (
-        supabase.table("projects")
-        .select("*")
-        .eq("review_status", "approved")
-        .eq("status", "live")
-        .eq("is_deleted", False)
-        .order("created_at", desc=True)
-        .limit(50)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("projects")
+            .select("*")
+            .eq("review_status", "approved")
+            .eq("status", "live")
+            .eq("is_deleted", False)
+            .order("created_at", desc=True)
+            .limit(50)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[projects] public query failed: {exc!r}")
+        return []
 
     projects = res.data or []
 
