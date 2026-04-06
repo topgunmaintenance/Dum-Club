@@ -168,16 +168,16 @@ export default function TiersPage() {
                   <div className="mt-3 text-lg font-bold text-emerald-400">{pkg.price}</div>
                   <button
                     type="button"
-                    onClick={() => alert("DUM Points purchase coming soon! For now, earn points by launching projects and creating offers.")}
+                    onClick={() => { window.location.href = "/hub"; }}
                     className={`mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-bold transition ${pkg.popular ? "bg-emerald-400 text-black hover:bg-emerald-300" : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"}`}
                   >
-                    Get {pkg.amount} DUM
+                    Get DUM Points →
                   </button>
                 </div>
               ))}
             </div>
             <p className="mt-6 text-[11px] text-zinc-600">
-              Coming soon: direct purchase via credit card. For now, earn DUM Points by building and selling on the platform.
+              Buy DUM Points directly in the DUM Hub, or earn them by building and selling on the platform.
             </p>
           </div>
         </div>
