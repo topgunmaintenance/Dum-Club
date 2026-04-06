@@ -42,6 +42,7 @@ from api.routes import (
     favorites,
     reviews,
     referrals,
+    ai_chat,
 )
 
 from db.supabase import init_supabase
@@ -138,6 +139,9 @@ app.include_router(token.router, tags=["Token"])
 app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["Reviews"])
 app.include_router(referrals.router, prefix="/api/referrals", tags=["Referrals"])
+
+# AI Sales Assistant
+app.include_router(ai_chat.router, prefix="/api/ai", tags=["AI Chat"])
 
 
 @app.get("/health")

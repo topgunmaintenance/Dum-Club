@@ -8,6 +8,7 @@ import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
+import { AiSalesChat } from "../../../components/AiSalesChat";
 import {
   LineChart,
   Line,
@@ -5690,6 +5691,18 @@ return (
         onClick={(e) => e.stopPropagation()}
       />
     </div>
+  )}
+
+  {/* AI Sales Assistant */}
+  {!isOwner && offers.length > 0 && (
+    <AiSalesChat
+      projectId={id}
+      businessName={projectName}
+      onScrollToOffer={(title) => {
+        const el = document.getElementById("offers-section");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}
+    />
   )}
 
   {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop */}
