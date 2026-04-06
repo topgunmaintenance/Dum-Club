@@ -96,7 +96,7 @@ export default function BuildPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-base px-4 text-white">
-      <Starfield count={80} />
+      <Starfield count={35} />
 
       {/* Launch limit modal */}
       {showLimitModal && (

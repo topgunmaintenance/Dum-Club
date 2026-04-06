@@ -443,7 +443,7 @@ export default function DiscoverPage() {
     marketPollRef.current = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       loadMarketSnapshots(projectIds);
-    }, 15_000);
+    }, 45_000);
 
     return () => {
       if (marketPollRef.current) clearInterval(marketPollRef.current);
@@ -484,7 +484,7 @@ export default function DiscoverPage() {
       setPulseId(pick.id);
       if (pulseClearTimeoutRef.current) clearTimeout(pulseClearTimeoutRef.current);
       pulseClearTimeoutRef.current = setTimeout(() => setPulseId(null), 600);
-    }, 2500);
+    }, 6000);
 
     return () => {
       clearInterval(interval);
@@ -562,7 +562,7 @@ export default function DiscoverPage() {
 
   return (
     <main className="relative min-h-screen bg-base text-white">
-      <Starfield count={100} />
+      <Starfield count={50} />
       <DiscoverSectionNav />
       {/* Branded activity strip */}
       <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">

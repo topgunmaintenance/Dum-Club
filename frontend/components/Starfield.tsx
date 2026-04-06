@@ -16,6 +16,8 @@ export function Starfield({ count = 120 }: { count?: number }) {
     if (!ctx) return;
 
     let w: number, h: number, raf: number;
+    let lastFrame = 0;
+    const FRAME_INTERVAL = 33; // ~30fps instead of 60fps
 
     /* ── Layer 1: static twinkling star field ── */
     type Star = {
@@ -113,21 +115,23 @@ export function Starfield({ count = 120 }: { count?: number }) {
     window.addEventListener("resize", resize);
 
     const draw = (ts: number) => {
+      // Throttle to ~30fps
+      if (ts - lastFrame < FRAME_INTERVAL) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrame = ts;
+
       ctx.clearRect(0, 0, w, h);
 
-      /* ── draw twinkling stars ── */
+      /* ── draw twinkling stars (no shadow — GPU expensive) ── */
       for (const s of stars) {
         s.phase += s.speed;
         const alpha = s.baseAlpha * (0.3 + 0.7 * Math.sin(s.phase));
-        if (s.glow) {
-          ctx.shadowBlur = 5;
-          ctx.shadowColor = `rgba(${s.r | 0},${s.g | 0},${s.b | 0},0.8)`;
-        }
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${s.r | 0},${s.g | 0},${s.b | 0},${alpha.toFixed(3)})`;
         ctx.fill();
-        if (s.glow) ctx.shadowBlur = 0;
       }
 
       /* ── spawn new meteor ── */
@@ -166,19 +170,12 @@ export function Starfield({ count = 120 }: { count?: number }) {
         ctx.lineCap = "round";
         ctx.stroke();
 
-        /* glowing head */
-        ctx.shadowBlur = 14;
+        /* glowing head (single pass, reduced shadow) */
+        ctx.shadowBlur = 8;
         ctx.shadowColor = m.headColor;
         ctx.beginPath();
         ctx.arc(m.x, m.y, m.headSize * fadeIn, 0, Math.PI * 2);
-        ctx.fillStyle = `${m.glowColor}${fadeIn.toFixed(2)})`;
-        ctx.fill();
-
-        /* bright core */
-        ctx.shadowBlur = 6;
-        ctx.beginPath();
-        ctx.arc(m.x, m.y, m.headSize * 0.35 * fadeIn, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${(0.75 * fadeIn).toFixed(2)})`;
+        ctx.fillStyle = `rgba(255,255,255,${(0.8 * fadeIn).toFixed(2)})`;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
