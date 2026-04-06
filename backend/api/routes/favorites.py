@@ -1,5 +1,6 @@
 """
 Favorites — save / unsave businesses.
+All queries wrapped in try/except for missing table safety.
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -9,6 +10,15 @@ from auth.privy import get_current_user
 
 router = APIRouter()
 
+_table_warning_logged = False
+
+
+def _log_once():
+    global _table_warning_logged
+    if not _table_warning_logged:
+        print("[favorites] table not found — using fallback (this warning logs once)")
+        _table_warning_logged = True
+
 
 class FavoriteToggle(BaseModel):
     project_id: str
@@ -16,81 +26,89 @@ class FavoriteToggle(BaseModel):
 
 @router.post("/toggle")
 def toggle_favorite(body: FavoriteToggle, user: dict = Depends(get_current_user)):
-    """Add or remove a project from the user's favorites. Returns new state."""
     privy_id = user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    sb = get_client()
+    try:
+        sb = get_client()
+        existing = (
+            sb.table("favorites")
+            .select("id")
+            .eq("privy_id", privy_id)
+            .eq("project_id", body.project_id)
+            .limit(1)
+            .execute()
+        )
 
-    # Check if already favorited
-    existing = (
-        sb.table("favorites")
-        .select("id")
-        .eq("privy_id", privy_id)
-        .eq("project_id", body.project_id)
-        .limit(1)
-        .execute()
-    )
-
-    if existing.data:
-        # Remove
-        sb.table("favorites").delete().eq("id", existing.data[0]["id"]).execute()
+        if existing.data:
+            sb.table("favorites").delete().eq("id", existing.data[0]["id"]).execute()
+            return {"favorited": False, "project_id": body.project_id}
+        else:
+            sb.table("favorites").insert({
+                "privy_id": privy_id,
+                "project_id": body.project_id,
+            }).execute()
+            return {"favorited": True, "project_id": body.project_id}
+    except Exception:
+        _log_once()
         return {"favorited": False, "project_id": body.project_id}
-    else:
-        # Add
-        sb.table("favorites").insert({
-            "privy_id": privy_id,
-            "project_id": body.project_id,
-        }).execute()
-        return {"favorited": True, "project_id": body.project_id}
 
 
 @router.get("/mine")
 def list_my_favorites(user: dict = Depends(get_current_user)):
-    """Return list of project IDs the user has favorited."""
     privy_id = user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    sb = get_client()
-    res = (
-        sb.table("favorites")
-        .select("project_id, created_at")
-        .eq("privy_id", privy_id)
-        .order("created_at", desc=True)
-        .execute()
-    )
-    return {"favorites": res.data or []}
+    try:
+        sb = get_client()
+        res = (
+            sb.table("favorites")
+            .select("project_id, created_at")
+            .eq("privy_id", privy_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return {"favorites": res.data or []}
+    except Exception:
+        _log_once()
+        return {"favorites": []}
 
 
 @router.get("/count/{project_id}")
 def favorite_count(project_id: str):
-    """Public: how many users favorited this project."""
-    sb = get_client()
-    res = (
-        sb.table("favorites")
-        .select("id", count="exact")
-        .eq("project_id", project_id)
-        .execute()
-    )
-    return {"project_id": project_id, "count": res.count or 0}
+    try:
+        sb = get_client()
+        res = (
+            sb.table("favorites")
+            .select("id", count="exact")
+            .eq("project_id", project_id)
+            .execute()
+        )
+        return {"project_id": project_id, "count": res.count or 0}
+    except Exception:
+        _log_once()
+        return {"project_id": project_id, "count": 0}
 
 
 @router.get("/check/{project_id}")
 def check_favorite(project_id: str, user: dict = Depends(get_current_user)):
-    """Check if the current user has favorited a project."""
     privy_id = user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    sb = get_client()
-    res = (
-        sb.table("favorites")
-        .select("id")
-        .eq("privy_id", privy_id)
-        .eq("project_id", project_id)
-        .limit(1)
-        .execute()
-    )
-    return {"favorited": bool(res.data), "project_id": project_id}
+    try:
+        sb = get_client()
+        res = (
+            sb.table("favorites")
+            .select("id")
+            .eq("privy_id", privy_id)
+            .eq("project_id", project_id)
+            .limit(1)
+            .execute()
+        )
+        return {"favorited": bool(res.data), "project_id": project_id}
+    except Exception:
+        _log_once()
+        return {"favorited": False, "project_id": project_id}

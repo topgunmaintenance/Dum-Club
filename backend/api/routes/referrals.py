@@ -28,57 +28,59 @@ def get_or_create_referral(user: dict = Depends(get_current_user)):
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    sb = get_client()
+    try:
+        sb = get_client()
 
-    existing = (
-        sb.table("referrals")
-        .select("*")
-        .eq("privy_id", privy_id)
-        .limit(1)
-        .execute()
-    )
+        existing = (
+            sb.table("referrals")
+            .select("*")
+            .eq("privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
 
-    if existing.data:
-        row = existing.data[0]
-        return {
-            "code": row["code"],
-            "clicks": row["clicks"],
-            "signups": row["signups"],
-            "points_earned": row["points_earned"],
-        }
+        if existing.data:
+            row = existing.data[0]
+            return {
+                "code": row["code"],
+                "clicks": row["clicks"],
+                "signups": row["signups"],
+                "points_earned": row["points_earned"],
+            }
 
-    # Create new referral code
-    code = _generate_code()
-    sb.table("referrals").insert({
-        "privy_id": privy_id,
-        "code": code,
-    }).execute()
+        # Create new referral code
+        code = _generate_code()
+        sb.table("referrals").insert({
+            "privy_id": privy_id,
+            "code": code,
+        }).execute()
 
-    return {"code": code, "clicks": 0, "signups": 0, "points_earned": 0}
+        return {"code": code, "clicks": 0, "signups": 0, "points_earned": 0}
+    except Exception:
+        return {"code": "", "clicks": 0, "signups": 0, "points_earned": 0}
 
 
 @router.post("/click/{code}")
 def track_click(code: str):
     """Public: increment click count for a referral code."""
-    sb = get_client()
-
-    existing = (
-        sb.table("referrals")
-        .select("id, clicks")
-        .eq("code", code)
-        .limit(1)
-        .execute()
-    )
-
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="Referral code not found")
-
-    row = existing.data[0]
-    sb.table("referrals").update({
-        "clicks": (row["clicks"] or 0) + 1,
-    }).eq("id", row["id"]).execute()
-
-    return {"status": "ok"}
+    try:
+        sb = get_client()
+        existing = (
+            sb.table("referrals")
+            .select("id, clicks")
+            .eq("code", code)
+            .limit(1)
+            .execute()
+        )
+        if not existing.data:
+            return {"status": "not_found"}
+        row = existing.data[0]
+        sb.table("referrals").update({
+            "clicks": (row["clicks"] or 0) + 1,
+        }).eq("id", row["id"]).execute()
+        return {"status": "ok"}
+    except Exception:
+        return {"status": "ok"}  # silent fallback — don't crash on missing table
 
 
 @router.post("/convert/{code}")

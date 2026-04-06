@@ -1506,7 +1506,7 @@ export default function Home() {
     marketPollRef.current = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       loadMarketSnapshots(projectIds);
-    }, 15000);
+    }, 45000);
 
     return () => {
       if (marketPollRef.current) clearInterval(marketPollRef.current);
@@ -1554,7 +1554,7 @@ export default function Home() {
         </div>
       )}
 
-      <Starfield count={130} />
+      <Starfield count={60} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
         {/* ── HERO — Input-First ── */}
