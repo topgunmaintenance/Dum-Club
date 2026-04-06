@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "../lib/auth/AuthContext";
 
 // Pages where the pill is hidden (already show points prominently)
-const HIDDEN_PATHS = ["/build", "/dashboard", "/hub"];
+const HIDDEN_PATHS = ["/build", "/dashboard", "/hub", "/project"];
 
 export function DumPill() {
   const { user } = useAuth();
