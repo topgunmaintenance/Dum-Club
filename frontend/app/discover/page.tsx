@@ -404,26 +404,26 @@ export default function DiscoverPage() {
     loadRecentTrades();
   }, []);
 
-  // Load review summaries for all projects
-  useEffect(() => {
-    if (!projects.length) return;
-    Promise.all(
-      projects.map(async (p) => {
-        try {
-          const res = await fetch(`${API_BASE}/api/reviews/summary/${p.id}`);
-          if (!res.ok) return null;
-          const data = await res.json();
-          return { id: p.id, count: data.count || 0, average_rating: data.average_rating || 0 };
-        } catch { return null; }
-      })
-    ).then((results) => {
-      const map: Record<string, { count: number; average_rating: number }> = {};
-      for (const r of results) {
-        if (r && r.count > 0) map[r.id] = { count: r.count, average_rating: r.average_rating };
-      }
-      setReviewSummaries(map);
-    });
-  }, [projects]);
+  // Review summaries disabled until reviews table is created in production
+  // useEffect(() => {
+  //   if (!projects.length) return;
+  //   Promise.all(
+  //     projects.map(async (p) => {
+  //       try {
+  //         const res = await fetch(`${API_BASE}/api/reviews/summary/${p.id}`);
+  //         if (!res.ok) return null;
+  //         const data = await res.json();
+  //         return { id: p.id, count: data.count || 0, average_rating: data.average_rating || 0 };
+  //       } catch { return null; }
+  //     })
+  //   ).then((results) => {
+  //     const map: Record<string, { count: number; average_rating: number }> = {};
+  //     for (const r of results) {
+  //       if (r && r.count > 0) map[r.id] = { count: r.count, average_rating: r.average_rating };
+  //     }
+  //     setReviewSummaries(map);
+  //   });
+  // }, [projects]);
 
   useEffect(() => {
     const id = setInterval(() => {
