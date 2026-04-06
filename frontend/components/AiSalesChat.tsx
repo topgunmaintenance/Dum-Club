@@ -87,7 +87,7 @@ export function AiSalesChat({
       setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
       if (data.offers?.length) setOffers(data.offers);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't respond right now. Please try again." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Having trouble right now — try again in a moment." }]);
     } finally {
       setLoading(false);
     }
@@ -169,12 +169,26 @@ export function AiSalesChat({
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" style={{ maxHeight: "360px", minHeight: "200px" }}>
             {messages.length === 0 && !loading && (
-              <div className="py-6 text-center">
+              <div className="py-4 text-center">
                 <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full ${accent.bg} text-sm font-black ${accent.text} border ${accent.border}`}>
                   {monogram}
                 </div>
-                <div className="text-sm font-semibold text-zinc-300">Ask about our offers</div>
-                <div className="mt-1 text-[11px] text-zinc-600">Pricing, availability, what&apos;s included</div>
+                <div className="text-sm font-semibold text-zinc-300">How can I help?</div>
+                <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                  {[
+                    "What do you offer?",
+                    "Which should I pick?",
+                    "What's most popular?",
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => { setInput(q); }}
+                      className={`rounded-full border ${accent.border} ${accent.bg} px-3 py-1.5 text-[11px] font-medium ${accent.text} transition hover:opacity-80`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
