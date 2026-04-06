@@ -1807,6 +1807,11 @@ export default function Home() {
                 desc: "Sell services, products, or access. One link. Customers pay instantly.",
               },
               {
+                tag: "Assistant",
+                title: "AI Sales Assistant",
+                desc: "Every business gets a trained assistant that knows your offers and helps customers buy.",
+              },
+              {
                 tag: "Loyalty",
                 title: "Automatic Rewards",
                 desc: "Repeat customers earn rewards automatically. No extra work.",
@@ -1829,6 +1834,64 @@ export default function Home() {
                 <p className="text-sm leading-relaxed text-zinc-400">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ── AI ASSISTANT DEMO ── */}
+        <div className="mx-auto mt-16 max-w-3xl px-4">
+          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-8">
+            <div className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400/60">Built-in AI Assistant</div>
+            <h3 className="text-xl font-extrabold text-white sm:text-2xl">Every business comes with a sales assistant.</h3>
+            <p className="mt-2 max-w-lg text-sm text-zinc-500">Your AI assistant knows your offers, answers customer questions, and helps close sales. No setup. No training. Ready at launch.</p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {/* Mini storefront preview */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-400/15 text-sm font-black text-orange-400 border border-orange-400/20">SP</div>
+                  <div>
+                    <div className="text-sm font-bold text-white">Sparkle Pro Mobile Wash</div>
+                    <div className="text-[10px] text-zinc-500">Mobile car wash & detailing</div>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {[
+                    { name: "Exterior Wash", price: "$49" },
+                    { name: "Full Detail", price: "$149" },
+                    { name: "Ceramic Coat", price: "$299" },
+                  ].map((offer) => (
+                    <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2">
+                      <span className="text-[12px] text-zinc-300">{offer.name}</span>
+                      <span className="font-mono text-[12px] font-bold text-emerald-400">{offer.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI conversation preview */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-400/15 text-[9px] font-bold text-orange-400 border border-orange-400/20">SP</div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">AI Assistant</span>
+                </div>
+                <div className="space-y-3">
+                  {/* Customer question */}
+                  <div className="flex justify-end">
+                    <div className="rounded-xl rounded-br-sm bg-zinc-800 px-3 py-2 text-[12px] text-zinc-300">
+                      What&apos;s included in the Full Detail?
+                    </div>
+                  </div>
+                  {/* AI answer */}
+                  <div className="flex gap-2">
+                    <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[7px] font-bold text-orange-400">SP</div>
+                    <div className="rounded-xl rounded-bl-sm border border-zinc-800/60 bg-zinc-950/80 px-3 py-2 text-[12px] leading-relaxed text-zinc-400">
+                      Full Detail covers interior deep clean, full exterior wash, tire dressing, and glass polish. Takes about 2 hours. Most customers go with this one.
+                      <span className="mt-1.5 block text-emerald-400/70">Full Detail — $149 →</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
