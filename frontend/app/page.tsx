@@ -1842,7 +1842,7 @@ export default function Home() {
           <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-8">
             <div className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400/60">Built-in AI Assistant</div>
             <h3 className="text-xl font-extrabold text-white sm:text-2xl">Every business comes with a sales assistant.</h3>
-            <p className="mt-2 max-w-lg text-sm text-zinc-500">Your AI assistant knows your offers, answers customer questions, and helps close sales. No setup. No training. Ready at launch.</p>
+            <p className="mt-2 max-w-lg text-sm text-zinc-500">Answers customer questions instantly and helps close the sale. No setup. No training. Ready at launch.</p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {/* Mini storefront preview */}
