@@ -55,13 +55,13 @@ function detectIntent(text: string): "find" | "create" {
 
 const TEMPLATE_STARTERS = [
   { label: "Sell coaching", prompt: "A personal training service selling custom workout plans and meal prep packages" },
-  { label: "Sell services", prompt: "A mobile car wash and detailing service with tiered packages" },
+  { label: "Find services", prompt: "Find me a mobile car wash or detailing service near me" },
   { label: "Sell products", prompt: "A local bakery selling custom cakes, pastries, and catering" },
-  { label: "Sell consulting", prompt: "A business consulting firm offering strategy sessions and audits" },
-  { label: "Sell handmade", prompt: "A handmade silver jewelry store with custom and ready-made pieces" },
+  { label: "Find food", prompt: "Find me a meal prep or catering service" },
   { label: "Sell design", prompt: "A freelance design studio offering logo, brand, and web packages" },
-  { label: "Sell maintenance", prompt: "An HVAC repair and installation service with maintenance plans" },
+  { label: "Find a designer", prompt: "Find me a logo designer or brand studio" },
   { label: "Sell digital goods", prompt: "A creator selling online courses, templates, and digital downloads" },
+  { label: "Find courses", prompt: "Find me online courses or digital templates" },
 ];
 
 const LAUNCH_PROGRESS = [
@@ -1674,9 +1674,9 @@ export default function Home() {
 
               {/* Line 3 — supporting detail */}
               <p className="hero-entrance-delay-2 mx-auto mt-5 max-w-md text-[clamp(14px,3.5vw,18px)] font-normal leading-relaxed text-zinc-500">
-                AI builds your storefront, offers, and payments.
+                Launch what you sell, or find what you need.
                 <br className="hidden sm:block" />
-                You share the link. You get paid.
+                Get paid or earn rewards.
               </p>
 
               {/* ── LAUNCH INPUT ── */}
@@ -1818,7 +1818,7 @@ export default function Home() {
               {!heroLaunching && (
                 <div className="hero-entrance-delay-2 mx-auto mt-6 max-w-2xl">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-600">
-                    Start from an example
+                    Try an example
                   </div>
                   <div className="flex flex-wrap justify-center gap-2">
                     {TEMPLATE_STARTERS.map((t) => (
@@ -1894,7 +1894,7 @@ export default function Home() {
             {[
               { n: "01", title: "Describe It", desc: "Tell the AI what you offer in plain English — coaching, services, products, anything." },
               { n: "02", title: "We Launch It", desc: "Your storefront, pricing, and offers go live automatically. No setup needed." },
-              { n: "03", title: "You Get Paid", desc: "Customers pay by card. You earn revenue. Rewards bring them back." },
+              { n: "03", title: "You Earn", desc: "Sell and get paid. Buy and earn rewards. Everyone wins." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -1924,13 +1924,13 @@ export default function Home() {
             {[
               {
                 tag: "AI",
-                title: "AI Business Builder",
-                desc: "Describe your idea. The AI builds your storefront, pricing, and offers instantly.",
+                title: "AI-Powered Marketplace",
+                desc: "Describe what you sell or what you need. AI builds the storefront and connects it to the marketplace.",
               },
               {
                 tag: "Store",
-                title: "Creator Marketplace",
-                desc: "Sell services, products, or access. One link. Customers pay instantly.",
+                title: "Buy & Sell Anything",
+                desc: "Sell services, products, or access — or find and buy from others. One link. Instant transactions.",
               },
               {
                 tag: "Assistant",
@@ -2165,25 +2165,25 @@ export default function Home() {
               Ready?
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Your business.
+              Your next move.
               <br />
               <span className="text-emerald-400">Live today.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Describe any idea — a service, a product, an experience. AI builds the storefront, offers, and payments. You share the link and start earning.
+              Sell something new, find what you need, or earn rewards along the way. AI builds the storefront and connects it to the marketplace.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/build"
                 className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
-                Start Selling Free →
+                Get Started Free →
               </Link>
               <Link
                 href="/discover"
                 className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                Browse Live Businesses
+                Browse the Marketplace
               </Link>
             </div>
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">

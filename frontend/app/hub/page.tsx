@@ -150,8 +150,8 @@ function PointsTab({
         <div className="space-y-3">
           {[
             { icon: "🛒", points: "+2", label: "Every purchase you make" },
-            { icon: "🏪", points: "+25", label: "Every business you create" },
-            { icon: "📦", points: "+5", label: "Every offer you add to your storefront" },
+            { icon: "🏪", points: "+25", label: "Every storefront you launch" },
+            { icon: "📦", points: "+5", label: "Every product or service you list" },
             { icon: "🔁", points: "+2", label: "When customers buy from your business" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-4">
@@ -1341,12 +1341,13 @@ export default function HubPage() {
         {tab === "refer" && <ReferTab getToken={getToken} />}
 
         {/* Bottom CTAs */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <p className="mt-8 text-center text-[11px] text-zinc-600">Earn when you sell. Earn when you buy.</p>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
             Start Selling →
           </Link>
           <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
-            Browse Businesses
+            Browse the Marketplace
           </Link>
         </div>
       </div>
