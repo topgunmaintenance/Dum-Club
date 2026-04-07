@@ -594,7 +594,7 @@ export default function DiscoverPage() {
           <span className="text-zinc-700">·</span>{" "}
           Activity rising{" "}
           <span className="text-zinc-700">·</span>{" "}
-          Businesses going live on DUM Club
+          Activity happening on DUM Club
         </p>
       </div>
 
@@ -604,7 +604,7 @@ export default function DiscoverPage() {
             ◆ DUM Club · Digital Utility Market
           </div>
           <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
-            Live Businesses
+            Live Marketplace
           </h1>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.04] px-4 py-2 text-[12px] text-emerald-400/80">
             <span>◆</span> DUM Points earned here work at every business on the platform

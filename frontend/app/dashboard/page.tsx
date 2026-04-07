@@ -248,7 +248,7 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">Manage your businesses</p>
+          <p className="mt-2 text-sm text-zinc-500">Your DUM Club activity</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}
@@ -633,7 +633,7 @@ export default function DashboardPage() {
               <Link href="/build" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
                 <span className="text-base">🚀</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Create your first business</div>
+                  <div className="text-sm font-bold text-white">Launch your first storefront</div>
                   <div className="text-[11px] text-zinc-500">Earn +25 DUM Points</div>
                 </div>
               </Link>
@@ -690,13 +690,13 @@ export default function DashboardPage() {
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
                 <div className="mb-2 text-2xl">💡</div>
-                <div className="mb-1 text-base font-bold text-white">Create your first business</div>
-                <p className="mb-4 text-sm text-zinc-400">Describe what you sell and AI will build your storefront with offers in under 60 seconds.</p>
+                <div className="mb-1 text-base font-bold text-white">Launch your first storefront</div>
+                <p className="mb-4 text-sm text-zinc-400">Describe your idea and AI builds your storefront with offers in under 60 seconds.</p>
                 <Link
                   href="/build"
                   className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                 >
-                  Start Selling →
+                  Get Started →
                 </Link>
               </div>
             ) : (
