@@ -1970,13 +1970,13 @@ export default function Home() {
                             : `${stripFindPrefixes(heroIdea).replace(/^./, (c) => c.toUpperCase())} near you`}
                         </div>
                         <p className="mt-1 text-[12px] text-zinc-500">
-                          This isn&apos;t on DUM Club yet — but you can still go local and earn rewards.
+                          This isn&apos;t on DUM Club yet — but you can still find a local option fast.
                         </p>
 
                         <div className="mt-3 flex gap-2">
                           <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[7px] font-bold text-emerald-400">◆</div>
                           <p className="text-[12px] leading-relaxed text-zinc-500">
-                            Search for &ldquo;{stripFindPrefixes(heroIdea)}{findCity ? ` in ${findCity}` : " near me"}&rdquo; and visit any local option. You&apos;ll earn DUM Points for your purchase.
+                            Find &ldquo;{stripFindPrefixes(heroIdea)}{findCity ? ` in ${findCity}` : " near me"}&rdquo; nearby, then help bring it to DUM Club so others can find it too.
                           </p>
                         </div>
 
