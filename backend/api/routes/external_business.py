@@ -24,8 +24,7 @@ from api.routes.feature_flags import get_flag
 
 router = APIRouter()
 
-_REWARD_PER_DOLLAR = 1  # 1 DUM per $1
-_REWARD_CAP = 25  # max 25 DUM per purchase
+_FLAT_REWARD = 10  # flat 10 DUM per verified off-platform purchase
 
 
 # ── Request/Response Models ──
@@ -69,10 +68,10 @@ def _receipt_hash(buyer: str, business_id: str, amount: float, dt: str) -> str:
 
 
 def _calculate_reward(amount_usd: float) -> int:
-    """Calculate DUM Points reward. 1 DUM per $1, capped at 25."""
+    """Flat 10 DUM per verified purchase. Amount must be positive."""
     if amount_usd <= 0:
         return 0
-    return min(int(amount_usd * _REWARD_PER_DOLLAR), _REWARD_CAP)
+    return _FLAT_REWARD
 
 
 # ── Demand Events ──

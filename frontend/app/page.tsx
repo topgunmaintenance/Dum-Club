@@ -1333,6 +1333,8 @@ export default function Home() {
   const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
   // Offer data for alternative projects (keyed by project id)
   const [findAltOffers, setFindAltOffers] = useState<Record<string, { title: string; price: number }>>({});
+  // Off-platform nearby results
+  const [findExternalResults, setFindExternalResults] = useState<{ name: string; address: string; category: string; rating: number | null; review_count: number; external_source: string; external_place_id: string }[]>([]);
   // Multi-turn refinement context
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
   const [refineListening, setRefineListening] = useState(false);
@@ -1483,7 +1485,7 @@ export default function Home() {
       setShowAlternatives(false);
       findExplainGenRef.current++;
       setFindRefineInput("");
-      setFindAllOffers([]); setFindAltOffers({});
+      setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]);
 
       if (USE_BACKEND_SEARCH) {
         // ── Backend search (v1) ──
@@ -1494,8 +1496,17 @@ export default function Home() {
         })
           .then((r) => r.ok ? r.json() : null)
           .then((data) => {
-            if (!data || data.fallback_needed) {
-              // No match or below threshold → empty results triggers fallback card
+            // Store external nearby results regardless of DUM Club match
+            setFindExternalResults(data?.nearby_external || []);
+
+            if (!data || (data.fallback_needed && !(data.nearby_external?.length))) {
+              // No match and no external results → fallback card
+              setFindResults([]);
+              setFindLoading(false);
+              return;
+            }
+            if (data.fallback_needed && data.nearby_external?.length) {
+              // No DUM match but external results exist → show empty DUM + external section
               setFindResults([]);
               setFindLoading(false);
               return;
@@ -1936,7 +1947,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -2064,7 +2075,7 @@ export default function Home() {
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <button
                             type="button"
-                            onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); }}
+                            onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); }}
                             className="flex-1 rounded-xl bg-zinc-800 px-4 py-2.5 text-[12px] font-semibold text-white transition hover:bg-zinc-700"
                           >
                             Create this business →
@@ -2095,7 +2106,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           Browse the marketplace →
                         </Link>
-                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
@@ -2447,9 +2458,37 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Nearby outside DUM Club ── */}
+                  {findExternalResults.length > 0 && !findLoading && (
+                    <div className="mt-4 animate-fade-in">
+                      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">Nearby outside DUM Club</div>
+                      <div className="space-y-2">
+                        {findExternalResults.map((ext, i) => (
+                          <div key={`${ext.external_source}-${ext.external_place_id}-${i}`} className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-[13px] font-semibold text-zinc-300">{ext.name}</div>
+                                {ext.address && <div className="mt-0.5 text-[10px] text-zinc-600 truncate">{ext.address}</div>}
+                              </div>
+                              {ext.rating != null && (
+                                <div className="shrink-0 text-right">
+                                  <div className="text-[12px] font-bold text-amber-400">{ext.rating.toFixed(1)}</div>
+                                  {ext.review_count > 0 && <div className="text-[9px] text-zinc-600">{ext.review_count} reviews</div>}
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-2 text-[10px] text-zinc-600">
+                              Not on DUM Club yet. Buy here and submit proof to earn DUM Points.
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
