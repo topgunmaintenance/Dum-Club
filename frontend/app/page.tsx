@@ -1962,6 +1962,7 @@ export default function Home() {
                   <textarea
                     value={heroIdea}
                     onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); setFindRefineInput(""); } }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleHeroLaunch(); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -2049,38 +2050,73 @@ export default function Home() {
                       <div className="h-16 animate-pulse rounded-xl bg-zinc-800/30" />
                     </div>
                   ) : findResults.length === 0 ? (
-                    /* ── No results — fallback recommendation ── */
+                    /* ── No results — fallback or promoted external ── */
                     <div className="space-y-3">
-                      {/* Fallback Best Option card */}
+                      {/* Best Option card — promote top external result if available */}
                       <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-5">
                         <div className="mb-3 flex items-center gap-2">
                           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Best option for &ldquo;{stripFindPrefixes(heroIdea)}&rdquo;{findCity ? ` in ${findCity}` : ""}</span>
                         </div>
 
-                        <div className="text-lg font-bold text-white">
-                          {findCity
-                            ? `Local ${stripFindPrefixes(heroIdea)} options in ${findCity}`
-                            : `${stripFindPrefixes(heroIdea).replace(/^./, (c) => c.toUpperCase())} near you`}
-                        </div>
-                        <p className="mt-1 text-[12px] text-zinc-500">
-                          This isn&apos;t on DUM Club yet — but you can still find a local option fast.
-                        </p>
-
-                        <div className="mt-3 flex gap-2">
-                          <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[7px] font-bold text-emerald-400">◆</div>
-                          <p className="text-[12px] leading-relaxed text-zinc-500">
-                            Find &ldquo;{stripFindPrefixes(heroIdea)}{findCity ? ` in ${findCity}` : " near me"}&rdquo; nearby, then help bring it to DUM Club so others can find it too.
-                          </p>
-                        </div>
-
-                        <a
-                          href={`https://www.google.com/maps/search/${encodeURIComponent(stripFindPrefixes(heroIdea) + (findCity ? ` in ${findCity}` : " near me"))}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
-                        >
-                          Find nearby →
-                        </a>
+                        {findExternalResults.length > 0 ? (() => {
+                          const top = findExternalResults[0];
+                          return (
+                            <>
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="text-lg font-bold text-white">{top.name}</div>
+                                  {top.address && <div className="mt-0.5 text-[12px] text-zinc-400">{top.address}</div>}
+                                </div>
+                                {top.rating != null && (
+                                  <div className="shrink-0 text-right">
+                                    <div className="text-lg font-bold text-amber-400">{top.rating.toFixed(1)}</div>
+                                    {top.review_count > 0 && <div className="text-[9px] text-zinc-500">{top.review_count} reviews</div>}
+                                  </div>
+                                )}
+                              </div>
+                              <p className="mt-2 text-[12px] text-zinc-500">
+                                Not on DUM Club yet.{proofRewardsEnabled ? " Submit proof of purchase to earn DUM Points after verification." : " Help bring this business to the platform."}
+                              </p>
+                              <div className="mt-3 flex gap-2">
+                                {proofRewardsEnabled && top.id ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => { if (!user) { login(); return; } setProofModalBiz({ id: top.id, name: top.name }); }}
+                                    className="flex-1 rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
+                                  >
+                                    I bought here →
+                                  </button>
+                                ) : (
+                                  <a
+                                    href={`https://www.google.com/maps/search/${encodeURIComponent(top.name + (top.address ? " " + top.address : ""))}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="flex-1 rounded-xl bg-emerald-400 px-5 py-3.5 text-center text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
+                                  >
+                                    View on map →
+                                  </a>
+                                )}
+                              </div>
+                            </>
+                          );
+                        })() : (
+                          <>
+                            <div className="text-lg font-bold text-white">
+                              {findCity
+                                ? `Local ${stripFindPrefixes(heroIdea)} options in ${findCity}`
+                                : `${stripFindPrefixes(heroIdea).replace(/^./, (c) => c.toUpperCase())} near you`}
+                            </div>
+                            <p className="mt-1 text-[12px] text-zinc-500">
+                              This isn&apos;t on DUM Club yet — but you can still find a local option fast.
+                            </p>
+                            <a
+                              href={`https://www.google.com/maps/search/${encodeURIComponent(stripFindPrefixes(heroIdea) + (findCity ? ` in ${findCity}` : " near me"))}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="mt-4 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
+                            >
+                              Find nearby →
+                            </a>
+                          </>
+                        )}
                       </div>
 
                       {/* Supporting actions */}
@@ -2479,12 +2515,16 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* ── Nearby outside DUM Club ── */}
-                  {findExternalResults.length > 0 && !findLoading && (
+                  {/* ── Nearby outside DUM Club (skip first if promoted to primary card) ── */}
+                  {(() => {
+                    const extsToShow = (findResults.length === 0 && findExternalResults.length > 1)
+                      ? findExternalResults.slice(1)
+                      : findExternalResults;
+                    return extsToShow.length > 0 && !findLoading && (
                     <div className="mt-4 animate-fade-in">
                       <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">Nearby outside DUM Club</div>
                       <div className="space-y-2">
-                        {findExternalResults.map((ext, i) => (
+                        {extsToShow.map((ext, i) => (
                           <div key={`${ext.external_source}-${ext.external_place_id}-${i}`} className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
@@ -2521,7 +2561,8 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
 
