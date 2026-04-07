@@ -104,6 +104,7 @@ class HomepageExplainRequest(BaseModel):
     refinement: str = ""  # follow-up query, e.g. "anything cheaper"
     previous_offer: PreviousOffer | None = None  # what was shown before refinement
     refinement_history: list[str] = []  # last 3 reason codes, e.g. ["cheapest", "premium"]
+    nearby_external_count: int = 0  # number of off-platform results also found
 
 
 # ── System prompt builders ──
@@ -136,8 +137,9 @@ Available offers:
 We are recommending: {req.highlighted_offer.title} at ${req.highlighted_offer.price:.0f} (labeled "{req.highlighted_offer.label}")
 Why: {reason_text}.
 {f'There is also another matching business: {req.alternative_title}.' if req.alternative_title else ''}
+{f'We also found {req.nearby_external_count} nearby businesses outside DUM Club.' if req.nearby_external_count else ''}
 
-YOUR JOB: Write 1-2 natural sentences explaining why this recommendation fits the customer's search. Mention the offer name and price exactly once.
+YOUR JOB: Write 1-2 natural sentences explaining why this recommendation fits the customer's search. Mention the offer name and price exactly once.{' You may briefly note that other nearby options exist outside DUM Club if relevant.' if req.nearby_external_count else ''}
 
 TONE: Be {tone}.
 

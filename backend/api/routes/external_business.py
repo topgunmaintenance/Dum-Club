@@ -16,8 +16,10 @@ import secrets
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from auth.privy import require_admin
 
 from db.supabase import get_client
 from api.routes.feature_flags import get_flag
@@ -161,7 +163,7 @@ async def submit_proof(req: ProofSubmitRequest):
 # ── Proof Verification (admin) ──
 
 @router.post("/verify-proof")
-async def verify_proof(req: ProofVerifyRequest):
+async def verify_proof(req: ProofVerifyRequest, _admin=Depends(require_admin)):
     """Verify or reject a purchase proof. Awards DUM Points on verification."""
     sb = get_client()
 
@@ -212,7 +214,7 @@ async def verify_proof(req: ProofVerifyRequest):
 # ── Admin Proof Listing ──
 
 @router.get("/all-proofs")
-async def list_all_proofs(status: str = "pending"):
+async def list_all_proofs(status: str = "pending", _admin=Depends(require_admin)):
     """List all purchase proofs filtered by status. For admin review."""
     sb = get_client()
     res = (
@@ -322,7 +324,7 @@ async def get_my_proofs(privy_id: str):
 # ── Analytics / Metrics ──
 
 @router.get("/metrics")
-async def get_metrics():
+async def get_metrics(_admin=Depends(require_admin)):
     """Return off-platform demand capture metrics."""
     sb = get_client()
 

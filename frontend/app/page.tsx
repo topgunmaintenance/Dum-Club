@@ -1506,12 +1506,19 @@ export default function Home() {
               // No match and no external results → fallback card
               setFindResults([]);
               setFindLoading(false);
+              if (voiceInitiatedRef.current && !voiceMuted) {
+                speakText(`No results found for ${stripFindPrefixes(heroIdea)}. You can search nearby or create this business on DUM Club.`);
+              }
               return;
             }
             if (data.fallback_needed && data.nearby_external?.length) {
               // No DUM match but external results exist → show empty DUM + external section
               setFindResults([]);
               setFindLoading(false);
+              if (voiceInitiatedRef.current && !voiceMuted) {
+                const extNames = (data.nearby_external as any[]).slice(0, 2).map((e: any) => e.name).join(" and ");
+                speakText(`No DUM Club businesses match, but I found nearby options like ${extNames}. You can earn DUM Points for verified purchases there.`);
+              }
               return;
             }
 
@@ -1566,6 +1573,7 @@ export default function Home() {
                   offers: allOffers.map((o: any) => ({ title: o.title, price: o.price, sold: o.sold })),
                   highlighted_offer: { title: pickTitle, price: pickPrice, label: best.offer.label, reason: best.offer.reason },
                   alternative_title: topProjects.length > 1 ? (topProjects[1].title || "") : "",
+                  nearby_external_count: (data.nearby_external || []).length,
                 }),
               })
                 .then((r) => r.ok ? r.json() : null)
