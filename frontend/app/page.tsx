@@ -1318,6 +1318,9 @@ export default function Home() {
   const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string } | null>(null);
   // AI agent layer state
   const [findExplanation, setFindExplanation] = useState("");
+  const [findAiExplanation, setFindAiExplanation] = useState("");
+  const [findAiFading, setFindAiFading] = useState(false);
+  const findExplainGenRef = useRef(0);
   const [findRefineInput, setFindRefineInput] = useState("");
   const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
 
@@ -1479,6 +1482,9 @@ export default function Home() {
       setFindLoading(false);
       setFindTopOffer(null);
       setFindExplanation("");
+      setFindAiExplanation("");
+      setFindAiFading(false);
+      findExplainGenRef.current++;
       setFindRefineInput("");
       setFindAllOffers([]);
 
@@ -1502,25 +1508,63 @@ export default function Home() {
             let pick: any;
             let label: string;
             let explanation: string;
+            let reason: string;
             if ((bestSeller.quantity_sold || 0) > 0) {
               pick = bestSeller;
               label = "Most popular";
+              reason = "best_seller";
               explanation = `Most customers go with ${pick.title} at $${Math.round(Number(pick.price_usd))}. ${allSorted.length > 1 ? `${allSorted.length - 1} other option${allSorted.length > 2 ? "s" : ""} available.` : ""}`;
             } else if (allSorted.length >= 3) {
               pick = active.sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))[Math.floor(active.length / 2)];
               label = "Best value";
+              reason = "mid_tier";
               explanation = `${pick.title} at $${Math.round(Number(pick.price_usd))} is the best balance of price and scope.`;
             } else if (allSorted.length === 2) {
               pick = allSorted[0];
               label = "Starting from";
+              reason = "cheapest";
               explanation = `Starts at $${Math.round(pick.price)}. There's also a $${Math.round(allSorted[1].price)} option with more included.`;
             } else {
               pick = allSorted[0];
               label = "Available now";
+              reason = "only";
               explanation = `${pick.title} is available for $${Math.round(pick.price)}. A solid choice to start with.`;
             }
-            setFindTopOffer({ title: pick.title || pick.name, price: Number(pick.price_usd || pick.price || 0), label });
+            const pickTitle = pick.title || pick.name;
+            const pickPrice = Number(pick.price_usd || pick.price || 0);
+            setFindTopOffer({ title: pickTitle, price: pickPrice, label });
             setFindExplanation(explanation);
+
+            // Async AI explanation — enhances the template without blocking
+            const gen = ++findExplainGenRef.current;
+            fetch(`${API_BASE}/api/ai/homepage-explain`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: heroIdea,
+                city: findCity,
+                matched_project: {
+                  id: topMatches[0].id,
+                  title: topMatches[0].title || topMatches[0].name || "",
+                  description: topMatches[0].description || "",
+                  category: topMatches[0].template_type || "",
+                },
+                offers: allSorted.map((o) => ({ title: o.title, price: o.price, sold: o.sold })),
+                highlighted_offer: { title: pickTitle, price: pickPrice, label, reason },
+                alternative_title: topMatches.length > 1 ? (topMatches[1].title || topMatches[1].name || "") : "",
+              }),
+            })
+              .then((r) => r.ok ? r.json() : null)
+              .then((data) => {
+                if (data?.explanation && findExplainGenRef.current === gen) {
+                  setFindAiFading(true);
+                  setTimeout(() => {
+                    setFindAiExplanation(data.explanation);
+                    setFindAiFading(false);
+                  }, 150);
+                }
+              })
+              .catch(() => {});
           })
           .catch(() => {});
       }
@@ -1807,7 +1851,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); setFindRefineInput(""); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1905,7 +1949,7 @@ export default function Home() {
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <button
                           type="button"
-                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); }}
+                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); findExplainGenRef.current++; setFindAllOffers([]); }}
                           className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                         >
                           Create this business →
@@ -1981,9 +2025,9 @@ export default function Home() {
                       {/* AI explanation + refinement */}
                       {findExplanation && (
                         <div className="flex gap-2.5 animate-fade-in">
-                          <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[8px] font-bold text-emerald-400">◆</div>
+                          <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[8px] font-bold text-emerald-400">{findAiExplanation ? "✦" : "◆"}</div>
                           <div>
-                            <p className="text-[13px] leading-relaxed text-zinc-400">{findExplanation}</p>
+                            <p className={`text-[13px] leading-relaxed text-zinc-400 transition-opacity duration-150 ${findAiFading ? "opacity-0" : "opacity-100"}`}>{findAiExplanation || findExplanation}</p>
                             <p className="mt-1 text-[11px] text-emerald-400/50">
                               {findTopOffer ? "This is a solid choice to start with." : "Want to see more details?"}
                             </p>
@@ -2070,7 +2114,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
