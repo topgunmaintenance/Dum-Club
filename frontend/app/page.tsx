@@ -1724,6 +1724,13 @@ export default function Home() {
                   )}
                 </button>
 
+                {/* Tagline */}
+                {!heroLaunching && (
+                  <p className="mt-3 text-center text-[11px] tracking-[0.1em] text-zinc-600">
+                    Sell anything. Buy anything. Reward everyone.
+                  </p>
+                )}
+
                 {heroError && (
                   <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                     {heroError}
