@@ -1281,6 +1281,16 @@ export default function Home() {
   const [launchCount, setLaunchCount] = useState(0);
   const [listening, setListening] = useState(false);
   const heroIntent = detectIntent(heroIdea);
+  const [ctaRotation, setCtaRotation] = useState(0);
+  const [ctaHovered, setCtaHovered] = useState(false);
+  const ctaLabels = ["Start Selling →", "Start Buying →", "Earn DUM Points →"];
+
+  // Rotate CTA when idle (no text typed, not launching, not hovered)
+  useEffect(() => {
+    if (heroIdea.trim() || heroLaunching || ctaHovered) return;
+    const t = setInterval(() => setCtaRotation((r) => (r + 1) % 3), 3500);
+    return () => clearInterval(t);
+  }, [heroIdea, heroLaunching, ctaHovered]);
 
   // Load launch count on mount
   useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
@@ -1657,6 +1667,8 @@ export default function Home() {
               <h1 className="hero-entrance mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
                 <span className="text-white">Sell anything.</span>
                 <br />
+                <span className="text-white">Buy anything.</span>
+                <br />
                 <span className="hero-text-glow">Reward everyone.</span>
               </h1>
 
@@ -1699,16 +1711,21 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Intent-aware CTA */}
+                {/* Intent-aware CTA with idle rotation */}
                 <button
                   type="button"
                   onClick={handleHeroLaunch}
+                  onMouseEnter={() => setCtaHovered(true)}
+                  onMouseLeave={() => setCtaHovered(false)}
                   disabled={!heroIdea.trim() || heroLaunching}
                   className={`mt-3 w-full rounded-2xl px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50 ${
-                    heroIntent === "find"
-                      ? "bg-sky-400 text-black hover:bg-sky-300 hover:shadow-[0_0_40px_rgba(56,189,248,0.35)]"
+                    heroIdea.trim()
+                      ? heroIntent === "find"
+                        ? "bg-sky-400 text-black hover:bg-sky-300 hover:shadow-[0_0_40px_rgba(56,189,248,0.35)]"
+                        : "bg-emerald-400 text-black hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
                       : "bg-emerald-400 text-black hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
                   }`}
+                  style={{ minHeight: "56px" }}
                 >
                   {heroLaunching ? (
                     <span className="flex items-center justify-center gap-3">
@@ -1717,16 +1734,18 @@ export default function Home() {
                         {LAUNCH_PROGRESS[heroProgress]}
                       </span>
                     </span>
-                  ) : heroIntent === "find" ? (
-                    "Find It →"
+                  ) : heroIdea.trim() ? (
+                    heroIntent === "find" ? "Find It →" : "Start Selling →"
                   ) : (
-                    "Start Selling →"
+                    <span key={ctaRotation} className="inline-block animate-fade-in">
+                      {ctaLabels[ctaRotation]}
+                    </span>
                   )}
                 </button>
 
                 {/* Tagline */}
                 {!heroLaunching && (
-                  <p className="mt-3 text-center text-[11px] tracking-[0.1em] text-zinc-600">
+                  <p className="mt-4 text-center text-[12px] font-medium tracking-[0.15em] text-zinc-500">
                     Sell anything. Buy anything. Reward everyone.
                   </p>
                 )}
