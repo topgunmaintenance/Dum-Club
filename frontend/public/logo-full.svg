@@ -1,23 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 260" fill="none">
   <defs>
     <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#A855F7"/>
-      <stop offset="100%" stop-color="#22D3EE"/>
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="50%" stop-color="#B07CD8"/>
+      <stop offset="100%" stop-color="#00FFA3"/>
     </linearGradient>
   </defs>
   <!-- Connecting lines -->
   <line x1="100" y1="55" x2="180" y2="55" stroke="#4B5563" stroke-width="1.5" opacity="0.4"/>
   <line x1="100" y1="55" x2="140" y2="125" stroke="#4B5563" stroke-width="1.5" opacity="0.4"/>
-  <line x1="180" y1="55" x2="140" y2="125" stroke="#4B5563" stroke-width="1.5" opacity="0.4"/>
+  <line x1="180" y1="55" x2="140" y2="125" stroke="#22D3EE" stroke-width="1.5" opacity="0.3"/>
   <!-- D circle -->
-  <circle cx="100" cy="48" r="26" fill="#A855F7"/>
+  <circle cx="100" cy="48" r="26" fill="#B07CD8"/>
   <text x="100" y="57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="white">D</text>
   <!-- U circle -->
   <circle cx="180" cy="48" r="26" fill="#818CF8"/>
   <text x="180" y="57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="white">U</text>
   <!-- M circle -->
-  <circle cx="140" cy="122" r="26" fill="#22D3EE"/>
-  <text x="140" y="131" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="white">M</text>
+  <circle cx="140" cy="122" r="26" fill="#00FFA3"/>
+  <text x="140" y="131" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#0B1120">M</text>
   <!-- Brand text -->
   <text x="140" y="178" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="800" letter-spacing="6" fill="url(#brandGrad)">DUM CLUB</text>
   <text x="140" y="200" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="500" letter-spacing="4" fill="#64748B">DIGITAL UTILITY MARKET</text>
