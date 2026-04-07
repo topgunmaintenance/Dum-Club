@@ -4274,19 +4274,28 @@ return (
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {(() => {
               const bestSellerId = offers.reduce((best, o) => (o.quantity_sold || 0) > (best.quantity_sold || 0) ? o : best, offers[0]).id;
+              // Best value = mid-tier by price (only when 3+ offers)
+              const sorted = [...offers].sort((a, b) => Number(a.price_usd) - Number(b.price_usd));
+              const bestValueId = sorted.length >= 3 ? sorted[Math.floor(sorted.length / 2)].id : "";
               return offers.map((offer) => {
               const isPopular = offer.id === bestSellerId && (offer.quantity_sold || 0) > 0;
+              const isBestValue = !isPopular && offer.id === bestValueId;
               const typeBadge = offer.offer_type === "physical_product"
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className={`rounded-2xl border bg-card p-5 sm:p-6 flex flex-col transition hover:shadow-[0_0_20px_rgba(0,255,163,0.02)] ${isPopular ? "border-emerald-400/20 hover:border-emerald-400/30" : "border-zinc-800 hover:border-zinc-700"}`}>
+                <div key={offer.id} className={`rounded-2xl border bg-card p-5 sm:p-6 flex flex-col transition hover:shadow-[0_0_20px_rgba(0,255,163,0.02)] ${isPopular ? "border-emerald-400/20 hover:border-emerald-400/30" : isBestValue ? "border-sky-400/15 hover:border-sky-400/25" : "border-zinc-800 hover:border-zinc-700"}`}>
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       {isPopular && (
                         <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
-                          Popular
+                          Most Popular
+                        </span>
+                      )}
+                      {isBestValue && (
+                        <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-400">
+                          Best Value
                         </span>
                       )}
                       <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
@@ -4447,8 +4456,8 @@ return (
                             Your Offer
                           </span>
                         ) : !authUser ? (
-                          <button disabled className="rounded-xl bg-zinc-800 px-5 py-2.5 text-xs font-semibold text-zinc-500 cursor-not-allowed">
-                            Connect to buy
+                          <button onClick={login} className="rounded-xl bg-emerald-400/80 px-5 py-3 text-xs font-bold text-black transition hover:bg-emerald-400">
+                            Sign in to buy
                           </button>
                         ) : isDemo ? (
                           <button

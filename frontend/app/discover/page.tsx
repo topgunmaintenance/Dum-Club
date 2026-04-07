@@ -690,8 +690,21 @@ export default function DiscoverPage() {
 
         <div id="section-grid">
         {loading ? (
-          <div className="border border-zinc-900 bg-zinc-950 p-8 text-zinc-400">
-            Loading public projects...
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="rounded-2xl border border-zinc-800/80 bg-card p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="h-9 w-9 animate-pulse rounded-xl bg-zinc-800" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 animate-pulse rounded bg-zinc-800" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-zinc-800" />
+                  </div>
+                </div>
+                <div className="h-3 w-full animate-pulse rounded bg-zinc-800" />
+                <div className="mt-2 h-3 w-5/6 animate-pulse rounded bg-zinc-800" />
+                <div className="mt-5 h-1 w-full animate-pulse rounded-full bg-zinc-800" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="border border-red-500/20 bg-red-500/10 p-8 text-red-300">
