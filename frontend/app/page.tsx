@@ -1956,43 +1956,81 @@ export default function Home() {
                       <div className="h-16 animate-pulse rounded-xl bg-zinc-800/30" />
                     </div>
                   ) : findResults.length === 0 ? (
-                    /* ── No results ── */
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 text-center">
-                      <div className="mb-2 text-2xl">🔍</div>
-                      <div className="text-base font-bold text-white">
-                        No matches for &quot;{stripFindPrefixes(heroIdea)}&quot;{findCity ? ` in ${findCity}` : ""}
-                      </div>
-                      <p className="mt-2 text-sm text-zinc-500">This doesn&apos;t exist on DUM Club yet. You can create it or suggest it.</p>
-                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                        <button
-                          type="button"
-                          onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
-                          className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                    /* ── No results — fallback recommendation ── */
+                    <div className="space-y-3">
+                      {/* Fallback Best Option card */}
+                      <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-5">
+                        <div className="mb-3 flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Best option for &ldquo;{stripFindPrefixes(heroIdea)}&rdquo;{findCity ? ` in ${findCity}` : ""}</span>
+                        </div>
+
+                        <div className="text-lg font-bold text-white">
+                          {findCity
+                            ? `Local ${stripFindPrefixes(heroIdea)} options in ${findCity}`
+                            : `${stripFindPrefixes(heroIdea).replace(/^./, (c) => c.toUpperCase())} near you`}
+                        </div>
+                        <p className="mt-1 text-[12px] text-zinc-500">
+                          This isn&apos;t on DUM Club yet — but you can still go local and earn rewards.
+                        </p>
+
+                        <div className="mt-3 flex gap-2">
+                          <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[7px] font-bold text-emerald-400">◆</div>
+                          <p className="text-[12px] leading-relaxed text-zinc-500">
+                            Search for &ldquo;{stripFindPrefixes(heroIdea)}{findCity ? ` in ${findCity}` : " near me"}&rdquo; and visit any local option. You&apos;ll earn DUM Points for your purchase.
+                          </p>
+                        </div>
+
+                        <a
+                          href={`https://www.google.com/maps/search/${encodeURIComponent(stripFindPrefixes(heroIdea) + (findCity ? ` in ${findCity}` : " near me"))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
                         >
-                          Create this business →
-                        </button>
-                        {!findSuggestSent ? (
+                          Find nearby →
+                        </a>
+                      </div>
+
+                      {/* Supporting actions */}
+                      <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 mb-2">Bring it to DUM Club</div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
                           <button
                             type="button"
-                            onClick={() => {
-                              const s = JSON.parse(localStorage.getItem("dum_suggestions") || "[]");
-                              s.push({ name: heroIdea, query: heroIdea, city: findCity, ts: Date.now() });
-                              localStorage.setItem("dum_suggestions", JSON.stringify(s.slice(-50)));
-                              setFindSuggestSent(true);
-                            }}
-                            className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                            onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
+                            className="flex-1 rounded-xl bg-zinc-800 px-4 py-2.5 text-[12px] font-semibold text-white transition hover:bg-zinc-700"
                           >
-                            Suggest it to DUM Club
+                            Create this business →
                           </button>
-                        ) : (
-                          <span className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-2.5 text-sm text-emerald-400">
-                            ✓ Suggestion received
-                          </span>
-                        )}
+                          {!findSuggestSent ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const s = JSON.parse(localStorage.getItem("dum_suggestions") || "[]");
+                                s.push({ name: heroIdea, query: heroIdea, city: findCity, ts: Date.now() });
+                                localStorage.setItem("dum_suggestions", JSON.stringify(s.slice(-50)));
+                                setFindSuggestSent(true);
+                              }}
+                              className="flex-1 rounded-xl border border-zinc-800 px-4 py-2.5 text-[12px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                            >
+                              Suggest it
+                            </button>
+                          ) : (
+                            <span className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5 text-[12px] text-emerald-400">
+                              ✓ Noted
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="mt-3 inline-block text-[11px] text-zinc-600 transition hover:text-zinc-400">
-                        Browse the full marketplace →
-                      </Link>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-1">
+                        <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                          Browse the marketplace →
+                        </Link>
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                          ✕ Clear
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     /* ── Results found ── */
