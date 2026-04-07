@@ -13,7 +13,6 @@ export function Navbar() {
 
   const [mounted, setMounted] = useState(false);
   const [navHover, setNavHover] = useState(false);
-  const [brandHover, setBrandHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dumBalance, setDumBalance] = useState(0);
 
@@ -108,10 +107,7 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2"
         >
-          <img src="/logo-mark.svg" alt="DUM Club" className="h-8 w-8" />
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "18px", fontWeight: 700, letterSpacing: "-0.05em" }}>
-            <span style={{ color: "#B07CD8" }}>DUM</span><span className="text-zinc-200">CLUB</span>
-          </span>
+          <img src="/logo.png" alt="DUM Club" className="h-8 w-auto" />
         </Link>
 
         <button
@@ -150,18 +146,10 @@ export function Navbar() {
       >
         <Link
           href="/"
-          onMouseEnter={() => setBrandHover(true)}
-          onMouseLeave={() => setBrandHover(false)}
-          className="flex items-center gap-3 transition-all duration-200"
+          className="flex items-center"
           style={{ textDecoration: "none" }}
         >
-          <img src="/logo-mark.svg" alt="DUM Club" className="h-10 w-10" style={{ filter: brandHover ? "drop-shadow(0 0 8px rgba(0,255,163,0.4))" : "none", transition: "filter 0.2s ease" }} />
-          <div className="flex flex-col">
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "24px", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1 }}>
-              <span style={{ color: "#B07CD8" }}>DUM</span><span style={{ color: brandHover ? "#00FFA3" : "#e8e8e8", transition: "color 0.2s ease" }}>CLUB</span>
-            </span>
-            <span style={{ fontSize: "8px", letterSpacing: "0.2em", color: "#64748B", marginTop: "2px" }}>DIGITAL UTILITY MARKET</span>
-          </div>
+          <img src="/logo.png" alt="DUM Club" className="h-10 w-auto" />
         </Link>
 
         <div
