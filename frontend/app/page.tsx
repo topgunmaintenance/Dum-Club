@@ -1331,6 +1331,8 @@ export default function Home() {
   const [findRefineInput, setFindRefineInput] = useState("");
   const refineInputRef = useRef<HTMLInputElement>(null);
   const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
+  // Offer data for alternative projects (keyed by project id)
+  const [findAltOffers, setFindAltOffers] = useState<Record<string, { title: string; price: number }>>({});
   // Multi-turn refinement context
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
   const [refineListening, setRefineListening] = useState(false);
@@ -1481,7 +1483,7 @@ export default function Home() {
       setShowAlternatives(false);
       findExplainGenRef.current++;
       setFindRefineInput("");
-      setFindAllOffers([]);
+      setFindAllOffers([]); setFindAltOffers({});
 
       if (USE_BACKEND_SEARCH) {
         // ── Backend search (v1) ──
@@ -1510,6 +1512,7 @@ export default function Home() {
                 template_type: best.project.category,
               } as Project);
             }
+            const altOfferMap: Record<string, { title: string; price: number }> = {};
             for (const opt of data.other_options || []) {
               if (opt?.project) {
                 topProjects.push({
@@ -1518,9 +1521,13 @@ export default function Home() {
                   description: opt.project.description,
                   template_type: opt.project.category,
                 } as Project);
+                if (opt.offer) {
+                  altOfferMap[opt.project.id] = { title: opt.offer.title, price: Number(opt.offer.price_usd || 0) };
+                }
               }
             }
             setFindResults(topProjects);
+            setFindAltOffers(altOfferMap);
             setFindLoading(false);
 
             if (best?.offer) {
@@ -1929,7 +1936,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -2057,7 +2064,7 @@ export default function Home() {
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <button
                             type="button"
-                            onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
+                            onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); }}
                             className="flex-1 rounded-xl bg-zinc-800 px-4 py-2.5 text-[12px] font-semibold text-white transition hover:bg-zinc-700"
                           >
                             Create this business →
@@ -2088,7 +2095,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           Browse the marketplace →
                         </Link>
-                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
@@ -2415,19 +2422,23 @@ export default function Home() {
                             </Link>
                           ))}
 
-                          {/* Alternative business */}
-                          {findResults.length > 1 && (() => {
-                            const alt = findResults[1];
+                          {/* Alternative businesses */}
+                          {findResults.slice(1).map((alt) => {
+                            const altOffer = findAltOffers[alt.id];
                             return (
-                              <Link href={`/project/${alt.id}`} className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 transition hover:border-zinc-700">
+                              <Link key={alt.id} href={`/project/${alt.id}`} className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 transition hover:border-zinc-700">
                                 <div>
-                                  <div className="text-[13px] font-semibold text-zinc-300 transition group-hover:text-emerald-400">{alt.title || alt.name}</div>
-                                  <div className="mt-0.5 text-[10px] text-zinc-600">Another matching business</div>
+                                  <div className="text-[13px] font-semibold text-zinc-300 transition group-hover:text-emerald-400">{altOffer ? altOffer.title : (alt.title || alt.name)}</div>
+                                  <div className="mt-0.5 text-[10px] text-zinc-600">{altOffer ? `from ${alt.title || alt.name}` : "Another matching business"}</div>
                                 </div>
-                                <span className="text-xs text-zinc-500 transition group-hover:text-emerald-400">View →</span>
+                                {altOffer ? (
+                                  <div className="font-mono text-sm font-bold text-zinc-400 transition group-hover:text-emerald-400">${altOffer.price < 1 ? altOffer.price.toFixed(2) : Math.round(altOffer.price)}</div>
+                                ) : (
+                                  <span className="text-xs text-zinc-500 transition group-hover:text-emerald-400">View →</span>
+                                )}
                               </Link>
                             );
-                          })()}
+                          })}
                         </div>
                       )}
 
@@ -2436,7 +2447,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
