@@ -94,6 +94,8 @@ function detectIntent(text: string): "find" | "create" {
         "for busy", "for small", "for local", "monthly service", "premium service",
         "that offers", "that provides", "that sells", "that delivers"];
       if (bizSignals.some((s) => lower.includes(s))) return "create";
+      // Article-led long descriptions: "A mobile car wash service" → CREATE
+      if (lower.startsWith("a ") || lower.startsWith("an ")) return "create";
     }
     return "find";
   }
