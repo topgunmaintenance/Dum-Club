@@ -1784,7 +1784,7 @@ export default function Home() {
             {[
               { n: "01", title: "Describe It", desc: "Tell the AI what you offer in plain English — coaching, services, products, anything." },
               { n: "02", title: "We Launch It", desc: "Your storefront, pricing, and offers go live automatically. No setup needed." },
-              { n: "03", title: "Your Fans Buy It", desc: "Customers pay by card. Loyalty rewards kick in automatically." },
+              { n: "03", title: "You Get Paid", desc: "Customers pay by card. You earn revenue. Rewards bring them back." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -1834,8 +1834,8 @@ export default function Home() {
               },
               {
                 tag: "Payments",
-                title: "Fast Invisible Payments",
-                desc: "Payments are instant and simple. No technical knowledge required.",
+                title: "Stripe Payments Built In",
+                desc: "Customers pay by card. You get paid. No setup, no merchant account.",
               },
             ].map((f) => (
               <div
