@@ -702,12 +702,13 @@ function ProductDemo() {
       { at: 7800, fn: () => setPhase(2) },
       { at: 8200, fn: () => setLiveStep(1) },
       { at: 8800, fn: () => setLiveStep(2) },
-      { at: 9400, fn: () => setLiveStep(3) },
-      { at: 10000, fn: () => setLiveStep(4) },
+      { at: 9600, fn: () => setLiveStep(3) },  // AI assistant appears
+      { at: 10400, fn: () => setLiveStep(4) }, // Actions + Buy Now
+      { at: 11200, fn: () => setLiveStep(5) }, // Ready signal
       // Purchase simulation
-      { at: 11500, fn: () => setPhase(3) },
+      { at: 12500, fn: () => setPhase(3) },
       // Clean restart
-      { at: 14500, fn: () => setLoopKey((k) => k + 1) },
+      { at: 15500, fn: () => setLoopKey((k) => k + 1) },
     ];
     const timers = schedule.map((s) => setTimeout(s.fn, s.at));
     return () => timers.forEach(clearTimeout);
@@ -890,33 +891,48 @@ function ProductDemo() {
                       <div className="text-[12px] text-zinc-400 mb-3">Premium mobile car detailing at your doorstep</div>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {[
-                          { name: "Basic Wash", price: "$29", tag: "Popular" },
-                          { name: "Full Detail", price: "$89", tag: null },
+                          { name: "Basic Wash", price: "$29", tag: null },
+                          { name: "Full Detail", price: "$89", tag: "Most popular" },
                           { name: "Monthly Plan", price: "$49/mo", tag: "Subscription" },
                         ].map((o) => (
-                          <div key={o.name} className="card-premium rounded-xl border border-zinc-800/40 bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center">
+                          <div key={o.name} className={`card-premium rounded-xl border bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center ${o.tag === "Most popular" ? "border-emerald-400/30" : "border-zinc-800/40"}`}>
                             <div className="text-[11px] text-zinc-400">{o.name}</div>
                             <div className="mt-1 text-[16px] font-extrabold text-emerald-400">{o.price}</div>
-                            {o.tag && <div className="mt-1 text-[8px] font-bold uppercase tracking-widest text-emerald-400/50">{o.tag}</div>}
+                            {o.tag && <div className={`mt-1 text-[8px] font-bold uppercase tracking-widest ${o.tag === "Most popular" ? "text-emerald-400" : "text-emerald-400/50"}`}>{o.tag}</div>}
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Actions */}
+                  {/* AI assistant helping sell */}
                   {liveStep >= 3 && (
+                    <div className="hero-chat-msg mb-3 rounded-xl border border-zinc-800/40 bg-zinc-900/30 p-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[8px] font-bold text-orange-400 border border-orange-400/20">SM</div>
+                        <div className="flex-1">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 mb-1">AI Sales Assistant</div>
+                          <div className="text-[11px] leading-relaxed text-zinc-400">
+                            Most customers go with the Full Detail at $89 — it covers interior, exterior, and wax. Great value for the price.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {liveStep >= 4 && (
                     <div className="hero-chat-msg flex items-center justify-between border-t border-zinc-800/30 pt-3 mb-3">
                       <div className="flex gap-2">
                         <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">🔗 Share</span>
-                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">✏️ Edit</span>
+                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">💬 Ask AI</span>
                       </div>
-                      <span className="rounded-xl bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black shadow-[0_0_12px_rgba(0,255,163,0.2)]">View Store →</span>
+                      <span className="rounded-xl bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black shadow-[0_0_12px_rgba(0,255,163,0.2)]">Buy Now →</span>
                     </div>
                   )}
 
                   {/* Ready signal */}
-                  {liveStep >= 4 && (
+                  {liveStep >= 5 && (
                     <div className="hero-chat-msg flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3">
                       <span className="text-base">🎉</span>
                       <div>
@@ -944,11 +960,11 @@ function ProductDemo() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-[14px] font-bold text-white">Full Detail Package</div>
-                    <div className="text-[11px] text-zinc-500">Purchased just now</div>
+                    <div className="text-[11px] text-zinc-500">Sarah M. just purchased</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-[18px] font-bold text-emerald-400">+$89.00</div>
-                    <div className="text-[9px] text-emerald-400/50">Revenue</div>
+                    <div className="font-mono text-[22px] font-black text-emerald-400">+$89</div>
+                    <div className="text-[9px] text-emerald-400/50">Your revenue</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
