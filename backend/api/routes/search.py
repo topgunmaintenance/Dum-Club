@@ -20,6 +20,8 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 import re
 
+from services.external_places import search_nearby, ExternalPlace
+
 from db.supabase import get_client
 
 router = APIRouter()
@@ -39,6 +41,17 @@ _LOCAL_STRIP_RE = re.compile(
 )
 _CITY_RE = re.compile(r"\bin\s+([a-z][a-z\s]{1,20})$", re.IGNORECASE)
 _ARTICLE_RE = re.compile(r"^(a|an|the)\s+", re.IGNORECASE)
+_LOCAL_PHRASES = ["near me", "nearby", "around here", "close to me", "in my area", "local"]
+
+
+def _has_local_intent(raw: str) -> bool:
+    """Detect whether the query implies local/nearby intent."""
+    lower = raw.lower()
+    if any(p in lower for p in _LOCAL_PHRASES):
+        return True
+    if _CITY_RE.search(raw):
+        return True
+    return False
 
 
 def _normalise_query(raw: str) -> tuple[str, str]:
@@ -158,9 +171,24 @@ class MatchResult(BaseModel):
     score: float = 0.0
 
 
+class ExternalBusinessResult(BaseModel):
+    id: str = ""  # DB id if persisted, empty for new discoveries
+    external_source: str = ""
+    external_place_id: str = ""
+    name: str
+    address: str = ""
+    city: str = ""
+    category: str = ""
+    rating: float | None = None
+    review_count: int = 0
+    phone: str = ""
+    website: str = ""
+
+
 class SearchResponse(BaseModel):
     best_match: MatchResult | None = None
     other_options: list[MatchResult] = []
+    nearby_external: list[ExternalBusinessResult] = []
     fallback_needed: bool = True
     debug: dict = {}
 
@@ -210,9 +238,37 @@ async def homepage_search(req: SearchRequest):
     scored.sort(key=lambda x: -x[1])
     top = scored[: req.limit]
 
+    # Fetch external nearby results for local-intent queries
+    external_results: list[ExternalBusinessResult] = []
+    local_intent = _has_local_intent(raw_query) or bool(city)
+    if local_intent:
+        places = await search_nearby(query=query, city=city, limit=5)
+        for p in places:
+            # Persist to DB for demand tracking (upsert by source+place_id)
+            try:
+                sb.table("external_businesses").upsert(
+                    p.to_dict(),
+                    on_conflict="external_source,external_place_id",
+                ).execute()
+            except Exception:
+                pass  # non-blocking — search still works if persist fails
+            external_results.append(ExternalBusinessResult(
+                external_source=p.external_source,
+                external_place_id=p.external_place_id,
+                name=p.name,
+                address=p.address,
+                city=p.city,
+                category=p.category,
+                rating=p.rating,
+                review_count=p.review_count,
+                phone=p.phone,
+                website=p.website,
+            ))
+
     if not top or top[0][1] < _FALLBACK_THRESHOLD:
         return SearchResponse(
-            fallback_needed=True,
+            fallback_needed=len(external_results) == 0,
+            nearby_external=external_results,
             debug={
                 "reason": "below_threshold" if top else "no_matches",
                 "query": query,
@@ -221,6 +277,8 @@ async def homepage_search(req: SearchRequest):
                 "candidates_checked": len(candidates),
                 "matches_found": len(scored),
                 "top_score": top[0][1] if top else 0,
+                "external_count": len(external_results),
+                "local_intent": local_intent,
             },
         )
 
@@ -259,6 +317,7 @@ async def homepage_search(req: SearchRequest):
     return SearchResponse(
         best_match=results[0] if results else None,
         other_options=results[1:],
+        nearby_external=external_results,
         fallback_needed=False,
         debug={
             "query": query,
@@ -267,5 +326,7 @@ async def homepage_search(req: SearchRequest):
             "candidates_checked": len(candidates),
             "matches_found": len(scored),
             "top_score": results[0].score if results else 0,
+            "external_count": len(external_results),
+            "local_intent": local_intent,
         },
     )

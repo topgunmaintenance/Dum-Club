@@ -696,7 +696,7 @@ async def get_onchain_balance(wallet_address: str):
 
 # ── Claimable amount ──────────────────────────────────────
 
-EARNED_REASONS = {"purchase_reward", "launch_bonus", "offer_created", "referral_bonus", "referral_welcome"}
+EARNED_REASONS = {"purchase_reward", "launch_bonus", "offer_created", "referral_bonus", "referral_welcome", "verified_off_platform_purchase"}
 
 
 @router.get("/claimable/{privy_id}")

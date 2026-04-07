@@ -45,6 +45,8 @@ from api.routes import (
     ai_chat,
     ai_homepage,
     search,
+    external_business,
+    feature_flags,
 )
 
 from db.supabase import init_supabase
@@ -148,6 +150,10 @@ app.include_router(ai_homepage.router, prefix="/api/ai", tags=["AI Homepage"])
 
 # Search
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
+
+# Off-platform demand capture
+app.include_router(external_business.router, prefix="/api/external", tags=["External Business"])
+app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 
 
 @app.get("/health")
