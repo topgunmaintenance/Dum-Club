@@ -281,6 +281,7 @@ function DiscoverSectionNav() {
 }
 
 export default function DiscoverPage() {
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
@@ -402,6 +403,15 @@ export default function DiscoverPage() {
   useEffect(() => {
     loadProjects();
     loadRecentTrades();
+    // Read search query from URL (?q=...) for homepage search routing
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        setSearchQuery(q);
+        setActiveTab("all");
+      }
+    }
   }, []);
 
   // Review summaries disabled until reviews table is created in production
