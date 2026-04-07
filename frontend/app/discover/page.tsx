@@ -609,6 +609,9 @@ export default function DiscoverPage() {
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.04] px-4 py-2 text-[12px] text-emerald-400/80">
             <span>◆</span> DUM Points earned here work at every business on the platform
           </div>
+          {searchArrival && searchQuery.trim() && (
+            <p className="mt-3 text-[11px] tracking-[0.1em] text-zinc-600">Sell anything. Buy anything. Reward everyone.</p>
+          )}
         </div>
 
         {/* Search */}
@@ -738,7 +741,8 @@ export default function DiscoverPage() {
               <div className="mx-auto max-w-md">
                 <div className="mb-3 text-3xl">🔍</div>
                 <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
-                <p className="mt-2 text-sm text-zinc-500">This could be yours — or suggest it so we can bring it to DUM Club.</p>
+                <p className="mt-2 text-sm text-zinc-500">This could be yours — or help bring it to DUM Club.</p>
+                <p className="mt-1 text-[10px] tracking-[0.1em] text-zinc-700">Sell anything. Buy anything. Reward everyone.</p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Link href={`/?idea=${encodeURIComponent(searchQuery)}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
                     Create this business →
@@ -750,17 +754,19 @@ export default function DiscoverPage() {
                 {/* Supplier suggest */}
                 <div className="mt-6 border-t border-zinc-800/50 pt-5">
                   {suggestSent ? (
-                    <div className="flex items-center justify-center gap-2 text-sm text-emerald-400">
-                      <span>✓</span> Suggestion received. We&apos;ll work on bringing this to DUM Club.
+                    <div className="text-center">
+                      <div className="text-sm font-semibold text-emerald-400">✓ Suggestion received</div>
+                      <p className="mt-1 text-[11px] text-zinc-600">You&apos;re helping grow the network. We&apos;ll reach out and invite them to join.</p>
+                      <p className="mt-2 text-[10px] tracking-[0.1em] text-zinc-700">Sell anything. Buy anything. Reward everyone!</p>
                     </div>
                   ) : (
                     <div>
-                      <p className="mb-2 text-[11px] text-zinc-600">Know a business that should be here?</p>
+                      <p className="mb-2 text-[11px] text-zinc-500">Help bring this business to DUM Club</p>
                       <div className="flex gap-2">
                         <input
                           value={suggestName}
                           onChange={(e) => setSuggestName(e.target.value)}
-                          placeholder="Business name or type"
+                          placeholder="Business name"
                           className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-600"
                         />
                         <button
@@ -795,15 +801,17 @@ export default function DiscoverPage() {
               ? top.store_items.reduce((sum: number, i: any) => sum + (Number(i.quantity_sold) || 0), 0)
               : 0;
 
-            // Build a contextual recommendation reason
-            const reasons: string[] = [];
-            if (topSold > 0) reasons.push(`${topSold} customers have purchased`);
-            if (topOffers > 1) reasons.push(`${topOffers} options available`);
-            if (topPrice != null && topPrice < 100) reasons.push("affordable pricing");
-            else if (topPrice != null) reasons.push("clear pricing");
-            const reasonText = reasons.length > 0
-              ? `Recommended because: ${reasons.slice(0, 2).join(" and ")}.`
-              : "Best match for your search.";
+            // Build trust-based recommendation reason (no star ratings, no fabricated claims)
+            let reasonText = "Best match for your search.";
+            if (topSold > 0 && topOffers > 1) {
+              reasonText = `Customers consistently choose this option. ${topOffers} offers with clear pricing.`;
+            } else if (topSold > 0) {
+              reasonText = `Real customers have purchased here. Clear pricing and strong engagement.`;
+            } else if (topOffers > 1 && topPrice != null) {
+              reasonText = `${topOffers} options available with transparent pricing starting at $${topPrice < 1 ? topPrice.toFixed(2) : Math.round(topPrice)}.`;
+            } else if (topOffers > 0) {
+              reasonText = "Active business with clear offers and pricing.";
+            }
 
             return (
               <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
@@ -939,11 +947,7 @@ export default function DiscoverPage() {
                           Promo
                         </span>
                       )}
-                      {reviewSummaries[project.id] && (
-                        <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold tracking-[0.1em] text-amber-400">
-                          {"★"} {reviewSummaries[project.id].average_rating.toFixed(1)} ({reviewSummaries[project.id].count})
-                        </span>
-                      )}
+                      {/* Star ratings hidden — trust signals come from engagement data, not ratings */}
                     </div>
 
                     {/* Readiness score bar */}
@@ -996,16 +1000,17 @@ export default function DiscoverPage() {
 
           {/* Supplier capture — after search results */}
           {searchArrival && searchQuery.trim() && (
-            <div className="mt-6 rounded-2xl border border-zinc-800/50 bg-zinc-950/60 p-5">
+            <div className="mt-6 rounded-2xl border border-zinc-800/40 bg-zinc-950/40 p-5">
               {suggestSent ? (
-                <div className="text-center text-sm text-emerald-400">
-                  ✓ Thanks for the suggestion. We&apos;re always expanding.
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-emerald-400">✓ Suggestion received</div>
+                  <p className="mt-1 text-[11px] text-zinc-600">You&apos;re helping grow the network. We&apos;ll reach out and invite them to join.</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-zinc-300">Don&apos;t see what you need?</div>
-                    <div className="mt-0.5 text-[11px] text-zinc-600">Suggest a business and we&apos;ll work on adding it.</div>
+                    <div className="text-sm font-semibold text-zinc-300">Help bring a business to DUM Club</div>
+                    <div className="mt-0.5 text-[11px] text-zinc-600">We&apos;ll reach out and invite them to join the network.</div>
                   </div>
                   <div className="flex gap-2">
                     <input
