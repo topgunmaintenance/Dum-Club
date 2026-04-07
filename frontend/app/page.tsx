@@ -1316,8 +1316,20 @@ export default function Home() {
     return () => timers.forEach(clearTimeout);
   }, [heroLaunching]);
 
-  // ── Check localStorage for pending idea on mount ──
+  // ── Check URL param or localStorage for pending idea on mount ──
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlIdea = params.get("idea");
+      if (urlIdea) {
+        setHeroIdea(urlIdea);
+        // Clean the URL
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("idea");
+        window.history.replaceState({}, "", clean.toString());
+        return;
+      }
+    }
     const pending = localStorage.getItem("pendingIdea");
     if (pending) setHeroIdea(pending);
   }, []);

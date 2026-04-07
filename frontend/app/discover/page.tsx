@@ -753,32 +753,51 @@ export default function DiscoverPage() {
             const top = sortedProjects[0];
             const topPrice = lowestOfferPrice(top);
             const topCategory = getCategory(top);
+            const topOffers = offerCount(top);
             const topSold = Array.isArray(top.store_items)
               ? top.store_items.reduce((sum: number, i: any) => sum + (Number(i.quantity_sold) || 0), 0)
               : 0;
+
+            // Build a contextual recommendation reason
+            const reasons: string[] = [];
+            if (topSold > 0) reasons.push(`${topSold} customers have purchased`);
+            if (topOffers > 1) reasons.push(`${topOffers} options available`);
+            if (topPrice != null && topPrice < 100) reasons.push("affordable pricing");
+            else if (topPrice != null) reasons.push("clear pricing");
+            const reasonText = reasons.length > 0
+              ? `Recommended because: ${reasons.slice(0, 2).join(" and ")}.`
+              : "Best match for your search.";
+
             return (
               <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Top Match</div>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Recommended</div>
+                  {topSold > 0 && (
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold text-emerald-400">
+                      {topSold} purchased
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
                     <Link href={`/project/${top.id}`} className="group">
                       <h3 className="text-xl font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</h3>
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-zinc-500">{top.description || "No description."}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{top.description || "No description."}</p>
+                    <p className="mt-2 text-[11px] text-emerald-400/70">{reasonText}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px]">
                       <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-zinc-500">{topCategory}</span>
-                      {hasOffers(top) && <span className="text-sky-400">{offerCount(top)} offer{offerCount(top) > 1 ? "s" : ""}</span>}
-                      {topSold > 0 && <span className="text-emerald-400">{topSold} purchased</span>}
+                      {topOffers > 0 && <span className="text-sky-400">{topOffers} offer{topOffers > 1 ? "s" : ""}</span>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
                     {topPrice != null && (
                       <div className="text-right">
                         <div className="text-[10px] text-zinc-600">From</div>
                         <div className="font-mono text-2xl font-black text-emerald-400">${topPrice < 1 ? topPrice.toFixed(2) : Math.round(topPrice)}</div>
                       </div>
                     )}
-                    <Link href={`/project/${top.id}`} className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]">
+                    <Link href={`/project/${top.id}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]">
                       View Offers →
                     </Link>
                   </div>
@@ -786,6 +805,13 @@ export default function DiscoverPage() {
               </div>
             );
           })()}
+
+          {/* Other results label */}
+          {searchArrival && searchQuery.trim() && sortedProjects.length > 1 && (
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+              {sortedProjects.length - 1} other result{sortedProjects.length - 1 > 1 ? "s" : ""}
+            </div>
+          )}
           <div className="grid gap-0 border border-zinc-900 md:grid-cols-2 xl:grid-cols-3">
             {sortedProjects.map((project, index) => {
               const accent = getAccent(index);
