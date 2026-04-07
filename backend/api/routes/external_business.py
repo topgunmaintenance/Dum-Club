@@ -209,6 +209,23 @@ async def verify_proof(req: ProofVerifyRequest):
     return {"ok": True, "status": req.status, "points_awarded": update.get("dum_points_awarded", 0)}
 
 
+# ── Admin Proof Listing ──
+
+@router.get("/all-proofs")
+async def list_all_proofs(status: str = "pending"):
+    """List all purchase proofs filtered by status. For admin review."""
+    sb = get_client()
+    res = (
+        sb.table("purchase_proofs")
+        .select("id, external_business_id, buyer_privy_id, receipt_text, purchase_amount_usd, purchase_date, status, dum_points_awarded, verification_notes, created_at")
+        .eq("status", status)
+        .order("created_at", desc=True)
+        .limit(100)
+        .execute()
+    )
+    return res.data or []
+
+
 def _queue_outreach(sb, external_business_id: str):
     """Create a merchant outreach queue entry after a verified purchase."""
     # Check if outreach already queued for this business

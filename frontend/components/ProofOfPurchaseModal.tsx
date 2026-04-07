@@ -77,7 +77,7 @@ export function ProofOfPurchaseModal({ businessId, businessName, buyerPrivyId, o
             <p className="mt-2 text-sm text-zinc-400">
               Your purchase at {businessName} is under review.
               {potentialReward > 0 && (
-                <> You could earn up to <span className="font-semibold text-emerald-400">{potentialReward} DUM Points</span> once verified.</>
+                <> You&apos;ll earn <span className="font-semibold text-emerald-400">{potentialReward} DUM Points</span> once verified.</>
               )}
             </p>
             <button onClick={onClose} className="mt-5 w-full rounded-xl bg-emerald-400 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
