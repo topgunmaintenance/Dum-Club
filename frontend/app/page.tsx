@@ -1315,7 +1315,7 @@ export default function Home() {
   const [findLoading, setFindLoading] = useState(false);
   const [findCity, setFindCity] = useState("");
   const [findSuggestSent, setFindSuggestSent] = useState(false);
-  const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string } | null>(null);
+  const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string; reason: string } | null>(null);
   // AI agent layer state
   const [findExplanation, setFindExplanation] = useState("");
   const [findAiExplanation, setFindAiExplanation] = useState("");
@@ -1532,7 +1532,7 @@ export default function Home() {
             }
             const pickTitle = pick.title || pick.name;
             const pickPrice = Number(pick.price_usd || pick.price || 0);
-            setFindTopOffer({ title: pickTitle, price: pickPrice, label });
+            setFindTopOffer({ title: pickTitle, price: pickPrice, label, reason });
             setFindExplanation(explanation);
 
             // Async AI explanation — enhances the template without blocking
@@ -2044,22 +2044,37 @@ export default function Home() {
                             onKeyDown={(e) => {
                               if (e.key !== "Enter" || !findRefineInput.trim()) return;
                               const q = findRefineInput.toLowerCase().trim();
-                              const current = findTopOffer;
+                              const prevOffer = findTopOffer ? { title: findTopOffer.title, price: findTopOffer.price } : null;
                               let newPick: typeof findAllOffers[0] | null = null;
                               let newLabel = "";
                               let newExplanation = "";
+                              let newReason = "";
 
-                              if (q.includes("cheap") || q.includes("less") || q.includes("under") || q.includes("afford") || q.includes("budget")) {
-                                // Find cheapest that isn't already shown
-                                newPick = findAllOffers.find((o) => !current || o.title !== current.title) || findAllOffers[0];
+                              if (q.includes("cheap") || q.includes("less") || q.includes("afford") || q.includes("budget")) {
                                 const cheapest = findAllOffers[0];
                                 newPick = cheapest;
                                 newLabel = "Cheapest option";
+                                newReason = "cheapest";
                                 newExplanation = `${cheapest.title} at $${Math.round(cheapest.price)} is the most affordable option.`;
+                              } else if (q.includes("popular") || q.includes("most ordered") || q.includes("favorite")) {
+                                const bestSeller = [...findAllOffers].sort((a, b) => b.sold - a.sold)[0];
+                                newPick = bestSeller;
+                                newLabel = "Most popular";
+                                newReason = "popular";
+                                newExplanation = bestSeller.sold > 0
+                                  ? `${bestSeller.title} at $${Math.round(bestSeller.price)} is the most popular choice with ${bestSeller.sold} sold.`
+                                  : `${bestSeller.title} at $${Math.round(bestSeller.price)} is a top option to consider.`;
+                              } else if (q.includes("pick") || q.includes("which") || q.includes("suggest") || q.includes("recommend")) {
+                                const mid = findAllOffers[Math.floor(findAllOffers.length / 2)];
+                                newPick = mid;
+                                newLabel = "Our pick";
+                                newReason = "pick";
+                                newExplanation = `${mid.title} at $${Math.round(mid.price)} is a solid middle-ground option.`;
                               } else if (q.includes("better") || q.includes("premium") || q.includes("best") || q.includes("top") || q.includes("more")) {
                                 const premium = findAllOffers[findAllOffers.length - 1];
                                 newPick = premium;
                                 newLabel = "Premium option";
+                                newReason = "mid_tier";
                                 newExplanation = `${premium.title} at $${Math.round(premium.price)} is the most comprehensive option available.`;
                               } else if (q.match(/under\s*\$?\d+|\$\d+|below\s*\d+/)) {
                                 const priceMatch = q.match(/\d+/);
@@ -2067,27 +2082,66 @@ export default function Home() {
                                   const maxPrice = Number(priceMatch[0]);
                                   const under = findAllOffers.filter((o) => o.price <= maxPrice);
                                   if (under.length > 0) {
-                                    newPick = under[under.length - 1]; // best within budget
+                                    newPick = under[under.length - 1];
                                     newLabel = `Under $${maxPrice}`;
+                                    newReason = "cheapest";
                                     newExplanation = `${newPick.title} at $${Math.round(newPick.price)} fits within your budget.`;
                                   } else {
                                     newExplanation = `Nothing under $${maxPrice}. The most affordable option is ${findAllOffers[0].title} at $${Math.round(findAllOffers[0].price)}.`;
                                   }
                                 }
                               } else {
-                                // Default: show next option
-                                const currentIdx = current ? findAllOffers.findIndex((o) => o.title === current.title) : -1;
+                                const currentIdx = findTopOffer ? findAllOffers.findIndex((o) => o.title === findTopOffer.title) : -1;
                                 const nextIdx = (currentIdx + 1) % findAllOffers.length;
                                 newPick = findAllOffers[nextIdx];
                                 newLabel = "Another option";
+                                newReason = "next";
                                 newExplanation = `${newPick.title} at $${Math.round(newPick.price)} is another option to consider.`;
                               }
 
                               if (newPick) {
-                                setFindTopOffer({ title: newPick.title, price: newPick.price, label: newLabel });
+                                setFindTopOffer({ title: newPick.title, price: newPick.price, label: newLabel, reason: newReason });
                               }
                               if (newExplanation) setFindExplanation(newExplanation);
+                              setFindAiExplanation("");
+
+                              // Async AI explanation for the refinement
+                              const refinementQuery = findRefineInput.trim();
                               setFindRefineInput("");
+                              if (newPick && findResults && findResults.length > 0) {
+                                const gen = ++findExplainGenRef.current;
+                                const top = findResults[0];
+                                fetch(`${API_BASE}/api/ai/homepage-explain`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    query: heroIdea,
+                                    city: findCity,
+                                    matched_project: {
+                                      id: top.id,
+                                      title: top.title || top.name || "",
+                                      description: top.description || "",
+                                      category: top.template_type || "",
+                                    },
+                                    offers: findAllOffers.map((o) => ({ title: o.title, price: o.price, sold: o.sold })),
+                                    highlighted_offer: { title: newPick.title, price: newPick.price, label: newLabel, reason: newReason },
+                                    alternative_title: findResults.length > 1 ? (findResults[1].title || findResults[1].name || "") : "",
+                                    refinement: refinementQuery,
+                                    previous_offer: prevOffer,
+                                  }),
+                                })
+                                  .then((r) => r.ok ? r.json() : null)
+                                  .then((data) => {
+                                    if (data?.explanation && findExplainGenRef.current === gen) {
+                                      setFindAiFading(true);
+                                      setTimeout(() => {
+                                        setFindAiExplanation(data.explanation);
+                                        setFindAiFading(false);
+                                      }, 150);
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }
                             }}
                             placeholder="Anything cheaper, better, or different?"
                             className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[12px] text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600"

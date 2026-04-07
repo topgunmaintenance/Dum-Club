@@ -5,6 +5,11 @@ Generates a 1-2 sentence explanation for why the deterministic recommendation
 system picked a specific offer for the customer's search query.  The AI never
 chooses a different offer — it only explains the one already selected.
 
+Supports two modes:
+1. Initial recommendation — explains why the first pick fits the search.
+2. Refinement — explains the new pick after the user asks a follow-up like
+   "anything cheaper" or "something better."
+
 Architecture:
 - The frontend deterministic system picks the offer instantly.
 - This endpoint is called async; its response replaces the template text.
@@ -73,8 +78,8 @@ class OfferData(BaseModel):
 class HighlightedOffer(BaseModel):
     title: str
     price: float
-    label: str  # "Most popular", "Best value", "Starting from", "Available now"
-    reason: str  # "best_seller", "mid_tier", "cheapest", "only"
+    label: str  # "Most popular", "Best value", "Starting from", etc.
+    reason: str  # "best_seller", "mid_tier", "cheapest", "only", "popular", "pick", "next"
 
 
 class MatchedProject(BaseModel):
@@ -84,6 +89,11 @@ class MatchedProject(BaseModel):
     category: str = ""
 
 
+class PreviousOffer(BaseModel):
+    title: str
+    price: float
+
+
 class HomepageExplainRequest(BaseModel):
     query: str  # original search input
     city: str = ""
@@ -91,11 +101,13 @@ class HomepageExplainRequest(BaseModel):
     offers: list[OfferData]
     highlighted_offer: HighlightedOffer
     alternative_title: str = ""  # second result title if exists
+    refinement: str = ""  # follow-up query, e.g. "anything cheaper"
+    previous_offer: PreviousOffer | None = None  # what was shown before refinement
 
 
-# ── System prompt builder ──
+# ── System prompt builders ──
 
-def _build_system_prompt(req: HomepageExplainRequest) -> str:
+def _build_initial_prompt(req: HomepageExplainRequest) -> str:
     tone = _get_tone(req.matched_project.category)
 
     offers_block = "\n".join(
@@ -137,6 +149,47 @@ STRICT RULES:
 - Maximum 2 sentences. Be direct."""
 
 
+def _build_refinement_prompt(req: HomepageExplainRequest) -> str:
+    tone = _get_tone(req.matched_project.category)
+
+    offers_block = "\n".join(
+        f"  - {o.title}: ${o.price:.0f} ({o.sold} sold)"
+        for o in req.offers
+    ) if req.offers else "  (no offers listed)"
+
+    prev_context = ""
+    if req.previous_offer:
+        prev_context = (
+            f"\nPreviously we were showing: {req.previous_offer.title} "
+            f"at ${req.previous_offer.price:.0f}."
+        )
+
+    return f"""You write a 1-2 sentence explanation after a customer refined their search on a marketplace homepage.
+
+Original search: "{req.query}"{f' in {req.city}' if req.city else ''}
+Business: {req.matched_project.title}
+{f'About: {req.matched_project.description}' if req.matched_project.description else ''}
+
+Available offers:
+{offers_block}
+{prev_context}
+
+The customer then asked: "{req.refinement}"
+We are now showing: {req.highlighted_offer.title} at ${req.highlighted_offer.price:.0f} (labeled "{req.highlighted_offer.label}")
+
+YOUR JOB: Write 1-2 natural sentences explaining why this offer answers their follow-up question. If they switched from a previous offer, briefly note the tradeoff (e.g. cheaper but less scope, or pricier but more included). Mention the new offer name and price exactly once.
+
+TONE: Be {tone}.
+
+STRICT RULES:
+- Do NOT suggest a different offer. You are explaining the one already chosen.
+- Do NOT invent features, delivery times, guarantees, or availability not stated above.
+- Do NOT use markdown, bullet points, or lists. Natural sentences only.
+- Do NOT say "as an AI" or "I recommend." Write as if you are the marketplace.
+- Do NOT mention DUM Club, tokens, blockchain, or any internal platform details.
+- Maximum 2 sentences. Be direct."""
+
+
 # ── Endpoint ──
 
 @router.post("/homepage-explain")
@@ -145,14 +198,19 @@ async def homepage_explain(req: HomepageExplainRequest):
     if not _client:
         raise HTTPException(status_code=503, detail="AI service not available")
 
-    system = _build_system_prompt(req)
+    if req.refinement:
+        system = _build_refinement_prompt(req)
+        user_msg = f"Explain why {req.highlighted_offer.title} answers: \"{req.refinement}\""
+    else:
+        system = _build_initial_prompt(req)
+        user_msg = "Explain this recommendation."
 
     try:
         resp = _client.messages.create(
             model=_ANTHROPIC_MODEL,
             max_tokens=128,
             system=system,
-            messages=[{"role": "user", "content": "Explain this recommendation."}],
+            messages=[{"role": "user", "content": user_msg}],
         )
         explanation = next((b.text for b in resp.content if b.type == "text"), "")
     except Exception as e:
