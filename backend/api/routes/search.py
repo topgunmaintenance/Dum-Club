@@ -238,10 +238,12 @@ async def homepage_search(req: SearchRequest):
     scored.sort(key=lambda x: -x[1])
     top = scored[: req.limit]
 
-    # Fetch external nearby results for local-intent queries
+    # Only fetch external results when DUM Club has no good matches
     external_results: list[ExternalBusinessResult] = []
     local_intent = _has_local_intent(raw_query) or bool(city)
-    if local_intent:
+    has_dum_match = top and top[0][1] >= _FALLBACK_THRESHOLD
+
+    if local_intent and not has_dum_match:
         places = await search_nearby(query=query, city=city, limit=5)
         for p in places:
             # Persist to DB for demand tracking (upsert by source+place_id)

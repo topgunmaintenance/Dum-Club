@@ -10,6 +10,7 @@ Usage:
 """
 
 import os
+import time
 from typing import Optional
 
 import httpx
@@ -18,6 +19,7 @@ from api.routes.feature_flags import get_flag
 
 _GOOGLE_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 _SEARCH_RADIUS = int(os.getenv("GOOGLE_MAPS_SEARCH_RADIUS", "10000"))  # meters
+_TIMEOUT = 4.0  # seconds — fast fail to keep homepage responsive
 
 
 class ExternalPlace:
@@ -89,7 +91,7 @@ async def search_nearby(
     Returns empty list when:
     - Feature flag is off
     - No API key configured
-    - External API call fails
+    - External API call fails or times out
     """
     if not get_flag("external_local_search_enabled"):
         return []
@@ -97,7 +99,7 @@ async def search_nearby(
     if _GOOGLE_API_KEY:
         return await _search_google_places(query, city, latitude, longitude, limit)
 
-    # No provider configured — graceful empty return
+    print("[external-places] no API key configured, skipping")
     return []
 
 
@@ -108,12 +110,12 @@ async def _search_google_places(
     longitude: Optional[float],
     limit: int,
 ) -> list[ExternalPlace]:
-    """Search Google Places Text Search API."""
+    """Search Google Places Text Search (New) API."""
     search_text = f"{query} in {city}" if city else query
+    t0 = time.monotonic()
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            # Use Text Search (New) API
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.post(
                 "https://places.googleapis.com/v1/places:searchText",
                 headers={
@@ -127,7 +129,8 @@ async def _search_google_places(
                 },
                 json={
                     "textQuery": search_text,
-                    "maxResultCount": limit,
+                    "languageCode": "en",
+                    "maxResultCount": min(limit, 5),
                     **({"locationBias": {
                         "circle": {
                             "center": {"latitude": latitude, "longitude": longitude},
@@ -137,22 +140,34 @@ async def _search_google_places(
                 },
             )
 
+            elapsed = round((time.monotonic() - t0) * 1000)
+
             if resp.status_code != 200:
-                print(f"[external-places] Google API error: {resp.status_code}")
+                print(f"[external-places] Google API error: {resp.status_code} ({elapsed}ms)")
                 return []
 
             data = resp.json()
             places = data.get("places", [])
 
+            # Sort by rating (highest first), then by review count
+            places.sort(key=lambda p: (-(p.get("rating") or 0), -(p.get("userRatingCount") or 0)))
+
             results = []
+            seen_names: set[str] = set()
             for p in places[:limit]:
+                name = (p.get("displayName") or {}).get("text", "")
+                # Deduplicate by normalised name
+                name_key = name.strip().lower()
+                if name_key in seen_names:
+                    continue
+                seen_names.add(name_key)
+
                 loc = p.get("location", {})
-                addr = p.get("formattedAddress", "")
                 results.append(ExternalPlace(
                     external_source="google_places",
                     external_place_id=p.get("id", ""),
-                    name=(p.get("displayName") or {}).get("text", ""),
-                    address=addr,
+                    name=name,
+                    address=p.get("formattedAddress", ""),
                     city=city,
                     latitude=loc.get("latitude"),
                     longitude=loc.get("longitude"),
@@ -164,8 +179,14 @@ async def _search_google_places(
                     raw_data=p,
                 ))
 
+            print(f"[external-places] query=\"{search_text}\" results={len(results)} ({elapsed}ms)")
             return results
 
+    except httpx.TimeoutException:
+        elapsed = round((time.monotonic() - t0) * 1000)
+        print(f"[external-places] timeout after {elapsed}ms for query=\"{search_text}\"")
+        return []
     except Exception as e:
-        print(f"[external-places] error: {e}")
+        elapsed = round((time.monotonic() - t0) * 1000)
+        print(f"[external-places] error: {e} ({elapsed}ms)")
         return []
