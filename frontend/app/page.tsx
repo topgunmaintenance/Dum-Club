@@ -1324,6 +1324,9 @@ export default function Home() {
   const findExplainGenRef = useRef(0);
   const [findRefineInput, setFindRefineInput] = useState("");
   const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
+  // Multi-turn refinement context
+  const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
+  const [refineListening, setRefineListening] = useState(false);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1486,6 +1489,7 @@ export default function Home() {
       setFindAiExplanation("");
       setFindAiFading(false);
       setFindAckLine("");
+      setRefineHistory([]);
       findExplainGenRef.current++;
       setFindRefineInput("");
       setFindAllOffers([]);
@@ -1853,7 +1857,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1951,7 +1955,7 @@ export default function Home() {
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <button
                           type="button"
-                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); findExplainGenRef.current++; setFindAllOffers([]); }}
+                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
                           className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                         >
                           Create this business →
@@ -2032,7 +2036,10 @@ export default function Home() {
                             {findAckLine && <p className="text-[12px] font-medium text-zinc-300 mb-0.5">{findAckLine}</p>}
                             <p className={`text-[13px] leading-relaxed text-zinc-400 transition-opacity duration-150 ${findAiFading ? "opacity-0" : "opacity-100"}`}>{findAiExplanation || findExplanation}</p>
                             <p className="mt-1 text-[11px] text-emerald-400/50">
-                              {findTopOffer ? "This is a solid choice to start with." : "Want to see more details?"}
+                              {!findTopOffer ? "Want to see more details?"
+                                : refineHistory.length === 0 ? "Try asking \u201Canything cheaper\u201D or \u201Csomething better.\u201D"
+                                : refineHistory.length >= 2 ? "Ready to check it out?"
+                                : "This is a solid choice to start with."}
                             </p>
                           </div>
                         </div>
@@ -2102,40 +2109,61 @@ export default function Home() {
                                 newExplanation = `${newPick.title} at $${Math.round(newPick.price)} is another option to consider.`;
                               }
 
-                              // Build acknowledgment line
+                              // Build multi-turn acknowledgment line
                               const same = newPick && prevOffer && newPick.title === prevOffer.title;
+                              const lastReason = refineHistory.length > 0 ? refineHistory[refineHistory.length - 1].reason : "";
+                              const stepCount = refineHistory.length;
                               let ack = "";
-                              if (newReason === "cheapest" && same) {
-                                ack = "You\u2019re already looking at the most affordable option.";
-                              } else if (newReason === "cheapest" && !same) {
-                                ack = "Switching to the lowest-priced option.";
-                              } else if (newReason === "mid_tier" && same) {
-                                ack = "You\u2019re already looking at the top-tier option.";
-                              } else if (newReason === "mid_tier" && !same) {
-                                ack = "Switching to the premium option.";
+
+                              // Direction-aware acknowledgments
+                              if (newReason === "cheapest") {
+                                if (same) {
+                                  ack = "You\u2019re already looking at the most affordable option.";
+                                } else if (lastReason === "mid_tier") {
+                                  ack = "Switching back to a more affordable option.";
+                                } else {
+                                  ack = "Switching to the lowest-priced option.";
+                                }
+                              } else if (newReason === "mid_tier") {
+                                if (same) {
+                                  ack = "You\u2019re already looking at the top-tier option.";
+                                } else if (lastReason === "cheapest") {
+                                  ack = "Upgrading from the lowest-priced option.";
+                                } else {
+                                  ack = "Switching to the premium option.";
+                                }
                               } else if (newReason === "popular") {
                                 const hasSales = findAllOffers.some((o) => o.sold > 0);
-                                ack = hasSales
-                                  ? (same ? "This is already the most popular choice." : "Here\u2019s the most popular choice right now.")
-                                  : (same ? "This is already a top option here." : "Here\u2019s a top option to consider.");
+                                if (same) {
+                                  ack = hasSales ? "This is already the most popular choice." : "This is already a top option here.";
+                                } else {
+                                  ack = hasSales ? "Here\u2019s the most popular choice right now." : "Here\u2019s a top option to consider.";
+                                }
                               } else if (newReason === "pick") {
-                                ack = same ? "This is already our best balanced pick." : "This is our best balanced pick.";
+                                if (same) {
+                                  ack = "This is already our best balanced pick.";
+                                } else if (stepCount >= 2) {
+                                  ack = "You\u2019ve seen a few options \u2014 this is the best middle ground.";
+                                } else {
+                                  ack = "This is our best balanced pick.";
+                                }
                               } else if (newLabel.startsWith("Under")) {
                                 ack = newPick ? "This option fits under your budget." : "";
                               } else if (newReason === "next") {
-                                ack = "Here\u2019s another option.";
+                                ack = stepCount >= 2 ? "Here\u2019s another option to compare." : "Here\u2019s another option.";
                               }
-                              // "under $X" with no match — no newPick, only explanation update
                               if (!newPick && newExplanation.startsWith("Nothing under")) {
                                 ack = "Nothing in that range \u2014 here\u2019s the closest.";
                               }
 
+                              // Update state
                               if (newPick) {
                                 setFindTopOffer({ title: newPick.title, price: newPick.price, label: newLabel, reason: newReason });
                               }
                               if (newExplanation) setFindExplanation(newExplanation);
                               setFindAiExplanation("");
                               setFindAckLine(ack);
+                              setRefineHistory((h) => [...h, { reason: newReason, offerTitle: newPick?.title || "" }].slice(-4));
 
                               // Async AI explanation for the refinement
                               const refinementQuery = findRefineInput.trim();
@@ -2160,6 +2188,7 @@ export default function Home() {
                                     alternative_title: findResults.length > 1 ? (findResults[1].title || findResults[1].name || "") : "",
                                     refinement: refinementQuery,
                                     previous_offer: prevOffer,
+                                    refinement_history: refineHistory.slice(-3).map((h) => h.reason),
                                   }),
                                 })
                                   .then((r) => r.ok ? r.json() : null)
@@ -2178,6 +2207,40 @@ export default function Home() {
                             placeholder="Anything cheaper, better, or different?"
                             className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[12px] text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600"
                           />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof window === "undefined") return;
+                              const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                              if (!SR) return;
+                              const rec = new SR();
+                              rec.lang = "en-US";
+                              rec.interimResults = false;
+                              rec.maxAlternatives = 1;
+                              rec.onstart = () => setRefineListening(true);
+                              rec.onresult = (ev: any) => {
+                                setFindRefineInput(ev.results[0][0].transcript);
+                                setRefineListening(false);
+                              };
+                              rec.onerror = () => setRefineListening(false);
+                              rec.onend = () => setRefineListening(false);
+                              rec.start();
+                            }}
+                            disabled={refineListening}
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition ${
+                              refineListening
+                                ? "border-red-400/40 bg-red-400/10 text-red-400 animate-pulse"
+                                : "border-zinc-800 bg-zinc-900/30 text-zinc-600 hover:border-emerald-400/30 hover:text-emerald-400"
+                            }`}
+                            title={refineListening ? "Listening..." : "Voice input"}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                              <line x1="12" y1="19" x2="12" y2="23" />
+                              <line x1="8" y1="23" x2="16" y2="23" />
+                            </svg>
+                          </button>
                         </div>
                       )}
 
@@ -2200,7 +2263,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>

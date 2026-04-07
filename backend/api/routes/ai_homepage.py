@@ -103,6 +103,7 @@ class HomepageExplainRequest(BaseModel):
     alternative_title: str = ""  # second result title if exists
     refinement: str = ""  # follow-up query, e.g. "anything cheaper"
     previous_offer: PreviousOffer | None = None  # what was shown before refinement
+    refinement_history: list[str] = []  # last 3 reason codes, e.g. ["cheapest", "mid_tier"]
 
 
 # ── System prompt builders ──
@@ -164,7 +165,19 @@ def _build_refinement_prompt(req: HomepageExplainRequest) -> str:
             f"at ${req.previous_offer.price:.0f}."
         )
 
-    return f"""You write a 1-2 sentence explanation after a customer refined their search on a marketplace homepage.
+    history_context = ""
+    if req.refinement_history:
+        reason_labels = {
+            "cheapest": "cheapest option",
+            "mid_tier": "premium option",
+            "popular": "most popular",
+            "pick": "balanced pick",
+            "next": "another option",
+        }
+        steps = [reason_labels.get(r, r) for r in req.refinement_history]
+        history_context = f"\nThe customer has already looked at: {', '.join(steps)}."
+
+    return f"""You write a 1-2 sentence explanation after a customer refined their search on a marketplace homepage. You are continuing a short decision flow — the customer has already seen previous options.
 
 Original search: "{req.query}"{f' in {req.city}' if req.city else ''}
 Business: {req.matched_project.title}
@@ -172,12 +185,12 @@ Business: {req.matched_project.title}
 
 Available offers:
 {offers_block}
-{prev_context}
+{prev_context}{history_context}
 
 The customer then asked: "{req.refinement}"
 We are now showing: {req.highlighted_offer.title} at ${req.highlighted_offer.price:.0f} (labeled "{req.highlighted_offer.label}")
 
-YOUR JOB: Write 1-2 natural sentences explaining why this offer answers their follow-up question. If they switched from a previous offer, briefly note the tradeoff (e.g. cheaper but less scope, or pricier but more included). Mention the new offer name and price exactly once.
+YOUR JOB: Write 1-2 natural sentences explaining why this offer answers their follow-up question. Reference the previous option when helpful and explain the tradeoff (e.g. cheaper but less scope, or pricier but more included). Mention the new offer name and price exactly once.
 
 TONE: Be {tone}.
 
