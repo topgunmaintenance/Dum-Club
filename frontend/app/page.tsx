@@ -85,13 +85,20 @@ function detectIntent(text: string): "find" | "create" {
   // Questions are usually searches
   if (lower.startsWith("is there") || lower.startsWith("do you") || lower.startsWith("can i") || lower.endsWith("?")) return "find";
 
-  // Known service/category terms → FIND
-  for (const cat of SERVICE_CATEGORIES) {
-    if (lower.includes(cat)) return "find";
+  // Known service/category terms → FIND (unless long phrase with business-building signal)
+  const words = lower.split(/\s+/);
+  const hasCategory = SERVICE_CATEGORIES.some((cat) => lower.includes(cat));
+  if (hasCategory) {
+    if (words.length >= 5) {
+      const bizSignals = ["business", "company", "brand", "agency", "subscription",
+        "for busy", "for small", "for local", "monthly service", "premium service",
+        "that offers", "that provides", "that sells", "that delivers"];
+      if (bizSignals.some((s) => lower.includes(s))) return "create";
+    }
+    return "find";
   }
 
   // Short noun-style queries (1-4 words) without create language → FIND
-  const words = lower.split(/\s+/);
   if (words.length <= 4) return "find";
 
   // Longer phrases default to CREATE (likely business descriptions)
