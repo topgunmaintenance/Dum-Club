@@ -1316,6 +1316,10 @@ export default function Home() {
   const [findCity, setFindCity] = useState("");
   const [findSuggestSent, setFindSuggestSent] = useState(false);
   const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string } | null>(null);
+  // AI agent layer state
+  const [findExplanation, setFindExplanation] = useState("");
+  const [findRefineInput, setFindRefineInput] = useState("");
+  const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1470,34 +1474,53 @@ export default function Home() {
         });
       }
 
-      setFindResults(matches.slice(0, 2));
+      const topMatches = matches.slice(0, 2);
+      setFindResults(topMatches);
       setFindLoading(false);
       setFindTopOffer(null);
+      setFindExplanation("");
+      setFindRefineInput("");
+      setFindAllOffers([]);
 
       // Fetch offers for top match (non-blocking — results already visible)
-      if (matches.length > 0) {
-        fetch(`${API_BASE}/api/offers/${matches[0].id}`)
+      if (topMatches.length > 0) {
+        fetch(`${API_BASE}/api/offers/${topMatches[0].id}`)
           .then((r) => r.ok ? r.json() : [])
           .then((offers: any[]) => {
             if (!offers.length) return;
             const active = offers.filter((o: any) => o.is_active !== false);
             if (!active.length) return;
+
+            // Store all offers for refinement queries
+            const allSorted = [...active]
+              .sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))
+              .map((o: any) => ({ title: o.title, price: Number(o.price_usd || 0), sold: Number(o.quantity_sold || 0) }));
+            setFindAllOffers(allSorted);
+
             // Pick best offer: best-seller > mid-tier > only option
-            const sorted = [...active].sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0));
             const bestSeller = active.reduce((best: any, o: any) => (o.quantity_sold || 0) > (best.quantity_sold || 0) ? o : best, active[0]);
             let pick: any;
             let label: string;
+            let explanation: string;
             if ((bestSeller.quantity_sold || 0) > 0) {
               pick = bestSeller;
               label = "Most popular";
-            } else if (sorted.length >= 2) {
-              pick = sorted[Math.floor(sorted.length / 2)];
+              explanation = `Most customers go with ${pick.title} at $${Math.round(Number(pick.price_usd))}. ${allSorted.length > 1 ? `${allSorted.length - 1} other option${allSorted.length > 2 ? "s" : ""} available.` : ""}`;
+            } else if (allSorted.length >= 3) {
+              pick = active.sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))[Math.floor(active.length / 2)];
               label = "Best value";
+              explanation = `${pick.title} at $${Math.round(Number(pick.price_usd))} is the best balance of price and scope.`;
+            } else if (allSorted.length === 2) {
+              pick = allSorted[0];
+              label = "Starting from";
+              explanation = `Starts at $${Math.round(pick.price)}. There's also a $${Math.round(allSorted[1].price)} option with more included.`;
             } else {
-              pick = sorted[0];
+              pick = allSorted[0];
               label = "Available now";
+              explanation = `${pick.title} is available for $${Math.round(pick.price)}. A solid choice to start with.`;
             }
-            setFindTopOffer({ title: pick.title, price: Number(pick.price_usd || 0), label });
+            setFindTopOffer({ title: pick.title || pick.name, price: Number(pick.price_usd || pick.price || 0), label });
+            setFindExplanation(explanation);
           })
           .catch(() => {});
       }
@@ -1784,7 +1807,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1882,7 +1905,7 @@ export default function Home() {
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <button
                           type="button"
-                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); }}
+                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); }}
                           className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                         >
                           Create this business →
@@ -1955,6 +1978,79 @@ export default function Home() {
                         );
                       })()}
 
+                      {/* AI explanation + refinement */}
+                      {findExplanation && (
+                        <div className="flex gap-2.5 animate-fade-in">
+                          <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[8px] font-bold text-emerald-400">◆</div>
+                          <div>
+                            <p className="text-[13px] leading-relaxed text-zinc-400">{findExplanation}</p>
+                            <p className="mt-1 text-[11px] text-emerald-400/50">
+                              {findTopOffer ? "This is a solid choice to start with." : "Want to see more details?"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Refinement input */}
+                      {findResults.length > 0 && findAllOffers.length > 1 && (
+                        <div className="flex gap-2">
+                          <input
+                            value={findRefineInput}
+                            onChange={(e) => setFindRefineInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" || !findRefineInput.trim()) return;
+                              const q = findRefineInput.toLowerCase().trim();
+                              const current = findTopOffer;
+                              let newPick: typeof findAllOffers[0] | null = null;
+                              let newLabel = "";
+                              let newExplanation = "";
+
+                              if (q.includes("cheap") || q.includes("less") || q.includes("under") || q.includes("afford") || q.includes("budget")) {
+                                // Find cheapest that isn't already shown
+                                newPick = findAllOffers.find((o) => !current || o.title !== current.title) || findAllOffers[0];
+                                const cheapest = findAllOffers[0];
+                                newPick = cheapest;
+                                newLabel = "Cheapest option";
+                                newExplanation = `${cheapest.title} at $${Math.round(cheapest.price)} is the most affordable option.`;
+                              } else if (q.includes("better") || q.includes("premium") || q.includes("best") || q.includes("top") || q.includes("more")) {
+                                const premium = findAllOffers[findAllOffers.length - 1];
+                                newPick = premium;
+                                newLabel = "Premium option";
+                                newExplanation = `${premium.title} at $${Math.round(premium.price)} is the most comprehensive option available.`;
+                              } else if (q.match(/under\s*\$?\d+|\$\d+|below\s*\d+/)) {
+                                const priceMatch = q.match(/\d+/);
+                                if (priceMatch) {
+                                  const maxPrice = Number(priceMatch[0]);
+                                  const under = findAllOffers.filter((o) => o.price <= maxPrice);
+                                  if (under.length > 0) {
+                                    newPick = under[under.length - 1]; // best within budget
+                                    newLabel = `Under $${maxPrice}`;
+                                    newExplanation = `${newPick.title} at $${Math.round(newPick.price)} fits within your budget.`;
+                                  } else {
+                                    newExplanation = `Nothing under $${maxPrice}. The most affordable option is ${findAllOffers[0].title} at $${Math.round(findAllOffers[0].price)}.`;
+                                  }
+                                }
+                              } else {
+                                // Default: show next option
+                                const currentIdx = current ? findAllOffers.findIndex((o) => o.title === current.title) : -1;
+                                const nextIdx = (currentIdx + 1) % findAllOffers.length;
+                                newPick = findAllOffers[nextIdx];
+                                newLabel = "Another option";
+                                newExplanation = `${newPick.title} at $${Math.round(newPick.price)} is another option to consider.`;
+                              }
+
+                              if (newPick) {
+                                setFindTopOffer({ title: newPick.title, price: newPick.price, label: newLabel });
+                              }
+                              if (newExplanation) setFindExplanation(newExplanation);
+                              setFindRefineInput("");
+                            }}
+                            placeholder="Anything cheaper, better, or different?"
+                            className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[12px] text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600"
+                          />
+                        </div>
+                      )}
+
                       {/* One alternative */}
                       {findResults.length > 1 && (() => {
                         const alt = findResults[1];
@@ -1974,7 +2070,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
