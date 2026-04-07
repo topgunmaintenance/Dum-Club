@@ -36,6 +36,10 @@ type MarketSnapshot = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Feature flag: use backend search endpoint instead of client-side filtering.
+// Set to false to roll back to the previous client-side behaviour.
+const USE_BACKEND_SEARCH = true;
+
 // ── Intent detection: FIND (search/buy) vs CREATE (build business) ──
 const FIND_PHRASES = [
   "find", "near me", "looking for", "where can i", "i need", "i want to buy",
@@ -1465,32 +1469,8 @@ export default function Home() {
       const rawQ = heroIdea.toLowerCase().trim();
       const city = extractCity(rawQ);
       if (city) setFindCity(city);
-      // Strip FIND prefixes so "find pizza" matches projects containing "pizza"
-      const q = stripFindPrefixes(rawQ).toLowerCase();
 
-      // Filter from already-loaded projects using cleaned query
-      let matches = allPublicProjects.filter((p) => {
-        if (!q) return false;
-        const title = (p.title || p.name || "").toLowerCase();
-        const desc = (p.description || "").toLowerCase();
-        // Match any word from the query (e.g. "car wash" matches "car" or "wash")
-        const words = q.split(/\s+/).filter((w) => w.length > 2);
-        return words.some((w) => title.includes(w) || desc.includes(w));
-      });
-
-      // Boost city matches to top if city detected
-      if (city) {
-        const cityLower = city.toLowerCase();
-        matches.sort((a, b) => {
-          const aCity = (a.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
-          const bCity = (b.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
-          return bCity - aCity;
-        });
-      }
-
-      const topMatches = matches.slice(0, 2);
-      setFindResults(topMatches);
-      setFindLoading(false);
+      // Reset state for new search
       stopSpeaking();
       setFindTopOffer(null);
       setFindExplanation("");
@@ -1503,88 +1483,167 @@ export default function Home() {
       setFindRefineInput("");
       setFindAllOffers([]);
 
-      // Fetch offers for top match (non-blocking — results already visible)
-      if (topMatches.length > 0) {
-        fetch(`${API_BASE}/api/offers/${topMatches[0].id}`)
-          .then((r) => r.ok ? r.json() : [])
-          .then((offers: any[]) => {
-            if (!offers.length) return;
-            const active = offers.filter((o: any) => o.is_active !== false);
-            if (!active.length) return;
-
-            // Store all offers for refinement queries
-            const allSorted = [...active]
-              .sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))
-              .map((o: any) => ({ title: o.title, price: Number(o.price_usd || 0), sold: Number(o.quantity_sold || 0) }));
-            setFindAllOffers(allSorted);
-
-            // Pick best offer: best-seller > mid-tier > only option
-            const bestSeller = active.reduce((best: any, o: any) => (o.quantity_sold || 0) > (best.quantity_sold || 0) ? o : best, active[0]);
-            let pick: any;
-            let label: string;
-            let explanation: string;
-            let reason: string;
-            if ((bestSeller.quantity_sold || 0) > 0) {
-              pick = bestSeller;
-              label = "Most popular";
-              reason = "best_seller";
-              explanation = `Most customers go with ${pick.title} at $${Math.round(Number(pick.price_usd))}. ${allSorted.length > 1 ? `${allSorted.length - 1} other option${allSorted.length > 2 ? "s" : ""} available.` : ""}`;
-            } else if (allSorted.length >= 3) {
-              pick = active.sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))[Math.floor(active.length / 2)];
-              label = "Best value";
-              reason = "mid_tier";
-              explanation = `${pick.title} at $${Math.round(Number(pick.price_usd))} is the best balance of price and scope.`;
-            } else if (allSorted.length === 2) {
-              pick = allSorted[0];
-              label = "Starting from";
-              reason = "cheapest";
-              explanation = `Starts at $${Math.round(pick.price)}. There's also a $${Math.round(allSorted[1].price)} option with more included.`;
-            } else {
-              pick = allSorted[0];
-              label = "Available now";
-              reason = "only";
-              explanation = `${pick.title} is available for $${Math.round(pick.price)}. A solid choice to start with.`;
+      if (USE_BACKEND_SEARCH) {
+        // ── Backend search (v1) ──
+        fetch(`${API_BASE}/api/search/homepage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: heroIdea, city: city || "" }),
+        })
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => {
+            if (!data || data.fallback_needed) {
+              // No match or below threshold → empty results triggers fallback card
+              setFindResults([]);
+              setFindLoading(false);
+              return;
             }
-            const pickTitle = pick.title || pick.name;
-            const pickPrice = Number(pick.price_usd || pick.price || 0);
-            setFindTopOffer({ title: pickTitle, price: pickPrice, label, reason });
-            setFindExplanation(explanation);
 
-            // Async AI explanation — enhances the template without blocking
-            const gen = ++findExplainGenRef.current;
-            fetch(`${API_BASE}/api/ai/homepage-explain`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                query: heroIdea,
-                city: findCity,
-                matched_project: {
-                  id: topMatches[0].id,
-                  title: topMatches[0].title || topMatches[0].name || "",
-                  description: topMatches[0].description || "",
-                  category: topMatches[0].template_type || "",
-                },
-                offers: allSorted.map((o) => ({ title: o.title, price: o.price, sold: o.sold })),
-                highlighted_offer: { title: pickTitle, price: pickPrice, label, reason },
-                alternative_title: topMatches.length > 1 ? (topMatches[1].title || topMatches[1].name || "") : "",
-              }),
-            })
-              .then((r) => r.ok ? r.json() : null)
-              .then((data) => {
-                if (data?.explanation && findExplainGenRef.current === gen) {
-                  setFindAiFading(true);
-                  setTimeout(() => {
-                    setFindAiExplanation(data.explanation);
-                    setFindAiFading(false);
-                    if (voiceInitiatedRef.current && !voiceMuted) speakText(data.explanation);
-                  }, 150);
-                } else if (voiceInitiatedRef.current && !voiceMuted && findExplainGenRef.current === gen) {
-                  speakText(explanation);
-                }
+            // Map backend response → existing state shape
+            const best = data.best_match;
+            const topProjects: Project[] = [];
+            if (best?.project) {
+              topProjects.push({
+                id: best.project.id,
+                title: best.project.title,
+                description: best.project.description,
+                template_type: best.project.category,
+              } as Project);
+            }
+            for (const opt of data.other_options || []) {
+              if (opt?.project) {
+                topProjects.push({
+                  id: opt.project.id,
+                  title: opt.project.title,
+                  description: opt.project.description,
+                  template_type: opt.project.category,
+                } as Project);
+              }
+            }
+            setFindResults(topProjects);
+            setFindLoading(false);
+
+            if (best?.offer) {
+              const allOffers = (best.all_offers || []).map((o: any) => ({
+                title: o.title, price: Number(o.price_usd || 0), sold: Number(o.sold || 0),
+              }));
+              setFindAllOffers(allOffers);
+              const pickTitle = best.offer.title;
+              const pickPrice = Number(best.offer.price_usd || 0);
+              setFindTopOffer({ title: pickTitle, price: pickPrice, label: best.offer.label, reason: best.offer.reason });
+              setFindExplanation(best.explanation || "");
+
+              // Async AI explanation
+              const gen = ++findExplainGenRef.current;
+              fetch(`${API_BASE}/api/ai/homepage-explain`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: heroIdea,
+                  city: city || findCity,
+                  matched_project: best.project,
+                  offers: allOffers.map((o: any) => ({ title: o.title, price: o.price, sold: o.sold })),
+                  highlighted_offer: { title: pickTitle, price: pickPrice, label: best.offer.label, reason: best.offer.reason },
+                  alternative_title: topProjects.length > 1 ? (topProjects[1].title || "") : "",
+                }),
               })
-              .catch(() => { if (voiceInitiatedRef.current && !voiceMuted) speakText(explanation); });
+                .then((r) => r.ok ? r.json() : null)
+                .then((aiData) => {
+                  if (aiData?.explanation && findExplainGenRef.current === gen) {
+                    setFindAiFading(true);
+                    setTimeout(() => {
+                      setFindAiExplanation(aiData.explanation);
+                      setFindAiFading(false);
+                      if (voiceInitiatedRef.current && !voiceMuted) speakText(aiData.explanation);
+                    }, 150);
+                  } else if (voiceInitiatedRef.current && !voiceMuted && findExplainGenRef.current === gen) {
+                    speakText(best.explanation || "");
+                  }
+                })
+                .catch(() => { if (voiceInitiatedRef.current && !voiceMuted) speakText(best.explanation || ""); });
+            }
           })
-          .catch(() => {});
+          .catch(() => {
+            // Backend search failed — show fallback
+            setFindResults([]);
+            setFindLoading(false);
+          });
+      } else {
+        // ── Legacy client-side search (fallback) ──
+        const q = stripFindPrefixes(rawQ).toLowerCase();
+        let matches = allPublicProjects.filter((p) => {
+          if (!q) return false;
+          const title = (p.title || p.name || "").toLowerCase();
+          const desc = (p.description || "").toLowerCase();
+          const words = q.split(/\s+/).filter((w) => w.length > 2);
+          return words.some((w) => title.includes(w) || desc.includes(w));
+        });
+        if (city) {
+          const cityLower = city.toLowerCase();
+          matches.sort((a, b) => {
+            const aCity = (a.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
+            const bCity = (b.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
+            return bCity - aCity;
+          });
+        }
+        const topMatches = matches.slice(0, 2);
+        setFindResults(topMatches);
+        setFindLoading(false);
+        if (topMatches.length > 0) {
+          fetch(`${API_BASE}/api/offers/${topMatches[0].id}`)
+            .then((r) => r.ok ? r.json() : [])
+            .then((offers: any[]) => {
+              if (!offers.length) return;
+              const active = offers.filter((o: any) => o.is_active !== false);
+              if (!active.length) return;
+              const allSorted = [...active]
+                .sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))
+                .map((o: any) => ({ title: o.title, price: Number(o.price_usd || 0), sold: Number(o.quantity_sold || 0) }));
+              setFindAllOffers(allSorted);
+              const bestSeller = active.reduce((best: any, o: any) => (o.quantity_sold || 0) > (best.quantity_sold || 0) ? o : best, active[0]);
+              let pick: any; let label: string; let explanation: string; let reason: string;
+              if ((bestSeller.quantity_sold || 0) > 0) {
+                pick = bestSeller; label = "Most popular"; reason = "best_seller";
+                explanation = `Most customers go with ${pick.title} at $${Math.round(Number(pick.price_usd))}. ${allSorted.length > 1 ? `${allSorted.length - 1} other option${allSorted.length > 2 ? "s" : ""} available.` : ""}`;
+              } else if (allSorted.length >= 3) {
+                pick = active.sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0))[Math.floor(active.length / 2)];
+                label = "Best value"; reason = "mid_tier";
+                explanation = `${pick.title} at $${Math.round(Number(pick.price_usd))} is the best balance of price and scope.`;
+              } else if (allSorted.length === 2) {
+                pick = allSorted[0]; label = "Starting from"; reason = "cheapest";
+                explanation = `Starts at $${Math.round(pick.price)}. There's also a $${Math.round(allSorted[1].price)} option with more included.`;
+              } else {
+                pick = allSorted[0]; label = "Available now"; reason = "only";
+                explanation = `${pick.title} is available for $${Math.round(pick.price)}. A solid choice to start with.`;
+              }
+              const pickTitle = pick.title || pick.name;
+              const pickPrice = Number(pick.price_usd || pick.price || 0);
+              setFindTopOffer({ title: pickTitle, price: pickPrice, label, reason });
+              setFindExplanation(explanation);
+              const gen = ++findExplainGenRef.current;
+              fetch(`${API_BASE}/api/ai/homepage-explain`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: heroIdea, city: findCity,
+                  matched_project: { id: topMatches[0].id, title: topMatches[0].title || topMatches[0].name || "", description: topMatches[0].description || "", category: topMatches[0].template_type || "" },
+                  offers: allSorted.map((o) => ({ title: o.title, price: o.price, sold: o.sold })),
+                  highlighted_offer: { title: pickTitle, price: pickPrice, label, reason },
+                  alternative_title: topMatches.length > 1 ? (topMatches[1].title || topMatches[1].name || "") : "",
+                }),
+              })
+                .then((r) => r.ok ? r.json() : null)
+                .then((data) => {
+                  if (data?.explanation && findExplainGenRef.current === gen) {
+                    setFindAiFading(true);
+                    setTimeout(() => { setFindAiExplanation(data.explanation); setFindAiFading(false);
+                      if (voiceInitiatedRef.current && !voiceMuted) speakText(data.explanation);
+                    }, 150);
+                  } else if (voiceInitiatedRef.current && !voiceMuted && findExplainGenRef.current === gen) { speakText(explanation); }
+                })
+                .catch(() => { if (voiceInitiatedRef.current && !voiceMuted) speakText(explanation); });
+            })
+            .catch(() => {});
+        }
       }
       // Scroll to results only if they'd be below the viewport
       setTimeout(() => {
