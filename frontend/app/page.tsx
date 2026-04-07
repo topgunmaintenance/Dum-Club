@@ -2164,7 +2164,7 @@ export default function Home() {
 
                             {/* Primary CTA */}
                             <Link
-                              href={`/project/${top.id}`}
+                              href={`/project/${top.id}${findTopOffer ? `?offer=${encodeURIComponent(findTopOffer.title)}&reason=${findTopOffer.reason}` : ""}`}
                               className="mt-4 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
                             >
                               {findTopOffer ? "Get this →" : "View offers →"}

@@ -652,6 +652,10 @@ export default function ProjectPage() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [buyingOfferId, setBuyingOfferId] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<"success" | "cancelled" | null>(null);
+  // Homepage recommendation context (from ?offer=...&reason=...)
+  const [recommendedOffer, setRecommendedOffer] = useState<string | null>(null);
+  const [recommendedReason, setRecommendedReason] = useState<string | null>(null);
+  const recommendedScrolled = useRef(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
@@ -2167,6 +2171,18 @@ export default function ProjectPage() {
     loadRedemptions();
   }, [id]);
 
+  // Scroll to recommended offer when arriving from homepage
+  useEffect(() => {
+    if (!recommendedOffer || !offers.length || recommendedScrolled.current) return;
+    const match = offers.find((o) => o.title === recommendedOffer);
+    if (!match) return;
+    recommendedScrolled.current = true;
+    setTimeout(() => {
+      const el = document.getElementById(`offer-${match.id}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }, [recommendedOffer, offers]);
+
   // Load business profile for the project owner (for verified badge)
   useEffect(() => {
     const ownerPrivyId = project?.privy_id || project?.owner_id;
@@ -2202,6 +2218,14 @@ export default function ProjectPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("launched") === "1") setShowLiveBanner(true);
     if (params.get("view") === "pitch") setPitchMode(true);
+    if (params.get("offer")) {
+      setRecommendedOffer(decodeURIComponent(params.get("offer")!));
+      setRecommendedReason(params.get("reason") || "");
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("offer");
+      cleanUrl.searchParams.delete("reason");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }
     if (params.get("checkout") === "success") {
       console.log("[checkout] Success redirect detected — scheduling data refreshes");
       setCheckoutResult("success");
@@ -4277,23 +4301,38 @@ return (
               // Best value = mid-tier by price (only when 3+ offers)
               const sorted = [...offers].sort((a, b) => Number(a.price_usd) - Number(b.price_usd));
               const bestValueId = sorted.length >= 3 ? sorted[Math.floor(sorted.length / 2)].id : "";
+              const recommendedReasonLabel: Record<string, string> = {
+                best_seller: "Recommended — most purchased",
+                mid_tier: "Recommended — best value",
+                cheapest: "Recommended — most affordable",
+                premium: "Recommended — most comprehensive",
+                popular: "Recommended — most popular",
+                pick: "Recommended for you",
+                only: "Recommended",
+              };
               return offers.map((offer) => {
               const isPopular = offer.id === bestSellerId && (offer.quantity_sold || 0) > 0;
               const isBestValue = !isPopular && offer.id === bestValueId;
+              const isRecommended = recommendedOffer === offer.title;
               const typeBadge = offer.offer_type === "physical_product"
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div key={offer.id} className={`rounded-2xl border bg-card p-5 sm:p-6 flex flex-col transition hover:shadow-[0_0_20px_rgba(0,255,163,0.02)] ${isPopular ? "border-emerald-400/20 hover:border-emerald-400/30" : isBestValue ? "border-sky-400/15 hover:border-sky-400/25" : "border-zinc-800 hover:border-zinc-700"}`}>
+                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-card p-5 sm:p-6 flex flex-col transition hover:shadow-[0_0_20px_rgba(0,255,163,0.02)] ${isRecommended ? "border-emerald-400/40 ring-1 ring-emerald-400/20 shadow-[0_0_24px_rgba(0,255,163,0.06)]" : isPopular ? "border-emerald-400/20 hover:border-emerald-400/30" : isBestValue ? "border-sky-400/15 hover:border-sky-400/25" : "border-zinc-800 hover:border-zinc-700"}`}>
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {isPopular && (
+                      {isRecommended && (
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+                          {recommendedReasonLabel[recommendedReason || ""] || "Recommended"}
+                        </span>
+                      )}
+                      {isPopular && !isRecommended && (
                         <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
                           Most Popular
                         </span>
                       )}
-                      {isBestValue && (
+                      {isBestValue && !isRecommended && (
                         <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-400">
                           Best Value
                         </span>
@@ -5692,8 +5731,9 @@ return (
       projectId={id}
       businessName={projectName}
       onScrollToOffer={(title) => {
-        const el = document.getElementById("offers-section");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const match = offers.find((o) => o.title === title);
+        const el = match ? document.getElementById(`offer-${match.id}`) : document.getElementById("offers-section");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: match ? "center" : "start" });
       }}
     />
   )}
