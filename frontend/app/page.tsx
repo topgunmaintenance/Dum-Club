@@ -53,6 +53,20 @@ function detectIntent(text: string): "find" | "create" {
   return "create";
 }
 
+function extractCity(text: string): string {
+  const m = text.toLowerCase().match(/\bin\s+([a-z][a-z\s]{1,20})$/);
+  return m ? m[1].trim().replace(/^./, (c) => c.toUpperCase()) : "";
+}
+
+function findQueryToCreatePrompt(query: string, city: string): string {
+  const cleaned = query
+    .replace(/^(find|find me|search|looking for|i need|get me|show me|where can i)\s*/i, "")
+    .replace(/\s*(near me|nearby|around here|close to me|in my area)\s*/i, "")
+    .replace(/\s*in\s+[a-z\s]+$/i, "")
+    .trim();
+  return `A ${cleaned} business${city ? ` in ${city}` : ""}`;
+}
+
 const TEMPLATE_STARTERS = [
   { label: "Sell coaching", prompt: "A personal training service selling custom workout plans and meal prep packages" },
   { label: "Find services", prompt: "Find me a mobile car wash or detailing service near me" },
@@ -1284,6 +1298,10 @@ export default function Home() {
   const [ctaRotation, setCtaRotation] = useState(0);
   const [ctaHovered, setCtaHovered] = useState(false);
   const ctaLabels = ["Start Selling →", "Start Buying →", "Earn DUM Points →"];
+  const [findResults, setFindResults] = useState<Project[] | null>(null);
+  const [findLoading, setFindLoading] = useState(false);
+  const [findCity, setFindCity] = useState("");
+  const [findSuggestSent, setFindSuggestSent] = useState(false);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1408,9 +1426,38 @@ export default function Home() {
   function handleHeroLaunch() {
     if (!heroIdea.trim() || heroLaunching) return;
 
-    // FIND intent → route to Discover with search query
+    // FIND intent → inline search results
     if (heroIntent === "find") {
-      router.push(`/discover?q=${encodeURIComponent(heroIdea.trim())}`);
+      setFindLoading(true);
+      setFindSuggestSent(false);
+      const q = heroIdea.toLowerCase().trim();
+      const city = extractCity(q);
+      if (city) setFindCity(city);
+
+      // Filter from already-loaded projects
+      let matches = allPublicProjects.filter(
+        (p) =>
+          (p.title || p.name || "").toLowerCase().includes(q) ||
+          (p.description || "").toLowerCase().includes(q)
+      );
+
+      // Boost city matches to top if city detected
+      if (city) {
+        const cityLower = city.toLowerCase();
+        matches.sort((a, b) => {
+          const aCity = (a.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
+          const bCity = (b.description || "").toLowerCase().includes(cityLower) ? 1 : 0;
+          return bCity - aCity;
+        });
+      }
+
+      setFindResults(matches.slice(0, 2));
+      setFindLoading(false);
+      // Scroll to results
+      setTimeout(() => {
+        const el = document.getElementById("find-results");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
       return;
     }
 
@@ -1684,7 +1731,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => setHeroIdea(e.target.value)}
+                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) setFindResults(null); }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1763,8 +1810,112 @@ export default function Home() {
                 )}
               </div>
 
-              {/* ── LIVE PREVIEW ── */}
-              {preview && !heroLaunching && (
+              {/* ── INLINE FIND RESULTS ── */}
+              {findResults !== null && !heroLaunching && (
+                <div id="find-results" className="mx-auto mt-6 max-w-2xl scroll-mt-32">
+                  {findLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-24 animate-pulse rounded-2xl bg-zinc-800/50" />
+                      <div className="h-16 animate-pulse rounded-xl bg-zinc-800/30" />
+                    </div>
+                  ) : findResults.length === 0 ? (
+                    /* ── No results ── */
+                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 text-center">
+                      <div className="mb-2 text-2xl">🔍</div>
+                      <div className="text-base font-bold text-white">
+                        No matches for &quot;{heroIdea.replace(/^(find|find me|search|looking for|i need|get me|show me)\s*/i, "").trim()}&quot;{findCity ? ` in ${findCity}` : ""}
+                      </div>
+                      <p className="mt-2 text-sm text-zinc-500">This doesn&apos;t exist on DUM Club yet. You can create it or suggest it.</p>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                        <button
+                          type="button"
+                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); }}
+                          className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                        >
+                          Create this business →
+                        </button>
+                        {!findSuggestSent ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const s = JSON.parse(localStorage.getItem("dum_suggestions") || "[]");
+                              s.push({ name: heroIdea, query: heroIdea, city: findCity, ts: Date.now() });
+                              localStorage.setItem("dum_suggestions", JSON.stringify(s.slice(-50)));
+                              setFindSuggestSent(true);
+                            }}
+                            className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                          >
+                            Suggest it to DUM Club
+                          </button>
+                        ) : (
+                          <span className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-2.5 text-sm text-emerald-400">
+                            ✓ Suggestion received
+                          </span>
+                        )}
+                      </div>
+                      <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="mt-3 inline-block text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        Browse the full marketplace →
+                      </Link>
+                    </div>
+                  ) : (
+                    /* ── Results found ── */
+                    <div className="space-y-3">
+                      {/* Top recommendation */}
+                      {(() => {
+                        const top = findResults[0];
+                        const hasDesc = top.description && !top.description.startsWith("Auto-created");
+                        return (
+                          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-5">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Recommended{findCity ? ` · ${findCity}` : ""}</span>
+                            </div>
+                            <Link href={`/project/${top.id}`} className="group">
+                              <h3 className="text-lg font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</h3>
+                            </Link>
+                            {hasDesc && <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{top.description}</p>}
+                            <p className="mt-2 text-[11px] text-emerald-400/70">
+                              {top.status === "live" ? "Active business with clear offers." : "New on DUM Club."}
+                            </p>
+                            <Link
+                              href={`/project/${top.id}`}
+                              className="mt-3 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]"
+                            >
+                              View Offers →
+                            </Link>
+                          </div>
+                        );
+                      })()}
+
+                      {/* One alternative */}
+                      {findResults.length > 1 && (() => {
+                        const alt = findResults[1];
+                        return (
+                          <Link href={`/project/${alt.id}`} className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 transition hover:border-zinc-700">
+                            <div>
+                              <div className="text-sm font-semibold text-zinc-300 transition group-hover:text-emerald-400">{alt.title || alt.name}</div>
+                              <div className="mt-0.5 text-[11px] text-zinc-600">Also matches your search</div>
+                            </div>
+                            <span className="text-xs text-zinc-500 transition group-hover:text-emerald-400">View →</span>
+                          </Link>
+                        );
+                      })()}
+
+                      {/* Footer links */}
+                      <div className="flex items-center justify-between pt-1">
+                        <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                          See all on Discover →
+                        </Link>
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                          ✕ Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── LIVE PREVIEW (hidden when find results showing) ── */}
+              {findResults === null && preview && !heroLaunching && (
                 <div className="hero-entrance-delay-2 mx-auto mt-5 max-w-2xl">
                   <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 overflow-hidden">
                     <div className="flex items-center gap-2 border-b border-zinc-800/50 bg-zinc-950/80 px-4 py-2">
@@ -1806,7 +1957,7 @@ export default function Home() {
               )}
 
               {/* ── LAUNCH LIMIT INDICATOR ── */}
-              {!heroLaunching && launchCount > 0 && launchCount < FREE_LAUNCH_LIMIT && (
+              {!heroLaunching && findResults === null && launchCount > 0 && launchCount < FREE_LAUNCH_LIMIT && (
                 <div className="mx-auto mt-3 max-w-2xl text-center">
                   <span className="text-[11px] text-zinc-600">
                     {FREE_LAUNCH_LIMIT - launchCount} free business{FREE_LAUNCH_LIMIT - launchCount === 1 ? "" : "es"} remaining
@@ -1814,8 +1965,8 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ── TEMPLATE STARTERS ── */}
-              {!heroLaunching && (
+              {/* ── TEMPLATE STARTERS (hidden when find results showing) ── */}
+              {!heroLaunching && findResults === null && (
                 <div className="hero-entrance-delay-2 mx-auto mt-6 max-w-2xl">
                   <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-600">
                     Try an example
