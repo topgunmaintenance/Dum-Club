@@ -49,6 +49,7 @@ export function AiSalesChat({
   const [loading, setLoading] = useState(false);
   const [offers, setOffers] = useState<OfferRef[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef(`s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
   const accent = getAccentFromName(businessName);
   const monogram = getMonogram(businessName);
@@ -77,6 +78,7 @@ export function AiSalesChat({
         body: JSON.stringify({
           project_id: projectId,
           message: text,
+          session_id: sessionIdRef.current,
           history: messages.slice(-8),
         }),
       });
