@@ -106,31 +106,11 @@ export function Navbar() {
       <div className="flex items-center justify-between px-4 py-4 lg:hidden">
         <Link
           href="/"
-          onMouseEnter={() => setBrandHover(true)}
-          onMouseLeave={() => setBrandHover(false)}
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "22px",
-            fontWeight: 700,
-            color: brandHover ? "#00FFB2" : "#e8e8e8",
-            textDecoration: "none",
-            letterSpacing: "-0.05em",
-            display: "inline-flex",
-            alignItems: "center",
-            transition: "all 0.18s ease",
-          }}
+          className="flex items-center gap-2"
         >
-          <span style={{ color: "#00FFB2" }}>DUM</span>
-          <span>CLUB</span>
-          <span
-            style={{
-              marginLeft: "8px",
-              fontSize: "9px",
-              letterSpacing: "0.24em",
-              color: "#666",
-            }}
-          >
-            EARLY ACCESS
+          <img src="/logo-mark.svg" alt="DUM Club" className="h-8 w-8" />
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "18px", fontWeight: 700, letterSpacing: "-0.05em" }}>
+            <span style={{ color: "#A855F7" }}>DUM</span><span className="text-zinc-200">CLUB</span>
           </span>
         </Link>
 
@@ -172,34 +152,16 @@ export function Navbar() {
           href="/"
           onMouseEnter={() => setBrandHover(true)}
           onMouseLeave={() => setBrandHover(false)}
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "30px",
-            fontWeight: 700,
-            color: brandHover ? "#00FFB2" : "#e8e8e8",
-            textDecoration: "none",
-            letterSpacing: "-0.05em",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0px",
-            justifySelf: "start",
-            transition: "all 0.18s ease",
-            textShadow: brandHover ? "0 0 10px rgba(0,255,178,0.28)" : "none",
-          }}
+          className="flex items-center gap-3 transition-all duration-200"
+          style={{ textDecoration: "none" }}
         >
-          <span style={{ color: "#00FFB2" }}>DUM</span>
-          <span>CLUB</span>
-          <span
-            style={{
-              marginLeft: "12px",
-              fontSize: "11px",
-              letterSpacing: "0.24em",
-              color: brandHover ? "#00FFB2" : "#666",
-              transition: "all 0.18s ease",
-            }}
-          >
-            EARLY ACCESS
-          </span>
+          <img src="/logo-mark.svg" alt="DUM Club" className="h-10 w-10" style={{ filter: brandHover ? "drop-shadow(0 0 8px rgba(168,85,247,0.4))" : "none", transition: "filter 0.2s ease" }} />
+          <div className="flex flex-col">
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "24px", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1 }}>
+              <span style={{ color: "#A855F7" }}>DUM</span><span style={{ color: brandHover ? "#A855F7" : "#e8e8e8", transition: "color 0.2s ease" }}>CLUB</span>
+            </span>
+            <span style={{ fontSize: "8px", letterSpacing: "0.2em", color: "#64748B", marginTop: "2px" }}>DIGITAL UTILITY MARKET</span>
+          </div>
         </Link>
 
         <div

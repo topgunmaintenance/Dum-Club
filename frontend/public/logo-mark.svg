@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Connecting lines -->
+  <line x1="60" y1="65" x2="140" y2="65" stroke="#4B5563" stroke-width="1.5" opacity="0.5"/>
+  <line x1="60" y1="65" x2="100" y2="145" stroke="#4B5563" stroke-width="1.5" opacity="0.5"/>
+  <line x1="140" y1="65" x2="100" y2="145" stroke="#4B5563" stroke-width="1.5" opacity="0.5"/>
+  <!-- D circle -->
+  <circle cx="60" cy="58" r="30" fill="#A855F7"/>
+  <text x="60" y="68" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white">D</text>
+  <!-- U circle -->
+  <circle cx="140" cy="58" r="30" fill="#818CF8"/>
+  <text x="140" y="68" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white">U</text>
+  <!-- M circle -->
+  <circle cx="100" cy="142" r="30" fill="#22D3EE"/>
+  <text x="100" y="152" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white">M</text>
+</svg>
