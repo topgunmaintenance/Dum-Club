@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Starfield } from "../components/Starfield";
 import { useAuth } from "../lib/auth/AuthContext";
+import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 type Project = {
@@ -1328,6 +1329,9 @@ export default function Home() {
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
   const [refineListening, setRefineListening] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
+  // Voice output state
+  const voiceInitiatedRef = useRef(false);
+  const [voiceMuted, setVoiceMuted] = useState(false);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1485,6 +1489,7 @@ export default function Home() {
       const topMatches = matches.slice(0, 2);
       setFindResults(topMatches);
       setFindLoading(false);
+      stopSpeaking();
       setFindTopOffer(null);
       setFindExplanation("");
       setFindAiExplanation("");
@@ -1569,10 +1574,13 @@ export default function Home() {
                   setTimeout(() => {
                     setFindAiExplanation(data.explanation);
                     setFindAiFading(false);
+                    if (voiceInitiatedRef.current && !voiceMuted) speakText(data.explanation);
                   }, 150);
+                } else if (voiceInitiatedRef.current && !voiceMuted && findExplainGenRef.current === gen) {
+                  speakText(explanation);
                 }
               })
-              .catch(() => {});
+              .catch(() => { if (voiceInitiatedRef.current && !voiceMuted) speakText(explanation); });
           })
           .catch(() => {});
       }
@@ -1622,6 +1630,7 @@ export default function Home() {
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setHeroIdea(transcript);
+      voiceInitiatedRef.current = true;
       setListening(false);
     };
     recognition.onerror = () => setListening(false);
@@ -1859,7 +1868,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
+                    onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1957,7 +1966,7 @@ export default function Home() {
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <button
                           type="button"
-                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
+                          onClick={() => { stopSpeaking(); setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); }}
                           className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                         >
                           Create this business →
@@ -2018,10 +2027,32 @@ export default function Home() {
                             {findExplanation && (
                               <div className="mt-3 flex gap-2">
                                 <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[7px] font-bold text-emerald-400">{findAiExplanation ? "✦" : "◆"}</div>
-                                <div>
+                                <div className="flex-1">
                                   {findAckLine && <p className="text-[11px] font-medium text-zinc-300 mb-0.5">{findAckLine}</p>}
                                   <p className={`text-[12px] leading-relaxed text-zinc-500 transition-opacity duration-150 ${findAiFading ? "opacity-0" : "opacity-100"}`}>{findAiExplanation || findExplanation}</p>
                                 </div>
+                                {canSpeak() && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (voiceMuted) {
+                                        setVoiceMuted(false);
+                                        speakText(findAiExplanation || findExplanation);
+                                      } else {
+                                        setVoiceMuted(true);
+                                        stopSpeaking();
+                                      }
+                                    }}
+                                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition ${voiceMuted ? "text-zinc-600 hover:text-zinc-400" : "text-emerald-400/60 hover:text-emerald-400"}`}
+                                    title={voiceMuted ? "Unmute voice" : "Mute voice"}
+                                  >
+                                    {voiceMuted ? (
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                                    ) : (
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                                    )}
+                                  </button>
+                                )}
                               </div>
                             )}
 
@@ -2058,6 +2089,7 @@ export default function Home() {
                             onChange={(e) => setFindRefineInput(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key !== "Enter" || !findRefineInput.trim()) return;
+                              stopSpeaking();
                               const q = findRefineInput.toLowerCase().trim();
                               const prevOffer = findTopOffer ? { title: findTopOffer.title, price: findTopOffer.price } : null;
                               let newPick: typeof findAllOffers[0] | null = null;
@@ -2203,10 +2235,13 @@ export default function Home() {
                                       setTimeout(() => {
                                         setFindAiExplanation(data.explanation);
                                         setFindAiFading(false);
+                                        if (voiceInitiatedRef.current && !voiceMuted) speakText(data.explanation);
                                       }, 150);
+                                    } else if (voiceInitiatedRef.current && !voiceMuted && findExplainGenRef.current === gen) {
+                                      speakText(newExplanation);
                                     }
                                   })
-                                  .catch(() => {});
+                                  .catch(() => { if (voiceInitiatedRef.current && !voiceMuted) speakText(newExplanation); });
                               }
                             }}
                             placeholder="Anything cheaper, better, or different?"
@@ -2225,6 +2260,7 @@ export default function Home() {
                               rec.onstart = () => setRefineListening(true);
                               rec.onresult = (ev: any) => {
                                 setFindRefineInput(ev.results[0][0].transcript);
+                                voiceInitiatedRef.current = true;
                                 setRefineListening(false);
                               };
                               rec.onerror = () => setRefineListening(false);
@@ -2290,7 +2326,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { stopSpeaking(); setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
