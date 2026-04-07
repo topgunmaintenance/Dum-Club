@@ -97,7 +97,7 @@ def _score_project(project: dict, words: list[str], city: str) -> float:
     title = (project.get("title") or project.get("name") or "").lower()
     desc = (project.get("description") or "").lower()
     offers = project.get("offers") or []
-    active_offers = [o for o in offers if o.get("is_active") is not False]
+    active_offers = [o for o in offers if o.get("is_active") is True]
 
     if not active_offers:
         return 0.0  # Must have at least one active offer
@@ -227,7 +227,7 @@ async def homepage_search(req: SearchRequest):
     # Build results
     results: list[MatchResult] = []
     for proj, score in top:
-        active = [o for o in (proj.get("offers") or []) if o.get("is_active") is not False]
+        active = [o for o in (proj.get("offers") or []) if o.get("is_active") is True]
         pick, label, reason, explanation = _pick_best_offer(active)
 
         all_sorted = sorted(active, key=lambda o: o.get("price_usd") or 0)
