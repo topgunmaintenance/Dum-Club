@@ -1315,6 +1315,7 @@ export default function Home() {
   const [findLoading, setFindLoading] = useState(false);
   const [findCity, setFindCity] = useState("");
   const [findSuggestSent, setFindSuggestSent] = useState(false);
+  const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string } | null>(null);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1471,6 +1472,35 @@ export default function Home() {
 
       setFindResults(matches.slice(0, 2));
       setFindLoading(false);
+      setFindTopOffer(null);
+
+      // Fetch offers for top match (non-blocking — results already visible)
+      if (matches.length > 0) {
+        fetch(`${API_BASE}/api/offers/${matches[0].id}`)
+          .then((r) => r.ok ? r.json() : [])
+          .then((offers: any[]) => {
+            if (!offers.length) return;
+            const active = offers.filter((o: any) => o.is_active !== false);
+            if (!active.length) return;
+            // Pick best offer: best-seller > mid-tier > only option
+            const sorted = [...active].sort((a: any, b: any) => (a.price_usd || 0) - (b.price_usd || 0));
+            const bestSeller = active.reduce((best: any, o: any) => (o.quantity_sold || 0) > (best.quantity_sold || 0) ? o : best, active[0]);
+            let pick: any;
+            let label: string;
+            if ((bestSeller.quantity_sold || 0) > 0) {
+              pick = bestSeller;
+              label = "Most popular";
+            } else if (sorted.length >= 2) {
+              pick = sorted[Math.floor(sorted.length / 2)];
+              label = "Best value";
+            } else {
+              pick = sorted[0];
+              label = "Available now";
+            }
+            setFindTopOffer({ title: pick.title, price: Number(pick.price_usd || 0), label });
+          })
+          .catch(() => {});
+      }
       // Scroll to results only if they'd be below the viewport
       setTimeout(() => {
         const el = document.getElementById("find-results");
@@ -1754,7 +1784,7 @@ export default function Home() {
                 <div className="relative">
                   <textarea
                     value={heroIdea}
-                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) setFindResults(null); }}
+                    onChange={(e) => { setHeroIdea(e.target.value); if (findResults !== null) { setFindResults(null); setFindTopOffer(null); } }}
                     placeholder="Describe a business to create — or search for something to buy"
                     rows={3}
                     disabled={heroLaunching}
@@ -1852,7 +1882,7 @@ export default function Home() {
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                         <button
                           type="button"
-                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); }}
+                          onClick={() => { setHeroIdea(findQueryToCreatePrompt(heroIdea, findCity)); setFindResults(null); setFindTopOffer(null); }}
                           className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                         >
                           Create this business →
@@ -1903,11 +1933,23 @@ export default function Home() {
                                 ? "Active on DUM Club."
                                 : "Recently launched on DUM Club."}
                             </p>
+                            {/* Offer mini-card — appears when offer data loads */}
+                            {findTopOffer && (
+                              <div className="mt-3 flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-4 py-2.5">
+                                <div>
+                                  <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-400/50">{findTopOffer.label}</div>
+                                  <div className="mt-0.5 text-sm font-semibold text-zinc-200">{findTopOffer.title}</div>
+                                </div>
+                                <div className="font-mono text-base font-bold text-emerald-400">${findTopOffer.price < 1 ? findTopOffer.price.toFixed(2) : Math.round(findTopOffer.price)}</div>
+                              </div>
+                            )}
                             <Link
                               href={`/project/${top.id}`}
                               className="mt-3 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]"
                             >
-                              View Offers →
+                              {findTopOffer
+                                ? `View ${findTopOffer.title} — $${findTopOffer.price < 1 ? findTopOffer.price.toFixed(2) : Math.round(findTopOffer.price)} →`
+                                : "View Offers →"}
                             </Link>
                           </div>
                         );
@@ -1932,7 +1974,7 @@ export default function Home() {
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
