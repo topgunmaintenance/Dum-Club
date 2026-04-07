@@ -281,7 +281,6 @@ function DiscoverSectionNav() {
 }
 
 export default function DiscoverPage() {
-  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
