@@ -1353,6 +1353,15 @@ export default function Home() {
     return () => clearInterval(t);
   }, [heroIdea, heroLaunching, ctaHovered]);
 
+  // Debounce auto-search for FIND intent (500ms pause triggers search)
+  const heroLaunchRef = useRef(handleHeroLaunch);
+  heroLaunchRef.current = handleHeroLaunch;
+  useEffect(() => {
+    if (!heroIdea.trim() || heroLaunching || heroIntent !== "find" || findResults !== null) return;
+    const t = setTimeout(() => heroLaunchRef.current(), 500);
+    return () => clearTimeout(t);
+  }, [heroIdea, heroIntent, heroLaunching, findResults]);
+
   // Load launch count on mount
   useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
 
@@ -2075,7 +2084,9 @@ export default function Home() {
                                 )}
                               </div>
                               <p className="mt-2 text-[12px] text-zinc-500">
-                                Not on DUM Club yet.{proofRewardsEnabled ? " Submit proof of purchase to earn DUM Points after verification." : " Help bring this business to the platform."}
+                                {proofRewardsEnabled
+                                  ? "Highly rated nearby. Earn 10 DUM Points when you verify your purchase."
+                                  : "Highly rated nearby. Visit and help bring them to DUM Club."}
                               </p>
                               <div className="mt-3 flex gap-2">
                                 {proofRewardsEnabled && top.id ? (
