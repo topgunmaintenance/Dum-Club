@@ -4308,6 +4308,7 @@ return (
                 premium: "Recommended — most comprehensive",
                 popular: "Recommended — most popular",
                 pick: "Recommended for you",
+                next: "Recommended",
                 only: "Recommended",
               };
               return offers.map((offer) => {
