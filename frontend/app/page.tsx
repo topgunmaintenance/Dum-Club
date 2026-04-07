@@ -1327,6 +1327,7 @@ export default function Home() {
   // Multi-turn refinement context
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
   const [refineListening, setRefineListening] = useState(false);
+  const [showAlternatives, setShowAlternatives] = useState(false);
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -1490,6 +1491,7 @@ export default function Home() {
       setFindAiFading(false);
       setFindAckLine("");
       setRefineHistory([]);
+      setShowAlternatives(false);
       findExplainGenRef.current++;
       setFindRefineInput("");
       setFindAllOffers([]);
@@ -1986,66 +1988,69 @@ export default function Home() {
                   ) : (
                     /* ── Results found ── */
                     <div className="space-y-3">
-                      {/* Top recommendation */}
+                      {/* ── Best Option card ── */}
                       {(() => {
                         const top = findResults[0];
-                        const hasDesc = top.description && !top.description.startsWith("Auto-created");
                         return (
-                          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-5">
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Recommended{findCity ? ` · ${findCity}` : ""}</span>
+                          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-5">
+                            <div className="mb-3 flex items-center gap-2">
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Best option for &ldquo;{stripFindPrefixes(heroIdea)}&rdquo;{findCity ? ` in ${findCity}` : ""}</span>
                             </div>
-                            <Link href={`/project/${top.id}`} className="group">
-                              <h3 className="text-lg font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</h3>
-                            </Link>
-                            {hasDesc && <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{top.description}</p>}
-                            <p className="mt-2 text-[11px] text-emerald-400/70">
-                              {top.status === "live" && hasDesc
-                                ? "Established business with a complete profile."
-                                : top.status === "live"
-                                ? "Active on DUM Club."
-                                : "Recently launched on DUM Club."}
-                            </p>
-                            {/* Offer mini-card — appears when offer data loads */}
-                            {findTopOffer && (
-                              <div className="mt-3 flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-4 py-2.5">
+
+                            {findTopOffer ? (
+                              <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-400/50">{findTopOffer.label}</div>
-                                  <div className="mt-0.5 text-sm font-semibold text-zinc-200">{findTopOffer.title}</div>
+                                  <div className="text-lg font-bold text-white">{findTopOffer.title}</div>
+                                  <div className="mt-0.5 text-[12px] text-zinc-400">from <Link href={`/project/${top.id}`} className="text-zinc-300 underline decoration-dotted underline-offset-2 transition hover:text-emerald-400">{top.title || top.name}</Link></div>
                                 </div>
-                                <div className="font-mono text-base font-bold text-emerald-400">${findTopOffer.price < 1 ? findTopOffer.price.toFixed(2) : Math.round(findTopOffer.price)}</div>
+                                <div className="font-mono text-2xl font-bold text-emerald-400">${findTopOffer.price < 1 ? findTopOffer.price.toFixed(2) : Math.round(findTopOffer.price)}</div>
+                              </div>
+                            ) : (
+                              <div>
+                                <Link href={`/project/${top.id}`} className="group">
+                                  <div className="text-lg font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</div>
+                                </Link>
+                                <div className="mt-0.5 text-[12px] text-zinc-500">Loading offers...</div>
                               </div>
                             )}
+
+                            {/* AI explanation inline */}
+                            {findExplanation && (
+                              <div className="mt-3 flex gap-2">
+                                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[7px] font-bold text-emerald-400">{findAiExplanation ? "✦" : "◆"}</div>
+                                <div>
+                                  {findAckLine && <p className="text-[11px] font-medium text-zinc-300 mb-0.5">{findAckLine}</p>}
+                                  <p className={`text-[12px] leading-relaxed text-zinc-500 transition-opacity duration-150 ${findAiFading ? "opacity-0" : "opacity-100"}`}>{findAiExplanation || findExplanation}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Primary CTA */}
                             <Link
                               href={`/project/${top.id}`}
-                              className="mt-3 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]"
+                              className="mt-4 flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]"
                             >
-                              {findTopOffer
-                                ? `View ${findTopOffer.title} — $${findTopOffer.price < 1 ? findTopOffer.price.toFixed(2) : Math.round(findTopOffer.price)} →`
-                                : "View Offers →"}
+                              {findTopOffer ? "Get this →" : "View offers →"}
                             </Link>
+
+                            {/* Secondary: see other options */}
+                            {(findAllOffers.length > 1 || findResults.length > 1) && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAlternatives((v) => !v)}
+                                className="mt-2 flex w-full items-center justify-center gap-1 py-1.5 text-[11px] font-medium text-zinc-500 transition hover:text-zinc-300"
+                              >
+                                {showAlternatives ? "Hide other options" : `See other options (${Math.max(findAllOffers.length - 1, findResults.length - 1)})`}
+                                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className={`transition-transform ${showAlternatives ? "rotate-180" : ""}`}>
+                                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         );
                       })()}
 
-                      {/* AI explanation + refinement */}
-                      {findExplanation && (
-                        <div className="flex gap-2.5 animate-fade-in">
-                          <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[8px] font-bold text-emerald-400">{findAiExplanation ? "✦" : "◆"}</div>
-                          <div>
-                            {findAckLine && <p className="text-[12px] font-medium text-zinc-300 mb-0.5">{findAckLine}</p>}
-                            <p className={`text-[13px] leading-relaxed text-zinc-400 transition-opacity duration-150 ${findAiFading ? "opacity-0" : "opacity-100"}`}>{findAiExplanation || findExplanation}</p>
-                            <p className="mt-1 text-[11px] text-emerald-400/50">
-                              {!findTopOffer ? "Want to see more details?"
-                                : refineHistory.length === 0 ? "Try asking \u201Canything cheaper\u201D or \u201Csomething better.\u201D"
-                                : refineHistory.length >= 2 ? "Ready to check it out?"
-                                : "This is a solid choice to start with."}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Refinement input */}
+                      {/* ── Refinement input (always visible) ── */}
                       {findResults.length > 0 && findAllOffers.length > 1 && (
                         <div className="flex gap-2">
                           <input
@@ -2244,26 +2249,48 @@ export default function Home() {
                         </div>
                       )}
 
-                      {/* One alternative */}
-                      {findResults.length > 1 && (() => {
-                        const alt = findResults[1];
-                        return (
-                          <Link href={`/project/${alt.id}`} className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3 transition hover:border-zinc-700">
-                            <div>
-                              <div className="text-sm font-semibold text-zinc-300 transition group-hover:text-emerald-400">{alt.title || alt.name}</div>
-                              <div className="mt-0.5 text-[11px] text-zinc-600">Also matches your search</div>
-                            </div>
-                            <span className="text-xs text-zinc-500 transition group-hover:text-emerald-400">View →</span>
-                          </Link>
-                        );
-                      })()}
+                      {/* ── Alternatives (collapsed by default) ── */}
+                      {showAlternatives && (
+                        <div className="space-y-2 animate-fade-in">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 pt-1">Other options</div>
+
+                          {/* Other offers from the same business */}
+                          {findAllOffers.filter((o) => !findTopOffer || o.title !== findTopOffer.title).map((o) => (
+                            <Link
+                              key={o.title}
+                              href={`/project/${findResults[0].id}`}
+                              className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 transition hover:border-zinc-700"
+                            >
+                              <div>
+                                <div className="text-[13px] font-semibold text-zinc-300 transition group-hover:text-emerald-400">{o.title}</div>
+                                <div className="mt-0.5 text-[10px] text-zinc-600">{findResults[0].title || findResults[0].name}</div>
+                              </div>
+                              <div className="font-mono text-sm font-bold text-zinc-400 transition group-hover:text-emerald-400">${o.price < 1 ? o.price.toFixed(2) : Math.round(o.price)}</div>
+                            </Link>
+                          ))}
+
+                          {/* Alternative business */}
+                          {findResults.length > 1 && (() => {
+                            const alt = findResults[1];
+                            return (
+                              <Link href={`/project/${alt.id}`} className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-2.5 transition hover:border-zinc-700">
+                                <div>
+                                  <div className="text-[13px] font-semibold text-zinc-300 transition group-hover:text-emerald-400">{alt.title || alt.name}</div>
+                                  <div className="mt-0.5 text-[10px] text-zinc-600">Another matching business</div>
+                                </div>
+                                <span className="text-xs text-zinc-500 transition group-hover:text-emerald-400">View →</span>
+                              </Link>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* Footer links */}
                       <div className="flex items-center justify-between pt-1">
                         <Link href={`/discover?q=${encodeURIComponent(heroIdea)}`} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           See all on Discover →
                         </Link>
-                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
+                        <button type="button" onClick={() => { setFindResults(null); setFindCity(""); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAckLine(""); setRefineHistory([]); setShowAlternatives(false); findExplainGenRef.current++; setFindAllOffers([]); setFindRefineInput(""); }} className="text-[11px] text-zinc-600 transition hover:text-zinc-400">
                           ✕ Clear
                         </button>
                       </div>
