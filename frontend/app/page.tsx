@@ -46,22 +46,55 @@ const FIND_PHRASES = [
   "find", "near me", "looking for", "where can i", "i need", "i want to buy",
   "who does", "who sells", "best", "cheapest", "get a", "get me", "buy",
   "search", "show me", "any", "recommend", "suggestion", "where to",
+  "nearby", "around here", "close to me", "open now", "how much",
+  "price", "cost", "affordable", "cheap",
+];
+
+const CREATE_PHRASES = [
+  "i want to sell", "i want to start", "help me sell", "help me build",
+  "create a", "build a", "launch a", "start a", "turn this into",
+  "make a business", "my business", "i sell", "i offer", "i provide",
+  "selling", "offering", "providing", "building", "creating", "launching", "starting",
+];
+
+const SERVICE_CATEGORIES = [
+  "pizza", "taco", "burger", "sushi", "coffee", "bakery", "restaurant",
+  "car wash", "cleaning", "plumber", "electrician", "mechanic", "barber",
+  "salon", "spa", "gym", "yoga", "trainer", "tutor", "lawyer",
+  "accountant", "photographer", "designer", "developer", "chef",
+  "catering", "landscaping", "painting", "roofing", "moving",
+  "pet", "dog", "grooming", "daycare", "dentist", "doctor",
+  "massage", "nail", "laundry", "tailor", "florist",
+  "meal prep", "house cleaning", "car detailing", "dog walking",
 ];
 
 function detectIntent(text: string): "find" | "create" {
   const lower = text.toLowerCase().trim();
   if (!lower) return "create";
+
+  // Explicit CREATE phrases win first
+  for (const phrase of CREATE_PHRASES) {
+    if (lower.includes(phrase)) return "create";
+  }
+
+  // Explicit FIND phrases
   for (const phrase of FIND_PHRASES) {
     if (lower.includes(phrase)) return "find";
   }
+
   // Questions are usually searches
   if (lower.startsWith("is there") || lower.startsWith("do you") || lower.startsWith("can i") || lower.endsWith("?")) return "find";
-  // Short noun-style queries (1-3 words, no business-description verbs) → likely a search
-  const words = lower.split(/\s+/);
-  if (words.length <= 3 && !lower.startsWith("a ") && !lower.startsWith("an ") && !lower.startsWith("my ")) {
-    const createVerbs = ["selling", "offering", "providing", "building", "creating", "launching", "starting"];
-    if (!createVerbs.some((v) => lower.includes(v))) return "find";
+
+  // Known service/category terms → FIND
+  for (const cat of SERVICE_CATEGORIES) {
+    if (lower.includes(cat)) return "find";
   }
+
+  // Short noun-style queries (1-4 words) without create language → FIND
+  const words = lower.split(/\s+/);
+  if (words.length <= 4) return "find";
+
+  // Longer phrases default to CREATE (likely business descriptions)
   return "create";
 }
 
@@ -2030,10 +2063,12 @@ export default function Home() {
                   )}
                 </button>
 
-                {/* Tagline */}
+                {/* Tagline / intent hint */}
                 {!heroLaunching && (
                   <p className="mt-4 text-center text-[12px] font-medium tracking-[0.15em] text-zinc-500">
-                    Sell anything. Buy anything. Reward everyone.
+                    {heroIdea.trim()
+                      ? heroIntent === "find" ? "Looking for a service" : "Creating a business"
+                      : "Sell anything. Buy anything. Reward everyone."}
                   </p>
                 )}
 
