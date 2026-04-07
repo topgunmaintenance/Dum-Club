@@ -50,6 +50,12 @@ function detectIntent(text: string): "find" | "create" {
   }
   // Questions are usually searches
   if (lower.startsWith("is there") || lower.startsWith("do you") || lower.startsWith("can i") || lower.endsWith("?")) return "find";
+  // Short noun-style queries (1-3 words, no business-description verbs) → likely a search
+  const words = lower.split(/\s+/);
+  if (words.length <= 3 && !lower.startsWith("a ") && !lower.startsWith("an ") && !lower.startsWith("my ")) {
+    const createVerbs = ["selling", "offering", "providing", "building", "creating", "launching", "starting"];
+    if (!createVerbs.some((v) => lower.includes(v))) return "find";
+  }
   return "create";
 }
 
@@ -58,12 +64,19 @@ function extractCity(text: string): string {
   return m ? m[1].trim().replace(/^./, (c) => c.toUpperCase()) : "";
 }
 
-function findQueryToCreatePrompt(query: string, city: string): string {
-  const cleaned = query
-    .replace(/^(find|find me|search|looking for|i need|get me|show me|where can i)\s*/i, "")
-    .replace(/\s*(near me|nearby|around here|close to me|in my area)\s*/i, "")
+const FIND_STRIP_RE = /^(find|find me|search|search for|looking for|i need|i want|get me|show me|where can i|where can i get|where can i find|who does|who sells)\s*/i;
+const LOCAL_STRIP_RE = /\s*(near me|nearby|around here|close to me|in my area)\s*/i;
+
+function stripFindPrefixes(text: string): string {
+  return text
+    .replace(FIND_STRIP_RE, "")
+    .replace(LOCAL_STRIP_RE, "")
     .replace(/\s*in\s+[a-z\s]+$/i, "")
     .trim();
+}
+
+function findQueryToCreatePrompt(query: string, city: string): string {
+  const cleaned = stripFindPrefixes(query);
   return `A ${cleaned} business${city ? ` in ${city}` : ""}`;
 }
 
@@ -1430,16 +1443,21 @@ export default function Home() {
     if (heroIntent === "find") {
       setFindLoading(true);
       setFindSuggestSent(false);
-      const q = heroIdea.toLowerCase().trim();
-      const city = extractCity(q);
+      const rawQ = heroIdea.toLowerCase().trim();
+      const city = extractCity(rawQ);
       if (city) setFindCity(city);
+      // Strip FIND prefixes so "find pizza" matches projects containing "pizza"
+      const q = stripFindPrefixes(rawQ).toLowerCase();
 
-      // Filter from already-loaded projects
-      let matches = allPublicProjects.filter(
-        (p) =>
-          (p.title || p.name || "").toLowerCase().includes(q) ||
-          (p.description || "").toLowerCase().includes(q)
-      );
+      // Filter from already-loaded projects using cleaned query
+      let matches = allPublicProjects.filter((p) => {
+        if (!q) return false;
+        const title = (p.title || p.name || "").toLowerCase();
+        const desc = (p.description || "").toLowerCase();
+        // Match any word from the query (e.g. "car wash" matches "car" or "wash")
+        const words = q.split(/\s+/).filter((w) => w.length > 2);
+        return words.some((w) => title.includes(w) || desc.includes(w));
+      });
 
       // Boost city matches to top if city detected
       if (city) {
@@ -1453,10 +1471,15 @@ export default function Home() {
 
       setFindResults(matches.slice(0, 2));
       setFindLoading(false);
-      // Scroll to results
+      // Scroll to results only if they'd be below the viewport
       setTimeout(() => {
         const el = document.getElementById("find-results");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top > window.innerHeight) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
       }, 100);
       return;
     }
@@ -1812,7 +1835,7 @@ export default function Home() {
 
               {/* ── INLINE FIND RESULTS ── */}
               {findResults !== null && !heroLaunching && (
-                <div id="find-results" className="mx-auto mt-6 max-w-2xl scroll-mt-32">
+                <div id="find-results" className="mx-auto mt-6 max-w-2xl scroll-mt-32 animate-fade-in">
                   {findLoading ? (
                     <div className="space-y-3">
                       <div className="h-24 animate-pulse rounded-2xl bg-zinc-800/50" />
@@ -1823,7 +1846,7 @@ export default function Home() {
                     <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 text-center">
                       <div className="mb-2 text-2xl">🔍</div>
                       <div className="text-base font-bold text-white">
-                        No matches for &quot;{heroIdea.replace(/^(find|find me|search|looking for|i need|get me|show me)\s*/i, "").trim()}&quot;{findCity ? ` in ${findCity}` : ""}
+                        No matches for &quot;{stripFindPrefixes(heroIdea)}&quot;{findCity ? ` in ${findCity}` : ""}
                       </div>
                       <p className="mt-2 text-sm text-zinc-500">This doesn&apos;t exist on DUM Club yet. You can create it or suggest it.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -1874,7 +1897,11 @@ export default function Home() {
                             </Link>
                             {hasDesc && <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{top.description}</p>}
                             <p className="mt-2 text-[11px] text-emerald-400/70">
-                              {top.status === "live" ? "Active business with clear offers." : "New on DUM Club."}
+                              {top.status === "live" && hasDesc
+                                ? "Established business with a complete profile."
+                                : top.status === "live"
+                                ? "Active on DUM Club."
+                                : "Recently launched on DUM Club."}
                             </p>
                             <Link
                               href={`/project/${top.id}`}
