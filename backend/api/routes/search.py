@@ -245,14 +245,18 @@ async def homepage_search(req: SearchRequest):
         places = await search_nearby(query=query, city=city, limit=5)
         for p in places:
             # Persist to DB for demand tracking (upsert by source+place_id)
+            db_id = ""
             try:
-                sb.table("external_businesses").upsert(
+                upsert_res = sb.table("external_businesses").upsert(
                     p.to_dict(),
                     on_conflict="external_source,external_place_id",
                 ).execute()
+                if upsert_res.data:
+                    db_id = upsert_res.data[0].get("id", "")
             except Exception:
                 pass  # non-blocking — search still works if persist fails
             external_results.append(ExternalBusinessResult(
+                id=db_id,
                 external_source=p.external_source,
                 external_place_id=p.external_place_id,
                 name=p.name,

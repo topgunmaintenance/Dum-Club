@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Starfield } from "../components/Starfield";
+import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -1334,7 +1335,9 @@ export default function Home() {
   // Offer data for alternative projects (keyed by project id)
   const [findAltOffers, setFindAltOffers] = useState<Record<string, { title: string; price: number }>>({});
   // Off-platform nearby results
-  const [findExternalResults, setFindExternalResults] = useState<{ name: string; address: string; category: string; rating: number | null; review_count: number; external_source: string; external_place_id: string }[]>([]);
+  const [findExternalResults, setFindExternalResults] = useState<{ id: string; name: string; address: string; category: string; rating: number | null; review_count: number; external_source: string; external_place_id: string }[]>([]);
+  const [proofModalBiz, setProofModalBiz] = useState<{ id: string; name: string } | null>(null);
+  const [proofRewardsEnabled, setProofRewardsEnabled] = useState(false);
   // Multi-turn refinement context
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
   const [refineListening, setRefineListening] = useState(false);
@@ -1831,6 +1834,9 @@ export default function Home() {
   useEffect(() => {
     loadPublicProjects();
     loadRecentTrades();
+    fetch(`${API_BASE}/api/flags`).then((r) => r.ok ? r.json() : {}).then((flags) => {
+      if (flags.off_platform_receipt_rewards_enabled) setProofRewardsEnabled(true);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -2484,9 +2490,25 @@ export default function Home() {
                                 </div>
                               )}
                             </div>
-                            <p className="mt-2 text-[10px] text-zinc-600">
-                              Not on DUM Club yet. Buy here and submit proof to earn DUM Points.
-                            </p>
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <p className="text-[10px] text-zinc-600">
+                                {proofRewardsEnabled
+                                  ? "Not on DUM Club yet. Submit proof of purchase to earn DUM Points after verification."
+                                  : "Not on DUM Club yet. Help bring this business to the platform."}
+                              </p>
+                              {proofRewardsEnabled && ext.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!user) { login(); return; }
+                                    setProofModalBiz({ id: ext.id, name: ext.name });
+                                  }}
+                                  className="shrink-0 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[10px] font-semibold text-emerald-400 transition hover:bg-emerald-400/10"
+                                >
+                                  I bought here
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -3114,6 +3136,17 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Proof of purchase modal for off-platform businesses */}
+      {proofModalBiz && (
+        <ProofOfPurchaseModal
+          businessId={proofModalBiz.id}
+          businessName={proofModalBiz.name}
+          buyerPrivyId={user?.privyId || ""}
+          onClose={() => setProofModalBiz(null)}
+          onSubmitted={() => setProofModalBiz(null)}
+        />
+      )}
     </div>
   );
 }
