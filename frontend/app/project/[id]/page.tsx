@@ -4298,9 +4298,11 @@ return (
                           Best Value
                         </span>
                       )}
-                      <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
-                        {typeBadge.label}
-                      </span>
+                      {isOwner && (
+                        <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
+                          {typeBadge.label}
+                        </span>
+                      )}
                       {offer.token_discount_percent > 0 && (
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
                           {offer.token_discount_percent}% off for supporters
@@ -4339,14 +4341,13 @@ return (
                         className="w-full aspect-[4/3] object-cover transition-transform duration-300 group-hover/img:scale-105"
                       />
                     </div>
-                  ) : (
-                    <div className="mb-4 flex h-40 items-center justify-center rounded-xl border border-zinc-800/50 bg-zinc-900/30 text-zinc-700 text-3xl">
-                      {offer.offer_type === "physical_product" ? "📦" : "💼"}
-                    </div>
-                  )}
+                  ) : null}
 
-                  {/* Content */}
-                  <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
+                  {/* Content — title + price together */}
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
+                    <div className="shrink-0 font-mono text-lg font-bold text-emerald-400">${Number(offer.price_usd).toFixed(0)}</div>
+                  </div>
                   {offer.description && (
                     <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
                   )}
@@ -4424,56 +4425,39 @@ return (
                     <div className="mt-2 text-[11px] text-amber-400/80">{dumDiscountError}</div>
                   )}
 
-                  {/* Price + Action */}
+                  {/* Action */}
                   {(() => {
                     const soldOut = !offer.unlimited_inventory && offer.quantity_available != null && (offer.quantity_available - (offer.quantity_sold || 0)) <= 0;
                     const basePrice = Number(offer.price_usd);
                     const finalPrice = dumDiscountApplied[offer.id] ? basePrice * 0.9 : basePrice;
                     return (
-                      <div className="mt-auto pt-5 flex items-end justify-between gap-3 border-t border-zinc-800/60 mt-5">
-                        <div>
-                          {dumDiscountApplied[offer.id] ? (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <div className="font-mono text-2xl font-bold text-emerald-400">${finalPrice.toFixed(2)}</div>
-                                <div className="font-mono text-sm text-zinc-600 line-through">${basePrice.toFixed(2)}</div>
-                              </div>
-                              <div className="text-[10px] uppercase tracking-[0.15em] text-emerald-400/60 mt-0.5">DUM discount · Secure checkout</div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="font-mono text-2xl font-bold text-white">${basePrice.toFixed(2)}</div>
-                              <div className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-0.5">USD · Secure checkout</div>
-                            </>
-                          )}
-                        </div>
+                      <div className="mt-auto pt-4 border-t border-zinc-800/60 mt-4">
+                        {dumDiscountApplied[offer.id] && (
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-emerald-400">${finalPrice.toFixed(2)}</span>
+                            <span className="font-mono text-xs text-zinc-600 line-through">${basePrice.toFixed(2)}</span>
+                            <span className="text-[9px] text-emerald-400/60">DUM discount</span>
+                          </div>
+                        )}
                         {soldOut ? (
-                          <span className="rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-2.5 text-xs font-semibold text-red-400 select-none">
+                          <div className="w-full rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-center text-xs font-semibold text-red-400 select-none">
                             Sold Out
-                          </span>
+                          </div>
                         ) : isOwner ? (
-                          <span className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-[11px] font-medium text-zinc-600 select-none">
+                          <div className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-[11px] font-medium text-zinc-600 select-none">
                             Your Offer
-                          </span>
+                          </div>
                         ) : !authUser ? (
-                          <button onClick={login} className="rounded-xl bg-emerald-400/80 px-5 py-3 text-xs font-bold text-black transition hover:bg-emerald-400">
-                            Sign in to buy
-                          </button>
-                        ) : isDemo ? (
-                          <button
-                            disabled={buyingOfferId === offer.id}
-                            onClick={() => buyOffer(offer)}
-                            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
-                          >
-                            {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : "Buy Now"}
+                          <button onClick={login} className="w-full rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.15)]">
+                            Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
                           <button
                             disabled={buyingOfferId === offer.id}
                             onClick={() => buyOffer(offer)}
-                            className="rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-black transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
+                            className="w-full rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.15)] active:scale-[0.98] disabled:opacity-60"
                           >
-                            {buyingOfferId === offer.id ? "Processing..." : "Buy Now"}
+                            {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
                           </button>
                         )}
                       </div>
