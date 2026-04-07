@@ -298,6 +298,8 @@ export default function DiscoverPage() {
   const pulseClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reviewSummaries, setReviewSummaries] = useState<Record<string, { count: number; average_rating: number }>>({});
   const [searchArrival, setSearchArrival] = useState(false);
+  const [suggestSent, setSuggestSent] = useState(false);
+  const [suggestName, setSuggestName] = useState("");
 
   async function loadMarketSnapshots(projectIds: string[]) {
     if (!projectIds.length) {
@@ -398,6 +400,15 @@ export default function DiscoverPage() {
     } catch {
       setRecentTrades([]);
     }
+  }
+
+  function submitSuggestion(name: string) {
+    if (!name.trim()) return;
+    // Store locally — backend can read these later
+    const existing = JSON.parse(localStorage.getItem("dum_suggestions") || "[]");
+    existing.push({ name: name.trim(), query: searchQuery, ts: Date.now() });
+    localStorage.setItem("dum_suggestions", JSON.stringify(existing.slice(-50)));
+    setSuggestSent(true);
   }
 
   useEffect(() => {
@@ -727,14 +738,40 @@ export default function DiscoverPage() {
               <div className="mx-auto max-w-md">
                 <div className="mb-3 text-3xl">🔍</div>
                 <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
-                <p className="mt-2 text-sm text-zinc-500">This could be yours. Launch this business on DUM Club and be the first to serve this market.</p>
+                <p className="mt-2 text-sm text-zinc-500">This could be yours — or suggest it so we can bring it to DUM Club.</p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Link href={`/?idea=${encodeURIComponent(searchQuery)}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
-                    Create &quot;{searchQuery.length > 30 ? searchQuery.slice(0, 30) + "..." : searchQuery}&quot; →
+                    Create this business →
                   </Link>
                   <button onClick={() => { setSearchQuery(""); setSearchArrival(false); }} className="rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
                     Clear search
                   </button>
+                </div>
+                {/* Supplier suggest */}
+                <div className="mt-6 border-t border-zinc-800/50 pt-5">
+                  {suggestSent ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-emerald-400">
+                      <span>✓</span> Suggestion received. We&apos;ll work on bringing this to DUM Club.
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="mb-2 text-[11px] text-zinc-600">Know a business that should be here?</p>
+                      <div className="flex gap-2">
+                        <input
+                          value={suggestName}
+                          onChange={(e) => setSuggestName(e.target.value)}
+                          placeholder="Business name or type"
+                          className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-600"
+                        />
+                        <button
+                          onClick={() => submitSuggestion(suggestName || searchQuery)}
+                          className="shrink-0 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                        >
+                          Suggest
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -956,6 +993,38 @@ export default function DiscoverPage() {
               );
             })}
           </div>
+
+          {/* Supplier capture — after search results */}
+          {searchArrival && searchQuery.trim() && (
+            <div className="mt-6 rounded-2xl border border-zinc-800/50 bg-zinc-950/60 p-5">
+              {suggestSent ? (
+                <div className="text-center text-sm text-emerald-400">
+                  ✓ Thanks for the suggestion. We&apos;re always expanding.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-zinc-300">Don&apos;t see what you need?</div>
+                    <div className="mt-0.5 text-[11px] text-zinc-600">Suggest a business and we&apos;ll work on adding it.</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={suggestName}
+                      onChange={(e) => setSuggestName(e.target.value)}
+                      placeholder="Business name"
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-600 sm:w-48"
+                    />
+                    <button
+                      onClick={() => submitSuggestion(suggestName || searchQuery)}
+                      className="shrink-0 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      Suggest
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           </>
         )}
         </div>
