@@ -297,6 +297,7 @@ export default function DiscoverPage() {
   const flashTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pulseClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reviewSummaries, setReviewSummaries] = useState<Record<string, { count: number; average_rating: number }>>({});
+  const [searchArrival, setSearchArrival] = useState(false);
 
   async function loadMarketSnapshots(projectIds: string[]) {
     if (!projectIds.length) {
@@ -409,6 +410,7 @@ export default function DiscoverPage() {
       if (q) {
         setSearchQuery(q);
         setActiveTab("all");
+        setSearchArrival(true);
       }
     }
   }, []);
@@ -720,13 +722,20 @@ export default function DiscoverPage() {
             {error}
           </div>
         ) : sortedProjects.length === 0 ? (
-          <div className="border border-zinc-900 bg-zinc-950 p-8 text-center">
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-8 text-center">
             {searchQuery.trim() ? (
-              <div>
-                <p className="text-zinc-400">No results for &quot;{searchQuery}&quot;</p>
-                <button onClick={() => setSearchQuery("")} className="mt-3 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400">
-                  Clear search
-                </button>
+              <div className="mx-auto max-w-md">
+                <div className="mb-3 text-3xl">🔍</div>
+                <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
+                <p className="mt-2 text-sm text-zinc-500">This could be yours. Launch this business on DUM Club and be the first to serve this market.</p>
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Link href={`/?idea=${encodeURIComponent(searchQuery)}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
+                    Create &quot;{searchQuery.length > 30 ? searchQuery.slice(0, 30) + "..." : searchQuery}&quot; →
+                  </Link>
+                  <button onClick={() => { setSearchQuery(""); setSearchArrival(false); }} className="rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                    Clear search
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -738,6 +747,45 @@ export default function DiscoverPage() {
             )}
           </div>
         ) : (
+          <>
+          {/* Featured top result — shown when arriving from search */}
+          {searchArrival && searchQuery.trim() && sortedProjects.length > 0 && (() => {
+            const top = sortedProjects[0];
+            const topPrice = lowestOfferPrice(top);
+            const topCategory = getCategory(top);
+            const topSold = Array.isArray(top.store_items)
+              ? top.store_items.reduce((sum: number, i: any) => sum + (Number(i.quantity_sold) || 0), 0)
+              : 0;
+            return (
+              <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Top Match</div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex-1">
+                    <Link href={`/project/${top.id}`} className="group">
+                      <h3 className="text-xl font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</h3>
+                    </Link>
+                    <p className="mt-1 line-clamp-2 text-sm text-zinc-500">{top.description || "No description."}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px]">
+                      <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-zinc-500">{topCategory}</span>
+                      {hasOffers(top) && <span className="text-sky-400">{offerCount(top)} offer{offerCount(top) > 1 ? "s" : ""}</span>}
+                      {topSold > 0 && <span className="text-emerald-400">{topSold} purchased</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+                    {topPrice != null && (
+                      <div className="text-right">
+                        <div className="text-[10px] text-zinc-600">From</div>
+                        <div className="font-mono text-2xl font-black text-emerald-400">${topPrice < 1 ? topPrice.toFixed(2) : Math.round(topPrice)}</div>
+                      </div>
+                    )}
+                    <Link href={`/project/${top.id}`} className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]">
+                      View Offers →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="grid gap-0 border border-zinc-900 md:grid-cols-2 xl:grid-cols-3">
             {sortedProjects.map((project, index) => {
               const accent = getAccent(index);
@@ -882,6 +930,7 @@ export default function DiscoverPage() {
               );
             })}
           </div>
+          </>
         )}
         </div>
       </section>
