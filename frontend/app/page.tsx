@@ -1842,7 +1842,7 @@ export default function Home() {
   useEffect(() => {
     loadPublicProjects();
     loadRecentTrades();
-    fetch(`${API_BASE}/api/flags`).then((r) => r.ok ? r.json() : {}).then((flags) => {
+    fetch(`${API_BASE}/api/flags`).then((r) => r.ok ? r.json() : { off_platform_receipt_rewards_enabled: false } as Record<string, boolean>).then((flags: Record<string, boolean>) => {
       if (flags.off_platform_receipt_rewards_enabled) setProofRewardsEnabled(true);
     }).catch(() => {});
   }, []);
