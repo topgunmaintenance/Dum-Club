@@ -59,7 +59,7 @@ const TEMPLATE_STARTERS = [
   { label: "Sell products", prompt: "A local bakery selling custom cakes, pastries, and catering" },
   { label: "Find food", prompt: "Find me a meal prep or catering service" },
   { label: "Sell design", prompt: "A freelance design studio offering logo, brand, and web packages" },
-  { label: "Find a designer", prompt: "Find me a logo designer or brand studio" },
+  { label: "Find designers", prompt: "Find me a logo designer or brand studio" },
   { label: "Sell digital goods", prompt: "A creator selling online courses, templates, and digital downloads" },
   { label: "Find courses", prompt: "Find me online courses or digital templates" },
 ];
@@ -1885,15 +1885,15 @@ export default function Home() {
             How it works
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Three steps. Your business, live today.
+            Three steps. Live today.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            No developers. No technical knowledge. Just describe what you offer.
+            No developers. No technical knowledge. Just describe what you need.
           </p>
           <div className="mt-12 grid gap-3 pt-10 sm:grid-cols-3">
             {[
-              { n: "01", title: "Describe It", desc: "Tell the AI what you offer in plain English — coaching, services, products, anything." },
-              { n: "02", title: "We Launch It", desc: "Your storefront, pricing, and offers go live automatically. No setup needed." },
+              { n: "01", title: "Describe It", desc: "Tell the AI what you sell or what you need — coaching, services, products, anything." },
+              { n: "02", title: "We Launch It", desc: "Your storefront and marketplace listing go live automatically. No setup needed." },
               { n: "03", title: "You Earn", desc: "Sell and get paid. Buy and earn rewards. Everyone wins." },
             ].map((step) => (
               <div

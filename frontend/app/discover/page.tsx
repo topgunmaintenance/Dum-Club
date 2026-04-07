@@ -757,7 +757,6 @@ export default function DiscoverPage() {
                     <div className="text-center">
                       <div className="text-sm font-semibold text-emerald-400">✓ Suggestion received</div>
                       <p className="mt-1 text-[11px] text-zinc-600">You&apos;re helping grow the network. We&apos;ll reach out and invite them to join.</p>
-                      <p className="mt-2 text-[10px] tracking-[0.1em] text-zinc-700">Sell anything. Buy anything. Reward everyone!</p>
                     </div>
                   ) : (
                     <div>
