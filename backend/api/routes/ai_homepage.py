@@ -79,7 +79,7 @@ class HighlightedOffer(BaseModel):
     title: str
     price: float
     label: str  # "Most popular", "Best value", "Starting from", etc.
-    reason: str  # "best_seller", "mid_tier", "cheapest", "only", "popular", "pick", "next"
+    reason: str  # "best_seller", "mid_tier", "premium", "cheapest", "only", "popular", "pick", "next"
 
 
 class MatchedProject(BaseModel):
@@ -103,7 +103,7 @@ class HomepageExplainRequest(BaseModel):
     alternative_title: str = ""  # second result title if exists
     refinement: str = ""  # follow-up query, e.g. "anything cheaper"
     previous_offer: PreviousOffer | None = None  # what was shown before refinement
-    refinement_history: list[str] = []  # last 3 reason codes, e.g. ["cheapest", "mid_tier"]
+    refinement_history: list[str] = []  # last 3 reason codes, e.g. ["cheapest", "premium"]
 
 
 # ── System prompt builders ──
@@ -119,6 +119,7 @@ def _build_initial_prompt(req: HomepageExplainRequest) -> str:
     reason_text = {
         "best_seller": f"{req.highlighted_offer.title} has the most purchases",
         "mid_tier": f"{req.highlighted_offer.title} is the best balance of price and scope",
+        "premium": f"{req.highlighted_offer.title} is the most comprehensive option",
         "cheapest": f"{req.highlighted_offer.title} is the most affordable option",
         "only": f"{req.highlighted_offer.title} is the available option",
     }.get(req.highlighted_offer.reason, f"{req.highlighted_offer.title} is a good match")
@@ -169,7 +170,8 @@ def _build_refinement_prompt(req: HomepageExplainRequest) -> str:
     if req.refinement_history:
         reason_labels = {
             "cheapest": "cheapest option",
-            "mid_tier": "premium option",
+            "mid_tier": "mid-tier option",
+            "premium": "premium option",
             "popular": "most popular",
             "pick": "balanced pick",
             "next": "another option",

@@ -113,7 +113,8 @@ def _classify_intent(message: str, session: dict) -> str:
     # browsing — broad questions
     browse_phrases = ["what do you", "what's available", "tell me about",
                       "what services", "what products", "show me", "options",
-                      "menu", "offer", "list", "packages"]
+                      "menu", "offer", "list", "packages", "popular",
+                      "what's most", "what is"]
     if any(p in msg for p in browse_phrases):
         return "browsing"
 

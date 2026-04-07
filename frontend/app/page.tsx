@@ -73,6 +73,7 @@ function stripFindPrefixes(text: string): string {
     .replace(FIND_STRIP_RE, "")
     .replace(LOCAL_STRIP_RE, "")
     .replace(/\s*in\s+[a-z\s]+$/i, "")
+    .replace(/^(a|an|the)\s+/i, "")
     .trim();
 }
 
@@ -1324,6 +1325,7 @@ export default function Home() {
   const [findAckLine, setFindAckLine] = useState("");
   const findExplainGenRef = useRef(0);
   const [findRefineInput, setFindRefineInput] = useState("");
+  const refineInputRef = useRef<HTMLInputElement>(null);
   const [findAllOffers, setFindAllOffers] = useState<{ title: string; price: number; sold: number }[]>([]);
   // Multi-turn refinement context
   const [refineHistory, setRefineHistory] = useState<{ reason: string; offerTitle: string }[]>([]);
@@ -2123,6 +2125,7 @@ export default function Home() {
                       {findResults.length > 0 && findAllOffers.length > 1 && (
                         <div className="flex gap-2">
                           <input
+                            ref={refineInputRef}
                             value={findRefineInput}
                             onChange={(e) => setFindRefineInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -2144,7 +2147,8 @@ export default function Home() {
                               } else if (q.includes("popular") || q.includes("most ordered") || q.includes("favorite")) {
                                 const bestSeller = [...findAllOffers].sort((a, b) => b.sold - a.sold)[0];
                                 newPick = bestSeller;
-                                newLabel = "Most popular";
+                                const hasSalesData = bestSeller.sold > 0;
+                                newLabel = hasSalesData ? "Most popular" : "Recommended";
                                 newReason = "popular";
                                 newExplanation = bestSeller.sold > 0
                                   ? `${bestSeller.title} at $${Math.round(bestSeller.price)} is the most popular choice with ${bestSeller.sold} sold.`
@@ -2159,7 +2163,7 @@ export default function Home() {
                                 const premium = findAllOffers[findAllOffers.length - 1];
                                 newPick = premium;
                                 newLabel = "Premium option";
-                                newReason = "mid_tier";
+                                newReason = "premium";
                                 newExplanation = `${premium.title} at $${Math.round(premium.price)} is the most comprehensive option available.`;
                               } else if (q.match(/under\s*\$?\d+|\$\d+|below\s*\d+/)) {
                                 const priceMatch = q.match(/\d+/);
@@ -2194,12 +2198,12 @@ export default function Home() {
                               if (newReason === "cheapest") {
                                 if (same) {
                                   ack = "You\u2019re already looking at the most affordable option.";
-                                } else if (lastReason === "mid_tier") {
+                                } else if (lastReason === "premium") {
                                   ack = "Switching back to a more affordable option.";
                                 } else {
                                   ack = "Switching to the lowest-priced option.";
                                 }
-                              } else if (newReason === "mid_tier") {
+                              } else if (newReason === "premium") {
                                 if (same) {
                                   ack = "You\u2019re already looking at the top-tier option.";
                                 } else if (lastReason === "cheapest") {
@@ -2285,6 +2289,15 @@ export default function Home() {
                             placeholder="Anything cheaper, better, or different?"
                             className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-[12px] text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600"
                           />
+                          <button
+                            type="button"
+                            onClick={() => refineInputRef.current?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))}
+                            disabled={!findRefineInput.trim()}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/30 text-zinc-600 transition hover:border-emerald-400/30 hover:text-emerald-400 disabled:opacity-30 disabled:pointer-events-none"
+                            title="Submit"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 1l7 7-7 7"/></svg>
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
