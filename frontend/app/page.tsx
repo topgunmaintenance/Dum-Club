@@ -35,6 +35,24 @@ type MarketSnapshot = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ── Intent detection: FIND (search/buy) vs CREATE (build business) ──
+const FIND_PHRASES = [
+  "find", "near me", "looking for", "where can i", "i need", "i want to buy",
+  "who does", "who sells", "best", "cheapest", "get a", "get me", "buy",
+  "search", "show me", "any", "recommend", "suggestion", "where to",
+];
+
+function detectIntent(text: string): "find" | "create" {
+  const lower = text.toLowerCase().trim();
+  if (!lower) return "create";
+  for (const phrase of FIND_PHRASES) {
+    if (lower.includes(phrase)) return "find";
+  }
+  // Questions are usually searches
+  if (lower.startsWith("is there") || lower.startsWith("do you") || lower.startsWith("can i") || lower.endsWith("?")) return "find";
+  return "create";
+}
+
 const TEMPLATE_STARTERS = [
   { label: "Sell coaching", prompt: "A personal training service selling custom workout plans and meal prep packages" },
   { label: "Sell services", prompt: "A mobile car wash and detailing service with tiered packages" },
@@ -1261,6 +1279,8 @@ export default function Home() {
   const [pendingAutoLaunch, setPendingAutoLaunch] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [launchCount, setLaunchCount] = useState(0);
+  const [listening, setListening] = useState(false);
+  const heroIntent = detectIntent(heroIdea);
 
   // Load launch count on mount
   useEffect(() => { setLaunchCount(getLaunchCount()); }, []);
@@ -1365,27 +1385,51 @@ export default function Home() {
   // ── Handle Launch button click ──
   function handleHeroLaunch() {
     if (!heroIdea.trim() || heroLaunching) return;
-    // Check free limit
+
+    // FIND intent → route to Discover with search query
+    if (heroIntent === "find") {
+      router.push(`/discover?q=${encodeURIComponent(heroIdea.trim())}`);
+      return;
+    }
+
+    // CREATE intent → existing launch flow
     if (getLaunchCount() >= FREE_LAUNCH_LIMIT) {
       setShowUpgradeModal(true);
       return;
     }
     if (!user) {
-      // Save idea, trigger login, set pending flag
       localStorage.setItem("pendingIdea", heroIdea.trim());
       setPendingAutoLaunch(true);
       login();
       return;
     }
     if (!walletAddress) {
-      // Save idea, create wallet, set pending flag
       localStorage.setItem("pendingIdea", heroIdea.trim());
       setPendingAutoLaunch(true);
       createWallet().catch(() => {});
       return;
     }
-    // Ready — launch immediately
     doHeroLaunch(heroIdea.trim());
+  }
+
+  // ── Voice input via Web Speech API ──
+  function startVoiceInput() {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setHeroIdea(transcript);
+      setListening(false);
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognition.start();
   }
 
   const latestProjectsNews = useMemo(
@@ -1613,20 +1657,46 @@ export default function Home() {
 
               {/* ── LAUNCH INPUT ── */}
               <div className="hero-entrance-delay-3 mx-auto mt-10 max-w-2xl">
-                <textarea
-                  value={heroIdea}
-                  onChange={(e) => setHeroIdea(e.target.value)}
-                  placeholder="What does your business sell?"
-                  rows={3}
-                  disabled={heroLaunching}
-                  className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950/80 px-5 py-4 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
-                />
+                <div className="relative">
+                  <textarea
+                    value={heroIdea}
+                    onChange={(e) => setHeroIdea(e.target.value)}
+                    placeholder="Describe a business to create — or search for something to buy"
+                    rows={3}
+                    disabled={heroLaunching}
+                    className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950/80 px-5 py-4 pr-14 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
+                  />
+                  {/* Voice input button */}
+                  <button
+                    type="button"
+                    onClick={startVoiceInput}
+                    disabled={heroLaunching || listening}
+                    className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                      listening
+                        ? "border-red-400/40 bg-red-400/10 text-red-400 animate-pulse"
+                        : "border-zinc-700 bg-zinc-900/80 text-zinc-500 hover:border-emerald-400/30 hover:text-emerald-400"
+                    }`}
+                    title={listening ? "Listening..." : "Voice input"}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  </button>
+                </div>
 
+                {/* Intent-aware CTA */}
                 <button
                   type="button"
                   onClick={handleHeroLaunch}
                   disabled={!heroIdea.trim() || heroLaunching}
-                  className="mt-3 w-full rounded-2xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] text-black transition-all duration-300 hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`mt-3 w-full rounded-2xl px-8 py-4 text-sm font-bold uppercase tracking-[0.15em] transition-all duration-300 hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50 ${
+                    heroIntent === "find"
+                      ? "bg-sky-400 text-black hover:bg-sky-300 hover:shadow-[0_0_40px_rgba(56,189,248,0.35)]"
+                      : "bg-emerald-400 text-black hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
+                  }`}
                 >
                   {heroLaunching ? (
                     <span className="flex items-center justify-center gap-3">
@@ -1635,6 +1705,8 @@ export default function Home() {
                         {LAUNCH_PROGRESS[heroProgress]}
                       </span>
                     </span>
+                  ) : heroIntent === "find" ? (
+                    "Find It →"
                   ) : (
                     "Start Selling →"
                   )}
