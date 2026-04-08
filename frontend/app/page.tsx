@@ -3224,8 +3224,10 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-70" />
-                <span className="text-[12px] font-bold tracking-tight text-zinc-400">DUM CLUB</span>
+                <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-80" />
+                <span className="text-[12px] font-bold tracking-tight">
+                  <span className="text-zinc-300">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
+                </span>
                 <span className="text-[10px] text-zinc-700">© {new Date().getFullYear()} · All rights reserved</span>
               </div>
               <div className="flex gap-6">

@@ -108,7 +108,9 @@ export function Navbar() {
           className="flex items-center gap-2.5"
         >
           <img src="/dum-logo-icon.png" alt="DUM Club" className="h-8 w-auto" />
-          <span className="text-[18px] font-bold tracking-tight text-white">DUM CLUB</span>
+          <span className="text-[18px] font-bold tracking-tight">
+            <span className="text-white">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
+          </span>
         </Link>
 
         <button
@@ -151,7 +153,9 @@ export function Navbar() {
           style={{ textDecoration: "none" }}
         >
           <img src="/dum-logo-icon.png" alt="DUM Club" className="h-10 w-auto" />
-          <span className="text-[22px] font-bold tracking-tight text-white">DUM CLUB</span>
+          <span className="text-[22px] font-bold tracking-tight">
+            <span className="text-white">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
+          </span>
         </Link>
 
         <div
