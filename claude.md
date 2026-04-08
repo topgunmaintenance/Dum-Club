@@ -59,6 +59,25 @@ type idea → authenticate → auto-wallet → launch → land on live project
 
 This is a transition and polish phase, not a rewrite phase.
 
+### Off-Platform → On-Platform Growth Engine (Additive Layer)
+
+DUM Club is building a customer acquisition engine on top of the existing launch flow. See `product.md` "Off-Platform → On-Platform Growth Engine".
+
+The engine is implemented as thin agent modules in `backend/services/agents/`:
+
+- `base.py` — `AgentResult` dataclass + `Agent` protocol. No framework, no new deps.
+- `local_discovery.py` — the **Local Discovery Agent**. Merges DUM Club project matches and nearby off-platform results (Google Places) into one labeled result set. Shipped in PR: local discovery only.
+- `purchase_proof.py` — the **Purchase Proof Agent**. Future PR. Do not build in the local-discovery PR.
+- `rewards.py` — the **Rewards Agent**. Future PR. Do not refactor reward logic out of `dum_points.py` or `external_business.py` until the dedicated Rewards Agent PR.
+
+Rules for anyone touching this layer:
+
+- Agents are **additive**. `backend/api/routes/search.py`, `backend/services/external_places.py`, and `backend/api/routes/external_business.py` stay as the HTTP surface. Agent modules are called from the routes, not the other way around.
+- Every agent stays deterministic. No LLM calls, no OCR, no network in the agent core unless the spec explicitly says so. External providers are injected so tests can mock them.
+- Every new behavior is behind a feature flag in `backend/api/routes/feature_flags.py`. Off by default. When the flag is off, the route falls back to the previous code path byte-for-byte.
+- The wire contract of `POST /api/search/homepage` does not break. New fields may be added; existing fields may not be removed or renamed.
+- Outreach "sent" state is only ever set after an actual send action. Never mark an outreach row as `sent` just because the agent queued it.
+
 ---
 
 ## Development Rules

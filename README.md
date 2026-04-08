@@ -1,16 +1,24 @@
-# DUM Club — AI-powered Solana launchpad for ideas
+# DUM Club — Customer acquisition machine for businesses
 
-Describe an idea. We generate the project and launch it on-chain so you can see if people care — instantly.
+DUM Club is a customer acquisition machine for businesses. Users describe an idea and launch a business in under 60 seconds, or discover businesses on DUM Club and nearby in the real world, buy, earn DUM Points, and help bring new businesses into the ecosystem automatically.
 
 ---
 
 ## How it works
 
+### Creator loop
 1. **Describe** — one sentence is enough
 2. **Generate** — AI drafts the project page, name, and token story
 3. **Launch** — project goes live with a public market feed
 4. **Discover** — community finds it, trades the token, signals demand
 5. **Evolve** — successful projects can unlock deeper offers after traction
+
+### Growth engine loop
+1. **Discover** — search for "pizza near me" and see DUM Club businesses plus nearby off-platform options, clearly labeled
+2. **Buy** — purchase on DUM Club or at a nearby off-platform business
+3. **Prove** — submit proof of purchase
+4. **Reward** — earn DUM Points once the purchase is verified
+5. **Acquire** — off-platform businesses get auto-invited to claim their DUM Club presence
 
 ---
 

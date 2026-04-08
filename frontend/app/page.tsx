@@ -2219,6 +2219,8 @@ export default function Home() {
                   ) : (
                     /* ── Results found ── */
                     <div className="space-y-3">
+                      {/* Section label: on DUM Club */}
+                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400/70">On DUM Club</div>
                       {/* ── Best Option card ── */}
                       {(() => {
                         const top = findResults[0];
@@ -2577,7 +2579,7 @@ export default function Home() {
                       : findExternalResults;
                     return extsToShow.length > 0 && !findLoading && (
                     <div className="mt-4 animate-fade-in">
-                      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">Nearby outside DUM Club</div>
+                      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">Nearby / Not on DUM Club yet</div>
                       <div className="space-y-2">
                         {extsToShow.map((ext, i) => (
                           <div key={`${ext.external_source}-${ext.external_place_id}-${i}`} className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3">

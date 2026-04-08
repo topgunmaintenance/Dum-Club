@@ -18,6 +18,8 @@ _FLAGS = {
     "off_platform_receipt_rewards_enabled": ("OFF_PLATFORM_RECEIPT_REWARDS_ENABLED", False),
     "merchant_outreach_queue_enabled": ("MERCHANT_OUTREACH_QUEUE_ENABLED", False),
     "merchant_outreach_send_enabled": ("MERCHANT_OUTREACH_SEND_ENABLED", False),
+    # Off-Platform → On-Platform Growth Engine agents
+    "local_discovery_agent_enabled": ("LOCAL_DISCOVERY_AGENT_ENABLED", False),
 }
 
 

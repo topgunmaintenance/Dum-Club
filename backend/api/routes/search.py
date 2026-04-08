@@ -1,146 +1,44 @@
 """
 Homepage search endpoint.
 
-Centralises query normalisation, eligibility filtering, scoring, and
-deterministic offer selection that previously lived in the frontend.
+This file now delegates to the Local Discovery Agent when the
+`local_discovery_agent_enabled` feature flag is on. When the flag is off,
+the previous byte-for-byte behaviour (DUM Club first, external fallback
+only when no good DUM match) is preserved.
 
-Scoring (v1 — deterministic, no ML):
-  title word match   0.40  (per word, strongest signal)
-  offer-title match  0.25  (any active offer title contains a query word)
-  description match  0.15  (per word)
-  city text match    0.10  (city name in description)
-  has-sales boost    0.05  (any offer with quantity_sold > 0)
+Wire contract of `POST /api/search/homepage` is NEVER broken. New fields
+may be added; existing ones may not be removed or renamed.
 
-Eligibility:
-  status = "live", review_status = "approved", is_deleted = false,
-  at least one active offer.
+New endpoint `POST /api/search/discover` returns the raw agent packet
+shape (labeled on_dum_club / nearby_off_platform lists) for callers that
+want the richer structure. It is additive and only active when the agent
+flag is on.
+
+Scoring (v1 — deterministic, no ML) and offer selection logic live in
+services/agents/_search_helpers.py so both this route and the agent use
+the exact same code path.
 """
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
 from pydantic import BaseModel
-import re
 
-from services.external_places import search_nearby, ExternalPlace
+from services.external_places import search_nearby
+from services.agents.local_discovery import LocalDiscoveryAgent
+from services.agents._search_helpers import (
+    extract_query_words,
+    has_local_intent,
+    normalise_query,
+    pick_best_offer,
+    score_project,
+)
 
 from db.supabase import get_client
+from api.routes.feature_flags import get_flag
 
 router = APIRouter()
 
 
-# ── Helpers ──
-
-_FIND_STRIP_RE = re.compile(
-    r"^(find|find me|search|search for|looking for|i need|i want|"
-    r"get me|show me|where can i|where can i get|where can i find|"
-    r"who does|who sells)\s*",
-    re.IGNORECASE,
-)
-_LOCAL_STRIP_RE = re.compile(
-    r"\s*(near me|nearby|around here|close to me|in my area)\s*",
-    re.IGNORECASE,
-)
-_CITY_RE = re.compile(r"\bin\s+([a-z][a-z\s]{1,20})$", re.IGNORECASE)
-_ARTICLE_RE = re.compile(r"^(a|an|the)\s+", re.IGNORECASE)
-_LOCAL_PHRASES = ["near me", "nearby", "around here", "close to me", "in my area", "local"]
-
-
-def _has_local_intent(raw: str) -> bool:
-    """Detect whether the query implies local/nearby intent."""
-    lower = raw.lower()
-    if any(p in lower for p in _LOCAL_PHRASES):
-        return True
-    if _CITY_RE.search(raw):
-        return True
-    return False
-
-
-def _normalise_query(raw: str) -> tuple[str, str]:
-    """Return (cleaned_query, city)."""
-    text = raw.strip()
-    city_match = _CITY_RE.search(text)
-    city = city_match.group(1).strip().title() if city_match else ""
-    cleaned = _FIND_STRIP_RE.sub("", text)
-    cleaned = _LOCAL_STRIP_RE.sub("", cleaned)
-    cleaned = re.sub(r"\s*in\s+[a-z\s]+$", "", cleaned, flags=re.IGNORECASE)
-    cleaned = _ARTICLE_RE.sub("", cleaned)
-    return cleaned.strip().lower(), city
-
-
-def _pick_best_offer(offers: list[dict]) -> tuple[dict | None, str, str, str]:
-    """Deterministic offer selection. Returns (offer, label, reason, explanation)."""
-    if not offers:
-        return None, "", "", ""
-
-    sorted_by_price = sorted(offers, key=lambda o: o.get("price_usd") or 0)
-    best_seller = max(offers, key=lambda o: o.get("quantity_sold") or 0)
-
-    if (best_seller.get("quantity_sold") or 0) > 0:
-        pick = best_seller
-        label = "Most popular"
-        reason = "best_seller"
-        price = round(pick.get("price_usd") or 0)
-        others = len(sorted_by_price) - 1
-        explanation = (
-            f"Most customers go with {pick['title']} at ${price}."
-            + (f" {others} other option{'s' if others > 1 else ''} available." if others > 0 else "")
-        )
-    elif len(sorted_by_price) >= 3:
-        pick = sorted_by_price[len(sorted_by_price) // 2]
-        label = "Best value"
-        reason = "mid_tier"
-        explanation = f"{pick['title']} at ${round(pick.get('price_usd') or 0)} is the best balance of price and scope."
-    elif len(sorted_by_price) == 2:
-        pick = sorted_by_price[0]
-        label = "Starting from"
-        reason = "cheapest"
-        p0 = round(sorted_by_price[0].get("price_usd") or 0)
-        p1 = round(sorted_by_price[1].get("price_usd") or 0)
-        explanation = f"Starts at ${p0}. There's also a ${p1} option with more included."
-    else:
-        pick = sorted_by_price[0]
-        label = "Available now"
-        reason = "only"
-        explanation = f"{pick['title']} is available for ${round(pick.get('price_usd') or 0)}. A solid choice to start with."
-
-    return pick, label, reason, explanation
-
-
-def _score_project(project: dict, words: list[str], city: str) -> float:
-    """Score a project + its embedded offers against query words."""
-    title = (project.get("title") or project.get("name") or "").lower()
-    desc = (project.get("description") or "").lower()
-    offers = project.get("offers") or []
-    active_offers = [o for o in offers if o.get("is_active") is True]
-
-    if not active_offers:
-        return 0.0  # Must have at least one active offer
-
-    score = 0.0
-    for w in words:
-        if w in title:
-            score += 0.40
-        if w in desc:
-            score += 0.15
-
-    # Offer-title matching (single pass, no N+1)
-    offer_titles = " ".join((o.get("title") or "").lower() for o in active_offers)
-    for w in words:
-        if w in offer_titles:
-            score += 0.25
-            break  # one boost per query, not per word
-
-    # City boost
-    if city and city.lower() in desc:
-        score += 0.10
-
-    # Sales boost
-    if any((o.get("quantity_sold") or 0) > 0 for o in active_offers):
-        score += 0.05
-
-    return round(score, 4)
-
-
-# ── Request / Response ──
+# ── Request / Response (stable wire contract) ──
 
 class SearchRequest(BaseModel):
     query: str
@@ -193,29 +91,144 @@ class SearchResponse(BaseModel):
     debug: dict = {}
 
 
-# ── Endpoint ──
-
 _FALLBACK_THRESHOLD = 0.3
 
 
-@router.post("/homepage", response_model=SearchResponse)
-async def homepage_search(req: SearchRequest):
-    """Search for projects and offers matching a homepage query."""
+# ── Helpers for the agent code path ──
+
+def _packet_to_match_result(packet: dict) -> MatchResult:
+    """Map a LocalDiscoveryAgent on_dum_club packet into the stable MatchResult shape."""
+    offer_data = packet.get("offer")
+    offer = None
+    if offer_data:
+        offer = OfferResult(
+            title=offer_data.get("title", ""),
+            price_usd=offer_data.get("price_usd") or 0,
+            sold=offer_data.get("sold") or 0,
+            label=offer_data.get("label", ""),
+            reason=offer_data.get("reason", ""),
+        )
+    all_offers = [
+        OfferResult(
+            title=o.get("title", ""),
+            price_usd=o.get("price_usd") or 0,
+            sold=o.get("sold") or 0,
+        )
+        for o in (packet.get("all_offers") or [])
+    ]
+    proj = packet.get("project") or {}
+    return MatchResult(
+        project=ProjectResult(
+            id=proj.get("id", ""),
+            title=proj.get("title", ""),
+            description=proj.get("description", ""),
+            category=proj.get("category", ""),
+        ),
+        offer=offer,
+        all_offers=all_offers,
+        explanation=packet.get("explanation", ""),
+        score=packet.get("score") or 0.0,
+    )
+
+
+def _packet_to_external_result(packet: dict) -> ExternalBusinessResult:
+    """Map a LocalDiscoveryAgent nearby_off_platform packet into the stable ExternalBusinessResult shape."""
+    return ExternalBusinessResult(
+        id=packet.get("external_business_id") or "",
+        external_source=packet.get("external_source", ""),
+        external_place_id=packet.get("external_place_id", ""),
+        name=packet.get("name", ""),
+        address=packet.get("address", ""),
+        city=packet.get("city", ""),
+        category=packet.get("category", ""),
+        rating=packet.get("rating"),
+        review_count=packet.get("review_count", 0) or 0,
+        phone=packet.get("phone", ""),
+        website=packet.get("website", ""),
+    )
+
+
+async def _homepage_search_via_agent(req: SearchRequest) -> SearchResponse:
+    """
+    Agent-backed implementation. Produces the same SearchResponse shape the
+    frontend already consumes, plus a debug flag indicating the agent path.
+    """
+    agent = LocalDiscoveryAgent(
+        supabase=get_client(),
+        places_provider=search_nearby,
+        fallback_threshold=_FALLBACK_THRESHOLD,
+    )
+    result = await agent.run({
+        "query": req.query,
+        "city": req.city,
+        "limit": req.limit,
+        "external_limit": 5,
+    })
+
+    data = result.data or {}
+    on_dum_club = data.get("on_dum_club") or []
+    nearby = data.get("nearby_off_platform") or []
+
+    match_results = [_packet_to_match_result(p) for p in on_dum_club]
+    external_results = [_packet_to_external_result(p) for p in nearby]
+
+    top_score = match_results[0].score if match_results else 0.0
+    has_good_dum = bool(match_results) and top_score >= _FALLBACK_THRESHOLD
+
+    debug = {
+        "agent": "local_discovery",
+        "query": data.get("query", ""),
+        "city": data.get("city", ""),
+        "words": data.get("words", []),
+        "matches_found": len(match_results),
+        "top_score": top_score,
+        "external_count": len(external_results),
+        "local_intent": data.get("local_intent", False),
+        "status": result.status,
+    }
+    if result.reason and result.reason != "ok":
+        debug["reason"] = result.reason
+
+    if not has_good_dum:
+        return SearchResponse(
+            best_match=None,
+            other_options=[],
+            nearby_external=external_results,
+            fallback_needed=len(external_results) == 0,
+            debug=debug,
+        )
+
+    return SearchResponse(
+        best_match=match_results[0],
+        other_options=match_results[1:],
+        nearby_external=external_results,
+        fallback_needed=False,
+        debug=debug,
+    )
+
+
+# ── Legacy (pre-agent) implementation ──
+
+async def _homepage_search_legacy(req: SearchRequest) -> SearchResponse:
+    """
+    Byte-for-byte equivalent of the pre-agent code path. Used when the
+    `local_discovery_agent_enabled` flag is off. Kept inline (rather than
+    deleted) so the flag gives us a clean rollback.
+    """
     raw_query = req.query.strip()
     if not raw_query:
         return SearchResponse(fallback_needed=True, debug={"reason": "empty_query"})
 
-    query, city = _normalise_query(raw_query)
+    query, city = normalise_query(raw_query)
     if req.city:
         city = req.city  # explicit city overrides extracted one
-    words = [w for w in query.split() if len(w) > 2]
+    words = extract_query_words(query)
 
     if not words:
         return SearchResponse(fallback_needed=True, debug={"reason": "no_valid_words", "query": query})
 
     sb = get_client()
 
-    # Single query: projects with embedded offers (avoids N+1)
     res = (
         sb.table("projects")
         .select("id, title, name, description, category, template_type, status, offers(title, price_usd, quantity_sold, is_active)")
@@ -228,25 +241,22 @@ async def homepage_search(req: SearchRequest):
 
     candidates = res.data or []
 
-    # Score all candidates
     scored = []
     for p in candidates:
-        s = _score_project(p, words, city)
+        s = score_project(p, words, city)
         if s > 0:
             scored.append((p, s))
 
     scored.sort(key=lambda x: -x[1])
     top = scored[: req.limit]
 
-    # Only fetch external results when DUM Club has no good matches
     external_results: list[ExternalBusinessResult] = []
-    local_intent = _has_local_intent(raw_query) or bool(city)
+    local_intent = has_local_intent(raw_query) or bool(city)
     has_dum_match = top and top[0][1] >= _FALLBACK_THRESHOLD
 
     if local_intent and not has_dum_match:
         places = await search_nearby(query=query, city=city, limit=5)
         for p in places:
-            # Persist to DB for demand tracking (upsert by source+place_id)
             db_id = ""
             try:
                 upsert_res = sb.table("external_businesses").upsert(
@@ -276,6 +286,7 @@ async def homepage_search(req: SearchRequest):
             fallback_needed=len(external_results) == 0,
             nearby_external=external_results,
             debug={
+                "agent": "legacy",
                 "reason": "below_threshold" if top else "no_matches",
                 "query": query,
                 "city": city,
@@ -288,11 +299,10 @@ async def homepage_search(req: SearchRequest):
             },
         )
 
-    # Build results
     results: list[MatchResult] = []
     for proj, score in top:
         active = [o for o in (proj.get("offers") or []) if o.get("is_active") is True]
-        pick, label, reason, explanation = _pick_best_offer(active)
+        pick, label, reason, explanation = pick_best_offer(active)
 
         all_sorted = sorted(active, key=lambda o: o.get("price_usd") or 0)
         all_offer_data = [
@@ -326,6 +336,7 @@ async def homepage_search(req: SearchRequest):
         nearby_external=external_results,
         fallback_needed=False,
         debug={
+            "agent": "legacy",
             "query": query,
             "city": city,
             "words": words,
@@ -336,3 +347,60 @@ async def homepage_search(req: SearchRequest):
             "local_intent": local_intent,
         },
     )
+
+
+# ── Endpoints ──
+
+@router.post("/homepage", response_model=SearchResponse)
+async def homepage_search(req: SearchRequest):
+    """
+    Search for projects and offers matching a homepage query.
+
+    Wire contract is stable. When the `local_discovery_agent_enabled`
+    feature flag is on, execution is delegated to LocalDiscoveryAgent
+    and the response includes `debug.agent = "local_discovery"`. When
+    off, the original code path runs and `debug.agent = "legacy"`.
+    """
+    if get_flag("local_discovery_agent_enabled"):
+        return await _homepage_search_via_agent(req)
+    return await _homepage_search_legacy(req)
+
+
+@router.post("/discover")
+async def discover(req: SearchRequest):
+    """
+    Raw Local Discovery Agent output — labeled on_dum_club and
+    nearby_off_platform packets. Additive endpoint, intended for callers
+    (admin tools, future UI surfaces, the other agents) that want the
+    richer structured packet the agent emits internally.
+
+    Returns 404-equivalent empty payload when the agent feature flag is
+    off, so we do not accidentally ship raw agent data without the gate.
+    """
+    if not get_flag("local_discovery_agent_enabled"):
+        return {
+            "enabled": False,
+            "reason": "local_discovery_agent_enabled is off",
+            "on_dum_club": [],
+            "nearby_off_platform": [],
+        }
+
+    agent = LocalDiscoveryAgent(
+        supabase=get_client(),
+        places_provider=search_nearby,
+        fallback_threshold=_FALLBACK_THRESHOLD,
+    )
+    result = await agent.run({
+        "query": req.query,
+        "city": req.city,
+        "limit": req.limit,
+        "external_limit": 5,
+    })
+
+    return {
+        "enabled": True,
+        "status": result.status,
+        "reason": result.reason,
+        "confidence": result.confidence,
+        **(result.data or {}),
+    }
