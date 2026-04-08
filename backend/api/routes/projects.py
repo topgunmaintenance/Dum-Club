@@ -6,6 +6,21 @@ import re
 import secrets
 
 from db.supabase import get_client
+from services.token_mode import is_simulated_token, token_mode
+
+
+def _attach_token_mode(project: dict) -> dict:
+    """
+    Additive honesty fields for any endpoint that returns a project row.
+    Every response that includes token_mint_address MUST carry is_simulated
+    and token_mode. See backend/services/token_mode.py.
+    """
+    if project is None:
+        return project
+    mint = project.get("token_mint_address")
+    project["is_simulated"] = is_simulated_token(mint)
+    project["token_mode"] = token_mode(mint)
+    return project
 
 _UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
@@ -560,6 +575,7 @@ async def list_public_projects():
 
     for p in projects:
         p["owner_verified"] = verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
+        _attach_token_mode(p)
 
     return projects
 
@@ -605,7 +621,10 @@ async def list_projects(owner_id: Optional[str] = Query(default=None)):
 
     res = query.limit(50).execute()
 
-    return res.data or []
+    projects = res.data or []
+    for p in projects:
+        _attach_token_mode(p)
+    return projects
 
 # -----------------------------
 # Backfill orphaned projects
@@ -732,7 +751,7 @@ async def get_project(project_id: str):
     except Exception:
         pass  # Never block page load for analytics
 
-    return project_res.data[0]
+    return _attach_token_mode(project_res.data[0])
 
 
 # -----------------------------

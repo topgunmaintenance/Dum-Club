@@ -4,6 +4,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
+from services.token_mode import is_simulated_token, token_mode
 try:
     import anthropic
 except ImportError:
@@ -419,14 +420,18 @@ async def project_gated_chat(
         raise HTTPException(status_code=404, detail="Project not found")
 
     token_mint = project.get("token_mint_address")
+    token_is_simulated = is_simulated_token(token_mint)
     free_limit = int(project.get("ai_free_question_limit") or 3)
     holder_unlimited = bool(project.get("holder_ai_unlimited", True))
 
     session_id = req.session_id or x_session_id or f"anon:{req.project_id}"
     wallet_address = req.wallet_address
 
+    # SIM_ mints have no on-chain presence — wallet_holds_project_token would
+    # always return False for them. Skip the call entirely so we never
+    # advertise a holder path that cannot exist.
     is_holder = False
-    if wallet_address and token_mint:
+    if wallet_address and token_mint and not token_is_simulated:
         is_holder = wallet_holds_project_token(wallet_address, token_mint)
 
     usage_record = get_usage_record(req.project_id, wallet_address, session_id)
@@ -434,16 +439,24 @@ async def project_gated_chat(
 
     if not (is_holder and holder_unlimited):
         if used_count >= free_limit:
+            # Honest 403 message — for SIM_ mints, tell the user the truth:
+            # this project's token layer is a demo and cannot be held.
+            if token_is_simulated:
+                limit_message = "Free AI limit reached. This project's token is a demo — holder unlimited access is not available until real on-chain minting ships."
+            else:
+                limit_message = "Free AI limit reached. Hold this project's token to unlock unlimited AI access."
             raise HTTPException(
                 status_code=403,
                 detail={
-                    "message": "Free AI limit reached. Hold this project's token to unlock unlimited AI access.",
+                    "message": limit_message,
                     "is_holder": False,
                     "free_limit": free_limit,
                     "used_count": used_count,
                     "free_questions_left": 0,
-                    "token_required": True,
+                    "token_required": not token_is_simulated,
                     "token_mint_address": token_mint,
+                    "is_simulated": token_is_simulated,
+                    "token_mode": token_mode(token_mint),
                 }
             )
 
@@ -508,6 +521,11 @@ async def project_gated_chat(
         "used_count": used_count if (is_holder and holder_unlimited) else new_count,
         "free_questions_left": 999999 if (is_holder and holder_unlimited) else free_questions_left,
         "holder_unlimited": holder_unlimited,
-        "token_required": bool(token_mint),
+        # For SIM_ mints, the "token_required" holder path is not real. We
+        # explicitly return False so clients cannot present a hold-to-unlock
+        # upsell for a token that does not exist on-chain.
+        "token_required": bool(token_mint) and not token_is_simulated,
         "token_mint_address": token_mint,
+        "is_simulated": token_is_simulated,
+        "token_mode": token_mode(token_mint),
     }

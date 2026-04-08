@@ -4825,13 +4825,19 @@ return (
                     Be the first to support this project
                   </h3>
                   <p className="mt-3 max-w-sm text-zinc-400">
-                    No trades yet. Early supporters back ideas before the market
-                    does — and shape the token's opening price history.
+                    {isSimulated
+                      ? "No demo trades yet. This Exchange tab is a simulated in-app ledger — no real tokens are minted and no on-chain trades occur."
+                      : "No trades yet. Early supporters back ideas before the market does — and shape the token's opening price history."}
                   </p>
                 </div>
                 <p className="text-sm text-zinc-500">
                   <span className="font-mono text-zinc-400">${displaySymbol}</span>
-                  {" · "}Starting price{" "}
+                  {isSimulated && (
+                    <span className="ml-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-300">
+                      Demo
+                    </span>
+                  )}
+                  {" · "}{isSimulated ? "Starting price (demo)" : "Starting price"}{" "}
                   {market?.price ? `$${formatPrice(market.price)}` : "$0.001000"}
                   {supplyDisplay !== "—" && <>{" · "}{supplyDisplay} supply</>}
                 </p>
@@ -4991,7 +4997,10 @@ return (
             <div id="buy-panel" className="rounded-3xl border border-emerald-500/10 bg-base p-5 sm:p-6 shadow-[0_0_40px_rgba(0,255,163,0.03)]">
               <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-emerald-400/50">DUM Club · Support this business</div>
 
-              <h2 className="text-xl font-bold text-white">Buy / Sell</h2>
+              <h2 className="text-xl font-bold text-white">
+                {isSimulated ? "Buy / Sell (demo)" : "Buy / Sell"}
+              </h2>
+              {isSimulated && <div className="mt-3"><SimulatedTokenBanner variant="compact" /></div>}
 
               {/* State indicator */}
               <div className="mt-3 flex items-center gap-2">
@@ -5058,7 +5067,7 @@ return (
                           : "text-zinc-500 hover:text-zinc-300"
                       }`}
                     >
-                      Buy
+                      {isSimulated ? "Demo buy" : "Buy"}
                     </button>
                     <button
                       type="button"
@@ -5069,7 +5078,7 @@ return (
                           : "text-zinc-500 hover:text-zinc-300"
                       }`}
                     >
-                      Sell
+                      {isSimulated ? "Demo sell" : "Sell"}
                     </button>
                   </div>
 
