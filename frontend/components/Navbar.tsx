@@ -105,9 +105,10 @@ export function Navbar() {
       <div className="flex items-center justify-between px-4 py-4 lg:hidden">
         <Link
           href="/"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2.5"
         >
           <img src="/dum-logo-icon.png" alt="DUM Club" className="h-8 w-auto" />
+          <span className="text-[18px] font-bold tracking-tight text-white">DUM CLUB</span>
         </Link>
 
         <button
@@ -146,10 +147,11 @@ export function Navbar() {
       >
         <Link
           href="/"
-          className="flex items-center"
+          className="flex items-center gap-3"
           style={{ textDecoration: "none" }}
         >
           <img src="/dum-logo-icon.png" alt="DUM Club" className="h-10 w-auto" />
+          <span className="text-[22px] font-bold tracking-tight text-white">DUM CLUB</span>
         </Link>
 
         <div
