@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #07090d;
+  color: #e6ecf5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+}
+
+/* --- Reusable building blocks --------------------------------------- */
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-white/5 bg-gunmetal-800/70 backdrop-blur-md shadow-panel;
+  }
+  .panel-tight {
+    @apply rounded-xl border border-white/5 bg-gunmetal-800/60;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-ink-200;
+  }
+  .pill-cyan {
+    @apply inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-cyan-300;
+  }
+  .pill-amber {
+    @apply inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-300;
+  }
+  .stat-label {
+    @apply text-[11px] uppercase tracking-[0.18em] text-ink-400;
+  }
+  .stat-value {
+    @apply font-mono text-2xl text-ink-100;
+  }
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-gunmetal-950 shadow-glow transition hover:bg-cyan-400;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-ink-100 transition hover:border-cyan-500/40 hover:text-cyan-300;
+  }
+}
+
+/* --- Subtle scrollbars ---------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.32);
+}

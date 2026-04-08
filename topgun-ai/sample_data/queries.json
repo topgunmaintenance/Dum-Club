@@ -1,0 +1,147 @@
+[
+  {
+    "id": "q_hyd_fluct_xls",
+    "question": "What are the likely causes of hydraulic pressure fluctuation on the Citation XLS?",
+    "created_at": "2026-04-07T15:42:11Z",
+    "answer": "Hydraulic pressure fluctuation on the Citation XLS typically traces to one of four subsystems: a failing engine-driven pump, air entrainment in the reservoir, a degraded pressure regulator, or a leaking priority valve. The AMM Ch. 29 inspection flow recommends starting with reservoir fluid level and aeration check, then a pump case-drain flow test before condemning the regulator. Three prior work orders on N123XL show the reservoir servicing path resolved the symptom on two aircraft within this operator's fleet.",
+    "sections": [
+      {
+        "heading": "Probable causes",
+        "bullets": [
+          "Engine-driven pump wear (pump case drain flow out of limits)",
+          "Air entrained in hydraulic reservoir after servicing",
+          "Pressure regulator drift",
+          "Internal leak at the priority valve"
+        ]
+      },
+      {
+        "heading": "Recommended actions",
+        "bullets": [
+          "Verify reservoir fluid level and aeration per AMM 29-10-00",
+          "Run pump case-drain flow test per AMM 29-11-05",
+          "Inspect pressure regulator adjustment per AMM 29-12-02",
+          "Review work order history for repeated servicing on the same tail"
+        ]
+      },
+      {
+        "heading": "Referenced procedures",
+        "bullets": [
+          "AMM 29-10-00 — Hydraulic power general",
+          "AMM 29-11-05 — Pump case-drain test",
+          "AMM 29-12-02 — Pressure regulator adjustment"
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "document_id": "doc_amm_xls_29",
+        "document_title": "Citation XLS AMM — Ch. 29 Hydraulic Power",
+        "document_type": "AMM",
+        "page": 14,
+        "snippet": "Pump case-drain flow shall be measured with reservoir at full and system pressurized to 3000 psi.",
+        "score": 0.92,
+        "lane": "manual"
+      },
+      {
+        "document_id": "doc_amm_xls_29",
+        "document_title": "Citation XLS AMM — Ch. 29 Hydraulic Power",
+        "document_type": "AMM",
+        "page": 27,
+        "snippet": "Air entrainment in the reservoir may present as pressure oscillation during gear retraction.",
+        "score": 0.88,
+        "lane": "manual"
+      },
+      {
+        "document_id": "doc_wo_n123xl_0418",
+        "document_title": "Work Order N123XL — WO-2026-0418",
+        "document_type": "WORK_ORDER",
+        "page": 3,
+        "snippet": "Hydraulic pressure fluctuation on climb. Serviced reservoir, bled system, ops-checked satisfactory.",
+        "score": 0.81,
+        "lane": "history"
+      }
+    ],
+    "related_documents": [
+      { "id": "doc_ipc_xls", "title": "Citation XLS IPC — Rev 47", "type": "IPC" },
+      { "id": "doc_inspection_xls", "title": "Citation XLS Inspection Program — Phase C", "type": "INSPECTION_PROGRAM" }
+    ],
+    "entities": [
+      { "kind": "aircraft", "value": "Citation XLS" },
+      { "kind": "ata", "value": "ATA 29" },
+      { "kind": "part_number", "value": "3214091-01" },
+      { "kind": "tail_number", "value": "N123XL" }
+    ],
+    "confidence": {
+      "score": 0.86,
+      "label": "high",
+      "reason": "Five corroborating chunks across AMM and maintenance history."
+    },
+    "followups": [
+      "Show the exact AMM 29-11-05 pump case-drain flow procedure.",
+      "List all prior hydraulic write-ups on N123XL in the last 12 months.",
+      "Which parts are required to rebuild the hydraulic pressure regulator?"
+    ]
+  },
+  {
+    "id": "q_bleed_overtemp_trend",
+    "question": "Find recurring writeups related to bleed air overtemp across the King Air 350 fleet.",
+    "created_at": "2026-04-06T09:10:00Z",
+    "answer": "The King Air 350 fleet has seven bleed air overtemp write-ups in the last 90 days, concentrated on the right-hand bleed duct sensor. SB-B78-14 revised the inspection interval for this sensor in February; three of the seven write-ups occurred on aircraft that had not yet incorporated the bulletin. Cluster confidence is high; see the Insights page for the full timeline.",
+    "sections": [
+      {
+        "heading": "Cluster summary",
+        "bullets": [
+          "7 write-ups across 4 tail numbers in 90 days",
+          "All right-hand bleed duct sensor",
+          "3 of 7 on aircraft without SB-B78-14 incorporated"
+        ]
+      },
+      {
+        "heading": "Recommended actions",
+        "bullets": [
+          "Verify SB-B78-14 compliance on remaining fleet aircraft",
+          "Inspect sensor wiring per SB-B78-14 step 4",
+          "Trend monitor for 30 days post-compliance"
+        ]
+      }
+    ],
+    "citations": [
+      {
+        "document_id": "doc_sb_king_air_b78",
+        "document_title": "King Air 350 SB-B78-14",
+        "document_type": "SB",
+        "page": 5,
+        "snippet": "Revised inspection interval reduced from 600 to 300 flight hours for the right-hand bleed duct sensor wiring harness.",
+        "score": 0.94,
+        "lane": "manual"
+      },
+      {
+        "document_id": "doc_logbook_n882gs",
+        "document_title": "Logbook — N882GS Gulfstream G200",
+        "document_type": "LOGBOOK",
+        "page": 142,
+        "snippet": "Bleed air overtemp annunciator momentary during climb. Reset, ops normal.",
+        "score": 0.72,
+        "lane": "history"
+      }
+    ],
+    "related_documents": [
+      { "id": "doc_parts_catalog_bleedair", "title": "Parts Catalog Excerpt — Bleed Air Components", "type": "PARTS_CATALOG" }
+    ],
+    "entities": [
+      { "kind": "aircraft", "value": "King Air 350" },
+      { "kind": "ata", "value": "ATA 36" },
+      { "kind": "bulletin", "value": "SB-B78-14" }
+    ],
+    "confidence": {
+      "score": 0.78,
+      "label": "high",
+      "reason": "Consistent cluster signal across 4 aircraft and 2 document sources."
+    },
+    "followups": [
+      "Which aircraft in our fleet have not yet complied with SB-B78-14?",
+      "Show the full bleed air overtemp timeline for the last 12 months.",
+      "What parts are needed to replace the bleed duct sensor harness?"
+    ]
+  }
+]

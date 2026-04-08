@@ -1,0 +1,97 @@
+{
+  "recurring_clusters": [
+    {
+      "id": "cl_bleed_overtemp",
+      "title": "Bleed air overtemp — right-hand duct sensor",
+      "aircraft": "King Air 350",
+      "ata": "ATA 36",
+      "count_90d": 7,
+      "aircraft_count": 4,
+      "trend": "rising",
+      "last_occurred": "2026-04-05",
+      "severity": "medium",
+      "notes": "Concentrated on aircraft without SB-B78-14 compliance."
+    },
+    {
+      "id": "cl_aileron_trim",
+      "title": "Aileron trim runaway — intermittent",
+      "aircraft": "Learjet 60",
+      "ata": "ATA 27",
+      "count_90d": 4,
+      "aircraft_count": 3,
+      "trend": "flat",
+      "last_occurred": "2026-03-29",
+      "severity": "medium",
+      "notes": "Shop troubleshooting record points to trim actuator harness chafing."
+    },
+    {
+      "id": "cl_hyd_press_fluct",
+      "title": "Hydraulic pressure fluctuation on climb",
+      "aircraft": "Citation XLS",
+      "ata": "ATA 29",
+      "count_90d": 5,
+      "aircraft_count": 2,
+      "trend": "falling",
+      "last_occurred": "2026-04-02",
+      "severity": "low",
+      "notes": "Majority resolved with reservoir servicing and bleed."
+    }
+  ],
+  "ata_hotspots": [
+    { "ata": "ATA 36", "label": "Bleed Air", "count_90d": 12, "delta_pct": 34 },
+    { "ata": "ATA 29", "label": "Hydraulic Power", "count_90d": 9, "delta_pct": -12 },
+    { "ata": "ATA 27", "label": "Flight Controls", "count_90d": 6, "delta_pct": 5 },
+    { "ata": "ATA 32", "label": "Landing Gear", "count_90d": 5, "delta_pct": 0 },
+    { "ata": "ATA 77", "label": "Engine Indicating", "count_90d": 4, "delta_pct": 22 }
+  ],
+  "fleet_widgets": [
+    {
+      "id": "w_deferred_items",
+      "label": "Deferred items",
+      "value": 14,
+      "unit": "items",
+      "trend": "stable",
+      "detail": "3 high-impact, 11 low-impact across 6 aircraft."
+    },
+    {
+      "id": "w_due_inspections",
+      "label": "Inspections due in 30 days",
+      "value": 8,
+      "unit": "inspections",
+      "trend": "rising",
+      "detail": "5 Phase C, 3 Phase D across the Citation fleet."
+    },
+    {
+      "id": "w_parts_on_order",
+      "label": "Parts on order",
+      "value": 23,
+      "unit": "line items",
+      "trend": "stable",
+      "detail": "2 AOG-critical, 21 routine replenishment."
+    },
+    {
+      "id": "w_docs_indexed",
+      "label": "Documents indexed",
+      "value": 8,
+      "unit": "docs",
+      "trend": "rising",
+      "detail": "8 demo documents loaded. Real ingestion arrives in Phase 1."
+    }
+  ],
+  "processing_logs": [
+    { "ts": "2026-04-08T08:12:44Z", "stage": "pdf_parser", "doc": "doc_parts_catalog_bleedair", "status": "ok", "detail": "44 pages extracted" },
+    { "ts": "2026-04-08T08:12:49Z", "stage": "document_classifier", "doc": "doc_parts_catalog_bleedair", "status": "ok", "detail": "classified as PARTS_CATALOG" },
+    { "ts": "2026-04-08T08:13:01Z", "stage": "chunker", "doc": "doc_parts_catalog_bleedair", "status": "ok", "detail": "126 chunks produced" },
+    { "ts": "2026-04-08T08:13:12Z", "stage": "embedder", "doc": "doc_parts_catalog_bleedair", "status": "queued", "detail": "waiting for embedding worker" },
+    { "ts": "2026-04-08T07:44:11Z", "stage": "ocr_processor", "doc": "doc_logbook_n882gs", "status": "ok", "detail": "14 pages OCRed, 2 low-confidence" },
+    { "ts": "2026-04-08T07:40:02Z", "stage": "field_extractor", "doc": "doc_logbook_n882gs", "status": "ok", "detail": "tail number extracted: N882GS" }
+  ],
+  "system_status": [
+    { "id": "api",        "label": "API",                "status": "healthy" },
+    { "id": "ingestion",  "label": "Ingestion queue",    "status": "healthy" },
+    { "id": "ocr",        "label": "OCR worker",         "status": "degraded" },
+    { "id": "embeddings", "label": "Embedding worker",   "status": "healthy" },
+    { "id": "vector",     "label": "Vector index",       "status": "healthy" },
+    { "id": "provider",   "label": "AI provider (stub)", "status": "healthy" }
+  ]
+}
