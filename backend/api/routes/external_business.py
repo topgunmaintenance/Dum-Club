@@ -10,7 +10,7 @@ Handles off-platform business interactions:
 - Analytics / metrics
 """
 
-import hashlib
+import json
 import os
 import secrets
 from datetime import date
@@ -23,6 +23,8 @@ from auth.privy import require_admin
 
 from db.supabase import get_client
 from api.routes.feature_flags import get_flag
+from services.agents._dedup import receipt_hash as _receipt_hash
+from services.agents.purchase_proof import PurchaseProofAgent
 
 router = APIRouter()
 
@@ -47,7 +49,10 @@ class ProofSubmitRequest(BaseModel):
     receipt_image_url: str = ""
     receipt_text: str = ""
     purchase_amount_usd: float = 0
-    purchase_date: Optional[str] = None  # YYYY-MM-DD
+    purchase_date: Optional[str] = None
+    # Additive: user-typed merchant override for the Purchase Proof Agent.
+    # Ignored when purchase_proof_agent_enabled is off.
+    merchant_name: str = ""  # YYYY-MM-DD
 
 
 class ProofVerifyRequest(BaseModel):
@@ -62,11 +67,8 @@ class ClaimBusinessRequest(BaseModel):
 
 
 # ── Helpers ──
-
-def _receipt_hash(buyer: str, business_id: str, amount: float, dt: str) -> str:
-    """Generate a dedup hash for a receipt."""
-    raw = f"{buyer}:{business_id}:{amount:.2f}:{dt}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:32]
+# _receipt_hash lives in services/agents/_dedup.py so the PurchaseProofAgent
+# and this route share the same hashing function. Do not duplicate it here.
 
 
 def _calculate_reward(amount_usd: float) -> int:
@@ -74,6 +76,63 @@ def _calculate_reward(amount_usd: float) -> int:
     if amount_usd <= 0:
         return 0
     return _FLAT_REWARD
+
+
+def _apply_verified_side_effects(
+    sb,
+    proof_id: str,
+    buyer_privy_id: str,
+    external_business_id: str,
+    amount_usd: float,
+) -> int:
+    """
+    Award DUM Points, log the verified demand event, and queue merchant
+    outreach for a purchase proof that has been marked verified.
+
+    This helper is a minimal, surgical extraction shared by the admin
+    verify_proof route and the auto-verify path in submit_proof. Reward
+    math (`_calculate_reward`, `_update_balance_and_log`) is untouched —
+    the lines that used to live inside verify_proof now live here. The
+    future Rewards Agent (PR 3) will replace this helper entirely.
+
+    The caller is responsible for the purchase_proofs row update (status,
+    dum_points_awarded). This helper never marks an outreach row as
+    "sent" — it only enqueues with status "pending", preserving the
+    invariant that sent state only flips on a real send action.
+
+    Returns the number of points awarded.
+    """
+    points = _calculate_reward(amount_usd or 0)
+
+    try:
+        from api.routes.dum_points import _update_balance_and_log
+        _update_balance_and_log(
+            sb,
+            buyer_privy_id,
+            points,
+            "verified_off_platform_purchase",
+            f"proof:{proof_id}",
+        )
+    except Exception as e:
+        print(f"[external-biz] Failed to award DUM points: {e}")
+
+    try:
+        sb.table("external_business_demand_events").insert({
+            "external_business_id": external_business_id,
+            "buyer_privy_id": buyer_privy_id,
+            "demand_type": "verified_purchase",
+            "purchase_amount_usd": amount_usd,
+        }).execute()
+    except Exception as e:
+        print(f"[external-biz] Failed to log verified demand event: {e}")
+
+    if get_flag("merchant_outreach_queue_enabled"):
+        try:
+            _queue_outreach(sb, external_business_id)
+        except Exception as e:
+            print(f"[external-biz] Failed to queue outreach: {e}")
+
+    return points
 
 
 # ── Demand Events ──
@@ -114,7 +173,15 @@ async def log_demand_event(req: DemandEventRequest):
 
 @router.post("/submit-proof")
 async def submit_proof(req: ProofSubmitRequest):
-    """Submit proof of purchase for an off-platform business."""
+    """
+    Submit proof of purchase for an off-platform business.
+
+    When the `purchase_proof_agent_enabled` feature flag is off, this route
+    behaves exactly as it did before PR 2 (byte-for-byte). When the flag is
+    on, submissions flow through the PurchaseProofAgent which parses, matches,
+    scores, dedups, and classifies the proof. The public response shape is
+    preserved — agent details are attached under an additive `agent` key.
+    """
     if not get_flag("off_platform_receipt_rewards_enabled"):
         raise HTTPException(status_code=403, detail="Off-platform receipt rewards are not enabled")
 
@@ -123,6 +190,17 @@ async def submit_proof(req: ProofSubmitRequest):
 
     sb = get_client()
 
+    if get_flag("purchase_proof_agent_enabled"):
+        return await _submit_proof_via_agent(sb, req)
+
+    return _submit_proof_legacy(sb, req)
+
+
+def _submit_proof_legacy(sb, req: ProofSubmitRequest) -> dict:
+    """
+    Byte-for-byte equivalent of the pre-PR-2 submit_proof body. Runs when
+    the agent flag is off so we have a clean rollback.
+    """
     # Check business exists
     biz = sb.table("external_businesses").select("id, name").eq("id", req.external_business_id).limit(1).execute()
     if not biz.data:
@@ -160,6 +238,122 @@ async def submit_proof(req: ProofSubmitRequest):
     return {"ok": True, "proof_id": proof_id, "status": "pending", "potential_reward": _calculate_reward(req.purchase_amount_usd)}
 
 
+async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
+    """
+    Agent-backed submit path. Runs PurchaseProofAgent, persists the agent
+    output fields to purchase_proofs, and optionally auto-verifies when
+    `purchase_proof_auto_verify_enabled` is on AND the agent returned
+    `approved`.
+    """
+    agent = PurchaseProofAgent(supabase=sb)
+    result = await agent.run({
+        "buyer_privy_id": req.buyer_privy_id,
+        "external_business_id": req.external_business_id,
+        "receipt_image_url": req.receipt_image_url,
+        "receipt_text": req.receipt_text,
+        "purchase_amount_usd": req.purchase_amount_usd,
+        "purchase_date": req.purchase_date or "",
+        "merchant_name": req.merchant_name,
+    })
+
+    data = result.data or {}
+    decision = data.get("decision", "review")
+    reason = data.get("reason", "")
+
+    # Hard-reject translations — preserve existing HTTP contract
+    if result.status == "reject":
+        if reason == "duplicate_receipt":
+            raise HTTPException(status_code=409, detail="A similar proof has already been submitted")
+        if reason == "business_not_found":
+            raise HTTPException(status_code=404, detail="External business not found")
+        if reason == "empty_submission":
+            raise HTTPException(status_code=400, detail="Submission is empty")
+        # Any other reject reason (future codes) — return 400 with the reason
+        raise HTTPException(status_code=400, detail=f"Proof rejected: {reason or 'unknown'}")
+
+    # At this point result.status is "ok" (approved) or "review"
+    dt_str = data.get("parsed_date") or req.purchase_date or str(date.today())
+    auto_verify = (
+        result.status == "ok"
+        and decision == "approved"
+        and get_flag("purchase_proof_auto_verify_enabled")
+    )
+    proof_status = "verified" if auto_verify else "pending"
+
+    # Stored notes are JSON-serialised for easy future querying. Keep small.
+    notes_payload = {
+        "reason": reason,
+        "merchant_match": data.get("merchant_match_strength"),
+        "breakdown": data.get("score_breakdown") or {},
+    }
+    try:
+        agent_notes = json.dumps(notes_payload, default=str)[:1000]
+    except Exception:
+        agent_notes = reason or ""
+
+    row_to_insert: dict = {
+        "external_business_id": req.external_business_id,
+        "buyer_privy_id": req.buyer_privy_id,
+        "receipt_image_url": req.receipt_image_url or None,
+        "receipt_text": req.receipt_text or None,
+        "purchase_amount_usd": req.purchase_amount_usd,
+        "purchase_date": dt_str,
+        "status": proof_status,
+        "duplicate_hash": data.get("dedup_hash") or None,
+        "parsed_merchant": data.get("parsed_merchant") or None,
+        "parsed_amount": data.get("parsed_amount") or None,
+        "parsed_date": data.get("parsed_date") or None,
+        "confidence": round(float(result.confidence), 3),
+        "agent_decision": decision,
+        "agent_notes": agent_notes,
+    }
+
+    proof = sb.table("purchase_proofs").insert(row_to_insert).execute()
+    proof_id = proof.data[0]["id"] if proof.data else None
+
+    # Always log the initial claim demand event (matches legacy behavior)
+    try:
+        sb.table("external_business_demand_events").insert({
+            "external_business_id": req.external_business_id,
+            "buyer_privy_id": req.buyer_privy_id,
+            "demand_type": "purchase_claim",
+            "purchase_amount_usd": req.purchase_amount_usd,
+        }).execute()
+    except Exception as e:
+        print(f"[external-biz] Failed to log purchase_claim event: {e}")
+
+    points_awarded = 0
+    if auto_verify and proof_id:
+        points_awarded = _apply_verified_side_effects(
+            sb,
+            proof_id=proof_id,
+            buyer_privy_id=req.buyer_privy_id,
+            external_business_id=req.external_business_id,
+            amount_usd=req.purchase_amount_usd,
+        )
+        try:
+            sb.table("purchase_proofs").update(
+                {"dum_points_awarded": points_awarded}
+            ).eq("id", proof_id).execute()
+        except Exception as e:
+            print(f"[external-biz] Failed to persist dum_points_awarded: {e}")
+
+    return {
+        "ok": True,
+        "proof_id": proof_id,
+        "status": proof_status,
+        "potential_reward": _calculate_reward(req.purchase_amount_usd),
+        # Additive debug block — existing clients ignore unknown keys.
+        "agent": {
+            "decision": decision,
+            "reason": reason,
+            "confidence": round(float(result.confidence), 4),
+            "auto_verified": auto_verify,
+            "points_awarded": points_awarded,
+        },
+    }
+
+
 # ── Proof Verification (admin) ──
 
 @router.post("/verify-proof")
@@ -178,33 +372,14 @@ async def verify_proof(req: ProofVerifyRequest, _admin=Depends(require_admin)):
     update: dict = {"status": req.status, "verification_notes": req.verification_notes}
 
     if req.status == "verified":
-        points = _calculate_reward(p.get("purchase_amount_usd") or 0)
+        points = _apply_verified_side_effects(
+            sb,
+            proof_id=req.proof_id,
+            buyer_privy_id=p["buyer_privy_id"],
+            external_business_id=p["external_business_id"],
+            amount_usd=p.get("purchase_amount_usd") or 0,
+        )
         update["dum_points_awarded"] = points
-
-        # Award DUM Points via the dum_points pattern
-        try:
-            from api.routes.dum_points import _update_balance_and_log
-            _update_balance_and_log(
-                sb,
-                p["buyer_privy_id"],
-                points,
-                "verified_off_platform_purchase",
-                f"proof:{req.proof_id}",
-            )
-        except Exception as e:
-            print(f"[external-biz] Failed to award DUM points: {e}")
-
-        # Log verified demand event
-        sb.table("external_business_demand_events").insert({
-            "external_business_id": p["external_business_id"],
-            "buyer_privy_id": p["buyer_privy_id"],
-            "demand_type": "verified_purchase",
-            "purchase_amount_usd": p.get("purchase_amount_usd"),
-        }).execute()
-
-        # Queue merchant outreach
-        if get_flag("merchant_outreach_queue_enabled"):
-            _queue_outreach(sb, p["external_business_id"])
 
     sb.table("purchase_proofs").update(update).eq("id", req.proof_id).execute()
 

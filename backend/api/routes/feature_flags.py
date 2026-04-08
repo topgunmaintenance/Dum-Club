@@ -20,6 +20,8 @@ _FLAGS = {
     "merchant_outreach_send_enabled": ("MERCHANT_OUTREACH_SEND_ENABLED", False),
     # Off-Platform → On-Platform Growth Engine agents
     "local_discovery_agent_enabled": ("LOCAL_DISCOVERY_AGENT_ENABLED", False),
+    "purchase_proof_agent_enabled": ("PURCHASE_PROOF_AGENT_ENABLED", False),
+    "purchase_proof_auto_verify_enabled": ("PURCHASE_PROOF_AUTO_VERIFY_ENABLED", False),
 }
 
 
