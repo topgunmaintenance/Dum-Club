@@ -3223,9 +3223,10 @@ export default function Home() {
               is built on Solana and operates in early access.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-[10px] text-zinc-700">
-                <img src="/dum-logo-wordmark.png" alt="DUM Club" className="h-4 w-auto opacity-60" />
-                © {new Date().getFullYear()} DUM Club. All rights reserved.
+              <div className="flex items-center gap-2">
+                <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-70" />
+                <span className="text-[12px] font-bold tracking-tight text-zinc-400">DUM CLUB</span>
+                <span className="text-[10px] text-zinc-700">© {new Date().getFullYear()} · All rights reserved</span>
               </div>
               <div className="flex gap-6">
                 <div className="flex gap-6">
