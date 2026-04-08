@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 import os
 import requests
 from db.supabase import get_client
+from services.token_mode import is_simulated_token, token_mode
 
 router = APIRouter()
 
@@ -82,12 +83,17 @@ def get_project_token_metadata(project_id: str):
             "supply": db_supply,
             "decimals": db_decimals,
             "status": project_token_status,
+            # No mint yet — treated as simulated for honesty purposes so
+            # nothing downstream advertises a live token that doesn't exist.
+            "is_simulated": True,
+            "token_mode": "simulated",
+            "simulated": True,
         }
 
     # -----------------------------
     # STATUS 2 — SIMULATED MINT
     # -----------------------------
-    if mint_address.startswith("SIM_"):
+    if is_simulated_token(mint_address):
         return {
             "mint_address": mint_address,
             "name": token_name,
@@ -95,7 +101,10 @@ def get_project_token_metadata(project_id: str):
             "supply": db_supply,
             "decimals": db_decimals or 9,
             "status": project_token_status,
+            # Historical field — kept for back-compat. Prefer is_simulated.
             "simulated": True,
+            "is_simulated": True,
+            "token_mode": "simulated",
         }
 
     # -----------------------------
@@ -126,4 +135,7 @@ def get_project_token_metadata(project_id: str):
         "supply": supply,
         "decimals": decimals,
         "status": status,
+        # Real mint path — by definition not simulated.
+        "is_simulated": False,
+        "token_mode": "on_chain",
     }

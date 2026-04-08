@@ -9,8 +9,8 @@ DUM Club is a customer acquisition machine for businesses. Users describe an ide
 ### Creator loop
 1. **Describe** — one sentence is enough
 2. **Generate** — AI drafts the project page, name, and token story
-3. **Launch** — project goes live with a public market feed
-4. **Discover** — community finds it, trades the token, signals demand
+3. **Launch** — project goes live with a storefront, offers, and a demo token market
+4. **Discover** — community finds the project and backs it through real offer purchases; demo token activity surfaces demand signal
 5. **Evolve** — successful projects can unlock deeper offers after traction
 
 ### Growth engine loop
@@ -32,11 +32,12 @@ DUM Club is a customer acquisition machine for businesses. Users describe an ide
 
 ## Core features
 
-- **AI project creation** — describe it, we build the workspace and token story
-- **Live token activity** — price, market cap, and momentum on every project
-- **Demand signals** — token activity shows what the community believes in
-- **AI workspace** — token-gated AI chat per project
-- **Wallet-based identity** — Phantom, Solflare, Backpack
+- **AI project creation** — describe it, we build the workspace, offers, and demo token story
+- **Real Stripe checkout** — every project ships with offers + Stripe-powered payments
+- **Demand-signal market (demo)** — simulated per-project price, market cap, and volume for demand-testing. See "Token role" below — real on-chain minting is not yet provisioned.
+- **AI workspace** — AI chat per project
+- **Wallet-based identity** — Privy sign-in with embedded Solana wallets
+- **Off-platform growth engine** — search nearby businesses, submit proof of purchase, earn DUM Points, auto-invite merchants
 
 ---
 
@@ -83,12 +84,20 @@ npm run dev
 
 ## Token role
 
-Tokens are demand signals, not service vouchers.
+Per-project tokens on DUM Club today are **simulated**, not on-chain.
+Every new project receives a `SIM_` placeholder mint address and an
+in-app ledger that drives the price/market-cap/volume display on the
+Exchange tab. No SPL mint, no liquidity pool, no real trading.
 
-- Token price and volume = community interest in the idea
-- Holders = early supporters and community members
-- Future utility layers in after traction is proven
+- Simulated price and volume = a demand signal, not an investment
+- There are no holders of real tokens until on-chain minting ships
+- DUM Points (the platform-wide loyalty currency) are separate and real;
+  they have a Stripe on-ramp and an optional on-chain claim path
+
+See `product.md` → "Token Role" for the language rules and
+`backend/services/token_mode.py` + `frontend/lib/tokenMode.ts` for the
+single-source-of-truth `is_simulated` helper.
 
 ---
 
-Built on Solana · Powered by Ollama · Beta
+Built on Solana · Powered by Ollama · Beta · Per-project token layer is currently a demo simulation

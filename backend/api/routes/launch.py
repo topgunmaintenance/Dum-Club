@@ -107,6 +107,10 @@ class LaunchResponse(BaseModel):
     token_symbol: str
     token_mint_address: Optional[str] = None
     token_status: Optional[str] = None
+    # Honesty flags — launch currently always emits a SIM_ mint.
+    # Frontends MUST surface the simulated state to users.
+    is_simulated: bool = True
+    token_mode: str = "simulated"
 
 
 # ── JSON helpers (mirrors generate_app.py approach) ───────────────────────────
@@ -723,7 +727,7 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
             "status": "live",
         }
     ).eq("id", project_id).execute()
-    print(f"[launch] token auto-created: {sim_mint} → trading_live")
+    print(f"[launch] simulated token issued for project={project_id}: {sim_mint} (demo ledger)")
 
     # ── 7. Auto-generate draft offers ──────────────────────────────────────
     # Best-effort: if LLM fails, the project still launches without offers.
@@ -787,4 +791,6 @@ async def _do_launch(req: LaunchRequest) -> LaunchResponse:
         token_symbol=token_symbol,
         token_mint_address=sim_mint,
         token_status="trading_live",
+        is_simulated=True,
+        token_mode="simulated",
     )

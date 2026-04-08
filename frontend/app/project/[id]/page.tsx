@@ -9,6 +9,8 @@ import { Starfield } from "../../../components/Starfield";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
+import { isSimulatedToken } from "../../../lib/tokenMode";
+import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import {
   LineChart,
   Line,
@@ -2548,7 +2550,7 @@ const heroUtility =
     ? "Ready to submit for review"
     : "Complete your project details";
 
-  const isSimulated = (tokenMeta.mint_address || project?.token_mint_address || "").startsWith("SIM_");
+  const isSimulated = isSimulatedToken(tokenMeta.mint_address || project?.token_mint_address);
 
   // ── Hero display values (read-only aliases; gates unchanged) ─────────────
   const heroTitle = projectName;
@@ -2675,24 +2677,29 @@ return (
 
             {/* Key Metrics */}
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
-                Key Metrics
+              <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                <span>Key Metrics</span>
+                {isSimulated && hasMarketSnapshot && (
+                  <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold tracking-[0.15em] text-amber-300">
+                    Demo
+                  </span>
+                )}
               </div>
               <div className="space-y-3">
                 {hasMarketSnapshot && (
                   <>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">Price</span>
+                      <span className="text-zinc-500">{isSimulated ? "Price (demo)" : "Price"}</span>
                       <span className="font-mono font-semibold text-white">${heroPrice.toFixed(6)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">Market Cap</span>
+                      <span className="text-zinc-500">{isSimulated ? "Market Cap (demo)" : "Market Cap"}</span>
                       <span className="font-mono font-semibold text-white">
                         ${formatNumber(Number(market?.market_cap || 0), 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">24h Volume</span>
+                      <span className="text-zinc-500">{isSimulated ? "24h Volume (demo)" : "24h Volume"}</span>
                       <span className="font-mono font-semibold text-white">
                         ${formatNumber(Number(market?.volume_24h || 0), 2)}
                       </span>
@@ -2772,7 +2779,7 @@ return (
                 {storeItems.map((item) => {
                   const badge = storeTypeBadge[item.type];
                   const hasPerk = Boolean(item.required_token_amount && item.required_token_amount > 0);
-                  const tokenConfigured = Boolean(project?.token_mint_address && !project.token_mint_address.startsWith("SIM_"));
+                  const tokenConfigured = Boolean(project?.token_mint_address && !isSimulatedToken(project.token_mint_address));
                   const showGating = hasPerk && tokenConfigured;
                   let perkState: "none" | "no_wallet" | "locked" | "unlocked" = "none";
                   if (showGating) {
@@ -3226,11 +3233,19 @@ return (
             {projectView === "analytics" && hasMarketSnapshot ? (
               <div className="rounded-2xl border border-emerald-500/10 bg-zinc-900 p-5 shadow-[0_0_30px_rgba(0,255,163,0.04)]">
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">Current Price</span>
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-xs text-zinc-500">
+                    {isSimulated ? "Demo price (simulated)" : "Current Price"}
                   </span>
+                  {isSimulated ? (
+                    <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-300">
+                      Demo
+                    </span>
+                  ) : (
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-end gap-3">
                   <span className="font-mono text-3xl font-black text-white">
@@ -3247,13 +3262,17 @@ return (
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">Market Cap</div>
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      {isSimulated ? "Market Cap (demo)" : "Market Cap"}
+                    </div>
                     <div className="mt-0.5 font-mono text-sm font-semibold text-white">
                       {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">Volume 24h</div>
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      {isSimulated ? "Volume 24h (demo)" : "Volume 24h"}
+                    </div>
                     <div className="mt-0.5 font-mono text-sm font-semibold text-white">
                       {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
                     </div>
@@ -3296,7 +3315,7 @@ return (
                   onClick={scrollToBuyPanel}
                   className="w-full rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
                 >
-                  Buy ${displaySymbol}
+                  {isSimulated ? `Record demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
                 </button>
                 <button
                   type="button"
@@ -3403,25 +3422,30 @@ return (
 
       {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-zinc-800 bg-base">
+          {isSimulated && (
+            <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
+              Demo market · simulated ledger · not on-chain
+            </div>
+          )}
           <div className="mx-auto max-w-6xl px-2">
             <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
               {[
                 {
-                  label: "Price",
+                  label: isSimulated ? "Price (demo)" : "Price",
                   value: `$${formatPrice(market?.price)}`,
                 },
                 {
-                  label: "24h Change",
+                  label: isSimulated ? "24h Change (demo)" : "24h Change",
                   value: `${heroPriceUp ? "+" : ""}${heroPriceChangePct.toFixed(2)}%`,
                   positive: heroPriceUp,
                 },
                 {
-                  label: "Market Cap",
+                  label: isSimulated ? "Market Cap (demo)" : "Market Cap",
                   value:
                     market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—",
                 },
                 {
-                  label: "Volume 24h",
+                  label: isSimulated ? "Volume 24h (demo)" : "Volume 24h",
                   value:
                     market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—",
                 },
@@ -4250,7 +4274,7 @@ return (
               />
             )}
             {/* Token perk fields */}
-            {project?.token_mint_address && !project.token_mint_address.startsWith("SIM_") && (
+            {project?.token_mint_address && !isSimulatedToken(project.token_mint_address) && (
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">Token Perk (optional)</div>
                 <input
@@ -4758,10 +4782,11 @@ return (
       {projectView === "analytics" && canShowMarketUi ? (
       /* Token Activity — only in analytics view */
       <div id="section-tokens" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        {isSimulated && <SimulatedTokenBanner />}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              Advanced Analytics
+              {isSimulated ? "Demo analytics (simulated ledger)" : "Advanced Analytics"}
             </div>
             <div className="mt-2 flex items-center gap-3">
               <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
@@ -4815,17 +4840,23 @@ return (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Price</div>
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    {isSimulated ? "Price (demo)" : "Price"}
+                  </div>
                   <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Market Cap</div>
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    {isSimulated ? "Market Cap (demo)" : "Market Cap"}
+                  </div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">24h Volume</div>
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    {isSimulated ? "24h Volume (demo)" : "24h Volume"}
+                  </div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
                 </div>
 
@@ -5054,10 +5085,20 @@ return (
                   >
                     {loadingTrade
                       ? "Working..."
+                      : isSimulated
+                      ? (tradeTab === "buy"
+                          ? `Record demo buy · $${displaySymbol}`
+                          : `Record demo sell · $${displaySymbol}`)
                       : tradeTab === "buy"
                       ? `Buy $${displaySymbol}`
                       : `Sell $${displaySymbol}`}
                   </button>
+
+                  {isSimulated && (
+                    <p className="text-center text-[11px] text-amber-200/80">
+                      Demo trade — updates the in-app ledger only. No on-chain transaction.
+                    </p>
+                  )}
 
                   {tradeMessage && (
                     <div
@@ -5187,10 +5228,13 @@ return (
       {project?.token_mint_address && (
         <div className="mt-4 rounded-lg border border-zinc-800 bg-base/40 px-3 py-2">
           <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-            Verified on Solana
+            {isSimulatedToken(project.token_mint_address)
+              ? "Demo mint · Not on-chain"
+              : "Verified on Solana"}
           </div>
           <div className="mt-1 break-all font-mono text-[11px] text-zinc-400">
-            Mint · {project.token_mint_address}
+            {isSimulatedToken(project.token_mint_address) ? "Demo mint · " : "Mint · "}
+            {project.token_mint_address}
           </div>
         </div>
       )}
@@ -5674,6 +5718,11 @@ return (
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
             <span className="truncate font-black text-white">{heroTitle}</span>
             <span className="font-mono text-sm text-zinc-400">${displaySymbol}</span>
+            {isSimulated && (
+              <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-300">
+                Demo
+              </span>
+            )}
             <span className="text-lg font-bold text-white">
               ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
             </span>
@@ -5689,14 +5738,14 @@ return (
 
           <div className="flex flex-shrink-0 items-center gap-3">
             <span className="hidden text-xs text-zinc-500 xl:inline">
-              Customers get unlimited AI access
+              {isSimulated ? "Demo token · in-app ledger only" : "Customers get unlimited AI access"}
             </span>
             <button
               type="button"
               onClick={scrollToBuyPanel}
               className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
             >
-              Buy ${displaySymbol}
+              {isSimulated ? `Demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
             </button>
           </div>
         </div>

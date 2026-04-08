@@ -5,6 +5,7 @@ import subprocess
 import uuid
 from datetime import datetime, timezone
 from db.supabase import get_client
+from services.token_mode import is_simulated_token, token_mode
 
 router = APIRouter()
 
@@ -87,6 +88,7 @@ async def create_project_token(project_id: str):
     # so the token lifecycle can advance through the UI.
     # Replace this block with the subprocess.run call once ready.
     mint = "SIM_" + uuid.uuid4().hex[:24].upper()
+    print(f"[token] simulated mint issued for project={project_id}: {mint}")
 
     # -----------------------------
     # UPDATE PROJECT RECORD
@@ -115,7 +117,11 @@ async def create_project_token(project_id: str):
         "token_supply": token_supply,
         "token_decimals": token_decimals,
         "token_status": "mint_created",
-        "db_updated": bool(update_resp.data)
+        "db_updated": bool(update_resp.data),
+        # Honesty flags — this response describes a SIM_ placeholder, not an
+        # on-chain mint. Frontends MUST surface the simulated state to users.
+        "is_simulated": is_simulated_token(mint),
+        "token_mode": token_mode(mint),
     }
 
 
@@ -232,7 +238,9 @@ async def mint_project_tokens(project_id: str):
         "dum_treasury_amount": dum_amount,
         "token_status": "tokens_minted",
         "script_output": output,
-        "db_updated": bool(update_resp.data)
+        "db_updated": bool(update_resp.data),
+        "is_simulated": is_simulated_token(mint_address),
+        "token_mode": token_mode(mint_address),
     }
 
 

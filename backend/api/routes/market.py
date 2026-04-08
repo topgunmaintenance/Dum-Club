@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from db.supabase import get_client
+from services.token_mode import is_simulated_token, token_mode
 
 router = APIRouter()
 
@@ -100,7 +101,7 @@ async def get_project_market(project_id: str):
 
     project_res = (
         supabase.table("projects")
-        .select("id, token_supply")
+        .select("id, token_supply, token_mint_address")
         .eq("id", project_id)
         .limit(1)
         .execute()
@@ -108,6 +109,7 @@ async def get_project_market(project_id: str):
 
     project = project_res.data[0] if project_res.data else None
     max_supply = _get_project_supply(project or {})
+    mint_address = (project or {}).get("token_mint_address")
 
     market = _get_market_row(supabase, project_id)
     price = _to_decimal(market.get("price") or DEFAULT_START_PRICE)
@@ -122,6 +124,12 @@ async def get_project_market(project_id: str):
         "max_supply": _decimal_to_float(max_supply, 6),
         "volume_24h": float(market.get("volume_24h") or 0),
         "last_trade_at": market.get("last_trade_at"),
+        # Honesty flags — price/volume/market_cap above are computed from
+        # a DB-only ledger. For SIM_ mints this is a simulation, not an
+        # on-chain market. Frontends MUST surface the simulated state.
+        "is_simulated": is_simulated_token(mint_address),
+        "token_mode": token_mode(mint_address),
+        "simulation_mode": is_simulated_token(mint_address),
     }
 
 
@@ -177,6 +185,8 @@ async def create_project_trade(project_id: str, body: TradeRequest):
 
     token_symbol = project.get("token_symbol")
     max_supply = _get_project_supply(project)
+    mint_address = project.get("token_mint_address")
+    trade_is_simulated = is_simulated_token(mint_address)
 
     if not token_symbol:
         raise HTTPException(status_code=400, detail="Project token symbol is missing")
@@ -350,7 +360,8 @@ async def create_project_trade(project_id: str, body: TradeRequest):
     except Exception as candle_err:
         print(f"[trade] Candle update error (non-critical): {candle_err}")
 
-    print(f"[trade] ✓ Trade complete: {side} {amount} {token_symbol} @ {current_price} → new_price={new_price}")
+    mode_label = "simulated_ledger" if trade_is_simulated else "on_chain"
+    print(f"[trade] ✓ Trade complete ({mode_label}): {side} {amount} {token_symbol} @ {current_price} → new_price={new_price}")
     return {
         "status": "success",
         "trade": trade_res.data[0] if trade_res.data else trade_insert,
@@ -362,11 +373,18 @@ async def create_project_trade(project_id: str, body: TradeRequest):
             "max_supply": _decimal_to_float(max_supply, 6),
             "volume_24h": market_upsert["volume_24h"],
             "last_trade_at": now,
+            "is_simulated": trade_is_simulated,
+            "token_mode": token_mode(mint_address),
         },
         "balance": {
             "wallet": wallet,
             "balance": _decimal_to_float(new_balance, 6),
         },
+        # Top-level honesty flags. Any caller consuming the trade response
+        # can branch on these to label the trade as demo vs on-chain.
+        "is_simulated": trade_is_simulated,
+        "simulation_mode": trade_is_simulated,
+        "token_mode": token_mode(mint_address),
     }
 
 

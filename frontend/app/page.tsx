@@ -1214,7 +1214,7 @@ function ComparisonTabs() {
                 { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
                 { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
                 { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana wallets" },
-                { f: "Token rewards", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — on-chain loyalty" },
+                { f: "Token rewards", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — real loyalty currency" },
                 { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
                 { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
               ].map((row, i) => (

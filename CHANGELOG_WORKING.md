@@ -4,6 +4,75 @@ Plain-English log of what changed and why. Updated each session.
 
 ---
 
+## 2026-04-08
+
+### Door A — Honest Simulated-Token Labeling (product-truth correction)
+
+**Why.** Every project launched through `/api/launch/` receives a `SIM_`
+placeholder mint address and `token_status="trading_live"`. The project
+page rendered "price", "market cap", "24h volume", and buy/sell buttons
+with no qualification — users could reasonably believe the token layer
+was a real Solana market. It is not. Trading is a DB-only ledger in
+`backend/api/routes/market.py` with a synthetic price-impact formula.
+
+**What changed.** Additive labeling — no behavior changes in
+`market.py`, `token.py`, `launch.py`, or `project_tokens.py`.
+
+Backend:
+- New `backend/services/token_mode.py` with `is_simulated_token()` and
+  `token_mode()` helpers. Single source of truth.
+- `token.py`, `launch.py`, `market.py`, `project_tokens.py` now return
+  `is_simulated` / `token_mode` / `simulation_mode` fields on every
+  response that emits `token_mint_address` or derived market data.
+- `market.py::/trade` response now carries `simulation_mode: true` for
+  SIM_ mints so any caller can branch on it.
+- Tagged log line `[token] simulated mint issued ...` and
+  `[trade] ... (simulated_ledger)` so backend logs make the demo state
+  obvious.
+
+Frontend:
+- New `frontend/lib/tokenMode.ts` — `isSimulatedToken()`,
+  `tokenModeLabel()`. Project page now routes every SIM_ check through
+  this helper; no more inline `.startsWith("SIM_")` comparisons.
+- New `frontend/components/SimulatedTokenBanner.tsx` — a persistent,
+  not-dismissible amber banner explaining the demo state.
+- `/project/[id]` Exchange tab:
+  - `SimulatedTokenBanner` rendered above all analytics content.
+  - "Advanced Analytics" header switches to "Demo analytics
+    (simulated ledger)" when simulated.
+  - Hero price card shows a "Demo" badge and relabels to
+    "Demo price (simulated)".
+  - Metric cards relabel to "Price (demo)", "Market Cap (demo)",
+    "Volume 24h (demo)".
+  - Stats bar gets a top strip "Demo market · simulated ledger · not
+    on-chain" and per-column demo labels.
+  - Buy/Sell buttons switch to "Record demo buy · $TOKEN" /
+    "Record demo sell · $TOKEN" with a disclaimer below.
+  - Sticky bottom bar shows a DEMO pill next to the token symbol and
+    labels the buy button "Demo buy · $TOKEN".
+  - The "Verified on Solana" footer (a direct falsehood for SIM_
+    mints) is now "Demo mint · Not on-chain" when simulated.
+- `frontend/app/page.tsx` comparison table: "DUM Points — on-chain
+  loyalty" → "DUM Points — real loyalty currency" (DUM Points claim is
+  DB-fallback-capable; the on-chain phrasing was too strong).
+
+Docs:
+- `product.md` "Token Role" section rewritten to open with "Current
+  State" explaining SIM_ mints and the simulated ledger. "Intended
+  Role" section preserved but labeled planned-not-shipped. Language
+  Guidelines gain "Avoid everywhere" items and a new "Allowed when
+  labeling simulated token surfaces" list.
+- `README.md`: "Live token activity" bullet → "Demand-signal market
+  (demo)". Token role section rewritten.
+- `claude.md`: new "Simulated Token Labeling (Door A — DO NOT
+  regress)" subsection under "What NOT to Build" with three hard
+  rules for anyone touching this surface.
+
+No migration. No feature flag. No new dependencies. No response fields
+removed or renamed. Agent tests still pass (22/22).
+
+---
+
 ## 2026-03-30
 
 ### Marketplace Stabilization (commits dcbc5b4, c36a499)

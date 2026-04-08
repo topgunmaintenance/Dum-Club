@@ -110,13 +110,42 @@ Someone with an idea who wants to:
 
 ## Token Role
 
-Tokens operate underneath the business layer:
+### Current State (important — read before writing any marketing copy)
+
+Per-project tokens on DUM Club today are **simulated**, not on-chain. Every
+project launched through `/api/launch/` receives a placeholder mint address
+with a `SIM_` prefix (see `backend/api/routes/launch.py` and
+`backend/api/routes/token.py`). The "price", "market cap", "volume", and
+buy/sell interactions on the Exchange tab are all computed from a DB-only
+ledger in `backend/api/routes/market.py`. No SPL mint exists on Solana for
+these projects, no liquidity pool, and no real trades occur.
+
+This is fine for demand-testing and UI iteration, but it MUST be labeled as
+such everywhere a user can see it. The `SimulatedTokenBanner` component and
+the `is_simulated` / `token_mode` fields returned from backend responses
+exist specifically so the frontend can never imply a live on-chain market
+for a SIM_ token. Do not remove those labels. When real on-chain minting
+ships, the helpers in `backend/services/token_mode.py` and
+`frontend/lib/tokenMode.ts` will flip individual projects to `on_chain`
+mode without any UI rewrite.
+
+**DUM Points are separate and are NOT simulated.** DUM Points are a real
+in-app balance with a real Stripe on-ramp and an optional on-chain claim
+path. Do not apply the simulated-token label to DUM Points.
+
+### Intended Role (planned, not shipped)
+
+When on-chain minting is provisioned, tokens will operate underneath the
+business layer:
 
 - **For supporters:** Holding tokens unlocks perks, discounts, and priority access
 - **For creators:** Token activity signals community interest and demand
 - **For the platform:** Transaction fees fund token burns, creating a value flywheel
 
-Tokens are NEVER the first thing a user sees. They are discovered through the Exchange tab or through deeper engagement.
+Tokens are NEVER the first thing a user sees. They are discovered through
+the Exchange tab or through deeper engagement. Even in the future on-chain
+state, the hybrid storefront-first rule in the Hybrid Model section still
+applies.
 
 ---
 
@@ -142,6 +171,16 @@ Tokens are NEVER the first thing a user sees. They are discovered through the Ex
 - "securities"
 - "it's like stocks"
 - "tokenized human economy"
+- "on-chain trading" (for per-project tokens — they are simulated today)
+- "live token market" / "live liquidity" / "real token trading"
+- "trade tokens on Solana" (for per-project tokens — see Token Role)
+
+**Allowed when labeling simulated token surfaces:**
+- "demo token"
+- "simulated price" / "simulated market"
+- "in-app ledger"
+- "demand-signal market"
+- "Record demo buy" / "Record demo sell"
 
 ---
 
