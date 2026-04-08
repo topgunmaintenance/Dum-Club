@@ -1,8 +1,16 @@
 import Link from "next/link";
 
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import type { RecentQuery } from "@/lib/types";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import type { ConfidenceLabel, RecentQuery } from "@/lib/types";
+
+const CONF_TONE: Record<ConfidenceLabel, BadgeTone> = {
+  high: "emerald",
+  medium: "cyan",
+  low: "amber",
+  insufficient: "rose",
+};
 
 export function RecentQueries({ queries }: { queries: RecentQuery[] }) {
   return (
@@ -12,41 +20,37 @@ export function RecentQueries({ queries }: { queries: RecentQuery[] }) {
       action={
         <Link
           href="/query"
-          className="text-[11px] uppercase tracking-[0.18em] text-cyan-300 hover:text-cyan-200"
+          className="label-eyebrow text-cyan-300 hover:text-cyan-200"
         >
           New query →
         </Link>
       }
     >
-      <ul className="divide-y divide-white/5">
-        {queries.map((q) => (
-          <li key={q.id} className="py-3">
-            <div className="flex items-start justify-between gap-3">
-              <p className="line-clamp-2 text-[13px] leading-snug text-ink-100">
-                {q.question}
-              </p>
-              <Badge
-                tone={
-                  q.confidence === "high"
-                    ? "emerald"
-                    : q.confidence === "medium"
-                      ? "cyan"
-                      : q.confidence === "low"
-                        ? "amber"
-                        : "rose"
-                }
-              >
-                {q.confidence}
-              </Badge>
-            </div>
-            {q.created_at && (
-              <div className="mt-1 text-[11px] text-ink-500">
-                {formatRelative(q.created_at)}
+      {queries.length === 0 ? (
+        <EmptyState
+          glyph="◇"
+          title="No queries yet"
+          body="Ask your first question in the Query Workspace."
+        />
+      ) : (
+        <ul className="divide-y divide-white/[0.06]">
+          {queries.map((q) => (
+            <li key={q.id} className="py-3 first:pt-0 last:pb-0">
+              <div className="flex items-start justify-between gap-3">
+                <p className="line-clamp-2 text-[13px] leading-snug text-ink-100">
+                  {q.question}
+                </p>
+                <Badge tone={CONF_TONE[q.confidence]} dot>
+                  {q.confidence}
+                </Badge>
               </div>
-            )}
-          </li>
-        ))}
-      </ul>
+              {q.created_at && (
+                <div className="mono-meta mt-1">{formatRelative(q.created_at)}</div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

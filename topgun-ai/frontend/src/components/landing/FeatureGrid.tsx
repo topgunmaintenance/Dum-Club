@@ -1,12 +1,12 @@
 const FEATURES = [
   {
     title: "Manuals + records, one query",
-    body: "Search AMMs, IPCs, service bulletins, work orders, logbooks, and shop reports together. No more switching between PDFs.",
+    body: "AMMs, IPCs, service bulletins, work orders, logbooks, and shop reports — searched together. No more PDF tab-hunting.",
     glyph: "▤",
   },
   {
-    title: "Source-cited answers",
-    body: "Every answer carries chunk-level provenance: document, page, snippet, score, and lane. The Source Drawer is one click away.",
+    title: "Source-cited, chunk-level",
+    body: "Every answer carries document, page, snippet, score, and lane. Open the Source Drawer to verify in one click.",
     glyph: "❑",
   },
   {
@@ -15,8 +15,8 @@ const FEATURES = [
     glyph: "⌬",
   },
   {
-    title: "Confidence on every reply",
-    body: "Topgun AI never hides a low-confidence answer. The badge tells you when there is not enough evidence to commit.",
+    title: "Confidence you can act on",
+    body: "Topgun AI never hides a weak answer. The confidence badge tells you exactly how much evidence is behind it.",
     glyph: "△",
   },
   {
@@ -25,27 +25,29 @@ const FEATURES = [
     glyph: "◇",
   },
   {
-    title: "Audit-ready by design",
-    body: "Every query, ingestion, and edit is logged with the actor, the source, and the time. Built for regulated operators.",
+    title: "Audit-grade by design",
+    body: "Every query, ingest, and correction is logged with actor, source, and timestamp. Built for regulated operators.",
     glyph: "⌗",
   },
 ];
 
 export function FeatureGrid() {
   return (
-    <section className="border-b border-white/5 bg-gunmetal-950">
-      <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <div className="mb-14 max-w-2xl">
-          <div className="pill mb-4">Capabilities</div>
-          <h2 className="text-3xl font-semibold tracking-tight text-ink-100 md:text-4xl">
-            Built for mission-critical maintenance,
-            <br />
-            not casual chat.
-          </h2>
-          <p className="mt-4 text-ink-300">
+    <section className="border-b border-white/[0.06] bg-gunmetal-950">
+      <div className="mx-auto max-w-6xl px-6 py-24 md:py-28">
+        <div className="mb-16 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <div className="pill mb-4">Capabilities</div>
+            <h2 className="text-[34px] font-semibold leading-[1.1] tracking-[-0.015em] text-ink-100 md:text-[44px]">
+              Mission-critical maintenance,
+              <br />
+              not casual chat.
+            </h2>
+          </div>
+          <p className="max-w-md text-[13.5px] leading-relaxed text-ink-300">
             Topgun AI is a structured intelligence panel for mechanics,
-            planners, and inspectors. Every feature serves the
-            audit-grade decisions your team makes every shift.
+            planners, and inspectors. Every feature serves the audit-grade
+            decisions your team makes every shift.
           </p>
         </div>
 
@@ -53,16 +55,18 @@ export function FeatureGrid() {
           {FEATURES.map((f) => (
             <article
               key={f.title}
-              className="panel group relative p-6 transition hover:border-cyan-500/30"
+              className="panel group relative p-6 transition duration-200 hover:border-cyan-500/30 hover:bg-gunmetal-800/80"
             >
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+              <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-300">
                 {f.glyph}
               </div>
-              <h3 className="text-base font-semibold text-ink-100">{f.title}</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight text-ink-100">
+                {f.title}
+              </h3>
               <p className="mt-2 text-[13px] leading-relaxed text-ink-300">
                 {f.body}
               </p>
-              <div className="absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+              <div className="absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent opacity-0 transition group-hover:opacity-100" />
             </article>
           ))}
         </div>

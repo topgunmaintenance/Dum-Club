@@ -17,11 +17,16 @@ const TONE_TEXT: Record<ConfidenceReport["label"], string> = {
 export function ConfidenceBadge({ report }: { report: ConfidenceReport }) {
   const pct = Math.round(report.score * 100);
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-gunmetal-900/70 p-3">
-      <div
-        className={`relative grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br ${TONE_RING[report.label]} text-gunmetal-950 shadow-glow`}
-      >
-        <span className="font-mono text-xs font-bold">{pct}</span>
+    <div className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-gunmetal-900/70 p-4">
+      <div className="relative">
+        <div
+          className={`grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br ${TONE_RING[report.label]} text-gunmetal-950 shadow-glow`}
+        >
+          <span className="font-mono text-[13px] font-bold">{pct}</span>
+        </div>
+        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 font-mono text-[9px] text-ink-400">
+          score
+        </span>
       </div>
       <div className="min-w-0">
         <div
@@ -29,7 +34,9 @@ export function ConfidenceBadge({ report }: { report: ConfidenceReport }) {
         >
           confidence · {report.label}
         </div>
-        <div className="text-[12px] text-ink-200">{report.reason}</div>
+        <div className="mt-1 text-[12.5px] leading-snug text-ink-200">
+          {report.reason}
+        </div>
       </div>
     </div>
   );

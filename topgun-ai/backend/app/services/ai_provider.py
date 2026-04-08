@@ -15,6 +15,8 @@ a clear, actionable error.
 """
 from __future__ import annotations
 
+import hashlib
+import struct
 from typing import Any, Protocol
 
 from app.core.config import get_settings
@@ -135,10 +137,11 @@ def get_ai_provider() -> AIProvider:
 
 # ---------------------------------------------------------------------------
 def _hashed_vector(text: str, dim: int) -> list[float]:
-    """Tiny deterministic "embedding" for the stub provider."""
-    import hashlib
-    import struct
+    """Tiny deterministic "embedding" for the stub provider.
 
+    This is a deterministic local fallback (NOT semantically meaningful).
+    Documented as fallback quality only — Phase 2 wires real embeddings.
+    """
     vec = [0.0] * dim
     for token in text.lower().split():
         digest = hashlib.sha1(token.encode("utf-8")).digest()

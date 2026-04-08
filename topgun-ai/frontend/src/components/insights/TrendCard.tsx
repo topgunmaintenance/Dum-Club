@@ -16,20 +16,25 @@ const TREND_TONE: Record<FleetWidget["trend"], string> = {
 
 export function TrendCard({ widget }: { widget: FleetWidget }) {
   return (
-    <Card title={widget.label} subtitle={widget.detail ?? undefined}>
+    <Card title={widget.label}>
       <div className="flex items-end justify-between">
         <div>
-          <div className="font-mono text-4xl text-ink-100">{widget.value}</div>
+          <div className="font-mono text-[36px] font-semibold leading-none text-ink-100">
+            {widget.value}
+          </div>
           {widget.unit && (
-            <div className="mt-1 text-[11px] uppercase tracking-wider text-ink-400">
-              {widget.unit}
-            </div>
+            <div className="label-eyebrow mt-2">{widget.unit}</div>
           )}
         </div>
         <div className={`text-2xl ${TREND_TONE[widget.trend]}`}>
           {TREND_GLYPH[widget.trend]}
         </div>
       </div>
+      {widget.detail && (
+        <p className="mt-4 border-t border-white/[0.06] pt-3 text-[11.5px] leading-relaxed text-ink-400">
+          {widget.detail}
+        </p>
+      )}
     </Card>
   );
 }

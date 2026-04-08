@@ -8,22 +8,27 @@ export function SystemStatusGrid({
   components: SystemComponent[];
 }) {
   return (
-    <Card title="System health" subtitle="Live component status">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <Card
+      variant="accent"
+      title="System health"
+      subtitle="Live component status"
+      action={<span className="pill-emerald">monitored</span>}
+    >
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {components.map((c) => (
           <div
             key={c.id}
-            className="panel-tight flex items-center justify-between p-4"
+            className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-gunmetal-900/60 p-3.5 transition hover:border-cyan-500/25"
           >
-            <div>
-              <div className="text-[11px] uppercase tracking-wider text-ink-400">
-                {c.id}
-              </div>
-              <div className="text-[14px] font-medium text-ink-100">
+            <div className="min-w-0">
+              <div className="label-eyebrow">{c.id}</div>
+              <div className="truncate text-[13px] font-medium text-ink-100">
                 {c.label}
               </div>
             </div>
-            <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+            <Badge tone={statusTone(c.status)} dot>
+              {c.status}
+            </Badge>
           </div>
         ))}
       </div>

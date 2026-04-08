@@ -1,50 +1,58 @@
-import { Badge } from "@/components/ui/Badge";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { Citation } from "@/lib/types";
 
-const LANE_TONE = {
+const LANE_TONE: Record<Citation["lane"], BadgeTone> = {
   manual: "cyan",
   history: "emerald",
-  parts: "amber",
+  parts: "violet",
   pattern: "rose",
-} as const;
+};
 
 export function CitationsPanel({ citations }: { citations: Citation[] }) {
   return (
     <Card
       title="Citations"
-      subtitle="Source-cited evidence — chunk-level provenance"
+      subtitle="Chunk-level source evidence"
+      action={
+        citations.length > 0 ? (
+          <span className="pill">{citations.length} sources</span>
+        ) : null
+      }
     >
       {citations.length === 0 ? (
-        <div className="rounded-lg border border-white/5 bg-gunmetal-900/60 p-4 text-[12px] text-ink-400">
-          No citations attached. Topgun AI refuses to answer without
-          source evidence.
-        </div>
+        <EmptyState
+          glyph="∅"
+          title="No evidence retrieved"
+          body="Topgun AI refuses to answer without cited sources. Upload a relevant manual or record and ask again."
+        />
       ) : (
         <ul className="space-y-3">
           {citations.map((c, idx) => (
             <li
               key={`${c.document_id}-${c.page}-${idx}`}
-              className="group rounded-xl border border-white/5 bg-gunmetal-900/60 p-3 transition hover:border-cyan-500/30"
+              className="group cursor-pointer rounded-xl border border-white/[0.06] bg-gunmetal-900/60 p-4 transition hover:border-cyan-500/30 hover:bg-gunmetal-900/80"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge tone={LANE_TONE[c.lane]}>{c.lane}</Badge>
-                    <span className="pill">{c.document_type}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={LANE_TONE[c.lane]}>lane · {c.lane}</Badge>
+                    <Badge tone="neutral">{c.document_type}</Badge>
+                    <span className="mono-meta">p. {c.page}</span>
                   </div>
                   <div className="mt-2 truncate text-[13px] font-medium text-ink-100">
                     {c.document_title}
                   </div>
-                  <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-300">
-                    “{c.snippet}”
-                  </p>
+                  <blockquote className="mt-2 border-l-2 border-white/10 pl-3 text-[12px] italic leading-relaxed text-ink-300 group-hover:border-cyan-500/50">
+                    {c.snippet}
+                  </blockquote>
                 </div>
-                <div className="text-right text-[10px] uppercase tracking-wider text-ink-400">
-                  <div>page {c.page}</div>
-                  <div className="font-mono text-cyan-300">
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="font-mono text-[12px] text-cyan-300">
                     {c.score.toFixed(2)}
                   </div>
+                  <div className="label-eyebrow">score</div>
                 </div>
               </div>
             </li>

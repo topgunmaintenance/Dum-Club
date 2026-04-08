@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import { statusTone, Badge } from "@/components/ui/Badge";
+import { Badge, statusTone } from "@/components/ui/Badge";
 import type { SystemComponent } from "@/lib/types";
 
 export function StatusCards({
@@ -12,20 +12,27 @@ export function StatusCards({
   provider: string;
 }) {
   return (
-    <Card title="System status" subtitle={`v${version} · ${provider} provider`}>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+    <Card
+      variant="accent"
+      title="System status"
+      subtitle={`v${version} · ${provider} provider`}
+      action={<span className="pill-emerald">all critical paths up</span>}
+    >
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
         {components.map((c) => (
           <div
             key={c.id}
-            className="panel-tight flex items-center justify-between px-3 py-3"
+            className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-gunmetal-900/60 p-3 transition hover:border-cyan-500/20"
           >
-            <div>
-              <div className="text-[11px] uppercase tracking-wider text-ink-400">
+            <div className="min-w-0">
+              <div className="label-eyebrow">{c.id}</div>
+              <div className="truncate text-[12.5px] font-medium text-ink-100">
                 {c.label}
               </div>
-              <div className="font-mono text-[12px] text-ink-200">{c.id}</div>
             </div>
-            <Badge tone={statusTone(c.status)}>{c.status}</Badge>
+            <Badge tone={statusTone(c.status)} dot>
+              {c.status}
+            </Badge>
           </div>
         ))}
       </div>

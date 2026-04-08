@@ -1,11 +1,11 @@
-import { Badge } from "@/components/ui/Badge";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import type { RecurringCluster } from "@/lib/types";
 
-const SEVERITY_TONE = {
+const SEVERITY_TONE: Record<RecurringCluster["severity"], BadgeTone> = {
   low: "emerald",
   medium: "amber",
   high: "rose",
-} as const;
+};
 
 const TREND_TONE = {
   rising: "text-amber-300",
@@ -23,46 +23,49 @@ const TREND_GLYPH = {
 
 export function IssueCluster({ cluster }: { cluster: RecurringCluster }) {
   return (
-    <article className="panel p-5">
+    <article className="panel p-5 transition hover:border-cyan-500/25">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={SEVERITY_TONE[cluster.severity]}>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge tone={SEVERITY_TONE[cluster.severity]} dot>
               {cluster.severity}
             </Badge>
-            <span className="pill">{cluster.ata}</span>
+            <Badge tone="cyan">{cluster.ata}</Badge>
             <span className="pill">{cluster.aircraft}</span>
           </div>
-          <h3 className="mt-3 text-base font-semibold text-ink-100">
+          <h3 className="mt-3 text-[15px] font-semibold tracking-tight text-ink-100">
             {cluster.title}
           </h3>
           {cluster.notes && (
-            <p className="mt-1 text-[12px] leading-relaxed text-ink-300">
+            <p className="mt-1 text-[12px] leading-relaxed text-ink-400">
               {cluster.notes}
             </p>
           )}
         </div>
-        <div className={`text-2xl ${TREND_TONE[cluster.trend]}`}>
+        <div
+          className={`text-2xl ${TREND_TONE[cluster.trend]}`}
+          aria-label={`trend ${cluster.trend}`}
+        >
           {TREND_GLYPH[cluster.trend]}
         </div>
       </div>
 
-      <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-white/5 pt-4 text-[11px] uppercase tracking-wider text-ink-400">
+      <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-white/[0.06] pt-4">
         <div>
-          <dt>Write-ups · 90d</dt>
-          <dd className="font-mono text-2xl text-ink-100">
+          <dt className="label-eyebrow">Write-ups · 90d</dt>
+          <dd className="mt-1 font-mono text-[24px] font-semibold text-ink-100">
             {cluster.count_90d}
           </dd>
         </div>
         <div>
-          <dt>Aircraft</dt>
-          <dd className="font-mono text-2xl text-ink-100">
+          <dt className="label-eyebrow">Aircraft</dt>
+          <dd className="mt-1 font-mono text-[24px] font-semibold text-ink-100">
             {cluster.aircraft_count}
           </dd>
         </div>
         <div>
-          <dt>Last seen</dt>
-          <dd className="font-mono text-base text-ink-200">
+          <dt className="label-eyebrow">Last seen</dt>
+          <dd className="mt-1 font-mono text-[14px] text-ink-200">
             {cluster.last_occurred}
           </dd>
         </div>

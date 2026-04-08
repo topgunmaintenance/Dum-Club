@@ -5,8 +5,11 @@
 // unreachable, callers can fall back to ``demoData`` so the UI always
 // has something meaningful to render.
 
+import { demoData } from "./demoData";
 import type {
+  DocumentDetail,
   DocumentListResponse,
+  DocumentSummary,
   InsightsResponse,
   QueryResponse,
   RecentQuery,
@@ -17,7 +20,7 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
   "http://localhost:8000";
 
-async function request<T>(
+async function jsonRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
@@ -30,8 +33,11 @@ async function request<T>(
     cache: "no-store",
   });
   if (!res.ok) {
+    const body = await res.text().catch(() => "");
     throw new Error(
-      `Topgun API ${path} failed: ${res.status} ${res.statusText}`,
+      `Topgun API ${path} failed: ${res.status} ${res.statusText}${
+        body ? ` — ${body.slice(0, 200)}` : ""
+      }`,
     );
   }
   return (await res.json()) as T;
@@ -41,27 +47,50 @@ export const api = {
   baseUrl: BASE_URL,
 
   async health(): Promise<{ status: string; version: string }> {
-    return request("/api/health");
+    return jsonRequest("/api/health");
   },
 
   async listDocuments(): Promise<DocumentListResponse> {
-    return request("/api/documents");
+    return jsonRequest("/api/documents");
+  },
+
+  async getDocument(id: string): Promise<DocumentDetail> {
+    return jsonRequest(`/api/documents/${encodeURIComponent(id)}`);
+  },
+
+  async uploadDocument(file: File): Promise<DocumentSummary> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE_URL}/api/documents/upload`, {
+      method: "POST",
+      body: form,
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(
+        `Upload failed: ${res.status} ${res.statusText}${
+          body ? ` — ${body.slice(0, 200)}` : ""
+        }`,
+      );
+    }
+    return (await res.json()) as DocumentSummary;
   },
 
   async insights(): Promise<InsightsResponse> {
-    return request("/api/insights");
+    return jsonRequest("/api/insights");
   },
 
   async systemStatus(): Promise<SystemStatusResponse> {
-    return request("/api/system/status");
+    return jsonRequest("/api/system/status");
   },
 
   async recentQueries(limit = 5): Promise<RecentQuery[]> {
-    return request(`/api/query/recent?limit=${limit}`);
+    return jsonRequest(`/api/query/recent?limit=${limit}`);
   },
 
   async ask(question: string): Promise<QueryResponse> {
-    return request("/api/query", {
+    return jsonRequest("/api/query", {
       method: "POST",
       body: JSON.stringify({ question }),
     });
@@ -72,13 +101,22 @@ export const api = {
 // Safe wrappers for server components: never crash the page if the
 // backend is offline; fall back to the bundled demo data instead.
 // ---------------------------------------------------------------------
-import { demoData } from "./demoData";
-
 export async function safeListDocuments(): Promise<DocumentListResponse> {
   try {
     return await api.listDocuments();
   } catch {
     return demoData.documentList;
+  }
+}
+
+export async function safeGetDocument(
+  id: string,
+): Promise<DocumentDetail | null> {
+  try {
+    return await api.getDocument(id);
+  } catch {
+    const fallback = demoData.documentList.documents.find((d) => d.id === id);
+    return fallback ? (fallback as DocumentDetail) : null;
   }
 }
 

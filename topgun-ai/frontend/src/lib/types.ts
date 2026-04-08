@@ -30,6 +30,10 @@ export interface DocumentSummary {
   summary?: string | null;
 }
 
+// The backend returns the same shape for list and detail in the MVP.
+// Aliasing keeps the API client honest if the contract diverges later.
+export type DocumentDetail = DocumentSummary;
+
 export interface DocumentListResponse {
   documents: DocumentSummary[];
   total: number;
