@@ -23,16 +23,70 @@ DUM_TREASURY_KEYPAIR = os.getenv("DUM_TREASURY_KEYPAIR", "")
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "")
 
 # Validate key format at import time so bad config is caught immediately
+_KEYPAIR_AUTO_DISABLED_REASON = ""
 if DUM_TREASURY_KEYPAIR and DUM_TREASURY_KEYPAIR.strip().startswith("["):
     print("[solana] FATAL CONFIG ERROR: DUM_TREASURY_KEYPAIR is JSON-array formatted.")
     print("[solana] It must be a base58-encoded secret string, NOT a JSON array.")
     print("[solana] On-chain minting will be DISABLED until this is fixed.")
     DUM_TREASURY_KEYPAIR = ""  # force disable to prevent repeated decode failures
+    _KEYPAIR_AUTO_DISABLED_REASON = "DUM_TREASURY_KEYPAIR was JSON-array formatted and was auto-disabled at import"
 
 
 def is_solana_enabled() -> bool:
     """Check if Solana minting is configured with valid env vars."""
     return bool(DUM_MINT and DUM_TREASURY_KEYPAIR)
+
+
+# One grep-friendly startup line so ops can see the current mint state
+# without tailing per-request logs. Not a secret — only booleans + reason.
+if is_solana_enabled():
+    print(f"[solana] startup: on-chain mint ENABLED mint_set=True keypair_set=True treasury_wallet_set={bool(DUM_TREASURY_WALLET)}")
+else:
+    _reason = _KEYPAIR_AUTO_DISABLED_REASON or (
+        "DUM_MINT and DUM_TREASURY_KEYPAIR are not set" if not DUM_MINT and not DUM_TREASURY_KEYPAIR
+        else "DUM_MINT is not set" if not DUM_MINT
+        else "DUM_TREASURY_KEYPAIR is not set"
+    )
+    print(f"[solana] startup: on-chain mint DISABLED reason={_reason!r}")
+
+
+def get_solana_status() -> dict:
+    """
+    Read-only status snapshot for admin/system health. Never exposes the
+    keypair itself — only booleans + the public RPC URL and mint address.
+
+    Fields:
+        mint_set:             DUM_MINT env var present
+        keypair_set:          DUM_TREASURY_KEYPAIR present AND not auto-disabled
+        treasury_wallet_set:  DUM_TREASURY_WALLET present (used by SOL deposit verify)
+        rpc_url:              SOLANA_RPC_URL (public)
+        mint_address:         DUM_MINT (public SPL mint address)
+        mint_enabled:         final "is the on-chain mint path ready?" answer
+        reason:               short explanation when not enabled
+    """
+    mint_set = bool(DUM_MINT)
+    keypair_set = bool(DUM_TREASURY_KEYPAIR)
+    enabled = mint_set and keypair_set
+    rpc_url = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+    reason = ""
+    if not enabled:
+        if _KEYPAIR_AUTO_DISABLED_REASON:
+            reason = _KEYPAIR_AUTO_DISABLED_REASON
+        elif not mint_set and not keypair_set:
+            reason = "DUM_MINT and DUM_TREASURY_KEYPAIR are not set"
+        elif not mint_set:
+            reason = "DUM_MINT is not set"
+        else:
+            reason = "DUM_TREASURY_KEYPAIR is not set"
+    return {
+        "mint_set": mint_set,
+        "keypair_set": keypair_set,
+        "treasury_wallet_set": bool(DUM_TREASURY_WALLET),
+        "rpc_url": rpc_url,
+        "mint_address": DUM_MINT,
+        "mint_enabled": enabled,
+        "reason": reason,
+    }
 
 
 def mint_dum_to_wallet(wallet_address: str, amount: int) -> dict | None:
@@ -124,6 +178,7 @@ def get_dum_balance(wallet_address: str) -> int | None:
     Returns the token balance as an integer, or None if failed.
     """
     if not DUM_MINT:
+        print(f"[solana] balance read skipped wallet={wallet_address} reason=DUM_MINT_not_set")
         return None
 
     try:
@@ -158,5 +213,5 @@ def get_dum_balance(wallet_address: str) -> int | None:
 
         return total
     except Exception as exc:
-        print(f"[solana] balance read failed for {wallet_address}: {exc!r}")
+        print(f"[solana] balance read FAILED wallet={wallet_address} rpc_url={os.getenv('SOLANA_RPC_URL', 'devnet')} err={type(exc).__name__}: {exc!r}")
         return None

@@ -8,6 +8,7 @@ Points are stored in users.dum_balance (integer).
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -16,6 +17,53 @@ from db.supabase import get_client
 from auth.privy import get_current_user
 
 router = APIRouter()
+
+
+# ── Cooldown helper (fail-safe) ─────────────────────────────────────
+#
+# Central helper for the three /swap + /claim endpoints. On a timestamp
+# parse error we previously did `except: pass`, which silently skipped
+# the cooldown gate and let a user burst past rate limits. The fix:
+# treat any parse failure as "cooldown still active" (fail-safe) and
+# deny the request with an honest 429.
+
+def _check_cooldown(
+    last_ts_str: Optional[str],
+    window_seconds: int,
+    *,
+    label: str,
+    privy_id: str,
+) -> None:
+    """
+    Raise HTTPException(429) if the last action was within `window_seconds`.
+
+    - last_ts_str: ISO-8601 string, or None/empty (no prior action).
+    - window_seconds: cooldown window in seconds.
+    - label: short tag for the log line (e.g. "swap_buy", "claim").
+    - privy_id: used in logs only, never in the user-facing response.
+
+    Fail-safe on parse errors: if the timestamp cannot be parsed, the
+    caller is denied with a 429 rather than allowed through. A malformed
+    DB row must never silently disable the rate limit.
+    """
+    if not last_ts_str:
+        return
+    try:
+        last_dt = datetime.fromisoformat(last_ts_str.replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        print(f"[dum] cooldown parse error label={label} privy_id={privy_id} raw={last_ts_str!r} err={type(exc).__name__}")
+        # Fail-safe: deny. A future well-formed write will clear the gate.
+        raise HTTPException(
+            status_code=429,
+            detail="Cooldown check failed on a malformed timestamp. Please retry shortly.",
+        )
+    elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+    if elapsed < window_seconds:
+        wait = int(window_seconds - elapsed)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {wait} seconds before {label.replace('_', ' ')} again",
+        )
 
 # ── Stripe (lazy import, same pattern as checkout.py) ──
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
@@ -97,7 +145,10 @@ def _update_balance_and_log(
             "balance_after": new_balance,
         }).execute()
     except Exception as exc:
-        print(f"[dum] transaction log failed (non-fatal): {exc!r}")
+        # Balance already updated above; ledger write failing means
+        # users.dum_balance and dum_transactions are now divergent. This
+        # is logged loudly so admin/system can investigate.
+        print(f"[dum] LEDGER DIVERGENCE privy_id={privy_id} delta={delta} reason={reason} reference_id={reference_id} new_balance={new_balance} err={type(exc).__name__}: {exc!r}")
 
     print(f"[dum] {'+' if delta > 0 else ''}{delta} to {privy_id} ({reason}) → {new_balance}")
     return new_balance
@@ -199,8 +250,12 @@ async def spend_points(
                 supabase.table("projects").update(
                     {"dum_received": current_received + req.amount}
                 ).eq("id", req.project_id).execute()
+            else:
+                print(f"[dum] business credit skipped project={req.project_id} privy_id={req.privy_id} amount={req.amount} reason=project_not_found")
         except Exception as exc:
-            print(f"[dum] business credit failed (non-fatal): {exc!r}")
+            # Non-fatal — user spend already succeeded. Surfaced loudly so
+            # admin/system health can detect divergence against project totals.
+            print(f"[dum] business credit FAILED project={req.project_id} privy_id={req.privy_id} amount={req.amount} err={type(exc).__name__}: {exc!r}")
 
     return DumBalanceResponse(privy_id=req.privy_id, balance=new_balance)
 
@@ -377,18 +432,14 @@ async def swap_sol_to_dum(
     )
     swap_rows = recent_swaps.data or []
 
-    # Cooldown: check last swap timestamp
+    # Cooldown: fail-safe on parse errors (see _check_cooldown helper).
     if swap_rows:
-        last_swap_time = swap_rows[0].get("created_at", "")
-        if last_swap_time:
-            try:
-                last_dt = datetime.fromisoformat(last_swap_time.replace("Z", "+00:00"))
-                elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
-                if elapsed < SWAP_COOLDOWN_SECONDS:
-                    wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
-                    raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
-            except (ValueError, TypeError):
-                pass
+        _check_cooldown(
+            swap_rows[0].get("created_at", ""),
+            SWAP_COOLDOWN_SECONDS,
+            label="swap_buy",
+            privy_id=privy_id,
+        )
 
     # Daily cap: sum SOL swapped in last 24h
     # DUM amount / rate = SOL equivalent
@@ -431,20 +482,33 @@ async def swap_sol_to_dum(
     )
 
     # Best-effort: mint SPL tokens on-chain
+    # Best-effort on-chain mint. Mode is reported in the response so the
+    # client knows whether the DB credit was accompanied by a real SPL mint.
+    onchain_attempted = False
+    onchain_ok = False
     try:
         from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
         if is_solana_enabled() and req.wallet_address:
-            mint_dum_to_wallet(req.wallet_address, dum_amount)
+            onchain_attempted = True
+            mint_result = mint_dum_to_wallet(req.wallet_address, dum_amount)
+            onchain_ok = bool(mint_result and mint_result.get("signature"))
+            if not onchain_ok:
+                print(f"[swap] on-chain mint returned no signature privy_id={privy_id} wallet={req.wallet_address}")
     except Exception as mint_err:
-        print(f"[swap] on-chain mint failed (non-fatal): {mint_err}")
+        print(f"[swap] on-chain mint FAILED privy_id={privy_id} wallet={req.wallet_address} err={type(mint_err).__name__}: {mint_err!r}")
 
-    print(f"[swap] ✓ {req.sol_amount} SOL → {dum_amount} DUM for {privy_id}")
+    claim_mode = "onchain" if onchain_ok else "db_only"
+    print(f"[swap] ✓ {req.sol_amount} SOL → {dum_amount} DUM for {privy_id} (claim_mode={claim_mode})")
     return {
         "status": "success",
         "sol_amount": req.sol_amount,
         "dum_received": dum_amount,
         "new_balance": new_balance,
         "tx_signature": req.tx_signature,
+        # Additive honesty fields — never overstate on-chain readiness.
+        "claim_mode": claim_mode,
+        "onchain_attempted": onchain_attempted,
+        "onchain_ok": onchain_ok,
     }
 
 
@@ -456,14 +520,15 @@ DUM_USD_PRICE = 0.01  # Fixed price for display: $0.01 per DUM Point
 
 @router.get("/market")
 async def get_market_data():
-    """Global DUM market overview — price, supply, volume."""
+    """Global DUM market overview — price, supply, volume, claim readiness."""
     supabase = get_client()
 
     # Total supply: sum of all user balances
     try:
         users_res = supabase.table("users").select("dum_balance").execute()
         total_supply = sum(row.get("dum_balance", 0) for row in (users_res.data or []))
-    except Exception:
+    except Exception as exc:
+        print(f"[dum] total_supply query failed err={type(exc).__name__}: {exc!r}")
         total_supply = 0
 
     # 24h volume: sum of positive transactions in last 24h
@@ -478,8 +543,23 @@ async def get_market_data():
             .execute()
         )
         volume_24h = sum(row.get("amount", 0) for row in (vol_res.data or []))
-    except Exception:
+    except Exception as exc:
+        print(f"[dum] volume_24h query failed err={type(exc).__name__}: {exc!r}")
         volume_24h = 0
+
+    # Honest claim-readiness snapshot. Never overstate on-chain readiness.
+    try:
+        from services.readiness import dum_points_status
+        claim_status = dum_points_status()
+    except Exception as exc:
+        print(f"[dum] claim readiness snapshot failed err={type(exc).__name__}: {exc!r}")
+        claim_status = {
+            "claims_enabled": True,
+            "onchain_claim_ready": False,
+            "claim_mode": "db_only",
+            "cooldown_seconds_effective": SWAP_COOLDOWN_SECONDS,
+            "reason": "readiness helper unavailable",
+        }
 
     return {
         "price_usd": DUM_USD_PRICE,
@@ -488,6 +568,11 @@ async def get_market_data():
         "market_cap_usd": round(total_supply * DUM_USD_PRICE, 2),
         "volume_24h": volume_24h,
         "volume_24h_usd": round(volume_24h * DUM_USD_PRICE, 2),
+        # Additive readiness fields — a client can render a "demo claim"
+        # badge or hide the on-chain claim UI entirely based on these.
+        "claims_enabled": claim_status.get("claims_enabled", True),
+        "onchain_claim_ready": claim_status.get("onchain_claim_ready", False),
+        "claim_mode": claim_status.get("claim_mode", "db_only"),
     }
 
 
@@ -558,16 +643,12 @@ async def demo_swap_sol_to_dum(
     swap_rows = recent_swaps.data or []
 
     if swap_rows:
-        last_swap_time = swap_rows[0].get("created_at", "")
-        if last_swap_time:
-            try:
-                last_dt = datetime.fromisoformat(last_swap_time.replace("Z", "+00:00"))
-                elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
-                if elapsed < SWAP_COOLDOWN_SECONDS:
-                    wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
-                    raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before swapping again")
-            except (ValueError, TypeError):
-                pass
+        _check_cooldown(
+            swap_rows[0].get("created_at", ""),
+            SWAP_COOLDOWN_SECONDS,
+            label="demo_swap",
+            privy_id=privy_id,
+        )
 
     total_dum_24h = sum(row.get("amount", 0) for row in swap_rows)
     total_sol_24h = total_dum_24h / DUM_SOL_RATE if DUM_SOL_RATE > 0 else 0
@@ -633,15 +714,12 @@ async def claim_dum_tokens(
         .execute()
     )
     if recent_claims.data:
-        last_time = recent_claims.data[0].get("created_at", "")
-        try:
-            last_dt = datetime.fromisoformat(last_time.replace("Z", "+00:00"))
-            elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
-            if elapsed < SWAP_COOLDOWN_SECONDS:
-                wait = int(SWAP_COOLDOWN_SECONDS - elapsed)
-                raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before claiming again")
-        except (ValueError, TypeError):
-            pass
+        _check_cooldown(
+            recent_claims.data[0].get("created_at", ""),
+            SWAP_COOLDOWN_SECONDS,
+            label="claim",
+            privy_id=privy_id,
+        )
 
     # Attempt real on-chain SPL mint, fall back to DB-only if unavailable
     from services.solana_mint import mint_dum_to_wallet, is_solana_enabled
@@ -679,6 +757,9 @@ async def claim_dum_tokens(
         "mint": os.getenv("DUM_MINT", ""),
         "wallet": req.wallet_address,
         "mode": mode,
+        # Additive normalised readiness fields (preserve `mode` for back-compat).
+        "claim_mode": "onchain" if mode == "on-chain" else "db_only",
+        "onchain_claim_ready": is_solana_enabled(),
     }
 
 

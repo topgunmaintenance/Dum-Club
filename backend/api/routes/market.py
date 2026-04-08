@@ -267,12 +267,24 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "source": wallet,
     }
 
-    # 1. Insert trade row
+    # Per-trade side-effect diagnostics. These flags are surfaced in the
+    # trade response so operators (and any future trade-integrity health
+    # query) can see which sub-writes succeeded without having to read DB.
+    side_effects = {
+        "trade_inserted": False,
+        "market_state_updated": False,
+        "balance_updated": False,
+        "candle_updated": False,
+    }
+    side_effect_errors: list[str] = []
+
+    # 1. Insert trade row — critical, failure bubbles as 500
     try:
         trade_res = supabase.table("project_trades").insert(trade_insert).execute()
-        print(f"[trade] Trade inserted: id={trade_res.data[0]['id'] if trade_res.data else '?'}, side={side}, amount={amount}")
+        side_effects["trade_inserted"] = True
+        print(f"[trade] inserted project={project_id} side={side} amount={amount} id={trade_res.data[0]['id'] if trade_res.data else '?'}")
     except Exception as db_err:
-        print(f"[trade] DB ERROR inserting trade: {type(db_err).__name__}: {db_err}")
+        print(f"[trade] DB ERROR inserting trade project={project_id} side={side} amount={amount} err={type(db_err).__name__}: {db_err}")
         raise HTTPException(status_code=500, detail=f"Failed to record trade: {str(db_err)}")
 
     market_upsert = {
@@ -286,17 +298,20 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "updated_at": now,
     }
 
-    # 2. Upsert market state
+    # 2. Upsert market state — non-critical, log and continue so a trade
+    # row is never orphaned just because the state table hiccupped.
     try:
         supabase.table("project_market_state").upsert(
             market_upsert,
             on_conflict="project_id"
         ).execute()
-        print(f"[trade] Market state updated: price={new_price}, market_cap={market_cap}")
+        side_effects["market_state_updated"] = True
+        print(f"[trade] market_state upserted project={project_id} price={new_price} market_cap={market_cap}")
     except Exception as db_err:
-        print(f"[trade] DB ERROR upserting market state: {type(db_err).__name__}: {db_err}")
-        # Trade was already inserted — don't fail the whole request, log and continue
-        print(f"[trade] WARNING: trade row exists but market state may be stale")
+        err_label = f"{type(db_err).__name__}"
+        side_effect_errors.append(f"market_state:{err_label}")
+        print(f"[trade] STATE DIVERGENCE project={project_id} sub=market_state err={err_label}: {db_err}")
+        print(f"[trade] WARNING project={project_id}: trade row exists but market_state is stale")
 
     balance_upsert = {
         "wallet_address": wallet,
@@ -306,18 +321,21 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "updated_at": now,
     }
 
-    # 3. Upsert wallet balance
+    # 3. Upsert wallet balance — non-critical, same pattern as market_state
     try:
         supabase.table("project_balances").upsert(
             balance_upsert,
             on_conflict="wallet_address,project_id"
         ).execute()
-        print(f"[trade] Balance updated: wallet={wallet[:12]}..., balance={new_balance}")
+        side_effects["balance_updated"] = True
+        print(f"[trade] balance upserted project={project_id} wallet={wallet[:12]}... balance={new_balance}")
     except Exception as db_err:
-        print(f"[trade] DB ERROR upserting balance: {type(db_err).__name__}: {db_err}")
-        print(f"[trade] WARNING: trade row exists but balance may be stale")
+        err_label = f"{type(db_err).__name__}"
+        side_effect_errors.append(f"balance:{err_label}")
+        print(f"[trade] STATE DIVERGENCE project={project_id} sub=balance wallet={wallet[:12]}... err={err_label}: {db_err}")
+        print(f"[trade] WARNING project={project_id}: trade row exists but balance is stale")
 
-    # 4. Upsert candle data (non-critical)
+    # 4. Upsert candle data — non-critical, trade continues even on failure
     try:
         candle_time = now[:16] + ":00Z"
         candles_res = (
@@ -356,12 +374,19 @@ async def create_project_trade(project_id: str, body: TradeRequest):
             supabase.table("project_candles").update(candle_update).eq(
                 "id", existing_candle["id"]
             ).execute()
-        print(f"[trade] Candle data updated for {candle_time}")
+        side_effects["candle_updated"] = True
+        print(f"[trade] candle upserted project={project_id} bucket={candle_time}")
     except Exception as candle_err:
-        print(f"[trade] Candle update error (non-critical): {candle_err}")
+        err_label = f"{type(candle_err).__name__}"
+        side_effect_errors.append(f"candle:{err_label}")
+        print(f"[trade] candle update error (non-critical) project={project_id} err={err_label}: {candle_err}")
 
     mode_label = "simulated_ledger" if trade_is_simulated else "on_chain"
-    print(f"[trade] ✓ Trade complete ({mode_label}): {side} {amount} {token_symbol} @ {current_price} → new_price={new_price}")
+    divergent = not all(side_effects.values())
+    if divergent:
+        print(f"[trade] ✓ trade complete ({mode_label}) project={project_id} side={side} amount={amount} — PARTIAL SIDE EFFECTS: {side_effect_errors}")
+    else:
+        print(f"[trade] ✓ trade complete ({mode_label}) project={project_id} side={side} amount={amount} @ {current_price} → new_price={new_price}")
     return {
         "status": "success",
         "trade": trade_res.data[0] if trade_res.data else trade_insert,
@@ -385,6 +410,13 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         "is_simulated": trade_is_simulated,
         "simulation_mode": trade_is_simulated,
         "token_mode": token_mode(mint_address),
+        # Additive diagnostics. Every sub-write is reported here so callers
+        # (and /api/health/trading) can tell which parts of the trade
+        # actually landed. `state_divergent` is true if any non-critical
+        # side write failed after the trade row was inserted.
+        "side_effects": side_effects,
+        "state_divergent": divergent,
+        "side_effect_errors": side_effect_errors,
     }
 
 

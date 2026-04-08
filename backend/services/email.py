@@ -1,6 +1,10 @@
 """
 Email notifications for order lifecycle events.
-Uses Resend. Fails silently — never blocks the main order flow.
+Uses Resend. Fails non-fatally — never blocks the main order flow.
+
+Every send is logged and reports back a bool so callers can detect
+config-disabled state if they need to. A module-level startup log makes
+the enabled state visible in Railway logs without tailing per-request.
 """
 import os
 
@@ -8,12 +12,45 @@ _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 _FROM_EMAIL = os.getenv("EMAIL_FROM", "DUM Club <orders@dum.club>")
 _PLATFORM_URL = os.getenv("NEXT_PUBLIC_SITE_URL", "https://dum-club.vercel.app")
 
+# EMAIL_ENABLED is the canonical "do we have a key?" flag. Read by the
+# readiness helper and by the /api/health/email endpoint. Not a secret.
+EMAIL_ENABLED: bool = bool(_RESEND_API_KEY)
 
-def _send(to: str, subject: str, html: str):
-    """Send email via Resend. Never raises — logs errors."""
+# Surface the startup state in logs so ops can see "email off" in Railway
+# without tailing per-request. One line, grep-friendly, no noise.
+if EMAIL_ENABLED:
+    print(f"[email] startup: Resend enabled, from={_FROM_EMAIL}")
+else:
+    print("[email] startup: RESEND_API_KEY is not set — email delivery DISABLED until it is")
+
+
+def get_email_status() -> dict:
+    """
+    Read-only status snapshot for admin/system health. Not a secret.
+    Fields:
+        enabled:      True when a real send will be attempted
+        provider:     always "resend" in this build
+        key_set:      whether RESEND_API_KEY is present
+        from_address: the configured EMAIL_FROM value (public)
+    """
+    return {
+        "enabled": EMAIL_ENABLED,
+        "provider": "resend",
+        "key_set": bool(_RESEND_API_KEY),
+        "from_address": _FROM_EMAIL,
+    }
+
+
+def _send(to: str, subject: str, html: str) -> bool:
+    """
+    Send email via Resend. Never raises — logs errors. Returns True when
+    a real send was attempted (regardless of downstream success), False
+    when skipped due to missing config. Existing callers that ignore the
+    return value continue to work unchanged.
+    """
     if not _RESEND_API_KEY:
-        print(f"[email] Skipped (no RESEND_API_KEY): to={to} subject={subject}")
-        return
+        print(f"[email] skipped (disabled: no RESEND_API_KEY) to={to} subject={subject!r}")
+        return False
     try:
         import resend
         resend.api_key = _RESEND_API_KEY
@@ -23,9 +60,11 @@ def _send(to: str, subject: str, html: str):
             "subject": subject,
             "html": html,
         })
-        print(f"[email] Sent to={to} subject={subject} id={result.get('id', '?')}")
+        print(f"[email] sent to={to} subject={subject!r} id={result.get('id', '?')}")
+        return True
     except Exception as e:
-        print(f"[email] FAILED to={to} subject={subject} error={e}")
+        print(f"[email] FAILED to={to} subject={subject!r} err={type(e).__name__}: {e}")
+        return True  # send was attempted — config is fine, provider failed
 
 
 def send_buyer_payment_confirmed(buyer_email: str, offer_title: str, amount_usd: float, project_name: str = ""):

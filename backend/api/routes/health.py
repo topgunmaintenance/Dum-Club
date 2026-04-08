@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
 from db.supabase import get_client
 from auth.privy import require_admin
+from services.readiness import email_status, solana_status, dum_points_status
 
 router = APIRouter()
 
@@ -245,8 +246,10 @@ async def health_checkout(_admin=Depends(require_admin)):
                 "status": ep.get("status", ""),
                 "enabled_events": ep.get("enabled_events", []),
             })
-    except Exception:
-        pass  # Stripe SDK may not be available or key may be invalid
+    except Exception as stripe_err:
+        # Non-critical enrichment — the /checkout probe still reports
+        # Stripe config state without the webhook endpoint list.
+        print(f"[admin] stripe webhook listing failed (non-critical) err={type(stripe_err).__name__}: {stripe_err}")
 
     if issues:
         status = "broken" if not stripe_configured else "degraded"
@@ -279,6 +282,8 @@ async def health_trading(_admin=Depends(require_admin)):
     checked_at = _now_iso()
     tables_ok = {}
     last_trade_at = None
+    simulated_live_project_count = 0
+    onchain_live_project_count = 0
 
     try:
         supabase = get_client()
@@ -287,8 +292,9 @@ async def health_trading(_admin=Depends(require_admin)):
             try:
                 supabase.table(table).select("*").limit(1).execute()
                 tables_ok[table] = True
-            except Exception:
+            except Exception as table_err:
                 tables_ok[table] = False
+                print(f"[admin] trading table check failed table={table} err={type(table_err).__name__}: {table_err}")
 
         # Last trade timestamp
         try:
@@ -301,8 +307,28 @@ async def health_trading(_admin=Depends(require_admin)):
             )
             if trade_res.data:
                 last_trade_at = trade_res.data[0].get("created_at")
-        except Exception:
-            pass
+        except Exception as trade_err:
+            print(f"[admin] last_trade_at query failed err={type(trade_err).__name__}: {trade_err}")
+
+        # Count live projects by token mode (simulated SIM_ vs real on-chain).
+        # Best-effort — never fail the health probe if one of the counts errs.
+        try:
+            live_res = (
+                supabase.table("projects")
+                .select("token_mint_address")
+                .eq("status", "live")
+                .eq("is_deleted", False)
+                .limit(500)
+                .execute()
+            )
+            for row in (live_res.data or []):
+                mint = (row.get("token_mint_address") or "")
+                if not mint or mint.startswith("SIM_"):
+                    simulated_live_project_count += 1
+                else:
+                    onchain_live_project_count += 1
+        except Exception as mode_err:
+            print(f"[admin] live-project mode count failed err={type(mode_err).__name__}: {mode_err}")
 
         all_ok = all(tables_ok.values())
         return {
@@ -314,9 +340,17 @@ async def health_trading(_admin=Depends(require_admin)):
             "details": {
                 "tables": tables_ok,
                 "last_trade_at": last_trade_at,
+                # Additive: honest report of what the "trading" subsystem is
+                # actually running today. SIM_ projects are DB-only ledger;
+                # the trade engine is a synthetic price-impact formula until
+                # on-chain minting ships. See backend/services/readiness.py.
+                "simulated_live_project_count": simulated_live_project_count,
+                "onchain_live_project_count": onchain_live_project_count,
+                "trade_engine_mode": "simulated_ledger" if onchain_live_project_count == 0 else "mixed",
             },
         }
     except Exception as e:
+        print(f"[admin] trading health check crashed err={type(e).__name__}: {e!r}")
         return {
             "ok": False,
             "status": "broken",
@@ -325,3 +359,107 @@ async def health_trading(_admin=Depends(require_admin)):
             "checked_at": checked_at,
             "details": {"tables": tables_ok},
         }
+
+
+# ── /api/health/email — Resend email subsystem ───────────────
+
+@router.get("/email")
+async def health_email(_admin=Depends(require_admin)):
+    """
+    Email subsystem readiness. Reports whether Resend is configured.
+    Does NOT make a real send — config check only.
+    """
+    checked_at = _now_iso()
+    status = email_status()
+    ok = bool(status.get("enabled"))
+    return {
+        "ok": ok,
+        "status": "healthy" if ok else "degraded",
+        "system": "email",
+        "message": "Resend configured" if ok else (status.get("reason") or "Email delivery disabled"),
+        "checked_at": checked_at,
+        "details": status,
+    }
+
+
+# ── /api/health/solana — on-chain mint/claim readiness ───────
+
+@router.get("/solana")
+async def health_solana(_admin=Depends(require_admin)):
+    """
+    Solana on-chain mint/claim readiness. Reports config + enabled state.
+    No private keys in the response — only booleans, the public RPC URL,
+    and the public mint address.
+    """
+    checked_at = _now_iso()
+    status = solana_status()
+    ok = bool(status.get("mint_enabled"))
+    return {
+        "ok": ok,
+        "status": "healthy" if ok else "degraded",
+        "system": "solana",
+        "message": "On-chain mint path ready" if ok else (status.get("reason") or "On-chain mint disabled"),
+        "checked_at": checked_at,
+        "details": status,
+    }
+
+
+# ── /api/health/dum — DUM Points claim readiness ─────────────
+
+@router.get("/dum")
+async def health_dum(_admin=Depends(require_admin)):
+    """
+    DUM Points subsystem readiness — claim mode, cooldowns, swap caps.
+    Never overstates on-chain readiness; falls back to db_only when the
+    Solana config is incomplete.
+    """
+    checked_at = _now_iso()
+    status = dum_points_status()
+    claim_mode = status.get("claim_mode", "db_only")
+    onchain_ready = bool(status.get("onchain_claim_ready"))
+
+    if onchain_ready:
+        health_status = "healthy"
+        message = "DUM Points claim is on-chain ready"
+    else:
+        health_status = "degraded"
+        message = "DUM Points claim is DB-only (on-chain not configured)"
+
+    return {
+        "ok": True,  # claims still work in db_only mode — not "broken"
+        "status": health_status,
+        "system": "dum_points",
+        "message": message,
+        "checked_at": checked_at,
+        "details": status,
+    }
+
+
+# ── /api/health/reliability — compact roll-up ────────────────
+
+@router.get("/reliability")
+async def health_reliability(_admin=Depends(require_admin)):
+    """
+    Single compact roll-up of the subsystems added in the reliability PR.
+    Reads the readiness helpers — no DB calls, no RPC calls, no real
+    sends. Safe to hit frequently.
+    """
+    checked_at = _now_iso()
+    e = email_status()
+    s = solana_status()
+    d = dum_points_status()
+
+    any_degraded = (not e.get("enabled")) or (not s.get("mint_enabled")) or (not d.get("onchain_claim_ready"))
+
+    return {
+        "ok": True,
+        "status": "degraded" if any_degraded else "healthy",
+        "system": "reliability",
+        "message": "Reliability roll-up",
+        "checked_at": checked_at,
+        "details": {
+            "email": e,
+            "solana": s,
+            "dum_points": d,
+        },
+    }
