@@ -107,7 +107,7 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2"
         >
-          <img src="/logo.png" alt="DUM Club" className="h-8 w-auto" />
+          <img src="/dum-logo-icon.png" alt="DUM Club" className="h-8 w-auto" />
         </Link>
 
         <button
@@ -149,7 +149,7 @@ export function Navbar() {
           className="flex items-center"
           style={{ textDecoration: "none" }}
         >
-          <img src="/logo.png" alt="DUM Club" className="h-10 w-auto" />
+          <img src="/dum-logo-icon.png" alt="DUM Club" className="h-10 w-auto" />
         </Link>
 
         <div
