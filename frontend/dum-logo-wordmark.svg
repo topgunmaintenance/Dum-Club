@@ -1,0 +1,24 @@
+<svg width="220" height="48" viewBox="0 0 220 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gW" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A855F7"/>
+      <stop offset="100%" stop-color="#00FFA3"/>
+    </linearGradient>
+  </defs>
+  <!-- D -->
+  <circle cx="13" cy="14" r="11" fill="#A855F7"/>
+  <text x="13" y="19" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="12" font-weight="900" fill="#FFFFFF">D</text>
+  <!-- U -->
+  <circle cx="35" cy="14" r="11" fill="#7B61FF"/>
+  <text x="35" y="19" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="12" font-weight="900" fill="#FFFFFF">U</text>
+  <!-- M -->
+  <circle cx="24" cy="33" r="11" fill="#00FFA3"/>
+  <text x="24" y="38" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="12" font-weight="900" fill="#07071A">M</text>
+  <!-- connector lines -->
+  <line x1="13" y1="14" x2="35" y2="14" stroke="#7B61FF" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="13" y1="14" x2="24" y2="33" stroke="#A855F7" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="35" y1="14" x2="24" y2="33" stroke="#00FFA3" stroke-width="1" stroke-opacity="0.5"/>
+  <!-- DUM CLUB text -->
+  <text x="54" y="30" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="22" font-weight="900" fill="#A855F7">DUM</text>
+  <text x="107" y="30" font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" font-size="22" font-weight="900" fill="#F0EFF8"> CLUB</text>
+</svg>
