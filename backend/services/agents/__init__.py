@@ -10,11 +10,9 @@ mock them.
 
 Currently shipped:
     - base.Agent / base.AgentResult
-    - local_discovery.LocalDiscoveryAgent
-
-Planned (future PRs, do not build here):
-    - purchase_proof.PurchaseProofAgent
-    - rewards.RewardsAgent
+    - local_discovery.LocalDiscoveryAgent  (flag: local_discovery_agent_enabled)
+    - purchase_proof.PurchaseProofAgent    (flag: purchase_proof_agent_enabled)
+    - rewards.RewardsAgent                 (flag: rewards_agent_enabled)
 """
 
 from services.agents.base import Agent, AgentResult

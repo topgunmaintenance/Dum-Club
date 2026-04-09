@@ -22,6 +22,7 @@ _FLAGS = {
     "local_discovery_agent_enabled": ("LOCAL_DISCOVERY_AGENT_ENABLED", False),
     "purchase_proof_agent_enabled": ("PURCHASE_PROOF_AGENT_ENABLED", False),
     "purchase_proof_auto_verify_enabled": ("PURCHASE_PROOF_AUTO_VERIFY_ENABLED", False),
+    "rewards_agent_enabled": ("REWARDS_AGENT_ENABLED", False),
 }
 
 

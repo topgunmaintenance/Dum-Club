@@ -112,11 +112,16 @@ class DumSpendRequest(BaseModel):
 # ── Shared helper: update balance + log transaction ──────────
 
 def _update_balance_and_log(
-    supabase, privy_id: str, delta: int, reason: str, reference_id: str | None = None
+    supabase, privy_id: str, delta: int, reason: str, reference_id: str | None = None,
+    business_candidate_id: str | None = None,
 ) -> int:
     """
     Atomically update dum_balance and insert a dum_transactions row.
     Returns the new balance. `delta` is positive for earning, negative for spending.
+
+    The optional `business_candidate_id` column (migration 020) attaches the
+    external business that triggered an off-platform reward. Set only by
+    RewardsAgent callers; all other call sites leave it None.
     """
     res = (
         supabase.table("users")
@@ -137,13 +142,16 @@ def _update_balance_and_log(
 
     # Log transaction
     try:
-        supabase.table("dum_transactions").insert({
+        row = {
             "privy_id": privy_id,
             "amount": delta,
             "reason": reason,
             "reference_id": reference_id,
             "balance_after": new_balance,
-        }).execute()
+        }
+        if business_candidate_id:
+            row["business_candidate_id"] = business_candidate_id
+        supabase.table("dum_transactions").insert(row).execute()
     except Exception as exc:
         # Balance already updated above; ledger write failing means
         # users.dum_balance and dum_transactions are now divergent. This
@@ -777,7 +785,7 @@ async def get_onchain_balance(wallet_address: str):
 
 # ── Claimable amount ──────────────────────────────────────
 
-EARNED_REASONS = {"purchase_reward", "launch_bonus", "offer_created", "referral_bonus", "referral_welcome", "verified_off_platform_purchase"}
+EARNED_REASONS = {"purchase_reward", "launch_bonus", "offer_created", "referral_bonus", "referral_welcome", "verified_off_platform_purchase", "referral_credit_off_platform"}
 
 
 @router.get("/claimable/{privy_id}")

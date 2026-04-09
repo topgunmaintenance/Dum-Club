@@ -78,29 +78,72 @@ def _calculate_reward(amount_usd: float) -> int:
     return _FLAT_REWARD
 
 
-def _apply_verified_side_effects(
+async def _apply_verified_side_effects(
     sb,
+    proof_id: str,
+    buyer_privy_id: str,
+    external_business_id: str,
+    amount_usd: float,
+    *,
+    purchase_date: str | None = None,
+    referring_privy_id: str | None = None,
+) -> int:
+    """
+    Flag-gated dispatcher for off-platform reward application.
+
+    When `rewards_agent_enabled` is OFF, runs the legacy body
+    byte-for-byte: flat 10 DUM via _update_balance_and_log with the
+    existing `proof:<id>` reference_id, a verified demand event insert,
+    and an outreach queue entry. This is the behavior that has been in
+    production since PR 2.
+
+    When `rewards_agent_enabled` is ON, delegates to RewardsAgent, the
+    single source of truth for off-platform reward math. The agent
+    performs its own idempotency check against dum_transactions
+    reference_id (`proof:<id>` and `proof:<id>:ref`), computes reward
+    tiers using the distinct `business_first_verified_purchase` and
+    `buyer_first_visit_to_business` concepts, applies daily caps,
+    writes the ledger row(s), logs the verified demand event, and
+    persists campaign_type onto the proof row. This helper then
+    still queues outreach (flag-gated, unchanged).
+
+    The caller is responsible for the purchase_proofs row update
+    (status, dum_points_awarded). Outreach "sent" state invariant is
+    preserved either way — no outreach row is marked sent here.
+
+    Returns the number of points awarded to the buyer's ledger.
+    """
+    if get_flag("rewards_agent_enabled"):
+        return await _apply_verified_side_effects_via_agent(
+            sb,
+            proof_id=proof_id,
+            buyer_privy_id=buyer_privy_id,
+            external_business_id=external_business_id,
+            amount_usd=amount_usd,
+            purchase_date=purchase_date,
+            referring_privy_id=referring_privy_id,
+        )
+    return _apply_verified_side_effects_legacy(
+        sb,
+        proof_id=proof_id,
+        buyer_privy_id=buyer_privy_id,
+        external_business_id=external_business_id,
+        amount_usd=amount_usd,
+    )
+
+
+def _apply_verified_side_effects_legacy(
+    sb,
+    *,
     proof_id: str,
     buyer_privy_id: str,
     external_business_id: str,
     amount_usd: float,
 ) -> int:
     """
-    Award DUM Points, log the verified demand event, and queue merchant
-    outreach for a purchase proof that has been marked verified.
-
-    This helper is a minimal, surgical extraction shared by the admin
-    verify_proof route and the auto-verify path in submit_proof. Reward
-    math (`_calculate_reward`, `_update_balance_and_log`) is untouched —
-    the lines that used to live inside verify_proof now live here. The
-    future Rewards Agent (PR 3) will replace this helper entirely.
-
-    The caller is responsible for the purchase_proofs row update (status,
-    dum_points_awarded). This helper never marks an outreach row as
-    "sent" — it only enqueues with status "pending", preserving the
-    invariant that sent state only flips on a real send action.
-
-    Returns the number of points awarded.
+    Byte-for-byte equivalent of the pre-RewardsAgent behavior. Runs when
+    `rewards_agent_enabled` is off. Do not delete until the agent has
+    soaked in production.
     """
     points = _calculate_reward(amount_usd or 0)
 
@@ -133,6 +176,62 @@ def _apply_verified_side_effects(
             print(f"[external-biz] Failed to queue outreach: {e}")
 
     return points
+
+
+async def _apply_verified_side_effects_via_agent(
+    sb,
+    *,
+    proof_id: str,
+    buyer_privy_id: str,
+    external_business_id: str,
+    amount_usd: float,
+    purchase_date: str | None = None,
+    referring_privy_id: str | None = None,
+) -> int:
+    """
+    Agent-backed path. Runs RewardsAgent and returns the points the
+    agent awarded to the buyer's ledger. Outreach queueing still
+    happens here (same scope as the legacy helper) and is still gated
+    by `merchant_outreach_queue_enabled`. Outreach is NOT run on an
+    idempotent replay — the agent returns `idempotent_replay=True`
+    and we skip the queue in that case.
+    """
+    from services.agents.rewards import RewardsAgent
+
+    agent = RewardsAgent(supabase=sb)
+    try:
+        result = await agent.run({
+            "proof_id": proof_id,
+            "buyer_privy_id": buyer_privy_id,
+            "external_business_id": external_business_id,
+            "amount_usd": amount_usd,
+            "purchase_date": purchase_date or "",
+            "referring_privy_id": referring_privy_id or "",
+            "commit": True,
+        })
+    except Exception as exc:
+        print(f"[rewards-agent] DISPATCH FAILED proof={proof_id} err={type(exc).__name__}: {exc!r}")
+        return 0
+
+    data = result.data or {}
+    points_awarded = int(data.get("points_awarded", 0) or 0)
+    idempotent_replay = bool(data.get("idempotent_replay", False))
+
+    print(
+        f"[rewards-agent] result proof={proof_id} status={result.status} "
+        f"reason={result.reason} points={points_awarded} "
+        f"replay={idempotent_replay} campaign={data.get('campaign_type', '')}"
+    )
+
+    # Queue outreach only on a fresh award, not on a replay. Matches the
+    # legacy helper's scope (still gated by its own flag).
+    if not idempotent_replay and result.status == "ok" and get_flag("merchant_outreach_queue_enabled"):
+        try:
+            _queue_outreach(sb, external_business_id)
+        except Exception as e:
+            print(f"[external-biz] Failed to queue outreach: {e}")
+
+    return points_awarded
 
 
 # ── Demand Events ──
@@ -324,12 +423,13 @@ async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
 
     points_awarded = 0
     if auto_verify and proof_id:
-        points_awarded = _apply_verified_side_effects(
+        points_awarded = await _apply_verified_side_effects(
             sb,
             proof_id=proof_id,
             buyer_privy_id=req.buyer_privy_id,
             external_business_id=req.external_business_id,
             amount_usd=req.purchase_amount_usd,
+            purchase_date=req.purchase_date,
         )
         try:
             sb.table("purchase_proofs").update(
@@ -372,12 +472,14 @@ async def verify_proof(req: ProofVerifyRequest, _admin=Depends(require_admin)):
     update: dict = {"status": req.status, "verification_notes": req.verification_notes}
 
     if req.status == "verified":
-        points = _apply_verified_side_effects(
+        points = await _apply_verified_side_effects(
             sb,
             proof_id=req.proof_id,
             buyer_privy_id=p["buyer_privy_id"],
             external_business_id=p["external_business_id"],
             amount_usd=p.get("purchase_amount_usd") or 0,
+            purchase_date=p.get("purchase_date"),
+            referring_privy_id=p.get("referring_privy_id"),
         )
         update["dum_points_awarded"] = points
 
