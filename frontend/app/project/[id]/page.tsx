@@ -5576,10 +5576,13 @@ return (
           </div>
         </div>
 
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Blueprint</div>
+        <details className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-zinc-600 hover:text-zinc-400">
+            <span>Business Blueprint</span>
+            <span className="text-[10px] text-zinc-600">Click to expand</span>
+          </summary>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-zinc-800 bg-base p-5">
               <h2 className="text-2xl font-bold text-white">Original Prompt</h2>
               <p className="mt-3 text-zinc-400">{project?.prompt || "No prompt saved yet."}</p>
@@ -5617,7 +5620,7 @@ return (
               </p>
             </div>
           </div>
-        </div>
+        </details>
 
         {!isApprovedProject && (
           <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
