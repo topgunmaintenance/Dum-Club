@@ -11,6 +11,7 @@ import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
+import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import {
   LineChart,
   Line,
@@ -62,6 +63,9 @@ type Project = {
       }
     | string
     | null;
+  is_live?: boolean;
+  stream_url?: string | null;
+  pinned_offer_id?: string | null;
 };
 
 type GatedChatResponse = {
@@ -697,6 +701,11 @@ export default function ProjectPage() {
 
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
+
+  // Live Commerce state
+  const [liveStreamUrl, setLiveStreamUrl] = useState("");
+  const [goingLive, setGoingLive] = useState(false);
+  const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [bannerCopied, setBannerCopied] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
@@ -1100,6 +1109,20 @@ export default function ProjectPage() {
       const pts = Number(localStorage.getItem("dum_points") || "0");
       localStorage.setItem("dum_points", String(pts + 2));
       window.dispatchEvent(new Event("dum-points-update"));
+      // Broadcast live purchase event
+      if (project?.is_live && id) {
+        setLiveSalesCount((c) => c + 1);
+        broadcastLiveEvent(id, {
+          user: authUser?.email || "Viewer",
+          text: `purchased ${offer.title} — +2 DUM`,
+          type: "purchase",
+        });
+        broadcastLiveEvent(id, {
+          user: "System",
+          text: `${authUser?.email || "A viewer"} earned +2 DUM Points`,
+          type: "reward",
+        });
+      }
       setTimeout(() => { setSimulatedPurchase(null); setBuyStep((p) => ({ ...p, [oid]: "" })); }, 6000);
       return;
     }
@@ -1134,6 +1157,7 @@ export default function ProjectPage() {
           success_url: cleanUrl,
           cancel_url: cleanUrl,
           use_dum_discount: !!dumDiscountApplied[oid],
+          source: project?.is_live ? "live" : "normal",
         }),
       });
 
@@ -1897,6 +1921,56 @@ export default function ProjectPage() {
     }
     window.history.replaceState({}, "", url.toString());
   }
+
+  /* ── Live Commerce ────────────────────────────────── */
+  async function handleGoLive() {
+    if (!id || !liveStreamUrl.trim()) return;
+    setGoingLive(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ stream_url: liveStreamUrl.trim() }),
+      });
+      if (res.ok) {
+        setProject((prev) => prev ? { ...prev, is_live: true, stream_url: liveStreamUrl.trim() } : prev);
+        setLiveSalesCount(0);
+      }
+    } catch (err) {
+      console.error("Go live failed", err);
+    } finally {
+      setGoingLive(false);
+    }
+  }
+
+  async function handleEndLive() {
+    if (!id) return;
+    try {
+      await fetch(`${API_BASE}/api/projects/${id}/end-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+      });
+      setProject((prev) => prev ? { ...prev, is_live: false, stream_url: null, pinned_offer_id: null } : prev);
+    } catch (err) {
+      console.error("End live failed", err);
+    }
+  }
+
+  async function handlePinOffer(offerId: string | null) {
+    if (!id) return;
+    try {
+      await fetch(`${API_BASE}/api/projects/${id}/pin-offer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ offer_id: offerId }),
+      });
+      setProject((prev) => prev ? { ...prev, pinned_offer_id: offerId } : prev);
+    } catch (err) {
+      console.error("Pin offer failed", err);
+    }
+  }
+
+  const pinnedOffer = offers.find((o) => o.id === project?.pinned_offer_id) || null;
 
   /* ── Project Score ────────────────────────────────── */
   async function evaluateProjectScore() {
@@ -2998,6 +3072,83 @@ return (
           </div>
         )}
       </div>
+
+      {/* ── LIVE NOW Banner + Stream ────────────────── */}
+      {project?.is_live && project.stream_url && (
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-3">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+              </span>
+              <span className="text-sm font-bold uppercase tracking-[0.2em] text-red-400">Live Now</span>
+              <span className="text-sm text-zinc-400">{projectName}</span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+              <iframe
+                src={project.stream_url}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+
+          {/* Pinned product + chat side by side */}
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+            {/* Pinned Offer */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                {pinnedOffer ? "Featured Product" : "No product pinned"}
+              </div>
+              {pinnedOffer ? (
+                <div>
+                  {pinnedOffer.primary_image_url && (
+                    <img
+                      src={pinnedOffer.primary_image_url}
+                      alt={pinnedOffer.title}
+                      className="mb-3 h-32 w-full rounded-xl object-cover"
+                    />
+                  )}
+                  <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
+                  {pinnedOffer.description && (
+                    <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
+                  )}
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="font-mono text-xl font-bold text-emerald-400">
+                      ${Number(pinnedOffer.price_usd).toFixed(2)}
+                    </span>
+                    {!isOwner && (
+                      <button
+                        onClick={() => buyOffer(pinnedOffer)}
+                        disabled={!!buyingOfferId}
+                        className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                      >
+                        {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-600">
+                  {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
+                </p>
+              )}
+            </div>
+
+            {/* Live Chat */}
+            <LiveChat
+              projectId={id as string}
+              userName={authUser?.email || null}
+              isOwner={isOwner}
+            />
+          </div>
+        </div>
+      )}
 
       <div
         id="section-top"
@@ -4385,6 +4536,98 @@ return (
         </div>
       )}
 
+
+      {/* ── Live Control Panel (Owner Only) ──────────── */}
+      {isOwner && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">Live Commerce</div>
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            {project?.is_live ? "You are LIVE" : "Go Live"}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {project?.is_live ? "Your stream is active. Viewers can see your products and buy in real time." : "Start a live stream to sell products in real time."}
+          </p>
+
+          {project?.is_live ? (
+            <div className="mt-5 space-y-4">
+              {/* Live stats */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    <span className="font-bold text-red-400">LIVE</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Sales This Stream</div>
+                  <div className="mt-2 font-mono text-lg text-white">{liveSalesCount}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Pinned Product</div>
+                  <div className="mt-2 text-sm text-white">{pinnedOffer?.title || "None"}</div>
+                </div>
+              </div>
+
+              {/* Pin offer selector */}
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Pin a Product</div>
+                <div className="flex flex-wrap gap-2">
+                  {offers.filter((o) => o.is_active).map((offer) => (
+                    <button
+                      key={offer.id}
+                      onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
+                      className={`rounded-xl border px-3 py-2 text-sm transition ${
+                        offer.id === project.pinned_offer_id
+                          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                      {offer.id === project.pinned_offer_id && " (pinned)"}
+                    </button>
+                  ))}
+                  {offers.filter((o) => o.is_active).length === 0 && (
+                    <p className="text-sm text-zinc-600">No active offers to pin. Create an offer first.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* End stream */}
+              <button
+                onClick={handleEndLive}
+                className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
+              >
+                End Stream
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={liveStreamUrl}
+                  onChange={(e) => setLiveStreamUrl(e.target.value)}
+                  placeholder="Paste stream URL (YouTube Live, Twitch, etc.)"
+                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40"
+                />
+                <button
+                  onClick={handleGoLive}
+                  disabled={goingLive || !liveStreamUrl.trim()}
+                  className="rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
+                >
+                  {goingLive ? "Starting..." : "Go Live"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-zinc-600">
+                Supports any embeddable video URL. Start your stream on YouTube/Twitch first, then paste the embed link here.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {isOwner && (

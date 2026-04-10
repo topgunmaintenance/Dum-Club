@@ -17,6 +17,7 @@ type Project = {
   promo_copy?: string | null;
   store_items?: any[] | null;
   owner_verified?: boolean;
+  is_live?: boolean;
 };
 
 type MarketSnapshot = {
@@ -144,7 +145,7 @@ function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
     case "top":
       return true;
     case "live":
-      return (project.status || "live") === "live";
+      return project.is_live === true;
     case "offers":
       return hasOffers(project);
     case "business":
@@ -546,6 +547,9 @@ export default function DiscoverPage() {
       );
     }
 
+    // Live projects float to top in every tab
+    list = [...list].sort((a, b) => (b.is_live ? 1 : 0) - (a.is_live ? 1 : 0));
+
     // Apply search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -894,13 +898,17 @@ export default function DiscoverPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
-                          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                        </span>
-                        <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-500">
-                          LIVE
-                        </span>
+                        {project.is_live && (
+                          <>
+                            <span className="relative flex h-2 w-2">
+                              <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                            </span>
+                            <span className="font-mono text-[9px] uppercase tracking-widest text-red-400">
+                              LIVE
+                            </span>
+                          </>
+                        )}
                         <span
                           className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em]"
                           style={{ borderColor: accent, color: accent }}
