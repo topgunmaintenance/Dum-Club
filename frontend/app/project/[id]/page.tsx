@@ -4475,325 +4475,308 @@ return (
       )}
 
 
-      {/* ── Project Score (Analytics view) ────────────────────────── */}
+      {/* ── AI Tools (Score + Builder — Analytics view) ────────────── */}
       {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              AI Evaluation
-            </span>
-            <button
-              onClick={evaluateProjectScore}
-              disabled={scoreLoading}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-            >
-              {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Project Score</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            AI-powered evaluation of your project's strength
-          </p>
-
-          {scoreLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">Evaluating your project...</span>
-              </div>
+        <details className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
+          <summary className="flex cursor-pointer items-center justify-between hover:text-zinc-300">
+            <div>
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Owner Tools</div>
+              <h2 className="text-xl font-bold text-white tracking-tight">AI Tools</h2>
+              <p className="mt-1 text-sm text-zinc-500">Score, improve, and build your project with AI</p>
             </div>
-          )}
-
-          {!scoreLoading && !projectScore && (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-              <p className="text-sm text-zinc-600">
-                Click "Score My Project" to get an AI evaluation
-              </p>
-            </div>
-          )}
-
-          {!scoreLoading && projectScore && (
-            <div className="mt-5 space-y-4">
-              {(["virality", "trust", "utility"] as const).map((dim) => {
-                const entry = projectScore[dim];
-                const label = dim.charAt(0).toUpperCase() + dim.slice(1);
-                return (
-                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-white">{label}</span>
-                      <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
-                        {entry.score}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
-                        style={{ width: `${entry.score}%` }}
-                      />
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
-                      <button
-                        onClick={() => {
-                          const tips: Record<string, string> = {
-                            virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
-                            trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
-                            utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
-                          };
-                          const action = builderActions.find((a) => a.key === "roast")!;
-                          const improveAction: BuilderActionDef = {
-                            ...action,
-                            key: `improve_${dim}`,
-                            label: `Improve ${label}`,
-                            prompt: (p) =>
-                              `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
-                          };
-                          runBuilderAction(improveAction, null);
-                        }}
-                        className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
-                      >
-                        Improve →
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
-                <span className="font-mono text-2xl font-bold text-white">
-                  {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
-                </span>
-                <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-
-
-      {/* ── BUILD & IMPROVE ──────────────────────── */}
-      {isOwner && (
-        <div className="mb-6 mt-2 flex items-center gap-4">
-          <div className="h-px flex-1 bg-zinc-800" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-600">Build &amp; Improve</span>
-          <div className="h-px flex-1 bg-zinc-800" />
-        </div>
-      )}
-
-      {/* ── AI Project Builder (Owner Only — Analytics view) ────────── */}
-      {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
-              Owner Tools
-            </span>
-            <button
-              onClick={togglePitchMode}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
-            >
-              Presentation Mode
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            DUM AI Business Builder
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Improve your project page and promo copy with AI
-          </p>
-
-          {/* Action buttons */}
-          {!builderAction && !storePickerFor && (
-            <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "project").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "store").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Item picker for store actions */}
-          {storePickerFor && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                Select an item
-              </div>
-              <div className="space-y-2">
-                {storeItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === storePickerFor);
-                      if (action) runBuilderAction(action, item);
-                    }}
-                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
-                  >
-                    <div className="text-sm font-medium text-white">{item.name}</div>
-                    <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setStorePickerFor(null)}
-                className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                onClick={(e) => { e.preventDefault(); togglePitchMode(); }}
+                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
               >
-                Cancel
+                Presentation Mode
+              </button>
+              <span className="text-[10px] text-zinc-600">Click to expand</span>
+            </div>
+          </summary>
+
+          {/* ── Project Score ── */}
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-[0.3em] text-zinc-500">Project Score</span>
+              <button
+                onClick={evaluateProjectScore}
+                disabled={scoreLoading}
+                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+              >
+                {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
               </button>
             </div>
-          )}
 
-          {/* Loading state */}
-          {builderLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">
-                  DUM AI is analyzing your project...
-                </span>
+            {scoreLoading && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <span className="text-sm text-zinc-400">Evaluating your project...</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Preview panel */}
-          {builderResult && !builderLoading && (
-            <div className="mt-5 space-y-4">
-              {builderField && builderResult.current && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    Current
-                  </div>
-                  <div className="text-sm leading-relaxed text-zinc-400">
-                    {builderResult.current}
+            {!scoreLoading && !projectScore && (
+              <div className="rounded-2xl border border-dashed border-zinc-800 p-6 text-center">
+                <p className="text-sm text-zinc-600">Click &ldquo;Score My Project&rdquo; to get an AI evaluation</p>
+              </div>
+            )}
+
+            {!scoreLoading && projectScore && (
+              <div className="space-y-3">
+                {(["virality", "trust", "utility"] as const).map((dim) => {
+                  const entry = projectScore[dim];
+                  const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+                  return (
+                    <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-white">{label}</span>
+                        <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
+                          {entry.score}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
+                          style={{ width: `${entry.score}%` }}
+                        />
+                      </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
+                        <button
+                          onClick={() => {
+                            const tips: Record<string, string> = {
+                              virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
+                              trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
+                              utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
+                            };
+                            const action = builderActions.find((a) => a.key === "roast")!;
+                            const improveAction: BuilderActionDef = {
+                              ...action,
+                              key: `improve_${dim}`,
+                              label: `Improve ${label}`,
+                              prompt: (p) =>
+                                `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                            };
+                            runBuilderAction(improveAction, null);
+                          }}
+                          className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
+                        >
+                          Improve →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                  <span className="font-mono text-2xl font-bold text-white">
+                    {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
+                  </span>
+                  <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Business Builder ── */}
+          <div className="mt-6">
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">Business Builder</div>
+
+            {/* Action buttons */}
+            {!builderAction && !storePickerFor && (
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
+                  <div className="flex flex-wrap gap-2">
+                    {builderActions.filter((a) => a.group === "project").map((a) => (
+                      <button
+                        key={a.key}
+                        onClick={() => initiateBuilderAction(a)}
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
+                <div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
+                  <div className="flex flex-wrap gap-2">
+                    {builderActions.filter((a) => a.group === "store").map((a) => (
+                      <button
+                        key={a.key}
+                        onClick={() => initiateBuilderAction(a)}
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                    {builderAction === "roast" ? "Roast"
-                      : builderAction === "promo" ? "Promo Copy"
-                      : builderAction === "store_ideas" ? "Product Ideas"
-                      : builderAction === "store_subscription" ? "Subscription Offer"
-                      : builderAction === "store_improve_desc" ? "Improved Description"
-                      : builderAction === "store_pricing" ? "Suggested Price"
-                      : "Suggested"}
-                  </span>
-                  {(builderAction === "promo" || builderAction === "roast") && (
+            {/* Item picker for store actions */}
+            {storePickerFor && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  Select an item
+                </div>
+                <div className="space-y-2">
+                  {storeItems.map((item) => (
                     <button
-                      onClick={() => copyToClipboard(builderResult.suggested, "text")}
-                      className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                      key={item.id}
+                      onClick={() => {
+                        const action = builderActions.find((a) => a.key === storePickerFor);
+                        if (action) runBuilderAction(action, item);
+                      }}
+                      className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
                     >
-                      Copy
+                      <div className="text-sm font-medium text-white">{item.name}</div>
+                      <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setStorePickerFor(null)}
+                  className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Loading state */}
+            {builderLoading && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <span className="text-sm text-zinc-400">
+                    DUM AI is analyzing your project...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Preview panel */}
+            {builderResult && !builderLoading && (
+              <div className="mt-4 space-y-4">
+                {builderField && builderResult.current && (
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                      Current
+                    </div>
+                    <div className="text-sm leading-relaxed text-zinc-400">
+                      {builderResult.current}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                      {builderAction === "roast" ? "Roast"
+                        : builderAction === "promo" ? "Promo Copy"
+                        : builderAction === "store_ideas" ? "Product Ideas"
+                        : builderAction === "store_subscription" ? "Subscription Offer"
+                        : builderAction === "store_improve_desc" ? "Improved Description"
+                        : builderAction === "store_pricing" ? "Suggested Price"
+                        : "Suggested"}
+                    </span>
+                    {(builderAction === "promo" || builderAction === "roast") && (
+                      <button
+                        onClick={() => copyToClipboard(builderResult.suggested, "text")}
+                        className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                    {builderResult.suggested}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  {builderAction !== "roast" && (
+                    <button
+                      onClick={applyBuilderResult}
+                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                    >
+                      Apply
                     </button>
                   )}
-                </div>
-                <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
-                  {builderResult.suggested}
+                  {builderAction !== "roast" && (
+                    <button
+                      onClick={() => {
+                        const action = builderActions.find((a) => a.key === builderAction);
+                        if (action) runBuilderAction(action, storeTargetItem);
+                      }}
+                      className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                    >
+                      Regenerate
+                    </button>
+                  )}
+                  <button
+                    onClick={dismissBuilder}
+                    className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    {builderAction === "roast" ? "Dismiss" : "Cancel"}
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div className="flex gap-2">
-                {builderAction !== "roast" && (
+            {/* Saved promo copy display */}
+            {!builderAction && promoCopy && (
+              <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                    Saved Promo Copy
+                  </span>
                   <button
-                    onClick={applyBuilderResult}
-                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                    onClick={() => copyToClipboard(promoCopy, "promo copy")}
+                    className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
                   >
-                    Apply
+                    Copy
+                  </button>
+                </div>
+                <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                  {promoCopy}
+                </div>
+              </div>
+            )}
+
+            {/* Share project */}
+            {!builderAction && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => copyToClipboard(window.location.href, "project link")}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Share Project Link
+                </button>
+                {promoCopy && (
+                  <button
+                    onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
+                    className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                  >
+                    Share Promo + Link
                   </button>
                 )}
-                {builderAction !== "roast" && (
-                  <button
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === builderAction);
-                      if (action) runBuilderAction(action, storeTargetItem);
-                    }}
-                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
-                  >
-                    Regenerate
-                  </button>
-                )}
-                <button
-                  onClick={dismissBuilder}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-                >
-                  {builderAction === "roast" ? "Dismiss" : "Cancel"}
-                </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Saved promo copy display */}
-          {!builderAction && promoCopy && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                  Saved Promo Copy
-                </span>
-                <button
-                  onClick={() => copyToClipboard(promoCopy, "promo copy")}
-                  className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
-                >
-                  Copy
-                </button>
+            {/* Success toast */}
+            {builderToast && (
+              <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
+                <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
               </div>
-              <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
-                {promoCopy}
-              </div>
-            </div>
-          )}
-
-          {/* Share project */}
-          {!builderAction && (
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => copyToClipboard(window.location.href, "project link")}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-              >
-                Share Project Link
-              </button>
-              {promoCopy && (
-                <button
-                  onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                >
-                  Share Promo + Link
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Success toast */}
-          {builderToast && (
-            <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
-              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </details>
       )}
 
 
@@ -5511,102 +5494,86 @@ return (
             </div>
           </div>
         </div>
-      ) : projectView === "analytics" && isApprovedProject ? (
-        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Business Overview</div>
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
-          <p className="mt-2 text-sm text-zinc-500">{nextStepHint || "Your business is live on DUM Club."}</p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
-              <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-white">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
-              <div className="mt-2 text-white">Stripe + DUM</div>
-            </div>
-          </div>
-        </div>
       ) : (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Setup</div>
-          <h2 className="text-3xl font-bold text-white">{projectName}</h2>
-          <p className="mt-3 max-w-3xl text-zinc-400">
-            {project?.description || parsedAiOutput?.description || "No description available yet."}
+        <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-emerald-400/10" : "border-zinc-900"} border bg-zinc-950 p-6`}>
+          <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-emerald-400/60" : "text-zinc-600"}`}>
+            Business Status
+          </div>
+
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            {isApprovedProject ? launchSectionHeading : projectName}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            {isApprovedProject
+              ? (nextStepHint || "Your business is live on DUM Club.")
+              : (project?.description || parsedAiOutput?.description || "No description available yet.")}
           </p>
 
-          <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-            {category}
-          </div>
+          {isApprovedProject ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
+                <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                <div className="mt-2 text-white">DUM Points</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
+                <div className="mt-2 text-white">Stripe + DUM</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
+                {category}
+              </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business</div>
-              <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-emerald-400">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
-              <div className="mt-2 text-white">{reviewStatus}</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
-              <div className="mt-2 text-white">{project?.status || "draft"}</div>
-            </div>
-          </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
+                  <div className="mt-2 text-white">{reviewStatus}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
+                  <div className="mt-2 text-white">{project?.status || "draft"}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                  <div className="mt-2 text-emerald-400">DUM Points</div>
+                </div>
+              </div>
 
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
-            <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
-            <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
-          </div>
+              <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
+                <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
+              </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
-            >
-              Edit Project
-            </Link>
-            {(reviewStatus === "draft" || reviewStatus === "pending") && (
-              <button
-                type="button"
-                onClick={() => submitReview()}
-                disabled={loadingAction}
-                className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                style={{ background: accent }}
-              >
-                {loadingAction ? "Submitting..." : "Submit for Review"}
-              </button>
-            )}
-          </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard"
+                  className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
+                >
+                  Edit Project
+                </Link>
+                {(reviewStatus === "draft" || reviewStatus === "pending") && (
+                  <button
+                    type="button"
+                    onClick={() => submitReview()}
+                    disabled={loadingAction}
+                    className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                    style={{ background: accent }}
+                  >
+                    {loadingAction ? "Submitting..." : "Submit for Review"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Status</div>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-lg text-emerald-400">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Discounts</div>
-              <div className="mt-2 text-lg text-white">10% off with DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Status</div>
-              <div className="mt-2 text-lg text-emerald-400">Live</div>
-            </div>
-          </div>
-        </div>
 
         <details className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-zinc-600 hover:text-zinc-400">
@@ -5654,39 +5621,6 @@ return (
           </div>
         </details>
 
-        {!isApprovedProject && (
-          <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Summary</div>
-
-            <h2 className="text-3xl font-bold text-white">Submission Details</h2>
-
-            <p className="mt-3 max-w-3xl text-zinc-500">
-              This section shows the project details used during review. Submit action is available
-              from the business setup panel above.
-            </p>
-
-            <p className="mt-3 text-sm text-zinc-400">
-              Review: {reviewStatus} · Publication: {project?.status || "draft"}
-            </p>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business Name</div>
-                <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-                <div className="mt-2 text-emerald-400">DUM Points</div>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Perks</div>
-                <div className="mt-2 text-white">
-                  {parsedAiOutput?.token_utility || project?.token_utility || "Discounts and rewards for customers"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {false && (
         <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
