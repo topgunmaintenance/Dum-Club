@@ -3034,12 +3034,6 @@ return (
                 </div>
               )}
 
-              {loadingProject ? (
-                <div className="mt-2 h-4 w-80 animate-pulse rounded bg-zinc-800" />
-              ) : (
-                <p className="mt-2 max-w-2xl text-sm text-zinc-400 sm:text-base">{heroUtility}</p>
-              )}
-
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span
                   className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
@@ -3121,14 +3115,6 @@ return (
                     </span>
                   )}
                 </div>
-                <p className="mb-3 text-sm leading-relaxed text-zinc-300">
-                  {project?.description
-                    ? project.description.length > 100
-                      ? project.description.slice(0, 100) + "..."
-                      : project.description
-                    : "Browse offers and start buying from this business."}
-                </p>
-
                 {/* Quick stats */}
                 {offers.length > 0 && (
                   <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
@@ -3482,324 +3468,6 @@ return (
         </div>
       )}
 
-      {isOwner && (
-        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
-          <span className="uppercase tracking-[0.18em] text-zinc-400">
-            Review & publication
-          </span>
-          <div className="mt-2 text-base text-white">{statusBanner}</div>
-        </div>
-      )}
-
-      {/* ── AI Project Builder (Owner Only — Analytics view) ────────── */}
-      {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
-              Owner Tools
-            </span>
-            <button
-              onClick={togglePitchMode}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
-            >
-              Presentation Mode
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            DUM AI Business Builder
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Improve your project page and promo copy with AI
-          </p>
-
-          {/* Action buttons */}
-          {!builderAction && !storePickerFor && (
-            <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "project").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "store").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Item picker for store actions */}
-          {storePickerFor && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                Select an item
-              </div>
-              <div className="space-y-2">
-                {storeItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === storePickerFor);
-                      if (action) runBuilderAction(action, item);
-                    }}
-                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
-                  >
-                    <div className="text-sm font-medium text-white">{item.name}</div>
-                    <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setStorePickerFor(null)}
-                className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {builderLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">
-                  DUM AI is analyzing your project...
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Preview panel */}
-          {builderResult && !builderLoading && (
-            <div className="mt-5 space-y-4">
-              {builderField && builderResult.current && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    Current
-                  </div>
-                  <div className="text-sm leading-relaxed text-zinc-400">
-                    {builderResult.current}
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                    {builderAction === "roast" ? "Roast"
-                      : builderAction === "promo" ? "Promo Copy"
-                      : builderAction === "store_ideas" ? "Product Ideas"
-                      : builderAction === "store_subscription" ? "Subscription Offer"
-                      : builderAction === "store_improve_desc" ? "Improved Description"
-                      : builderAction === "store_pricing" ? "Suggested Price"
-                      : "Suggested"}
-                  </span>
-                  {(builderAction === "promo" || builderAction === "roast") && (
-                    <button
-                      onClick={() => copyToClipboard(builderResult.suggested, "text")}
-                      className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
-                    >
-                      Copy
-                    </button>
-                  )}
-                </div>
-                <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
-                  {builderResult.suggested}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {builderAction !== "roast" && (
-                  <button
-                    onClick={applyBuilderResult}
-                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
-                  >
-                    Apply
-                  </button>
-                )}
-                {builderAction !== "roast" && (
-                  <button
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === builderAction);
-                      if (action) runBuilderAction(action, storeTargetItem);
-                    }}
-                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
-                  >
-                    Regenerate
-                  </button>
-                )}
-                <button
-                  onClick={dismissBuilder}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-                >
-                  {builderAction === "roast" ? "Dismiss" : "Cancel"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Saved promo copy display */}
-          {!builderAction && promoCopy && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                  Saved Promo Copy
-                </span>
-                <button
-                  onClick={() => copyToClipboard(promoCopy, "promo copy")}
-                  className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
-                >
-                  Copy
-                </button>
-              </div>
-              <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
-                {promoCopy}
-              </div>
-            </div>
-          )}
-
-          {/* Share project */}
-          {!builderAction && (
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => copyToClipboard(window.location.href, "project link")}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-              >
-                Share Project Link
-              </button>
-              {promoCopy && (
-                <button
-                  onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                >
-                  Share Promo + Link
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Success toast */}
-          {builderToast && (
-            <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
-              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Project Score (Analytics view) ────────────────────────── */}
-      {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              AI Evaluation
-            </span>
-            <button
-              onClick={evaluateProjectScore}
-              disabled={scoreLoading}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-            >
-              {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Project Score</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            AI-powered evaluation of your project's strength
-          </p>
-
-          {scoreLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">Evaluating your project...</span>
-              </div>
-            </div>
-          )}
-
-          {!scoreLoading && !projectScore && (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-              <p className="text-sm text-zinc-600">
-                Click "Score My Project" to get an AI evaluation
-              </p>
-            </div>
-          )}
-
-          {!scoreLoading && projectScore && (
-            <div className="mt-5 space-y-4">
-              {(["virality", "trust", "utility"] as const).map((dim) => {
-                const entry = projectScore[dim];
-                const label = dim.charAt(0).toUpperCase() + dim.slice(1);
-                return (
-                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-white">{label}</span>
-                      <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
-                        {entry.score}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
-                        style={{ width: `${entry.score}%` }}
-                      />
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
-                      <button
-                        onClick={() => {
-                          const tips: Record<string, string> = {
-                            virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
-                            trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
-                            utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
-                          };
-                          const action = builderActions.find((a) => a.key === "roast")!;
-                          const improveAction: BuilderActionDef = {
-                            ...action,
-                            key: `improve_${dim}`,
-                            label: `Improve ${label}`,
-                            prompt: (p) =>
-                              `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
-                          };
-                          runBuilderAction(improveAction, null);
-                        }}
-                        className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
-                      >
-                        Improve →
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
-                <span className="font-mono text-2xl font-bold text-white">
-                  {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
-                </span>
-                <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── Embedded Interactive Content ── */}
       {(() => {
@@ -4605,87 +4273,6 @@ return (
         )}
       </div>
 
-      {/* ── Seller Sales (Owner Only) ──────────────── */}
-      {isOwner && (
-        <div id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
-          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
-            Sales
-          </div>
-          <h2 className="text-2xl font-bold text-white">Orders</h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            Purchases from your offers
-          </p>
-
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
-            <span className="text-[11px] text-zinc-600">
-              Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
-            </span>
-          </div>
-
-          {sellerOrders.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-              <p className="text-sm text-zinc-600">No sales yet</p>
-            </div>
-          ) : (
-            <div className="mt-5 space-y-3">
-              {sellerOrders.map((order) => {
-                const isPaid = order.status === "paid";
-                const isDelivered = order.status === "delivered";
-                return (
-                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-base p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-white truncate">
-                          {order.offers?.title || "Offer"}
-                        </h3>
-                        <div className="mt-1 text-xs text-zinc-600">
-                          {order.buyer_email || "Anonymous buyer"} · {new Date(order.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-mono text-base font-bold text-white">
-                          ${Number(order.amount_paid_usd).toFixed(2)}
-                        </div>
-                        <div className="text-[10px] text-zinc-600 mt-0.5">
-                          You receive: ${Number(order.seller_receives_usd).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
-                        order.status === "fulfilled" || order.status === "delivered"
-                          ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
-                          : order.status === "paid"
-                          ? "border-sky-400/30 text-sky-400 bg-sky-400/10"
-                          : order.status === "pending_payment"
-                          ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
-                          : "border-zinc-700 text-zinc-500"
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${
-                          order.status === "fulfilled" || order.status === "delivered" ? "bg-emerald-400"
-                          : order.status === "paid" ? "bg-sky-400"
-                          : order.status === "pending_payment" ? "bg-amber-400"
-                          : "bg-zinc-600"
-                        }`} />
-                        {order.status === "pending_payment" ? "Awaiting Payment" : order.status}
-                      </span>
-                      {order.status === "paid" && (
-                        <button
-                          onClick={() => updateOrderStatus(order.id, "fulfilled")}
-                          className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
-                        >
-                          Mark Fulfilled
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
         <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
 
@@ -4778,6 +4365,437 @@ return (
           </div>
         </div>
       </div>
+
+
+      {/* ── OWNER TOOLS ──────────────────────────── */}
+      {isOwner && (
+        <div className="mb-6 mt-2 flex items-center gap-4">
+          <div className="h-px flex-1 bg-zinc-800" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-600">Owner Tools</span>
+          <div className="h-px flex-1 bg-zinc-800" />
+        </div>
+      )}
+
+      {isOwner && (
+        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
+          <span className="uppercase tracking-[0.18em] text-zinc-400">
+            Review & publication
+          </span>
+          <div className="mt-2 text-base text-white">{statusBanner}</div>
+        </div>
+      )}
+
+
+      {/* ── Seller Sales (Owner Only) ──────────────── */}
+      {isOwner && (
+        <details id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
+          <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-zinc-300">
+            <div>
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
+                Sales
+              </div>
+              <h2 className="text-2xl font-bold text-white">Orders</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                Purchases from your offers
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-zinc-800 bg-base px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+              {sellerOrders.length} {sellerOrders.length === 1 ? "order" : "orders"}
+            </span>
+          </summary>
+
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
+            <span className="text-[11px] text-zinc-600">
+              Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
+            </span>
+          </div>
+
+          {sellerOrders.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+              <p className="text-sm text-zinc-600">No sales yet</p>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {sellerOrders.map((order) => {
+                const isPaid = order.status === "paid";
+                const isDelivered = order.status === "delivered";
+                return (
+                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-base p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-white truncate">
+                          {order.offers?.title || "Offer"}
+                        </h3>
+                        <div className="mt-1 text-xs text-zinc-600">
+                          {order.buyer_email || "Anonymous buyer"} · {new Date(order.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-base font-bold text-white">
+                          ${Number(order.amount_paid_usd).toFixed(2)}
+                        </div>
+                        <div className="text-[10px] text-zinc-600 mt-0.5">
+                          You receive: ${Number(order.seller_receives_usd).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                        order.status === "fulfilled" || order.status === "delivered"
+                          ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
+                          : order.status === "paid"
+                          ? "border-sky-400/30 text-sky-400 bg-sky-400/10"
+                          : order.status === "pending_payment"
+                          ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
+                          : "border-zinc-700 text-zinc-500"
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          order.status === "fulfilled" || order.status === "delivered" ? "bg-emerald-400"
+                          : order.status === "paid" ? "bg-sky-400"
+                          : order.status === "pending_payment" ? "bg-amber-400"
+                          : "bg-zinc-600"
+                        }`} />
+                        {order.status === "pending_payment" ? "Awaiting Payment" : order.status}
+                      </span>
+                      {order.status === "paid" && (
+                        <button
+                          onClick={() => updateOrderStatus(order.id, "fulfilled")}
+                          className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                        >
+                          Mark Fulfilled
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </details>
+      )}
+
+
+      {/* ── Project Score (Analytics view) ────────────────────────── */}
+      {isOwner && projectView === "analytics" && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+              AI Evaluation
+            </span>
+            <button
+              onClick={evaluateProjectScore}
+              disabled={scoreLoading}
+              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+            >
+              {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
+            </button>
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Project Score</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            AI-powered evaluation of your project's strength
+          </p>
+
+          {scoreLoading && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-sm text-zinc-400">Evaluating your project...</span>
+              </div>
+            </div>
+          )}
+
+          {!scoreLoading && !projectScore && (
+            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
+              <p className="text-sm text-zinc-600">
+                Click "Score My Project" to get an AI evaluation
+              </p>
+            </div>
+          )}
+
+          {!scoreLoading && projectScore && (
+            <div className="mt-5 space-y-4">
+              {(["virality", "trust", "utility"] as const).map((dim) => {
+                const entry = projectScore[dim];
+                const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+                return (
+                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-white">{label}</span>
+                      <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
+                        {entry.score}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
+                        style={{ width: `${entry.score}%` }}
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
+                      <button
+                        onClick={() => {
+                          const tips: Record<string, string> = {
+                            virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
+                            trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
+                            utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
+                          };
+                          const action = builderActions.find((a) => a.key === "roast")!;
+                          const improveAction: BuilderActionDef = {
+                            ...action,
+                            key: `improve_${dim}`,
+                            label: `Improve ${label}`,
+                            prompt: (p) =>
+                              `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                          };
+                          runBuilderAction(improveAction, null);
+                        }}
+                        className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
+                      >
+                        Improve →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                <span className="font-mono text-2xl font-bold text-white">
+                  {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
+                </span>
+                <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+
+
+      {/* ── BUILD & IMPROVE ──────────────────────── */}
+      {isOwner && (
+        <div className="mb-6 mt-2 flex items-center gap-4">
+          <div className="h-px flex-1 bg-zinc-800" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-600">Build &amp; Improve</span>
+          <div className="h-px flex-1 bg-zinc-800" />
+        </div>
+      )}
+
+      {/* ── AI Project Builder (Owner Only — Analytics view) ────────── */}
+      {isOwner && projectView === "analytics" && (
+        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
+              Owner Tools
+            </span>
+            <button
+              onClick={togglePitchMode}
+              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+            >
+              Presentation Mode
+            </button>
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            DUM AI Business Builder
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Improve your project page and promo copy with AI
+          </p>
+
+          {/* Action buttons */}
+          {!builderAction && !storePickerFor && (
+            <div className="mt-5 space-y-4">
+              <div>
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
+                <div className="flex flex-wrap gap-2">
+                  {builderActions.filter((a) => a.group === "project").map((a) => (
+                    <button
+                      key={a.key}
+                      onClick={() => initiateBuilderAction(a)}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
+                <div className="flex flex-wrap gap-2">
+                  {builderActions.filter((a) => a.group === "store").map((a) => (
+                    <button
+                      key={a.key}
+                      onClick={() => initiateBuilderAction(a)}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Item picker for store actions */}
+          {storePickerFor && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                Select an item
+              </div>
+              <div className="space-y-2">
+                {storeItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      const action = builderActions.find((a) => a.key === storePickerFor);
+                      if (action) runBuilderAction(action, item);
+                    }}
+                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
+                  >
+                    <div className="text-sm font-medium text-white">{item.name}</div>
+                    <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setStorePickerFor(null)}
+                className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {builderLoading && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-sm text-zinc-400">
+                  DUM AI is analyzing your project...
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Preview panel */}
+          {builderResult && !builderLoading && (
+            <div className="mt-5 space-y-4">
+              {builderField && builderResult.current && (
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                    Current
+                  </div>
+                  <div className="text-sm leading-relaxed text-zinc-400">
+                    {builderResult.current}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                    {builderAction === "roast" ? "Roast"
+                      : builderAction === "promo" ? "Promo Copy"
+                      : builderAction === "store_ideas" ? "Product Ideas"
+                      : builderAction === "store_subscription" ? "Subscription Offer"
+                      : builderAction === "store_improve_desc" ? "Improved Description"
+                      : builderAction === "store_pricing" ? "Suggested Price"
+                      : "Suggested"}
+                  </span>
+                  {(builderAction === "promo" || builderAction === "roast") && (
+                    <button
+                      onClick={() => copyToClipboard(builderResult.suggested, "text")}
+                      className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                  {builderResult.suggested}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {builderAction !== "roast" && (
+                  <button
+                    onClick={applyBuilderResult}
+                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                  >
+                    Apply
+                  </button>
+                )}
+                {builderAction !== "roast" && (
+                  <button
+                    onClick={() => {
+                      const action = builderActions.find((a) => a.key === builderAction);
+                      if (action) runBuilderAction(action, storeTargetItem);
+                    }}
+                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                  >
+                    Regenerate
+                  </button>
+                )}
+                <button
+                  onClick={dismissBuilder}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  {builderAction === "roast" ? "Dismiss" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Saved promo copy display */}
+          {!builderAction && promoCopy && (
+            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  Saved Promo Copy
+                </span>
+                <button
+                  onClick={() => copyToClipboard(promoCopy, "promo copy")}
+                  className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                {promoCopy}
+              </div>
+            </div>
+          )}
+
+          {/* Share project */}
+          {!builderAction && (
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => copyToClipboard(window.location.href, "project link")}
+                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+              >
+                Share Project Link
+              </button>
+              {promoCopy && (
+                <button
+                  onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                >
+                  Share Promo + Link
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Success toast */}
+          {builderToast && (
+            <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
+              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {projectView === "analytics" && canShowMarketUi ? (
       /* Token Activity — only in analytics view */
@@ -5590,10 +5608,13 @@ return (
           </div>
         </div>
 
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Blueprint</div>
+        <details className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-zinc-600 hover:text-zinc-400">
+            <span>Business Blueprint</span>
+            <span className="text-[10px] text-zinc-600">Click to expand</span>
+          </summary>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-zinc-800 bg-base p-5">
               <h2 className="text-2xl font-bold text-white">Original Prompt</h2>
               <p className="mt-3 text-zinc-400">{project?.prompt || "No prompt saved yet."}</p>
@@ -5631,7 +5652,7 @@ return (
               </p>
             </div>
           </div>
-        </div>
+        </details>
 
         {!isApprovedProject && (
           <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
@@ -5667,6 +5688,7 @@ return (
           </div>
         )}
 
+        {false && (
         <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
@@ -5718,6 +5740,7 @@ return (
               )}
             </div>
           </div>
+        )}
 
     </>)}
 

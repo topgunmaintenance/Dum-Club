@@ -31,6 +31,67 @@ router = APIRouter()
 _FLAT_REWARD = 10  # flat 10 DUM per verified off-platform purchase
 
 
+def _build_growth_context(sb, external_business_id: str, buyer_privy_id: str, campaign_type: str | None) -> dict:
+    """Build user-facing growth context for a verified proof.
+    Pure reads — no writes. Used by both submit-proof (auto-verify)
+    and verify-proof (admin) to enrich the response."""
+
+    # Business name
+    biz = sb.table("external_businesses").select("name, status").eq("id", external_business_id).limit(1).execute()
+    biz_data = biz.data[0] if biz.data else {}
+    business_name = biz_data.get("name", "this business")
+
+    # Business status: is it claimed / linked to an on-platform project?
+    biz_status = biz_data.get("status", "unclaimed")
+    business_on_platform = biz_status == "claimed"
+
+    # Verified proof count for this business
+    biz_proofs = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("external_business_id", external_business_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    proof_count = biz_proofs.count or 0
+
+    # This buyer's verified visits to this business
+    buyer_visits = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("external_business_id", external_business_id)
+        .eq("buyer_privy_id", buyer_privy_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    visit_count = buyer_visits.count or 0
+
+    # Growth tier label
+    if proof_count <= 1:
+        growth_tier = "just_discovered"
+    elif proof_count <= 5:
+        growth_tier = "growing"
+    else:
+        growth_tier = "popular"
+
+    # Impact message
+    impact_messages = {
+        "lead_credit": f"You discovered {business_name}. This business is now being tracked on Dum Club.",
+        "first_visit": f"You're one of the first customers here. {business_name} is gaining traction on Dum Club.",
+        "repeat_visit": f"You're a returning customer. {business_name} is building loyalty on Dum Club.",
+    }
+    impact_message = impact_messages.get(campaign_type or "", f"Your purchase at {business_name} has been verified.")
+
+    return {
+        "business_name": business_name,
+        "business_status": "on_platform" if business_on_platform else "not_on_platform",
+        "proof_count_for_business": proof_count,
+        "user_visit_count": visit_count,
+        "growth_tier": growth_tier,
+        "impact_message": impact_message,
+    }
+
+
 # ── Request/Response Models ──
 
 class DemandEventRequest(BaseModel):
@@ -438,7 +499,7 @@ async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
         except Exception as e:
             print(f"[external-biz] Failed to persist dum_points_awarded: {e}")
 
-    return {
+    response = {
         "ok": True,
         "proof_id": proof_id,
         "status": proof_status,
@@ -452,6 +513,21 @@ async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
             "points_awarded": points_awarded,
         },
     }
+
+    # Enrich auto-verified proofs with growth context for immediate user feedback
+    if auto_verify and proof_id:
+        try:
+            # Read back campaign_type set by RewardsAgent
+            final = sb.table("purchase_proofs").select("campaign_type").eq("id", proof_id).limit(1).execute()
+            campaign_type = final.data[0].get("campaign_type") if final.data else None
+            response["campaign_type"] = campaign_type
+            response["growth"] = _build_growth_context(
+                sb, req.external_business_id, req.buyer_privy_id, campaign_type
+            )
+        except Exception as e:
+            print(f"[external-biz] submit growth context failed: {e}")
+
+    return response
 
 
 # ── Proof Verification (admin) ──
@@ -485,24 +561,167 @@ async def verify_proof(req: ProofVerifyRequest, _admin=Depends(require_admin)):
 
     sb.table("purchase_proofs").update(update).eq("id", req.proof_id).execute()
 
-    return {"ok": True, "status": req.status, "points_awarded": update.get("dum_points_awarded", 0)}
+    # Read back campaign_type (set by RewardsAgent directly on the proof row)
+    final = sb.table("purchase_proofs").select("campaign_type").eq("id", req.proof_id).limit(1).execute()
+    campaign_type = final.data[0].get("campaign_type") if final.data else None
+
+    response: dict = {
+        "ok": True,
+        "status": req.status,
+        "points_awarded": update.get("dum_points_awarded", 0),
+        "campaign_type": campaign_type,
+    }
+
+    # Enrich with growth context on successful verification
+    if req.status == "verified":
+        try:
+            response["growth"] = _build_growth_context(
+                sb, p["external_business_id"], p["buyer_privy_id"], campaign_type
+            )
+        except Exception as e:
+            print(f"[external-biz] growth context failed: {e}")
+
+    return response
+
+
+# ── Reward Preview (admin, read-only) ──
+
+@router.get("/proof-reward-preview/{proof_id}")
+async def proof_reward_preview(proof_id: str, _admin=Depends(require_admin)):
+    """Preview the expected reward for a pending proof WITHOUT verifying it.
+    Pure read — no writes, no side effects."""
+    sb = get_client()
+
+    proof = sb.table("purchase_proofs").select("*").eq("id", proof_id).limit(1).execute()
+    if not proof.data:
+        raise HTTPException(status_code=404, detail="Proof not found")
+    p = proof.data[0]
+
+    biz_id = p["external_business_id"]
+    buyer_id = p["buyer_privy_id"]
+
+    # Resolve business name
+    biz = sb.table("external_businesses").select("name").eq("id", biz_id).limit(1).execute()
+    business_name = biz.data[0]["name"] if biz.data else "Unknown business"
+
+    # Resolve buyer balance
+    user = sb.table("users").select("dum_balance, email").eq("privy_id", buyer_id).limit(1).execute()
+    buyer_balance = user.data[0]["dum_balance"] if user.data else 0
+    buyer_email = user.data[0].get("email", "") if user.data else ""
+
+    # Classify: check demand events to predict campaign_type
+    biz_demand = (
+        sb.table("external_business_demand_events")
+        .select("id", count="exact")
+        .eq("external_business_id", biz_id)
+        .eq("demand_type", "verified_purchase")
+        .limit(1)
+        .execute()
+    )
+    business_first = (biz_demand.count or 0) == 0
+
+    buyer_demand = (
+        sb.table("external_business_demand_events")
+        .select("id", count="exact")
+        .eq("external_business_id", biz_id)
+        .eq("buyer_privy_id", buyer_id)
+        .eq("demand_type", "verified_purchase")
+        .limit(1)
+        .execute()
+    )
+    buyer_first_visit = (buyer_demand.count or 0) == 0
+
+    if business_first:
+        campaign_type = "lead_credit"
+        points_expected = 25
+    elif buyer_first_visit:
+        campaign_type = "first_visit"
+        points_expected = 15
+    else:
+        campaign_type = "repeat_visit"
+        points_expected = 10
+
+    # Check idempotency — already awarded?
+    existing = (
+        sb.table("dum_transactions")
+        .select("id", count="exact")
+        .eq("reference_id", f"proof:{proof_id}")
+        .limit(1)
+        .execute()
+    )
+    already_awarded = (existing.count or 0) > 0
+
+    return {
+        "proof_id": proof_id,
+        "business_name": business_name,
+        "buyer_privy_id": buyer_id,
+        "buyer_email": buyer_email,
+        "buyer_balance": buyer_balance,
+        "purchase_amount_usd": p.get("purchase_amount_usd"),
+        "purchase_date": p.get("purchase_date"),
+        "campaign_type": campaign_type,
+        "points_expected": points_expected,
+        "balance_after": buyer_balance + (0 if already_awarded else points_expected),
+        "already_awarded": already_awarded,
+        "status": p["status"],
+    }
 
 
 # ── Admin Proof Listing ──
 
 @router.get("/all-proofs")
 async def list_all_proofs(status: str = "pending", _admin=Depends(require_admin)):
-    """List all purchase proofs filtered by status. For admin review."""
+    """List all purchase proofs filtered by status. For admin review.
+    Enriches each proof with business_name and campaign_type prediction."""
     sb = get_client()
     res = (
         sb.table("purchase_proofs")
-        .select("id, external_business_id, buyer_privy_id, receipt_text, purchase_amount_usd, purchase_date, status, dum_points_awarded, verification_notes, created_at")
+        .select("id, external_business_id, buyer_privy_id, receipt_text, purchase_amount_usd, purchase_date, status, dum_points_awarded, verification_notes, campaign_type, created_at")
         .eq("status", status)
         .order("created_at", desc=True)
         .limit(100)
         .execute()
     )
-    return res.data or []
+    proofs = res.data or []
+    if not proofs:
+        return []
+
+    # Batch-resolve business names
+    biz_ids = list({p["external_business_id"] for p in proofs})
+    biz_res = sb.table("external_businesses").select("id, name").in_("id", biz_ids).execute()
+    biz_map = {b["id"]: b["name"] for b in (biz_res.data or [])}
+
+    # For pending proofs, predict campaign_type from demand events
+    if status == "pending":
+        demand_res = (
+            sb.table("external_business_demand_events")
+            .select("external_business_id, buyer_privy_id")
+            .in_("external_business_id", biz_ids)
+            .eq("demand_type", "verified_purchase")
+            .execute()
+        )
+        demand_rows = demand_res.data or []
+        # Sets for fast lookup
+        biz_with_verified = {d["external_business_id"] for d in demand_rows}
+        buyer_biz_pairs = {(d["buyer_privy_id"], d["external_business_id"]) for d in demand_rows}
+
+        for p in proofs:
+            bid = p["external_business_id"]
+            uid = p["buyer_privy_id"]
+            if bid not in biz_with_verified:
+                p["campaign_type_preview"] = "lead_credit"
+                p["points_expected"] = 25
+            elif (uid, bid) not in buyer_biz_pairs:
+                p["campaign_type_preview"] = "first_visit"
+                p["points_expected"] = 15
+            else:
+                p["campaign_type_preview"] = "repeat_visit"
+                p["points_expected"] = 10
+
+    for p in proofs:
+        p["business_name"] = biz_map.get(p["external_business_id"], "Unknown")
+
+    return proofs
 
 
 def _queue_outreach(sb, external_business_id: str):
