@@ -31,6 +31,67 @@ router = APIRouter()
 _FLAT_REWARD = 10  # flat 10 DUM per verified off-platform purchase
 
 
+def _build_growth_context(sb, external_business_id: str, buyer_privy_id: str, campaign_type: str | None) -> dict:
+    """Build user-facing growth context for a verified proof.
+    Pure reads — no writes. Used by both submit-proof (auto-verify)
+    and verify-proof (admin) to enrich the response."""
+
+    # Business name
+    biz = sb.table("external_businesses").select("name, status").eq("id", external_business_id).limit(1).execute()
+    biz_data = biz.data[0] if biz.data else {}
+    business_name = biz_data.get("name", "this business")
+
+    # Business status: is it claimed / linked to an on-platform project?
+    biz_status = biz_data.get("status", "unclaimed")
+    business_on_platform = biz_status == "claimed"
+
+    # Verified proof count for this business
+    biz_proofs = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("external_business_id", external_business_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    proof_count = biz_proofs.count or 0
+
+    # This buyer's verified visits to this business
+    buyer_visits = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("external_business_id", external_business_id)
+        .eq("buyer_privy_id", buyer_privy_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    visit_count = buyer_visits.count or 0
+
+    # Growth tier label
+    if proof_count <= 1:
+        growth_tier = "just_discovered"
+    elif proof_count <= 5:
+        growth_tier = "growing"
+    else:
+        growth_tier = "popular"
+
+    # Impact message
+    impact_messages = {
+        "lead_credit": f"You discovered {business_name}. This business is now being tracked on Dum Club.",
+        "first_visit": f"You're one of the first customers here. {business_name} is gaining traction on Dum Club.",
+        "repeat_visit": f"You're a returning customer. {business_name} is building loyalty on Dum Club.",
+    }
+    impact_message = impact_messages.get(campaign_type or "", f"Your purchase at {business_name} has been verified.")
+
+    return {
+        "business_name": business_name,
+        "business_status": "on_platform" if business_on_platform else "not_on_platform",
+        "proof_count_for_business": proof_count,
+        "user_visit_count": visit_count,
+        "growth_tier": growth_tier,
+        "impact_message": impact_message,
+    }
+
+
 # ── Request/Response Models ──
 
 class DemandEventRequest(BaseModel):
@@ -438,7 +499,7 @@ async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
         except Exception as e:
             print(f"[external-biz] Failed to persist dum_points_awarded: {e}")
 
-    return {
+    response = {
         "ok": True,
         "proof_id": proof_id,
         "status": proof_status,
@@ -452,6 +513,21 @@ async def _submit_proof_via_agent(sb, req: ProofSubmitRequest) -> dict:
             "points_awarded": points_awarded,
         },
     }
+
+    # Enrich auto-verified proofs with growth context for immediate user feedback
+    if auto_verify and proof_id:
+        try:
+            # Read back campaign_type set by RewardsAgent
+            final = sb.table("purchase_proofs").select("campaign_type").eq("id", proof_id).limit(1).execute()
+            campaign_type = final.data[0].get("campaign_type") if final.data else None
+            response["campaign_type"] = campaign_type
+            response["growth"] = _build_growth_context(
+                sb, req.external_business_id, req.buyer_privy_id, campaign_type
+            )
+        except Exception as e:
+            print(f"[external-biz] submit growth context failed: {e}")
+
+    return response
 
 
 # ── Proof Verification (admin) ──
@@ -489,7 +565,23 @@ async def verify_proof(req: ProofVerifyRequest, _admin=Depends(require_admin)):
     final = sb.table("purchase_proofs").select("campaign_type").eq("id", req.proof_id).limit(1).execute()
     campaign_type = final.data[0].get("campaign_type") if final.data else None
 
-    return {"ok": True, "status": req.status, "points_awarded": update.get("dum_points_awarded", 0), "campaign_type": campaign_type}
+    response: dict = {
+        "ok": True,
+        "status": req.status,
+        "points_awarded": update.get("dum_points_awarded", 0),
+        "campaign_type": campaign_type,
+    }
+
+    # Enrich with growth context on successful verification
+    if req.status == "verified":
+        try:
+            response["growth"] = _build_growth_context(
+                sb, p["external_business_id"], p["buyer_privy_id"], campaign_type
+            )
+        except Exception as e:
+            print(f"[external-biz] growth context failed: {e}")
+
+    return response
 
 
 # ── Reward Preview (admin, read-only) ──
