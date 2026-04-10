@@ -1107,19 +1107,19 @@ export default function ProjectPage() {
       setBuyStep((p) => ({ ...p, [oid]: "demo_success" }));
       // Award DUM Points locally
       const pts = Number(localStorage.getItem("dum_points") || "0");
-      localStorage.setItem("dum_points", String(pts + 2));
+      localStorage.setItem("dum_points", String(pts + 10));
       window.dispatchEvent(new Event("dum-points-update"));
       // Broadcast live purchase event
       if (project?.is_live && id) {
         setLiveSalesCount((c) => c + 1);
         broadcastLiveEvent(id, {
           user: authUser?.email || "Viewer",
-          text: `purchased ${offer.title} — +2 DUM`,
+          text: `purchased ${offer.title} — +10 DUM`,
           type: "purchase",
         });
         broadcastLiveEvent(id, {
           user: "System",
-          text: `${authUser?.email || "A viewer"} earned +2 DUM Points`,
+          text: `${authUser?.email || "A viewer"} earned +10 DUM Points`,
           type: "reward",
         });
       }
@@ -4350,7 +4350,7 @@ return (
                   {/* Demo purchase success feedback */}
                   {buyStep[offer.id] === "demo_success" && (
                     <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-300">
-                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +2 DUM Points earned
+                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +10 DUM Points earned
                     </div>
                   )}
 
