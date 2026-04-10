@@ -111,6 +111,7 @@ export function Navbar() {
           <span className="text-[18px] font-bold tracking-tight">
             <span className="text-white">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
           </span>
+          <span style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#00FFA3", border: "1px solid rgba(0,255,163,0.25)", background: "rgba(0,255,163,0.08)", borderRadius: "5px", padding: "2px 6px", lineHeight: 1 }}>BETA</span>
         </Link>
 
         <button
@@ -156,6 +157,7 @@ export function Navbar() {
           <span className="text-[22px] font-bold tracking-tight">
             <span className="text-white">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
           </span>
+          <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#00FFA3", border: "1px solid rgba(0,255,163,0.25)", background: "rgba(0,255,163,0.08)", borderRadius: "6px", padding: "3px 7px", lineHeight: 1 }}>BETA</span>
         </Link>
 
         <div
