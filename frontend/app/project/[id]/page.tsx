@@ -3034,12 +3034,6 @@ return (
                 </div>
               )}
 
-              {loadingProject ? (
-                <div className="mt-2 h-4 w-80 animate-pulse rounded bg-zinc-800" />
-              ) : (
-                <p className="mt-2 max-w-2xl text-sm text-zinc-400 sm:text-base">{heroUtility}</p>
-              )}
-
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
                 <span
                   className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
