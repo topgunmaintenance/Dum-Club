@@ -917,3 +917,78 @@ async def get_price_history(range: str = "7d"):
         "points": points,
         "price": DUM_USD_PRICE,
     }
+
+
+# ── Network Impact ──────────────────────────────────────────────────
+
+@router.get("/network-impact/{privy_id}")
+async def get_network_impact(privy_id: str):
+    """User-facing network impact metrics. Read-only, no auth required
+    (balance endpoints are also public). Uses existing tables only."""
+    from datetime import timedelta
+
+    sb = get_client()
+
+    # Verified purchases by this buyer
+    verified = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("buyer_privy_id", privy_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    verified_purchases = verified.count or 0
+
+    # Distinct businesses visited
+    biz_visited = (
+        sb.table("purchase_proofs")
+        .select("external_business_id")
+        .eq("buyer_privy_id", privy_id)
+        .eq("status", "verified")
+        .execute()
+    )
+    businesses_visited = len({r["external_business_id"] for r in (biz_visited.data or [])})
+
+    # Businesses discovered (user was the first verified buyer → lead_credit)
+    discovered = (
+        sb.table("purchase_proofs")
+        .select("id", count="exact")
+        .eq("buyer_privy_id", privy_id)
+        .eq("campaign_type", "lead_credit")
+        .execute()
+    )
+    businesses_discovered = discovered.count or 0
+
+    # Referral signups
+    referral_signups = 0
+    try:
+        ref = (
+            sb.table("referrals")
+            .select("signups")
+            .eq("privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
+        if ref.data:
+            referral_signups = ref.data[0].get("signups", 0) or 0
+    except Exception:
+        pass  # referrals table may not exist for all users
+
+    # Activity this week
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    weekly = (
+        sb.table("dum_transactions")
+        .select("id", count="exact")
+        .eq("privy_id", privy_id)
+        .gte("created_at", cutoff)
+        .execute()
+    )
+    activity_this_week = weekly.count or 0
+
+    return {
+        "verified_purchases": verified_purchases,
+        "businesses_visited": businesses_visited,
+        "businesses_discovered": businesses_discovered,
+        "referral_signups": referral_signups,
+        "activity_this_week": activity_this_week,
+    }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { getTier } from "../../lib/dumTiers";
 import { Starfield } from "../../components/Starfield";
 
 type Project = {
@@ -300,61 +301,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* DUM Points + Tier Progress */}
-        <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</span>
-                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest ${
-                  dumBalance >= 500 ? "bg-amber-400/10 text-amber-400 border border-amber-400/20" :
-                  dumBalance >= 150 ? "bg-violet-400/10 text-violet-400 border border-violet-400/20" :
-                  dumBalance >= 50 ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20" :
-                  "bg-zinc-800 text-zinc-500 border border-zinc-700"
-                }`}>
-                  {dumBalance >= 500 ? "Mogul" : dumBalance >= 150 ? "Operator" : dumBalance >= 50 ? "Builder" : "Starter"}
-                </span>
+        {/* DUM Points — compact card (full details in Hub) */}
+        {(() => {
+          const tier = getTier(dumBalance);
+          return (
+            <Link href="/hub" className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5 transition hover:border-emerald-400/30">
+              <div className="flex items-center gap-4">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-2xl font-extrabold text-emerald-400">{dumBalance}</span>
+                    <span className="rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest" style={{ borderColor: tier.color, color: tier.color }}>
+                      {tier.name}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="text-2xl font-extrabold text-emerald-400">{dumBalance}</span>
-                <span className="text-sm text-zinc-500">points</span>
-              </div>
-              <p className="mt-1 text-xs text-zinc-500">Use for discounts, boosts, and features across all businesses</p>
-            </div>
-            <Link
-              href="/upgrade"
-              className="shrink-0 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
-            >
-              Get More →
+              <span className="shrink-0 text-xs font-bold text-emerald-400/70">Manage →</span>
             </Link>
-          </div>
-          {/* Tier progress */}
-          <div className="mt-4 border-t border-zinc-800/30 pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-zinc-500">Progress to next tier</span>
-              <span className="text-[10px] font-bold text-zinc-400">
-                {dumBalance >= 500 ? "Max tier reached" :
-                 dumBalance >= 150 ? `${500 - dumBalance} to Mogul` :
-                 dumBalance >= 50 ? `${150 - dumBalance} to Operator` :
-                 `${50 - dumBalance} to Builder`}
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
-              <div
-                className="h-full rounded-full bg-emerald-400 transition-all duration-700"
-                style={{
-                  width: `${dumBalance >= 500 ? 100 :
-                    dumBalance >= 150 ? ((dumBalance - 150) / 350) * 100 :
-                    dumBalance >= 50 ? ((dumBalance - 50) / 100) * 100 :
-                    (dumBalance / 50) * 100}%`
-                }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between text-[8px] text-zinc-700">
-              <span>Starter</span><span>Builder</span><span>Operator</span><span>Mogul</span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* DUM Received from customers */}
         {projects.length > 0 && !analytics && (() => {

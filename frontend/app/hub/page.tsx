@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { TIERS, getTier, getNextTier } from "../../lib/dumTiers";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Connection } from "@solana/web3.js";
@@ -13,26 +14,6 @@ const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet
 const DUM_TREASURY = process.env.NEXT_PUBLIC_DUM_TREASURY_WALLET || "";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-/* ── Tier system ── */
-const TIERS = [
-  { name: "Starter", min: 0, color: "#666" },
-  { name: "Builder", min: 50, color: "#00FF87" },
-  { name: "Operator", min: 100, color: "#F5A623" },
-  { name: "Major", min: 1000, color: "#4F9EFF" },
-];
-
-function getTier(pts: number) {
-  for (let i = TIERS.length - 1; i >= 0; i--) {
-    if (pts >= TIERS[i].min) return TIERS[i];
-  }
-  return TIERS[0];
-}
-
-function getNextTier(pts: number) {
-  for (const t of TIERS) { if (pts < t.min) return t; }
-  return null;
-}
 
 function formatTimeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -60,6 +41,56 @@ const REASON_LABELS: Record<string, string> = {
 /* ════════════════════════════════════════════════════════════════
    POINTS TAB
    ════════════════════════════════════════════════════════════════ */
+/* ── Network Impact (lightweight, read-only) ── */
+function NetworkImpact({ privyId }: { privyId?: string }) {
+  const [data, setData] = useState<{
+    verified_purchases: number;
+    businesses_visited: number;
+    businesses_discovered: number;
+    referral_signups: number;
+    activity_this_week: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!privyId) return;
+    fetch(`${API_BASE}/api/dum/network-impact/${encodeURIComponent(privyId)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setData(d); })
+      .catch(() => {});
+  }, [privyId]);
+
+  if (!data) return null;
+  const total = data.verified_purchases + data.businesses_visited + data.businesses_discovered + data.referral_signups;
+  if (total === 0) return null;
+
+  const stats = [
+    { value: data.verified_purchases, label: "Purchases verified", show: data.verified_purchases > 0 },
+    { value: data.businesses_visited, label: "Businesses visited", show: data.businesses_visited > 0 },
+    { value: data.businesses_discovered, label: "Discovered for DUM Club", show: data.businesses_discovered > 0 },
+    { value: data.referral_signups, label: "Referral signups", show: data.referral_signups > 0 },
+  ].filter((s) => s.show);
+
+  return (
+    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Your Impact</div>
+      <div className={`grid gap-3 ${stats.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3 text-center">
+            <div className="text-xl font-black text-white">{s.value}</div>
+            <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-zinc-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      {data.activity_this_week > 0 && (
+        <div className="mt-3 text-center text-[10px] text-zinc-600">
+          {data.activity_this_week} transaction{data.activity_this_week === 1 ? "" : "s"} this week
+        </div>
+      )}
+      <p className="mt-2 text-center text-[11px] text-zinc-600">Your purchases bring businesses into the DUM Club network.</p>
+    </div>
+  );
+}
+
 function PointsTab({
   balance, tier, next, progressPct, user, getToken,
   purchasing, setPurchasing, purchaseError, setPurchaseError, purchaseSuccess,
@@ -143,6 +174,9 @@ function PointsTab({
           </div>
         )}
       </div>
+
+      {/* Network Impact */}
+      <NetworkImpact privyId={user?.privyId} />
 
       {/* How to Earn */}
       <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
@@ -712,355 +746,6 @@ function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpda
 }
 
 /* ════════════════════════════════════════════════════════════════
-   USE TAB — How to spend DUM Points
-   ════════════════════════════════════════════════════════════════ */
-function UseTab() {
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">Spend Your DUM Points</div>
-        <div className="space-y-4">
-          {[
-            { icon: "%", title: "10% off any offer", desc: "Spend 10 points at checkout. Instant discount, any business." },
-            { icon: "🌐", title: "Works everywhere", desc: "Earn at any storefront, spend at any storefront." },
-            { icon: "⬆", title: "Higher tiers, more perks", desc: "More points, better tier. Priority placement, more AI, exclusive features." },
-          ].map((f) => (
-            <div key={f.title} className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{f.icon}</div>
-              <div>
-                <div className="text-sm font-bold text-white">{f.title}</div>
-                <div className="text-[12px] text-zinc-500">{f.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
-        <div className="mb-2 text-lg font-black text-white">Use DUM. Save money.</div>
-        <p className="mb-4 text-sm text-zinc-500">Instant discounts at checkout, across every business.</p>
-        <Link href="/discover" className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
-          Browse Businesses →
-        </Link>
-      </div>
-
-      {/* Tiers */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Tiers</div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {TIERS.map((t) => (
-            <div key={t.name} className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-4 text-center">
-              <div className="mb-1 text-lg font-black" style={{ color: t.color }}>{t.min === 0 ? "0" : t.min.toLocaleString()}+</div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: t.color }}>{t.name}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   MARKET TAB — Coming Soon positioning screen
-   ════════════════════════════════════════════════════════════════ */
-function MarketComingSoonTab() {
-  return (
-    <div className="mx-auto max-w-lg space-y-6">
-
-      {/* ── 1. Header + Hook ── */}
-      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] via-zinc-950 to-violet-500/[0.03] p-8 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <h2 className="text-2xl font-black text-white sm:text-3xl">DUM Market</h2>
-          <span className="rounded-full border border-zinc-700 bg-zinc-900/80 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">
-            Coming Soon
-          </span>
-        </div>
-        <p className="mx-auto mt-4 max-w-sm text-lg font-semibold leading-snug text-zinc-300">
-          You don&apos;t trade DUM yet.<br />
-          <span className="text-emerald-400">You earn it first.</span>
-        </p>
-        <p className="mt-3 text-[13px] leading-relaxed text-zinc-500">
-          DUM starts as a reward. It becomes a market when real usage, real demand, and real businesses back it — not before.
-        </p>
-      </div>
-
-      {/* ── 2. What is the DUM Market ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">What is the DUM Market?</div>
-        <p className="text-sm leading-relaxed text-zinc-400">
-          A real exchange where DUM holders trade, transfer, and put their rewards to work.
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          DUM is not a token-first project. It becomes tradable only after real commerce backs it. The price is set by supply and demand — not by us.
-        </p>
-      </div>
-
-      {/* ── 3. Why a Market ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Build a Market?</div>
-        <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-          Most rewards are closed. Airline miles, credit card points, in-game currency — locked to one platform, non-transferable, often worthless.
-        </p>
-        <div className="space-y-2">
-          {[
-            { old: "Airline miles expire", dum: "DUM is yours permanently on-chain" },
-            { old: "Credit card points locked to one issuer", dum: "DUM works across every DUM Club business" },
-            { old: "In-game currency has no real value", dum: "DUM becomes tradable between real users" },
-          ].map((row) => (
-            <div key={row.old} className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-900/40 px-4 py-3">
-              <div className="text-[11px] text-zinc-600 line-through decoration-zinc-700">{row.old}</div>
-              <div className="text-[11px] font-medium text-emerald-400/80">{row.dum}</div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-[12px] text-zinc-500">
-          Open value. Transferable. Tradable between real users.
-        </p>
-      </div>
-
-      {/* ── 4. How Value Flows ── */}
-      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">How Value Flows</div>
-        <p className="mb-4 text-sm text-zinc-400">
-          Rewards come from real revenue, not inflation. Every transaction funds the pool.
-        </p>
-        {/* Transaction breakdown */}
-        <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-5">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">Example: $100 purchase</div>
-          <div className="space-y-2">
-            {[
-              { label: "Customer pays", value: "$100", color: "text-white" },
-              { label: "Business receives", value: "~$93", color: "text-white" },
-              { label: "Platform fee", value: "~$7", color: "text-zinc-400" },
-              { label: "Portion funds DUM rewards", value: "2–5%", color: "text-emerald-400" },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between border-b border-zinc-800/40 pb-2 last:border-0 last:pb-0">
-                <span className="text-[12px] text-zinc-500">{row.label}</span>
-                <span className={`font-mono text-sm font-bold ${row.color}`}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Flow */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-3">
-          {["Customer", "Platform", "Business", "Rewards", "Back to User"].map((step, i) => (
-            <span key={step} className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-emerald-400">{step}</span>
-              {i < 4 && <span className="text-zinc-700">→</span>}
-            </span>
-          ))}
-        </div>
-        <p className="mt-3 text-center text-[10px] text-zinc-600">
-          Nothing is manufactured. Every DUM is earned.
-        </p>
-      </div>
-
-      {/* ── 5. How We Get There (Mechanism) ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How We Get There</div>
-        <p className="mb-5 text-sm text-zinc-400">
-          Markets are grown, not switched on. Each step causes the next.
-        </p>
-        <div className="space-y-3">
-          {[
-            { phase: "1", title: "Transactions create rewards", desc: "Every purchase generates DUM — funded by revenue, not printing.", cause: "More purchases → more DUM distributed" },
-            { phase: "2", title: "Rewards create demand", desc: "Users earn DUM and spend it on discounts. Natural demand follows.", cause: "More users → more demand" },
-            { phase: "3", title: "Spending creates circulation", desc: "DUM moves through businesses instead of sitting idle.", cause: "More spending → healthier velocity" },
-            { phase: "4", title: "Activity builds value", desc: "More businesses, more users, more utility, more trust.", cause: "More activity → stronger network" },
-            { phase: "5", title: "Liquidity is introduced", desc: "Treasury and user participation create depth for fair pricing.", cause: "Real depth → real prices" },
-            { phase: "6", title: "Trading unlocks", desc: "Real supply, real demand, real stability. Then the market opens.", cause: "Fundamentals first" },
-          ].map((step) => {
-            const isActive = Number(step.phase) <= 3;
-            return (
-              <div key={step.phase} className="flex gap-4">
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
-                  isActive
-                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
-                    : "border-zinc-700 bg-zinc-800 text-zinc-500"
-                }`}>
-                  {step.phase}
-                </div>
-                <div className="flex-1">
-                  <div className={`text-sm font-bold ${isActive ? "text-white" : "text-zinc-500"}`}>{step.title}</div>
-                  <div className="mt-0.5 text-[12px] leading-relaxed text-zinc-500">{step.desc}</div>
-                  <div className="mt-1 text-[10px] font-medium text-emerald-400/50">{step.cause}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── 6. How Transactions Create Stability ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How Transactions Create Stability</div>
-        <p className="mb-5 text-sm text-zinc-400">
-          Every action feeds a reinforcing loop. More usage, more stability.
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { action: "Purchases", result: "Generate rewards", icon: "🛒" },
-            { action: "Rewards", result: "Distribute DUM", icon: "◆" },
-            { action: "Spending DUM", result: "Creates demand", icon: "%" },
-            { action: "Business adoption", result: "Creates real utility", icon: "🏪" },
-          ].map((item) => (
-            <div key={item.action} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4">
-              <div className="mb-2 text-base">{item.icon}</div>
-              <div className="text-xs font-bold text-white">{item.action}</div>
-              <div className="mt-0.5 text-[10px] text-zinc-500">{item.result}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-4 py-3">
-          {["Purchases", "Rewards", "Spending", "Demand", "Liquidity", "Stability"].map((step, i) => (
-            <span key={step} className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-emerald-400">{step}</span>
-              {i < 5 && <span className="text-[10px] text-zinc-700">→</span>}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 7. Customer-First Market Model ── */}
-      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Customer-First Market</div>
-        <p className="mb-4 text-sm text-zinc-400">
-          Built from customers, not wallets. Active users matter more than empty holders.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-1.5 rounded-xl border border-zinc-800/60 bg-zinc-950/80 px-3 py-4">
-          {["Customers", "Activity", "Demand", "Holders", "Market"].map((step, i) => (
-            <span key={step} className="flex items-center gap-1.5">
-              <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                i < 3
-                  ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20"
-                  : "bg-zinc-800 text-zinc-500 border border-zinc-700"
-              }`}>
-                {step}
-              </span>
-              {i < 4 && <span className="text-zinc-700">→</span>}
-            </span>
-          ))}
-        </div>
-        <p className="mt-3 text-center text-[11px] text-zinc-600">
-          The sequence matters. Customers come first. Market comes last.
-        </p>
-      </div>
-
-      {/* ── 8. When the Market Unlocks ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">When the Market Unlocks</div>
-        <p className="mb-4 text-sm text-zinc-400">
-          The market is a result of activity, not a starting feature.
-        </p>
-        <div className="space-y-2">
-          {[
-            "Active customers are consistently using DUM across businesses",
-            "Multiple businesses accept and integrate DUM into their storefronts",
-            "Transactions are recurring, not one-time",
-            "A meaningful portion of users choose to hold DUM beyond immediate use",
-          ].map((cond) => (
-            <div key={cond} className="flex items-start gap-3 rounded-xl bg-zinc-900/40 px-4 py-3">
-              <span className="mt-0.5 shrink-0 text-[10px] text-zinc-600">○</span>
-              <span className="text-[12px] leading-relaxed text-zinc-400">{cond}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-[11px] text-zinc-600">
-          No dates. No artificial deadlines. Fundamentals first.
-        </p>
-      </div>
-
-      {/* ── 9. The Flywheel ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">The Flywheel</div>
-        <div className="flex items-center justify-between rounded-xl border border-zinc-800/60 bg-zinc-900/30 px-3 py-4 sm:px-4">
-          {["Earn", "Use", "Demand", "Liquidity", "Trade"].map((step, i) => (
-            <div key={step} className="flex items-center gap-1 sm:gap-2">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-full border text-[10px] font-bold sm:h-10 sm:w-10 sm:text-[11px] ${
-                i < 3
-                  ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-400"
-                  : "border-zinc-700 bg-zinc-800 text-zinc-500"
-              }`}>
-                {step.slice(0, 2)}
-              </div>
-              {i < 4 && <span className="text-[10px] text-zinc-700">→</span>}
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-center text-[11px] text-zinc-600">
-          Each step feeds the next. No step is skipped.
-        </p>
-      </div>
-
-      {/* ── 10. Why It's Not Live Yet ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Why Not Live Yet?</div>
-        <p className="text-sm font-semibold text-zinc-300">Markets without usage are unstable.</p>
-        <p className="mt-3 text-sm text-zinc-500">
-          We are building real demand first — not launching empty trading.
-        </p>
-        <div className="mt-4 space-y-2">
-          {[
-            { label: "Real users", desc: "People who use DUM Club to run businesses and buy services" },
-            { label: "Real transactions", desc: "Purchases, discounts, and rewards flowing through the system daily" },
-            { label: "Real value", desc: "DUM backed by utility across a growing ecosystem of businesses" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-start gap-3 rounded-xl bg-zinc-900/40 px-4 py-3">
-              <span className="mt-0.5 text-emerald-400/60">&#10003;</span>
-              <div>
-                <span className="text-xs font-bold text-white">{item.label}</span>
-                <span className="ml-1.5 text-[11px] text-zinc-500">— {item.desc}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 11. Vision ── */}
-      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">The Vision</div>
-        <div className="flex items-center justify-between gap-1">
-          {[
-            { label: "Reward System", active: true },
-            { label: "Marketplace", active: true },
-            { label: "Market", active: false },
-            { label: "Economy", active: false },
-          ].map((step, i) => (
-            <div key={step.label} className="flex flex-1 flex-col items-center gap-1.5">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold ${
-                step.active
-                  ? "bg-emerald-400/15 text-emerald-400 border border-emerald-400/30"
-                  : "bg-zinc-800 text-zinc-600 border border-zinc-700 border-dashed"
-              }`}>
-                {step.active ? "✓" : i + 1}
-              </div>
-              <span className={`text-center text-[9px] font-bold leading-tight ${step.active ? "text-emerald-400" : "text-zinc-600"}`}>{step.label}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-500">
-          DUM is not a token looking for a use case. It is a use case becoming a token.
-        </p>
-      </div>
-
-      {/* ── 12. CTA ── */}
-      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-950 p-8 text-center">
-        <div className="mb-2 text-lg font-black text-white">The market starts with you.</div>
-        <p className="mb-5 text-sm text-zinc-500">Every DUM Point you earn today brings the market closer to launch.</p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
-            Browse Businesses →
-          </Link>
-          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
-            Create a Business
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    REFER TAB
    ════════════════════════════════════════════════════════════════ */
 function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
@@ -1198,7 +883,7 @@ export default function HubPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState<{ added: number; newBalance: number } | null>(null);
-  const [tab, setTab] = useState<"points" | "claim" | "use" | "market" | "refer">("points");
+  const [tab, setTab] = useState<"balance" | "claim" | "refer">("balance");
   const [hubClaimable, setHubClaimable] = useState(0);
 
   useEffect(() => {
@@ -1277,7 +962,7 @@ export default function HubPage() {
         <div className="mb-6 text-center">
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Digital Utility Market · Powered by Solana</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DUM Hub</h1>
-          <p className="mt-2 text-sm text-zinc-500">Earn · Claim · Use · Trade</p>
+          <p className="mt-2 text-sm text-zinc-500">Balance · Claim · Refer</p>
         </div>
 
         {/* How DUM works — explainer strip */}
@@ -1298,10 +983,8 @@ export default function HubPage() {
         {/* Tab bar */}
         <div className="mb-8 flex items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-lg mx-auto">
           {[
-            { id: "points" as const, label: "Points", icon: "◆" },
+            { id: "balance" as const, label: "Balance", icon: "◆" },
             { id: "claim" as const, label: "Claim", icon: "⬇" },
-            { id: "use" as const, label: "Use", icon: "%" },
-            { id: "market" as const, label: "Market", icon: "📊" },
             { id: "refer" as const, label: "Refer", icon: "🔗" },
           ].map((t) => (
             <button
@@ -1325,7 +1008,7 @@ export default function HubPage() {
         </div>
 
         {/* Tab content */}
-        {tab === "points" && (
+        {tab === "balance" && (
           <PointsTab
             balance={balance} tier={tier} next={next} progressPct={progressPct}
             user={user} getToken={getToken}
@@ -1336,8 +1019,6 @@ export default function HubPage() {
           />
         )}
         {tab === "claim" && <ClaimTab balance={balance} onBalanceUpdate={setBalance} />}
-        {tab === "use" && <UseTab />}
-        {tab === "market" && <MarketComingSoonTab />}
         {tab === "refer" && <ReferTab getToken={getToken} />}
 
         {/* Bottom CTAs */}
