@@ -64,13 +64,13 @@ export default function DashboardPage() {
           const res = await fetch(`${API_BASE}/api/dum/balance/${encodeURIComponent(privyId)}`);
           if (res.ok) {
             const data = await res.json();
-            setDumBalance(data.balance ?? 50);
-            localStorage.setItem("dum_points", String(data.balance ?? 50));
+            setDumBalance(data.balance ?? 0);
+            localStorage.setItem("dum_points", String(data.balance ?? 0));
             return;
           }
         } catch {}
       }
-      setDumBalance(Number(localStorage.getItem("dum_points") || "50"));
+      setDumBalance(Number(localStorage.getItem("dum_points") || "0"));
     }
     loadDum();
     const handler = () => setDumBalance(Number(localStorage.getItem("dum_points") || "0"));

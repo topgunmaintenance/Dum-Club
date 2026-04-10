@@ -28,20 +28,15 @@ export function Navbar() {
           const res = await fetch(`${API}/api/dum/balance/${encodeURIComponent(privyId)}`);
           if (res.ok) {
             const data = await res.json();
-            setDumBalance(data.balance ?? 50);
-            localStorage.setItem("dum_points", String(data.balance ?? 50));
+            setDumBalance(data.balance ?? 0);
+            localStorage.setItem("dum_points", String(data.balance ?? 0));
             return;
           }
         } catch {}
       }
-      // Fallback: localStorage
+      // Fallback: localStorage (no hardcoded default — 0 until API confirms)
       const stored = localStorage.getItem("dum_points");
-      if (stored) {
-        setDumBalance(Number(stored));
-      } else {
-        localStorage.setItem("dum_points", "50");
-        setDumBalance(50);
-      }
+      setDumBalance(stored ? Number(stored) : 0);
     }
     loadBalance();
 

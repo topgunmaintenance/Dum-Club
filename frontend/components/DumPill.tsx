@@ -14,20 +14,41 @@ export function DumPill() {
   const [balance, setBalance] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
-  // Read balance from localStorage + listen for updates
+  // Fetch balance from API (single source of truth), then listen for updates
   useEffect(() => {
     const read = () => {
       const pts = Number(localStorage.getItem("dum_points") || "0");
       setBalance(pts);
     };
-    read();
+
+    // Try backend first, same as Navbar
+    async function loadBalance() {
+      const privyId = user?.privyId;
+      if (privyId) {
+        try {
+          const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const res = await fetch(`${API}/api/dum/balance/${encodeURIComponent(privyId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const val = data.balance ?? 0;
+            setBalance(val);
+            localStorage.setItem("dum_points", String(val));
+            return;
+          }
+        } catch {}
+      }
+      // Fallback: localStorage (no hardcoded default)
+      read();
+    }
+    loadBalance();
+
     window.addEventListener("dum-points-update", read);
     window.addEventListener("storage", read);
     return () => {
       window.removeEventListener("dum-points-update", read);
       window.removeEventListener("storage", read);
     };
-  }, []);
+  }, [user]);
 
   // Hide for logged-out users
   if (!user) return null;

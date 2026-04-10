@@ -1032,7 +1032,7 @@ export default function ProjectPage() {
           }
         } else {
           // Fallback: localStorage only
-          const pts = Number(localStorage.getItem("dum_points") || "50");
+          const pts = Number(localStorage.getItem("dum_points") || "0");
           localStorage.setItem("dum_points", String(pts + 5));
         }
         window.dispatchEvent(new Event("dum-points-update"));

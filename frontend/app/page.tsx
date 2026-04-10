@@ -745,7 +745,7 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
 /* ─── DUM Points Helpers ─── */
 function getDumPoints(): number {
   if (typeof window === "undefined") return 0;
-  return Number(localStorage.getItem("dum_points") || "50");
+  return Number(localStorage.getItem("dum_points") || "0");
 }
 
 function awardDumPoints(amount: number): number {
