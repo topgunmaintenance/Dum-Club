@@ -5653,6 +5653,7 @@ return (
           </div>
         )}
 
+        {false && (
         <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
 
@@ -5704,6 +5705,7 @@ return (
               )}
             </div>
           </div>
+        )}
 
     </>)}
 
