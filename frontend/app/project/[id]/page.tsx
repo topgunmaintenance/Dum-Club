@@ -4593,16 +4593,23 @@ return (
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {isOwner && (
-        <div id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
-          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
-            Sales
-          </div>
-          <h2 className="text-2xl font-bold text-white">Orders</h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            Purchases from your offers
-          </p>
+        <details id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
+          <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-zinc-300">
+            <div>
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
+                Sales
+              </div>
+              <h2 className="text-2xl font-bold text-white">Orders</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                Purchases from your offers
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-zinc-800 bg-base px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+              {sellerOrders.length} {sellerOrders.length === 1 ? "order" : "orders"}
+            </span>
+          </summary>
 
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
             <span className="text-[11px] text-zinc-600">
               Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
             </span>
@@ -4669,7 +4676,7 @@ return (
               })}
             </div>
           )}
-        </div>
+        </details>
       )}
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
