@@ -3115,14 +3115,6 @@ return (
                     </span>
                   )}
                 </div>
-                <p className="mb-3 text-sm leading-relaxed text-zinc-300">
-                  {project?.description
-                    ? project.description.length > 100
-                      ? project.description.slice(0, 100) + "..."
-                      : project.description
-                    : "Browse offers and start buying from this business."}
-                </p>
-
                 {/* Quick stats */}
                 {offers.length > 0 && (
                   <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
