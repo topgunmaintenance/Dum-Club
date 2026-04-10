@@ -376,6 +376,7 @@ export default function AdminProofsPage() {
   // Execute verify after modal confirmation
   async function confirmVerify() {
     if (!modalPreview) return;
+    const proofId = modalPreview.proof_id;
     setModalLoading(true);
     setVerifyError(null);
     try {
@@ -384,7 +385,7 @@ export default function AdminProofsPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          proof_id: modalPreview.proof_id,
+          proof_id: proofId,
           status: "verified",
           verification_notes: "",
         }),
@@ -394,7 +395,7 @@ export default function AdminProofsPage() {
         throw new Error(err.detail || "Verification failed");
       }
       setModalPreview(null);
-      setProofs((prev) => prev.filter((p) => p.id !== modalPreview.proof_id));
+      setProofs((prev) => prev.filter((p) => p.id !== proofId));
       loadData();
     } catch (e: any) {
       setVerifyError(e.message || "Verification failed");
