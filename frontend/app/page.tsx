@@ -3176,7 +3176,7 @@ export default function Home() {
                   },
                   {
                     label: "Contact",
-                    href: "mailto:julian@topgunmaintenance.com",
+                    href: "mailto:julian@dum.club",
                   },
                 ].map((link) => (
                   <li key={link.label}>

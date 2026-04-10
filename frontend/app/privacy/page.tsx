@@ -57,8 +57,8 @@ export default function PrivacyPage() {
             <h2 className="mb-2 text-lg font-bold text-white">7. Contact</h2>
             <p>
               For privacy-related inquiries, contact us at{" "}
-              <a href="mailto:julian@topgunmaintenance.com" className="text-emerald-400 hover:text-emerald-300">
-                julian@topgunmaintenance.com
+              <a href="mailto:julian@dum.club" className="text-emerald-400 hover:text-emerald-300">
+                julian@dum.club
               </a>
             </p>
           </section>

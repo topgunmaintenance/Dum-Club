@@ -131,7 +131,7 @@ removed or renamed. Agent tests still pass (22/22).
 ### Admin Access Audit
 - Searched entire codebase for hardcoded email checks — none found
 - Admin access is fully DB-driven via `users.is_admin` (backend + frontend)
-- Only reference to `julian@topgunmaintenance.com` is a mailto contact link on landing page (not a permission check)
+- Only reference to `julian@dum.club` is a mailto contact link on landing page (not a permission check)
 
 ### UI Upgrade Steps 1-5
 **Step 1 — Global color system + typography** (commit b9893dc)

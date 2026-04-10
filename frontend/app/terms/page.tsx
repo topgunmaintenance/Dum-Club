@@ -64,8 +64,8 @@ export default function TermsPage() {
             <h2 className="mb-2 text-lg font-bold text-white">8. Contact</h2>
             <p>
               For questions about these terms, contact us at{" "}
-              <a href="mailto:julian@topgunmaintenance.com" className="text-emerald-400 hover:text-emerald-300">
-                julian@topgunmaintenance.com
+              <a href="mailto:julian@dum.club" className="text-emerald-400 hover:text-emerald-300">
+                julian@dum.club
               </a>
             </p>
           </section>
