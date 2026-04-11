@@ -1206,26 +1206,30 @@ export default function ProjectPage() {
       const cleanUrl = window.location.origin + window.location.pathname;
       console.log("[buyOffer] clean URL for redirect:", cleanUrl);
 
+      const checkoutPayload = {
+        offer_id: oid,
+        success_url: cleanUrl,
+        cancel_url: cleanUrl,
+        use_dum_discount: !!dumDiscountApplied[oid],
+        source: auctionId ? "live_auction" : project?.is_live ? "live" : "normal",
+        ...(auctionId && { auction_id: auctionId }),
+        ...(overridePrice != null && { override_price: overridePrice }),
+      };
+      console.log("[buyOffer] Sending checkout payload:", checkoutPayload);
+
       const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          offer_id: oid,
-          success_url: cleanUrl,
-          cancel_url: cleanUrl,
-          use_dum_discount: !!dumDiscountApplied[oid],
-          source: auctionId ? "live_auction" : project?.is_live ? "live" : "normal",
-          ...(auctionId && { auction_id: auctionId }),
-          ...(overridePrice != null && { override_price: overridePrice }),
-        }),
+        body: JSON.stringify(checkoutPayload),
       });
 
       console.log("[buyOffer] checkout response status:", res.status);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        console.error("[buyOffer] Checkout error detail:", errData);
         const msg = typeof errData.detail === "string" ? errData.detail : `Checkout failed (HTTP ${res.status})`;
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
         setBuyError((p) => ({ ...p, [oid]: msg }));

@@ -95,8 +95,11 @@ async def create_payment_intent(
     if not _STRIPE_SECRET:
         raise HTTPException(status_code=503, detail="Stripe is not configured")
 
+    print(f"[checkout] Request: offer_id={body.offer_id}, source={body.source}, auction_id={body.auction_id}, override_price={body.override_price}, use_dum_discount={body.use_dum_discount}")
+
     supabase = get_client()
     privy_id = current_user.get("sub")
+    print(f"[checkout] Buyer: privy_id={privy_id}")
 
     # 1. Fetch offer
     offer_res = (
@@ -170,7 +173,8 @@ async def create_payment_intent(
     amount_cents = int(round(final_price * 100))
 
     if amount_cents < 50:
-        raise HTTPException(status_code=400, detail="Minimum charge is $0.50")
+        print(f"[checkout] REJECTED: amount_cents={amount_cents}, original_price={original_price}, final_price={final_price}, offer_id={body.offer_id}")
+        raise HTTPException(status_code=400, detail=f"Minimum charge is $0.50 (got ${final_price:.2f})")
 
     # 4. Resolve buyer identity
     buyer_user_id = privy_id
