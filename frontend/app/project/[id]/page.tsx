@@ -3598,6 +3598,24 @@ return (
         )}
       </div>
 
+      {/* ── IVS Host (must stay mounted across live session — rendered at top) ── */}
+      {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
+        <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6"}>
+          <IVSStageHost
+            projectId={id as string}
+            userId={authUser?.privyId || ""}
+            onLive={() => {
+              setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
+              setLiveSalesCount(0);
+            }}
+            onEnd={() => {
+              setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
+            }}
+            onError={(msg) => setGoLiveError(msg)}
+          />
+        </div>
+      )}
+
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
         <div className="mb-6 space-y-4">
@@ -3852,12 +3870,35 @@ return (
               />
             </div>
           )}
+
+          {/* ── HOST CONTROLS — inside live banner for unified experience ── */}
+          {isOwner && isIVSSession(project) && (
+            <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
+              <div className="flex flex-wrap gap-2">
+                {offers.filter((o) => o.is_active).map((offer) => (
+                  <button
+                    key={offer.id}
+                    onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
+                    className={`rounded-xl border px-3 py-2 text-sm transition ${
+                      offer.id === project.pinned_offer_id
+                        ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
+                  >
+                    {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                    {offer.id === project.pinned_offer_id && " (pinned)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       <div
         id="section-top"
-        className={`mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) && !isOwner ? "hidden" : ""}`}
+        className={`mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
@@ -4454,7 +4495,7 @@ return (
       </div>
 
       {/* ── Offers (Public Storefront + Owner Tools) — hidden for viewers during live ── */}
-      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8 ${project?.is_live && isIVSSession(project) && !isOwner ? "hidden" : ""}`}>
+      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
@@ -5242,28 +5283,12 @@ return (
       )}
 
 
-      {/* ── Live Control Panel (Owner Only) — 1-Tap Go Live ──────────── */}
-      {isOwner && (
+      {/* ── Legacy Live Control Panel (non-IVS only) ── */}
+      {isOwner && !IVS_REALTIME_ENABLED && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
 
-          {/* IVS Real-Time host — stays mounted through entire live session */}
-          {IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
-            <IVSStageHost
-              projectId={id as string}
-              userId={authUser?.privyId || ""}
-              onLive={() => {
-                setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
-                setLiveSalesCount(0);
-              }}
-              onEnd={() => {
-                setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
-              }}
-              onError={(msg) => setGoLiveError(msg)}
-            />
-          )}
-
-          {/* Selling controls — shown for ALL live providers when live */}
-          {project?.is_live && (
+          {/* Selling controls — shown for non-IVS live providers only (IVS controls are in the banner) */}
+          {project?.is_live && !isIVSSession(project) && (
             <div className="space-y-4">
               {/* Only show legacy live header when NOT using IVS (IVS has its own) */}
               {!isIVSSession(project) && (
