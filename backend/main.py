@@ -47,6 +47,7 @@ from api.routes import (
     search,
     external_business,
     feature_flags,
+    auctions,
 )
 
 from db.supabase import init_supabase
@@ -154,6 +155,7 @@ app.include_router(search.router, prefix="/api/search", tags=["Search"])
 # Off-platform demand capture
 app.include_router(external_business.router, prefix="/api/external", tags=["External Business"])
 app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
+app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
 
 
 @app.get("/health")

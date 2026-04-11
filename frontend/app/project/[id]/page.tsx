@@ -66,6 +66,7 @@ type Project = {
   is_live?: boolean;
   stream_url?: string | null;
   pinned_offer_id?: string | null;
+  active_auction_id?: string | null;
 };
 
 type GatedChatResponse = {
@@ -706,6 +707,31 @@ export default function ProjectPage() {
   const [liveStreamUrl, setLiveStreamUrl] = useState("");
   const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
+
+  // Auction state
+  type Auction = {
+    id: string;
+    project_id: string;
+    offer_id: string;
+    starting_price: number;
+    current_bid: number | null;
+    current_bidder: string | null;
+    current_bidder_display: string | null;
+    bid_count: number;
+    status: "active" | "ended" | "awaiting_payment" | "paid" | "voided" | "closed";
+    duration_seconds: number;
+    ends_at: string;
+    ended_at: string | null;
+  };
+  const [auction, setAuction] = useState<Auction | null>(null);
+  const [auctionBidAmount, setAuctionBidAmount] = useState("");
+  const [auctionBidding, setAuctionBidding] = useState(false);
+  const [auctionBidError, setAuctionBidError] = useState<string | null>(null);
+  const [auctionCountdown, setAuctionCountdown] = useState("");
+  const [auctionStarting, setAuctionStarting] = useState(false);
+  const [auctionStartPrice, setAuctionStartPrice] = useState("10");
+  const [auctionDuration, setAuctionDuration] = useState(120);
+  const [auctionOfferSelect, setAuctionOfferSelect] = useState<string | null>(null);
   const [bannerCopied, setBannerCopied] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
@@ -1971,6 +1997,173 @@ export default function ProjectPage() {
   }
 
   const pinnedOffer = offers.find((o) => o.id === project?.pinned_offer_id) || null;
+  const auctionOffer = auction ? offers.find((o) => o.id === auction.offer_id) || null : null;
+  const isAuctionActive = auction?.status === "active";
+  const isAuctionWinner = auction?.status === "ended" && auction.current_bidder === authUser?.privyId;
+
+  /* ── Auction Functions ────────────────────────────── */
+  async function loadAuction() {
+    if (!project?.active_auction_id) { setAuction(null); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${project.active_auction_id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAuction(data);
+      }
+    } catch { setAuction(null); }
+  }
+
+  useEffect(() => { loadAuction(); }, [project?.active_auction_id]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!auction || auction.status !== "active") { setAuctionCountdown(""); return; }
+    function tick() {
+      const now = Date.now();
+      const end = new Date(auction!.ends_at).getTime();
+      const diff = Math.max(0, end - now);
+      if (diff <= 0) {
+        setAuctionCountdown("0:00");
+        // Auto-close when timer hits zero
+        fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        }).then(() => loadAuction()).catch(() => {});
+        return;
+      }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setAuctionCountdown(`${m}:${s.toString().padStart(2, "0")}`);
+    }
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [auction?.id, auction?.status, auction?.ends_at]);
+
+  // Poll auction state every 3 seconds while active
+  useEffect(() => {
+    if (!auction || auction.status !== "active") return;
+    const iv = setInterval(loadAuction, 3000);
+    return () => clearInterval(iv);
+  }, [auction?.id, auction?.status]);
+
+  async function handleStartAuction() {
+    if (!id || !auctionOfferSelect || !auctionStartPrice) return;
+    setAuctionStarting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({
+          project_id: id,
+          offer_id: auctionOfferSelect,
+          starting_price: Number(auctionStartPrice),
+          duration_seconds: auctionDuration,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuction(data.auction);
+        setProject((prev) => prev ? { ...prev, active_auction_id: data.auction.id, pinned_offer_id: data.auction.offer_id } : prev);
+        if (id) {
+          broadcastLiveEvent(id, {
+            user: "System",
+            text: `Auction started: ${data.offer_title} — starting at $${Number(auctionStartPrice).toFixed(0)} (${Math.floor(auctionDuration / 60)}:${(auctionDuration % 60).toString().padStart(2, "0")})`,
+            type: "system",
+          });
+        }
+      }
+    } catch (err) { console.error("Start auction failed", err); }
+    finally { setAuctionStarting(false); }
+  }
+
+  async function handlePlaceBid() {
+    if (!auction || !auctionBidAmount) return;
+    setAuctionBidding(true);
+    setAuctionBidError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${auction.id}/bid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ amount: Number(auctionBidAmount) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuction(data.auction);
+        setAuctionBidAmount("");
+        if (id) {
+          broadcastLiveEvent(id, {
+            user: data.your_display_name,
+            text: `placed a bid: $${Number(auctionBidAmount).toFixed(0)}`,
+            type: "purchase",
+          });
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setAuctionBidError(err.detail || "Bid failed");
+      }
+    } catch { setAuctionBidError("Network error"); }
+    finally { setAuctionBidding(false); }
+  }
+
+  async function handleCloseAuction(force: boolean) {
+    if (!auction) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${auction.id}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ force }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        loadAuction();
+        setProject((prev) => prev ? { ...prev, active_auction_id: null } : prev);
+        if (id) {
+          const msg = data.winner_display
+            ? `Auction ended! ${data.winner_display} wins — $${Number(data.winning_bid).toFixed(0)}`
+            : "Auction ended — no bids";
+          broadcastLiveEvent(id, { user: "System", text: msg, type: "system" });
+        }
+      }
+    } catch (err) { console.error("Close auction failed", err); }
+  }
+
+  async function handleAuctionPayNow() {
+    if (!auction || !auctionOffer) return;
+    // Demo mode: simulate payment
+    if (isDemo) {
+      const price = Number(auction.current_bid || 0);
+      setSimulatedPurchase(auctionOffer.title);
+      setSimulatedRevenue((prev) => prev + price);
+      setSimPurchaseCount((prev) => prev + 1);
+      setCheckoutResult("success");
+      setLiveSalesCount((c) => c + 1);
+      const pts = Number(localStorage.getItem("dum_points") || "0");
+      localStorage.setItem("dum_points", String(pts + 10));
+      window.dispatchEvent(new Event("dum-points-update"));
+      // Update auction status locally
+      setAuction((prev) => prev ? { ...prev, status: "paid" } : prev);
+      if (id) {
+        broadcastLiveEvent(id, {
+          user: auction.current_bidder_display || "Winner",
+          text: `purchased ${auctionOffer.title} for $${price.toFixed(0)} — +10 DUM`,
+          type: "purchase",
+        });
+        broadcastLiveEvent(id, {
+          user: "System",
+          text: `${auction.current_bidder_display || "Winner"} earned +10 DUM Points`,
+          type: "reward",
+        });
+      }
+      setTimeout(() => setSimulatedPurchase(null), 6000);
+      return;
+    }
+    // Real Stripe path
+    buyOffer({
+      ...auctionOffer,
+      price_usd: Number(auction.current_bid),
+    } as Offer);
+  }
 
   /* ── Project Score ────────────────────────────────── */
   async function evaluateProjectScore() {
@@ -3098,47 +3291,178 @@ return (
             </div>
           </div>
 
-          {/* Pinned product + chat side by side */}
+          {/* Pinned product / auction + chat side by side */}
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-            {/* Pinned Offer */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                {pinnedOffer ? "Featured Product" : "No product pinned"}
-              </div>
-              {pinnedOffer ? (
-                <div>
-                  {pinnedOffer.primary_image_url && (
-                    <img
-                      src={pinnedOffer.primary_image_url}
-                      alt={pinnedOffer.title}
-                      className="mb-3 h-32 w-full rounded-xl object-cover"
-                    />
+
+            {/* ── Auction Widget (replaces pinned offer when auction active) ── */}
+            {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment") ? (
+              <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
+                  {isAuctionActive && (
+                    <span className="font-mono text-lg font-bold text-white">{auctionCountdown}</span>
                   )}
-                  <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
-                  {pinnedOffer.description && (
-                    <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="font-mono text-xl font-bold text-emerald-400">
-                      ${Number(pinnedOffer.price_usd).toFixed(2)}
-                    </span>
-                    {!isOwner && (
-                      <button
-                        onClick={() => buyOffer(pinnedOffer)}
-                        disabled={!!buyingOfferId}
-                        className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
-                      >
-                        {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
-                      </button>
-                    )}
+                </div>
+
+                <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
+                {auctionOffer.description && (
+                  <p className="mt-1 text-sm text-zinc-400 line-clamp-1">{auctionOffer.description}</p>
+                )}
+
+                {/* Bid display */}
+                <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                        {auction.current_bid ? "Current Bid" : "Starting Price"}
+                      </div>
+                      <div className="font-mono text-2xl font-bold text-white">
+                        ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {auction.current_bidder_display && (
+                        <div className="text-sm text-zinc-400">by {auction.current_bidder_display}</div>
+                      )}
+                      <div className="text-[10px] text-zinc-600">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <p className="text-sm text-zinc-600">
-                  {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
-                </p>
-              )}
-            </div>
+
+                {/* Bidder state feedback */}
+                {isAuctionActive && !isOwner && authUser && (
+                  <>
+                    {auction.current_bidder === authUser.privyId ? (
+                      <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-semibold text-emerald-400">
+                        You are the highest bidder
+                      </div>
+                    ) : auction.current_bidder && (
+                      <div className="mt-3 space-y-2">
+                        {auctionBidError && (
+                          <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400">{auctionBidError}</div>
+                        )}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                            <input
+                              type="number"
+                              value={auctionBidAmount}
+                              onChange={(e) => setAuctionBidAmount(e.target.value)}
+                              placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
+                              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                            />
+                          </div>
+                          <button
+                            onClick={handlePlaceBid}
+                            disabled={auctionBidding || !auctionBidAmount}
+                            className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                          >
+                            {auctionBidding ? "..." : "Bid"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* First bid (no current bidder yet) */}
+                    {!auction.current_bidder && (
+                      <div className="mt-3 flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                          <input
+                            type="number"
+                            value={auctionBidAmount}
+                            onChange={(e) => setAuctionBidAmount(e.target.value)}
+                            placeholder={String(auction.starting_price)}
+                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                          />
+                        </div>
+                        <button
+                          onClick={handlePlaceBid}
+                          disabled={auctionBidding || !auctionBidAmount}
+                          className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        >
+                          {auctionBidding ? "..." : "Place Bid"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Winner Pay Now */}
+                {auction.status === "ended" && isAuctionWinner && (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-bold text-emerald-400">
+                      You Won!
+                    </div>
+                    <button
+                      onClick={handleAuctionPayNow}
+                      className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                    >
+                      Pay Now — ${Number(auction.current_bid).toFixed(2)}
+                    </button>
+                  </div>
+                )}
+
+                {/* Ended states for non-winners */}
+                {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
+                  </div>
+                )}
+                {(auction.status === "awaiting_payment" || auction.status === "paid") && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    {auction.status === "paid" ? `Sold for $${Number(auction.current_bid).toFixed(2)}` : "Completing payment..."}
+                  </div>
+                )}
+
+                {/* Not signed in */}
+                {isAuctionActive && !authUser && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    Sign in to place a bid
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Standard Pinned Offer (Buy Now) ── */
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+                <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  {pinnedOffer ? "Featured Product" : "No product pinned"}
+                </div>
+                {pinnedOffer ? (
+                  <div>
+                    {pinnedOffer.primary_image_url && (
+                      <img
+                        src={pinnedOffer.primary_image_url}
+                        alt={pinnedOffer.title}
+                        className="mb-3 h-32 w-full rounded-xl object-cover"
+                      />
+                    )}
+                    <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
+                    {pinnedOffer.description && (
+                      <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-mono text-xl font-bold text-emerald-400">
+                        ${Number(pinnedOffer.price_usd).toFixed(2)}
+                      </span>
+                      {!isOwner && (
+                        <button
+                          onClick={() => buyOffer(pinnedOffer)}
+                          disabled={!!buyingOfferId}
+                          className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                        >
+                          {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-600">
+                    {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Live Chat */}
             <LiveChat
@@ -4594,6 +4918,98 @@ return (
                     <p className="text-sm text-zinc-600">No active offers to pin. Create an offer first.</p>
                   )}
                 </div>
+              </div>
+
+              {/* ── Auction Controls ── */}
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-amber-400/70">Auction</div>
+
+                {isAuctionActive && auction ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
+                        <div className="text-xs text-zinc-500">
+                          {auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""} · ends in {auctionCountdown}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-lg font-bold text-white">
+                          ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
+                        </div>
+                        {auction.current_bidder_display && (
+                          <div className="text-xs text-zinc-500">{auction.current_bidder_display}</div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCloseAuction(true)}
+                      className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-400/20"
+                    >
+                      End Auction Early
+                    </button>
+                  </div>
+                ) : auction && auction.status === "ended" ? (
+                  <div className="space-y-2">
+                    <div className="text-sm text-white">
+                      Winner: <span className="font-semibold">{auction.current_bidder_display || "—"}</span> — ${Number(auction.current_bid).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      {auction.status === "ended" ? "Awaiting payment" : auction.status}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm text-zinc-500">Start an auction on one of your offers.</div>
+                    <div className="flex flex-wrap gap-2">
+                      {offers.filter((o) => o.is_active).map((offer) => (
+                        <button
+                          key={offer.id}
+                          onClick={() => setAuctionOfferSelect(offer.id === auctionOfferSelect ? null : offer.id)}
+                          className={`rounded-xl border px-3 py-2 text-sm transition ${
+                            offer.id === auctionOfferSelect
+                              ? "border-amber-400/40 bg-amber-400/10 text-amber-400"
+                              : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                          }`}
+                        >
+                          {offer.title}
+                        </button>
+                      ))}
+                    </div>
+                    {auctionOfferSelect && (
+                      <div className="flex items-end gap-3">
+                        <div>
+                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Starting $</div>
+                          <input
+                            type="number"
+                            value={auctionStartPrice}
+                            onChange={(e) => setAuctionStartPrice(e.target.value)}
+                            className="w-24 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+                          />
+                        </div>
+                        <div>
+                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Duration</div>
+                          <select
+                            value={auctionDuration}
+                            onChange={(e) => setAuctionDuration(Number(e.target.value))}
+                            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+                          >
+                            <option value={60}>1 min</option>
+                            <option value={120}>2 min</option>
+                            <option value={300}>5 min</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={handleStartAuction}
+                          disabled={auctionStarting}
+                          className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        >
+                          {auctionStarting ? "Starting..." : "Start Auction"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* End stream */}

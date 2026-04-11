@@ -49,6 +49,8 @@ class PaymentIntentRequest(BaseModel):
     cancel_url: Optional[str] = None
     use_dum_discount: bool = False
     source: str = "normal"
+    auction_id: Optional[str] = None
+    override_price: Optional[float] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -122,8 +124,11 @@ async def create_payment_intent(
         raise HTTPException(status_code=404, detail="Project not found")
     seller_user_id = project_res.data[0].get("owner_id") or ""
 
-    # 3. Calculate price
-    original_price = float(offer["price_usd"])
+    # 3. Calculate price (auction override takes precedence)
+    if body.override_price is not None and body.auction_id:
+        original_price = body.override_price
+    else:
+        original_price = float(offer["price_usd"])
     base_price = original_price
     token_discount_applied = False
 
@@ -273,6 +278,17 @@ async def create_payment_intent(
             print(f"[checkout] Payment Intent metadata updated: PI={session.payment_intent}")
         except Exception as pi_meta_err:
             print(f"[checkout] Warning: could not update PI metadata: {pi_meta_err}")
+
+    # If this is an auction payment, update auction status
+    if body.auction_id:
+        try:
+            supabase.table("auctions").update({
+                "status": "awaiting_payment",
+                "winner_order_id": order["id"],
+            }).eq("id", body.auction_id).eq("status", "ended").execute()
+            print(f"[checkout] Auction {body.auction_id} → awaiting_payment")
+        except Exception as auc_err:
+            print(f"[checkout] Warning: could not update auction: {auc_err}")
 
     return {
         "checkout_url": session.url,
