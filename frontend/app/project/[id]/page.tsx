@@ -2061,13 +2061,19 @@ export default function ProjectPage() {
       const ws = new WebSocket(wsUrl);
       relayWsRef.current = ws;
 
+      ws.binaryType = "arraybuffer";
+
       ws.onopen = () => {
         console.log("[go-live] WebSocket connected, starting MediaRecorder");
 
         // 3. Start MediaRecorder
         const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
           ? "video/webm;codecs=vp8,opus"
+          : MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+          ? "video/webm;codecs=vp9,opus"
           : "video/webm";
+        console.log("[go-live] Selected mimeType:", mimeType);
+        console.log("[go-live] Stream tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}`));
 
         const recorder = new MediaRecorder(stream, {
           mimeType,
@@ -2075,23 +2081,45 @@ export default function ProjectPage() {
         });
         mediaRecorderRef.current = recorder;
 
+        let chunksSent = 0;
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            chunksSent++;
             ws.send(e.data);
+            if (chunksSent <= 3 || chunksSent % 100 === 0) {
+              console.log(`[go-live] Sent chunk #${chunksSent}: ${e.data.size} bytes`);
+            }
           }
         };
 
-        recorder.onstop = () => {
-          console.log("[go-live] MediaRecorder stopped");
+        recorder.onerror = (e) => {
+          console.error("[go-live] MediaRecorder error:", e);
         };
 
-        // Send chunks every 250ms for low latency
-        recorder.start(250);
-        console.log("[go-live] MediaRecorder started, mime:", mimeType);
+        recorder.onstop = () => {
+          console.log(`[go-live] MediaRecorder stopped after ${chunksSent} chunks`);
+        };
+
+        // Send chunks every 500ms — gives ffmpeg enough data per chunk to process
+        recorder.start(500);
+        console.log("[go-live] MediaRecorder started, state:", recorder.state);
       };
 
-      ws.onclose = () => {
-        console.log("[go-live] WebSocket closed");
+      ws.onmessage = (e) => {
+        // Backend sends status/error JSON messages
+        try {
+          const msg = typeof e.data === "string" ? JSON.parse(e.data) : null;
+          if (msg) {
+            console.log("[go-live] Server message:", msg);
+            if (msg.error) {
+              setGoLiveError(msg.error);
+            }
+          }
+        } catch { /* ignore binary */ }
+      };
+
+      ws.onclose = (e) => {
+        console.log("[go-live] WebSocket closed, code:", e.code, "reason:", e.reason);
       };
 
       ws.onerror = (err) => {

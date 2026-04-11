@@ -77,26 +77,40 @@ async def live_relay(websocket: WebSocket, project_id: str):
         return
 
     ingest_url = f"rtmps://global-live.mux.com:443/app/{stream_key}"
-    print(f"[live-relay] Starting ffmpeg relay to {ingest_url[:50]}...")
+    print(f"[live-relay] Starting ffmpeg relay to Mux for project {project_id}")
+    print(f"[live-relay] Ingest URL: {ingest_url[:60]}...")
+    print(f"[live-relay] ffmpeg path: {FFMPEG_PATH}")
 
     # Spawn ffmpeg
-    # -f webm -i pipe:0     → read webm from stdin
-    # -c:v copy              → pass through video (VP8/VP9 from browser)
-    # -c:a aac -b:a 128k    → transcode audio to AAC (RTMP requires AAC)
-    # -f flv                 → output FLV container for RTMP
+    # Browser sends webm (VP8 video + Opus audio) via MediaRecorder.
+    # RTMP/FLV requires H.264 + AAC, so we must transcode both.
+    # -probesize / -analyzeduration: start fast without waiting for full headers
+    # -fflags +genpts: generate PTS for piped input without timing info
     ffmpeg_proc: Optional[asyncio.subprocess.Process] = None
     try:
-        ffmpeg_proc = await asyncio.create_subprocess_exec(
+        ffmpeg_cmd = [
             FFMPEG_PATH,
             "-hide_banner",
-            "-loglevel", "warning",
+            "-loglevel", "info",
+            "-fflags", "+genpts",
+            "-probesize", "512000",
+            "-analyzeduration", "500000",
             "-f", "webm",
             "-i", "pipe:0",
-            "-c:v", "copy",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-tune", "zerolatency",
+            "-g", "60",
             "-c:a", "aac",
             "-b:a", "128k",
+            "-ar", "44100",
             "-f", "flv",
             ingest_url,
+        ]
+        print(f"[live-relay] ffmpeg command: {' '.join(ffmpeg_cmd[:10])}... → Mux")
+
+        ffmpeg_proc = await asyncio.create_subprocess_exec(
+            *ffmpeg_cmd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -113,20 +127,34 @@ async def live_relay(websocket: WebSocket, project_id: str):
                     text = line.decode(errors="replace").strip()
                     if text:
                         print(f"[live-relay][ffmpeg] {text}")
+            # Log exit code when ffmpeg exits
+            if ffmpeg_proc:
+                code = await ffmpeg_proc.wait()
+                print(f"[live-relay][ffmpeg] Process exited with code {code}")
 
         stderr_task = asyncio.create_task(log_ffmpeg_stderr())
 
         # Main loop: receive binary chunks from browser, pipe to ffmpeg
         chunk_count = 0
+        total_bytes = 0
         while True:
             data = await websocket.receive_bytes()
             chunk_count += 1
+            total_bytes += len(data)
+
+            # Check if ffmpeg is still running
+            if ffmpeg_proc.returncode is not None:
+                print(f"[live-relay] ERROR: ffmpeg exited with code {ffmpeg_proc.returncode} after {chunk_count} chunks")
+                await websocket.send_text(json.dumps({"error": f"ffmpeg exited unexpectedly (code {ffmpeg_proc.returncode})"}))
+                break
+
             if ffmpeg_proc.stdin:
                 ffmpeg_proc.stdin.write(data)
                 await ffmpeg_proc.stdin.drain()
 
-            if chunk_count % 50 == 0:
-                print(f"[live-relay] {chunk_count} chunks relayed ({len(data)} bytes last)")
+            # Log first 5 chunks individually, then every 100
+            if chunk_count <= 5 or chunk_count % 100 == 0:
+                print(f"[live-relay] Chunk #{chunk_count}: {len(data)} bytes (total: {total_bytes} bytes)")
 
     except WebSocketDisconnect:
         print(f"[live-relay] WebSocket disconnected (project {project_id})")
