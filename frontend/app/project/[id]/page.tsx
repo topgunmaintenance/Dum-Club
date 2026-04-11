@@ -3601,14 +3601,17 @@ return (
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn) && (
         <div className="mb-6 space-y-4">
-          <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-3">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
               </span>
-              <span className="text-sm font-bold uppercase tracking-[0.2em] text-red-400">Live Now</span>
-              <span className="text-sm text-zinc-400">{projectName}</span>
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-red-400">Live</span>
+              <span className="text-xs sm:text-sm text-zinc-400 truncate">{projectName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+              <span className="rounded-full border border-zinc-800 px-2 py-0.5">Earn DUM</span>
             </div>
           </div>
 
