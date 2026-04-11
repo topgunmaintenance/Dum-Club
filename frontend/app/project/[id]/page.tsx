@@ -3666,7 +3666,7 @@ return (
             <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
           </div>
 
-          {/* Pinned product / auction + chat side by side */}
+          {/* Pinned product / auction */}
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
 
             {/* ── Auction Widget (replaces pinned offer when auction active) ── */}
@@ -3839,7 +3839,10 @@ return (
               </div>
             )}
 
-            {/* Live Chat */}
+          </div>
+
+          {/* ── LIVE CHAT — full width, always visible during live ── */}
+          <div style={{ minHeight: 300 }}>
             {isIVSSession(project) ? (
               <LiveChatIVS
                 projectId={id as string}

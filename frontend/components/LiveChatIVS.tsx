@@ -29,6 +29,8 @@ export function LiveChatIVS({ projectId, userId, userName, isHost }: LiveChatIVS
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    console.log("[live-chat] MOUNTED — host:", isHost, "project:", projectId, "user:", userId);
+
     function connect() {
       const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
       const wsHost = API_BASE.replace(/^https?:\/\//, "");
