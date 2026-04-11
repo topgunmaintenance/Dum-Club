@@ -286,6 +286,155 @@ function DiscoverSectionNav() {
   );
 }
 
+/* ─── Live Now Section — Multi-stream Preview ─── */
+function LiveNowSection({ projects }: { projects: Project[] }) {
+  const liveProjects = projects.filter((p) => p.is_live);
+  const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+
+  // IntersectionObserver to track which cards are visible
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setVisibleIds((prev) => {
+          const next = new Set(prev);
+          for (const entry of entries) {
+            const id = entry.target.getAttribute("data-project-id");
+            if (!id) continue;
+            if (entry.isIntersecting) next.add(id);
+            else next.delete(id);
+          }
+          return next;
+        });
+      },
+      { root: scrollRef.current, threshold: 0.3 },
+    );
+
+    const cards = scrollRef.current.querySelectorAll("[data-project-id]");
+    cards.forEach((card) => observer.observe(card));
+
+    return () => observer.disconnect();
+  }, [liveProjects.length]);
+
+  if (liveProjects.length === 0) return null;
+
+  function handleCardClick(projectId: string, hasNativePlayback: boolean) {
+    if (!hasNativePlayback) {
+      window.location.href = `/project/${projectId}?live=1`;
+      return;
+    }
+    setActiveStreamId((prev) => (prev === projectId ? null : projectId));
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+          </span>
+          <h2 className="text-lg font-bold uppercase tracking-[0.15em] text-white">Live Now</h2>
+          <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-400">
+            {liveProjects.length}
+          </span>
+        </div>
+        {activeStreamId && (
+          <button
+            onClick={() => setActiveStreamId(null)}
+            className="text-[11px] font-medium text-zinc-500 transition hover:text-white"
+          >
+            Mute All
+          </button>
+        )}
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto pb-2"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
+        {liveProjects.map((project, index) => {
+          const hasNative = project.live_provider === "native_mux" && !!project.live_playback_id;
+          const isActive = activeStreamId === project.id;
+          const isVisible = visibleIds.has(project.id);
+          const shouldAutoplay = hasNative && isVisible && index < 6;
+          const accent = getAccent(index);
+          const emoji = getProjectEmoji(project, index);
+
+          return (
+            <div
+              key={project.id}
+              data-project-id={project.id}
+              onClick={() => handleCardClick(project.id, hasNative)}
+              className={`flex-shrink-0 cursor-pointer rounded-2xl border transition-all duration-300 ${
+                isActive
+                  ? "border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]"
+                  : "border-zinc-800 hover:border-zinc-700"
+              }`}
+              style={{ width: 320, scrollSnapAlign: "start" }}
+            >
+              {/* Video / Thumbnail */}
+              <div className="relative overflow-hidden rounded-t-2xl bg-black" style={{ aspectRatio: "16/9" }}>
+                {hasNative && shouldAutoplay ? (
+                  <MuxPlayer
+                    playbackId={project.live_playback_id!}
+                    streamType="live"
+                    autoPlay="muted"
+                    muted={!isActive}
+                    style={{ width: "100%", height: "100%", position: "absolute", inset: "0" }}
+                    primaryColor="#10b981"
+                    secondaryColor="#09090b"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-zinc-900">
+                    <span className="text-4xl">{emoji}</span>
+                  </div>
+                )}
+
+                {/* LIVE pill overlay */}
+                <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-red-500/90 px-2.5 py-1 backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-white">Live</span>
+                </div>
+
+                {/* Sound indicator */}
+                {isActive && hasNative && (
+                  <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white backdrop-blur-sm">
+                    🔊
+                  </div>
+                )}
+                {!isActive && hasNative && shouldAutoplay && (
+                  <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[10px] text-zinc-400 backdrop-blur-sm">
+                    🔇 tap for sound
+                  </div>
+                )}
+              </div>
+
+              {/* Card info */}
+              <div className="rounded-b-2xl bg-zinc-950 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-sm font-bold text-white">
+                      {project.title || project.name || "Untitled"}
+                    </h3>
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                      <span style={{ color: accent }}>{getCategory(project)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function DiscoverPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
@@ -721,6 +870,9 @@ export default function DiscoverPage() {
             </div>
           </div>
         )}
+
+        {/* ── LIVE NOW Hero Section ── */}
+        <LiveNowSection projects={projects} />
 
         <div id="section-grid">
         {loading ? (
