@@ -1,12 +1,11 @@
 """
-Real-Time Auction WebSocket — server-authoritative auction state broadcast.
+Real-Time Live WebSocket — chat, auction state, and event broadcast.
 
-Replaces polling for auction state with real-time push.
 Connected clients receive:
+  - chat messages (host + viewer)
   - bid events
   - auction start/end events
   - synchronized timer ticks
-  - host control events
 """
 import asyncio
 import json
@@ -19,9 +18,12 @@ from db.supabase import get_client
 
 router = APIRouter()
 
-# In-memory connection registry: project_id → set of WebSocket connections
 _connections: Dict[str, Set[WebSocket]] = {}
 _auction_timers: Dict[str, asyncio.Task] = {}
+# Rate limit: track last message time per connection
+_last_chat: Dict[int, float] = {}
+MAX_CHAT_LENGTH = 300
+CHAT_COOLDOWN = 0.5  # seconds between messages
 
 
 async def _broadcast(project_id: str, event: dict):
@@ -148,23 +150,75 @@ async def auction_events(websocket: WebSocket, project_id: str):
     except Exception as exc:
         print(f"[auction-ws] Error sending initial state: {exc!r}")
 
+    # Send viewer count on connect
+    viewer_count = len(_connections.get(project_id, set()))
+    await websocket.send_text(json.dumps({
+        "type": "viewer_count",
+        "data": {"count": viewer_count},
+        "timestamp": time.time(),
+    }))
+    # Broadcast updated count to all
+    await _broadcast(project_id, {
+        "type": "viewer_count",
+        "data": {"count": viewer_count},
+        "timestamp": time.time(),
+    })
+
+    ws_id = id(websocket)
+
     # Keep connection alive, handle client messages
     try:
         while True:
-            # Client can send ping or bid requests
             data = await websocket.receive_text()
             try:
                 msg = json.loads(data)
-                if msg.get("type") == "ping":
+                msg_type = msg.get("type")
+
+                if msg_type == "ping":
                     await websocket.send_text(json.dumps({"type": "pong", "timestamp": time.time()}))
+
+                elif msg_type == "chat":
+                    # Rate limit
+                    now = time.time()
+                    last = _last_chat.get(ws_id, 0)
+                    if now - last < CHAT_COOLDOWN:
+                        continue
+                    _last_chat[ws_id] = now
+
+                    body = (msg.get("body") or "").strip()
+                    if not body or len(body) > MAX_CHAT_LENGTH:
+                        continue
+
+                    chat_event = {
+                        "type": "chat",
+                        "data": {
+                            "id": f"msg-{now:.0f}-{ws_id}",
+                            "project_id": project_id,
+                            "sender_id": msg.get("sender_id", ""),
+                            "sender_name": msg.get("sender_name", "Viewer"),
+                            "sender_role": msg.get("sender_role", "viewer"),
+                            "body": body,
+                            "created_at": now,
+                        },
+                        "timestamp": now,
+                    }
+                    await _broadcast(project_id, chat_event)
+
             except json.JSONDecodeError:
                 pass
 
     except WebSocketDisconnect:
         pass
     except Exception as exc:
-        print(f"[auction-ws] Error: {exc!r}")
+        print(f"[live-ws] Error: {exc!r}")
     finally:
         _connections.get(project_id, set()).discard(websocket)
-        count = len(_connections.get(project_id, set()))
-        print(f"[auction-ws] Client disconnected (project {project_id}, {count} remaining)")
+        _last_chat.pop(ws_id, None)
+        remaining = len(_connections.get(project_id, set()))
+        print(f"[live-ws] Client disconnected (project {project_id}, {remaining} remaining)")
+        # Broadcast updated viewer count
+        await _broadcast(project_id, {
+            "type": "viewer_count",
+            "data": {"count": remaining},
+            "timestamp": time.time(),
+        })

@@ -19,6 +19,7 @@ import { AiSalesChat } from "../../../components/AiSalesChat";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
+import { LiveChatIVS } from "../../../components/LiveChatIVS";
 import {
   LineChart,
   Line,
@@ -3836,11 +3837,20 @@ return (
             )}
 
             {/* Live Chat */}
-            <LiveChat
-              projectId={id as string}
-              userName={authUser?.email || null}
-              isOwner={isOwner}
-            />
+            {isIVSSession(project) ? (
+              <LiveChatIVS
+                projectId={id as string}
+                userId={authUser?.privyId || ""}
+                userName={authUser?.email || "Viewer"}
+                isHost={isOwner}
+              />
+            ) : (
+              <LiveChat
+                projectId={id as string}
+                userName={authUser?.email || null}
+                isOwner={isOwner}
+              />
+            )}
           </div>
         </div>
       )}
