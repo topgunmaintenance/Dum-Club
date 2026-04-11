@@ -3633,8 +3633,8 @@ return (
             </div>
           </div>
 
-          {/* IVS Real-Time / Mux / iframe fallback */}
-          {isIVSSession(project) && project.ivs_stage_arn ? (
+          {/* IVS Real-Time / Mux / iframe fallback — skip for host (they have IVSStageHost preview) */}
+          {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
             <IVSStageViewer
               projectId={id as string}
               userId={authUser?.privyId || ""}
