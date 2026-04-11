@@ -78,6 +78,8 @@ def create_participant_token(
     if role == "PUBLISHER":
         capabilities = ["PUBLISH", "SUBSCRIBE"]
 
+    print(f"[ivs] create_participant_token: stageArn={stage_arn}, user={user_id}, role={role}, capabilities={capabilities}, duration={duration_minutes}min")
+
     try:
         response = client.create_participant_token(
             stageArn=stage_arn,
@@ -86,14 +88,15 @@ def create_participant_token(
             duration=duration_minutes,  # API expects minutes
         )
         token_data = response.get("participantToken", {})
-        print(f"[ivs] Token created for user={user_id}, role={role}")
+        token_val = token_data.get("token", "")
+        print(f"[ivs] Token created: user={user_id}, role={role}, has_token={bool(token_val)}, token_len={len(token_val)}, participant_id={token_data.get('participantId')}, expiration={token_data.get('expirationTime')}")
         return {
-            "token": token_data.get("token", ""),
+            "token": token_val,
             "participant_id": token_data.get("participantId", ""),
             "expiration": str(token_data.get("expirationTime", "")),
         }
     except Exception as exc:
-        print(f"[ivs] create_participant_token failed: {exc!r}")
+        print(f"[ivs] create_participant_token FAILED: {exc!r}")
         return None
 
 

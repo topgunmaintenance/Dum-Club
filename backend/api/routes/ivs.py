@@ -7,6 +7,9 @@ Endpoints:
   POST /api/ivs/viewer-token    — Viewer gets a SUBSCRIBE token
   POST /api/ivs/end-stage       — Owner ends/deletes a stage
 """
+import asyncio
+import time as _time
+
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional
@@ -90,7 +93,6 @@ async def api_create_stage(
             "ivs_stage_id": None,
             "is_live": False,
         }).eq("id", body.project_id).execute()
-        import asyncio
         await asyncio.sleep(1.0)  # Allow AWS to propagate deletion
         print(f"[ivs] Stale stage cleaned, creating fresh")
 
@@ -101,25 +103,38 @@ async def api_create_stage(
         raise HTTPException(status_code=502, detail="Failed to create IVS stage")
 
     fresh_arn = stage_data["stage_arn"]
-    print(f"[ivs] Fresh stage created: {fresh_arn}")
+    fresh_id = stage_data["stage_id"]
+    create_ts = _time.time()
+    print(f"[ivs] Fresh stage created: arn={fresh_arn} id={fresh_id} at={create_ts:.3f}")
 
     # Store stage ARN on project
     supabase = get_client()
     supabase.table("projects").update({
         "ivs_stage_arn": fresh_arn,
-        "ivs_stage_id": stage_data["stage_id"],
+        "ivs_stage_id": fresh_id,
         "live_provider": "ivs_realtime",
         "is_live": True,
     }).eq("id", body.project_id).execute()
+    print(f"[ivs] DB updated with fresh ARN")
 
-    # Generate host token using the FRESH ARN
+    # Wait for AWS to fully propagate the new stage before minting tokens
+    await asyncio.sleep(1.0)
+    mint_ts = _time.time()
+    print(f"[ivs] Waited {mint_ts - create_ts:.1f}s before token mint")
+
+    # Generate host token using the FRESH ARN — hard validation
     print(f"[ivs] Minting host PUBLISH token for stage: {fresh_arn}")
     host_token = create_participant_token(
         stage_arn=fresh_arn,
         user_id=user_id,
         role="PUBLISHER",
     )
-    print(f"[ivs] Host token created: has_token={bool(host_token)}")
+
+    # Hard assertion: token was minted for the right stage
+    if host_token:
+        print(f"[ivs] VALIDATION: fresh_arn={fresh_arn}, token_minted=True, participant={host_token.get('participant_id')}")
+    else:
+        print(f"[ivs] VALIDATION: fresh_arn={fresh_arn}, token_minted=False — PUBLISH TOKEN FAILED")
 
     return {
         "status": "success",
