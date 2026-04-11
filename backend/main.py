@@ -50,6 +50,7 @@ from api.routes import (
     auctions,
     live_relay,
     ivs,
+    auction_ws,
 )
 
 from db.supabase import init_supabase
@@ -161,6 +162,7 @@ app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
 app.include_router(live_relay.router, prefix="/api/live", tags=["Live Relay"])
 app.include_router(ivs.router, prefix="/api/ivs", tags=["IVS Real-Time"])
+app.include_router(auction_ws.router, prefix="/api/auction-ws", tags=["Auction WebSocket"])
 
 
 @app.get("/health")
