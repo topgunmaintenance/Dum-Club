@@ -16,6 +16,7 @@ from typing import Optional
 
 from db.supabase import get_client
 from services.ivs_realtime import is_ivs_enabled, create_stage, create_participant_token, delete_stage
+from services.live_limits import register_stream_start, clear_stream, check_join_rate, add_viewer, remove_viewer
 
 router = APIRouter()
 
@@ -81,6 +82,11 @@ async def api_create_stage(
     """Owner creates an IVS Real-Time stage for their project."""
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
+
+    # Check daily stream limit
+    limit_err = register_stream_start(body.project_id, user_id)
+    if limit_err:
+        raise HTTPException(status_code=429, detail=limit_err)
 
     # If stale stage exists, clean it up first
     old_arn = project.get("ivs_stage_arn")
@@ -184,6 +190,18 @@ async def api_viewer_token(
 ):
     """Viewer gets a SUBSCRIBE participant token for a project's stage."""
     _require_ivs()
+
+    # Rate limit joins
+    viewer_id = user_id or f"anon-{body.project_id[:8]}"
+    join_err = check_join_rate(viewer_id)
+    if join_err:
+        raise HTTPException(status_code=429, detail=join_err)
+
+    # Check viewer capacity
+    viewer_err = add_viewer(body.project_id)
+    if viewer_err:
+        raise HTTPException(status_code=503, detail=viewer_err)
+
     supabase = get_client()
 
     res = (
@@ -232,6 +250,9 @@ async def api_end_stage(
     stage_arn = project.get("ivs_stage_arn")
     if stage_arn:
         delete_stage(stage_arn)
+
+    # Clear limits tracking
+    clear_stream(body.project_id)
 
     # Clear live state
     supabase = get_client()

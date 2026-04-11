@@ -15,6 +15,7 @@ from typing import Dict, Set
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from db.supabase import get_client
+from services.live_limits import check_chat_rate, check_stream_duration
 
 router = APIRouter()
 
@@ -178,12 +179,24 @@ async def auction_events(websocket: WebSocket, project_id: str):
                     await websocket.send_text(json.dumps({"type": "pong", "timestamp": time.time()}))
 
                 elif msg_type == "chat":
-                    # Rate limit
+                    # Rate limit (per-connection cooldown + per-user sliding window)
                     now = time.time()
                     last = _last_chat.get(ws_id, 0)
                     if now - last < CHAT_COOLDOWN:
                         continue
                     _last_chat[ws_id] = now
+
+                    sender_id = msg.get("sender_id", "")
+                    if sender_id:
+                        rate_err = check_chat_rate(sender_id)
+                        if rate_err:
+                            await websocket.send_text(json.dumps({"type": "error", "data": {"message": rate_err}}))
+                            continue
+
+                    # Check stream duration — auto-end if exceeded
+                    if check_stream_duration(project_id):
+                        await _broadcast(project_id, {"type": "stream_expired", "data": {"message": "Stream duration limit reached"}, "timestamp": now})
+                        break
 
                     body = (msg.get("body") or "").strip()
                     if not body or len(body) > MAX_CHAT_LENGTH:
