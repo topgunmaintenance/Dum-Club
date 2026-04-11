@@ -3295,7 +3295,7 @@ return (
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
 
             {/* ── Auction Widget (replaces pinned offer when auction active) ── */}
-            {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment") ? (
+            {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
               <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
