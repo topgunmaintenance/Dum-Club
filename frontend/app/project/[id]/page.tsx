@@ -720,6 +720,7 @@ export default function ProjectPage() {
   const [muxPlaybackId, setMuxPlaybackId] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [goLiveError, setGoLiveError] = useState<string | null>(null);
 
   // Auction state
   type Auction = {
@@ -1968,13 +1969,14 @@ export default function ProjectPage() {
     if (!id) return;
     if (liveMode === "manual_embed" && !liveStreamUrl.trim()) return;
     setGoingLive(true);
+    setGoLiveError(null);
     try {
-      const body: Record<string, unknown> = { provider: liveMode };
-      if (liveMode === "manual_embed") body.stream_url = liveStreamUrl.trim();
+      const reqBody: Record<string, unknown> = { provider: liveMode };
+      if (liveMode === "manual_embed") reqBody.stream_url = liveStreamUrl.trim();
       const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(reqBody),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1993,8 +1995,15 @@ export default function ProjectPage() {
           } : prev);
         }
         setLiveSalesCount(0);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const detail = typeof errData.detail === "string" ? errData.detail : `Go live failed (HTTP ${res.status})`;
+        setGoLiveError(detail);
+        console.error("[go-live] Error:", detail);
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      setGoLiveError(msg);
       console.error("Go live failed", err);
     } finally {
       setGoingLive(false);
@@ -5174,6 +5183,12 @@ return (
                   >
                     {goingLive ? "Creating Stream..." : "Create Native Stream"}
                   </button>
+                </div>
+              )}
+
+              {goLiveError && (
+                <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                  {goLiveError}
                 </div>
               )}
             </div>

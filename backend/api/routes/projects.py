@@ -856,10 +856,12 @@ async def go_live(
     if body.provider == "native_mux":
         from services.mux_live import is_mux_configured, create_live_stream
         if not is_mux_configured():
-            raise HTTPException(status_code=503, detail="Mux is not configured on this server")
+            raise HTTPException(status_code=503, detail="Mux is not configured on this server — set MUX_TOKEN_ID and MUX_TOKEN_SECRET")
         mux_data = await create_live_stream()
-        if not mux_data:
-            raise HTTPException(status_code=502, detail="Failed to create Mux live stream")
+        if "error" in mux_data:
+            error_code = mux_data["error"]
+            status = 401 if error_code == "mux_auth_failed" else 403 if error_code == "mux_forbidden" else 502
+            raise HTTPException(status_code=status, detail=mux_data["detail"])
         update_fields.update({
             "live_stream_id": mux_data["stream_id"],
             "live_playback_id": mux_data["playback_id"],
