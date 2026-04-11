@@ -23,6 +23,10 @@ declare module "amazon-ivs-web-broadcast" {
     STAGE_PARTICIPANT_LEFT = "stageParticipantLeft",
     STAGE_PARTICIPANT_STREAMS_ADDED = "stageParticipantStreamsAdded",
     STAGE_PARTICIPANT_STREAMS_REMOVED = "stageParticipantStreamsRemoved",
+    STAGE_STREAM_MUTE_CHANGED = "stageStreamMuteChanged",
+    STAGE_PARTICIPANT_SUBSCRIBE_STATE_CHANGED = "stageParticipantSubscribeStateChanged",
+    STAGE_PARTICIPANT_PUBLISH_STATE_CHANGED = "stageParticipantPublishStateChanged",
+    STAGE_LEFT = "stageLeft",
   }
 
   export enum ConnectionState {

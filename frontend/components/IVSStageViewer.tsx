@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
 
 type ViewerStatus = "loading" | "connecting" | "watching" | "ended" | "error";
@@ -16,137 +16,130 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [hasVideo, setHasVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<any>(null);
-  const pendingTrackRef = useRef<MediaStreamTrack | null>(null);
-
-  const attachVideoTrack = useCallback((track: MediaStreamTrack) => {
-    const videoEl = videoRef.current;
-    if (!videoEl) {
-      console.warn("[ivs-viewer] videoRef null — storing pending track");
-      pendingTrackRef.current = track;
-      return;
-    }
-    console.log("[ivs-viewer] ATTACHING video track:", track.kind, track.readyState, track.enabled);
-    const ms = new MediaStream([track]);
-    videoEl.srcObject = ms;
-    console.log("[ivs-viewer] srcObject set:", videoEl.srcObject !== null);
-    videoEl.muted = true;
-    videoEl.play().then(() => {
-      console.log("[ivs-viewer] play() OK, dimensions:", videoEl.videoWidth, "x", videoEl.videoHeight);
-      setHasVideo(true);
-    }).catch((e) => {
-      console.error("[ivs-viewer] play() failed:", e.message);
-    });
-  }, []);
+  const joinedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    if (videoRef.current && pendingTrackRef.current) {
-      attachVideoTrack(pendingTrackRef.current);
-      pendingTrackRef.current = null;
+    mountedRef.current = true;
+
+    // Guard: only join once
+    if (joinedRef.current) {
+      console.log("[ivs-viewer] Already joined, skipping duplicate");
+      return;
     }
-  });
+    joinedRef.current = true;
 
-  const joinStage = useCallback(async () => {
-    setStatus("connecting");
-    setHasVideo(false);
+    async function join() {
+      setStatus("connecting");
+      console.log("[ivs-viewer] === JOIN START (single) ===");
 
-    try {
-      const res = await fetch(`${API_BASE}/api/ivs/viewer-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", user_id: userId },
-        body: JSON.stringify({ project_id: projectId }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Token failed (${res.status})`);
-      }
-      const data = await res.json();
-      if (!data.token) throw new Error("No token");
-      console.log("[ivs-viewer] Token OK, length:", data.token.length);
-
-      const IVS = await import("amazon-ivs-web-broadcast");
-      console.log("[ivs-viewer] SDK loaded, available exports:", Object.keys(IVS).filter(k => !k.startsWith("_")).join(", "));
-
-      const { Stage, StageEvents, ConnectionState, SubscribeType } = IVS;
-      console.log("[ivs-viewer] StageEvents:", JSON.stringify(StageEvents));
-
-      const strategy = {
-        stageStreamsToPublish: () => [],
-        shouldPublishParticipant: () => false,
-        shouldSubscribeToParticipant: (participant: any) => {
-          console.log("[ivs-viewer] shouldSubscribe for:", participant?.userId, "isLocal:", participant?.isLocal, "→ AUDIO_VIDEO");
-          return SubscribeType.AUDIO_VIDEO;
-        },
-      };
-
-      const stage = new Stage(data.token, strategy);
-      stageRef.current = stage;
-
-      // === LOG EVERY SINGLE EVENT ===
-      const allEvents = Object.values(StageEvents) as string[];
-      console.log("[ivs-viewer] Registering listeners for ALL events:", allEvents);
-      for (const eventName of allEvents) {
-        stage.on(eventName, (...args: any[]) => {
-          console.log(`[IVS-EVENT] ${eventName}`, args.length, "args");
-          // For streams events, deep log
-          if (eventName.includes("Stream") || eventName.includes("stream")) {
-            args.forEach((arg: any, i: number) => {
-              if (Array.isArray(arg)) {
-                console.log(`  arg[${i}] is array, length:`, arg.length);
-                arg.forEach((item: any, j: number) => {
-                  console.log(`    [${j}] keys:`, Object.keys(item || {}));
-                  console.log(`    [${j}] .mediaStreamTrack:`, item?.mediaStreamTrack);
-                  console.log(`    [${j}] .streamType:`, item?.streamType);
-                  console.log(`    [${j}] .isMuted:`, item?.isMuted);
-                  if (item?.mediaStreamTrack) {
-                    console.log(`    [${j}] track.kind:`, item.mediaStreamTrack.kind);
-                    console.log(`    [${j}] track.readyState:`, item.mediaStreamTrack.readyState);
-                  }
-                });
-              } else if (arg && typeof arg === "object") {
-                console.log(`  arg[${i}]:`, JSON.stringify({
-                  userId: arg.userId,
-                  isLocal: arg.isLocal,
-                  isPublishing: arg.isPublishing,
-                  id: arg.id,
-                }));
-              }
-            });
-          }
+      try {
+        // 1. Get token
+        const res = await fetch(`${API_BASE}/api/ivs/viewer-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", user_id: userId },
+          body: JSON.stringify({ project_id: projectId }),
         });
-      }
-
-      // === SPECIFIC HANDLERS ===
-      stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
-        console.log("[ivs-viewer] CONNECTION:", state);
-        if (state === ConnectionState.CONNECTED) {
-          setStatus("watching");
-        } else if (state === ConnectionState.DISCONNECTED) {
-          setStatus("ended");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Token failed (${res.status})`);
         }
-      });
+        const data = await res.json();
+        if (!data.token) throw new Error("No token");
+        console.log("[ivs-viewer] Token OK");
 
-      stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
-        console.log("[ivs-viewer] ★★★ STREAMS_ADDED ★★★");
-        console.log("[ivs-viewer] participant:", participant?.userId, "isLocal:", participant?.isLocal);
-        console.log("[ivs-viewer] stream count:", streams?.length);
+        if (!mountedRef.current) return;
 
-        if (!streams) return;
+        // 2. Load SDK
+        const IVS = await import("amazon-ivs-web-broadcast");
+        const { Stage, StageEvents, ConnectionState, SubscribeType } = IVS;
 
-        for (let i = 0; i < streams.length; i++) {
-          const s = streams[i];
-          const track = s?.mediaStreamTrack;
-          console.log(`[ivs-viewer] stream[${i}]:`, {
-            hasTrack: !!track,
-            trackKind: track?.kind,
-            trackState: track?.readyState,
-            streamType: s?.streamType,
-            isMuted: s?.isMuted,
+        // 3. Strategy
+        const strategy = {
+          stageStreamsToPublish: () => [],
+          shouldPublishParticipant: () => false,
+          shouldSubscribeToParticipant: (participant: any) => {
+            const sub = participant?.isLocal ? SubscribeType.NONE : SubscribeType.AUDIO_VIDEO;
+            console.log("[ivs-viewer] shouldSubscribe:", participant?.userId, "isLocal:", participant?.isLocal, "→", sub);
+            return sub;
+          },
+        };
+
+        // 4. Create stage
+        const stage = new Stage(data.token, strategy);
+        stageRef.current = stage;
+
+        // 5. Register ALL event listeners
+        const allEvents = Object.values(StageEvents) as string[];
+        for (const evt of allEvents) {
+          stage.on(evt, (...args: any[]) => {
+            const summary = args.map((a: any) => {
+              if (Array.isArray(a)) return `[array:${a.length}]`;
+              if (a && typeof a === "object") return JSON.stringify({ userId: a.userId, isLocal: a.isLocal, isPublishing: a.isPublishing, id: a.id });
+              return String(a);
+            }).join(", ");
+            console.log(`[IVS] ${evt} → ${summary}`);
           });
+        }
 
-          if (track instanceof MediaStreamTrack) {
-            if (track.kind === "video") {
-              attachVideoTrack(track);
-            } else if (track.kind === "audio") {
+        // 6. Connection state
+        stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
+          if (!mountedRef.current) return;
+          console.log("[ivs-viewer] CONNECTION:", state);
+          if (state === ConnectionState.CONNECTED) setStatus("watching");
+          else if (state === ConnectionState.DISCONNECTED) setStatus("ended");
+        });
+
+        // 7. Participant joined — log everything
+        stage.on(StageEvents.STAGE_PARTICIPANT_JOINED, (p: any) => {
+          console.log("[ivs-viewer] JOINED:", JSON.stringify({
+            userId: p?.userId,
+            id: p?.id,
+            isLocal: p?.isLocal,
+            isPublishing: p?.isPublishing,
+            audioMuted: p?.audioMuted,
+            videoStopped: p?.videoStopped,
+            capabilities: p?.capabilities ? Array.from(p.capabilities) : [],
+          }));
+        });
+
+        // 8. Subscribe state changed
+        stage.on(StageEvents.STAGE_PARTICIPANT_SUBSCRIBE_STATE_CHANGED, (p: any, state: any) => {
+          console.log("[ivs-viewer] SUBSCRIBE_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
+        });
+
+        // 9. Publish state changed
+        stage.on(StageEvents.STAGE_PARTICIPANT_PUBLISH_STATE_CHANGED, (p: any, state: any) => {
+          console.log("[ivs-viewer] PUBLISH_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
+        });
+
+        // 10. STREAMS ADDED — the critical handler
+        stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
+          console.log("[ivs-viewer] ★★★ STREAMS_ADDED ★★★");
+          console.log("[ivs-viewer]   from:", participant?.userId, "isLocal:", participant?.isLocal);
+          console.log("[ivs-viewer]   count:", streams?.length);
+
+          if (!streams) return;
+          for (let i = 0; i < streams.length; i++) {
+            const s = streams[i];
+            const track = s?.mediaStreamTrack;
+            console.log(`[ivs-viewer]   stream[${i}]: type=${s?.streamType} muted=${s?.isMuted} hasTrack=${!!track} trackKind=${track?.kind} trackState=${track?.readyState}`);
+
+            if (track instanceof MediaStreamTrack && track.kind === "video") {
+              const videoEl = videoRef.current;
+              if (!videoEl) {
+                console.error("[ivs-viewer] videoRef is null!");
+                return;
+              }
+              videoEl.srcObject = new MediaStream([track]);
+              videoEl.muted = true;
+              videoEl.play().then(() => {
+                console.log("[ivs-viewer] play() OK:", videoEl.videoWidth, "x", videoEl.videoHeight);
+                if (mountedRef.current) setHasVideo(true);
+              }).catch(e => console.error("[ivs-viewer] play() failed:", e.message));
+            }
+
+            if (track instanceof MediaStreamTrack && track.kind === "audio") {
               try {
                 const a = new Audio();
                 a.srcObject = new MediaStream([track]);
@@ -155,39 +148,41 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
               } catch {}
             }
           }
-        }
-      });
+        });
 
-      stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (p: any) => {
-        console.log("[ivs-viewer] LEFT:", p?.userId, "isLocal:", p?.isLocal);
-        if (!p?.isLocal) {
-          if (videoRef.current) videoRef.current.srcObject = null;
-          setHasVideo(false);
-          setStatus("ended");
-        }
-      });
+        // 11. Participant left
+        stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (p: any) => {
+          console.log("[ivs-viewer] LEFT:", p?.userId, "isLocal:", p?.isLocal);
+          if (!p?.isLocal) {
+            if (videoRef.current) videoRef.current.srcObject = null;
+            if (mountedRef.current) { setHasVideo(false); setStatus("ended"); }
+          }
+        });
 
-      console.log("[ivs-viewer] Calling stage.join()...");
-      await stage.join();
-      console.log("[ivs-viewer] stage.join() resolved");
+        // 12. Join
+        console.log("[ivs-viewer] Calling stage.join()...");
+        await stage.join();
+        console.log("[ivs-viewer] stage.join() resolved");
 
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed";
-      console.error("[ivs-viewer] ERROR:", msg, err);
-      setErrorMsg(msg);
-      setStatus("error");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed";
+        console.error("[ivs-viewer] ERROR:", msg);
+        if (mountedRef.current) { setErrorMsg(msg); setStatus("error"); }
+      }
     }
-  }, [projectId, userId, attachVideoTrack]);
 
-  useEffect(() => {
-    joinStage();
+    join();
+
     return () => {
+      mountedRef.current = false;
       if (stageRef.current) {
         try { stageRef.current.leave(); } catch {}
         stageRef.current = null;
       }
+      // Allow rejoin if component remounts
+      joinedRef.current = false;
     };
-  }, [joinStage]);
+  }, [projectId, userId]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black" style={{ minHeight: 200 }}>
@@ -214,7 +209,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
           <div className="text-center px-6">
             <p className="text-sm text-red-400">{errorMsg}</p>
-            <button onClick={() => { setErrorMsg(null); joinStage(); }}
+            <button onClick={() => { setErrorMsg(null); joinedRef.current = false; setStatus("loading"); }}
               className="mt-3 rounded-lg border border-zinc-800 px-4 py-2 text-xs text-zinc-400 hover:text-white">
               Retry
             </button>
