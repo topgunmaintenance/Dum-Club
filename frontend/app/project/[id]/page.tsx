@@ -2837,9 +2837,11 @@ export default function ProjectPage() {
       // Refresh offers after webhook processes (may take a few seconds)
       // Note: loadSellerOrders is also triggered by the isOwner effect, so always safe to call loadOffers here
       const refreshAfterCheckout = () => {
-        console.log("[checkout] Refreshing offers and orders...");
+        console.log("[checkout] Refreshing offers, orders, and DUM balance...");
         loadOffers();
         loadSellerOrders();
+        // Trigger DUM balance refresh across the app
+        window.dispatchEvent(new Event("dum-points-update"));
       };
       setTimeout(refreshAfterCheckout, 2000);
       setTimeout(refreshAfterCheckout, 5000);
@@ -4564,23 +4566,24 @@ return (
 
         {/* Checkout result banner */}
         {checkoutResult === "success" && (
-          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
+          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-emerald-300">
-                {simulatedPurchase
-                  ? `✓ New sale: "${simulatedPurchase}" — $${simulatedRevenue.toFixed(2)} total revenue`
-                  : "Payment successful — thank you for your purchase!"}
-              </span>
-              <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
-            </div>
-            {simPurchaseCount > 0 && (
-              <div className="mt-2 flex items-center gap-4 text-[11px] text-emerald-400/70">
-                <span>{simPurchaseCount} sale{simPurchaseCount > 1 ? "s" : ""}</span>
-                <span>·</span>
-                <span>${simulatedRevenue.toFixed(2)} revenue</span>
-                <span>·</span>
-                <span>+{simPurchaseCount * 2} DUM Points earned</span>
+              <div>
+                <p className="text-sm font-semibold text-emerald-300">
+                  {isOwner && simulatedPurchase
+                    ? `✓ Sale: "${simulatedPurchase}" — $${simulatedRevenue.toFixed(2)} revenue`
+                    : "Purchase successful! ✓"}
+                </p>
+                {!isOwner && (
+                  <p className="mt-1 text-lg font-bold text-emerald-400">You earned DUM 🎉</p>
+                )}
               </div>
+              <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">×</button>
+            </div>
+            {!isOwner && (
+              <p className="mt-2 text-xs text-emerald-400/60">
+                Every purchase earns DUM rewards. DUM will power discounts, boosts, and future on-chain utility on Solana.
+              </p>
             )}
           </div>
         )}

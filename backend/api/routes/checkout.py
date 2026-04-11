@@ -354,6 +354,16 @@ async def stripe_webhook(request: Request):
 
     supabase = get_client()
 
+    # ── Idempotency: skip already-processed events ──
+    event_id = event["id"]
+    try:
+        existing = supabase.table("processed_webhook_events").select("event_id").eq("event_id", event_id).limit(1).execute()
+        if existing.data:
+            print(f"[webhook] Event {event_id} already processed, skipping")
+            return JSONResponse(content={"received": True, "duplicate": True}, status_code=200)
+    except Exception:
+        pass  # Table may not exist yet — proceed without idempotency
+
     def _find_order(session_id: str, pi_id: str, metadata: dict) -> dict | None:
         """Try multiple strategies to find the matching order."""
 
@@ -470,21 +480,27 @@ async def stripe_webhook(request: Request):
             send_buyer_payment_confirmed(buyer_email or "", offer_title, amount, proj_name)
             print(f"[webhook] Buyer email: {'sent' if buyer_email else 'skipped (no email)'}")
 
-            # Award +2 DUM Points to buyer for purchase (with transaction log)
+            # Award DUM Points to buyer — 10 base + 1 per $5 spent (max 50)
             buyer_uid = od.get("buyer_user_id")
             if buyer_uid:
                 try:
+                    dum_reward = min(50, 10 + int(amount / 5))
                     dum_res = supabase.table("users").select("dum_balance").eq("privy_id", buyer_uid).limit(1).execute()
                     if dum_res.data:
-                        cur_dum = dum_res.data[0].get("dum_balance", 50)
-                        new_dum = cur_dum + 2
+                        cur_dum = dum_res.data[0].get("dum_balance", 0)
+                        new_dum = cur_dum + dum_reward
                         supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", buyer_uid).execute()
                         supabase.table("dum_transactions").insert({
-                            "privy_id": buyer_uid, "amount": 2,
-                            "reason": "purchase_reward", "reference_id": od.get("offer_id"),
+                            "privy_id": buyer_uid, "amount": dum_reward,
+                            "reason": "purchase_reward", "reference_id": od.get("id"),
                             "balance_after": new_dum,
                         }).execute()
-                        print(f"[webhook] awarded 2 DUM to buyer {buyer_uid} → {new_dum}")
+                        print(f"[webhook] Awarded {dum_reward} DUM to buyer {buyer_uid} (spent ${amount:.2f}) → balance {new_dum}")
+
+                        # Send DUM reward email
+                        if buyer_email:
+                            from services.email import send_dum_reward_email
+                            send_dum_reward_email(buyer_email, dum_reward, new_dum, offer_title)
                 except Exception as dum_err:
                     print(f"[webhook] DUM award failed (non-fatal): {dum_err}")
 
@@ -604,6 +620,15 @@ async def stripe_webhook(request: Request):
 
     else:
         print(f"[webhook] Unhandled event: {event['type']}")
+
+    # Record event as processed for idempotency
+    try:
+        supabase.table("processed_webhook_events").insert({
+            "event_id": event_id,
+            "event_type": event["type"],
+        }).execute()
+    except Exception:
+        pass  # Non-fatal — duplicate check on next attempt
 
     print(f"[webhook] ========== WEBHOOK DONE ==========")
     return JSONResponse(content={"received": True}, status_code=200)
