@@ -3840,24 +3840,6 @@ return (
             )}
 
           </div>
-
-          {/* ── LIVE CHAT — full width, always visible during live ── */}
-          <div style={{ minHeight: 300 }}>
-            {isIVSSession(project) ? (
-              <LiveChatIVS
-                projectId={id as string}
-                userId={authUser?.privyId || ""}
-                userName={authUser?.email || "Viewer"}
-                isHost={isOwner}
-              />
-            ) : (
-              <LiveChat
-                projectId={id as string}
-                userName={authUser?.email || null}
-                isOwner={isOwner}
-              />
-            )}
-          </div>
         </div>
       )}
 
@@ -5384,6 +5366,18 @@ return (
               </div>
             )
           )}
+        </div>
+      )}
+
+      {/* ── LIVE CHAT — unified block for host AND viewer ── */}
+      {project?.is_live && isIVSSession(project) && (
+        <div className="mb-8" style={{ minHeight: 400 }}>
+          <LiveChatIVS
+            projectId={id as string}
+            userId={authUser?.privyId || ""}
+            userName={authUser?.email || "Viewer"}
+            isHost={isOwner}
+          />
         </div>
       )}
 
