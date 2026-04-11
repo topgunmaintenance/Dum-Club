@@ -172,9 +172,10 @@ async def create_payment_intent(
     seller_receives = round(seller_payout_base - platform_fee, 2)
     amount_cents = int(round(final_price * 100))
 
+    # Stripe minimum is $0.50 USD
     if amount_cents < 50:
-        print(f"[checkout] REJECTED: amount_cents={amount_cents}, original_price={original_price}, final_price={final_price}, offer_id={body.offer_id}")
-        raise HTTPException(status_code=400, detail=f"Minimum charge is $0.50 (got ${final_price:.2f})")
+        print(f"[checkout] Price below Stripe minimum: amount_cents={amount_cents}, price={final_price}, offer={body.offer_id}")
+        raise HTTPException(status_code=400, detail=f"Price must be at least $0.50 for checkout. This offer is ${final_price:.2f}. Update the offer price in your dashboard.")
 
     # 4. Resolve buyer identity
     buyer_user_id = privy_id
