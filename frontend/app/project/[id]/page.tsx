@@ -5252,27 +5252,30 @@ return (
             />
           )}
 
-          {project?.is_live ? (
-            /* ══ LIVE STATE — selling controls ══ */
+          {/* Selling controls — shown for ALL live providers when live */}
+          {project?.is_live && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                  </span>
-                  <h2 className="text-xl font-bold text-white">You're Live</h2>
+              {/* Only show legacy live header when NOT using IVS (IVS has its own) */}
+              {!isIVSSession(project) && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                    </span>
+                    <h2 className="text-xl font-bold text-white">You're Live</h2>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-zinc-500">
+                    <span>{liveSalesCount} sale{liveSalesCount !== 1 ? "s" : ""}</span>
+                    <button
+                      onClick={handleEndLive}
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
+                    >
+                      End Stream
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-zinc-500">
-                  <span>{liveSalesCount} sale{liveSalesCount !== 1 ? "s" : ""}</span>
-                  <button
-                    onClick={handleEndLive}
-                    className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
-                  >
-                    End Stream
-                  </button>
-                </div>
-              </div>
+              )}
 
               {/* Product selector — immediate access */}
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
@@ -5336,79 +5339,34 @@ return (
                 )}
               </div>
             </div>
+          )}
 
-          ) : cameraPreview ? (
-            /* ══ CAMERA PREVIEW — ready to go live ══ */
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Camera Ready</h2>
-              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-                <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={startLiveFromCamera}
-                  disabled={goingLive}
-                  className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
-                >
-                  {goingLive ? "Starting..." : "Start Live"}
-                </button>
-                <button
-                  onClick={cancelCameraPreview}
-                  className="rounded-xl border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-
-          ) : (
-            /* ══ DEFAULT — single Go Live button ══ */
-            <div className="text-center py-4">
-              <button
-                onClick={startCameraPreview}
-                className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 hover:shadow-red-500/30 active:scale-[0.98]"
-              >
-                Go Live
-              </button>
-              <p className="mt-3 text-sm text-zinc-500">Start selling in seconds</p>
-
-              {goLiveError && (
-                <div className="mt-3 mx-auto max-w-md rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
-                  {goLiveError}
+          {/* Legacy Mux/camera flow — only when IVS is NOT enabled and NOT live */}
+          {!IVS_REALTIME_ENABLED && !project?.is_live && (
+            cameraPreview ? (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-white">Camera Ready</h2>
+                <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
                 </div>
-              )}
-
-              {/* Advanced streaming — hidden by default */}
-              <div className="mt-6">
-                <button
-                  onClick={() => setShowAdvancedLive(!showAdvancedLive)}
-                  className="text-[11px] text-zinc-600 transition hover:text-zinc-400"
-                >
-                  {showAdvancedLive ? "Hide" : "Advanced Streaming"}
+                <div className="flex gap-3">
+                  <button onClick={startLiveFromCamera} disabled={goingLive} className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40">
+                    {goingLive ? "Starting..." : "Start Live"}
+                  </button>
+                  <button onClick={cancelCameraPreview} className="rounded-xl border border-zinc-800 px-5 py-3 text-sm text-zinc-400 hover:text-white">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <button onClick={startCameraPreview} className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
+                  Go Live
                 </button>
-                {showAdvancedLive && (
-                  <div className="mt-4 mx-auto max-w-lg space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4 text-left">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Advanced Options</div>
-                    {/* Mode selector */}
-                    <div className="flex gap-2">
-                      <button onClick={() => setLiveMode("native_mux")} className={`rounded-lg border px-3 py-1.5 text-xs transition ${liveMode === "native_mux" ? "border-emerald-400/40 text-emerald-400" : "border-zinc-800 text-zinc-500"}`}>Mux (OBS)</button>
-                      <button onClick={() => setLiveMode("manual_embed")} className={`rounded-lg border px-3 py-1.5 text-xs transition ${liveMode === "manual_embed" ? "border-emerald-400/40 text-emerald-400" : "border-zinc-800 text-zinc-500"}`}>Embed URL</button>
-                    </div>
-                    {liveMode === "manual_embed" ? (
-                      <div className="flex gap-2">
-                        <input value={liveStreamUrl} onChange={(e) => setLiveStreamUrl(e.target.value)} placeholder="Paste stream URL..." className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none" />
-                        <button onClick={handleGoLive} disabled={goingLive || !liveStreamUrl.trim()} className="rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-40">{goingLive ? "..." : "Go"}</button>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-xs text-zinc-500 mb-2">Stream via OBS with Mux. Requires MUX_TOKEN_ID on server.</p>
-                        <button onClick={handleGoLive} disabled={goingLive} className="rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-40">{goingLive ? "..." : "Create Mux Stream"}</button>
-                      </div>
-                    )}
-                  </div>
+                <p className="mt-3 text-sm text-zinc-500">Start selling in seconds</p>
+                {goLiveError && (
+                  <div className="mt-3 mx-auto max-w-md rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">{goLiveError}</div>
                 )}
               </div>
-            </div>
+            )
           )}
         </div>
       )}
