@@ -1105,7 +1105,7 @@ export default function ProjectPage() {
     }
   }
 
-  async function buyOffer(offer: Offer) {
+  async function buyOffer(offer: Offer, auctionId?: string, overridePrice?: number) {
     const oid = offer.id;
     console.log("[buyOffer] clicked, offer:", oid, offer.title);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
@@ -1183,7 +1183,9 @@ export default function ProjectPage() {
           success_url: cleanUrl,
           cancel_url: cleanUrl,
           use_dum_discount: !!dumDiscountApplied[oid],
-          source: project?.is_live ? "live" : "normal",
+          source: auctionId ? "live_auction" : project?.is_live ? "live" : "normal",
+          ...(auctionId && { auction_id: auctionId }),
+          ...(overridePrice != null && { override_price: overridePrice }),
         }),
       });
 
@@ -2089,12 +2091,13 @@ export default function ProjectPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        const bidAmount = Number(auctionBidAmount);
         setAuction(data.auction);
         setAuctionBidAmount("");
         if (id) {
           broadcastLiveEvent(id, {
             user: data.your_display_name,
-            text: `placed a bid: $${Number(auctionBidAmount).toFixed(0)}`,
+            text: `placed a bid: $${bidAmount.toFixed(0)}`,
             type: "purchase",
           });
         }
@@ -2158,11 +2161,8 @@ export default function ProjectPage() {
       setTimeout(() => setSimulatedPurchase(null), 6000);
       return;
     }
-    // Real Stripe path
-    buyOffer({
-      ...auctionOffer,
-      price_usd: Number(auction.current_bid),
-    } as Offer);
+    // Real Stripe path — pass auction_id and override_price
+    buyOffer(auctionOffer, auction.id, Number(auction.current_bid));
   }
 
   /* ── Project Score ────────────────────────────────── */

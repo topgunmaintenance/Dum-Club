@@ -239,7 +239,7 @@ async def create_payment_intent(
         "buyer_email": body.buyer_email,
         "notes": body.notes,
         "token_discount_applied": token_discount_applied,
-        "source": body.source if body.source in ("normal", "live") else "normal",
+        "source": body.source if body.source in ("normal", "live", "live_auction") else "normal",
     }
 
     print(f"[checkout] Inserting order: session_id={order_insert['stripe_session_id']}, pi={order_insert['stripe_payment_intent_id']}, status={order_insert['status']}")
