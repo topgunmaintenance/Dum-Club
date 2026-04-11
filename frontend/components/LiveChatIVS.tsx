@@ -101,16 +101,16 @@ export function LiveChatIVS({ projectId, userId, userName, isHost }: LiveChatIVS
   }
 
   return (
-    <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden" style={{ height: 360 }}>
+    <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden" style={{ minHeight: 360 }}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Live Chat</span>
+          <span className="text-sm font-bold text-white">LIVE CHAT</span>
           {connected && (
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
           )}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
           <span>{viewerCount} watching</span>
         </div>
       </div>
