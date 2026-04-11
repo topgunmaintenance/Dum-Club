@@ -6,6 +6,10 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
+
+import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
+const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
+const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
@@ -71,6 +75,8 @@ type Project = {
   pinned_offer_id?: string | null;
   active_auction_id?: string | null;
   live_provider?: string | null;
+  ivs_stage_arn?: string | null;
+  ivs_stage_id?: string | null;
   live_playback_id?: string | null;
   live_stream_key?: string | null;
   live_ingest_url?: string | null;
@@ -3592,7 +3598,7 @@ return (
       </div>
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
-      {project?.is_live && (project.stream_url || project.live_playback_id) && (
+      {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn) && (
         <div className="mb-6 space-y-4">
           <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-3">
             <div className="flex items-center gap-3">
@@ -3605,7 +3611,13 @@ return (
             </div>
           </div>
 
-          {/* Native Mux player or iframe fallback */}
+          {/* IVS Real-Time / Mux / iframe fallback */}
+          {isIVSSession(project) && project.ivs_stage_arn ? (
+            <IVSStageViewer
+              projectId={id as string}
+              userId={authUser?.privyId || ""}
+            />
+          ) : (
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
             {project.live_provider === "native_mux" && project.live_playback_id ? (
               <MuxPlayer
@@ -3642,6 +3654,7 @@ return (
               </div>
             ) : null}
           </div>
+          )}
 
           {/* Reward visibility */}
           <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5 mb-4">
@@ -5223,7 +5236,21 @@ return (
       {isOwner && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
 
-          {project?.is_live ? (
+          {/* IVS Real-Time path (when enabled and not already live via other provider) */}
+          {IVS_REALTIME_ENABLED && !project?.is_live ? (
+            <IVSStageHost
+              projectId={id as string}
+              userId={authUser?.privyId || ""}
+              onLive={() => {
+                setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
+                setLiveSalesCount(0);
+              }}
+              onEnd={() => {
+                setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
+              }}
+              onError={(msg) => setGoLiveError(msg)}
+            />
+          ) : project?.is_live ? (
             /* ══ LIVE STATE — selling controls ══ */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
