@@ -419,93 +419,75 @@ async def stripe_webhook(request: Request):
         return None
 
     def _process_paid(order: dict, session_id: str, pi_id: str, source: str):
-        """Update order to paid, decrement inventory, send emails."""
+        """Update order to paid, update inventory, award DUM, send emails."""
+        order_id = order["id"]
+        audit = {"order_id": order_id, "stripe_event_id": event_id, "source": source}
+
         if order["status"] not in ("pending_payment", "pending"):
-            print(f"[webhook] Order {order['id']} already {order['status']}, skipping")
+            print(f"[webhook] Order {order_id} already {order['status']}, skipping")
             return
 
-        # Update order to paid + backfill IDs
+        # ── 1. Mark order paid ──
         update_fields: dict = {"status": "paid", "updated_at": _now_iso()}
         if session_id:
             update_fields["stripe_session_id"] = session_id
         if pi_id:
             update_fields["stripe_payment_intent_id"] = pi_id
 
-        update_res = supabase.table("orders").update(update_fields).eq("id", order["id"]).execute()
-        rows = len(update_res.data or [])
-        print(f"[webhook] ✓ Order {order['id']} → paid (rows={rows}, source={source})")
+        supabase.table("orders").update(update_fields).eq("id", order_id).execute()
+        print(f"[webhook] ✓ ORDER PAID: {order_id}")
+        audit["order_paid"] = True
 
-        # Decrement inventory
+        # ── 2. Update inventory ──
         offer_id = order.get("offer_id")
         if offer_id:
-            offer_res = supabase.table("offers").select("id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
-            if offer_res.data:
-                o = offer_res.data[0]
-                is_unlimited = o.get("unlimited_inventory")
-                current_sold = o.get("quantity_sold") or 0
-                current_available = o.get("quantity_available")
-                print(f"[webhook] Inventory check: offer={offer_id}, unlimited={is_unlimited}, sold={current_sold}, available={current_available}")
+            try:
+                offer_res = supabase.table("offers").select("id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
+                if offer_res.data:
+                    o = offer_res.data[0]
+                    new_sold = (o.get("quantity_sold") or 0) + 1
+                    supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
+                    print(f"[webhook] ✓ INVENTORY: offer={offer_id}, sold → {new_sold}")
+                    audit["inventory_updated"] = True
+            except Exception as inv_err:
+                print(f"[webhook] ✗ Inventory update failed (non-fatal): {inv_err}")
 
-                # Always increment quantity_sold (tracks total sales regardless of unlimited flag)
-                new_sold = current_sold + 1
-                supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
-                print(f"[webhook] Inventory updated: offer={offer_id}, quantity_sold {current_sold} → {new_sold}")
-            else:
-                print(f"[webhook] WARNING: offer {offer_id} not found for inventory update")
+        # ── 3. Resolve order details for reward + email ──
+        dum_reward = 0
+        new_dum = 0
+        buyer_email = ""
+        seller_email = ""
+        offer_title = "Order"
+        amount = 0.0
+        seller_receives_val = 0.0
+        proj_name = ""
+        proj_id = ""
+        buyer_uid = ""
 
-        # Send emails (non-blocking)
         try:
-            full_order = supabase.table("orders").select("*, offers(title, price_usd, project_id)").eq("id", order["id"]).single().execute()
+            full_order = supabase.table("orders").select("*, offers(title, price_usd, project_id)").eq("id", order_id).single().execute()
             od = full_order.data or {}
             offer_data = od.get("offers") or {}
             offer_title = offer_data.get("title", "Order")
             amount = float(od.get("amount_paid_usd", 0))
             seller_receives_val = float(od.get("seller_receives_usd", 0))
             proj_id = od.get("project_id", "")
+            buyer_uid = od.get("buyer_user_id", "")
 
-            proj_name = ""
             if proj_id:
                 proj_res = supabase.table("projects").select("title, name").eq("id", proj_id).limit(1).execute()
                 if proj_res.data:
                     proj_name = proj_res.data[0].get("title") or proj_res.data[0].get("name") or ""
 
-            buyer_email = od.get("buyer_email")
-            if not buyer_email:
-                buyer_uid = od.get("buyer_user_id")
-                if buyer_uid:
-                    u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
-                    if u_res.data:
-                        buyer_email = u_res.data[0].get("email")
+            # Resolve buyer email
+            buyer_email = od.get("buyer_email") or ""
+            if not buyer_email and buyer_uid:
+                u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
+                if u_res.data:
+                    buyer_email = u_res.data[0].get("email") or ""
 
-            send_buyer_payment_confirmed(buyer_email or "", offer_title, amount, proj_name)
-            print(f"[webhook] Buyer email: {'sent' if buyer_email else 'skipped (no email)'}")
-
-            # Award DUM Points to buyer — 10 base + 1 per $5 spent (max 50)
-            buyer_uid = od.get("buyer_user_id")
-            if buyer_uid:
-                try:
-                    dum_reward = min(50, 10 + int(amount / 5))
-                    dum_res = supabase.table("users").select("dum_balance").eq("privy_id", buyer_uid).limit(1).execute()
-                    if dum_res.data:
-                        cur_dum = dum_res.data[0].get("dum_balance", 0)
-                        new_dum = cur_dum + dum_reward
-                        supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", buyer_uid).execute()
-                        supabase.table("dum_transactions").insert({
-                            "privy_id": buyer_uid, "amount": dum_reward,
-                            "reason": "purchase_reward", "reference_id": od.get("id"),
-                            "balance_after": new_dum,
-                        }).execute()
-                        print(f"[webhook] Awarded {dum_reward} DUM to buyer {buyer_uid} (spent ${amount:.2f}) → balance {new_dum}")
-
-                        # Send DUM reward email
-                        if buyer_email:
-                            from services.email import send_dum_reward_email
-                            send_dum_reward_email(buyer_email, dum_reward, new_dum, offer_title)
-                except Exception as dum_err:
-                    print(f"[webhook] DUM award failed (non-fatal): {dum_err}")
-
+            # Resolve seller email
             seller_uid = od.get("seller_user_id")
-            seller_email = ""
             if seller_uid:
                 prof_res = supabase.table("profiles").select("wallet_address").eq("id", seller_uid).limit(1).execute()
                 if prof_res.data:
@@ -514,10 +496,61 @@ async def stripe_webhook(request: Request):
                         u_res = supabase.table("users").select("email").eq("wallet_address", wallet).limit(1).execute()
                         if u_res.data:
                             seller_email = u_res.data[0].get("email") or ""
-            send_seller_new_order(seller_email, offer_title, amount, seller_receives_val, proj_id)
-            print(f"[webhook] Seller email: {'sent' if seller_email else 'skipped (no email)'}")
-        except Exception as email_err:
-            print(f"[webhook] Email error (non-blocking): {email_err}")
+        except Exception as detail_err:
+            print(f"[webhook] Order detail resolve error (non-fatal): {detail_err}")
+
+        # ── 4. Award DUM (payment is already confirmed — this is safe) ──
+        if buyer_uid:
+            try:
+                dum_reward = min(50, 10 + int(amount / 5))
+                dum_res = supabase.table("users").select("dum_balance").eq("privy_id", buyer_uid).limit(1).execute()
+                if dum_res.data:
+                    cur_dum = dum_res.data[0].get("dum_balance", 0)
+                    new_dum = cur_dum + dum_reward
+                    supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", buyer_uid).execute()
+                    supabase.table("dum_transactions").insert({
+                        "privy_id": buyer_uid, "amount": dum_reward,
+                        "reason": "purchase_reward", "reference_id": order_id,
+                        "balance_after": new_dum,
+                    }).execute()
+                    print(f"[webhook] ✓ DUM AWARDED: {dum_reward} to {buyer_uid} (spent ${amount:.2f}) → balance {new_dum}")
+                    audit["dum_awarded"] = dum_reward
+                    audit["dum_balance"] = new_dum
+            except Exception as dum_err:
+                print(f"[webhook] ✗ DUM award failed (non-fatal): {dum_err}")
+
+        # ── 5. Send emails (never blocks payment processing) ──
+        # Single combined buyer email (confirmation + DUM reward)
+        try:
+            if buyer_email:
+                from services.email import send_buyer_payment_confirmed
+                send_buyer_payment_confirmed(buyer_email, offer_title, amount, proj_name)
+                print(f"[webhook] ✓ BUYER EMAIL sent to {buyer_email}")
+                audit["buyer_email_sent"] = True
+
+                # DUM reward email (separate — specific reward details)
+                if dum_reward > 0:
+                    from services.email import send_dum_reward_email
+                    send_dum_reward_email(buyer_email, dum_reward, new_dum, offer_title)
+                    print(f"[webhook] ✓ DUM REWARD EMAIL sent to {buyer_email}")
+                    audit["reward_email_sent"] = True
+            else:
+                print(f"[webhook] ⊘ Buyer email skipped (no email)")
+        except Exception as buyer_email_err:
+            print(f"[webhook] ✗ Buyer email failed (non-fatal): {buyer_email_err}")
+
+        try:
+            if seller_email:
+                send_seller_new_order(seller_email, offer_title, amount, seller_receives_val, proj_id)
+                print(f"[webhook] ✓ SELLER EMAIL sent to {seller_email}")
+                audit["seller_email_sent"] = True
+            else:
+                print(f"[webhook] ⊘ Seller email skipped (no email)")
+        except Exception as seller_email_err:
+            print(f"[webhook] ✗ Seller email failed (non-fatal): {seller_email_err}")
+
+        # ── 6. Audit trail ──
+        print(f"[webhook] ═══ AUDIT: {audit}")
 
     # ── Event routing ────────────────────────────────────────
 
