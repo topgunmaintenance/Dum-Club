@@ -3840,12 +3840,24 @@ return (
             )}
 
           </div>
+
+          {/* ── LIVE CHAT — inside live banner for unified experience ── */}
+          {isIVSSession(project) && (
+            <div style={{ minHeight: 360 }}>
+              <LiveChatIVS
+                projectId={id as string}
+                userId={authUser?.privyId || ""}
+                userName={authUser?.email || "Viewer"}
+                isHost={isOwner}
+              />
+            </div>
+          )}
         </div>
       )}
 
       <div
         id="section-top"
-        className="mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8"
+        className={`mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) && !isOwner ? "hidden" : ""}`}
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
@@ -4441,8 +4453,8 @@ return (
         </div>
       </div>
 
-      {/* ── Offers (Public Storefront + Owner Tools) ── */}
-      <div id="offers-section" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
+      {/* ── Offers (Public Storefront + Owner Tools) — hidden for viewers during live ── */}
+      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8 ${project?.is_live && isIVSSession(project) && !isOwner ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
@@ -5366,18 +5378,6 @@ return (
               </div>
             )
           )}
-        </div>
-      )}
-
-      {/* ── LIVE CHAT — unified block for host AND viewer ── */}
-      {project?.is_live && isIVSSession(project) && (
-        <div className="mb-8" style={{ minHeight: 400 }}>
-          <LiveChatIVS
-            projectId={id as string}
-            userId={authUser?.privyId || ""}
-            userName={authUser?.email || "Viewer"}
-            isHost={isOwner}
-          />
         </div>
       )}
 
