@@ -84,7 +84,7 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
       }
 
       // 2. Load IVS SDK dynamically
-      const IVSBroadcastClient = (await import("amazon-ivs-web-broadcast")).default;
+      const { Stage, LocalStageStream, StageEvents, ConnectionState, SubscribeType } = await import("amazon-ivs-web-broadcast");
 
       // 3. Create stage with strategy
       const stream = cameraStreamRef.current;
@@ -102,34 +102,34 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
       const strategy = {
         stageStreamsToPublish: () => {
           return [
-            new IVSBroadcastClient.LocalStageStream(videoTrack),
-            new IVSBroadcastClient.LocalStageStream(audioTrack),
+            new LocalStageStream(videoTrack),
+            new LocalStageStream(audioTrack),
           ];
         },
         shouldPublishParticipant: () => true,
-        shouldSubscribeToParticipant: () => IVSBroadcastClient.SubscribeType.AUDIO_VIDEO,
+        shouldSubscribeToParticipant: () => SubscribeType.AUDIO_VIDEO,
       };
       strategyRef.current = strategy;
 
       // Create and join stage
-      const stage = new IVSBroadcastClient.Stage(data.host_token, strategy);
+      const stage = new Stage(data.host_token, strategy);
       stageRef.current = stage;
 
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
+      stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
         console.log("[ivs-host] Connection state:", state);
-        if (state === IVSBroadcastClient.ConnectionState.CONNECTED) {
+        if (state === ConnectionState.CONNECTED) {
           setStatus("live");
           onLive();
-        } else if (state === IVSBroadcastClient.ConnectionState.DISCONNECTED) {
+        } else if (state === ConnectionState.DISCONNECTED) {
           console.log("[ivs-host] Disconnected from stage");
         }
       });
 
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_PARTICIPANT_JOINED, (participant: any) => {
+      stage.on(StageEvents.STAGE_PARTICIPANT_JOINED, (participant: any) => {
         console.log("[ivs-host] Participant joined:", participant.userId);
       });
 
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_PARTICIPANT_LEFT, (participant: any) => {
+      stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (participant: any) => {
         console.log("[ivs-host] Participant left:", participant.userId);
       });
 

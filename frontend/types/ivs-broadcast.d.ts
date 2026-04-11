@@ -1,49 +1,41 @@
 declare module "amazon-ivs-web-broadcast" {
-  interface LocalStageStream {
-    new (track: MediaStreamTrack): LocalStageStream;
+  export class LocalStageStream {
+    constructor(track: MediaStreamTrack, config?: any);
     mediaStreamTrack: MediaStreamTrack;
   }
 
-  interface StageStrategy {
+  export interface StageStrategy {
     stageStreamsToPublish: () => LocalStageStream[];
     shouldPublishParticipant: (participant?: any) => boolean;
-    shouldSubscribeToParticipant: (participant?: any) => any;
+    shouldSubscribeToParticipant: (participant?: any) => SubscribeType;
   }
 
-  interface Stage {
-    new (token: string, strategy: StageStrategy): Stage;
+  export class Stage {
+    constructor(token: string, strategy: StageStrategy);
     join(): Promise<void>;
     leave(): void;
     on(event: string, callback: (...args: any[]) => void): void;
   }
 
-  const StageEvents: {
-    STAGE_CONNECTION_STATE_CHANGED: string;
-    STAGE_PARTICIPANT_JOINED: string;
-    STAGE_PARTICIPANT_LEFT: string;
-    STAGE_PARTICIPANT_STREAMS_ADDED: string;
-    STAGE_PARTICIPANT_STREAMS_REMOVED: string;
-  };
+  export enum StageEvents {
+    STAGE_CONNECTION_STATE_CHANGED = "stageConnectionStateChanged",
+    STAGE_PARTICIPANT_JOINED = "stageParticipantJoined",
+    STAGE_PARTICIPANT_LEFT = "stageParticipantLeft",
+    STAGE_PARTICIPANT_STREAMS_ADDED = "stageParticipantStreamsAdded",
+    STAGE_PARTICIPANT_STREAMS_REMOVED = "stageParticipantStreamsRemoved",
+  }
 
-  const ConnectionState: {
-    CONNECTED: string;
-    CONNECTING: string;
-    DISCONNECTED: string;
-  };
+  export enum ConnectionState {
+    CLOSED = "closed",
+    COMPLETED = "completed",
+    CONNECTED = "connected",
+    CONNECTING = "connecting",
+    DISCONNECTED = "disconnected",
+  }
 
-  const SubscribeType: {
-    NONE: string;
-    AUDIO_ONLY: string;
-    AUDIO_VIDEO: string;
-  };
-
-  const _default: {
-    Stage: Stage;
-    LocalStageStream: LocalStageStream;
-    StageEvents: typeof StageEvents;
-    ConnectionState: typeof ConnectionState;
-    SubscribeType: typeof SubscribeType;
-  };
-
-  export default _default;
+  export enum SubscribeType {
+    NONE = "none",
+    AUDIO_ONLY = "audio_only",
+    AUDIO_VIDEO = "audio_video",
+  }
 }

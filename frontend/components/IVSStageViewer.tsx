@@ -37,30 +37,30 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       console.log("[ivs-viewer] Viewer token received");
 
       // 2. Load IVS SDK
-      const IVSBroadcastClient = (await import("amazon-ivs-web-broadcast")).default;
+      const { Stage, StageEvents, ConnectionState, SubscribeType } = await import("amazon-ivs-web-broadcast");
 
       // 3. Create stage with subscriber strategy
       const strategy = {
         stageStreamsToPublish: () => [],
         shouldPublishParticipant: () => false,
-        shouldSubscribeToParticipant: () => IVSBroadcastClient.SubscribeType.AUDIO_VIDEO,
+        shouldSubscribeToParticipant: () => SubscribeType.AUDIO_VIDEO,
       };
 
-      const stage = new IVSBroadcastClient.Stage(data.token, strategy);
+      const stage = new Stage(data.token, strategy);
       stageRef.current = stage;
 
       // Handle connection state
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
+      stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
         console.log("[ivs-viewer] Connection state:", state);
-        if (state === IVSBroadcastClient.ConnectionState.CONNECTED) {
+        if (state === ConnectionState.CONNECTED) {
           setStatus("watching");
-        } else if (state === IVSBroadcastClient.ConnectionState.DISCONNECTED) {
+        } else if (state === ConnectionState.DISCONNECTED) {
           setStatus("ended");
         }
       });
 
       // Handle remote participant streams
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
+      stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
         console.log("[ivs-viewer] Streams received from:", participant.userId, "count:", streams.length);
 
         const container = videoContainerRef.current;
@@ -100,7 +100,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       });
 
       // Handle participant leaving
-      stage.on(IVSBroadcastClient.StageEvents.STAGE_PARTICIPANT_LEFT, (participant: any) => {
+      stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (participant: any) => {
         console.log("[ivs-viewer] Host left:", participant.userId);
         if (videoContainerRef.current) {
           videoContainerRef.current.innerHTML = "";
