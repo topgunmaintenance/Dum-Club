@@ -13,12 +13,14 @@ interface IVSStageViewerProps {
 export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [hasVideo, setHasVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stageRef = useRef<any>(null);
 
   const joinStage = useCallback(async () => {
     setStatus("connecting");
+    setHasVideo(false);
     console.log("[ivs-viewer] Requesting viewer token...");
 
     try {
@@ -35,7 +37,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
 
       const data = await res.json();
       if (!data.token) throw new Error("No viewer token received from server");
-      console.log("[ivs-viewer] Viewer token received");
+      console.log("[ivs-viewer] Viewer token received, length:", data.token.length);
 
       const { Stage, StageEvents, ConnectionState, SubscribeType } =
         await import("amazon-ivs-web-broadcast");
@@ -53,78 +55,91 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
         console.log("[ivs-viewer] Connection state:", state);
         if (state === ConnectionState.CONNECTED) {
-          console.log("[ivs-viewer] CONNECTED — waiting for host streams");
           setStatus("watching");
         } else if (state === ConnectionState.DISCONNECTED) {
-          console.log("[ivs-viewer] DISCONNECTED");
           setStatus("ended");
         }
       });
 
       stage.on(StageEvents.STAGE_PARTICIPANT_JOINED, (participant: any) => {
-        console.log("[ivs-viewer] Participant joined:", participant?.userId, participant?.isLocal ? "(local)" : "(remote/host)");
+        console.log("[ivs-viewer] Participant joined:", participant?.userId, "isLocal:", participant?.isLocal);
       });
 
       stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
-        console.log("[ivs-viewer] Streams received from:", participant?.userId,
-          "count:", streams?.length,
-          "kinds:", streams?.map((s: any) => s.mediaStreamTrack?.kind));
+        console.log("[ivs-viewer] === STREAMS ADDED ===");
+        console.log("[ivs-viewer] From:", participant?.userId, "isLocal:", participant?.isLocal);
+        console.log("[ivs-viewer] Stream count:", streams?.length);
 
         if (!streams || streams.length === 0) {
           console.warn("[ivs-viewer] No streams in event");
           return;
         }
 
-        // Attach tracks to our persistent video/audio elements
         for (const stageStream of streams) {
           const track = stageStream.mediaStreamTrack;
           if (!track) {
-            console.warn("[ivs-viewer] Stream has no mediaStreamTrack");
+            console.warn("[ivs-viewer] Stream missing mediaStreamTrack, checking isMuted:", stageStream.isMuted);
             continue;
           }
 
-          console.log("[ivs-viewer] Attaching track:", track.kind, "readyState:", track.readyState, "enabled:", track.enabled);
+          console.log("[ivs-viewer] Track:", track.kind, "readyState:", track.readyState, "enabled:", track.enabled, "id:", track.id);
 
-          if (track.kind === "video" && videoRef.current) {
-            // Use a MediaStream with this single track
+          if (track.kind === "video") {
+            const videoEl = videoRef.current;
+            if (!videoEl) {
+              console.error("[ivs-viewer] VIDEO REF IS NULL — cannot attach track");
+              return;
+            }
             const ms = new MediaStream([track]);
-            videoRef.current.srcObject = ms;
-            videoRef.current.play().catch(() => {
-              // Autoplay policy — mute and retry
-              console.log("[ivs-viewer] Autoplay blocked, muting and retrying");
-              if (videoRef.current) {
-                videoRef.current.muted = true;
-                videoRef.current.play().catch((e) => {
-                  console.error("[ivs-viewer] Video play failed even muted:", e);
-                });
-              }
+            videoEl.srcObject = ms;
+            console.log("[ivs-viewer] srcObject set on video element");
+            console.log("[ivs-viewer] Video element state: muted=", videoEl.muted, "autoplay=", videoEl.autoplay, "readyState=", videoEl.readyState);
+            console.log("[ivs-viewer] Video element size:", videoEl.offsetWidth, "x", videoEl.offsetHeight);
+
+            videoEl.play().then(() => {
+              console.log("[ivs-viewer] video.play() succeeded");
+              setHasVideo(true);
+            }).catch((e) => {
+              console.warn("[ivs-viewer] video.play() failed:", e.message, "— retrying muted");
+              videoEl.muted = true;
+              videoEl.play().then(() => {
+                console.log("[ivs-viewer] video.play() muted succeeded");
+                setHasVideo(true);
+              }).catch((e2) => {
+                console.error("[ivs-viewer] video.play() muted also failed:", e2.message);
+              });
             });
-            console.log("[ivs-viewer] Video track attached to <video> element");
-          } else if (track.kind === "audio" && audioRef.current) {
-            const ms = new MediaStream([track]);
-            audioRef.current.srcObject = ms;
-            audioRef.current.play().catch(() => {});
-            console.log("[ivs-viewer] Audio track attached to <audio> element");
+          } else if (track.kind === "audio") {
+            const audioEl = audioRef.current;
+            if (audioEl) {
+              audioEl.srcObject = new MediaStream([track]);
+              audioEl.play().catch(() => {});
+              console.log("[ivs-viewer] Audio track attached");
+            }
           }
         }
       });
 
-      stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_REMOVED, (participant: any, streams: any[]) => {
+      stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_REMOVED, (participant: any) => {
         console.log("[ivs-viewer] Streams removed from:", participant?.userId);
         if (videoRef.current) videoRef.current.srcObject = null;
         if (audioRef.current) audioRef.current.srcObject = null;
+        setHasVideo(false);
       });
 
       stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (participant: any) => {
         console.log("[ivs-viewer] Participant left:", participant?.userId);
-        if (videoRef.current) videoRef.current.srcObject = null;
-        if (audioRef.current) audioRef.current.srcObject = null;
-        setStatus("ended");
+        if (!participant?.isLocal) {
+          if (videoRef.current) videoRef.current.srcObject = null;
+          if (audioRef.current) audioRef.current.srcObject = null;
+          setHasVideo(false);
+          setStatus("ended");
+        }
       });
 
       console.log("[ivs-viewer] Joining stage...");
       await stage.join();
-      console.log("[ivs-viewer] stage.join() resolved — connected");
+      console.log("[ivs-viewer] stage.join() resolved");
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to join stream";
@@ -145,34 +160,38 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   }, [joinStage]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-      {/* Video element — always in DOM, visible when watching */}
+    <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black" style={{ minHeight: 200 }}>
+      {/* Video — ALWAYS visible, muted for autoplay, red debug border */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
+        muted
         style={{
           width: "100%",
+          minHeight: 300,
           aspectRatio: "16/9",
           objectFit: "cover",
-          display: status === "watching" ? "block" : "none",
+          background: "#111",
+          border: hasVideo ? "none" : "2px solid #333",
         }}
       />
-      {/* Hidden audio element for separate audio track */}
       <audio ref={audioRef} autoPlay style={{ display: "none" }} />
 
-      {/* Status overlays */}
-      {(status === "loading" || status === "connecting") && (
-        <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+      {/* Status overlays — positioned OVER the video */}
+      {!hasVideo && (status === "loading" || status === "connecting" || status === "watching") && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: "none" }}>
           <div className="text-center">
             <div className="h-3 w-3 animate-ping rounded-full bg-red-500 mx-auto mb-3" />
-            <p className="text-sm text-zinc-400">Connecting to live stream...</p>
+            <p className="text-sm text-zinc-400">
+              {status === "watching" ? "Waiting for host video..." : "Connecting to live stream..."}
+            </p>
           </div>
         </div>
       )}
 
       {status === "error" && (
-        <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+        <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
           <div className="text-center px-6">
             <p className="text-sm text-red-400">{errorMsg || "Failed to load stream"}</p>
             <button
@@ -186,7 +205,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       )}
 
       {status === "ended" && (
-        <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+        <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
           <p className="text-sm text-zinc-500">Stream has ended</p>
         </div>
       )}
