@@ -807,3 +807,127 @@ async def update_project(
         .execute()
     )
     return updated.data
+
+
+# -----------------------------
+# Live Commerce MVP
+# -----------------------------
+
+class GoLiveRequest(BaseModel):
+    stream_url: str = Field(min_length=5, max_length=500)
+
+class PinOfferRequest(BaseModel):
+    offer_id: Optional[str] = None
+
+
+@router.post("/{project_id}/go-live")
+async def go_live(
+    project_id: str,
+    body: GoLiveRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    """Owner toggles stream ON with a stream URL."""
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id, privy_id")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+    resolved_owner = _resolve_owner_uuid(supabase, user_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == user_id)
+        or (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner)
+        or (project.get("privy_id") and project["privy_id"] == user_id)
+    )
+    if not owner_match:
+        raise HTTPException(status_code=403, detail="Not project owner")
+
+    supabase.table("projects").update({
+        "is_live": True,
+        "stream_url": body.stream_url.strip(),
+    }).eq("id", project_id).execute()
+
+    return {"status": "success", "is_live": True}
+
+
+@router.post("/{project_id}/end-live")
+async def end_live(
+    project_id: str,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    """Owner ends the live stream."""
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id, privy_id")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+    resolved_owner = _resolve_owner_uuid(supabase, user_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == user_id)
+        or (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner)
+        or (project.get("privy_id") and project["privy_id"] == user_id)
+    )
+    if not owner_match:
+        raise HTTPException(status_code=403, detail="Not project owner")
+
+    supabase.table("projects").update({
+        "is_live": False,
+        "stream_url": None,
+        "pinned_offer_id": None,
+    }).eq("id", project_id).execute()
+
+    return {"status": "success", "is_live": False}
+
+
+@router.post("/{project_id}/pin-offer")
+async def pin_offer(
+    project_id: str,
+    body: PinOfferRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    """Owner pins (or unpins) an offer during a live stream."""
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id, privy_id, is_live")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+    resolved_owner = _resolve_owner_uuid(supabase, user_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == user_id)
+        or (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner)
+        or (project.get("privy_id") and project["privy_id"] == user_id)
+    )
+    if not owner_match:
+        raise HTTPException(status_code=403, detail="Not project owner")
+
+    supabase.table("projects").update({
+        "pinned_offer_id": body.offer_id,
+    }).eq("id", project_id).execute()
+
+    return {"status": "success", "pinned_offer_id": body.offer_id}

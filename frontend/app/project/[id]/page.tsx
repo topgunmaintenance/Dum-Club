@@ -11,6 +11,7 @@ import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
+import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import {
   LineChart,
   Line,
@@ -62,6 +63,10 @@ type Project = {
       }
     | string
     | null;
+  is_live?: boolean;
+  stream_url?: string | null;
+  pinned_offer_id?: string | null;
+  active_auction_id?: string | null;
 };
 
 type GatedChatResponse = {
@@ -697,6 +702,36 @@ export default function ProjectPage() {
 
   // Live banner — shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
+
+  // Live Commerce state
+  const [liveStreamUrl, setLiveStreamUrl] = useState("");
+  const [goingLive, setGoingLive] = useState(false);
+  const [liveSalesCount, setLiveSalesCount] = useState(0);
+
+  // Auction state
+  type Auction = {
+    id: string;
+    project_id: string;
+    offer_id: string;
+    starting_price: number;
+    current_bid: number | null;
+    current_bidder: string | null;
+    current_bidder_display: string | null;
+    bid_count: number;
+    status: "active" | "ended" | "awaiting_payment" | "paid" | "voided" | "closed";
+    duration_seconds: number;
+    ends_at: string;
+    ended_at: string | null;
+  };
+  const [auction, setAuction] = useState<Auction | null>(null);
+  const [auctionBidAmount, setAuctionBidAmount] = useState("");
+  const [auctionBidding, setAuctionBidding] = useState(false);
+  const [auctionBidError, setAuctionBidError] = useState<string | null>(null);
+  const [auctionCountdown, setAuctionCountdown] = useState("");
+  const [auctionStarting, setAuctionStarting] = useState(false);
+  const [auctionStartPrice, setAuctionStartPrice] = useState("10");
+  const [auctionDuration, setAuctionDuration] = useState(120);
+  const [auctionOfferSelect, setAuctionOfferSelect] = useState<string | null>(null);
   const [bannerCopied, setBannerCopied] = useState(false);
 
   const [chatMeta, setChatMeta] = useState<{
@@ -1070,7 +1105,7 @@ export default function ProjectPage() {
     }
   }
 
-  async function buyOffer(offer: Offer) {
+  async function buyOffer(offer: Offer, auctionId?: string, overridePrice?: number) {
     const oid = offer.id;
     console.log("[buyOffer] clicked, offer:", oid, offer.title);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
@@ -1098,8 +1133,22 @@ export default function ProjectPage() {
       setBuyStep((p) => ({ ...p, [oid]: "demo_success" }));
       // Award DUM Points locally
       const pts = Number(localStorage.getItem("dum_points") || "0");
-      localStorage.setItem("dum_points", String(pts + 2));
+      localStorage.setItem("dum_points", String(pts + 10));
       window.dispatchEvent(new Event("dum-points-update"));
+      // Broadcast live purchase event
+      if (project?.is_live && id) {
+        setLiveSalesCount((c) => c + 1);
+        broadcastLiveEvent(id, {
+          user: authUser?.email || "Viewer",
+          text: `purchased ${offer.title} — +10 DUM`,
+          type: "purchase",
+        });
+        broadcastLiveEvent(id, {
+          user: "System",
+          text: `${authUser?.email || "A viewer"} earned +10 DUM Points`,
+          type: "reward",
+        });
+      }
       setTimeout(() => { setSimulatedPurchase(null); setBuyStep((p) => ({ ...p, [oid]: "" })); }, 6000);
       return;
     }
@@ -1134,6 +1183,9 @@ export default function ProjectPage() {
           success_url: cleanUrl,
           cancel_url: cleanUrl,
           use_dum_discount: !!dumDiscountApplied[oid],
+          source: auctionId ? "live_auction" : project?.is_live ? "live" : "normal",
+          ...(auctionId && { auction_id: auctionId }),
+          ...(overridePrice != null && { override_price: overridePrice }),
         }),
       });
 
@@ -1896,6 +1948,221 @@ export default function ProjectPage() {
       url.searchParams.delete("view");
     }
     window.history.replaceState({}, "", url.toString());
+  }
+
+  /* ── Live Commerce ────────────────────────────────── */
+  async function handleGoLive() {
+    if (!id || !liveStreamUrl.trim()) return;
+    setGoingLive(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ stream_url: liveStreamUrl.trim() }),
+      });
+      if (res.ok) {
+        setProject((prev) => prev ? { ...prev, is_live: true, stream_url: liveStreamUrl.trim() } : prev);
+        setLiveSalesCount(0);
+      }
+    } catch (err) {
+      console.error("Go live failed", err);
+    } finally {
+      setGoingLive(false);
+    }
+  }
+
+  async function handleEndLive() {
+    if (!id) return;
+    try {
+      await fetch(`${API_BASE}/api/projects/${id}/end-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+      });
+      setProject((prev) => prev ? { ...prev, is_live: false, stream_url: null, pinned_offer_id: null } : prev);
+    } catch (err) {
+      console.error("End live failed", err);
+    }
+  }
+
+  async function handlePinOffer(offerId: string | null) {
+    if (!id) return;
+    try {
+      await fetch(`${API_BASE}/api/projects/${id}/pin-offer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ offer_id: offerId }),
+      });
+      setProject((prev) => prev ? { ...prev, pinned_offer_id: offerId } : prev);
+    } catch (err) {
+      console.error("Pin offer failed", err);
+    }
+  }
+
+  const pinnedOffer = offers.find((o) => o.id === project?.pinned_offer_id) || null;
+  const auctionOffer = auction ? offers.find((o) => o.id === auction.offer_id) || null : null;
+  const isAuctionActive = auction?.status === "active";
+  const isAuctionWinner = auction?.status === "ended" && auction.current_bidder === authUser?.privyId;
+
+  /* ── Auction Functions ────────────────────────────── */
+  async function loadAuction() {
+    if (!project?.active_auction_id) { setAuction(null); return; }
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${project.active_auction_id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAuction(data);
+      }
+    } catch { setAuction(null); }
+  }
+
+  useEffect(() => { loadAuction(); }, [project?.active_auction_id]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!auction || auction.status !== "active") { setAuctionCountdown(""); return; }
+    function tick() {
+      const now = Date.now();
+      const end = new Date(auction!.ends_at).getTime();
+      const diff = Math.max(0, end - now);
+      if (diff <= 0) {
+        setAuctionCountdown("0:00");
+        // Auto-close when timer hits zero
+        fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        }).then(() => loadAuction()).catch(() => {});
+        return;
+      }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setAuctionCountdown(`${m}:${s.toString().padStart(2, "0")}`);
+    }
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [auction?.id, auction?.status, auction?.ends_at]);
+
+  // Poll auction state every 3 seconds while active
+  useEffect(() => {
+    if (!auction || auction.status !== "active") return;
+    const iv = setInterval(loadAuction, 3000);
+    return () => clearInterval(iv);
+  }, [auction?.id, auction?.status]);
+
+  async function handleStartAuction() {
+    if (!id || !auctionOfferSelect || !auctionStartPrice) return;
+    setAuctionStarting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({
+          project_id: id,
+          offer_id: auctionOfferSelect,
+          starting_price: Number(auctionStartPrice),
+          duration_seconds: auctionDuration,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuction(data.auction);
+        setProject((prev) => prev ? { ...prev, active_auction_id: data.auction.id, pinned_offer_id: data.auction.offer_id } : prev);
+        if (id) {
+          broadcastLiveEvent(id, {
+            user: "System",
+            text: `Auction started: ${data.offer_title} — starting at $${Number(auctionStartPrice).toFixed(0)} (${Math.floor(auctionDuration / 60)}:${(auctionDuration % 60).toString().padStart(2, "0")})`,
+            type: "system",
+          });
+        }
+      }
+    } catch (err) { console.error("Start auction failed", err); }
+    finally { setAuctionStarting(false); }
+  }
+
+  async function handlePlaceBid() {
+    if (!auction || !auctionBidAmount) return;
+    setAuctionBidding(true);
+    setAuctionBidError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${auction.id}/bid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ amount: Number(auctionBidAmount) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const bidAmount = Number(auctionBidAmount);
+        setAuction(data.auction);
+        setAuctionBidAmount("");
+        if (id) {
+          broadcastLiveEvent(id, {
+            user: data.your_display_name,
+            text: `placed a bid: $${bidAmount.toFixed(0)}`,
+            type: "purchase",
+          });
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setAuctionBidError(err.detail || "Bid failed");
+      }
+    } catch { setAuctionBidError("Network error"); }
+    finally { setAuctionBidding(false); }
+  }
+
+  async function handleCloseAuction(force: boolean) {
+    if (!auction) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${auction.id}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ force }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        loadAuction();
+        setProject((prev) => prev ? { ...prev, active_auction_id: null } : prev);
+        if (id) {
+          const msg = data.winner_display
+            ? `Auction ended! ${data.winner_display} wins — $${Number(data.winning_bid).toFixed(0)}`
+            : "Auction ended — no bids";
+          broadcastLiveEvent(id, { user: "System", text: msg, type: "system" });
+        }
+      }
+    } catch (err) { console.error("Close auction failed", err); }
+  }
+
+  async function handleAuctionPayNow() {
+    if (!auction || !auctionOffer) return;
+    // Demo mode: simulate payment
+    if (isDemo) {
+      const price = Number(auction.current_bid || 0);
+      setSimulatedPurchase(auctionOffer.title);
+      setSimulatedRevenue((prev) => prev + price);
+      setSimPurchaseCount((prev) => prev + 1);
+      setCheckoutResult("success");
+      setLiveSalesCount((c) => c + 1);
+      const pts = Number(localStorage.getItem("dum_points") || "0");
+      localStorage.setItem("dum_points", String(pts + 10));
+      window.dispatchEvent(new Event("dum-points-update"));
+      // Update auction status locally
+      setAuction((prev) => prev ? { ...prev, status: "paid" } : prev);
+      if (id) {
+        broadcastLiveEvent(id, {
+          user: auction.current_bidder_display || "Winner",
+          text: `purchased ${auctionOffer.title} for $${price.toFixed(0)} — +10 DUM`,
+          type: "purchase",
+        });
+        broadcastLiveEvent(id, {
+          user: "System",
+          text: `${auction.current_bidder_display || "Winner"} earned +10 DUM Points`,
+          type: "reward",
+        });
+      }
+      setTimeout(() => setSimulatedPurchase(null), 6000);
+      return;
+    }
+    // Real Stripe path — pass auction_id and override_price
+    buyOffer(auctionOffer, auction.id, Number(auction.current_bid));
   }
 
   /* ── Project Score ────────────────────────────────── */
@@ -2998,6 +3265,214 @@ return (
           </div>
         )}
       </div>
+
+      {/* ── LIVE NOW Banner + Stream ────────────────── */}
+      {project?.is_live && project.stream_url && (
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-3">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+              </span>
+              <span className="text-sm font-bold uppercase tracking-[0.2em] text-red-400">Live Now</span>
+              <span className="text-sm text-zinc-400">{projectName}</span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+              <iframe
+                src={project.stream_url}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+
+          {/* Pinned product / auction + chat side by side */}
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+
+            {/* ── Auction Widget (replaces pinned offer when auction active) ── */}
+            {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
+              <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
+                  {isAuctionActive && (
+                    <span className="font-mono text-lg font-bold text-white">{auctionCountdown}</span>
+                  )}
+                </div>
+
+                <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
+                {auctionOffer.description && (
+                  <p className="mt-1 text-sm text-zinc-400 line-clamp-1">{auctionOffer.description}</p>
+                )}
+
+                {/* Bid display */}
+                <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                        {auction.current_bid ? "Current Bid" : "Starting Price"}
+                      </div>
+                      <div className="font-mono text-2xl font-bold text-white">
+                        ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {auction.current_bidder_display && (
+                        <div className="text-sm text-zinc-400">by {auction.current_bidder_display}</div>
+                      )}
+                      <div className="text-[10px] text-zinc-600">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bidder state feedback */}
+                {isAuctionActive && !isOwner && authUser && (
+                  <>
+                    {auction.current_bidder === authUser.privyId ? (
+                      <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-semibold text-emerald-400">
+                        You are the highest bidder
+                      </div>
+                    ) : auction.current_bidder && (
+                      <div className="mt-3 space-y-2">
+                        {auctionBidError && (
+                          <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400">{auctionBidError}</div>
+                        )}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                            <input
+                              type="number"
+                              value={auctionBidAmount}
+                              onChange={(e) => setAuctionBidAmount(e.target.value)}
+                              placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
+                              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                            />
+                          </div>
+                          <button
+                            onClick={handlePlaceBid}
+                            disabled={auctionBidding || !auctionBidAmount}
+                            className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                          >
+                            {auctionBidding ? "..." : "Bid"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* First bid (no current bidder yet) */}
+                    {!auction.current_bidder && (
+                      <div className="mt-3 flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                          <input
+                            type="number"
+                            value={auctionBidAmount}
+                            onChange={(e) => setAuctionBidAmount(e.target.value)}
+                            placeholder={String(auction.starting_price)}
+                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                          />
+                        </div>
+                        <button
+                          onClick={handlePlaceBid}
+                          disabled={auctionBidding || !auctionBidAmount}
+                          className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        >
+                          {auctionBidding ? "..." : "Place Bid"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Winner Pay Now */}
+                {auction.status === "ended" && isAuctionWinner && (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-bold text-emerald-400">
+                      You Won!
+                    </div>
+                    <button
+                      onClick={handleAuctionPayNow}
+                      className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                    >
+                      Pay Now — ${Number(auction.current_bid).toFixed(2)}
+                    </button>
+                  </div>
+                )}
+
+                {/* Ended states for non-winners */}
+                {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
+                  </div>
+                )}
+                {(auction.status === "awaiting_payment" || auction.status === "paid") && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    {auction.status === "paid" ? `Sold for $${Number(auction.current_bid).toFixed(2)}` : "Completing payment..."}
+                  </div>
+                )}
+
+                {/* Not signed in */}
+                {isAuctionActive && !authUser && (
+                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                    Sign in to place a bid
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Standard Pinned Offer (Buy Now) ── */
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+                <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  {pinnedOffer ? "Featured Product" : "No product pinned"}
+                </div>
+                {pinnedOffer ? (
+                  <div>
+                    {pinnedOffer.primary_image_url && (
+                      <img
+                        src={pinnedOffer.primary_image_url}
+                        alt={pinnedOffer.title}
+                        className="mb-3 h-32 w-full rounded-xl object-cover"
+                      />
+                    )}
+                    <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
+                    {pinnedOffer.description && (
+                      <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-mono text-xl font-bold text-emerald-400">
+                        ${Number(pinnedOffer.price_usd).toFixed(2)}
+                      </span>
+                      {!isOwner && (
+                        <button
+                          onClick={() => buyOffer(pinnedOffer)}
+                          disabled={!!buyingOfferId}
+                          className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                        >
+                          {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-600">
+                    {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Live Chat */}
+            <LiveChat
+              projectId={id as string}
+              userName={authUser?.email || null}
+              isOwner={isOwner}
+            />
+          </div>
+        </div>
+      )}
 
       <div
         id="section-top"
@@ -4199,7 +4674,7 @@ return (
                   {/* Demo purchase success feedback */}
                   {buyStep[offer.id] === "demo_success" && (
                     <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-300">
-                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +2 DUM Points earned
+                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +10 DUM Points earned
                     </div>
                   )}
 
@@ -4386,6 +4861,190 @@ return (
       )}
 
 
+      {/* ── Live Control Panel (Owner Only) ──────────── */}
+      {isOwner && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">Live Commerce</div>
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            {project?.is_live ? "You are LIVE" : "Go Live"}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {project?.is_live ? "Your stream is active. Viewers can see your products and buy in real time." : "Start a live stream to sell products in real time."}
+          </p>
+
+          {project?.is_live ? (
+            <div className="mt-5 space-y-4">
+              {/* Live stats */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    <span className="font-bold text-red-400">LIVE</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Sales This Stream</div>
+                  <div className="mt-2 font-mono text-lg text-white">{liveSalesCount}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Pinned Product</div>
+                  <div className="mt-2 text-sm text-white">{pinnedOffer?.title || "None"}</div>
+                </div>
+              </div>
+
+              {/* Pin offer selector */}
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Pin a Product</div>
+                <div className="flex flex-wrap gap-2">
+                  {offers.filter((o) => o.is_active).map((offer) => (
+                    <button
+                      key={offer.id}
+                      onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
+                      className={`rounded-xl border px-3 py-2 text-sm transition ${
+                        offer.id === project.pinned_offer_id
+                          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                      {offer.id === project.pinned_offer_id && " (pinned)"}
+                    </button>
+                  ))}
+                  {offers.filter((o) => o.is_active).length === 0 && (
+                    <p className="text-sm text-zinc-600">No active offers to pin. Create an offer first.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Auction Controls ── */}
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-amber-400/70">Auction</div>
+
+                {isAuctionActive && auction ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
+                        <div className="text-xs text-zinc-500">
+                          {auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""} · ends in {auctionCountdown}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-lg font-bold text-white">
+                          ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
+                        </div>
+                        {auction.current_bidder_display && (
+                          <div className="text-xs text-zinc-500">{auction.current_bidder_display}</div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCloseAuction(true)}
+                      className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-400/20"
+                    >
+                      End Auction Early
+                    </button>
+                  </div>
+                ) : auction && auction.status === "ended" ? (
+                  <div className="space-y-2">
+                    <div className="text-sm text-white">
+                      Winner: <span className="font-semibold">{auction.current_bidder_display || "—"}</span> — ${Number(auction.current_bid).toFixed(2)}
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      {auction.status === "ended" ? "Awaiting payment" : auction.status}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm text-zinc-500">Start an auction on one of your offers.</div>
+                    <div className="flex flex-wrap gap-2">
+                      {offers.filter((o) => o.is_active).map((offer) => (
+                        <button
+                          key={offer.id}
+                          onClick={() => setAuctionOfferSelect(offer.id === auctionOfferSelect ? null : offer.id)}
+                          className={`rounded-xl border px-3 py-2 text-sm transition ${
+                            offer.id === auctionOfferSelect
+                              ? "border-amber-400/40 bg-amber-400/10 text-amber-400"
+                              : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                          }`}
+                        >
+                          {offer.title}
+                        </button>
+                      ))}
+                    </div>
+                    {auctionOfferSelect && (
+                      <div className="flex items-end gap-3">
+                        <div>
+                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Starting $</div>
+                          <input
+                            type="number"
+                            value={auctionStartPrice}
+                            onChange={(e) => setAuctionStartPrice(e.target.value)}
+                            className="w-24 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+                          />
+                        </div>
+                        <div>
+                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Duration</div>
+                          <select
+                            value={auctionDuration}
+                            onChange={(e) => setAuctionDuration(Number(e.target.value))}
+                            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+                          >
+                            <option value={60}>1 min</option>
+                            <option value={120}>2 min</option>
+                            <option value={300}>5 min</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={handleStartAuction}
+                          disabled={auctionStarting}
+                          className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        >
+                          {auctionStarting ? "Starting..." : "Start Auction"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* End stream */}
+              <button
+                onClick={handleEndLive}
+                className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
+              >
+                End Stream
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={liveStreamUrl}
+                  onChange={(e) => setLiveStreamUrl(e.target.value)}
+                  placeholder="Paste stream URL (YouTube Live, Twitch, etc.)"
+                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40"
+                />
+                <button
+                  onClick={handleGoLive}
+                  disabled={goingLive || !liveStreamUrl.trim()}
+                  className="rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
+                >
+                  {goingLive ? "Starting..." : "Go Live"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-zinc-600">
+                Supports any embeddable video URL. Start your stream on YouTube/Twitch first, then paste the embed link here.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {isOwner && (
         <details id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
@@ -4475,325 +5134,308 @@ return (
       )}
 
 
-      {/* ── Project Score (Analytics view) ────────────────────────── */}
+      {/* ── AI Tools (Score + Builder — Analytics view) ────────────── */}
       {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              AI Evaluation
-            </span>
-            <button
-              onClick={evaluateProjectScore}
-              disabled={scoreLoading}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
-            >
-              {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Project Score</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            AI-powered evaluation of your project's strength
-          </p>
-
-          {scoreLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">Evaluating your project...</span>
-              </div>
+        <details className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
+          <summary className="flex cursor-pointer items-center justify-between hover:text-zinc-300">
+            <div>
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Owner Tools</div>
+              <h2 className="text-xl font-bold text-white tracking-tight">AI Tools</h2>
+              <p className="mt-1 text-sm text-zinc-500">Score, improve, and build your project with AI</p>
             </div>
-          )}
-
-          {!scoreLoading && !projectScore && (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-              <p className="text-sm text-zinc-600">
-                Click "Score My Project" to get an AI evaluation
-              </p>
-            </div>
-          )}
-
-          {!scoreLoading && projectScore && (
-            <div className="mt-5 space-y-4">
-              {(["virality", "trust", "utility"] as const).map((dim) => {
-                const entry = projectScore[dim];
-                const label = dim.charAt(0).toUpperCase() + dim.slice(1);
-                return (
-                  <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-white">{label}</span>
-                      <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
-                        {entry.score}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
-                        style={{ width: `${entry.score}%` }}
-                      />
-                    </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
-                      <button
-                        onClick={() => {
-                          const tips: Record<string, string> = {
-                            virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
-                            trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
-                            utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
-                          };
-                          const action = builderActions.find((a) => a.key === "roast")!;
-                          const improveAction: BuilderActionDef = {
-                            ...action,
-                            key: `improve_${dim}`,
-                            label: `Improve ${label}`,
-                            prompt: (p) =>
-                              `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
-                          };
-                          runBuilderAction(improveAction, null);
-                        }}
-                        className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
-                      >
-                        Improve →
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
-                <span className="font-mono text-2xl font-bold text-white">
-                  {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
-                </span>
-                <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-
-
-      {/* ── BUILD & IMPROVE ──────────────────────── */}
-      {isOwner && (
-        <div className="mb-6 mt-2 flex items-center gap-4">
-          <div className="h-px flex-1 bg-zinc-800" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-600">Build &amp; Improve</span>
-          <div className="h-px flex-1 bg-zinc-800" />
-        </div>
-      )}
-
-      {/* ── AI Project Builder (Owner Only — Analytics view) ────────── */}
-      {isOwner && projectView === "analytics" && (
-        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/60">
-              Owner Tools
-            </span>
-            <button
-              onClick={togglePitchMode}
-              className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
-            >
-              Presentation Mode
-            </button>
-          </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            DUM AI Business Builder
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Improve your project page and promo copy with AI
-          </p>
-
-          {/* Action buttons */}
-          {!builderAction && !storePickerFor && (
-            <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "project").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
-                <div className="flex flex-wrap gap-2">
-                  {builderActions.filter((a) => a.group === "store").map((a) => (
-                    <button
-                      key={a.key}
-                      onClick={() => initiateBuilderAction(a)}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Item picker for store actions */}
-          {storePickerFor && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                Select an item
-              </div>
-              <div className="space-y-2">
-                {storeItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === storePickerFor);
-                      if (action) runBuilderAction(action, item);
-                    }}
-                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
-                  >
-                    <div className="text-sm font-medium text-white">{item.name}</div>
-                    <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setStorePickerFor(null)}
-                className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                onClick={(e) => { e.preventDefault(); togglePitchMode(); }}
+                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
               >
-                Cancel
+                Presentation Mode
+              </button>
+              <span className="text-[10px] text-zinc-600">Click to expand</span>
+            </div>
+          </summary>
+
+          {/* ── Project Score ── */}
+          <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-[0.3em] text-zinc-500">Project Score</span>
+              <button
+                onClick={evaluateProjectScore}
+                disabled={scoreLoading}
+                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+              >
+                {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
               </button>
             </div>
-          )}
 
-          {/* Loading state */}
-          {builderLoading && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-sm text-zinc-400">
-                  DUM AI is analyzing your project...
-                </span>
+            {scoreLoading && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <span className="text-sm text-zinc-400">Evaluating your project...</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Preview panel */}
-          {builderResult && !builderLoading && (
-            <div className="mt-5 space-y-4">
-              {builderField && builderResult.current && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    Current
-                  </div>
-                  <div className="text-sm leading-relaxed text-zinc-400">
-                    {builderResult.current}
+            {!scoreLoading && !projectScore && (
+              <div className="rounded-2xl border border-dashed border-zinc-800 p-6 text-center">
+                <p className="text-sm text-zinc-600">Click &ldquo;Score My Project&rdquo; to get an AI evaluation</p>
+              </div>
+            )}
+
+            {!scoreLoading && projectScore && (
+              <div className="space-y-3">
+                {(["virality", "trust", "utility"] as const).map((dim) => {
+                  const entry = projectScore[dim];
+                  const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+                  return (
+                    <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-white">{label}</span>
+                        <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
+                          {entry.score}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
+                          style={{ width: `${entry.score}%` }}
+                        />
+                      </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
+                        <button
+                          onClick={() => {
+                            const tips: Record<string, string> = {
+                              virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
+                              trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
+                              utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
+                            };
+                            const action = builderActions.find((a) => a.key === "roast")!;
+                            const improveAction: BuilderActionDef = {
+                              ...action,
+                              key: `improve_${dim}`,
+                              label: `Improve ${label}`,
+                              prompt: (p) =>
+                                `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                            };
+                            runBuilderAction(improveAction, null);
+                          }}
+                          className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
+                        >
+                          Improve →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                  <span className="font-mono text-2xl font-bold text-white">
+                    {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
+                  </span>
+                  <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Business Builder ── */}
+          <div className="mt-6">
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">Business Builder</div>
+
+            {/* Action buttons */}
+            {!builderAction && !storePickerFor && (
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
+                  <div className="flex flex-wrap gap-2">
+                    {builderActions.filter((a) => a.group === "project").map((a) => (
+                      <button
+                        key={a.key}
+                        onClick={() => initiateBuilderAction(a)}
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
+                <div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
+                  <div className="flex flex-wrap gap-2">
+                    {builderActions.filter((a) => a.group === "store").map((a) => (
+                      <button
+                        key={a.key}
+                        onClick={() => initiateBuilderAction(a)}
+                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
-                    {builderAction === "roast" ? "Roast"
-                      : builderAction === "promo" ? "Promo Copy"
-                      : builderAction === "store_ideas" ? "Product Ideas"
-                      : builderAction === "store_subscription" ? "Subscription Offer"
-                      : builderAction === "store_improve_desc" ? "Improved Description"
-                      : builderAction === "store_pricing" ? "Suggested Price"
-                      : "Suggested"}
-                  </span>
-                  {(builderAction === "promo" || builderAction === "roast") && (
+            {/* Item picker for store actions */}
+            {storePickerFor && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  Select an item
+                </div>
+                <div className="space-y-2">
+                  {storeItems.map((item) => (
                     <button
-                      onClick={() => copyToClipboard(builderResult.suggested, "text")}
-                      className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                      key={item.id}
+                      onClick={() => {
+                        const action = builderActions.find((a) => a.key === storePickerFor);
+                        if (action) runBuilderAction(action, item);
+                      }}
+                      className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
                     >
-                      Copy
+                      <div className="text-sm font-medium text-white">{item.name}</div>
+                      <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setStorePickerFor(null)}
+                  className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Loading state */}
+            {builderLoading && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  <span className="text-sm text-zinc-400">
+                    DUM AI is analyzing your project...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Preview panel */}
+            {builderResult && !builderLoading && (
+              <div className="mt-4 space-y-4">
+                {builderField && builderResult.current && (
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                      Current
+                    </div>
+                    <div className="text-sm leading-relaxed text-zinc-400">
+                      {builderResult.current}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                      {builderAction === "roast" ? "Roast"
+                        : builderAction === "promo" ? "Promo Copy"
+                        : builderAction === "store_ideas" ? "Product Ideas"
+                        : builderAction === "store_subscription" ? "Subscription Offer"
+                        : builderAction === "store_improve_desc" ? "Improved Description"
+                        : builderAction === "store_pricing" ? "Suggested Price"
+                        : "Suggested"}
+                    </span>
+                    {(builderAction === "promo" || builderAction === "roast") && (
+                      <button
+                        onClick={() => copyToClipboard(builderResult.suggested, "text")}
+                        className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                    {builderResult.suggested}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  {builderAction !== "roast" && (
+                    <button
+                      onClick={applyBuilderResult}
+                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                    >
+                      Apply
                     </button>
                   )}
-                </div>
-                <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
-                  {builderResult.suggested}
+                  {builderAction !== "roast" && (
+                    <button
+                      onClick={() => {
+                        const action = builderActions.find((a) => a.key === builderAction);
+                        if (action) runBuilderAction(action, storeTargetItem);
+                      }}
+                      className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                    >
+                      Regenerate
+                    </button>
+                  )}
+                  <button
+                    onClick={dismissBuilder}
+                    className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    {builderAction === "roast" ? "Dismiss" : "Cancel"}
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div className="flex gap-2">
-                {builderAction !== "roast" && (
+            {/* Saved promo copy display */}
+            {!builderAction && promoCopy && (
+              <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                    Saved Promo Copy
+                  </span>
                   <button
-                    onClick={applyBuilderResult}
-                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                    onClick={() => copyToClipboard(promoCopy, "promo copy")}
+                    className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
                   >
-                    Apply
+                    Copy
+                  </button>
+                </div>
+                <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                  {promoCopy}
+                </div>
+              </div>
+            )}
+
+            {/* Share project */}
+            {!builderAction && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => copyToClipboard(window.location.href, "project link")}
+                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Share Project Link
+                </button>
+                {promoCopy && (
+                  <button
+                    onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
+                    className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                  >
+                    Share Promo + Link
                   </button>
                 )}
-                {builderAction !== "roast" && (
-                  <button
-                    onClick={() => {
-                      const action = builderActions.find((a) => a.key === builderAction);
-                      if (action) runBuilderAction(action, storeTargetItem);
-                    }}
-                    className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
-                  >
-                    Regenerate
-                  </button>
-                )}
-                <button
-                  onClick={dismissBuilder}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-                >
-                  {builderAction === "roast" ? "Dismiss" : "Cancel"}
-                </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Saved promo copy display */}
-          {!builderAction && promoCopy && (
-            <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                  Saved Promo Copy
-                </span>
-                <button
-                  onClick={() => copyToClipboard(promoCopy, "promo copy")}
-                  className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
-                >
-                  Copy
-                </button>
+            {/* Success toast */}
+            {builderToast && (
+              <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
+                <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
               </div>
-              <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
-                {promoCopy}
-              </div>
-            </div>
-          )}
-
-          {/* Share project */}
-          {!builderAction && (
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => copyToClipboard(window.location.href, "project link")}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
-              >
-                Share Project Link
-              </button>
-              {promoCopy && (
-                <button
-                  onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
-                >
-                  Share Promo + Link
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Success toast */}
-          {builderToast && (
-            <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
-              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </details>
       )}
 
 
@@ -5511,102 +6153,86 @@ return (
             </div>
           </div>
         </div>
-      ) : projectView === "analytics" && isApprovedProject ? (
-        <div className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Business Overview</div>
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">{launchSectionHeading}</h2>
-          <p className="mt-2 text-sm text-zinc-500">{nextStepHint || "Your business is live on DUM Club."}</p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
-              <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-white">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
-              <div className="mt-2 text-white">Stripe + DUM</div>
-            </div>
-          </div>
-        </div>
       ) : (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Setup</div>
-          <h2 className="text-3xl font-bold text-white">{projectName}</h2>
-          <p className="mt-3 max-w-3xl text-zinc-400">
-            {project?.description || parsedAiOutput?.description || "No description available yet."}
+        <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-emerald-400/10" : "border-zinc-900"} border bg-zinc-950 p-6`}>
+          <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-emerald-400/60" : "text-zinc-600"}`}>
+            Business Status
+          </div>
+
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            {isApprovedProject ? launchSectionHeading : projectName}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            {isApprovedProject
+              ? (nextStepHint || "Your business is live on DUM Club.")
+              : (project?.description || parsedAiOutput?.description || "No description available yet.")}
           </p>
 
-          <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-            {category}
-          </div>
+          {isApprovedProject ? (
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
+                <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                <div className="mt-2 text-white">DUM Points</div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
+                <div className="mt-2 text-white">Stripe + DUM</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
+                {category}
+              </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business</div>
-              <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-emerald-400">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
-              <div className="mt-2 text-white">{reviewStatus}</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
-              <div className="mt-2 text-white">{project?.status || "draft"}</div>
-            </div>
-          </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
+                  <div className="mt-2 text-white">{reviewStatus}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
+                  <div className="mt-2 text-white">{project?.status || "draft"}</div>
+                </div>
+                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+                  <div className="mt-2 text-emerald-400">DUM Points</div>
+                </div>
+              </div>
 
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
-            <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
-            <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
-          </div>
+              <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
+                <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
+              </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
-            >
-              Edit Project
-            </Link>
-            {(reviewStatus === "draft" || reviewStatus === "pending") && (
-              <button
-                type="button"
-                onClick={() => submitReview()}
-                disabled={loadingAction}
-                className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                style={{ background: accent }}
-              >
-                {loadingAction ? "Submitting..." : "Submit for Review"}
-              </button>
-            )}
-          </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard"
+                  className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
+                >
+                  Edit Project
+                </Link>
+                {(reviewStatus === "draft" || reviewStatus === "pending") && (
+                  <button
+                    type="button"
+                    onClick={() => submitReview()}
+                    disabled={loadingAction}
+                    className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
+                    style={{ background: accent }}
+                  >
+                    {loadingAction ? "Submitting..." : "Submit for Review"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Business Status</div>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Rewards</div>
-              <div className="mt-2 text-lg text-emerald-400">DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Discounts</div>
-              <div className="mt-2 text-lg text-white">10% off with DUM Points</div>
-            </div>
-            <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Status</div>
-              <div className="mt-2 text-lg text-emerald-400">Live</div>
-            </div>
-          </div>
-        </div>
 
         <details className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-zinc-600 hover:text-zinc-400">
@@ -5654,39 +6280,6 @@ return (
           </div>
         </details>
 
-        {!isApprovedProject && (
-          <div id="review-pipeline" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Review Summary</div>
-
-            <h2 className="text-3xl font-bold text-white">Submission Details</h2>
-
-            <p className="mt-3 max-w-3xl text-zinc-500">
-              This section shows the project details used during review. Submit action is available
-              from the business setup panel above.
-            </p>
-
-            <p className="mt-3 text-sm text-zinc-400">
-              Review: {reviewStatus} · Publication: {project?.status || "draft"}
-            </p>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Business Name</div>
-                <div className="mt-2 text-white">{project?.title || project?.name || "-"}</div>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-                <div className="mt-2 text-emerald-400">DUM Points</div>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Perks</div>
-                <div className="mt-2 text-white">
-                  {parsedAiOutput?.token_utility || project?.token_utility || "Discounts and rewards for customers"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {false && (
         <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
