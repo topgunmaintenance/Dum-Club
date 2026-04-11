@@ -879,7 +879,7 @@ export default function ProjectPage() {
     if (!id) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/memories?project_id=${id}`);
+      const res = await fetch(`${API_BASE}/api/memories/?project_id=${id}`);
       if (!res.ok) throw new Error("Failed to load memories");
 
       const data = await res.json();

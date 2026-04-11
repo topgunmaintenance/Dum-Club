@@ -65,6 +65,7 @@ app = FastAPI(
     description="Digital Utility Model Club — Solana-native AI app builder",
     version="0.2.0",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 _LOCALHOST_ORIGINS = [

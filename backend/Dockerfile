@@ -24,4 +24,4 @@ COPY . .
 # package.json and scripts/ must exist in backend/ (copied via CI or manually)
 RUN if [ -f package.json ]; then npm install --production; else echo "[docker] No package.json — Solana minting will use DB fallback"; fi
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
