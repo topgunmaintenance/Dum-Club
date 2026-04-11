@@ -71,12 +71,29 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
         body: JSON.stringify({ project_id: projectId }),
       });
 
+      let data: any;
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Stage creation failed (${res.status})`);
+        if (res.status === 409) {
+          // Stage already exists — get a fresh host token
+          console.log("[ivs-host] Stage already exists, requesting host token...");
+          const tokenRes = await fetch(`${API_BASE}/api/ivs/host-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", user_id: userId },
+            body: JSON.stringify({ project_id: projectId }),
+          });
+          if (!tokenRes.ok) {
+            const tokenErr = await tokenRes.json().catch(() => ({}));
+            throw new Error(tokenErr.detail || "Failed to get host token");
+          }
+          const tokenData = await tokenRes.json();
+          data = { host_token: tokenData.token, stage_id: "existing" };
+        } else {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Stage creation failed (${res.status})`);
+        }
+      } else {
+        data = await res.json();
       }
-
-      const data = await res.json();
       console.log("[ivs-host] Stage created:", data.stage_id);
 
       if (!data.host_token) {
@@ -95,12 +112,10 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
 
       if (!videoTrack || !audioTrack) throw new Error("Missing video or audio track");
 
-      // Create media stream outputs for IVS
-      const mediaStream = new MediaStream([videoTrack, audioTrack]);
-
       // Strategy tells IVS what to publish
       const strategy = {
         stageStreamsToPublish: () => {
+          if (!videoTrack.readyState || videoTrack.readyState === "ended") return [];
           return [
             new LocalStageStream(videoTrack),
             new LocalStageStream(audioTrack),

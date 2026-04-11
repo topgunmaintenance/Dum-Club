@@ -34,6 +34,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       }
 
       const data = await res.json();
+      if (!data.token) throw new Error("No viewer token received from server");
       console.log("[ivs-viewer] Viewer token received");
 
       // 2. Load IVS SDK
