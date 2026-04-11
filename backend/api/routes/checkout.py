@@ -194,7 +194,18 @@ async def create_payment_intent(
     else:
         print(f"[checkout] Unlimited inventory or no limit set: unlimited={is_unlimited}, qty_available={qty_available}")
 
-    # 5. Create Stripe Checkout Session
+    # 5. Resolve buyer email for Stripe receipt
+    buyer_email = body.buyer_email
+    if not buyer_email and privy_id:
+        try:
+            user_res = supabase.table("users").select("email").eq("privy_id", privy_id).limit(1).execute()
+            if user_res.data:
+                buyer_email = user_res.data[0].get("email")
+        except Exception:
+            pass
+    print(f"[checkout] Buyer email for receipt: {buyer_email or 'none — Stripe will collect'}")
+
+    # 6. Create Stripe Checkout Session
     s = _get_stripe()
     success_url = body.success_url or "https://dum-club.vercel.app/dashboard"
     cancel_url = body.cancel_url or success_url
@@ -210,9 +221,9 @@ async def create_payment_intent(
     print(f"[checkout] Creating Stripe session: offer={offer['id']}, amount_cents={amount_cents}, buyer={buyer_user_id}")
 
     try:
-        session = s.checkout.Session.create(
-            mode="payment",
-            line_items=[{
+        session_params = {
+            "mode": "payment",
+            "line_items": [{
                 "price_data": {
                     "currency": "usd",
                     "unit_amount": amount_cents,
@@ -223,15 +234,19 @@ async def create_payment_intent(
                 },
                 "quantity": 1,
             }],
-            metadata={
+            "metadata": {
                 "offer_id": offer["id"],
                 "buyer_user_id": buyer_user_id,
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
             },
-            success_url=_append_query_param(success_url, "checkout", "success"),
-            cancel_url=_append_query_param(cancel_url, "checkout", "cancelled"),
-        )
+            "success_url": _append_query_param(success_url, "checkout", "success"),
+            "cancel_url": _append_query_param(cancel_url, "checkout", "cancelled"),
+        }
+        if buyer_email:
+            session_params["customer_email"] = buyer_email
+            session_params["payment_intent_data"] = {"receipt_email": buyer_email}
+        session = s.checkout.Session.create(**session_params)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")
 
