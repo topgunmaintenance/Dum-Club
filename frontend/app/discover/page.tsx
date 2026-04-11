@@ -1157,7 +1157,7 @@ export default function DiscoverPage() {
 
                     <div className="mt-5 flex items-center justify-between gap-3 border-t border-zinc-800/60 pt-4">
                       <span className="text-xs font-medium text-zinc-400 transition group-hover:text-emerald-400">
-                        {hasOffers(project) ? "View Offers →" : "View Project →"}
+                        {project.is_live ? "Tap to watch & earn →" : hasOffers(project) ? "View Offers →" : "View Project →"}
                       </span>
                       <div className="flex items-center gap-2">
                         {(() => {

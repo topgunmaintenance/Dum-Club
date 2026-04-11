@@ -721,6 +721,10 @@ export default function ProjectPage() {
   const [keyCopied, setKeyCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [goLiveError, setGoLiveError] = useState<string | null>(null);
+  const [cameraPreview, setCameraPreview] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [showAdvancedLive, setShowAdvancedLive] = useState(false);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
 
   // Auction state
   type Auction = {
@@ -1962,6 +1966,68 @@ export default function ProjectPage() {
       url.searchParams.delete("view");
     }
     window.history.replaceState({}, "", url.toString());
+  }
+
+  /* ── Camera Preview ────────────────────────────────── */
+  async function startCameraPreview() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setCameraStream(stream);
+      setCameraPreview(true);
+      // Attach to video element after render
+      setTimeout(() => {
+        if (previewVideoRef.current) {
+          previewVideoRef.current.srcObject = stream;
+        }
+      }, 50);
+    } catch (err) {
+      setGoLiveError("Camera access denied. Please allow camera and microphone.");
+    }
+  }
+
+  function cancelCameraPreview() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+    setCameraPreview(false);
+  }
+
+  async function startLiveFromCamera() {
+    // Stop camera preview tracks (they were just for preview)
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+    setCameraPreview(false);
+    // Use manual_embed with a placeholder — the camera preview was for UX only
+    // Actual streaming requires the Mux pipeline (advanced mode)
+    // For now, set live with manual_embed to enable all live commerce features
+    setLiveMode("manual_embed");
+    setLiveStreamUrl("");
+    setGoingLive(true);
+    setGoLiveError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ provider: "manual_embed", stream_url: "camera://local" }),
+      });
+      if (res.ok) {
+        setProject((prev) => prev ? {
+          ...prev, is_live: true, live_provider: "manual_embed",
+          stream_url: "camera://local", live_playback_id: null,
+        } : prev);
+        setLiveSalesCount(0);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setGoLiveError(typeof errData.detail === "string" ? errData.detail : "Failed to go live");
+      }
+    } catch (err) {
+      setGoLiveError("Network error — please try again");
+    } finally {
+      setGoingLive(false);
+    }
   }
 
   /* ── Live Commerce ────────────────────────────────── */
@@ -3338,6 +3404,19 @@ return (
                 secondaryColor="#09090b"
                 accentColor="#10b981"
               />
+            ) : project.stream_url === "camera://local" ? (
+              <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                    </span>
+                    <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
+                  </div>
+                  <p className="text-xs text-zinc-500">Browse products and chat below</p>
+                </div>
+              </div>
             ) : project.stream_url ? (
               <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
                 <iframe
@@ -3348,6 +3427,12 @@ return (
                 />
               </div>
             ) : null}
+          </div>
+
+          {/* Reward visibility */}
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5 mb-4">
+            <span className="text-emerald-400 text-sm font-semibold">Earn DUM when you buy</span>
+            <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
           </div>
 
           {/* Pinned product / auction + chat side by side */}
@@ -4920,89 +5005,35 @@ return (
       )}
 
 
-      {/* ── Live Control Panel (Owner Only) ──────────── */}
+      {/* ── Live Control Panel (Owner Only) — 1-Tap Go Live ──────────── */}
       {isOwner && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">Live Commerce</div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            {project?.is_live ? "You are LIVE" : "Go Live"}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {project?.is_live ? "Your stream is active. Viewers can see your products and buy in real time." : "Start a live stream to sell products in real time."}
-          </p>
 
           {project?.is_live ? (
-            <div className="mt-5 space-y-4">
-              {/* Live stats */}
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                    </span>
-                    <span className="font-bold text-red-400">LIVE</span>
-                  </div>
+            /* ══ LIVE STATE — selling controls ══ */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                  </span>
+                  <h2 className="text-xl font-bold text-white">You're Live</h2>
                 </div>
-                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Sales This Stream</div>
-                  <div className="mt-2 font-mono text-lg text-white">{liveSalesCount}</div>
-                </div>
-                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Pinned Product</div>
-                  <div className="mt-2 text-sm text-white">{pinnedOffer?.title || "None"}</div>
+                <div className="flex items-center gap-3 text-sm text-zinc-500">
+                  <span>{liveSalesCount} sale{liveSalesCount !== 1 ? "s" : ""}</span>
+                  <button
+                    onClick={handleEndLive}
+                    className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
+                  >
+                    End Stream
+                  </button>
                 </div>
               </div>
 
-              {/* Mux stream setup (native live only) */}
-              {project?.live_provider === "native_mux" && (muxStreamKey || project.live_stream_key) && (
-                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 space-y-3">
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">Stream Setup</div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-[10px] text-zinc-600 mb-1">Ingest URL</div>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 font-mono truncate">
-                          {muxIngestUrl || project.live_ingest_url || "—"}
-                        </code>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(muxIngestUrl || project?.live_ingest_url || ""); setUrlCopied(true); setTimeout(() => setUrlCopied(false), 2000); }}
-                          className="shrink-0 rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-400 transition hover:text-white"
-                        >
-                          {urlCopied ? "Copied" : "Copy"}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-zinc-600 mb-1">Stream Key</div>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 font-mono truncate">
-                          {muxStreamKey || project.live_stream_key || "—"}
-                        </code>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(muxStreamKey || project?.live_stream_key || ""); setKeyCopied(true); setTimeout(() => setKeyCopied(false), 2000); }}
-                          className="shrink-0 rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-400 transition hover:text-white"
-                        >
-                          {keyCopied ? "Copied" : "Copy"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-zinc-800 bg-base p-3 text-xs text-zinc-500 space-y-1">
-                    <div className="font-semibold text-zinc-400">OBS Setup:</div>
-                    <div>1. Open OBS → Settings → Stream</div>
-                    <div>2. Service: Custom</div>
-                    <div>3. Paste Ingest URL as Server</div>
-                    <div>4. Paste Stream Key</div>
-                    <div>5. Start Streaming</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Pin offer selector */}
+              {/* Product selector — immediate access */}
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Pin a Product</div>
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
                 <div className="flex flex-wrap gap-2">
                   {offers.filter((o) => o.is_active).map((offer) => (
                     <button
@@ -5019,178 +5050,121 @@ return (
                     </button>
                   ))}
                   {offers.filter((o) => o.is_active).length === 0 && (
-                    <p className="text-sm text-zinc-600">No active offers to pin. Create an offer first.</p>
+                    <p className="text-sm text-zinc-600">No offers yet. Create one from your dashboard.</p>
                   )}
                 </div>
               </div>
 
-              {/* ── Auction Controls ── */}
+              {/* Auction controls */}
               <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.03] p-4">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-amber-400/70">Auction</div>
-
                 {isAuctionActive && auction ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
-                        <div className="text-xs text-zinc-500">
-                          {auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""} · ends in {auctionCountdown}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-lg font-bold text-white">
-                          ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
-                        </div>
-                        {auction.current_bidder_display && (
-                          <div className="text-xs text-zinc-500">{auction.current_bidder_display}</div>
-                        )}
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
+                      <div className="text-xs text-zinc-500">{auction.bid_count} bids · {auctionCountdown}</div>
                     </div>
-                    <button
-                      onClick={() => handleCloseAuction(true)}
-                      className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-400/20"
-                    >
-                      End Auction Early
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(0)}</span>
+                      <button onClick={() => handleCloseAuction(true)} className="rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs text-amber-400 hover:bg-amber-400/10">End</button>
+                    </div>
                   </div>
                 ) : auction && auction.status === "ended" ? (
-                  <div className="space-y-2">
-                    <div className="text-sm text-white">
-                      Winner: <span className="font-semibold">{auction.current_bidder_display || "—"}</span> — ${Number(auction.current_bid).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-zinc-500">
-                      {auction.status === "ended" ? "Awaiting payment" : auction.status}
-                    </div>
-                  </div>
+                  <div className="text-sm text-zinc-400">Winner: {auction.current_bidder_display || "—"} — ${Number(auction.current_bid).toFixed(0)}</div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="text-sm text-zinc-500">Start an auction on one of your offers.</div>
+                  <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
                       {offers.filter((o) => o.is_active).map((offer) => (
-                        <button
-                          key={offer.id}
-                          onClick={() => setAuctionOfferSelect(offer.id === auctionOfferSelect ? null : offer.id)}
-                          className={`rounded-xl border px-3 py-2 text-sm transition ${
-                            offer.id === auctionOfferSelect
-                              ? "border-amber-400/40 bg-amber-400/10 text-amber-400"
-                              : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
-                          }`}
-                        >
-                          {offer.title}
-                        </button>
+                        <button key={offer.id} onClick={() => setAuctionOfferSelect(offer.id === auctionOfferSelect ? null : offer.id)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${offer.id === auctionOfferSelect ? "border-amber-400/40 text-amber-400" : "border-zinc-800 text-zinc-500"}`}
+                        >{offer.title}</button>
                       ))}
                     </div>
                     {auctionOfferSelect && (
-                      <div className="flex items-end gap-3">
-                        <div>
-                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Starting $</div>
-                          <input
-                            type="number"
-                            value={auctionStartPrice}
-                            onChange={(e) => setAuctionStartPrice(e.target.value)}
-                            className="w-24 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
-                          />
-                        </div>
-                        <div>
-                          <div className="mb-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">Duration</div>
-                          <select
-                            value={auctionDuration}
-                            onChange={(e) => setAuctionDuration(Number(e.target.value))}
-                            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
-                          >
-                            <option value={60}>1 min</option>
-                            <option value={120}>2 min</option>
-                            <option value={300}>5 min</option>
-                          </select>
-                        </div>
-                        <button
-                          onClick={handleStartAuction}
-                          disabled={auctionStarting}
-                          className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
-                        >
-                          {auctionStarting ? "Starting..." : "Start Auction"}
-                        </button>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} placeholder="$10" className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs text-white outline-none" />
+                        <select value={auctionDuration} onChange={(e) => setAuctionDuration(Number(e.target.value))} className="rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs text-white outline-none">
+                          <option value={60}>1m</option><option value={120}>2m</option><option value={300}>5m</option>
+                        </select>
+                        <button onClick={handleStartAuction} disabled={auctionStarting} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black disabled:opacity-40">{auctionStarting ? "..." : "Start Auction"}</button>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-
-              {/* End stream */}
-              <button
-                onClick={handleEndLive}
-                className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
-              >
-                End Stream
-              </button>
             </div>
-          ) : (
-            <div className="mt-5 space-y-4">
-              {/* Mode selector */}
-              <div className="flex gap-2">
+
+          ) : cameraPreview ? (
+            /* ══ CAMERA PREVIEW — ready to go live ══ */
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-white">Camera Ready</h2>
+              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
+              </div>
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setLiveMode("native_mux")}
-                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
-                    liveMode === "native_mux"
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
-                  }`}
+                  onClick={startLiveFromCamera}
+                  disabled={goingLive}
+                  className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
                 >
-                  Native Live (DUM Club)
+                  {goingLive ? "Starting..." : "Start Live"}
                 </button>
                 <button
-                  onClick={() => setLiveMode("manual_embed")}
-                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
-                    liveMode === "manual_embed"
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
-                  }`}
+                  onClick={cancelCameraPreview}
+                  className="rounded-xl border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
                 >
-                  External Embed
+                  Cancel
                 </button>
               </div>
+            </div>
 
-              {liveMode === "manual_embed" ? (
-                <div>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      value={liveStreamUrl}
-                      onChange={(e) => setLiveStreamUrl(e.target.value)}
-                      placeholder="Paste stream URL (YouTube Live, Twitch, etc.)"
-                      className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40"
-                    />
-                    <button
-                      onClick={handleGoLive}
-                      disabled={goingLive || !liveStreamUrl.trim()}
-                      className="rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
-                    >
-                      {goingLive ? "Starting..." : "Go Live"}
-                    </button>
-                  </div>
-                  <p className="mt-2 text-xs text-zinc-600">
-                    Paste any embeddable video URL from YouTube Live, Twitch, etc.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm text-zinc-400">
-                    Stream directly on DUM Club using OBS or Streamlabs. We'll create your stream and give you the keys.
-                  </p>
-                  <button
-                    onClick={handleGoLive}
-                    disabled={goingLive}
-                    className="mt-3 rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
-                  >
-                    {goingLive ? "Creating Stream..." : "Create Native Stream"}
-                  </button>
-                </div>
-              )}
+          ) : (
+            /* ══ DEFAULT — single Go Live button ══ */
+            <div className="text-center py-4">
+              <button
+                onClick={startCameraPreview}
+                className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 hover:shadow-red-500/30 active:scale-[0.98]"
+              >
+                Go Live
+              </button>
+              <p className="mt-3 text-sm text-zinc-500">Start selling in seconds</p>
 
               {goLiveError && (
-                <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                <div className="mt-3 mx-auto max-w-md rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
                   {goLiveError}
                 </div>
               )}
+
+              {/* Advanced streaming — hidden by default */}
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowAdvancedLive(!showAdvancedLive)}
+                  className="text-[11px] text-zinc-600 transition hover:text-zinc-400"
+                >
+                  {showAdvancedLive ? "Hide" : "Advanced Streaming"}
+                </button>
+                {showAdvancedLive && (
+                  <div className="mt-4 mx-auto max-w-lg space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4 text-left">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Advanced Options</div>
+                    {/* Mode selector */}
+                    <div className="flex gap-2">
+                      <button onClick={() => setLiveMode("native_mux")} className={`rounded-lg border px-3 py-1.5 text-xs transition ${liveMode === "native_mux" ? "border-emerald-400/40 text-emerald-400" : "border-zinc-800 text-zinc-500"}`}>Mux (OBS)</button>
+                      <button onClick={() => setLiveMode("manual_embed")} className={`rounded-lg border px-3 py-1.5 text-xs transition ${liveMode === "manual_embed" ? "border-emerald-400/40 text-emerald-400" : "border-zinc-800 text-zinc-500"}`}>Embed URL</button>
+                    </div>
+                    {liveMode === "manual_embed" ? (
+                      <div className="flex gap-2">
+                        <input value={liveStreamUrl} onChange={(e) => setLiveStreamUrl(e.target.value)} placeholder="Paste stream URL..." className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder:text-zinc-600 outline-none" />
+                        <button onClick={handleGoLive} disabled={goingLive || !liveStreamUrl.trim()} className="rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-40">{goingLive ? "..." : "Go"}</button>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-2">Stream via OBS with Mux. Requires MUX_TOKEN_ID on server.</p>
+                        <button onClick={handleGoLive} disabled={goingLive} className="rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-40">{goingLive ? "..." : "Create Mux Stream"}</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
