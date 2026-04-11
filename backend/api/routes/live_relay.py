@@ -82,32 +82,32 @@ async def live_relay(websocket: WebSocket, project_id: str):
     print(f"[live-relay] ffmpeg path: {FFMPEG_PATH}")
 
     # Spawn ffmpeg
-    # Browser sends webm (VP8 video + Opus audio) via MediaRecorder.
-    # RTMP/FLV requires H.264 + AAC, so we must transcode both.
-    # -probesize / -analyzeduration: start fast without waiting for full headers
-    # -fflags +genpts: generate PTS for piped input without timing info
+    # Browser sends webm (VP8+Opus on Chrome/Firefox) or mp4 (H.264+AAC on Safari).
+    # RTMP/FLV requires H.264 + AAC. We transcode video to H.264 always (cheap if
+    # Safari already sends H.264 — ffmpeg will detect and copy if possible).
+    # Let ffmpeg auto-detect input format via probe (no -f flag for input).
     ffmpeg_proc: Optional[asyncio.subprocess.Process] = None
     try:
         ffmpeg_cmd = [
             FFMPEG_PATH,
             "-hide_banner",
             "-loglevel", "info",
-            "-fflags", "+genpts",
-            "-probesize", "512000",
-            "-analyzeduration", "500000",
-            "-f", "webm",
+            "-fflags", "+genpts+nobuffer",
+            "-probesize", "1000000",
+            "-analyzeduration", "1000000",
             "-i", "pipe:0",
             "-c:v", "libx264",
             "-preset", "veryfast",
             "-tune", "zerolatency",
             "-g", "60",
+            "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "128k",
             "-ar", "44100",
             "-f", "flv",
             ingest_url,
         ]
-        print(f"[live-relay] ffmpeg command: {' '.join(ffmpeg_cmd[:10])}... → Mux")
+        print(f"[live-relay] ffmpeg command: {' '.join(ffmpeg_cmd)}")
 
         ffmpeg_proc = await asyncio.create_subprocess_exec(
             *ffmpeg_cmd,

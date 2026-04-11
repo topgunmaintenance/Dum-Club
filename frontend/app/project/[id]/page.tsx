@@ -146,7 +146,7 @@ type Candle = {
 
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../../lib/apiBase";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROJECT_FEE_RATE = 0.015;
@@ -474,6 +474,12 @@ export default function ProjectPage() {
   const id = params?.id as string;
   const { user: authUser, login, getToken } = useAuth();
   const { wallets } = useSolanaWallets();
+
+  // Diagnostic: log effective API base on mount
+  useEffect(() => {
+    console.log("[project-page] API_BASE:", API_BASE);
+    console.log("[project-page] window.location.protocol:", typeof window !== "undefined" ? window.location.protocol : "SSR");
+  }, []);
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("Untitled Project");
@@ -1973,18 +1979,54 @@ export default function ProjectPage() {
 
   /* ── Camera Preview ────────────────────────────────── */
   async function startCameraPreview() {
+    console.log("[camera] Go Live clicked — requesting camera/mic");
+    setGoLiveError(null);
+
+    // Check if getUserMedia is available
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setGoLiveError("Camera not supported on this browser. Try Chrome or Safari.");
+      console.error("[camera] getUserMedia not available");
+      return;
+    }
+
+    // Mobile-friendly constraints: prefer front camera, limit resolution for performance
+    const constraints: MediaStreamConstraints = {
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    };
+    console.log("[camera] Requesting getUserMedia with constraints:", JSON.stringify(constraints));
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("[camera] getUserMedia success. Tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}:${t.readyState}`));
+
       setCameraStream(stream);
       setCameraPreview(true);
-      // Attach to video element after render
-      setTimeout(() => {
+
+      // Attach to video element after render — retry a few times for mobile
+      const attachToVideo = (attempt = 0) => {
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = stream;
+          previewVideoRef.current.play().catch(() => {});
+          console.log("[camera] Preview attached to video element (attempt", attempt, ")");
+        } else if (attempt < 5) {
+          setTimeout(() => attachToVideo(attempt + 1), 100);
+        } else {
+          console.warn("[camera] Could not attach preview — video element not found after 5 attempts");
         }
-      }, 50);
+      };
+      setTimeout(() => attachToVideo(), 50);
+
     } catch (err) {
-      setGoLiveError("Camera access denied. Please allow camera and microphone.");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[camera] getUserMedia failed:", msg);
+      if (msg.includes("Permission") || msg.includes("NotAllowed")) {
+        setGoLiveError("Camera access denied. Please allow camera and microphone in your browser settings.");
+      } else if (msg.includes("NotFound") || msg.includes("DevicesNotFound")) {
+        setGoLiveError("No camera found. Make sure your device has a camera.");
+      } else {
+        setGoLiveError(`Camera error: ${msg}`);
+      }
     }
   }
 
@@ -2066,43 +2108,69 @@ export default function ProjectPage() {
       ws.onopen = () => {
         console.log("[go-live] WebSocket connected, starting MediaRecorder");
 
-        // 3. Start MediaRecorder
-        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-          ? "video/webm;codecs=vp8,opus"
-          : MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-          ? "video/webm;codecs=vp9,opus"
-          : "video/webm";
-        console.log("[go-live] Selected mimeType:", mimeType);
-        console.log("[go-live] Stream tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}`));
-
-        const recorder = new MediaRecorder(stream, {
-          mimeType,
-          videoBitsPerSecond: 1_500_000,
+        // 3. Detect best supported mimeType
+        // Order: webm VP8 (Chrome/Firefox) → webm VP9 → webm (generic) → mp4 (Safari)
+        const candidates = [
+          "video/webm;codecs=vp8,opus",
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8",
+          "video/webm",
+          "video/mp4",  // Safari on iOS/macOS
+        ];
+        const supported = candidates.filter((m) => {
+          try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
         });
+        console.log("[go-live] Supported mimeTypes:", supported);
+
+        const mimeType = supported[0] || "";
+        console.log("[go-live] Selected mimeType:", mimeType || "(default — no explicit type)");
+        console.log("[go-live] Stream tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}:${t.readyState}`));
+
+        // Determine input format for backend ffmpeg
+        const isMP4 = mimeType.includes("mp4");
+        if (isMP4) {
+          console.log("[go-live] Browser uses MP4 container (Safari) — backend ffmpeg needs -f mp4 input");
+        }
+
+        let recorder: MediaRecorder;
+        try {
+          const opts: MediaRecorderOptions = { videoBitsPerSecond: 1_500_000 };
+          if (mimeType) opts.mimeType = mimeType;
+          recorder = new MediaRecorder(stream, opts);
+        } catch (recErr) {
+          console.error("[go-live] MediaRecorder creation failed:", recErr);
+          // Last resort: try with no options
+          recorder = new MediaRecorder(stream);
+          console.log("[go-live] Fallback: MediaRecorder created with default options, mimeType:", recorder.mimeType);
+        }
         mediaRecorderRef.current = recorder;
+        console.log("[go-live] MediaRecorder created, actual mimeType:", recorder.mimeType);
 
         let chunksSent = 0;
+        let totalBytesSent = 0;
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
             chunksSent++;
+            totalBytesSent += e.data.size;
             ws.send(e.data);
-            if (chunksSent <= 3 || chunksSent % 100 === 0) {
-              console.log(`[go-live] Sent chunk #${chunksSent}: ${e.data.size} bytes`);
+            if (chunksSent <= 5 || chunksSent % 50 === 0) {
+              console.log(`[go-live] Chunk #${chunksSent}: ${e.data.size} bytes (total: ${(totalBytesSent / 1024).toFixed(0)} KB)`);
             }
           }
         };
 
         recorder.onerror = (e) => {
           console.error("[go-live] MediaRecorder error:", e);
+          setGoLiveError("Recording error — please try again");
         };
 
         recorder.onstop = () => {
-          console.log(`[go-live] MediaRecorder stopped after ${chunksSent} chunks`);
+          console.log(`[go-live] MediaRecorder stopped after ${chunksSent} chunks (${(totalBytesSent / 1024).toFixed(0)} KB total)`);
         };
 
-        // Send chunks every 500ms — gives ffmpeg enough data per chunk to process
-        recorder.start(500);
-        console.log("[go-live] MediaRecorder started, state:", recorder.state);
+        // Send chunks every 1000ms — gives ffmpeg substantial data per chunk
+        recorder.start(1000);
+        console.log("[go-live] MediaRecorder started, state:", recorder.state, "timeslice: 1000ms");
       };
 
       ws.onmessage = (e) => {
