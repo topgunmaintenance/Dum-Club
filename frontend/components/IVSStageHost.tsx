@@ -74,18 +74,26 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
       let data: any;
       if (!res.ok) {
         if (res.status === 409) {
-          console.log("[ivs-host] Stage already exists, requesting host token...");
-          const tokenRes = await fetch(`${API_BASE}/api/ivs/host-token`, {
+          // Stale stage exists — end it first, then create fresh
+          console.log("[ivs-host] Stale stage exists, ending it first...");
+          await fetch(`${API_BASE}/api/ivs/end-stage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", user_id: userId },
+            body: JSON.stringify({ project_id: projectId }),
+          }).catch(() => {});
+
+          // Now create a fresh stage
+          console.log("[ivs-host] Creating fresh stage...");
+          const retryRes = await fetch(`${API_BASE}/api/ivs/create-stage`, {
             method: "POST",
             headers: { "Content-Type": "application/json", user_id: userId },
             body: JSON.stringify({ project_id: projectId }),
           });
-          if (!tokenRes.ok) {
-            const tokenErr = await tokenRes.json().catch(() => ({}));
-            throw new Error(tokenErr.detail || "Failed to get host token");
+          if (!retryRes.ok) {
+            const retryErr = await retryRes.json().catch(() => ({}));
+            throw new Error(retryErr.detail || `Stage creation failed on retry (${retryRes.status})`);
           }
-          const tokenData = await tokenRes.json();
-          data = { host_token: tokenData.token, stage_id: "existing" };
+          data = await retryRes.json();
         } else {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.detail || `Stage creation failed (${res.status})`);
