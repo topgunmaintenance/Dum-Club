@@ -39,6 +39,9 @@ stripe==11.4.1
 # ── Email ─────────────────────────────────────────────────────
 resend==2.5.1
 
+# ── AWS (IVS Real-Time) ──────────────────────────────────────
+boto3>=1.34.0
+
 # ── Heavy ML stack (transcription / embeddings / RAG) ─────────
 # Not installed in the production image. Routes that depend on
 # these packages fail gracefully at call time, not at startup.

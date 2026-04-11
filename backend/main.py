@@ -49,6 +49,7 @@ from api.routes import (
     feature_flags,
     auctions,
     live_relay,
+    ivs,
 )
 
 from db.supabase import init_supabase
@@ -159,6 +160,7 @@ app.include_router(external_business.router, prefix="/api/external", tags=["Exte
 app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
 app.include_router(live_relay.router, prefix="/api/live", tags=["Live Relay"])
+app.include_router(ivs.router, prefix="/api/ivs", tags=["IVS Real-Time"])
 
 
 @app.get("/health")
