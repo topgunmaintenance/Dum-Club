@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import QRCode from "react-qr-code";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../../../lib/apiBase";
 
 type Slot = {
   id: string;

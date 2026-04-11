@@ -7,7 +7,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Starfield } from "../../components/Starfield";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../lib/apiBase";
 
 type LaunchState = "idle" | "generating" | "error";
 
@@ -64,7 +64,7 @@ export default function BuildPage() {
     setError("");
 
     try {
-      const res = await fetch(`${API}/api/launch/`, {
+      const res = await fetch(`${API_BASE}/api/launch/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

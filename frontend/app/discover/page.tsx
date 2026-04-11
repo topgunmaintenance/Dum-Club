@@ -38,7 +38,7 @@ type RecentTrade = {
   token_symbol?: string | null;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../lib/apiBase";
 /** Recent trades: GET /api/activity/recent-trades (see backend/api/routes/market.py) */
 
 const TARGET_MARKET_CAP = 100_000;

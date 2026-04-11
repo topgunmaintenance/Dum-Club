@@ -13,7 +13,7 @@ const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet
 
 const DUM_TREASURY = process.env.NEXT_PUBLIC_DUM_TREASURY_WALLET || "";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../lib/apiBase";
 
 function formatTimeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);

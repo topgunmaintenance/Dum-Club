@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../lib/apiBase";
 
 export default function VaultPage() {
   const { publicKey, sendTransaction } = useWallet();
@@ -35,7 +35,7 @@ export default function VaultPage() {
       await connection.confirmTransaction(sig, "confirmed");
 
       // Record in backend
-      await fetch(`${API}/api/vault/record`, {
+      await fetch(`${API_BASE}/api/vault/record`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

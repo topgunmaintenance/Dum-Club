@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAuth } from "../lib/auth/AuthContext";
+import { API_BASE } from "../lib/apiBase";
 
 export function Navbar() {
   const path = usePathname();
@@ -24,8 +25,7 @@ export function Navbar() {
       const privyId = user?.privyId;
       if (privyId) {
         try {
-          const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-          const res = await fetch(`${API}/api/dum/balance/${encodeURIComponent(privyId)}`);
+          const res = await fetch(`${API_BASE}/api/dum/balance/${encodeURIComponent(privyId)}`);
           if (res.ok) {
             const data = await res.json();
             setDumBalance(data.balance ?? 0);

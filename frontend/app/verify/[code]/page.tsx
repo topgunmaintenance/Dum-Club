@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { authFetch } from "../../../lib/authFetch";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../../lib/apiBase";
 
 export default function VerifyPage() {
   const params = useParams() as { code: string };

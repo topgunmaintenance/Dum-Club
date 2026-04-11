@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { RewardToast } from "./RewardToast";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../lib/apiBase";
 
 type GrowthContext = {
   business_name: string;

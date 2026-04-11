@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminRoute from "../../../components/AdminRoute";
 import { useAuth } from "../../../lib/auth/AuthContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../../lib/apiBase";
 
 // ── Types ──
 

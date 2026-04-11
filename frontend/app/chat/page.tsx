@@ -6,7 +6,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Starfield } from "../../components/Starfield";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../lib/apiBase";
 
 const FREE_MESSAGE_LIMIT = 5;
 const STORAGE_KEY = "dum_ai_messages_used";
@@ -101,7 +101,7 @@ function ChatPageInner() {
       return;
     }
     let cancelled = false;
-    fetch(`${API}/api/sol-balance/${walletAddress}`)
+    fetch(`${API_BASE}/api/sol-balance/${walletAddress}`)
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) setSolBalance(data.sol ?? null);
@@ -139,7 +139,7 @@ function ChatPageInner() {
       return;
     }
     setChatMode("project");
-    fetch(`${API}/api/projects/${projectId}`)
+    fetch(`${API_BASE}/api/projects/${projectId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
@@ -223,7 +223,7 @@ function ChatPageInner() {
     setUsedCount(newUsed);
 
     try {
-      const res = await fetch(`${API}/api/chat/`, {
+      const res = await fetch(`${API_BASE}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: msg, project_id: currentProject?.id ?? null, stream: true }),

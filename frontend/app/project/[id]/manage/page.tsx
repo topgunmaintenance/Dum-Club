@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
 import { authFetch } from "../../../../lib/authFetch";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "../../../../lib/apiBase";
 
 const TIMES = [
   "08:00",

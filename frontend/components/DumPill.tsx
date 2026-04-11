@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../lib/auth/AuthContext";
+import { API_BASE } from "../lib/apiBase";
 
 // Pages where the pill is hidden (already show points prominently)
 const HIDDEN_PATHS = ["/build", "/dashboard", "/hub", "/project"];
@@ -26,8 +27,7 @@ export function DumPill() {
       const privyId = user?.privyId;
       if (privyId) {
         try {
-          const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-          const res = await fetch(`${API}/api/dum/balance/${encodeURIComponent(privyId)}`);
+          const res = await fetch(`${API_BASE}/api/dum/balance/${encodeURIComponent(privyId)}`);
           if (res.ok) {
             const data = await res.json();
             const val = data.balance ?? 0;
