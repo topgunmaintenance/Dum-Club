@@ -5236,8 +5236,8 @@ return (
       {isOwner && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
 
-          {/* IVS Real-Time path (when enabled and not already live via other provider) */}
-          {IVS_REALTIME_ENABLED && !project?.is_live ? (
+          {/* IVS Real-Time host — stays mounted through entire live session */}
+          {IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
             <IVSStageHost
               projectId={id as string}
               userId={authUser?.privyId || ""}
@@ -5250,7 +5250,9 @@ return (
               }}
               onError={(msg) => setGoLiveError(msg)}
             />
-          ) : project?.is_live ? (
+          )}
+
+          {project?.is_live ? (
             /* ══ LIVE STATE — selling controls ══ */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
