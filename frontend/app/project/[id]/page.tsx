@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
@@ -67,6 +70,10 @@ type Project = {
   stream_url?: string | null;
   pinned_offer_id?: string | null;
   active_auction_id?: string | null;
+  live_provider?: string | null;
+  live_playback_id?: string | null;
+  live_stream_key?: string | null;
+  live_ingest_url?: string | null;
 };
 
 type GatedChatResponse = {
@@ -707,6 +714,12 @@ export default function ProjectPage() {
   const [liveStreamUrl, setLiveStreamUrl] = useState("");
   const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
+  const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
+  const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
+  const [muxIngestUrl, setMuxIngestUrl] = useState<string | null>(null);
+  const [muxPlaybackId, setMuxPlaybackId] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   // Auction state
   type Auction = {
@@ -1952,16 +1965,33 @@ export default function ProjectPage() {
 
   /* ── Live Commerce ────────────────────────────────── */
   async function handleGoLive() {
-    if (!id || !liveStreamUrl.trim()) return;
+    if (!id) return;
+    if (liveMode === "manual_embed" && !liveStreamUrl.trim()) return;
     setGoingLive(true);
     try {
+      const body: Record<string, unknown> = { provider: liveMode };
+      if (liveMode === "manual_embed") body.stream_url = liveStreamUrl.trim();
       const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ stream_url: liveStreamUrl.trim() }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
-        setProject((prev) => prev ? { ...prev, is_live: true, stream_url: liveStreamUrl.trim() } : prev);
+        const data = await res.json();
+        if (data.provider === "native_mux") {
+          setMuxStreamKey(data.stream_key);
+          setMuxIngestUrl(data.ingest_url);
+          setMuxPlaybackId(data.playback_id);
+          setProject((prev) => prev ? {
+            ...prev, is_live: true, live_provider: "native_mux",
+            live_playback_id: data.playback_id, stream_url: null,
+          } : prev);
+        } else {
+          setProject((prev) => prev ? {
+            ...prev, is_live: true, live_provider: "manual_embed",
+            stream_url: liveStreamUrl.trim(), live_playback_id: null,
+          } : prev);
+        }
         setLiveSalesCount(0);
       }
     } catch (err) {
@@ -1978,7 +2008,13 @@ export default function ProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
       });
-      setProject((prev) => prev ? { ...prev, is_live: false, stream_url: null, pinned_offer_id: null } : prev);
+      setProject((prev) => prev ? {
+        ...prev, is_live: false, stream_url: null, pinned_offer_id: null,
+        live_provider: null, live_playback_id: null,
+      } : prev);
+      setMuxStreamKey(null);
+      setMuxIngestUrl(null);
+      setMuxPlaybackId(null);
     } catch (err) {
       console.error("End live failed", err);
     }
@@ -3267,7 +3303,7 @@ return (
       </div>
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
-      {project?.is_live && project.stream_url && (
+      {project?.is_live && (project.stream_url || project.live_playback_id) && (
         <div className="mb-6 space-y-4">
           <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-5 py-3">
             <div className="flex items-center gap-3">
@@ -3280,15 +3316,29 @@ return (
             </div>
           </div>
 
+          {/* Native Mux player or iframe fallback */}
           <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-              <iframe
-                src={project.stream_url}
-                className="absolute inset-0 h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+            {project.live_provider === "native_mux" && project.live_playback_id ? (
+              <MuxPlayer
+                playbackId={project.live_playback_id}
+                streamType="live"
+                autoPlay="muted"
+                muted
+                style={{ width: "100%", aspectRatio: "16/9" }}
+                primaryColor="#10b981"
+                secondaryColor="#09090b"
+                accentColor="#10b981"
               />
-            </div>
+            ) : project.stream_url ? (
+              <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                <iframe
+                  src={project.stream_url}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : null}
           </div>
 
           {/* Pinned product / auction + chat side by side */}
@@ -4896,6 +4946,51 @@ return (
                 </div>
               </div>
 
+              {/* Mux stream setup (native live only) */}
+              {project?.live_provider === "native_mux" && (muxStreamKey || project.live_stream_key) && (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 space-y-3">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">Stream Setup</div>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-[10px] text-zinc-600 mb-1">Ingest URL</div>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 font-mono truncate">
+                          {muxIngestUrl || project.live_ingest_url || "—"}
+                        </code>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(muxIngestUrl || project?.live_ingest_url || ""); setUrlCopied(true); setTimeout(() => setUrlCopied(false), 2000); }}
+                          className="shrink-0 rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-400 transition hover:text-white"
+                        >
+                          {urlCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-zinc-600 mb-1">Stream Key</div>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 font-mono truncate">
+                          {muxStreamKey || project.live_stream_key || "—"}
+                        </code>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(muxStreamKey || project?.live_stream_key || ""); setKeyCopied(true); setTimeout(() => setKeyCopied(false), 2000); }}
+                          className="shrink-0 rounded-lg border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-400 transition hover:text-white"
+                        >
+                          {keyCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800 bg-base p-3 text-xs text-zinc-500 space-y-1">
+                    <div className="font-semibold text-zinc-400">OBS Setup:</div>
+                    <div>1. Open OBS → Settings → Stream</div>
+                    <div>2. Service: Custom</div>
+                    <div>3. Paste Ingest URL as Server</div>
+                    <div>4. Paste Stream Key</div>
+                    <div>5. Start Streaming</div>
+                  </div>
+                </div>
+              )}
+
               {/* Pin offer selector */}
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Pin a Product</div>
@@ -5021,25 +5116,66 @@ return (
               </button>
             </div>
           ) : (
-            <div className="mt-5">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  value={liveStreamUrl}
-                  onChange={(e) => setLiveStreamUrl(e.target.value)}
-                  placeholder="Paste stream URL (YouTube Live, Twitch, etc.)"
-                  className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40"
-                />
+            <div className="mt-5 space-y-4">
+              {/* Mode selector */}
+              <div className="flex gap-2">
                 <button
-                  onClick={handleGoLive}
-                  disabled={goingLive || !liveStreamUrl.trim()}
-                  className="rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
+                  onClick={() => setLiveMode("native_mux")}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                    liveMode === "native_mux"
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                  }`}
                 >
-                  {goingLive ? "Starting..." : "Go Live"}
+                  Native Live (DUM Club)
+                </button>
+                <button
+                  onClick={() => setLiveMode("manual_embed")}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                    liveMode === "manual_embed"
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                  }`}
+                >
+                  External Embed
                 </button>
               </div>
-              <p className="mt-2 text-xs text-zinc-600">
-                Supports any embeddable video URL. Start your stream on YouTube/Twitch first, then paste the embed link here.
-              </p>
+
+              {liveMode === "manual_embed" ? (
+                <div>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      value={liveStreamUrl}
+                      onChange={(e) => setLiveStreamUrl(e.target.value)}
+                      placeholder="Paste stream URL (YouTube Live, Twitch, etc.)"
+                      className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40"
+                    />
+                    <button
+                      onClick={handleGoLive}
+                      disabled={goingLive || !liveStreamUrl.trim()}
+                      className="rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
+                    >
+                      {goingLive ? "Starting..." : "Go Live"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-zinc-600">
+                    Paste any embeddable video URL from YouTube Live, Twitch, etc.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-zinc-400">
+                    Stream directly on DUM Club using OBS or Streamlabs. We'll create your stream and give you the keys.
+                  </p>
+                  <button
+                    onClick={handleGoLive}
+                    disabled={goingLive}
+                    className="mt-3 rounded-xl bg-red-500 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40"
+                  >
+                    {goingLive ? "Creating Stream..." : "Create Native Stream"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

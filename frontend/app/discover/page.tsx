@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Starfield } from "../../components/Starfield";
+
+const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
 type Project = {
   id: string;
@@ -18,6 +21,8 @@ type Project = {
   store_items?: any[] | null;
   owner_verified?: boolean;
   is_live?: boolean;
+  live_playback_id?: string | null;
+  live_provider?: string | null;
 };
 
 type MarketSnapshot = {
@@ -868,7 +873,7 @@ export default function DiscoverPage() {
               const pulsing = pulseId === project.id;
 
               return (
-                <Link key={project.id} href={`/project/${project.id}`} className="group">
+                <Link key={project.id} href={`/project/${project.id}${project.is_live ? "?live=1" : ""}`} className="group">
                   <div
                     className={`h-full rounded-2xl border bg-card p-6 transition-all duration-300 md:p-7 ${
                       pulsing
@@ -917,6 +922,22 @@ export default function DiscoverPage() {
                         </span>
                       </div>
                     </div>
+
+                    {/* Live video preview */}
+                    {project.is_live && project.live_playback_id && project.live_provider === "native_mux" && (
+                      <div className="mb-3 overflow-hidden rounded-xl border border-red-500/20">
+                        <MuxPlayer
+                          playbackId={project.live_playback_id}
+                          streamType="live"
+                          autoPlay="muted"
+                          muted
+                          loop
+                          style={{ width: "100%", aspectRatio: "16/9", "--controls": "none" } as React.CSSProperties}
+                          primaryColor="#10b981"
+                          secondaryColor="#09090b"
+                        />
+                      </div>
+                    )}
 
                     <h3 className="text-xl font-bold leading-snug text-white md:text-2xl">
                       {project.title || project.name || "Untitled Project"}

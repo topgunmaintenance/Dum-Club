@@ -814,7 +814,8 @@ async def update_project(
 # -----------------------------
 
 class GoLiveRequest(BaseModel):
-    stream_url: str = Field(min_length=5, max_length=500)
+    stream_url: Optional[str] = Field(default=None, max_length=500)
+    provider: str = Field(default="manual_embed")  # "native_mux" or "manual_embed"
 
 class PinOfferRequest(BaseModel):
     offer_id: Optional[str] = None
@@ -850,12 +851,41 @@ async def go_live(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
-    supabase.table("projects").update({
-        "is_live": True,
-        "stream_url": body.stream_url.strip(),
-    }).eq("id", project_id).execute()
+    update_fields: dict = {"is_live": True, "live_provider": body.provider}
 
-    return {"status": "success", "is_live": True}
+    if body.provider == "native_mux":
+        from services.mux_live import is_mux_configured, create_live_stream
+        if not is_mux_configured():
+            raise HTTPException(status_code=503, detail="Mux is not configured on this server")
+        mux_data = await create_live_stream()
+        if not mux_data:
+            raise HTTPException(status_code=502, detail="Failed to create Mux live stream")
+        update_fields.update({
+            "live_stream_id": mux_data["stream_id"],
+            "live_playback_id": mux_data["playback_id"],
+            "live_stream_key": mux_data["stream_key"],
+            "live_ingest_url": mux_data["ingest_url"],
+            "stream_url": None,
+        })
+    else:
+        if not body.stream_url or len(body.stream_url.strip()) < 5:
+            raise HTTPException(status_code=400, detail="stream_url required for manual embed")
+        update_fields.update({
+            "stream_url": body.stream_url.strip(),
+            "live_stream_id": None,
+            "live_playback_id": None,
+            "live_stream_key": None,
+            "live_ingest_url": None,
+        })
+
+    supabase.table("projects").update(update_fields).eq("id", project_id).execute()
+
+    result: dict = {"status": "success", "is_live": True, "provider": body.provider}
+    if body.provider == "native_mux":
+        result["stream_key"] = update_fields["live_stream_key"]
+        result["ingest_url"] = update_fields["live_ingest_url"]
+        result["playback_id"] = update_fields["live_playback_id"]
+    return result
 
 
 @router.post("/{project_id}/end-live")
@@ -887,13 +917,65 @@ async def end_live(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
+    # Disable Mux stream if native
+    live_data = supabase.table("projects").select("live_provider, live_stream_id").eq("id", project_id).limit(1).execute()
+    if live_data.data and live_data.data[0].get("live_provider") == "native_mux":
+        stream_id = live_data.data[0].get("live_stream_id")
+        if stream_id:
+            try:
+                from services.mux_live import disable_live_stream
+                import asyncio
+                asyncio.ensure_future(disable_live_stream(stream_id))
+            except Exception:
+                pass
+
     supabase.table("projects").update({
         "is_live": False,
         "stream_url": None,
         "pinned_offer_id": None,
+        "live_provider": None,
+        "live_stream_id": None,
+        "live_playback_id": None,
+        "live_stream_key": None,
+        "live_ingest_url": None,
     }).eq("id", project_id).execute()
 
     return {"status": "success", "is_live": False}
+
+
+@router.get("/{project_id}/live-status")
+async def get_live_status(project_id: str):
+    """Public endpoint: returns live provider info and stream health."""
+    supabase = get_client()
+    res = (
+        supabase.table("projects")
+        .select("is_live, live_provider, live_playback_id, live_stream_id, stream_url")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = res.data[0]
+    result = {
+        "is_live": project.get("is_live", False),
+        "provider": project.get("live_provider"),
+        "playback_id": project.get("live_playback_id"),
+        "stream_url": project.get("stream_url"),
+    }
+
+    # Optionally check Mux stream health
+    if project.get("live_provider") == "native_mux" and project.get("live_stream_id"):
+        try:
+            from services.mux_live import get_stream_status
+            status = await get_stream_status(project["live_stream_id"])
+            result["stream_health"] = status
+        except Exception:
+            result["stream_health"] = "unknown"
+
+    return result
 
 
 @router.post("/{project_id}/pin-offer")
