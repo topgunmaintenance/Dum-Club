@@ -180,11 +180,19 @@ async def create_payment_intent(
     # 4. Resolve buyer identity
     buyer_user_id = privy_id
 
-    # 4a. Check inventory
-    if not offer.get("unlimited_inventory", True):
-        available = (offer.get("quantity_available") or 0) - (offer.get("quantity_sold") or 0)
-        if available <= 0:
+    # 4a. Check inventory (only enforce if seller explicitly set a quantity limit)
+    is_unlimited = offer.get("unlimited_inventory", True)
+    qty_available = offer.get("quantity_available") or 0
+    qty_sold = offer.get("quantity_sold") or 0
+
+    if not is_unlimited and qty_available > 0:
+        remaining = qty_available - qty_sold
+        if remaining <= 0:
+            print(f"[checkout] Sold out: offer={body.offer_id}, available={qty_available}, sold={qty_sold}")
             raise HTTPException(status_code=400, detail="This offer is sold out")
+        print(f"[checkout] Inventory OK: {remaining} remaining (available={qty_available}, sold={qty_sold})")
+    else:
+        print(f"[checkout] Unlimited inventory or no limit set: unlimited={is_unlimited}, qty_available={qty_available}")
 
     # 5. Create Stripe Checkout Session
     s = _get_stripe()

@@ -3839,19 +3839,38 @@ return (
                       <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
                     )}
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="font-mono text-xl font-bold text-emerald-400">
-                        ${Number(pinnedOffer.price_usd).toFixed(2)}
-                      </span>
-                      {!isOwner && (
-                        <button
-                          onClick={() => buyOffer(pinnedOffer)}
-                          disabled={!!buyingOfferId}
-                          className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
-                        >
-                          {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
-                        </button>
-                      )}
+                      <div>
+                        <span className="font-mono text-xl font-bold text-emerald-400">
+                          ${Number(pinnedOffer.price_usd).toFixed(2)}
+                        </span>
+                        {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
+                          <span className="ml-2 text-xs text-zinc-500">
+                            {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
+                          </span>
+                        )}
+                      </div>
+                      {!isOwner && (() => {
+                        const isSoldOut = !pinnedOffer.unlimited_inventory
+                          && (pinnedOffer.quantity_available || 0) > 0
+                          && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+                        return isSoldOut ? (
+                          <span className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-bold text-zinc-500">Sold Out</span>
+                        ) : (
+                          <button
+                            onClick={() => buyOffer(pinnedOffer)}
+                            disabled={!!buyingOfferId}
+                            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                          >
+                            {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                          </button>
+                        );
+                      })()}
                     </div>
+                    {buyError[pinnedOffer.id] && (
+                      <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                        {buyError[pinnedOffer.id]}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-zinc-600">
