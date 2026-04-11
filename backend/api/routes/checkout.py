@@ -2,6 +2,7 @@
 Checkout — Stripe payment intents, webhook, and order queries.
 """
 import os
+import time
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
@@ -13,6 +14,7 @@ from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user, require_admin
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
+from api.routes.auction_ws import broadcast_sync
 
 router = APIRouter()
 
@@ -440,15 +442,41 @@ async def stripe_webhook(request: Request):
 
         # ── 2. Update inventory ──
         offer_id = order.get("offer_id")
+        # Resolve project_id early for broadcast
+        _proj_id_for_broadcast = ""
         if offer_id:
             try:
-                offer_res = supabase.table("offers").select("id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
+                offer_res = supabase.table("offers").select("id, project_id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
                 if offer_res.data:
                     o = offer_res.data[0]
                     new_sold = (o.get("quantity_sold") or 0) + 1
+                    qty_available = o.get("quantity_available") or 0
+                    is_unlimited = o.get("unlimited_inventory", True)
                     supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
                     print(f"[webhook] ✓ INVENTORY: offer={offer_id}, sold → {new_sold}")
                     audit["inventory_updated"] = True
+                    _proj_id_for_broadcast = o.get("project_id") or ""
+
+                    # Broadcast real-time inventory update to all connected clients
+                    sold_out = not is_unlimited and qty_available > 0 and new_sold >= qty_available
+                    broadcast_sync(_proj_id_for_broadcast, {
+                        "type": "item_updated",
+                        "data": {
+                            "offer_id": offer_id,
+                            "quantity_sold": new_sold,
+                            "quantity_available": qty_available,
+                            "unlimited_inventory": is_unlimited,
+                            "sold_out": sold_out,
+                        },
+                        "timestamp": time.time(),
+                    })
+                    if sold_out:
+                        broadcast_sync(_proj_id_for_broadcast, {
+                            "type": "item_sold",
+                            "data": {"offer_id": offer_id, "title": "Item"},
+                            "timestamp": time.time(),
+                        })
+                    print(f"[webhook] ✓ BROADCAST: item_updated for offer={offer_id}, sold_out={sold_out}")
             except Exception as inv_err:
                 print(f"[webhook] ✗ Inventory update failed (non-fatal): {inv_err}")
 
@@ -525,15 +553,8 @@ async def stripe_webhook(request: Request):
             if buyer_email:
                 from services.email import send_buyer_payment_confirmed
                 send_buyer_payment_confirmed(buyer_email, offer_title, amount, proj_name)
-                print(f"[webhook] ✓ BUYER EMAIL sent to {buyer_email}")
+                print(f"[webhook] ✓ BUYER EMAIL sent to {buyer_email} (includes DUM reward messaging)")
                 audit["buyer_email_sent"] = True
-
-                # DUM reward email (separate — specific reward details)
-                if dum_reward > 0:
-                    from services.email import send_dum_reward_email
-                    send_dum_reward_email(buyer_email, dum_reward, new_dum, offer_title)
-                    print(f"[webhook] ✓ DUM REWARD EMAIL sent to {buyer_email}")
-                    audit["reward_email_sent"] = True
             else:
                 print(f"[webhook] ⊘ Buyer email skipped (no email)")
         except Exception as buyer_email_err:

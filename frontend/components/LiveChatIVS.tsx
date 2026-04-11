@@ -12,14 +12,24 @@ interface ChatMessage {
   created_at: number;
 }
 
+interface ItemUpdateEvent {
+  offer_id: string;
+  quantity_sold: number;
+  quantity_available: number;
+  unlimited_inventory: boolean;
+  sold_out: boolean;
+}
+
 interface LiveChatIVSProps {
   projectId: string;
   userId: string;
   userName: string;
   isHost: boolean;
+  onItemUpdate?: (data: ItemUpdateEvent) => void;
+  onItemSold?: (data: { offer_id: string; title: string }) => void;
 }
 
-export function LiveChatIVS({ projectId, userId, userName, isHost }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [viewerCount, setViewerCount] = useState(0);
@@ -52,6 +62,21 @@ export function LiveChatIVS({ projectId, userId, userName, isHost }: LiveChatIVS
             setMessages((prev) => [...prev.slice(-199), msg.data as ChatMessage]);
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
+          } else if (msg.type === "item_updated" && onItemUpdate) {
+            console.log("[live-chat] Item updated:", msg.data);
+            onItemUpdate(msg.data as ItemUpdateEvent);
+          } else if (msg.type === "item_sold" && onItemSold) {
+            console.log("[live-chat] Item sold:", msg.data);
+            onItemSold(msg.data);
+            // Show sold announcement in chat
+            setMessages((prev) => [...prev.slice(-199), {
+              id: `sold-${Date.now()}`,
+              sender_id: "system",
+              sender_name: "DUM Club",
+              sender_role: "host" as const,
+              body: `${msg.data.title || "Item"} just sold! 🎉`,
+              created_at: Date.now() / 1000,
+            }]);
           }
         } catch {}
       };

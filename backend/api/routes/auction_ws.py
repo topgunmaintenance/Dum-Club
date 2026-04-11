@@ -40,6 +40,18 @@ async def _broadcast(project_id: str, event: dict):
     conns -= dead
 
 
+def broadcast_sync(project_id: str, event: dict):
+    """Fire-and-forget broadcast from sync code (e.g. webhook handler)."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(_broadcast(project_id, event))
+        else:
+            loop.run_until_complete(_broadcast(project_id, event))
+    except Exception as e:
+        print(f"[live-ws] broadcast_sync failed: {e}")
+
+
 async def broadcast_bid(project_id: str, bid_data: dict):
     """Broadcast a new bid to all connected clients."""
     await _broadcast(project_id, {

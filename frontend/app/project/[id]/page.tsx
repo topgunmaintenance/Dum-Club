@@ -3892,6 +3892,20 @@ return (
                 userId={authUser?.privyId || ""}
                 userName={authUser?.email || "Viewer"}
                 isHost={isOwner}
+                onItemUpdate={(data) => {
+                  // Update offer in local state so UI re-renders instantly
+                  setOffers((prev) => prev.map((o) =>
+                    o.id === data.offer_id
+                      ? { ...o, quantity_sold: data.quantity_sold }
+                      : o
+                  ));
+                  console.log("[live] Item updated:", data.offer_id, "sold:", data.quantity_sold, "sold_out:", data.sold_out);
+                }}
+                onItemSold={(data) => {
+                  // Refresh offers to get accurate state
+                  loadOffers();
+                  console.log("[live] Item sold out:", data.offer_id, data.title);
+                }}
               />
             </div>
           )}
