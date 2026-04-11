@@ -83,7 +83,7 @@ def create_participant_token(
             stageArn=stage_arn,
             userId=user_id,
             capabilities=capabilities,
-            duration=duration_minutes * 60,  # API expects seconds
+            duration=duration_minutes,  # API expects minutes
         )
         token_data = response.get("participantToken", {})
         print(f"[ivs] Token created for user={user_id}, role={role}")

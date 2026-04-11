@@ -10,24 +10,26 @@ interface IVSStageViewerProps {
   userId: string;
 }
 
+// Module-level guard to prevent multiple Stage instances across re-mounts
+let _activeStageProjectId: string | null = null;
+
 export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<any>(null);
-  const joinedRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // Guard: only join once
-    if (joinedRef.current) {
-      console.log("[ivs-viewer] Already joined, skipping duplicate");
+    // Guard: only one Stage instance per project across all mounts
+    if (_activeStageProjectId === projectId) {
+      console.log("[ivs-viewer] Stage already active for this project, skipping");
       return;
     }
-    joinedRef.current = true;
+    _activeStageProjectId = projectId;
 
     async function join() {
       setStatus("connecting");
@@ -179,8 +181,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         try { stageRef.current.leave(); } catch {}
         stageRef.current = null;
       }
-      // Allow rejoin if component remounts
-      joinedRef.current = false;
+      _activeStageProjectId = null;
     };
   }, [projectId, userId]);
 
@@ -209,7 +210,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
           <div className="text-center px-6">
             <p className="text-sm text-red-400">{errorMsg}</p>
-            <button onClick={() => { setErrorMsg(null); joinedRef.current = false; setStatus("loading"); }}
+            <button onClick={() => { setErrorMsg(null); _activeStageProjectId = null; setStatus("loading"); }}
               className="mt-3 rounded-lg border border-zinc-800 px-4 py-2 text-xs text-zinc-400 hover:text-white">
               Retry
             </button>

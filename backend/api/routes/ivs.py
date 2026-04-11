@@ -79,31 +79,47 @@ async def api_create_stage(
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
 
-    # Check if stage already exists
-    if project.get("ivs_stage_arn"):
-        raise HTTPException(status_code=409, detail="Stage already exists for this project")
+    # If stale stage exists, clean it up first
+    old_arn = project.get("ivs_stage_arn")
+    if old_arn:
+        print(f"[ivs] Cleaning up stale stage: {old_arn}")
+        delete_stage(old_arn)
+        supabase_client = get_client()
+        supabase_client.table("projects").update({
+            "ivs_stage_arn": None,
+            "ivs_stage_id": None,
+            "is_live": False,
+        }).eq("id", body.project_id).execute()
+        import asyncio
+        await asyncio.sleep(1.0)  # Allow AWS to propagate deletion
+        print(f"[ivs] Stale stage cleaned, creating fresh")
 
-    # Create stage
+    # Create fresh stage
     stage_name = f"dum-club-{body.project_id[:8]}"
     stage_data = create_stage(stage_name)
     if not stage_data:
         raise HTTPException(status_code=502, detail="Failed to create IVS stage")
 
+    fresh_arn = stage_data["stage_arn"]
+    print(f"[ivs] Fresh stage created: {fresh_arn}")
+
     # Store stage ARN on project
     supabase = get_client()
     supabase.table("projects").update({
-        "ivs_stage_arn": stage_data["stage_arn"],
+        "ivs_stage_arn": fresh_arn,
         "ivs_stage_id": stage_data["stage_id"],
         "live_provider": "ivs_realtime",
         "is_live": True,
     }).eq("id", body.project_id).execute()
 
-    # Generate host token immediately
+    # Generate host token using the FRESH ARN
+    print(f"[ivs] Minting host PUBLISH token for stage: {fresh_arn}")
     host_token = create_participant_token(
-        stage_arn=stage_data["stage_arn"],
+        stage_arn=fresh_arn,
         user_id=user_id,
         role="PUBLISHER",
     )
+    print(f"[ivs] Host token created: has_token={bool(host_token)}")
 
     return {
         "status": "success",

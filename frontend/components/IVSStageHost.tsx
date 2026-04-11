@@ -71,36 +71,12 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
         body: JSON.stringify({ project_id: projectId }),
       });
 
-      let data: any;
+      // Backend handles stale stage cleanup atomically — no 409 retry needed
       if (!res.ok) {
-        if (res.status === 409) {
-          // Stale stage exists — end it first, then create fresh
-          console.log("[ivs-host] Stale stage exists, ending it first...");
-          await fetch(`${API_BASE}/api/ivs/end-stage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", user_id: userId },
-            body: JSON.stringify({ project_id: projectId }),
-          }).catch(() => {});
-
-          // Now create a fresh stage
-          console.log("[ivs-host] Creating fresh stage...");
-          const retryRes = await fetch(`${API_BASE}/api/ivs/create-stage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", user_id: userId },
-            body: JSON.stringify({ project_id: projectId }),
-          });
-          if (!retryRes.ok) {
-            const retryErr = await retryRes.json().catch(() => ({}));
-            throw new Error(retryErr.detail || `Stage creation failed on retry (${retryRes.status})`);
-          }
-          data = await retryRes.json();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `Stage creation failed (${res.status})`);
-        }
-      } else {
-        data = await res.json();
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Stage creation failed (${res.status})`);
       }
+      const data = await res.json();
       console.log("[ivs-host] Stage response:", { stage_id: data.stage_id, has_token: !!data.host_token });
 
       if (!data.host_token) {
@@ -150,6 +126,20 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
       // 6. Create and join stage
       const stage = new Stage(data.host_token, strategy);
       stageRef.current = stage;
+
+      // Log ALL events
+      const allEvents = Object.values(StageEvents) as string[];
+      for (const evt of allEvents) {
+        stage.on(evt, (...args: any[]) => {
+          const summary = args.map((a: any) => {
+            if (a && typeof a === "object") {
+              return JSON.stringify({ userId: a.userId, isLocal: a.isLocal, isPublishing: a.isPublishing, message: a.message, code: a.code, category: a.category });
+            }
+            return String(a);
+          }).join(", ");
+          console.log(`[IVS-HOST] ${evt} → ${summary}`);
+        });
+      }
 
       stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
         console.log("[ivs-host] Connection state changed:", state);
