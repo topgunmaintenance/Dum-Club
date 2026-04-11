@@ -100,58 +100,85 @@ export function LiveChatIVS({ projectId, userId, userName, isHost }: LiveChatIVS
     setInput("");
   }
 
+  console.log("[live-chat] RENDERING — host:", isHost, "connected:", connected, "messages:", messages.length);
+
   return (
-    <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden" style={{ minHeight: 360 }}>
+    <div
+      style={{
+        minHeight: 400,
+        border: "2px solid #ef4444",
+        borderRadius: 16,
+        background: "#0a0a0a",
+        position: "relative",
+        zIndex: 10,
+        opacity: 1,
+        overflow: "visible",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-white">LIVE CHAT</span>
-          {connected && (
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          )}
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>LIVE CHAT</span>
+          {connected && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />}
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-          <span>{viewerCount} watching</span>
-        </div>
+        <span style={{ fontSize: 11, color: "#71717a" }}>{viewerCount} watching</span>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: 200 }}>
         {messages.length === 0 && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-xs text-zinc-700">Say something...</p>
+          <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
+            <p style={{ fontSize: 12, color: "#3f3f46" }}>Say something...</p>
           </div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className="text-sm leading-relaxed">
-            <span className={`mr-1.5 font-semibold ${
-              msg.sender_role === "host" ? "text-red-400" : "text-zinc-400"
-            }`}>
+          <div key={msg.id} style={{ fontSize: 14, lineHeight: 1.6 }}>
+            <span style={{ fontWeight: 600, color: msg.sender_role === "host" ? "#f87171" : "#a1a1aa", marginRight: 6 }}>
               {msg.sender_name}
-              {msg.sender_role === "host" && (
-                <span className="ml-1 text-[9px] uppercase tracking-wider text-red-500/60">host</span>
-              )}
+              {msg.sender_role === "host" && <span style={{ fontSize: 9, color: "#ef444480", marginLeft: 4 }}>HOST</span>}
             </span>
-            <span className="text-zinc-300">{msg.body}</span>
+            <span style={{ color: "#d4d4d8" }}>{msg.body}</span>
           </div>
         ))}
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="border-t border-zinc-800 p-2">
-        <div className="flex gap-2">
+      <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={userId ? "Say something..." : "Sign in to chat"}
             disabled={!userId || !connected}
             maxLength={300}
-            className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none transition focus:border-emerald-400/40 disabled:opacity-40"
+            style={{
+              flex: 1,
+              borderRadius: 8,
+              border: "1px solid #27272a",
+              background: "#18181b",
+              padding: "8px 12px",
+              fontSize: 14,
+              color: "#fff",
+              outline: "none",
+              opacity: (!userId || !connected) ? 0.4 : 1,
+            }}
           />
           <button
             type="submit"
             disabled={!userId || !connected || !input.trim()}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-emerald-400 disabled:opacity-30"
+            style={{
+              borderRadius: 8,
+              background: "#10b981",
+              padding: "8px 16px",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#000",
+              border: "none",
+              cursor: "pointer",
+              opacity: (!userId || !connected || !input.trim()) ? 0.3 : 1,
+            }}
           >
             Send
           </button>
