@@ -48,6 +48,7 @@ from api.routes import (
     external_business,
     feature_flags,
     auctions,
+    live_relay,
 )
 
 from db.supabase import init_supabase
@@ -156,6 +157,7 @@ app.include_router(search.router, prefix="/api/search", tags=["Search"])
 app.include_router(external_business.router, prefix="/api/external", tags=["External Business"])
 app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
+app.include_router(live_relay.router, prefix="/api/live", tags=["Live Relay"])
 
 
 @app.get("/health")

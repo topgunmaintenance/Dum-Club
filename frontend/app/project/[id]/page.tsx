@@ -725,6 +725,9 @@ export default function ProjectPage() {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [showAdvancedLive, setShowAdvancedLive] = useState(false);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const relayWsRef = useRef<WebSocket | null>(null);
+  const liveCameraStreamRef = useRef<MediaStream | null>(null);
 
   // Auction state
   type Auction = {
@@ -1994,41 +1997,133 @@ export default function ProjectPage() {
   }
 
   async function startLiveFromCamera() {
-    // Stop camera preview tracks (they were just for preview)
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
-    }
     setCameraPreview(false);
-    // Use manual_embed with a placeholder — the camera preview was for UX only
-    // Actual streaming requires the Mux pipeline (advanced mode)
-    // For now, set live with manual_embed to enable all live commerce features
-    setLiveMode("manual_embed");
-    setLiveStreamUrl("");
     setGoingLive(true);
     setGoLiveError(null);
+
+    // Keep the camera stream alive — we need it for MediaRecorder
+    const stream = cameraStream;
+    if (!stream) {
+      setGoLiveError("Camera stream lost — please try again");
+      setGoingLive(false);
+      return;
+    }
+    liveCameraStreamRef.current = stream;
+
     try {
+      // 1. Create native Mux stream on backend
       const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ provider: "manual_embed", stream_url: "camera://local" }),
+        body: JSON.stringify({ provider: "native_mux" }),
       });
-      if (res.ok) {
-        setProject((prev) => prev ? {
-          ...prev, is_live: true, live_provider: "manual_embed",
-          stream_url: "camera://local", live_playback_id: null,
-        } : prev);
-        setLiveSalesCount(0);
-      } else {
+      if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        setGoLiveError(typeof errData.detail === "string" ? errData.detail : "Failed to go live");
+        const detail = typeof errData.detail === "string" ? errData.detail : "Failed to create stream";
+        // Fallback: if Mux isn't configured, go live without video
+        if (res.status === 503 || res.status === 502) {
+          // Mux not available — fall back to live-without-video mode
+          const fallbackRes = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+            body: JSON.stringify({ provider: "manual_embed", stream_url: "camera://local" }),
+          });
+          if (fallbackRes.ok) {
+            stream.getTracks().forEach((t) => t.stop());
+            setCameraStream(null);
+            setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "manual_embed", stream_url: "camera://local", live_playback_id: null } : prev);
+            setLiveSalesCount(0);
+            setGoingLive(false);
+            return;
+          }
+        }
+        setGoLiveError(detail);
+        setGoingLive(false);
+        return;
       }
+
+      const data = await res.json();
+      setMuxStreamKey(data.stream_key);
+      setMuxIngestUrl(data.ingest_url);
+      setMuxPlaybackId(data.playback_id);
+      setProject((prev) => prev ? {
+        ...prev, is_live: true, live_provider: "native_mux",
+        live_playback_id: data.playback_id, stream_url: null,
+      } : prev);
+      setLiveSalesCount(0);
+
+      // 2. Open WebSocket to live relay
+      const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
+      const wsHost = API_BASE.replace(/^https?:\/\//, "");
+      const wsUrl = `${wsProtocol}://${wsHost}/api/live/stream/${id}`;
+      console.log("[go-live] Connecting WebSocket:", wsUrl);
+
+      const ws = new WebSocket(wsUrl);
+      relayWsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("[go-live] WebSocket connected, starting MediaRecorder");
+
+        // 3. Start MediaRecorder
+        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+          ? "video/webm;codecs=vp8,opus"
+          : "video/webm";
+
+        const recorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: 1_500_000,
+        });
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            ws.send(e.data);
+          }
+        };
+
+        recorder.onstop = () => {
+          console.log("[go-live] MediaRecorder stopped");
+        };
+
+        // Send chunks every 250ms for low latency
+        recorder.start(250);
+        console.log("[go-live] MediaRecorder started, mime:", mimeType);
+      };
+
+      ws.onclose = () => {
+        console.log("[go-live] WebSocket closed");
+      };
+
+      ws.onerror = (err) => {
+        console.error("[go-live] WebSocket error:", err);
+      };
+
     } catch (err) {
-      setGoLiveError("Network error — please try again");
+      const msg = err instanceof Error ? err.message : "Network error";
+      setGoLiveError(msg);
+      // Clean up camera on failure
+      stream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
     } finally {
       setGoingLive(false);
     }
   }
+
+  // Clean up live stream on unmount / tab close
+  useEffect(() => {
+    function cleanup() {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      if (relayWsRef.current) relayWsRef.current.close();
+      if (liveCameraStreamRef.current) liveCameraStreamRef.current.getTracks().forEach((t) => t.stop());
+    }
+    window.addEventListener("beforeunload", cleanup);
+    return () => {
+      window.removeEventListener("beforeunload", cleanup);
+      cleanup();
+    };
+  }, []);
 
   /* ── Live Commerce ────────────────────────────────── */
   async function handleGoLive() {
@@ -2078,6 +2173,29 @@ export default function ProjectPage() {
 
   async function handleEndLive() {
     if (!id) return;
+
+    // Stop MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+
+    // Close WebSocket relay
+    if (relayWsRef.current) {
+      relayWsRef.current.close();
+      relayWsRef.current = null;
+    }
+
+    // Stop camera tracks
+    if (liveCameraStreamRef.current) {
+      liveCameraStreamRef.current.getTracks().forEach((t) => t.stop());
+      liveCameraStreamRef.current = null;
+    }
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((t) => t.stop());
+      setCameraStream(null);
+    }
+
     try {
       await fetch(`${API_BASE}/api/projects/${id}/end-live`, {
         method: "POST",

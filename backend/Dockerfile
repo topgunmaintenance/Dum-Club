@@ -2,12 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps + Node.js 20 for Solana token scripts
+# System deps + Node.js 20 for Solana token scripts + ffmpeg for live relay
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg \
     build-essential \
+    ffmpeg \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
