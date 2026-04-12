@@ -762,6 +762,17 @@ export default function DashboardPage() {
                       </div>
                     </Link>
 
+                    <Link
+                      href={`/project/${project.id}?golive=1`}
+                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-400"
+                    >
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                      </span>
+                      Go Live
+                    </Link>
+
                     <button
                       type="button"
                       onClick={() => deleteProject(project)}

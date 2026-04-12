@@ -16,6 +16,7 @@ export function Navbar() {
   const [navHover, setNavHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dumBalance, setDumBalance] = useState(0);
+  const [latestProjectId, setLatestProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +48,21 @@ export function Navbar() {
     };
     window.addEventListener("dum-points-update", handler);
     return () => window.removeEventListener("dum-points-update", handler);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.privyId) { setLatestProjectId(null); return; }
+    async function loadProjects() {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects?owner_id=${encodeURIComponent(user!.privyId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const projects = Array.isArray(data) ? data : data.projects ?? [];
+          if (projects.length > 0) setLatestProjectId(String(projects[0].id));
+        }
+      } catch {}
+    }
+    loadProjects();
   }, [user]);
 
   // Close mobile menu on route change
@@ -221,6 +237,34 @@ export function Navbar() {
         >
           {mounted && (
             <>
+              {user && latestProjectId && (
+                <Link
+                  href={`/project/${latestProjectId}?golive=1`}
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "#fff",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    background: "#ef4444",
+                    borderRadius: "10px",
+                    padding: "8px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    whiteSpace: "nowrap",
+                    textDecoration: "none",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                  </span>
+                  Go Live
+                </Link>
+              )}
               {user && dumBalance > 0 && (
                 <Link
                   href="/hub"
@@ -394,6 +438,36 @@ export function Navbar() {
             </Link>
           );
         })}
+
+        {mounted && user && latestProjectId && (
+          <Link
+            href={`/project/${latestProjectId}?golive=1`}
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              margin: "10px 20px 0",
+              padding: "14px 18px",
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+              color: "#fff",
+              background: "#ef4444",
+              borderRadius: "14px",
+            }}
+          >
+            <span style={{ position: "relative", width: 10, height: 10, display: "inline-flex" }}>
+              <span style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "#fff", opacity: 0.75, animation: "ping 1s cubic-bezier(0,0,0.2,1) infinite" }} />
+              <span style={{ position: "relative", width: 10, height: 10, borderRadius: "50%", background: "#fff", display: "inline-flex" }} />
+            </span>
+            Go Live
+          </Link>
+        )}
 
         {mounted && (
           <div

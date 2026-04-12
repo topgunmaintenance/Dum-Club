@@ -8,6 +8,7 @@ type HostStatus = "idle" | "requesting_camera" | "previewing" | "connecting" | "
 interface IVSStageHostProps {
   projectId: string;
   userId: string;
+  autoStart?: boolean;
   onLive: () => void;
   onEnd: () => void;
   onError: (msg: string) => void;
@@ -19,7 +20,7 @@ let _localStreams: any[] = [];
 let _videoTrackId: string | null = null;
 let _audioTrackId: string | null = null;
 
-export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSStageHostProps) {
+export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError }: IVSStageHostProps) {
   const [status, setStatus] = useState<HostStatus>(() => {
     // If stage exists from a previous render, stay in live state
     return _stageInstance ? "live" : "idle";
@@ -57,6 +58,10 @@ export function IVSStageHost({ projectId, userId, onLive, onEnd, onError }: IVSS
       setErrorMsg(msg); setStatus("error"); onError(msg);
     }
   }, [onError]);
+
+  useEffect(() => {
+    if (autoStart && status === "idle") startPreview();
+  }, [autoStart, status, startPreview]);
 
   const goLive = useCallback(async () => {
     // Guard: don't rejoin if already connected

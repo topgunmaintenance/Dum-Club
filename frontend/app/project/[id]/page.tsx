@@ -729,6 +729,7 @@ export default function ProjectPage() {
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
+  const [autoGoLive, setAutoGoLive] = useState(false);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
   const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
   const [muxIngestUrl, setMuxIngestUrl] = useState<string | null>(null);
@@ -2878,6 +2879,12 @@ export default function ProjectPage() {
       cleanUrl.searchParams.delete("checkout");
       window.history.replaceState({}, "", cleanUrl.toString());
     }
+    if (params.get("golive") === "1") {
+      setAutoGoLive(true);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("golive");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }
   }, []);
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
@@ -3631,6 +3638,7 @@ return (
           <IVSStageHost
             projectId={id as string}
             userId={authUser?.privyId || ""}
+            autoStart={autoGoLive}
             onLive={() => {
               setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
               setLiveSalesCount(0);
