@@ -3624,8 +3624,9 @@ return (
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
-        <div className="mb-6 space-y-4">
-          <div className="flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
+        <div className="mb-6">
+          {/* ── LIVE banner — always full width above the grid ── */}
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
@@ -3639,300 +3640,368 @@ return (
             </div>
           </div>
 
-          {/* IVS Real-Time / Mux / iframe fallback — skip for host (they have IVSStageHost preview) */}
-          {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
-            <IVSStageViewer
-              projectId={id as string}
-              userId={authUser?.privyId || ""}
-            />
-          ) : (
-          <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-            {project.live_provider === "native_mux" && project.live_playback_id ? (
-              <MuxPlayer
-                playbackId={project.live_playback_id}
-                streamType="live"
-                autoPlay="muted"
-                muted
-                style={{ width: "100%", aspectRatio: "16/9" }}
-                primaryColor="#10b981"
-                secondaryColor="#09090b"
-                accentColor="#10b981"
-              />
-            ) : project.stream_url === "camera://local" ? (
-              <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                    </span>
-                    <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
-                  </div>
-                  <p className="text-xs text-zinc-500">Browse products and chat below</p>
-                </div>
-              </div>
-            ) : project.stream_url ? (
-              <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-                <iframe
-                  src={project.stream_url}
-                  className="absolute inset-0 h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
+          {/* ── Two-column grid: video (left) + chat (right) on lg:, stacked on mobile ── */}
+          <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+
+            {/* ── LEFT COLUMN: video + product + controls ── */}
+            <div className="space-y-4">
+              {/* Video player */}
+              {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
+                <IVSStageViewer
+                  projectId={id as string}
+                  userId={authUser?.privyId || ""}
                 />
-              </div>
-            ) : null}
-          </div>
-          )}
-
-          {/* Reward visibility */}
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5 mb-4">
-            <span className="text-emerald-400 text-sm font-semibold">Earn DUM when you buy</span>
-            <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
-          </div>
-
-          {/* Pinned product / auction */}
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-
-            {/* ── Auction Widget (replaces pinned offer when auction active) ── */}
-            {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
-              <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
-                  {isAuctionActive && (
-                    <span className="font-mono text-lg font-bold text-white">{auctionCountdown}</span>
-                  )}
-                </div>
-
-                <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
-                {auctionOffer.description && (
-                  <p className="mt-1 text-sm text-zinc-400 line-clamp-1">{auctionOffer.description}</p>
-                )}
-
-                {/* Bid display */}
-                <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                        {auction.current_bid ? "Current Bid" : "Starting Price"}
+              ) : (
+              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                {project.live_provider === "native_mux" && project.live_playback_id ? (
+                  <MuxPlayer
+                    playbackId={project.live_playback_id}
+                    streamType="live"
+                    autoPlay="muted"
+                    muted
+                    style={{ width: "100%", aspectRatio: "16/9" }}
+                    primaryColor="#10b981"
+                    secondaryColor="#09090b"
+                    accentColor="#10b981"
+                  />
+                ) : project.stream_url === "camera://local" ? (
+                  <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                          <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                        </span>
+                        <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
                       </div>
-                      <div className="font-mono text-2xl font-bold text-white">
-                        ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {auction.current_bidder_display && (
-                        <div className="text-sm text-zinc-400">by {auction.current_bidder_display}</div>
-                      )}
-                      <div className="text-[10px] text-zinc-600">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
+                      <p className="text-xs text-zinc-500">Browse products and chat below</p>
                     </div>
                   </div>
-                </div>
+                ) : project.stream_url ? (
+                  <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                    <iframe
+                      src={project.stream_url}
+                      className="absolute inset-0 h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : null}
+              </div>
+              )}
 
-                {/* Bidder state feedback */}
-                {isAuctionActive && !isOwner && authUser && (
-                  <>
-                    {auction.current_bidder === authUser.privyId ? (
-                      <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-semibold text-emerald-400">
-                        You are the highest bidder
-                      </div>
-                    ) : auction.current_bidder && (
-                      <div className="mt-3 space-y-2">
-                        {auctionBidError && (
-                          <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400">{auctionBidError}</div>
-                        )}
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
-                            <input
-                              type="number"
-                              value={auctionBidAmount}
-                              onChange={(e) => setAuctionBidAmount(e.target.value)}
-                              placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
-                              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
-                            />
-                          </div>
-                          <button
-                            onClick={handlePlaceBid}
-                            disabled={auctionBidding || !auctionBidAmount}
-                            className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
-                          >
-                            {auctionBidding ? "..." : "Bid"}
-                          </button>
-                        </div>
-                      </div>
+              {/* Reward visibility — hidden on mobile, visible on lg: (stays in DOM) */}
+              <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5">
+                <span className="text-emerald-400 text-sm font-semibold">Earn DUM when you buy</span>
+                <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
+              </div>
+
+              {/* Pinned product / auction — full card on desktop, hidden on mobile (sticky bar replaces it) */}
+              <div className="hidden lg:block">
+                {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
+                  <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
+                      {isAuctionActive && (
+                        <span className="font-mono text-lg font-bold text-white">{auctionCountdown}</span>
+                      )}
+                    </div>
+
+                    <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
+                    {auctionOffer.description && (
+                      <p className="mt-1 text-sm text-zinc-400 line-clamp-1">{auctionOffer.description}</p>
                     )}
 
-                    {/* First bid (no current bidder yet) */}
-                    {!auction.current_bidder && (
-                      <div className="mt-3 flex gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
-                          <input
-                            type="number"
-                            value={auctionBidAmount}
-                            onChange={(e) => setAuctionBidAmount(e.target.value)}
-                            placeholder={String(auction.starting_price)}
-                            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
-                          />
+                    {/* Bid display */}
+                    <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                            {auction.current_bid ? "Current Bid" : "Starting Price"}
+                          </div>
+                          <div className="font-mono text-2xl font-bold text-white">
+                            ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {auction.current_bidder_display && (
+                            <div className="text-sm text-zinc-400">by {auction.current_bidder_display}</div>
+                          )}
+                          <div className="text-[10px] text-zinc-600">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bidder state feedback */}
+                    {isAuctionActive && !isOwner && authUser && (
+                      <>
+                        {auction.current_bidder === authUser.privyId ? (
+                          <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-semibold text-emerald-400">
+                            You are the highest bidder
+                          </div>
+                        ) : auction.current_bidder && (
+                          <div className="mt-3 space-y-2">
+                            {auctionBidError && (
+                              <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400">{auctionBidError}</div>
+                            )}
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                                <input
+                                  type="number"
+                                  value={auctionBidAmount}
+                                  onChange={(e) => setAuctionBidAmount(e.target.value)}
+                                  placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
+                                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                                />
+                              </div>
+                              <button
+                                onClick={handlePlaceBid}
+                                disabled={auctionBidding || !auctionBidAmount}
+                                className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                              >
+                                {auctionBidding ? "..." : "Bid"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* First bid (no current bidder yet) */}
+                        {!auction.current_bidder && (
+                          <div className="mt-3 flex gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                              <input
+                                type="number"
+                                value={auctionBidAmount}
+                                onChange={(e) => setAuctionBidAmount(e.target.value)}
+                                placeholder={String(auction.starting_price)}
+                                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                              />
+                            </div>
+                            <button
+                              onClick={handlePlaceBid}
+                              disabled={auctionBidding || !auctionBidAmount}
+                              className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                            >
+                              {auctionBidding ? "..." : "Place Bid"}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Winner Pay Now */}
+                    {auction.status === "ended" && isAuctionWinner && (
+                      <div className="mt-3 space-y-2">
+                        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-bold text-emerald-400">
+                          You Won!
                         </div>
                         <button
-                          onClick={handlePlaceBid}
-                          disabled={auctionBidding || !auctionBidAmount}
-                          className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                          onClick={handleAuctionPayNow}
+                          className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
                         >
-                          {auctionBidding ? "..." : "Place Bid"}
+                          Pay Now — ${Number(auction.current_bid).toFixed(2)}
                         </button>
                       </div>
                     )}
-                  </>
-                )}
 
-                {/* Winner Pay Now */}
-                {auction.status === "ended" && isAuctionWinner && (
-                  <div className="mt-3 space-y-2">
-                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-bold text-emerald-400">
-                      You Won!
-                    </div>
-                    <button
-                      onClick={handleAuctionPayNow}
-                      className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
-                    >
-                      Pay Now — ${Number(auction.current_bid).toFixed(2)}
-                    </button>
-                  </div>
-                )}
-
-                {/* Ended states for non-winners */}
-                {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
-                    Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
-                  </div>
-                )}
-                {(auction.status === "awaiting_payment" || auction.status === "paid") && (
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
-                    {auction.status === "paid" ? `Sold for $${Number(auction.current_bid).toFixed(2)}` : "Completing payment..."}
-                  </div>
-                )}
-
-                {/* Not signed in */}
-                {isAuctionActive && !authUser && (
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
-                    Sign in to place a bid
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* ── Standard Pinned Offer (Buy Now) ── */
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-                <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                  {pinnedOffer ? "Featured Product" : "No product pinned"}
-                </div>
-                {pinnedOffer ? (
-                  <div>
-                    {pinnedOffer.primary_image_url && (
-                      <img
-                        src={pinnedOffer.primary_image_url}
-                        alt={pinnedOffer.title}
-                        className="mb-3 h-32 w-full rounded-xl object-cover"
-                      />
-                    )}
-                    <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
-                    {pinnedOffer.description && (
-                      <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
-                    )}
-                    <div className="mt-3 flex items-center justify-between">
-                      <div>
-                        <span className="font-mono text-xl font-bold text-emerald-400">
-                          ${Number(pinnedOffer.price_usd).toFixed(2)}
-                        </span>
-                        {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
-                          <span className="ml-2 text-xs text-zinc-500">
-                            {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
-                          </span>
-                        )}
+                    {/* Ended states for non-winners */}
+                    {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
+                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                        Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
                       </div>
-                      {!isOwner && (() => {
-                        const isSoldOut = !pinnedOffer.unlimited_inventory
-                          && (pinnedOffer.quantity_available || 0) > 0
-                          && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
-                        return isSoldOut ? (
-                          <span className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-bold text-zinc-500">Sold Out</span>
-                        ) : (
-                          <button
-                            onClick={() => buyOffer(pinnedOffer)}
-                            disabled={!!buyingOfferId}
-                            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
-                          >
-                            {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
-                          </button>
-                        );
-                      })()}
-                    </div>
-                    {buyError[pinnedOffer.id] && (
-                      <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
-                        {buyError[pinnedOffer.id]}
+                    )}
+                    {(auction.status === "awaiting_payment" || auction.status === "paid") && (
+                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                        {auction.status === "paid" ? `Sold for $${Number(auction.current_bid).toFixed(2)}` : "Completing payment..."}
+                      </div>
+                    )}
+
+                    {/* Not signed in */}
+                    {isAuctionActive && !authUser && (
+                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                        Sign in to place a bid
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-zinc-600">
-                    {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
-                  </p>
+                  /* ── Standard Pinned Offer (Buy Now) — desktop card ── */
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+                    <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                      {pinnedOffer ? "Featured Product" : "No product pinned"}
+                    </div>
+                    {pinnedOffer ? (
+                      <div>
+                        {pinnedOffer.primary_image_url && (
+                          <img
+                            src={pinnedOffer.primary_image_url}
+                            alt={pinnedOffer.title}
+                            className="mb-3 h-32 w-full rounded-xl object-cover"
+                          />
+                        )}
+                        <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
+                        {pinnedOffer.description && (
+                          <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
+                        )}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div>
+                            <span className="font-mono text-xl font-bold text-emerald-400">
+                              ${Number(pinnedOffer.price_usd).toFixed(2)}
+                            </span>
+                            {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
+                              <span className="ml-2 text-xs text-zinc-500">
+                                {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
+                              </span>
+                            )}
+                          </div>
+                          {!isOwner && (() => {
+                            const isSoldOut = !pinnedOffer.unlimited_inventory
+                              && (pinnedOffer.quantity_available || 0) > 0
+                              && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+                            return isSoldOut ? (
+                              <span className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-bold text-zinc-500">Sold Out</span>
+                            ) : (
+                              <button
+                                onClick={() => buyOffer(pinnedOffer)}
+                                disabled={!!buyingOfferId}
+                                className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                              >
+                                {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                              </button>
+                            );
+                          })()}
+                        </div>
+                        {buyError[pinnedOffer.id] && (
+                          <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                            {buyError[pinnedOffer.id]}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-600">
+                        {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
+                      </p>
+                    )}
+                  </div>
                 )}
+              </div>
+
+              {/* Host controls — below product on desktop */}
+              {isOwner && isIVSSession(project) && (
+                <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
+                  <div className="flex flex-wrap gap-2">
+                    {offers.filter((o) => o.is_active).map((offer) => (
+                      <button
+                        key={offer.id}
+                        onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
+                        className={`rounded-xl border px-3 py-2 text-sm transition ${
+                          offer.id === project.pinned_offer_id
+                            ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                            : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                        }`}
+                      >
+                        {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                        {offer.id === project.pinned_offer_id && " (pinned)"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ── */}
+            {isIVSSession(project) && (
+              <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] pb-20 lg:pb-0">
+                <LiveChatIVS
+                  projectId={id as string}
+                  userId={authUser?.privyId || ""}
+                  userName={authUser?.email || "Viewer"}
+                  isHost={isOwner}
+                  onItemUpdate={(data) => {
+                    setOffers((prev) => prev.map((o) =>
+                      o.id === data.offer_id
+                        ? { ...o, quantity_sold: data.quantity_sold }
+                        : o
+                    ));
+                    console.log("[live] Item updated:", data.offer_id, "sold:", data.quantity_sold, "sold_out:", data.sold_out);
+                  }}
+                  onItemSold={(data) => {
+                    loadOffers();
+                    console.log("[live] Item sold out:", data.offer_id, data.title);
+                  }}
+                />
               </div>
             )}
 
           </div>
 
-          {/* ── LIVE CHAT — inside live banner for unified experience ── */}
-          {isIVSSession(project) && (
-            <div style={{ minHeight: 360 }}>
-              <LiveChatIVS
-                projectId={id as string}
-                userId={authUser?.privyId || ""}
-                userName={authUser?.email || "Viewer"}
-                isHost={isOwner}
-                onItemUpdate={(data) => {
-                  // Update offer in local state so UI re-renders instantly
-                  setOffers((prev) => prev.map((o) =>
-                    o.id === data.offer_id
-                      ? { ...o, quantity_sold: data.quantity_sold }
-                      : o
-                  ));
-                  console.log("[live] Item updated:", data.offer_id, "sold:", data.quantity_sold, "sold_out:", data.sold_out);
-                }}
-                onItemSold={(data) => {
-                  // Refresh offers to get accurate state
-                  loadOffers();
-                  console.log("[live] Item sold out:", data.offer_id, data.title);
-                }}
-              />
-            </div>
-          )}
-
-          {/* ── HOST CONTROLS — inside live banner for unified experience ── */}
-          {isOwner && isIVSSession(project) && (
-            <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
-              <div className="flex flex-wrap gap-2">
-                {offers.filter((o) => o.is_active).map((offer) => (
-                  <button
-                    key={offer.id}
-                    onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
-                    className={`rounded-xl border px-3 py-2 text-sm transition ${
-                      offer.id === project.pinned_offer_id
-                        ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                    }`}
-                  >
-                    {offer.title} · ${Number(offer.price_usd).toFixed(0)}
-                    {offer.id === project.pinned_offer_id && " (pinned)"}
-                  </button>
-                ))}
-              </div>
+          {/* ── MOBILE STICKY BUY BAR — pinned product/auction as bottom bar on mobile ── */}
+          {!isOwner && (
+            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+              {auction && auctionOffer && isAuctionActive ? (
+                /* Auction sticky bar */
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400">Live Auction</div>
+                    <div className="truncate text-sm font-bold text-white">{auctionOffer.title}</div>
+                  </div>
+                  <div className="flex items-center gap-3 pl-3">
+                    <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(2)}</span>
+                    {authUser ? (
+                      auction.current_bidder === authUser.privyId ? (
+                        <span className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-400">Top Bid</span>
+                      ) : (
+                        <button
+                          onClick={handlePlaceBid}
+                          disabled={auctionBidding}
+                          className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
+                        >
+                          {auctionBidding ? "..." : "Bid"}
+                        </button>
+                      )
+                    ) : (
+                      <span className="text-xs text-zinc-500">Sign in</span>
+                    )}
+                  </div>
+                </div>
+              ) : pinnedOffer ? (
+                /* Pinned offer sticky bar */
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
+                    <span className="font-mono text-sm font-bold text-emerald-400">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
+                    {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
+                      <span className="ml-2 text-[10px] text-zinc-500">
+                        {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
+                      </span>
+                    )}
+                  </div>
+                  <div className="pl-3">
+                    {(() => {
+                      const isSoldOut = !pinnedOffer.unlimited_inventory
+                        && (pinnedOffer.quantity_available || 0) > 0
+                        && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+                      return isSoldOut ? (
+                        <span className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-500">Sold Out</span>
+                      ) : (
+                        <button
+                          onClick={() => buyOffer(pinnedOffer)}
+                          disabled={!!buyingOfferId}
+                          className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                        >
+                          {buyingOfferId === pinnedOffer.id ? "..." : "Buy Now"}
+                        </button>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
+
       )}
 
       <div
