@@ -728,6 +728,7 @@ export default function ProjectPage() {
   const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
+  const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
   const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
   const [muxIngestUrl, setMuxIngestUrl] = useState<string | null>(null);
@@ -1242,6 +1243,8 @@ export default function ProjectPage() {
       console.log("[buyOffer] checkout response:", { checkout_url: !!data.checkout_url, order_id: data.order_id });
       if (data.checkout_url) {
         setBuyStep((p) => ({ ...p, [oid]: "redirecting" }));
+        const buyPrice = overridePrice ?? Number(offer.price_usd || 0);
+        sessionStorage.setItem("liveLastBuyPrice", String(buyPrice));
         window.location.href = data.checkout_url;
       } else {
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
@@ -2835,6 +2838,23 @@ export default function ProjectPage() {
     if (params.get("checkout") === "success") {
       console.log("[checkout] Success redirect detected — scheduling data refreshes");
       setCheckoutResult("success");
+
+      // Compute and show DUM Points earned in live flow
+      const savedPrice = sessionStorage.getItem("liveLastBuyPrice");
+      if (savedPrice) {
+        const price = Number(savedPrice);
+        sessionStorage.removeItem("liveLastBuyPrice");
+        if (price > 0) {
+          // NOTE: This formula mirrors backend webhook
+          // logic in backend/api/routes/checkout.py
+          // min(50, 10 + floor(amount/5))
+          // If backend formula changes update this too
+          const points = Math.min(50, 10 + Math.floor(price / 5));
+          setDumPointsEarned(points);
+          setTimeout(() => setDumPointsEarned(null), 10000);
+        }
+      }
+
       // Refresh offers after webhook processes (may take a few seconds)
       // Note: loadSellerOrders is also triggered by the isOwner effect, so always safe to call loadOffers here
       const refreshAfterCheckout = () => {
@@ -3708,6 +3728,19 @@ return (
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* ── DUM Points earned toast — top-right of video ── */}
+                {dumPointsEarned !== null && (
+                  <div className="pointer-events-none absolute top-3 right-3 z-10">
+                    <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-black/80 px-4 py-2.5 shadow-lg shadow-amber-500/10 backdrop-blur-sm animate-bounce" style={{ animationDuration: "0.6s", animationIterationCount: "1" }}>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-black">+</span>
+                      <div>
+                        <div className="text-sm font-bold text-white">You earned {dumPointsEarned} DUM Points!</div>
+                        <div className="text-[11px] text-amber-400/70">Rewards on every purchase</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
