@@ -727,6 +727,7 @@ export default function ProjectPage() {
   const [liveStreamUrl, setLiveStreamUrl] = useState("");
   const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
+  const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
   const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
   const [muxIngestUrl, setMuxIngestUrl] = useState<string | null>(null);
@@ -3645,50 +3646,71 @@ return (
 
             {/* ── LEFT COLUMN: video + product + controls ── */}
             <div className="space-y-4">
-              {/* Video player */}
-              {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
-                <IVSStageViewer
-                  projectId={id as string}
-                  userId={authUser?.privyId || ""}
-                />
-              ) : (
-              <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-                {project.live_provider === "native_mux" && project.live_playback_id ? (
-                  <MuxPlayer
-                    playbackId={project.live_playback_id}
-                    streamType="live"
-                    autoPlay="muted"
-                    muted
-                    style={{ width: "100%", aspectRatio: "16/9" }}
-                    primaryColor="#10b981"
-                    secondaryColor="#09090b"
-                    accentColor="#10b981"
+              {/* Video player with sale toast overlay */}
+              <div className="relative">
+                {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
+                  <IVSStageViewer
+                    projectId={id as string}
+                    userId={authUser?.privyId || ""}
                   />
-                ) : project.stream_url === "camera://local" ? (
-                  <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-2 mb-2">
-                        <span className="relative flex h-3 w-3">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                          <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                        </span>
-                        <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
-                      </div>
-                      <p className="text-xs text-zinc-500">Browse products and chat below</p>
-                    </div>
-                  </div>
-                ) : project.stream_url ? (
-                  <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-                    <iframe
-                      src={project.stream_url}
-                      className="absolute inset-0 h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
+                ) : (
+                <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                  {project.live_provider === "native_mux" && project.live_playback_id ? (
+                    <MuxPlayer
+                      playbackId={project.live_playback_id}
+                      streamType="live"
+                      autoPlay="muted"
+                      muted
+                      style={{ width: "100%", aspectRatio: "16/9" }}
+                      primaryColor="#10b981"
+                      secondaryColor="#09090b"
+                      accentColor="#10b981"
                     />
+                  ) : project.stream_url === "camera://local" ? (
+                    <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                          </span>
+                          <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
+                        </div>
+                        <p className="text-xs text-zinc-500">Browse products and chat below</p>
+                      </div>
+                    </div>
+                  ) : project.stream_url ? (
+                    <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                      <iframe
+                        src={project.stream_url}
+                        className="absolute inset-0 h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                )}
+
+                {/* ── Sale toast overlay — bottom-left of video ── */}
+                {saleToasts.length > 0 && (
+                  <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-2">
+                    {saleToasts.map((toast) => (
+                      <div
+                        key={toast.id}
+                        className="pointer-events-none flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-black/80 px-4 py-2.5 shadow-lg shadow-emerald-500/10 backdrop-blur-sm animate-bounce"
+                        style={{ animationDuration: "0.6s", animationIterationCount: "1" }}
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-black">$</span>
+                        <div>
+                          <div className="text-sm font-bold text-white">{toast.title} just sold!</div>
+                          <div className="text-[11px] text-emerald-400">{toast.count} sold this show</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ) : null}
+                )}
               </div>
-              )}
 
               {/* Reward visibility — hidden on mobile, visible on lg: (stays in DOM) */}
               <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5">
@@ -3929,7 +3951,19 @@ return (
                   }}
                   onItemSold={(data) => {
                     loadOffers();
-                    console.log("[live] Item sold out:", data.offer_id, data.title);
+                    setLiveSalesCount((c) => {
+                      const next = c + 1;
+                      const toastId = `${data.offer_id}-${Date.now()}`;
+                      setSaleToasts((prev) => [
+                        ...prev.slice(-2),
+                        { id: toastId, title: data.title || "Item", count: next },
+                      ]);
+                      setTimeout(() => {
+                        setSaleToasts((prev) => prev.filter((t) => t.id !== toastId));
+                      }, 4000);
+                      return next;
+                    });
+                    console.log("[live] Item sold:", data.offer_id, data.title);
                   }}
                 />
               </div>
