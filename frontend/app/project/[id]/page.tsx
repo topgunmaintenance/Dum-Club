@@ -3098,17 +3098,6 @@ const heroUtility =
 
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
-  const statusBanner = canShowMarketUi
-    ? "Approved / Live"
-    : isApprovedProject
-    ? "Approved — business is live"
-    : isRejected
-    ? "Needs changes before resubmission"
-    : isSubmitted
-    ? "Under review"
-    : isPending
-    ? "Created — not yet submitted"
-    : "Draft — continue setting up your business";
   const nextTokenActionLabel =
     tokenStatus === "draft"
       ? "Set Up Business"
@@ -5313,16 +5302,6 @@ return (
         </div>
       )}
 
-      {isOwner && (
-        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
-          <span className="uppercase tracking-[0.18em] text-zinc-400">
-            Review & publication
-          </span>
-          <div className="mt-2 text-base text-white">{statusBanner}</div>
-        </div>
-      )}
-
-
       {/* ── Legacy Live Control Panel (non-IVS only) ── */}
       {isOwner && !IVS_REALTIME_ENABLED && (
         <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
@@ -6561,13 +6540,13 @@ return (
           </div>
 
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            {isApprovedProject ? launchSectionHeading : projectName}
+            {isApprovedProject ? launchSectionHeading : "Finalize Your Setup"}
           </h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            {isApprovedProject
-              ? (nextStepHint || "Your business is live on DUM Club.")
-              : (project?.description || parsedAiOutput?.description || "No description available yet.")}
-          </p>
+          {isApprovedProject && (
+            <p className="mt-2 text-sm text-zinc-500">
+              {nextStepHint || "Your business is live on DUM Club."}
+            </p>
+          )}
 
           {isApprovedProject ? (
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -6586,10 +6565,6 @@ return (
             </div>
           ) : (
             <>
-              <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-                {category}
-              </div>
-
               <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-2xl border border-zinc-800 bg-base p-4">
                   <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
