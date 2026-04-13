@@ -299,8 +299,10 @@ TYPE 5: FOOT TRAFFIC EVENT (no payment)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 FOUNDING MERCHANT PROGRAM:
-  First 20 merchants: $0/month, $0 platform fee
+  First 50 merchants: $0/month, $0 platform fee
   founding_merchant = true in database
+  founding_slot_number assigned 1..50 on signup
+  plan_type = 'founding' while slots remain
   Full access to all features
   Grandfathered when paid tiers launch
   Launch pitch: "Let me help you make money first"
@@ -635,7 +637,7 @@ SPRINT 7: Greeter device API wiring
 
 Infrastructure: ~$45-145/month total
 Break even: 5 paying merchants
-Founding period: first 20 merchants free
+Founding period: first 50 merchants free
 Goal: prove model before charging anyone
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

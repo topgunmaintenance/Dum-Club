@@ -327,7 +327,7 @@ export default function BusinessPage() {
               ★ Founding Merchant Program
             </div>
             <div style={{ fontSize: "15px", lineHeight: 1.55, color: "#f0f0f0", fontWeight: 500 }}>
-              First 20 merchants pay <strong style={{ color: "#00FF87" }}>$0/month. Forever.</strong> No commission. No new hardware. No catch.
+              First 50 merchants pay <strong style={{ color: "#00FF87" }}>$0/month. Forever.</strong> No commission. No new hardware. No catch.
             </div>
           </div>
         </Reveal>

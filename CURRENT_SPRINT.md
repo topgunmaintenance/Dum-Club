@@ -5,7 +5,7 @@
 
 Get real merchants signed up and connected to
 DUM Club with zero friction and zero cost.
-First 20 merchants are founding merchants —
+First 50 merchants are founding merchants —
 $0/month, $0 platform fee, full access.
 
 ## Context — What Already Exists

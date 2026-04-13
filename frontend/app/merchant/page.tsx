@@ -21,12 +21,28 @@ type Merchant = {
   created_at: string;
 };
 
+type FoundingStatus = {
+  founding_slots_remaining: number;
+  total_cap: number;
+  founding_program_open: boolean;
+};
+
+// Standard plan price is pulled from an env var so the UI does not
+// hard-code $29 anywhere (CLAUDE.md Section 7 rule). Falls back to 29
+// only when NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD is unset at build time.
+const STANDARD_PLAN_PRICE_USD = Number(
+  process.env.NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD ?? 29
+);
+
 export default function MerchantPage() {
   const { user, getToken } = useAuth();
 
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSignup, setShowSignup] = useState(false);
+
+  // Founding program status — pulled from a public endpoint, no auth needed.
+  const [foundingStatus, setFoundingStatus] = useState<FoundingStatus | null>(null);
 
   // Signup form
   const [bizName, setBizName] = useState("");
@@ -38,6 +54,17 @@ export default function MerchantPage() {
 
   // Analytics from existing business profile
   const [analytics, setAnalytics] = useState<any>(null);
+
+  useEffect(() => {
+    // Founding-status is public — fetch on mount regardless of auth so
+    // unauthenticated visitors see the counter on the signup form too.
+    fetch(`${API_BASE}/api/merchant/founding-status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setFoundingStatus(data);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -152,13 +179,56 @@ export default function MerchantPage() {
 
   // ── Signup form ──
   if (showSignup) {
+    const programOpen = foundingStatus?.founding_program_open ?? true;
+    const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
+    const totalCap = foundingStatus?.total_cap ?? 50;
+
     return (
       <div className="min-h-screen bg-zinc-950 pt-28 px-4">
         <div className="mx-auto max-w-md">
+          {/* Founding status banner — renders whether the program is open
+              or closed. Driven by /api/merchant/founding-status. */}
+          {programOpen ? (
+            <div className="mb-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.05] px-5 py-4 shadow-[0_0_24px_rgba(0,255,135,0.08)]">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">⚡</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-emerald-400">
+                    {slotsRemaining !== null ? (
+                      <>
+                        {slotsRemaining} of {totalCap} founding merchant spots remaining
+                      </>
+                    ) : (
+                      <>Founding merchant program — {totalCap} spots</>
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-xs text-emerald-400/70">
+                    $0/month forever · No commission · No catch
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-4 rounded-2xl border border-zinc-700 bg-zinc-900/60 px-5 py-4">
+              <div className="text-sm font-bold text-zinc-200">
+                Founding program closed
+              </div>
+              <div className="mt-1 text-xs text-zinc-500">
+                Standard plan ${STANDARD_PLAN_PRICE_USD}/month. Unlimited transactions, loyalty built in.
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Founding Merchant</div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+              {programOpen ? "Founding Merchant" : "Standard Plan"}
+            </div>
             <h1 className="text-xl font-bold text-white mb-1">Join DUM Club</h1>
-            <p className="text-sm text-zinc-400 mb-6">Free forever for founding members. No credit card required.</p>
+            <p className="text-sm text-zinc-400 mb-6">
+              {programOpen
+                ? "Free forever for founding members. No credit card required."
+                : `Standard plan — $${STANDARD_PLAN_PRICE_USD}/month when billing launches. No card required today.`}
+            </p>
 
             {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
@@ -206,7 +276,11 @@ export default function MerchantPage() {
                 disabled={saving}
                 className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-50"
               >
-                {saving ? "Creating..." : "Become a Founding Merchant — Free"}
+                {saving
+                  ? "Creating..."
+                  : programOpen
+                  ? "Become a Founding Merchant — Free"
+                  : "Continue to signup"}
               </button>
             </div>
           </div>

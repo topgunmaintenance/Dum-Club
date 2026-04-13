@@ -26,6 +26,12 @@ _SQUARE_ENV = os.getenv("SQUARE_ENVIRONMENT", "sandbox")
 
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# ── Founding merchant program ──────────────────────────────────────
+# Total cap for the founding program. Source of truth for both the
+# slot assignment during signup and the /founding-status counter.
+# CLAUDE.md Section 7 is kept in sync with this value.
+FOUNDING_CAP = 50
+
 
 class MerchantSignup(BaseModel):
     business_name: str
@@ -51,6 +57,21 @@ def _get_merchant_or_404(privy_id: str):
 
 
 # ── Signup ──
+
+def _count_active_founding(supabase) -> int:
+    """Count active merchants currently on the founding plan."""
+    res = (
+        supabase.table("merchants")
+        .select("id", count="exact")
+        .eq("plan_type", "founding")
+        .eq("active", True)
+        .execute()
+    )
+    # Supabase Python client returns `count` when count="exact" is set.
+    if getattr(res, "count", None) is not None:
+        return int(res.count or 0)
+    return len(res.data or [])
+
 
 @router.post("/signup")
 async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get_current_user)):
@@ -83,24 +104,135 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
     if bp.data:
         bp_id = bp.data[0]["id"]
 
-    row = {
+    # Atomic-ish founding slot assignment. Supabase/PostgREST doesn't give us a
+    # SQL transaction handle, so we:
+    #   1. Fetch the current max founding_slot_number
+    #   2. Attempt INSERT with that value + 1 under the partial unique index
+    #      idx_merchants_founding_slot
+    #   3. Retry a small number of times if a concurrent signup collides
+    # Over the cap → fall through to the 'standard' plan.
+    row_base = {
         "owner_privy_id": privy_id,
         "business_profile_id": bp_id,
         "business_name": body.business_name,
         "business_type": body.business_type,
         "location_city": body.location_city,
         "location_state": body.location_state,
-        "founding_merchant": True,
-        "subscription_tier": "founding",
         "subscription_price_usd": 0,
         "platform_fee_percent": 0,
     }
 
-    res = supabase.table("merchants").insert(row).execute()
-    if not res.data:
-        raise HTTPException(status_code=500, detail="Failed to create merchant")
+    inserted = None
+    last_error = None
+    max_attempts = 5
 
-    return {"merchant": res.data[0], "created": True}
+    for _ in range(max_attempts):
+        founding_count = _count_active_founding(supabase)
+
+        if founding_count >= FOUNDING_CAP:
+            # Cap hit — onboard as standard plan. Pricing is config-driven
+            # on the frontend; backend defaults to 0 until Stripe billing
+            # is wired up in a future PR.
+            row = {
+                **row_base,
+                "founding_merchant": False,
+                "subscription_tier": "standard",
+                "plan_type": "standard",
+                "subscription_status": "active",
+                "founding_slot_number": None,
+            }
+            try:
+                res = supabase.table("merchants").insert(row).execute()
+                if res.data:
+                    inserted = res.data[0]
+                    break
+            except Exception as exc:
+                last_error = exc
+                continue
+
+        # Founding path — compute the next slot number from current max.
+        # The partial unique index idx_merchants_founding_slot will reject
+        # collisions; we retry on duplicate-key errors.
+        slot_res = (
+            supabase.table("merchants")
+            .select("founding_slot_number")
+            .order("founding_slot_number", desc=True)
+            .not_.is_("founding_slot_number", "null")
+            .limit(1)
+            .execute()
+        )
+        current_max = 0
+        if slot_res.data and slot_res.data[0].get("founding_slot_number") is not None:
+            current_max = int(slot_res.data[0]["founding_slot_number"])
+        next_slot = current_max + 1
+
+        if next_slot > FOUNDING_CAP:
+            # Race: someone filled the last slot between count and max query.
+            continue
+
+        row = {
+            **row_base,
+            "founding_merchant": True,
+            "subscription_tier": "founding",
+            "plan_type": "founding",
+            "subscription_status": "active",
+            "founding_slot_number": next_slot,
+        }
+
+        try:
+            res = supabase.table("merchants").insert(row).execute()
+            if res.data:
+                inserted = res.data[0]
+                break
+        except Exception as exc:
+            # Most likely a unique-key collision on founding_slot_number —
+            # re-loop and try the next slot.
+            last_error = exc
+            continue
+
+    if not inserted:
+        detail = "Failed to create merchant"
+        if last_error is not None:
+            detail = f"{detail}: {last_error!r}"
+        raise HTTPException(status_code=500, detail=detail)
+
+    return {"merchant": inserted, "created": True}
+
+
+# ── Founding status (public) ──
+
+@router.get("/founding-status")
+async def get_founding_status():
+    """Public endpoint: how many founding slots are left.
+
+    Returns:
+      {
+        "founding_slots_remaining": int,   # max(0, FOUNDING_CAP - current count)
+        "total_cap": int,                  # FOUNDING_CAP
+        "founding_program_open": bool,     # true if slots_remaining > 0
+      }
+
+    No auth required — this drives the "X of 50 spots remaining" counter
+    on the /merchant signup page, which non-authenticated visitors see.
+    """
+    try:
+        supabase = get_client()
+        taken = _count_active_founding(supabase)
+    except Exception as exc:
+        print(f"[merchant] founding-status error: {exc!r}")
+        # Graceful fallback — surface the cap without failing the page.
+        return {
+            "founding_slots_remaining": FOUNDING_CAP,
+            "total_cap": FOUNDING_CAP,
+            "founding_program_open": True,
+        }
+
+    remaining = max(0, FOUNDING_CAP - taken)
+    return {
+        "founding_slots_remaining": remaining,
+        "total_cap": FOUNDING_CAP,
+        "founding_program_open": remaining > 0,
+    }
 
 
 # ── Get my merchant record ──
