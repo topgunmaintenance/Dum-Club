@@ -6,11 +6,26 @@ Every send is logged and reports back a bool so callers can detect
 config-disabled state if they need to. A module-level startup log makes
 the enabled state visible in Railway logs without tailing per-request.
 """
+import hashlib
+import hmac
 import os
+import urllib.parse
 
 _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 _FROM_EMAIL = os.getenv("EMAIL_FROM", "DUM Club <orders@dum.club>")
 _PLATFORM_URL = os.getenv("NEXT_PUBLIC_SITE_URL", "https://dum-club.vercel.app")
+
+# Secret used to sign unsubscribe links for outreach emails. Falls back
+# to a deterministic default so the feature works out of the box; set
+# a real value in Railway env for production to prevent unsubscribe-
+# token forging.
+_OUTREACH_UNSUB_SECRET = os.getenv(
+    "OUTREACH_UNSUBSCRIBE_SECRET",
+    "dumclub-outreach-default-secret-change-me",
+)
+if _OUTREACH_UNSUB_SECRET == "dumclub-outreach-default-secret-change-me":
+    print("[email] WARNING: OUTREACH_UNSUBSCRIBE_SECRET is not set — using default. "
+          "Set a real value in Railway env before production outreach.")
 
 # EMAIL_ENABLED is the canonical "do we have a key?" flag. Read by the
 # readiness helper and by the /api/health/email endpoint. Not a secret.
@@ -171,3 +186,171 @@ def send_buyer_fulfilled(buyer_email: str, offer_title: str):
     </div>
     """
     _send(buyer_email, subject, html)
+
+
+# ══════════════════════════════════════════════════════════════════
+# MERCHANT OUTREACH
+# ══════════════════════════════════════════════════════════════════
+#
+# Proactive cold outreach to merchants not yet on DUM Club. Templates
+# are rendered against the lead's business_name. Every email includes
+# a signed unsubscribe link as required for CAN-SPAM compliance and
+# to protect Resend sender reputation — DO NOT remove.
+#
+# send_outreach_email() returns a (send_ok, error_message) tuple so
+# the caller can persist the result alongside the message audit row.
+
+
+def unsubscribe_token(contact: str) -> str:
+    """HMAC-SHA256 token bound to a lowercased contact. Short-enough for
+    URL use, still infeasible to guess. Stable across restarts as long
+    as OUTREACH_UNSUBSCRIBE_SECRET is stable."""
+    return hmac.new(
+        _OUTREACH_UNSUB_SECRET.encode("utf-8"),
+        contact.strip().lower().encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:32]
+
+
+def verify_unsubscribe_token(contact: str, token: str) -> bool:
+    """Constant-time comparison against the expected token."""
+    expected = unsubscribe_token(contact)
+    return hmac.compare_digest(expected, token or "")
+
+
+def _unsubscribe_url(contact: str) -> str:
+    """Build the one-click unsubscribe link embedded in every outreach
+    email. Lands on the /api/outreach/unsubscribe public endpoint."""
+    token = unsubscribe_token(contact)
+    qs = urllib.parse.urlencode({"contact": contact, "token": token})
+    return f"{_PLATFORM_URL}/api/outreach/unsubscribe?{qs}"
+
+
+# Template registry. Keyed by template_key stored on outreach_messages.
+# Each template is a dict with subject + plain body text. HTML is
+# rendered by _render_outreach_html below.
+OUTREACH_TEMPLATES: dict = {
+    "initial": {
+        "subject": "We already built your store",
+        "body": (
+            "Hi {business_name},\n\n"
+            "How much are you losing in fees every month?\n\n"
+            "We built DUM Club — a platform where you keep 100% of your "
+            "revenue and get built-in customer loyalty rewards automatically.\n\n"
+            "We already set up a store page for you. Want access?\n\n"
+            "We're onboarding founding merchants right now — free forever, "
+            "no commission, no catch.\n\n"
+            "View Your Store → {cta_url}\n\n"
+            "— The DUM Club Team"
+        ),
+    },
+    "followup_day2": {
+        "subject": "Quick follow-up on your DUM Club store",
+        "body": (
+            "Hi {business_name},\n\n"
+            "Just circling back on your DUM Club store. Two days ago I "
+            "mentioned we already set one up for you — free forever as a "
+            "founding merchant.\n\n"
+            "No credit card, no commission, no catch. Want a look?\n\n"
+            "View Your Store → {cta_url}\n\n"
+            "— The DUM Club Team"
+        ),
+    },
+    "followup_day5": {
+        "subject": "Still saving your founding spot",
+        "body": (
+            "Hi {business_name},\n\n"
+            "Your founding-merchant spot is still open. Once the 50 "
+            "founding slots are filled, the plan shifts to the standard "
+            "tier — but founding members are free forever.\n\n"
+            "Takes 60 seconds to claim.\n\n"
+            "View Your Store → {cta_url}\n\n"
+            "— The DUM Club Team"
+        ),
+    },
+    "followup_day10": {
+        "subject": "Last ping — your DUM Club store",
+        "body": (
+            "Hi {business_name},\n\n"
+            "Last note from me on this. Your founding spot is still "
+            "available but I don't want to keep pinging if this isn't a "
+            "fit. No offence taken either way.\n\n"
+            "If you'd like to see the store we built for you:\n"
+            "{cta_url}\n\n"
+            "Otherwise I'll leave you alone.\n\n"
+            "— The DUM Club Team"
+        ),
+    },
+}
+
+# Ordered (longest-first) so the follow-up endpoint picks the highest
+# applicable template based on days since last_contacted_at.
+OUTREACH_FOLLOWUP_SEQUENCE = [
+    # (min_days_since_last_contact, template_key)
+    (10, "followup_day10"),
+    (5,  "followup_day5"),
+    (2,  "followup_day2"),
+]
+
+
+def _render_outreach_html(body_text: str, contact: str) -> str:
+    """Wrap a plain-text outreach body in a minimal premium email layout
+    with the mandatory unsubscribe link at the bottom."""
+    unsub_url = _unsubscribe_url(contact)
+    body_html = body_text.replace("\n\n", "</p><p style=\"margin:12px 0;\">").replace("\n", "<br/>")
+    return f"""
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
+      <div style="color:#e4e4e7;font-size:14px;line-height:1.6;">
+        <p style="margin:12px 0;">{body_html}</p>
+      </div>
+      <hr style="border:none;border-top:1px solid #27272a;margin:28px 0 16px;" />
+      <p style="color:#52525b;font-size:11px;line-height:1.5;margin:0;">
+        You're receiving this because DUM Club reached out about bringing your business onto the platform.
+        Don't want these? <a href="{unsub_url}" style="color:#71717a;text-decoration:underline;">Unsubscribe</a>.
+      </p>
+    </div>
+    """
+
+
+def render_outreach_template(template_key: str, business_name, contact: str):
+    """Return (subject, plain_body, html_body) for a given template + lead.
+
+    Raises KeyError if the template key is unknown.
+    """
+    tpl = OUTREACH_TEMPLATES[template_key]
+    # Business name may be null — fall back to a friendly default.
+    name = (business_name or "there").strip() if business_name else "there"
+    cta_url = f"{_PLATFORM_URL}/discover"
+    plain_body = tpl["body"].format(business_name=name, cta_url=cta_url)
+    html_body = _render_outreach_html(plain_body, contact)
+    return tpl["subject"], plain_body, html_body
+
+
+def send_outreach_email(contact: str, subject: str, html_body: str):
+    """Send a merchant outreach email. Never raises.
+
+    Returns (send_ok, error_message). On provider failure send_ok is
+    False and error_message contains the exception repr so the caller
+    can persist it on outreach_messages.send_error for later debugging.
+
+    If EMAIL is disabled (no RESEND_API_KEY), returns
+    (False, "email service disabled").
+    """
+    if not _RESEND_API_KEY:
+        return False, "email service disabled"
+    try:
+        import resend
+        resend.api_key = _RESEND_API_KEY
+        result = resend.Emails.send({
+            "from": _FROM_EMAIL,
+            "to": [contact],
+            "subject": subject,
+            "html": html_body,
+        })
+        print(f"[email] outreach sent to={contact} subject={subject!r} id={result.get('id', '?')}")
+        return True, None
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"
+        print(f"[email] outreach FAILED to={contact} subject={subject!r} err={err}")
+        return False, err
