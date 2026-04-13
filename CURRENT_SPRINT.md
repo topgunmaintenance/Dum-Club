@@ -1,87 +1,96 @@
-## SPRINT 1 — Live Commerce Viewer UX (CLOSED)
-
-All four tasks complete and approved.
-
-1. LAYOUT FIX — Chat beside video on desktop ✅
-   Two-column grid (lg: breakpoint), chat right
-   Mobile: video top, chat below, sticky buy bar
-   Commit: 2c3aa01
-
-2. ENERGY LAYER — Purchase animation ✅
-   Sale toast overlay bottom-left of video
-   Green with $ icon, auto-dismiss 4s, stack limit 3
-   Commit: a90e737
-
-3. DUM POINTS CONFIRMATION — Post-purchase ✅
-   Amber toast top-right of video
-   sessionStorage price persistence across Stripe redirect
-   Formula mirrors backend: min(50, 10 + floor(amount/5))
-   Auto-dismiss 10s
-   Commit: 38a6279
-
-4. CAMERA-FIRST SELLER FLOW ✅
-   Go Live button on dashboard project cards
-   Go Live button in navbar (desktop + mobile)
-   Auto-trigger camera preview via ?golive=1 param
-   IVSStageHost autoStart prop
-   Commit: 90f17c8
-
----
-
-## SPRINT 2 — Merchant Onboarding
+# CURRENT_SPRINT.md
+# Sprint 2 — Merchant Onboarding
 
 ## Goal
-Get real merchants signed up and connected
-to DUM Club with zero friction and zero cost.
+
+Get real merchants signed up and connected to
+DUM Club with zero friction and zero cost.
 First 20 merchants are founding merchants —
 $0/month, $0 platform fee, full access.
-Billing architecture must support $29/month
-later but pricing logic must allow $0 now.
+
+## Context — What Already Exists
+
+  business_profiles table — exists and working
+  Stripe buyer checkout — working end to end
+  Feature flags system — exists in feature_flags.py
+  merchants table — migration approved, pending run
+
+## Context — What Is Missing
+
+  merchants table — not yet created
+  Merchant signup endpoint — does not exist
+  Stripe Connect — zero infrastructure
+  Square OAuth — zero infrastructure
+  Merchant dashboard — needs upgrade
+  Founding merchant status — not in any UI
 
 ## Must Finish This Week
 
-1. Merchant signup flow
-   Simple form: business name, type, location
-   No payment required for founding merchants
-   Create merchant record in database
-   Issue founding merchant status flag
+1. MERCHANTS TABLE
+   Run the approved migration
+   Confirm table created with all indexes
 
-2. Stripe Connect onboarding
-   Merchant connects their Stripe account
-   So they can receive payouts from live sales
-   Standard Stripe Connect OAuth flow
+2. MERCHANT SIGNUP ENDPOINT
+   POST /api/merchant/signup
+   Auth via Privy — owner_privy_id TEXT
+   Creates merchant with founding defaults
+   One merchant per user — DB enforced
+   No payment required
+   Under 2 minutes to complete
 
-3. Square OAuth connect
-   Merchant connects their Square account
-   We receive their location_id
-   Every future Square sale auto-awards
-   DUM Points to their customers
+3. STRIPE CONNECT OAUTH
+   GET /api/merchant/stripe-connect/authorize
+   GET /api/merchant/stripe-connect/callback
+   Optional at signup — connect later is fine
+   Uses STRIPE_CONNECT_CLIENT_ID env var
 
-4. Merchant dashboard — minimal
-   Show: transactions today
-   Show: DUM Points issued today
-   Show: connected status for Square
-   Show: QR code to download and print
+4. SQUARE OAUTH
+   GET /api/merchant/square/authorize
+   GET /api/merchant/square/callback
+   Encrypt token — column: square_access_token_enc
+   Optional at signup — connect later is fine
+   Uses SQUARE_APPLICATION_ID and
+   SQUARE_APPLICATION_SECRET env vars
 
-## Pricing Architecture
-  founding_merchant: boolean flag on merchant record
-  subscription_price_usd: DECIMAL default 0
-  platform_fee_percent: DECIMAL default 0
-  Both fields exist for future use
-  Do not hard-code $29 anywhere in UI or logic
-  Founding merchant sees: "Founding Member — Free"
-  Future merchants will see pricing options
+5. MINIMAL MERCHANT DASHBOARD
+   Founding merchant badge — Free forever
+   Stripe Connect status + connect button
+   Square status + connect button
+   QR code linking to business profile
+   Transaction count today
+   Must work without any connections made
+
+## Pricing Rules
+
+  Do not hard-code $29 anywhere
+  founding_merchant flag overrides all pricing
+  Founding merchant always sees: Free
+  Do not change existing 7% buyer platform fee
 
 ## Do Not Touch
-  Live commerce flow — sprint 1 complete
+
+  Live commerce flow — Sprint 1 complete
   Stripe checkout for buyers — working
-  Webhook handler — hardened
-  Auth system
-  IVS streaming
+  Webhook handler — hardened, do not touch
+  Auth system — do not touch
+  IVS streaming — do not touch
+  existing feature_flags.py entries — never remove
+  All existing docs — do not touch
+
+## Build Order
+
+  Complete steps in strict order
+  Each step confirmed before next begins
+  Report after each step before proceeding
 
 ## Definition of Done
-  A real merchant can sign up in under 4 minutes
-  Connect Square in one OAuth click
-  See their dashboard with live data
-  Download their QR code
-  All at zero cost with founding merchant status
+
+  Merchant signs up in under 2 minutes
+  Founding merchant status shown clearly
+  Stripe Connect OAuth works end to end
+  Square OAuth works end to end
+  Dashboard shows basic data
+  QR code displayed or downloadable
+  All at zero cost for founding merchants
+  TypeScript passes on all new files
+  No regressions on existing buyer flows
