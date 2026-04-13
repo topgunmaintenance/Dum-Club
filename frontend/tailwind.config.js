@@ -6,6 +6,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Pull Geist via the CSS variables set by next/font on <html>.
+        // Tailwind's font-sans / font-mono utilities now resolve to Geist
+        // across the whole app; inline "Space Mono" styles still win
+        // where they're hardcoded, and will be migrated in a follow-up.
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+      },
       colors: {
         base: "var(--color-bg-base)",
         card: "var(--color-bg-card)",
