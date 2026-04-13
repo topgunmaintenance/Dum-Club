@@ -79,7 +79,7 @@ body::before {
   border-radius: 14px !important;
   height: 52px !important;
   min-width: 190px !important;
-  font-family: "Space Mono", monospace !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace !important;
   font-size: 12px !important;
   font-weight: 700 !important;
   letter-spacing: 0.13em !important;

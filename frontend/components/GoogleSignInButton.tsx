@@ -33,7 +33,7 @@ export default function GoogleSignInButton() {
         fontSize: "12px",
         letterSpacing: "0.13em",
         cursor: "pointer",
-        fontFamily: "'Space Mono', monospace",
+        fontFamily: "var(--font-geist-mono), monospace",
         textTransform: "uppercase",
         borderRadius: "14px",
         boxShadow: hover ? "0 0 10px rgba(0,255,178,0.25)" : "none",

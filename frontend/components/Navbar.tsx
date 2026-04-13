@@ -150,7 +150,7 @@ export function Navbar() {
           onClick={() => setMenuOpen((o) => !o)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           style={{
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-geist-mono), monospace",
             fontSize: "20px",
             background: "none",
             border: "1px solid #2a2a2a",
@@ -234,7 +234,7 @@ export function Navbar() {
                   border: active
                     ? "1px solid rgba(0,255,178,0.22)"
                     : "1px solid transparent",
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-geist-mono), monospace",
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
                 }}
@@ -261,7 +261,7 @@ export function Navbar() {
                 <Link
                   href={`/project/${latestProjectId}?golive=1`}
                   style={{
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "11px",
                     fontWeight: 700,
                     color: "#fff",
@@ -289,7 +289,7 @@ export function Navbar() {
                 <Link
                   href="/hub"
                   style={{
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "11px",
                     color: "#00FFB2",
                     letterSpacing: "0.1em",
@@ -314,7 +314,7 @@ export function Navbar() {
                   type="button"
                   disabled
                   style={{
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "12px",
                     color: "#777",
                     letterSpacing: "0.08em",
@@ -337,7 +337,7 @@ export function Navbar() {
                     title="Account menu"
                     aria-expanded={userMenuOpen}
                     style={{
-                      fontFamily: "'Space Mono', monospace",
+                      fontFamily: "var(--font-geist-mono), monospace",
                       fontSize: "12px",
                       color: "#00FFB2",
                       letterSpacing: "0.08em",
@@ -389,7 +389,7 @@ export function Navbar() {
                             style={{
                               display: "block",
                               padding: "11px 14px",
-                              fontFamily: "'Space Mono', monospace",
+                              fontFamily: "var(--font-geist-mono), monospace",
                               fontSize: "12px",
                               fontWeight: 700,
                               letterSpacing: "0.12em",
@@ -425,7 +425,7 @@ export function Navbar() {
                           display: "block",
                           width: "100%",
                           padding: "11px 14px",
-                          fontFamily: "'Space Mono', monospace",
+                          fontFamily: "var(--font-geist-mono), monospace",
                           fontSize: "12px",
                           fontWeight: 700,
                           letterSpacing: "0.12em",
@@ -462,7 +462,7 @@ export function Navbar() {
                     fontSize: "12px",
                     letterSpacing: "0.13em",
                     cursor: "pointer",
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     textTransform: "uppercase",
                     borderRadius: "14px",
                     height: "52px",
@@ -477,7 +477,7 @@ export function Navbar() {
               {connected && (
                 <div
                   style={{
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "12px",
                     color: "#00FFB2",
                     letterSpacing: "0.14em",
@@ -526,7 +526,7 @@ export function Navbar() {
               style={{
                 display: "block",
                 padding: "14px 20px",
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-geist-mono), monospace",
                 fontSize: "13px",
                 fontWeight: 700,
                 textDecoration: "none",
@@ -552,7 +552,7 @@ export function Navbar() {
               justifyContent: "space-between",
               margin: "12px 20px 0",
               padding: "12px 16px",
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-geist-mono), monospace",
               fontSize: "13px",
               fontWeight: 700,
               letterSpacing: "0.08em",
@@ -582,7 +582,7 @@ export function Navbar() {
               gap: "8px",
               margin: "10px 20px 0",
               padding: "14px 18px",
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-geist-mono), monospace",
               fontSize: "13px",
               fontWeight: 700,
               letterSpacing: "0.15em",
@@ -606,7 +606,7 @@ export function Navbar() {
           <div style={{ marginTop: "18px", padding: "0 20px" }}>
             <div
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-geist-mono), monospace",
                 fontSize: "9px",
                 letterSpacing: "0.22em",
                 color: "#555",
@@ -627,7 +627,7 @@ export function Navbar() {
                   style={{
                     display: "block",
                     padding: "12px 14px",
-                    fontFamily: "'Space Mono', monospace",
+                    fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "12px",
                     fontWeight: 700,
                     letterSpacing: "0.12em",
@@ -657,7 +657,7 @@ export function Navbar() {
             {loading ? (
               <div
                 style={{
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-geist-mono), monospace",
                   fontSize: "12px",
                   color: "#777",
                   padding: "4px 0",
@@ -671,7 +671,7 @@ export function Navbar() {
                 onClick={() => { logout(); setMenuOpen(false); }}
                 title="Sign out"
                 style={{
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-geist-mono), monospace",
                   fontSize: "12px",
                   color: "#00FFB2",
                   letterSpacing: "0.08em",
@@ -698,7 +698,7 @@ export function Navbar() {
                   fontSize: "12px",
                   letterSpacing: "0.13em",
                   cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-geist-mono), monospace",
                   textTransform: "uppercase",
                   borderRadius: "14px",
                   width: "100%",
@@ -711,7 +711,7 @@ export function Navbar() {
             {connected && (
               <div
                 style={{
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-geist-mono), monospace",
                   fontSize: "11px",
                   color: "#00FFB2",
                   letterSpacing: "0.14em",

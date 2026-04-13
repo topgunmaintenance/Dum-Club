@@ -84,14 +84,14 @@ function HeroDemo() {
 
       {phase <= 1 && (
         <div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>
             Describe your business
           </div>
-          <div style={{ background: "#161616", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "10px", padding: "14px 16px", fontFamily: "'Space Mono', monospace", fontSize: "14px", color: phase === 0 ? "#f0f0f0" : "#888", minHeight: "48px" }}>
+          <div style={{ background: "#161616", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "10px", padding: "14px 16px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "14px", color: phase === 0 ? "#f0f0f0" : "#888", minHeight: "48px" }}>
             {phase === 0 ? <>{typed}<span style={{ opacity: 0.6, animation: "blink 1s infinite" }}>|</span></> : target}
           </div>
           {phase === 1 && (
-            <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px", fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#00FF87" }}>
+            <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", color: "#00FF87" }}>
               <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%", display: "inline-block" }} className="pulse-dot" />
               AI is building your storefront...
             </div>
@@ -101,7 +101,7 @@ function HeroDemo() {
 
       {phase === 2 && (
         <div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#00FF87", textTransform: "uppercase", marginBottom: "12px" }}>Generating offers</div>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#00FF87", textTransform: "uppercase", marginBottom: "12px" }}>Generating offers</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {DEMO_OFFERS.map((o, i) => (
               <div key={i} style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", animation: `fadeUp 0.3s ease ${i * 0.15}s both` }}>
@@ -109,7 +109,7 @@ function HeroDemo() {
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "#f0f0f0" }}>{o.title}</div>
                   <div style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}>{o.tag}</div>
                 </div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "14px", fontWeight: 700, color: "#00FF87" }}>{o.price}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "14px", fontWeight: 700, color: "#00FF87" }}>{o.price}</div>
               </div>
             ))}
           </div>
@@ -121,19 +121,19 @@ function HeroDemo() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
             <div>
               <div style={{ fontSize: "16px", fontWeight: 800, color: "#f0f0f0" }}>Sparkle Mobile Wash</div>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", color: "#888", marginTop: "2px" }}>SERVICES · DUM CLUB</div>
+              <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.1em", color: "#888", marginTop: "2px" }}>SERVICES · DUM CLUB</div>
             </div>
-            <div style={{ background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "4px 10px", fontFamily: "'Space Mono', monospace", fontSize: "9px", color: "#00FF87", letterSpacing: "0.1em" }}>LIVE</div>
+            <div style={{ background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "4px 10px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", color: "#00FF87", letterSpacing: "0.1em" }}>LIVE</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {DEMO_OFFERS.map((o, i) => (
               <div key={i} style={{ background: "#161616", borderRadius: "8px", padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "12px", color: "#ccc" }}>{o.title}</span>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "12px", fontWeight: 600, color: "#00FF87" }}>{o.price}</span>
+                <span style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "12px", fontWeight: 600, color: "#00FF87" }}>{o.price}</span>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: "12px", textAlign: "center", fontFamily: "'Space Mono', monospace", fontSize: "10px", color: "#444", letterSpacing: "0.1em" }}>
+          <div style={{ marginTop: "12px", textAlign: "center", fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", color: "#444", letterSpacing: "0.1em" }}>
             PAYMENTS · REWARDS · ANALYTICS — ALL ACTIVE
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function BusinessPage() {
         <Reveal>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
-            fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.16em",
+            fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.16em",
             color: "#444", border: "1px solid rgba(255,255,255,0.06)", padding: "5px 14px", borderRadius: "20px", marginBottom: "24px",
           }}>
             <span style={{ color: "#00FF87" }}>★</span> DUM CLUB · DIGITAL UTILITY MARKET
@@ -216,7 +216,7 @@ export default function BusinessPage() {
 
         <Reveal delay={0.1}>
           <h1 style={{
-            fontFamily: "'Space Mono', Syne, monospace", fontSize: "clamp(32px, 9vw, 52px)",
+            fontFamily: "var(--font-geist-mono), monospace", fontSize: "clamp(32px, 9vw, 52px)",
             fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: "20px",
           }}>
             Your business.<br />
@@ -244,7 +244,7 @@ export default function BusinessPage() {
         </Reveal>
 
         <Reveal delay={0.4}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", fontSize: "10px", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", color: "#444" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", fontSize: "10px", fontFamily: "var(--font-geist-mono), monospace", letterSpacing: "0.08em", color: "#444" }}>
             <span><span style={{ color: "#00FF87" }}>✓</span> Free to start</span>
             <span><span style={{ color: "#00FF87" }}>✓</span> Stripe payments</span>
             <span><span style={{ color: "#00FF87" }}>✓</span>{liveStats && liveStats.live_projects > 0 ? ` ${liveStats.live_projects} businesses live` : " Live in minutes"}</span>
@@ -267,7 +267,7 @@ export default function BusinessPage() {
 
         {/* 4 steps */}
         <Reveal>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px", textAlign: "center" }}>
+          <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px", textAlign: "center" }}>
             Live in 4 steps. <span style={{ color: "#00FF87" }}>No friction.</span>
           </h2>
           <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px", textAlign: "center" }}>From idea to customers paying you — the same afternoon.</p>
@@ -289,10 +289,10 @@ export default function BusinessPage() {
                   width: "28px", height: "28px", margin: "0 auto 10px",
                   borderRadius: "8px", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'Space Mono', monospace", fontSize: "11px", color: "#00FF87",
+                  fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", color: "#00FF87",
                 }}>{s.n}</div>
                 <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "6px" }}>{s.t}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "11px", fontWeight: 700, color: "#00FF87", letterSpacing: "0.06em" }}>{s.time}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", fontWeight: 700, color: "#00FF87", letterSpacing: "0.06em" }}>{s.time}</div>
               </div>
             </Reveal>
           ))}
@@ -302,8 +302,8 @@ export default function BusinessPage() {
       {/* ═══════════════ SECTION 3: WHAT YOU GET ═══════════════ */}
       <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>What you get</div>
-          <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>What you get</div>
+          <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
             Everything you need.<br />Nothing you don{"'"}t.
           </h2>
         </Reveal>
@@ -323,7 +323,7 @@ export default function BusinessPage() {
             }}
           >
             <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "140px", height: "140px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#00FF87", textTransform: "uppercase", marginBottom: "8px", fontWeight: 700 }}>
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#00FF87", textTransform: "uppercase", marginBottom: "8px", fontWeight: 700 }}>
               ★ Founding Merchant Program
             </div>
             <div style={{ fontSize: "15px", lineHeight: 1.55, color: "#f0f0f0", fontWeight: 500 }}>
@@ -344,7 +344,7 @@ export default function BusinessPage() {
             <Reveal key={i} delay={i * 0.06}>
               <div className="biz-feature-card">
                 <div style={{ fontSize: "20px", marginBottom: "8px" }}>{f.icon}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87", textTransform: "uppercase", marginBottom: "5px" }}>{f.tag}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87", textTransform: "uppercase", marginBottom: "5px" }}>{f.tag}</div>
                 <div style={{ fontWeight: 700, fontSize: "14px", color: "#f0f0f0", marginBottom: "6px" }}>{f.title}</div>
                 <div style={{ fontSize: "12px", color: "#888", lineHeight: 1.55 }}>{f.body}</div>
               </div>
@@ -357,8 +357,8 @@ export default function BusinessPage() {
       <section style={{ padding: "0 20px 72px", maxWidth: "780px", margin: "0 auto", position: "relative", zIndex: 1 }}>
         <Reveal>
           <div style={{ textAlign: "center", marginBottom: "24px" }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>See yourself here</div>
-            <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Built for every business</h2>
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>See yourself here</div>
+            <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Built for every business</h2>
           </div>
         </Reveal>
 
@@ -373,7 +373,7 @@ export default function BusinessPage() {
               { cat: "Digital", name: "Design Studio", dum: "+2 DUM/project" },
             ].map((u, i) => (
               <div key={i} style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "16px" }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#00FF87", marginBottom: "6px", textTransform: "uppercase" }}>{u.cat}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#00FF87", marginBottom: "6px", textTransform: "uppercase" }}>{u.cat}</div>
                 <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "3px" }}>{u.name}</div>
                 <div style={{ fontSize: "11px", color: "#888" }}>{u.dum}</div>
               </div>
@@ -386,16 +386,16 @@ export default function BusinessPage() {
           <Reveal delay={0.2}>
             <div style={{ marginTop: "24px" }} className="biz-grid-3col">
               <div style={{ background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#00FF87", lineHeight: 1 }}>{liveStats.live_projects}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>LIVE BUSINESSES</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#00FF87", lineHeight: 1 }}>{liveStats.live_projects}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>LIVE BUSINESSES</div>
               </div>
               <div style={{ background: "#0b0b0b", border: "1px solid rgba(245,166,35,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#F5A623", lineHeight: 1 }}>{liveStats.active_offers}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>ACTIVE OFFERS</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#F5A623", lineHeight: 1 }}>{liveStats.active_offers}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>ACTIVE OFFERS</div>
               </div>
               <div style={{ background: "#0b0b0b", border: "1px solid rgba(79,158,255,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px", fontWeight: 800, color: "#4F9EFF", lineHeight: 1 }}>{liveStats.businesses}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED BUSINESSES</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#4F9EFF", lineHeight: 1 }}>{liveStats.businesses}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED BUSINESSES</div>
               </div>
             </div>
           </Reveal>
@@ -412,7 +412,7 @@ export default function BusinessPage() {
           }}>
             <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-            <h2 style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(26px, 7vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
+            <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "clamp(26px, 7vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
               Your business could be<br /><span className="biz-hero-glow" style={{ color: "#00FF87" }}>selling right now.</span>
             </h2>
             <p style={{ fontSize: "15px", color: "#888", marginBottom: "32px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 32px" }}>
@@ -426,7 +426,7 @@ export default function BusinessPage() {
                 Explore Businesses →
               </Link>
             </div>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>
               No credit card · No developer needed · Live in minutes
             </div>
           </div>
