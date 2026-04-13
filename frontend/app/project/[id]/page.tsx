@@ -3825,8 +3825,12 @@ return (
                 <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
               </div>
 
-              {/* Pinned product / auction — full card on desktop, hidden on mobile (sticky bar replaces it) */}
-              <div className="hidden lg:block">
+              {/* Pinned product / auction — full card on every viewport.
+                  On mobile this sits above the chat (the chat is a separate
+                  grid item that falls below the left column when collapsed).
+                  The fixed sticky buy bar at the bottom of the screen is
+                  still rendered on mobile as an always-visible quick action. */}
+              <div>
                 {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
                   <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
                     <div className="mb-3 flex items-center justify-between">
@@ -3973,7 +3977,7 @@ return (
                         {pinnedOffer.description && (
                           <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
                         )}
-                        <div className="mt-3 flex items-center justify-between">
+                        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <span className="font-mono text-xl font-bold text-emerald-400">
                               ${Number(pinnedOffer.price_usd).toFixed(2)}
@@ -3989,12 +3993,12 @@ return (
                               && (pinnedOffer.quantity_available || 0) > 0
                               && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
                             return isSoldOut ? (
-                              <span className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-bold text-zinc-500">Sold Out</span>
+                              <span className="w-full rounded-xl border border-zinc-700 px-5 py-2.5 text-center text-sm font-bold text-zinc-500 sm:w-auto">Sold Out</span>
                             ) : (
                               <button
                                 onClick={() => buyOffer(pinnedOffer)}
                                 disabled={!!buyingOfferId}
-                                className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                                className="w-full rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40 sm:w-auto sm:py-2.5"
                               >
                                 {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
                               </button>

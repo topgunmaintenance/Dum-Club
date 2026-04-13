@@ -162,14 +162,22 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
                 a.muted = false;
                 a.volume = 1.0;
                 a.autoplay = true;
+                // Optimistically show the "Tap to hear audio" overlay the
+                // moment the audio track arrives. If autoplay succeeds, the
+                // "playing" event listener above flips this back to false
+                // within a frame. If autoplay is blocked, the existing
+                // document-level recovery handler takes over. Doing this
+                // BEFORE calling play() avoids a 30s+ delay waiting for the
+                // play() promise to reject under autoplay policy.
+                if (mountedRef.current) setAudioBlocked(true);
                 a.play().then(() => {
                   console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
                 }).catch((e) => {
                   console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
-                  // Surface a visible tap target so the viewer knows audio is
-                  // available. The existing document-level listeners below
-                  // remain the primary recovery path; this is purely a UX cue.
-                  if (mountedRef.current) setAudioBlocked(true);
+                  // audioBlocked is already true from the pre-play set above;
+                  // the visible overlay is therefore already on screen. The
+                  // document-level listeners below remain the primary
+                  // recovery path for the actual unmute.
                   // Autoplay was blocked — unmute on next user interaction
                   const unmute = () => {
                     a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
