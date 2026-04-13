@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_BASE } from "../../../lib/apiBase";
 
-export default function StripeCallbackPage() {
+function StripeCallbackInner() {
   const params = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
@@ -62,5 +62,13 @@ export default function StripeCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StripeCallbackPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-zinc-950"><span className="text-sm text-zinc-500">Loading...</span></div>}>
+      <StripeCallbackInner />
+    </Suspense>
   );
 }
