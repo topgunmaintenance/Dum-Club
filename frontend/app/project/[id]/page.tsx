@@ -914,6 +914,36 @@ export default function ProjectPage() {
     }
   }
 
+  // Lightweight viewer-side project refresh used by the live-stream polling
+  // loop. Deliberately does NOT go through the full loadProject() path —
+  // that one also resets chatMeta (including free_questions_left), promoCopy,
+  // storeItems, tokenMeta, and serviceProfile, which would clobber in-progress
+  // UI state on every tick. We merge only the fields that actually change
+  // during a live stream (live state + pinned offer + auction + status).
+  async function refreshLiveStateForViewer() {
+    if (!id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${id}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const fresh = data?.project || data;
+      if (!fresh) return;
+      setProject((prev) => prev ? {
+        ...prev,
+        is_live: fresh.is_live,
+        pinned_offer_id: fresh.pinned_offer_id ?? null,
+        active_auction_id: fresh.active_auction_id ?? null,
+        live_provider: fresh.live_provider ?? null,
+        live_playback_id: fresh.live_playback_id ?? null,
+        live_stream_id: fresh.live_stream_id ?? null,
+        stream_url: fresh.stream_url ?? null,
+        status: fresh.status ?? prev.status,
+      } : fresh);
+    } catch {
+      // Silent — the next poll tick will retry.
+    }
+  }
+
   function openOfferForm(offer?: Offer) {
     setOfferEditing(offer ? { ...offer } : {
       title: "",
@@ -2780,6 +2810,42 @@ export default function ProjectPage() {
     refreshMarketData();
     loadRedemptions();
   }, [id]);
+
+  // ── Viewer fast-poll while watching a live stream ─────────────────────
+  // When a project is_live and the current user is NOT the owner, poll
+  // project state + offers every 3 seconds so that pinned-offer changes,
+  // new offers, and inventory updates appear within a few seconds of the
+  // host making them. The owner already sees local state updates instantly
+  // on pin/unpin, and we deliberately don't run this on the owner side
+  // because the full load path would wipe their in-progress UI.
+  //
+  // Skips when the tab is hidden (document.visibilityState === "hidden")
+  // so we're not burning requests in background tabs.
+  useEffect(() => {
+    if (!id) return;
+    if (!project?.is_live) return;
+    if (isOwner) return;
+
+    let cancelled = false;
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      await refreshLiveStateForViewer();
+      if (cancelled) return;
+      loadOffers();
+    };
+
+    // Run once immediately so the viewer doesn't wait for the first interval.
+    tick();
+    const iv = setInterval(tick, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, project?.is_live, isOwner]);
 
   // Scroll to recommended offer when arriving from homepage
   useEffect(() => {
