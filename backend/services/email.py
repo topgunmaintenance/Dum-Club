@@ -339,7 +339,7 @@ def render_outreach_template(template_key: str, business_name, contact: str):
     tpl = OUTREACH_TEMPLATES[template_key]
     # Business name may be null — fall back to a friendly default.
     name = (business_name or "there").strip() if business_name else "there"
-    cta_url = f"{_PLATFORM_URL}/discover"
+    cta_url = f"{_PLATFORM_URL}/merchant"
     plain_body = tpl["body"].format(business_name=name, cta_url=cta_url)
     html_body = _render_outreach_html(plain_body, contact)
     return tpl["subject"], plain_body, html_body
