@@ -17,6 +17,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stageRef = useRef<any>(null);
@@ -148,6 +149,13 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
                 // Store in ref to prevent garbage collection
                 if (!audioRef.current) {
                   audioRef.current = new Audio();
+                  // Whenever audio actually starts producing sound — whether
+                  // via initial autoplay, the document-level click listener,
+                  // or the visible "Tap to hear audio" overlay — hide the
+                  // blocked overlay. Single source of truth for the UI state.
+                  audioRef.current.addEventListener("playing", () => {
+                    if (mountedRef.current) setAudioBlocked(false);
+                  });
                 }
                 const a = audioRef.current;
                 a.srcObject = new MediaStream([track]);
@@ -158,6 +166,10 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
                   console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
                 }).catch((e) => {
                   console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
+                  // Surface a visible tap target so the viewer knows audio is
+                  // available. The existing document-level listeners below
+                  // remain the primary recovery path; this is purely a UX cue.
+                  if (mountedRef.current) setAudioBlocked(true);
                   // Autoplay was blocked — unmute on next user interaction
                   const unmute = () => {
                     a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
@@ -249,6 +261,33 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
           <p className="text-sm text-zinc-500">Stream has ended</p>
         </div>
+      )}
+
+      {/* ── Audio unmute banner ──────────────────────────────────────
+           When the browser's autoplay policy blocks audio.play(), the
+           existing document-level click/touchstart listener will resume
+           playback on the next interaction — but viewers have no way to
+           know audio is available. This overlay gives them a visible tap
+           target. Dismisses automatically via the "playing" event listener
+           on the audio element. */}
+      {audioBlocked && hasVideo && (
+        <button
+          type="button"
+          aria-label="Tap to hear audio"
+          onClick={() => {
+            // Direct resume as a belt-and-suspenders backup to the
+            // existing document-level listener. Safe to call even if the
+            // listener also fires — play() on an already-playing element
+            // is a no-op. Do not change any other audio logic.
+            const a = audioRef.current;
+            if (a) a.play().catch(() => {});
+          }}
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-400/50 bg-black/85 px-5 py-3 text-sm font-bold text-white shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(0,255,163,0.15)] backdrop-blur-md transition hover:border-emerald-400/80 hover:bg-black/95 animate-pulse"
+          style={{ minHeight: 44, minWidth: 44 }}
+        >
+          <span className="text-base leading-none">🔊</span>
+          <span className="leading-none">Tap to hear audio</span>
+        </button>
       )}
     </div>
   );
