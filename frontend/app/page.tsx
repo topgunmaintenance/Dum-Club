@@ -1143,7 +1143,7 @@ function LiveSaleToast() {
 
   return (
     <div
-      className={`fixed bottom-4 left-4 z-50 transition-all duration-500 ${
+      className={`fixed bottom-4 left-4 z-50 hidden transition-all duration-500 lg:block ${
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
     >
@@ -2072,27 +2072,6 @@ export default function Home() {
             {/* ── /DYNAMIC HERO BANNER ───────────────────────────── */}
 
             <div className="mx-auto max-w-3xl text-center">
-
-              {/* Eyebrow */}
-              <div className="hero-entrance mb-4 text-[clamp(10px,2.5vw,13px)] font-bold uppercase tracking-[0.3em] text-zinc-500">
-                Digital Utility Market
-              </div>
-
-              {/* Line 1 — the HERO line */}
-              <h1 className="hero-entrance mt-3 text-[clamp(32px,9vw,72px)] font-black leading-[0.95] tracking-[-0.04em]">
-                <span className="text-white">Sell anything.</span>
-                <br />
-                <span className="text-white">Buy anything.</span>
-                <br />
-                <span className="hero-text-glow">Reward everyone.</span>
-              </h1>
-
-              {/* Line 3 — supporting detail */}
-              <p className="hero-entrance-delay-2 mx-auto mt-5 max-w-md text-[clamp(14px,3.5vw,18px)] font-normal leading-relaxed text-zinc-500">
-                Launch what you sell, or find what you need.
-                <br className="hidden sm:block" />
-                Get paid or earn rewards.
-              </p>
 
               {/* ── LAUNCH INPUT ── */}
               <div className="hero-entrance-delay-3 mx-auto mt-10 max-w-2xl">
