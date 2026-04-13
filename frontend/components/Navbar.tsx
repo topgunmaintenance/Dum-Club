@@ -15,6 +15,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [navHover, setNavHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [dumBalance, setDumBalance] = useState(0);
   const [latestProjectId, setLatestProjectId] = useState<string | null>(null);
 
@@ -65,16 +66,35 @@ export function Navbar() {
     loadProjects();
   }, [user]);
 
-  // Close mobile menu on route change
+  // Close mobile + user menus on route change
   useEffect(() => {
     setMenuOpen(false);
+    setUserMenuOpen(false);
   }, [path]);
 
+  // Dismiss user dropdown when clicking outside
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest?.("[data-user-menu]")) setUserMenuOpen(false);
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [userMenuOpen]);
+
+  // Primary nav — simplified to the active-growth priorities.
+  // Build, Dashboard, and AI Chat live in the authenticated user dropdown.
   const links = [
-    { href: "/discover", label: "Discover" },
-    { href: "/build", label: "Build" },
+    { href: "/discover", label: "Explore" },
+    { href: "/hub", label: "DUM Points" },
     { href: "/business", label: "For Business" },
-    { href: "/hub", label: "DUM Hub" },
+    { href: "/merchant", label: "Merchant" },
+  ];
+
+  // Items in the authenticated-user dropdown (and mirrored into mobile menu).
+  const userMenuLinks = [
+    { href: "/build", label: "Build" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/chat", label: "AI Chat" },
   ];
@@ -310,44 +330,126 @@ export function Navbar() {
                   Loading...
                 </button>
               ) : user ? (
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "#00FFB2";
-                    e.currentTarget.style.border =
-                      "1px solid rgba(0,255,178,0.35)";
-                    e.currentTarget.style.background = "rgba(0,255,178,0.10)";
-                    e.currentTarget.style.boxShadow =
-                      "0 0 10px rgba(0,255,178,0.22)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "#00FFB2";
-                    e.currentTarget.style.border =
-                      "1px solid rgba(0,255,178,0.22)";
-                    e.currentTarget.style.background = "rgba(0,255,178,0.06)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                  title="Sign out"
-                  style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "12px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.08em",
-                    whiteSpace: "nowrap",
-                    border: "1px solid rgba(0,255,178,0.22)",
-                    background: "rgba(0,255,178,0.06)",
-                    borderRadius: "14px",
-                    padding: "13px 18px",
-                    height: "52px",
-                    display: "flex",
-                    alignItems: "center",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {shortEmail}
-                </button>
+                <div data-user-menu style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen((o) => !o)}
+                    title="Account menu"
+                    aria-expanded={userMenuOpen}
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: "12px",
+                      color: "#00FFB2",
+                      letterSpacing: "0.08em",
+                      whiteSpace: "nowrap",
+                      border: userMenuOpen
+                        ? "1px solid rgba(0,255,178,0.35)"
+                        : "1px solid rgba(0,255,178,0.22)",
+                      background: userMenuOpen
+                        ? "rgba(0,255,178,0.10)"
+                        : "rgba(0,255,178,0.06)",
+                      borderRadius: "14px",
+                      padding: "13px 18px",
+                      height: "52px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>{shortEmail}</span>
+                    <span style={{ fontSize: "9px", opacity: 0.7, transform: userMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }}>▼</span>
+                  </button>
+
+                  {userMenuOpen && (
+                    <div
+                      data-user-menu
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
+                        right: 0,
+                        minWidth: "220px",
+                        background: "rgba(6,6,6,0.98)",
+                        border: "1px solid rgba(0,255,178,0.18)",
+                        borderRadius: "14px",
+                        padding: "8px",
+                        boxShadow: "0 16px 48px rgba(0,0,0,0.6), 0 0 24px rgba(0,255,178,0.08)",
+                        backdropFilter: "blur(16px)",
+                        WebkitBackdropFilter: "blur(16px)",
+                      }}
+                    >
+                      {userMenuLinks.map((item) => {
+                        const active = path === item.href;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setUserMenuOpen(false)}
+                            style={{
+                              display: "block",
+                              padding: "11px 14px",
+                              fontFamily: "'Space Mono', monospace",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                              textDecoration: "none",
+                              color: active ? "#00FFB2" : "#d0d0d0",
+                              background: active ? "rgba(0,255,178,0.08)" : "transparent",
+                              borderRadius: "10px",
+                              transition: "all 0.12s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!active) {
+                                e.currentTarget.style.background = "rgba(0,255,178,0.06)";
+                                e.currentTarget.style.color = "#00FFB2";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!active) {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "#d0d0d0";
+                              }
+                            }}
+                          >
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                      <div style={{ margin: "6px 10px", height: "1px", background: "rgba(255,255,255,0.06)" }} />
+                      <button
+                        type="button"
+                        onClick={() => { setUserMenuOpen(false); logout(); }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          padding: "11px 14px",
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          textAlign: "left",
+                          color: "#f08080",
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          transition: "all 0.12s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(240,128,128,0.08)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"
@@ -439,6 +541,36 @@ export function Navbar() {
           );
         })}
 
+        {/* DUM balance badge — visible in the mobile menu for logged-in users. */}
+        {mounted && user && dumBalance > 0 && (
+          <Link
+            href="/hub"
+            onClick={() => setMenuOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              margin: "12px 20px 0",
+              padding: "12px 16px",
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textDecoration: "none",
+              color: "#00FFB2",
+              border: "1px solid rgba(0,255,178,0.22)",
+              background: "rgba(0,255,178,0.05)",
+              borderRadius: "14px",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "15px" }}>◆</span>
+              {dumBalance} DUM POINTS
+            </span>
+            <span style={{ fontSize: "10px", opacity: 0.7 }}>VIEW →</span>
+          </Link>
+        )}
+
         {mounted && user && latestProjectId && (
           <Link
             href={`/project/${latestProjectId}?golive=1`}
@@ -467,6 +599,50 @@ export function Navbar() {
             </span>
             Go Live
           </Link>
+        )}
+
+        {/* Account section: Build / Dashboard / AI Chat for logged-in users. */}
+        {mounted && user && (
+          <div style={{ marginTop: "18px", padding: "0 20px" }}>
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "9px",
+                letterSpacing: "0.22em",
+                color: "#555",
+                textTransform: "uppercase",
+                marginBottom: "6px",
+                paddingLeft: "4px",
+              }}
+            >
+              Account
+            </div>
+            {userMenuLinks.map((item) => {
+              const active = path === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    display: "block",
+                    padding: "12px 14px",
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    color: active ? "#00FFB2" : "#c8c8c8",
+                    background: active ? "rgba(0,255,178,0.06)" : "transparent",
+                    borderRadius: "10px",
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
         )}
 
         {mounted && (

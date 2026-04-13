@@ -228,17 +228,17 @@ export default function BusinessPage() {
         <Reveal delay={0.2}>
           <p style={{ fontSize: "16px", color: "#999", lineHeight: 1.65, marginBottom: "32px", maxWidth: "480px", margin: "0 auto 32px" }}>
             DUM Club gives you a storefront, Stripe payments, and built-in loyalty
-            — <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>no website, no developer, no monthly fee.</strong>
+            — <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>founding merchants pay $0/month, forever.</strong>
           </p>
         </Reveal>
 
         <Reveal delay={0.3}>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "28px", maxWidth: "360px", margin: "0 auto 28px" }}>
-            <Link href="/build" className="biz-cta-primary">
-              Start Selling →
+            <Link href="/merchant" className="biz-cta-primary">
+              Become a Founding Merchant — Free →
             </Link>
             <Link href="/discover" className="biz-cta-secondary">
-              Browse Live Businesses ↓
+              Explore Businesses →
             </Link>
           </div>
         </Reveal>
@@ -308,11 +308,35 @@ export default function BusinessPage() {
           </h2>
         </Reveal>
 
+        {/* ── Founding merchant callout — emerald-bordered premium emphasis. */}
+        <Reveal delay={0.05}>
+          <div
+            style={{
+              background: "linear-gradient(180deg, rgba(0,255,135,0.08), rgba(0,255,135,0.02))",
+              border: "1px solid rgba(0,255,135,0.35)",
+              borderRadius: "14px",
+              padding: "18px 22px",
+              marginBottom: "22px",
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 0 24px rgba(0,255,135,0.08)",
+            }}
+          >
+            <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "140px", height: "140px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#00FF87", textTransform: "uppercase", marginBottom: "8px", fontWeight: 700 }}>
+              ★ Founding Merchant Program
+            </div>
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "#f0f0f0", fontWeight: 500 }}>
+              First 20 merchants pay <strong style={{ color: "#00FF87" }}>$0/month. Forever.</strong> No commission. No new hardware. No catch.
+            </div>
+          </div>
+        </Reveal>
+
         <div className="biz-grid-2col">
           {[
             { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page — offers, pricing, descriptions." },
             { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account needed." },
-            { icon: "🔁", tag: "LOYALTY", title: "Customers keep coming back", body: "Every purchase earns DUM Points automatically. Built-in repeat business." },
+            { icon: "🔁", tag: "REWARDS", title: "Customers earn DUM Points — and come back", body: "Every purchase at your business earns DUM Points redeemable across the entire network. That cross-merchant loyalty is what brings customers back." },
             { icon: "🤖", tag: "AI POWERED", title: "Your storefront writes itself", body: "AI generates offers, descriptions, and pricing. Edit anything, or don't." },
             { icon: "📊", tag: "ANALYTICS", title: "See what sells", body: "Views, sales, and customer activity. One dashboard." },
             { icon: "✓", tag: "TRUST", title: "Verified business badge", body: "Get reviewed. Earn a trust badge. Rank higher." },
@@ -395,11 +419,11 @@ export default function BusinessPage() {
               Describe what you sell. AI builds your storefront with payments included. Share your link — you{"'"}re open for business.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "380px", margin: "0 auto 20px" }}>
-              <Link href="/build" className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
-                Start Selling →
+              <Link href="/merchant" className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
+                Become a Founding Merchant — Free →
               </Link>
               <Link href="/discover" className="biz-cta-secondary">
-                View Live Businesses ↓
+                Explore Businesses →
               </Link>
             </div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>

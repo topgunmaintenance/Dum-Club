@@ -1110,7 +1110,6 @@ const HOME_SECTIONS = [
   { id: "section-features", label: "Features" },
   { id: "section-compare", label: "Why Us" },
   { id: "section-projects", label: "Projects" },
-  { id: "section-stats", label: "Stats" },
   { id: "section-cta", label: "Get Started" },
 ];
 
@@ -2976,11 +2975,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* DUM Club activity strip */}
-        <div className="mx-auto mt-20 max-w-7xl border-t border-zinc-900">
-          <DumActivityStrip projectCount={liveProjectCount} tradeCount={tradesInLast24h} />
-        </div>
-
         {/* ── CONDENSED: WHY DUM CLUB WINS ── */}
         <div id="section-compare" className="border-t border-zinc-900 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl text-center">
@@ -3078,38 +3072,6 @@ export default function Home() {
             {!featured?.project && !loadingProjects && (
               <p className="text-sm text-zinc-500">No public projects yet.</p>
             )}
-          </div>
-        </div>
-
-        {/* Platform stats */}
-        <div id="section-stats" className="border-t border-zinc-900 bg-zinc-950/30 px-4 py-16 sm:py-20">
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-10 text-center text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-              Platform
-            </div>
-            <div className="grid grid-cols-2 gap-10 lg:grid-cols-4">
-              {[
-                {
-                  label: "Projects live",
-                  value: allPublicProjects.length.toString(),
-                },
-                { label: "Stripe payments", value: "✓" },
-                { label: "Business categories", value: "5+" },
-                { label: "Built on Solana", value: "✓" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-xl border border-zinc-800/30 bg-gradient-to-b from-zinc-900/40 to-transparent p-6 text-center"
-                >
-                  <div className="font-mono text-4xl font-black text-white sm:text-5xl">
-                    {stat.value}
-                  </div>
-                  <div className="mt-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
