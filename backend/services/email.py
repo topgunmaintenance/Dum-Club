@@ -13,7 +13,7 @@ import urllib.parse
 
 _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 _FROM_EMAIL = os.getenv("EMAIL_FROM", "DUM Club <orders@dum.club>")
-_PLATFORM_URL = os.getenv("NEXT_PUBLIC_SITE_URL", "https://dum-club.vercel.app")
+_PLATFORM_URL = os.getenv("NEXT_PUBLIC_SITE_URL", "https://dum.club")
 
 # Secret used to sign unsubscribe links for outreach emails. Falls back
 # to a deterministic default so the feature works out of the box; set
@@ -240,8 +240,10 @@ OUTREACH_TEMPLATES: dict = {
             "We already set up a store page for you. Want access?\n\n"
             "We're onboarding founding merchants right now — free forever, "
             "no commission, no catch.\n\n"
-            "View Your Store → {cta_url}\n\n"
-            "— The DUM Club Team"
+            "Check what we built for you:\n"
+            "{cta_url}\n\n"
+            "— Julian\n"
+            "DUM Club"
         ),
     },
     "followup_day2": {
@@ -252,8 +254,10 @@ OUTREACH_TEMPLATES: dict = {
             "mentioned we already set one up for you — free forever as a "
             "founding merchant.\n\n"
             "No credit card, no commission, no catch. Want a look?\n\n"
-            "View Your Store → {cta_url}\n\n"
-            "— The DUM Club Team"
+            "Check what we built for you:\n"
+            "{cta_url}\n\n"
+            "— Julian\n"
+            "DUM Club"
         ),
     },
     "followup_day5": {
@@ -264,8 +268,10 @@ OUTREACH_TEMPLATES: dict = {
             "founding slots are filled, the plan shifts to the standard "
             "tier — but founding members are free forever.\n\n"
             "Takes 60 seconds to claim.\n\n"
-            "View Your Store → {cta_url}\n\n"
-            "— The DUM Club Team"
+            "Check what we built for you:\n"
+            "{cta_url}\n\n"
+            "— Julian\n"
+            "DUM Club"
         ),
     },
     "followup_day10": {
@@ -278,7 +284,8 @@ OUTREACH_TEMPLATES: dict = {
             "If you'd like to see the store we built for you:\n"
             "{cta_url}\n\n"
             "Otherwise I'll leave you alone.\n\n"
-            "— The DUM Club Team"
+            "— Julian\n"
+            "DUM Club"
         ),
     },
 }
