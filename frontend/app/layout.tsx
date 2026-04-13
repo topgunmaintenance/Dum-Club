@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppProviders } from "../components/AppProviders";
 import { Navbar } from "../components/Navbar";
 import { DumPill } from "../components/DumPill";
+import { LiveActivityTicker } from "../components/LiveActivityTicker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,6 +42,8 @@ export default function RootLayout({
           <Navbar />
           {/* Spacer to offset fixed navbar: 72px mobile, 92px desktop */}
           <div className="h-[72px] lg:h-[92px]" />
+          {/* Global live activity ticker — sits directly below the navbar. */}
+          <LiveActivityTicker />
           {children}
           <DumPill />
           {/* Deploy indicator — low-visibility, bottom-right */}

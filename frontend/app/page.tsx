@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Starfield } from "../components/Starfield";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
+import { ProofOfMotion } from "../components/ProofOfMotion";
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -19,6 +20,7 @@ type Project = {
   created_at?: string;
   token_symbol?: string | null;
   token_utility?: string | null;
+  is_live?: boolean;
 };
 
 type RecentTrade = {
@@ -1801,6 +1803,14 @@ export default function Home() {
     return n > 0 ? n : allPublicProjects.length;
   }, [allPublicProjects]);
 
+  // Projects that are CURRENTLY streaming (is_live === true) — drives the
+  // dynamic hero banner. Falls back to the no-streams value-prop state when
+  // this list is empty.
+  const liveStreamingProjects = useMemo(
+    () => allPublicProjects.filter((p) => p.is_live === true).slice(0, 4),
+    [allPublicProjects]
+  );
+
   const featured = useMemo(() => {
     const quality = allPublicProjects.filter((p) => !isPlaceholderDescription(p.description));
     const pool = quality.length > 0 ? quality : allPublicProjects;
@@ -1984,6 +1994,85 @@ export default function Home() {
           </div>
 
           <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
+
+            {/* ── DYNAMIC HERO BANNER ──────────────────────────────
+                 When streams are live: LIVE NOW + stream cards.
+                 Otherwise: "Earn rewards everywhere. Redeem anywhere."
+                 + two CTAs (Start Shopping, List Your Business Free).
+                 Sits above the interactive launch input below. */}
+            {liveStreamingProjects.length > 0 ? (
+              <div className="mx-auto mb-10 max-w-5xl">
+                <div className="mb-4 flex items-center justify-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-red-400">
+                    Live Now on DUM Club
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {liveStreamingProjects.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/project/${p.id}`}
+                      className="group relative overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/[0.04] to-zinc-950 p-4 text-left transition hover:border-red-500/40 hover:shadow-[0_0_24px_rgba(239,68,68,0.12)]"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                          </span>
+                          <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-red-400">
+                            Live
+                          </span>
+                        </div>
+                        <span className="text-[16px]">{getProjectEmoji(p, 0)}</span>
+                      </div>
+                      <div className="text-[14px] font-bold leading-tight text-white line-clamp-2">
+                        {p.title || p.name || "Live business"}
+                      </div>
+                      <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500 transition group-hover:text-red-400">
+                        Watch now →
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="mt-4 text-center">
+                  <Link
+                    href="/discover"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 transition hover:text-emerald-400"
+                  >
+                    See every live business →
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="mx-auto mb-10 max-w-3xl text-center">
+                <h2 className="text-[clamp(22px,5vw,34px)] font-black leading-[1.05] tracking-[-0.02em] text-white">
+                  Earn rewards everywhere.
+                  <br />
+                  <span className="hero-text-glow">Redeem anywhere.</span>
+                </h2>
+                <div className="mt-5 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+                  <Link
+                    href="/discover"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-400 px-5 text-[12px] font-bold uppercase tracking-[0.15em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.3)]"
+                  >
+                    Start Shopping →
+                  </Link>
+                  <Link
+                    href="/merchant"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/60 px-5 text-[12px] font-bold uppercase tracking-[0.15em] text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  >
+                    List Your Business Free
+                  </Link>
+                </div>
+              </div>
+            )}
+            {/* ── /DYNAMIC HERO BANNER ───────────────────────────── */}
+
             <div className="mx-auto max-w-3xl text-center">
 
               {/* Eyebrow */}
@@ -2093,6 +2182,12 @@ export default function Home() {
                   </p>
                 )}
               </div>
+
+              {/* ── PROOF OF MOTION ──────────────────────────────
+                   4 stat cells right under the launch CTA. Real data
+                   from /api/projects/live-stats + /api/checkout/recent-sales,
+                   contextual fallback copy when any stat is zero. */}
+              <ProofOfMotion />
 
               {/* ── INLINE FIND RESULTS ── */}
               {findResults !== null && !heroLaunching && (
