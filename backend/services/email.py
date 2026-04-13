@@ -14,6 +14,12 @@ import urllib.parse
 _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 _FROM_EMAIL = os.getenv("EMAIL_FROM", "DUM Club <orders@dum.club>")
 _PLATFORM_URL = os.getenv("NEXT_PUBLIC_SITE_URL", "https://dum.club")
+# Used specifically by the outreach unsubscribe link. Kept separate from
+# _PLATFORM_URL so we can route the unsubscribe click through the
+# known-good FRONTEND_URL env var even if NEXT_PUBLIC_SITE_URL on Railway
+# is stale (e.g. still pointing at a Vercel preview subdomain). The two
+# env vars can converge once NEXT_PUBLIC_SITE_URL is cleaned up.
+_FRONTEND_URL = os.getenv("FRONTEND_URL", "https://dum.club")
 
 # Secret used to sign unsubscribe links for outreach emails. Falls back
 # to a deterministic default so the feature works out of the box; set
@@ -220,10 +226,15 @@ def verify_unsubscribe_token(contact: str, token: str) -> bool:
 
 def _unsubscribe_url(contact: str) -> str:
     """Build the one-click unsubscribe link embedded in every outreach
-    email. Lands on the /api/outreach/unsubscribe public endpoint."""
+    email. Lands on the /api/outreach/unsubscribe public endpoint.
+
+    Uses _FRONTEND_URL (from FRONTEND_URL env var) rather than
+    _PLATFORM_URL so the unsubscribe link routes through the known-good
+    domain configured on Railway even if NEXT_PUBLIC_SITE_URL is stale.
+    """
     token = unsubscribe_token(contact)
     qs = urllib.parse.urlencode({"contact": contact, "token": token})
-    return f"{_PLATFORM_URL}/api/outreach/unsubscribe?{qs}"
+    return f"{_FRONTEND_URL}/api/outreach/unsubscribe?{qs}"
 
 
 # Template registry. Keyed by template_key stored on outreach_messages.
