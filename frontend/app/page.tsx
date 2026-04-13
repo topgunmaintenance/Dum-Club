@@ -1359,7 +1359,7 @@ export default function Home() {
   const heroIntent = detectIntent(heroIdea);
   const [ctaRotation, setCtaRotation] = useState(0);
   const [ctaHovered, setCtaHovered] = useState(false);
-  const ctaLabels = ["Start Selling →", "Start Buying →", "Earn DUM Points →"];
+  const ctaLabels = ["Start Selling →", "Start Buying →"];
   const [findResults, setFindResults] = useState<Project[] | null>(null);
   const [findLoading, setFindLoading] = useState(false);
   const [findCity, setFindCity] = useState("");
@@ -1391,7 +1391,7 @@ export default function Home() {
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
     if (heroIdea.trim() || heroLaunching || ctaHovered) return;
-    const t = setInterval(() => setCtaRotation((r) => (r + 1) % 3), 3500);
+    const t = setInterval(() => setCtaRotation((r) => (r + 1) % 2), 3500);
     return () => clearInterval(t);
   }, [heroIdea, heroLaunching, ctaHovered]);
 
@@ -2080,7 +2080,7 @@ export default function Home() {
                     value={heroIdea}
                     onChange={(e) => { setHeroIdea(e.target.value); voiceInitiatedRef.current = false; if (findResults !== null) { stopSpeaking(); setFindResults(null); setFindTopOffer(null); setFindExplanation(""); setFindAiExplanation(""); setFindAiFading(false); setFindAckLine(""); setRefineHistory([]); findExplainGenRef.current++; setFindAllOffers([]); setFindAltOffers({}); setFindExternalResults([]); setFindRefineInput(""); } }}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleHeroLaunch(); } }}
-                    placeholder="Describe a business to create — or search for something to buy"
+                    placeholder="What do you want to find or build?"
                     rows={3}
                     disabled={heroLaunching}
                     className="w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-950/80 px-5 py-4 pr-14 text-base leading-relaxed text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 disabled:opacity-50"
@@ -2770,10 +2770,6 @@ export default function Home() {
               {/* ── Trust line ── */}
               <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
                 <p className="text-[13px] text-zinc-600">
-                  {allPublicProjects.length > 0 && (
-                    <span className="text-emerald-400/70">{allPublicProjects.length} businesses live</span>
-                  )}
-                  {allPublicProjects.length > 0 && " · "}
                   Stripe checkout · Built on Solana · Live in 60 seconds
                 </p>
                 {/* Payment + chain icons */}
