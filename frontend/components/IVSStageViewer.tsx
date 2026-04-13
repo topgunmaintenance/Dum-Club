@@ -18,6 +18,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const stageRef = useRef<any>(null);
   const mountedRef = useRef(true);
 
@@ -142,12 +143,33 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
             }
 
             if (track instanceof MediaStreamTrack && track.kind === "audio") {
+              console.log("[ivs-viewer] Setting up audio track:", track.id, "state:", track.readyState, "enabled:", track.enabled);
               try {
-                const a = new Audio();
+                // Store in ref to prevent garbage collection
+                if (!audioRef.current) {
+                  audioRef.current = new Audio();
+                }
+                const a = audioRef.current;
                 a.srcObject = new MediaStream([track]);
+                a.muted = false;
+                a.volume = 1.0;
                 a.autoplay = true;
-                a.play().catch(() => {});
-              } catch {}
+                a.play().then(() => {
+                  console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
+                }).catch((e) => {
+                  console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
+                  // Autoplay was blocked — unmute on next user interaction
+                  const unmute = () => {
+                    a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
+                    document.removeEventListener("click", unmute);
+                    document.removeEventListener("touchstart", unmute);
+                  };
+                  document.addEventListener("click", unmute, { once: true });
+                  document.addEventListener("touchstart", unmute, { once: true });
+                });
+              } catch (e) {
+                console.error("[ivs-viewer] Audio setup error:", e);
+              }
             }
           }
         });
@@ -180,6 +202,11 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       if (stageRef.current) {
         try { stageRef.current.leave(); } catch {}
         stageRef.current = null;
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.srcObject = null;
+        audioRef.current = null;
       }
       _activeStageProjectId = null;
     };
