@@ -1106,6 +1106,7 @@ function ProductDemo() {
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
+  { id: "section-moat", label: "Why It Works" },
   { id: "section-how", label: "How It Works" },
   { id: "section-features", label: "Features" },
   { id: "section-compare", label: "Why Us" },
@@ -2803,6 +2804,114 @@ export default function Home() {
         {/* ── Platform Activity ── */}
         <div className="mx-auto mt-10 max-w-4xl">
           <PlatformActivity projectCount={allPublicProjects.length} />
+        </div>
+
+        {/* ── THE MOAT — Buy Here. Use There. ────────────────────────
+             The cross-merchant rewards loop made visible. Single most
+             important section on the homepage — it explains WHY DUM
+             Club beats single-merchant loyalty programs by showing
+             the economic loop with real numbers instead of feature
+             cards. Sits between social proof and "How it works" so
+             visitors understand the moat before the mechanics. */}
+        <div
+          id="section-moat"
+          className="scroll-mt-28 mx-auto mt-20 max-w-6xl px-4 sm:px-8"
+        >
+          <div className="text-center text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
+            Buy Here. Use There.
+          </div>
+          <h2 className="mx-auto mt-3 max-w-3xl text-center text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
+            One loyalty program.
+            <br className="hidden sm:block" />{" "}
+            <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.25)" }}>
+              That works at every shop on the network.
+            </span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Earn DUM Points at one merchant. Spend them at another. Every business on DUM Club brings every other business new customers — no ads, no commission, no catch.
+          </p>
+
+          {/* ── Flow: 2 merchant cards + connecting arrow ── */}
+          <div className="mt-12 grid gap-6 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
+
+            {/* MERCHANT A — the earn side */}
+            <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/[0.06] blur-3xl" />
+              <div className="relative mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-2xl shadow-inner">
+                  ☕
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Morning</div>
+                  <div className="text-base font-bold text-white">Mario&apos;s Cafe</div>
+                </div>
+              </div>
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2.5">
+                  <span className="text-[13px] text-zinc-400">Oat latte</span>
+                  <span className="font-mono text-[13px] font-bold text-white">$5.00</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-emerald-400/30 bg-emerald-400/[0.06] px-3 py-2.5">
+                  <span className="text-[13px] font-semibold text-emerald-400">Points earned</span>
+                  <span className="font-mono text-[13px] font-bold text-emerald-400">+50 DUM</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CONNECTOR — horizontal on md+, vertical on mobile */}
+            <div className="flex items-center justify-center py-1 md:px-2 md:py-0">
+              <div className="flex flex-col items-center gap-2">
+                <div className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+                  Later that day
+                </div>
+                <svg
+                  className="h-10 w-10 rotate-90 text-emerald-400/60 md:h-8 md:w-8 md:rotate-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* MERCHANT B — the redeem side */}
+            <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/[0.06] blur-3xl" />
+              <div className="relative mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-2xl shadow-inner">
+                  🌮
+                </div>
+                <div>
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Afternoon</div>
+                  <div className="text-base font-bold text-white">Taco Lane</div>
+                </div>
+              </div>
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2.5">
+                  <span className="text-[13px] text-zinc-400">Lunch combo</span>
+                  <span className="font-mono text-[13px] font-bold text-white">$12.00</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-emerald-400/30 bg-emerald-400/[0.06] px-3 py-2.5">
+                  <span className="text-[13px] font-semibold text-emerald-400">Points redeemed</span>
+                  <span className="font-mono text-[13px] font-bold text-emerald-400">−$5.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Takeaway — the punch line ── */}
+          <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-5 text-center shadow-[0_0_32px_rgba(0,255,163,0.04)] sm:p-6">
+            <p className="text-[13px] leading-relaxed text-zinc-300 sm:text-[15px]">
+              <span className="font-bold text-white">Taco Lane just won a customer they never reached.</span>{" "}
+              Mario&apos;s Cafe didn&apos;t lose a sale. The network did that — and the more merchants on it, the more it works.
+            </p>
+          </div>
         </div>
 
         <div
