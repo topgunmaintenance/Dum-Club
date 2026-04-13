@@ -219,6 +219,29 @@ export default function MerchantPage() {
             </div>
           )}
 
+          {/* ── Why DUM Club for merchants — 3 direct selling points.
+               Only rendered inside the `if (showSignup)` branch, so
+               it never shows on the merchant dashboard view. ── */}
+          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
+            <ul className="space-y-2.5">
+              {[
+                "Keep more of every sale — no platform commissions, ever",
+                "Customers earn DUM Points automatically — they come back without you paying for ads",
+                "Free forever for founding merchants — $0/month, no catch",
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-2.5 text-sm leading-relaxed text-zinc-200"
+                >
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-bold text-emerald-400">
+                    ✓
+                  </span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
             <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
               {programOpen ? "Founding Merchant" : "Standard Plan"}

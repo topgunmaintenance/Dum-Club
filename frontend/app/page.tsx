@@ -1109,7 +1109,6 @@ const HOME_SECTIONS = [
   { id: "section-how", label: "How It Works" },
   { id: "section-features", label: "Features" },
   { id: "section-compare", label: "Why Us" },
-  { id: "section-projects", label: "Projects" },
   { id: "section-cta", label: "Get Started" },
 ];
 
@@ -3020,61 +3019,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Featured project spotlight */}
-        <div id="section-projects" className="border-t border-zinc-900 px-4 py-20 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-4 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Featured business
-            </div>
-            {featured?.project && (
-              <Link href={`/project/${featured.project.id}`}>
-                <div
-                  className="card-premium group relative overflow-hidden rounded-3xl border border-zinc-800/60 bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900/50 p-8 hover:border-emerald-400/25"
-                  style={{ borderTop: "2px solid rgba(0,255,163,0.3)" }}
-                >
-                  {/* Inner ambient glow */}
-                  <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-emerald-400/[0.04] blur-3xl transition-opacity duration-500 group-hover:opacity-100 opacity-0" />
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-start gap-5">
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 text-3xl shadow-inner">
-                        {getProjectEmoji(featured.project, 0)}
-                      </div>
-                      <div>
-                        <div className="text-2xl font-black text-white">
-                          {featured.project.title || featured.project.name || "New Business"}
-                        </div>
-                        <div className="mt-1 max-w-lg text-sm leading-relaxed text-zinc-300">
-                          {featured.project.description || "No description yet."}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] text-emerald-400">
-                            DUM Points accepted
-                          </span>
-                          <span className="rounded-full border border-zinc-800 px-3 py-1 text-[10px] text-zinc-500">
-                            {featured.project.token_utility || "Member perks available"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1">
-                        <span className="text-[10px] font-bold text-emerald-400">DUM Points</span>
-                        <span className="text-[10px] text-emerald-400/60">for discounts</span>
-                      </div>
-                      <div className="mt-3 inline-block rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition group-hover:bg-emerald-400">
-                        View project →
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            )}
-            {!featured?.project && !loadingProjects && (
-              <p className="text-sm text-zinc-500">No public projects yet.</p>
-            )}
-          </div>
-        </div>
-
         {/* Bottom CTA */}
         <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
@@ -3109,49 +3053,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Latest — real public projects */}
-      <div className="border-t border-zinc-900 px-4 py-16 sm:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8 text-xs font-bold uppercase tracking-[0.3em] text-zinc-500">
-            Recently Added
-          </div>
-          {latestProjectsNews.length === 0 && !loadingProjects ? (
-            <p className="text-sm text-zinc-500">
-              {allPublicProjects.length === 0
-                ? "No businesses yet — be the first to go live."
-                : "New businesses will appear here as they go live."}
-            </p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {loadingProjects && latestProjectsNews.length === 0
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-32 animate-pulse rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-950 to-zinc-900/30"
-                    />
-                  ))
-                : latestProjectsNews.map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/project/${p.id}`}
-                      className="card-premium block rounded-xl border border-zinc-800/50 bg-gradient-to-br from-zinc-950 to-zinc-900/30 p-6 hover:border-emerald-400/15"
-                    >
-                      <div className="mb-2 font-mono text-[10px] text-emerald-500">
-                        {formatNewsDate(p.created_at)}
-                      </div>
-                      <div className="mb-2 text-base font-bold leading-tight text-white">
-                        {p.title || p.name || "New Business"}
-                      </div>
-                      <div className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
-                        {p.description?.trim() || "Live on DUM Club with AI and community features."}
-                      </div>
-                    </Link>
-                  ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Honest stack strip (no fake press logos) */}
       <div className="border-t border-zinc-900 py-10">
