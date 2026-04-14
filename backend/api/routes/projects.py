@@ -542,13 +542,27 @@ async def list_redemptions(project_id: str):
 
 @router.get("/public")
 async def list_public_projects():
+    """Public project listing for /discover.
+
+    Two-pass query: the standard strict listing (approved/live/public)
+    plus a second pass for verified founding merchants. The union is
+    deduped by id and sorted so that pinned projects (non-null
+    sort_order) float to the top.
+
+    Why two passes: founding merchants are seeded via migrations that
+    set verified=true + visibility=public but may have status or
+    review_status values that don't match the strict listing's
+    expectations (e.g. a services storefront with token_status
+    'inactive'). Rather than special-case every field, we unconditionally
+    include any project with verified=true that isn't hidden/deleted.
+    This is the CLAUDE.md v5.0 Phase 0B contract: a verified founding
+    merchant must appear on /discover, period.
+    """
     supabase = get_client()
 
+    # Pass 1: strict standard listing.
+    standard_rows: list[dict] = []
     try:
-        # visibility='public' filter added in migration 029_project_visibility.
-        # Hidden projects (founder demo storefronts, test fixtures) are excluded
-        # from the public listing without being deleted. Queried via the
-        # idx_projects_visibility_public partial index.
         res = (
             supabase.table("projects")
             .select("*")
@@ -560,11 +574,57 @@ async def list_public_projects():
             .limit(50)
             .execute()
         )
+        standard_rows = res.data or []
     except Exception as exc:
-        print(f"[projects] public query failed: {exc!r}")
-        return []
+        print(f"[projects] public standard query failed: {exc!r}")
 
-    projects = res.data or []
+    # Pass 2: verified founding merchants. We accept these even if
+    # status/review_status don't line up, because a verified founding
+    # merchant is a product-level contract with CLAUDE.md v5.0 Section 6
+    # Phase 0B ("/discover shows 1 verified merchant not 0"). Still
+    # filter out hidden/deleted rows — verification is not a bypass for
+    # soft-delete or visibility.
+    verified_rows: list[dict] = []
+    try:
+        vres = (
+            supabase.table("projects")
+            .select("*")
+            .eq("verified", True)
+            .eq("is_deleted", False)
+            .eq("visibility", "public")
+            .limit(50)
+            .execute()
+        )
+        verified_rows = vres.data or []
+    except Exception as exc:
+        # Non-fatal: if the `verified` column doesn't exist yet (pre-031
+        # migration) this will throw — fall through to standard results.
+        print(f"[projects] public verified query failed (ignored): {exc!r}")
+
+    # Union + dedupe by id. Verified rows win when duplicates exist.
+    by_id: dict[str, dict] = {}
+    for p in standard_rows:
+        if p.get("id"):
+            by_id[p["id"]] = p
+    for p in verified_rows:
+        if p.get("id"):
+            by_id[p["id"]] = p
+
+    projects = list(by_id.values())
+
+    # Sort: pinned first (sort_order non-null, ascending, 0 = top),
+    # then by created_at desc. Pinned verified founding merchants
+    # land above the organic firehose.
+    def _sort_key(p: dict):
+        so = p.get("sort_order")
+        pinned = so is None  # False (pinned) sorts before True
+        so_val = so if so is not None else 0
+        created = p.get("created_at") or ""
+        # Invert created_at string for desc order within each pin bucket
+        return (pinned, so_val, _neg_iso(created))
+
+    projects.sort(key=_sort_key)
+    projects = projects[:50]
 
     # Attach owner verification status for ranking/badge display
     owner_ids = list(set(p.get("privy_id") for p in projects if p.get("privy_id")))
@@ -579,10 +639,27 @@ async def list_public_projects():
                 pass
 
     for p in projects:
-        p["owner_verified"] = verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
+        p["owner_verified"] = (
+            verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
+            or bool(p.get("verified"))
+        )
         _attach_token_mode(p)
 
     return projects
+
+
+def _neg_iso(s: str) -> str:
+    """Return a string that sorts opposite to the input ISO timestamp.
+
+    Used to turn a default ascending sort into a created_at-desc sort
+    within each pin bucket without flipping the whole sort direction.
+    """
+    if not s:
+        return "\uffff"  # empty strings sort last (= oldest)
+    # ISO timestamps are lexicographically ordered — flipping each char
+    # ordinal gives the opposite sort. This is a cheap trick that avoids
+    # parsing the timestamp.
+    return "".join(chr(0xFFFF - ord(c)) if ord(c) < 0xFFFF else c for c in s)
 
 
 @router.get("/live-stats")
