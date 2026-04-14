@@ -187,75 +187,46 @@ Never described as investment, token, or financial product
 
 ## 6. WHAT WE ARE BUILDING — PHASE MAP
 
-### Phase 0A ✅ COMPLETE
-- Demo storefronts hidden from Discover
-- Ticker shows real data only
-- Solana language moved to /technology page only
-- DUM Points hidden from navbar
-- /hub cleaned up — no Solana language in default view
-- Buy Points panel hidden
-- Fictional moat section (Mario's Cafe) removed
-- Homepage repositioned to Morris County local services
+**Execution status lives in `ROADMAP.md` at repo root.** That file
+is the living view: current phase, % complete, per-task status,
+unlock conditions, external blockers, and a recently-shipped
+changelog. Update it on ship, not continuously.
 
-### Phase 0B ← ACTIVE NOW
-Goal: Get one real paid Stripe transaction
+This section stays as the doctrine-level phase shape. If ROADMAP.md
+and this section disagree about gates/goals, CLAUDE.md is doctrine
+and ROADMAP.md is stale — fix ROADMAP.md.
 
-Tasks:
-- [ ] Remove DUM Points from navbar (mobile + desktop)
-- [ ] Build Topgun Maintenance LLC storefront
-      (6 services, 5 photos, bio, verified=true)
-- [ ] Storefront live at /project/topgun-maintenance
-- [ ] Discover shows 1 verified merchant not 0
-- [ ] Update homepage comparison:
-      Whatnot/Commonsold/Google vs DUM Club
-- [ ] Get 1 real paid Stripe transaction
-- [ ] Bump FOUNDING_CAP to 100 everywhere
+### Phase 0A — Strip v1 AI-builder framing
+Goal: Hide DUM Points + Solana from consumer pages. Reposition
+homepage away from "type an idea → AI builds a business".
+Gate out: none (starting point).
 
-### Phase 1 ← LOCKED until Phase 0B complete
-Goal: 100 founding sellers recruited
+### Phase 0B — First real paid Stripe transaction
+Goal: One real checkout against Topgun Maintenance's storefront.
+Gate out: a single row in `orders` with `status='paid'` and
+amount > 0 coming from production-mode Stripe.
 
-Tasks:
-- [ ] Build Whatnot seller scraping agent
-      (backend/agents/whatnot_scraper.py)
-- [ ] Update 4 outreach email templates — Whatnot pitch
-- [ ] Homepage redesign — Whatnot visual energy:
-      - Hero: "Sell Live. Keep Everything Except a Flat Fee."
-      - Founding 100 banner with real slot counter
-      - Live Now grid (AWS IVS)
-      - Best Deals This Week section
-      - Fee comparison: Whatnot/Commonsold vs DUM Club
-      - Category browse row
-      - Google reviews display
-- [ ] Activate AWS IVS live selling for merchants
-- [ ] "Go Live" button on merchant dashboard
+### Phase 1 — 100 founding sellers recruited
+Goal: Hit the founding cap via Whatnot seller outreach.
+Gate out: 100 rows in `merchants` table with
+`stripe_connect_status='connected'`.
 
-### Phase 2 ← LOCKED until 10+ real sellers live
-Goal: DUM Points return, retention proven
+### Phase 2 — DUM Points return, retention proven
+Goal: Points back in navbar, cross-merchant loyalty active,
+AI retention agent replacing direct mail.
+Gate out: 10+ verified sellers live AND $1,000+ real GMV AND
+legal review of points purchase flow complete.
 
-Tasks:
-- [ ] Restore DUM Points to navbar
-- [ ] Cross-merchant loyalty active
-- [ ] AI retention agent automating point reminders
-- [ ] Customer retention program replaces direct mail pitch
-- [ ] Points dashboard for sellers showing retention data
+### Phase 3 — Optional Solana layer
+Goal: Solana claim available as an opt-in toggle only.
+Gate out: Phase 2 proven with data AND legal sign-off on the
+Solana claim flow.
 
-### Phase 3 ← LOCKED until Phase 2 proven
-Goal: Optional Solana layer
-
-Tasks:
-- [ ] Legal review complete
-- [ ] Optional Solana claim behind Advanced toggle
-- [ ] Never mandatory, never on consumer-facing pages
-
-### Phase 4 ← LOCKED until Phase 3 proven
-Goal: Scale and monetize
-
-Tasks:
-- [ ] Flat fee tiers fully active for all new sellers
-- [ ] B2B white-label points product launched
-- [ ] AI social media service productized
-- [ ] City-by-city replication begins
-- [ ] Enterprise loyalty contracts
+### Phase 4 — Scale and monetize
+Goal: Flat-fee tiers fully active, B2B white-label product,
+AI social media productized, city-by-city replication, enterprise
+loyalty contracts.
+Gate out: Year-1 revenue projection from Section 13 achieved.
 
 ---
 
