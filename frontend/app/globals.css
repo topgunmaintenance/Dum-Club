@@ -257,6 +257,21 @@ body::before {
   animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
 }
 
+/* Reduced-motion fallback — snap to final state immediately so elements
+   don't stay stuck at opacity:0 (translateY 24px) if the browser skips
+   the animation. Without this, reduced-motion visitors can see blank
+   space where hero-entrance-delay-* elements should be. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-entrance,
+  .hero-entrance-delay-1,
+  .hero-entrance-delay-2,
+  .hero-entrance-delay-3 {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Hero gradient text shimmer */
 @keyframes hero-shimmer {
   0%   { background-position: 200% center; }

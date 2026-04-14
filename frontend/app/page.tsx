@@ -1985,7 +1985,7 @@ export default function Home() {
 
       <Starfield count={60} />
       <HomeSectionNav />
-      <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
+      <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
           {/* Ambient background */}
@@ -2002,7 +2002,7 @@ export default function Home() {
             />
           </div>
 
-          <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-24">
+          <div className="relative px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14">
 
             {/* ── DYNAMIC HERO BANNER ──────────────────────────────
                  When streams are live: LIVE NOW + stream cards.
@@ -2085,7 +2085,7 @@ export default function Home() {
             <div className="mx-auto max-w-3xl text-center">
 
               {/* ── LAUNCH INPUT ── */}
-              <div className="hero-entrance-delay-3 mx-auto mt-10 max-w-2xl">
+              <div className="hero-entrance-delay-3 mx-auto mt-6 max-w-2xl">
                 <div className="relative">
                   <textarea
                     value={heroIdea}
