@@ -73,9 +73,14 @@ export function DumPill() {
             <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">
               DUM Points
             </div>
-            <div className="mb-4 flex items-baseline gap-2">
+            <div className="mb-2 flex items-baseline gap-2">
               <span className="text-3xl font-black text-white">{balance}</span>
               <span className="text-sm text-zinc-500">points</span>
+            </div>
+            {/* Human conversion line — Phase 0A. The whole point of this
+                pill is to make the unit obvious to a non-crypto user. */}
+            <div className="mb-3 text-[11px] leading-snug text-zinc-500">
+              1 DUM = $0.10 · use for discounts at participating businesses
             </div>
 
             <div className="space-y-2.5 border-t border-zinc-800 pt-3">
@@ -103,9 +108,12 @@ export function DumPill() {
           </div>
         )}
 
-        {/* Collapsed pill */}
+        {/* Collapsed pill — native title attribute gives a hover tooltip
+            without needing JS or a new dependency. */}
         <button
           onClick={() => setExpanded(!expanded)}
+          title="1 DUM = $0.10 · use for discounts at participating businesses"
+          aria-label={`${balance} DUM Points · 1 DUM = $0.10 · use for discounts at participating businesses`}
           className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-zinc-950/95 px-4 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4),0_0_8px_rgba(0,255,163,0.04)] backdrop-blur-md transition-all duration-200 hover:border-emerald-400/40 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_12px_rgba(0,255,163,0.08)]"
         >
           <span className="relative flex h-2 w-2">
