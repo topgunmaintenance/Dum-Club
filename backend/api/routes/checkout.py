@@ -692,21 +692,46 @@ async def stripe_webhook(request: Request):
 
 @router.get("/recent-sales")
 async def recent_sales(limit: int = 10):
-    """Public endpoint: recent paid/fulfilled orders for social proof."""
+    """Public endpoint: recent paid/fulfilled orders for social proof.
+
+    Filters out sales whose underlying project is soft-hidden via the
+    `visibility='hidden'` flag (migration 029_project_visibility). This
+    is what stops founder demo storefronts — e.g. Silver Market Hub,
+    Date Night Box Co., Sparkle Pro Mobile Wash, GrowthKit — from
+    showing up in the homepage LiveActivityTicker after they've been
+    hidden from /discover. Social proof must match public listing
+    semantics, or the ticker contradicts the directory.
+
+    To keep the visible count close to the requested `limit` after
+    filtering, we fetch a larger internal window (5x the requested
+    limit, capped at 100) and slice to `limit` post-filter.
+    """
     supabase = get_client()
     try:
+        # Larger internal fetch so post-filtering still leaves enough
+        # rows to satisfy the requested limit.
+        db_limit = min(max(limit * 5, 50), 100)
         res = (
             supabase.table("orders")
-            .select("id, amount_paid_usd, status, created_at, offers(title, project_id, projects(title))")
+            .select(
+                "id, amount_paid_usd, status, created_at, "
+                "offers(title, project_id, projects(title, visibility))"
+            )
             .in_("status", ["paid", "fulfilled"])
             .order("created_at", desc=True)
-            .limit(min(limit, 20))
+            .limit(db_limit)
             .execute()
         )
         sales = []
         for row in (res.data or []):
             offer = row.get("offers") or {}
             project = offer.get("projects") or {}
+            # Hard-exclude sales whose project is hidden from the public
+            # directory. Orphaned sales (null project) are included —
+            # they can't be affirmatively hidden, so we default to
+            # showing them rather than silently swallowing them.
+            if project.get("visibility") == "hidden":
+                continue
             sales.append({
                 "id": row["id"],
                 "amount": float(row.get("amount_paid_usd", 0)),
@@ -715,6 +740,8 @@ async def recent_sales(limit: int = 10):
                 "status": row.get("status", ""),
                 "created_at": row.get("created_at", ""),
             })
+            if len(sales) >= limit:
+                break
         return {"sales": sales}
     except Exception as exc:
         print(f"[checkout] recent-sales error: {exc!r}")
