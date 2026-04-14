@@ -1,96 +1,91 @@
-# CURRENT_SPRINT.md
-# Sprint 2 — Merchant Onboarding
+# CURRENT_SPRINT.md — Phase 0B + Phase 1 Prep
+# Updated: April 2026
 
-## Goal
+## Sprint Goal
 
-Get real merchants signed up and connected to
-DUM Club with zero friction and zero cost.
-First 50 merchants are founding merchants —
-$0/month, $0 platform fee, full access.
+Complete Phase 0B: get Topgun Maintenance live as a verified
+founding merchant and close one real paid Stripe transaction.
+Then immediately execute Phase 1 Whatnot seller outreach and
+homepage redesign.
 
-## Context — What Already Exists
+---
 
-  business_profiles table — exists and working
-  Stripe buyer checkout — working end to end
-  Feature flags system — exists in feature_flags.py
-  merchants table — migration approved, pending run
+## Phase 0B Tasks — DO THESE FIRST
 
-## Context — What Is Missing
+- [ ] 1. Remove DUM Points link from navbar
+         File: frontend/components/Navbar.tsx
+         Both mobile AND desktop nav menus
+         /hub still works at direct URL — just not in nav
 
-  merchants table — not yet created
-  Merchant signup endpoint — does not exist
-  Stripe Connect — zero infrastructure
-  Square OAuth — zero infrastructure
-  Merchant dashboard — needs upgrade
-  Founding merchant status — not in any UI
+- [ ] 2. Bump FOUNDING_CAP from current value → 100
+         File: backend/api/routes/merchant.py
+         Update ALL hardcoded references in frontend copy too
+         Update all email templates to say "100 founding sellers"
+         Update all banners and CTAs
 
-## Must Finish This Week
+- [ ] 3. Build Topgun Maintenance storefront
+         Full spec in CLAUDE.md Section 7
+         Slug: topgun-maintenance
+         All 6 services with prices
+         All 5 photos from topgunmaintenance.com
+         verified=true, visibility=public, profile_strength=100
+         Pinned first on /discover
 
-1. MERCHANTS TABLE
-   Run the approved migration
-   Confirm table created with all indexes
+- [ ] 4. Update homepage comparison table
+         REMOVE: Base44, Lovable, Venice.ai, Angi, Thumbtack
+         ADD: Whatnot (8%+2.9%), Commonsold (% fees),
+              Google Maps (pay to rank)
+         DUM Club column: Flat $29-$99/month, 0% per sale
 
-2. MERCHANT SIGNUP ENDPOINT
-   POST /api/merchant/signup
-   Auth via Privy — owner_privy_id TEXT
-   Creates merchant with founding defaults
-   One merchant per user — DB enforced
-   No payment required
-   Under 2 minutes to complete
+- [ ] 5. Get 1 real paid Stripe transaction
+         Send storefront link to 20 real contacts
+         This is the Phase 1 unlock condition
 
-3. STRIPE CONNECT OAUTH
-   GET /api/merchant/stripe-connect/authorize
-   GET /api/merchant/stripe-connect/callback
-   Optional at signup — connect later is fine
-   Uses STRIPE_CONNECT_CLIENT_ID env var
+---
 
-4. SQUARE OAUTH
-   GET /api/merchant/square/authorize
-   GET /api/merchant/square/callback
-   Encrypt token — column: square_access_token_enc
-   Optional at signup — connect later is fine
-   Uses SQUARE_APPLICATION_ID and
-   SQUARE_APPLICATION_SECRET env vars
+## Phase 1 Tasks — LOCKED until Phase 0B complete
 
-5. MINIMAL MERCHANT DASHBOARD
-   Founding merchant badge — Free forever
-   Stripe Connect status + connect button
-   Square status + connect button
-   QR code linking to business profile
-   Transaction count today
-   Must work without any connections made
+- [ ] 1. Whatnot seller scraping agent
+         File: backend/agents/whatnot_scraper.py
+         Target: active sellers last 30 days
+         Categories: Sports Cards, Collectibles, Sneakers,
+         Streetwear, Pokémon, Comics, Vintage
+         Output: /data/whatnot_sellers.csv
+         Connect to: backend/services/email.py pipeline
 
-## Pricing Rules
+- [ ] 2. Update all 4 outreach email templates
+         Pitch: flat $29/month vs Whatnot's 8% per sale
+         On $10k/month = $800+ saved every month
+         100 founding slots — $0 during founding period
 
-  Do not hard-code $29 anywhere
-  founding_merchant flag overrides all pricing
-  Founding merchant always sees: Free
-  Do not change existing 7% buyer platform fee
+- [ ] 3. Homepage redesign — Whatnot visual energy
+         Hero: "Sell Live. Pay a Flat Fee. Keep the Rest."
+         Founding 100 banner: real slot counter from API
+         Live Now grid: AWS IVS (when is_live=true)
+         Best Deals This Week section
+         Fee comparison: Whatnot/Commonsold vs DUM Club flat fee
+         Category browse: Cards/Sneakers/Collectibles/
+                          Streetwear/Local Services/Digital Goods
+         Google reviews displayed per business
+         No DUM Points mentions anywhere
 
-## Do Not Touch
+- [ ] 4. Activate AWS IVS live selling
+         "Go Live" button on merchant dashboard
+         Sets is_live=true, starts IVS stream
+         Live indicator on Discover card
+         /live/[slug] viewer page
+         "End Stream" button
+         Mobile-first
 
-  Live commerce flow — Sprint 1 complete
-  Stripe checkout for buyers — working
-  Webhook handler — hardened, do not touch
-  Auth system — do not touch
-  IVS streaming — do not touch
-  existing feature_flags.py entries — never remove
-  All existing docs — do not touch
+---
 
-## Build Order
+## What Is Locked — Do Not Touch
 
-  Complete steps in strict order
-  Each step confirmed before next begins
-  Report after each step before proceeding
-
-## Definition of Done
-
-  Merchant signs up in under 2 minutes
-  Founding merchant status shown clearly
-  Stripe Connect OAuth works end to end
-  Square OAuth works end to end
-  Dashboard shows basic data
-  QR code displayed or downloadable
-  All at zero cost for founding merchants
-  TypeScript passes on all new files
-  No regressions on existing buyer flows
+- DUM Points backend or /hub page content
+- /technology page
+- Solana claim flow
+- Restaurant vertical
+- City replication
+- B2B white-label (Phase 4)
+- Square/PayPal/GoDaddy payment integrations
+- Any % fee on transactions
