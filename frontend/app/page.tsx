@@ -2017,7 +2017,7 @@ export default function Home() {
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
         {/* ── HERO — Input-First ── */}
-        <div id="section-hero" className="relative rounded-2xl border border-zinc-800/60 bg-base/80 backdrop-blur-sm">
+        <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
           {/* Ambient background */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
@@ -2104,7 +2104,7 @@ export default function Home() {
                     onChange={(e) => setHeroSearch(e.target.value)}
                     placeholder={heroPlaceholders[heroPlaceholderIdx]}
                     aria-label="Search local services"
-                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
+                    className="w-full rounded-2xl border border-zinc-600/50 bg-zinc-800/60 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-500 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
                   />
                   <button
                     type="submit"
@@ -2137,7 +2137,7 @@ export default function Home() {
                   <Link
                     key={pill.label}
                     href={`/discover?q=${encodeURIComponent(pill.label)}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-[12px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-zinc-200"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/40 bg-zinc-800/80 px-3.5 py-1.5 text-[12px] text-zinc-300 transition hover:border-emerald-400/40 hover:bg-zinc-800 hover:text-white"
                   >
                     <span aria-hidden="true">{pill.icon}</span>
                     <span>{pill.label}</span>
@@ -2158,12 +2158,12 @@ export default function Home() {
 
               {/* ── Trust line ── */}
               <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
-                <p className="text-[13px] text-zinc-600">
+                <p className="text-[13px] text-zinc-400">
                   Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
                 {/* Payment icons — consumer-facing payment methods only.
                     Solana removed per Phase 0A and consolidated on /technology. */}
-                <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
+                <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
                   <span className="flex items-center gap-1.5">
                     <svg width="20" height="13" viewBox="0 0 24 16" fill="none" className="text-zinc-600"><rect x="0.5" y="0.5" width="23" height="15" rx="2" stroke="currentColor"/><rect x="0" y="4" width="24" height="4" fill="currentColor" opacity="0.3"/></svg>
                     Visa
@@ -2201,7 +2201,7 @@ export default function Home() {
 
         <div
           id="section-how"
-          className="scroll-mt-28 mx-auto mt-12 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-12 sm:px-12 sm:py-16"
+          className="scroll-mt-28 mx-auto mt-12 max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-900/40 px-8 py-12 backdrop-blur-sm sm:px-12 sm:py-16"
         >
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             How it works
@@ -2220,12 +2220,14 @@ export default function Home() {
             ].map((step) => (
               <div
                 key={step.n}
-                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-800/40 bg-gradient-to-br from-zinc-900/60 to-zinc-950 p-6 hover:border-emerald-400/15"
+                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
               >
-                <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-400/[0.03] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="font-mono text-3xl font-extrabold text-emerald-400/30">{step.n}</div>
+                <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-400/[0.06] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/20 font-mono text-sm font-extrabold text-emerald-400">
+                  {step.n}
+                </div>
                 <div className="mt-3 text-base font-bold text-white">{step.title}</div>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{step.desc}</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{step.desc}</p>
               </div>
             ))}
           </div>

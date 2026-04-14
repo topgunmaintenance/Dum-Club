@@ -114,40 +114,39 @@ export default function BusinessPage() {
           ].map((p) => (
             <div
               key={p.name}
-              className={`rounded-2xl border p-6 text-center transition ${
+              className={`rounded-2xl border p-6 text-center backdrop-blur-sm transition ${
                 p.muted
-                  ? "border-zinc-800/60 bg-zinc-950/60"
-                  : "border-emerald-400/30 bg-emerald-400/[0.04] shadow-[0_0_32px_rgba(0,255,163,0.08)]"
+                  ? "border-red-500/20 bg-zinc-900/60"
+                  : "border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_40px_rgba(0,255,163,0.2)]"
               }`}
             >
               <div
                 className={`mb-2 text-[10px] font-bold uppercase tracking-[0.2em] ${
-                  p.muted ? "text-zinc-500" : "text-emerald-400"
+                  p.muted ? "text-zinc-400" : "text-emerald-400"
                 }`}
               >
                 {p.name}
               </div>
               <div
                 className={`font-mono text-3xl font-extrabold ${
-                  p.muted ? "text-zinc-400" : "text-emerald-400"
+                  p.muted ? "text-red-400/80" : "neon-emerald text-emerald-400"
                 }`}
-                style={p.muted ? undefined : { textShadow: "0 0 24px rgba(0,255,163,0.35)" }}
               >
                 {p.fees}
               </div>
-              <div className="mt-2 text-[11px] text-zinc-500">{p.detail}</div>
+              <div className="mt-2 text-[11px] text-zinc-400">{p.detail}</div>
             </div>
           ))}
         </div>
 
-        <p className="mt-8 text-center text-sm text-zinc-400">
+        <p className="mt-8 text-center text-sm text-zinc-300">
           Sell $10,000 or $100,000 a month —{" "}
           <span className="font-bold text-emerald-400">your fee never changes.</span>
         </p>
       </section>
 
       {/* ── Tier cards ───────────────────────────────────── */}
-      <section className="border-t border-zinc-900 px-4 py-20">
+      <section className="border-t border-zinc-800 px-4 py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
@@ -205,18 +204,18 @@ export default function BusinessPage() {
             ].map((tier) => (
               <div
                 key={tier.name}
-                className={`relative rounded-2xl border p-8 transition ${
+                className={`relative rounded-2xl border p-8 backdrop-blur-sm transition ${
                   tier.highlight
-                    ? "border-emerald-400/40 bg-gradient-to-b from-emerald-400/[0.05] to-zinc-950 shadow-[0_0_32px_rgba(0,255,163,0.08)]"
-                    : "border-zinc-800/60 bg-zinc-950/60 hover:border-emerald-400/20"
+                    ? "border-2 border-emerald-400/60 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_48px_rgba(0,255,163,0.2)]"
+                    : "border-zinc-700/50 bg-zinc-900/60 hover:border-emerald-400/30"
                 }`}
               >
                 {tier.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-emerald-400/50 bg-[#060606] px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-emerald-400/60 bg-[var(--color-bg-base)] px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-400 shadow-[0_0_20px_rgba(0,255,163,0.3)]">
                     Most Popular
                   </div>
                 )}
-                <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+                <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
                   {tier.name}
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -245,7 +244,7 @@ export default function BusinessPage() {
       </section>
 
       {/* ── What's included in every tier ───────────────── */}
-      <section className="border-t border-zinc-900 px-4 py-20">
+      <section className="border-t border-zinc-800 px-4 py-20">
         <div className="mx-auto max-w-4xl">
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
@@ -285,7 +284,7 @@ export default function BusinessPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-5 transition hover:border-emerald-400/20"
+                className="rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-5 backdrop-blur-sm transition hover:border-emerald-400/30"
               >
                 <div className="mb-2 text-sm font-bold text-white">{item.title}</div>
                 <p className="text-[13px] leading-relaxed text-zinc-400">{item.desc}</p>
@@ -296,7 +295,7 @@ export default function BusinessPage() {
       </section>
 
       {/* ── Founding 100 section ────────────────────────── */}
-      <section className="border-t border-zinc-900 px-4 py-20">
+      <section className="border-t border-zinc-800 px-4 py-20">
         <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.08] to-zinc-950 p-10 text-center shadow-[0_0_48px_rgba(0,255,163,0.1)]">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
             Limited · Founding 100
@@ -308,7 +307,7 @@ export default function BusinessPage() {
             $0 during the founding period. Locked at $29/month after. Founding merchant badge permanent on your profile. Once 100 slots fill, the program closes and standard tiers apply to everyone new.
           </p>
 
-          <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 px-6 py-4">
+          <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/60 px-6 py-4 backdrop-blur-sm">
             <span className="font-mono text-4xl font-extrabold text-emerald-400">
               {slotsRemaining != null ? slotsRemaining : "—"}
             </span>
@@ -329,8 +328,8 @@ export default function BusinessPage() {
       </section>
 
       {/* ── Talk to Julian CTA ─────────────────────────── */}
-      <section className="border-t border-zinc-900 px-4 py-20">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-800/60 bg-zinc-950/80 p-10 text-center">
+      <section className="border-t border-zinc-800 px-4 py-20">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-10 text-center backdrop-blur-sm">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
             Questions?
           </div>
@@ -359,7 +358,7 @@ export default function BusinessPage() {
       </section>
 
       {/* ── Bottom footer strip ────────────────────────── */}
-      <div className="border-t border-zinc-900 px-4 py-10 text-center">
+      <div className="border-t border-zinc-800 px-4 py-10 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-700">
           Stripe-powered payments · 0% commission · Founding 100 · DUM Club v5.0
         </p>

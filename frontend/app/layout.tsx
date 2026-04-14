@@ -36,7 +36,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className={`${GeistSans.className} bg-zinc-950 text-white min-h-screen`}>
+      <body className={`${GeistSans.className} bg-base text-[var(--color-text-primary)] min-h-screen`}>
         <AppProviders>
           <Navbar />
           {/* Spacer to offset fixed navbar: 72px mobile, 92px desktop */}

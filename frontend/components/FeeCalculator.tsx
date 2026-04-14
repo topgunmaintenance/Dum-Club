@@ -85,7 +85,7 @@ export function FeeCalculator() {
 
   return (
     <section className="mx-auto mt-10 max-w-4xl px-4">
-      <div className="rounded-3xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-10">
+      <div className="rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm sm:p-10">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
@@ -94,7 +94,7 @@ export function FeeCalculator() {
           <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
             See what you&apos;d save.
           </h2>
-          <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-500">
+          <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
             Drag the slider. We&apos;ll show you what Whatnot and Commonsold would take out of every sale — and what DUM Club charges instead.
           </p>
         </div>
@@ -103,7 +103,7 @@ export function FeeCalculator() {
         <div className="mx-auto max-w-2xl">
           <label
             htmlFor="fee-calc-slider"
-            className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500"
+            className="mb-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400"
           >
             <span>Your monthly sales</span>
             <span className="font-mono text-sm text-emerald-400">
@@ -133,46 +133,43 @@ export function FeeCalculator() {
         {/* Result columns */}
         <div className="mt-10 grid gap-3 sm:grid-cols-3">
           {/* Whatnot */}
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/60 p-5 text-center">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="rounded-2xl border border-red-500/20 bg-zinc-900/60 p-5 text-center backdrop-blur-sm">
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
               Whatnot
             </div>
             <div className="font-mono text-3xl font-extrabold text-red-400/80">
               {formatMoneyPrecise(fees.whatnot)}
             </div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">per month</div>
-            <div className="mt-3 text-[11px] text-zinc-500">
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">per month</div>
+            <div className="mt-3 text-[11px] text-zinc-400">
               8% + 2.9% + $0.30/txn
             </div>
           </div>
 
           {/* Commonsold */}
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/60 p-5 text-center">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="rounded-2xl border border-red-500/20 bg-zinc-900/60 p-5 text-center backdrop-blur-sm">
+            <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
               Commonsold
             </div>
             <div className="font-mono text-3xl font-extrabold text-red-400/80">
               {formatMoneyPrecise(fees.commonsold)}
             </div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-600">per month</div>
-            <div className="mt-3 text-[11px] text-zinc-500">
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">per month</div>
+            <div className="mt-3 text-[11px] text-zinc-400">
               5% per sale + $49 base
             </div>
           </div>
 
           {/* DUM Club */}
-          <div className="rounded-2xl border border-emerald-400/40 bg-gradient-to-b from-emerald-400/[0.06] to-zinc-950 p-5 text-center shadow-[0_0_32px_rgba(0,255,163,0.08)]">
+          <div className="rounded-2xl border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 p-5 text-center shadow-[0_0_32px_rgba(0,255,163,0.15)] backdrop-blur-sm">
             <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
               DUM Club ★
             </div>
-            <div
-              className="font-mono text-3xl font-extrabold text-emerald-400"
-              style={{ textShadow: "0 0 24px rgba(0,255,163,0.35)" }}
-            >
+            <div className="neon-emerald font-mono text-3xl font-extrabold text-emerald-400">
               {formatMoneyPrecise(fees.dumClub)}
             </div>
             <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">flat / month</div>
-            <div className="mt-3 text-[11px] text-zinc-400">
+            <div className="mt-3 text-[11px] text-zinc-300">
               Growth tier · 0% per sale
             </div>
           </div>
@@ -180,17 +177,14 @@ export function FeeCalculator() {
 
         {/* Savings headline */}
         <div className="mt-10 text-center">
-          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
             You save
           </div>
-          <div
-            className="mt-2 font-mono text-5xl font-extrabold text-emerald-400 sm:text-6xl"
-            style={{ textShadow: "0 0 48px rgba(0,255,163,0.3)" }}
-          >
+          <div className="neon-emerald-strong mt-2 font-mono text-6xl font-extrabold text-emerald-400 sm:text-7xl">
             {formatMoneyPrecise(fees.annualSavings)}
-            <span className="text-lg font-bold text-emerald-400/70">/year</span>
+            <span className="text-xl font-bold text-emerald-400/70">/year</span>
           </div>
-          <p className="mt-3 text-sm text-zinc-400">
+          <p className="mt-3 text-sm text-zinc-300">
             {savingsContext(fees.annualSavings)}
           </p>
         </div>
@@ -203,7 +197,7 @@ export function FeeCalculator() {
           >
             Start selling — founding merchants join free →
           </Link>
-          <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
+          <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
             First 100 merchants · $0 during founding period · locked at $29/mo after
           </p>
         </div>

@@ -3,24 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --background: #07071A;
+  /* ── v5.1 brightness pass ──
+     Darker-but-lifted palette. The old values (#07071A / #0D0D25 /
+     #12122E) felt lifeless against zinc-800/zinc-900 cards because
+     the background and the cards were too close in luminance. We
+     lightened the base a touch, reduced the blue tint, and dropped
+     the card tier one step further below the panel so glassmorphism
+     wrappers (bg-zinc-900/60 + backdrop-blur-sm) have a noticeable
+     layer break. Foreground and secondary text bumped one notch
+     brighter so body copy is readable without squinting. */
+  --background: #0A0A0F;
   --foreground: #F0EFF8;
 
   /* DUM Club color system */
-  --color-bg-base: #07071A;
-  --color-bg-card: #0D0D25;
-  --color-bg-panel: #12122E;
+  --color-bg-base: #0A0A0F;
+  --color-bg-card: #14141C;
+  --color-bg-panel: #1A1A24;
 
   --color-green: #00FFA3;
-  --color-green-dim: rgba(0,255,163,0.10);
+  --color-green-dim: rgba(0,255,163,0.12);
 
   --color-violet: #7B61FF;
 
   --color-text-primary: #F0EFF8;
-  --color-text-secondary: #9B9BB8;
-  --color-text-dim: #545470;
+  --color-text-secondary: #B4B4CC;
+  --color-text-dim: #6C6C82;
 
-  --color-border: rgba(255,255,255,0.06);
+  --color-border: rgba(255,255,255,0.08);
 }
 
 html {
@@ -276,6 +285,29 @@ body::before {
 @keyframes hero-shimmer {
   0%   { background-position: 200% center; }
   100% { background-position: -200% center; }
+}
+
+/* ── Neon emerald text glow ──
+   Subtle text-shadow for headlines and price numbers to give the
+   site the Whatnot-style "neon marketplace" energy without being
+   gaudy. Pair with text-emerald-400 for the color; this utility
+   only adds the glow. */
+.neon-emerald {
+  text-shadow: 0 0 20px rgba(0, 255, 163, 0.25);
+}
+
+.neon-emerald-strong {
+  text-shadow: 0 0 24px rgba(0, 255, 163, 0.4), 0 0 48px rgba(0, 255, 163, 0.15);
+}
+
+/* ── Emerald button hover glow ──
+   Add to primary emerald CTAs on :hover for a soft neon halo.
+   Used by Claim Your Free Spot, Book Now, Buy Now, Search button. */
+.emerald-hover-glow {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.emerald-hover-glow:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 163, 0.25), 0 0 40px rgba(0, 255, 163, 0.12);
 }
 
 .hero-text-glow {

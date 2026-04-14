@@ -854,13 +854,13 @@ export default function DiscoverPage() {
 
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div id="section-top" className="mb-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-600">
+          <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-400">
             ◆ DUM Club · Digital Utility Market
           </div>
-          <h1 className="text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
+          <h1 className="neon-emerald text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
             Live Marketplace
           </h1>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.04] px-4 py-2 text-[12px] text-emerald-400/80">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] px-4 py-2 text-[12px] text-emerald-400">
             <span>◆</span> DUM Points earned here work at every business on the platform
           </div>
           {searchArrival && searchQuery.trim() && (
@@ -894,7 +894,7 @@ export default function DiscoverPage() {
         {/* ── UNIFIED CATEGORY FILTER PILLS ─────────────────────
              Replaces the old tab row. Single source of truth for
              category selection. Horizontal scroll on mobile. */}
-        <div id="section-filters" className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1.5">
+        <div id="section-filters" className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-1.5 backdrop-blur-sm">
           {DISCOVER_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
@@ -902,8 +902,8 @@ export default function DiscoverPage() {
               onClick={() => setActiveCategory(cat.id)}
               className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition ${
                 activeCategory === cat.id
-                  ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "bg-emerald-400 text-black shadow-[0_0_20px_rgba(0,255,163,0.35)]"
+                  : "text-zinc-300 hover:text-white"
               }`}
             >
               <span aria-hidden="true">{cat.icon}</span>
@@ -913,14 +913,14 @@ export default function DiscoverPage() {
         </div>
 
         {/* ── FILTER BAR: sort + price + toggles ─────────────── */}
-        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3">
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-700/50 bg-zinc-900/60 px-4 py-3 backdrop-blur-sm">
           {/* Sort by */}
-          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-400">
             Sort
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as DiscoverSortId)}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/30 focus:border-emerald-400/60"
+              className="rounded-lg border border-zinc-600/50 bg-zinc-800/80 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/40 focus:border-emerald-400/60"
             >
               <option value="newest">Newest</option>
               <option value="popular">Most Popular</option>
@@ -931,12 +931,12 @@ export default function DiscoverPage() {
           </label>
 
           {/* Price */}
-          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-400">
             Price
             <select
               value={priceFilter}
               onChange={(e) => setPriceFilter(e.target.value as typeof priceFilter)}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/30 focus:border-emerald-400/60"
+              className="rounded-lg border border-zinc-600/50 bg-zinc-800/80 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/40 focus:border-emerald-400/60"
             >
               <option value="any">Any</option>
               <option value="under25">Under $25</option>
@@ -952,8 +952,8 @@ export default function DiscoverPage() {
             onClick={() => setLiveOnly((v) => !v)}
             className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
               liveOnly
-                ? "border-red-400/40 bg-red-400/10 text-red-400"
-                : "border-zinc-800 text-zinc-500 hover:border-emerald-400/30 hover:text-zinc-300"
+                ? "border-red-400/50 bg-red-400/15 text-red-400 shadow-[0_0_16px_rgba(248,113,113,0.2)]"
+                : "border-zinc-600/50 text-zinc-300 hover:border-emerald-400/40 hover:text-white"
             }`}
           >
             <span className="relative flex h-1.5 w-1.5">
@@ -963,7 +963,7 @@ export default function DiscoverPage() {
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
                 </>
               )}
-              {!liveOnly && <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-600" />}
+              {!liveOnly && <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-500" />}
             </span>
             Live Now
           </button>
@@ -974,8 +974,8 @@ export default function DiscoverPage() {
             onClick={() => setDealsOnly((v) => !v)}
             className={`rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
               dealsOnly
-                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                : "border-zinc-800 text-zinc-500 hover:border-emerald-400/30 hover:text-zinc-300"
+                ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-400 shadow-[0_0_16px_rgba(0,255,163,0.2)]"
+                : "border-zinc-600/50 text-zinc-300 hover:border-emerald-400/40 hover:text-white"
             }`}
           >
             Deals Only
@@ -992,30 +992,30 @@ export default function DiscoverPage() {
                 setLiveOnly(false);
                 setDealsOnly(false);
               }}
-              className="ml-auto rounded-lg px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] text-zinc-600 transition hover:text-zinc-300"
+              className="ml-auto rounded-lg px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] text-zinc-400 transition hover:text-white"
             >
               Reset
             </button>
           )}
         </div>
 
-        <div className="mb-8 grid grid-cols-2 gap-4 border border-zinc-900 bg-zinc-950/50 px-4 py-5 sm:flex sm:flex-wrap sm:px-6">
+        <div className="mb-8 grid grid-cols-2 gap-4 rounded-2xl border border-zinc-700/50 bg-zinc-900/60 px-4 py-5 backdrop-blur-sm sm:flex sm:flex-wrap sm:px-6">
           <div className="min-w-[140px] flex-1">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-400">
               Live businesses
             </div>
             <div className="font-mono text-2xl font-bold text-white">{totalPublicProjects}</div>
           </div>
-          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-700/50 sm:pl-4 sm:pl-6">
+            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-400">
               With offers
             </div>
-            <div className="font-mono text-2xl font-bold text-emerald-400/90">
+            <div className="neon-emerald font-mono text-2xl font-bold text-emerald-400">
               {projects.filter((p) => hasOffers(p)).length}
             </div>
           </div>
-          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          <div className="min-w-[140px] flex-1 sm:border-l sm:border-zinc-700/50 sm:pl-4 sm:pl-6">
+            <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-400">
               Newest
             </div>
             <div className="line-clamp-2 text-sm font-semibold text-zinc-200">
@@ -1023,8 +1023,8 @@ export default function DiscoverPage() {
             </div>
           </div>
           {newTodayCount > 0 && (
-            <div className="min-w-[100px] flex-1 sm:border-l sm:border-zinc-800 sm:pl-4 sm:pl-6">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+            <div className="min-w-[100px] flex-1 sm:border-l sm:border-zinc-700/50 sm:pl-4 sm:pl-6">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.28em] text-zinc-400">
                 New today
               </div>
               <div className="font-mono text-2xl font-bold text-white">{newTodayCount}</div>
@@ -1096,13 +1096,13 @@ export default function DiscoverPage() {
             {error}
           </div>
         ) : sortedProjects.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-8 text-center">
+          <div className="rounded-2xl border border-zinc-700/50 bg-zinc-800/40 p-10 text-center backdrop-blur-sm">
             {searchQuery.trim() ? (
               <div className="mx-auto max-w-md">
                 <div className="mb-3 text-3xl">🔍</div>
                 <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
-                <p className="mt-2 text-sm text-zinc-500">This could be yours — or help bring it to DUM Club.</p>
-                <p className="mt-1 text-[10px] tracking-[0.1em] text-zinc-700">Sell anything. Buy anything. Reward everyone.</p>
+                <p className="mt-2 text-sm text-zinc-300">This could be yours — or help bring it to DUM Club.</p>
+                <p className="mt-1 text-[10px] tracking-[0.1em] text-zinc-500">Sell anything. Buy anything. Reward everyone.</p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Link href={`/?idea=${encodeURIComponent(searchQuery)}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
                     Create this business →
@@ -1140,10 +1140,17 @@ export default function DiscoverPage() {
                 </div>
               </div>
             ) : (
-              <div>
-                <p className="text-zinc-400">No businesses in this category yet.</p>
-                <Link href="/build" className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300">
-                  Be the first — Create a business →
+              <div className="mx-auto max-w-md">
+                <div className="mb-4 text-4xl">✨</div>
+                <p className="text-lg font-bold text-white">No businesses in this category yet.</p>
+                <p className="mt-2 text-sm text-zinc-300">
+                  Be the first merchant in this category — founding merchants get in free.
+                </p>
+                <Link
+                  href="/merchant"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.4)]"
+                >
+                  Claim Your Free Spot →
                 </Link>
               </div>
             )}

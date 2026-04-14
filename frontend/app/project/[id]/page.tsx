@@ -4552,8 +4552,8 @@ return (
         </div>
       </div>
 
-      <div id="section-about" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">About</div>
+      <div id="section-about" className="mb-8 rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm">
+        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-400">About</div>
         {loadingProject ? (
           <div className="space-y-2">
             <div className="h-4 w-full animate-pulse rounded bg-zinc-800" />
@@ -4574,24 +4574,24 @@ return (
 
       {/* ── FOUNDER CARD — Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">Founding Merchant</div>
+        <div className="mb-8 rounded-3xl border border-zinc-700/50 border-l-2 border-l-emerald-400/40 bg-zinc-900/60 p-6 backdrop-blur-sm">
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-400">Founding Merchant</div>
           <div className="flex items-start gap-5">
             <img
               src="/Julian.jpeg"
               alt="Julian Mero — founder, Topgun Maintenance LLC"
-              className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-emerald-400/30"
+              className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-emerald-400/40 shadow-[0_0_24px_rgba(0,255,163,0.15)]"
             />
             <div className="flex-1 min-w-0">
               <div className="text-lg font-bold text-white">Julian Mero</div>
-              <div className="mt-0.5 text-sm text-zinc-400">Founder · A&amp;P Certified Mechanic</div>
-              <div className="mt-1 text-xs text-zinc-500">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.06] px-3 py-1.5">
+              <div className="mt-0.5 text-sm text-zinc-300">Founder · A&amp;P Certified Mechanic</div>
+              <div className="mt-1 text-xs text-zinc-400">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-4 py-2 shadow-[0_0_20px_rgba(0,255,163,0.2)]">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">Verified Founding Merchant</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">Verified Founding Merchant</span>
               </div>
             </div>
           </div>
@@ -4790,7 +4790,7 @@ return (
       </div>
 
       {/* ── Offers (Public Storefront + Owner Tools) — hidden for viewers during live ── */}
-      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
@@ -5204,7 +5204,7 @@ return (
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-card p-5 sm:p-6 flex flex-col transition hover:shadow-[0_0_20px_rgba(0,255,163,0.02)] ${isRecommended ? "border-emerald-400/40 ring-1 ring-emerald-400/20 shadow-[0_0_24px_rgba(0,255,163,0.06)]" : isPopular ? "border-emerald-400/20 hover:border-emerald-400/30" : isBestValue ? "border-sky-400/15 hover:border-sky-400/25" : "border-zinc-800 hover:border-zinc-700"}`}>
+                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-zinc-900/60 p-5 backdrop-blur-sm sm:p-6 flex flex-col transition hover:shadow-[0_0_24px_rgba(0,255,163,0.08)] ${isRecommended ? "border-2 border-emerald-400/50 shadow-[0_0_32px_rgba(0,255,163,0.15)]" : isPopular ? "border-emerald-400/30 hover:border-emerald-400/50" : isBestValue ? "border-sky-400/25 hover:border-sky-400/40" : "border-zinc-700/50 hover:border-emerald-400/30"}`}>
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -5373,14 +5373,14 @@ return (
                             Your Offer
                           </div>
                         ) : !authUser ? (
-                          <button onClick={login} className="w-full rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.15)]">
+                          <button onClick={login} className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]">
                             Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
                           <button
                             disabled={buyingOfferId === offer.id}
                             onClick={() => buyOffer(offer)}
-                            className="w-full rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.15)] active:scale-[0.98] disabled:opacity-60"
+                            className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
                           >
                             {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
                           </button>

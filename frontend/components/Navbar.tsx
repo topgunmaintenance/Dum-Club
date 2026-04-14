@@ -96,7 +96,7 @@ export function Navbar() {
         right: 0,
         background: navHover
           ? "rgba(0,255,178,0.035)"
-          : "rgba(6,6,6,0.92)",
+          : "rgba(10,10,15,0.92)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         zIndex: 9999,
@@ -126,7 +126,7 @@ export function Navbar() {
             fontSize: "20px",
             background: "none",
             border: "1px solid #2a2a2a",
-            color: menuOpen ? "#00FFB2" : "#9a9a9a",
+            color: menuOpen ? "#00FFB2" : "#b4b4cc",
             borderRadius: "10px",
             width: "44px",
             height: "44px",
@@ -188,7 +188,7 @@ export function Navbar() {
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    e.currentTarget.style.color = "#9a9a9a";
+                    e.currentTarget.style.color = "#b4b4cc";
                     e.currentTarget.style.border = "1px solid transparent";
                     e.currentTarget.style.background = "transparent";
                     e.currentTarget.style.boxShadow = "none";
@@ -202,7 +202,7 @@ export function Navbar() {
                   textDecoration: "none",
                   transition: "all 0.15s ease",
                   background: active ? "rgba(0,255,178,0.08)" : "transparent",
-                  color: active ? "#00FFB2" : "#9a9a9a",
+                  color: active ? "#00FFB2" : "#b4b4cc",
                   border: active
                     ? "1px solid rgba(0,255,178,0.22)"
                     : "1px solid transparent",
@@ -319,7 +319,7 @@ export function Navbar() {
                         top: "calc(100% + 8px)",
                         right: 0,
                         minWidth: "220px",
-                        background: "rgba(6,6,6,0.98)",
+                        background: "rgba(10,10,15,0.98)",
                         border: "1px solid rgba(0,255,178,0.18)",
                         borderRadius: "14px",
                         padding: "8px",
@@ -479,7 +479,7 @@ export function Navbar() {
                 fontSize: "13px",
                 fontWeight: 700,
                 textDecoration: "none",
-                color: active ? "#00FFB2" : "#9a9a9a",
+                color: active ? "#00FFB2" : "#b4b4cc",
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
                 borderBottom: "1px solid #111",
