@@ -1804,10 +1804,20 @@ export default function Home() {
 
   // Projects that are CURRENTLY streaming (is_live === true) — drives the
   // dynamic hero banner. Falls back to the no-streams value-prop state when
-  // this list is empty.
+  // this list is empty OR when the live-streams hero is disabled by env flag.
+  //
+  // The feature flag NEXT_PUBLIC_ENABLE_LIVE_STREAMS defaults to OFF per the
+  // local-services wedge strategy (Master Playbook Phase 0/1). The Whatnot-
+  // style live commerce hero is dormant code, not deleted code — flip the
+  // env var on in Vercel to re-enable when the live-commerce loop matters
+  // again (Phase 3+ at the earliest).
+  const liveStreamsEnabled = process.env.NEXT_PUBLIC_ENABLE_LIVE_STREAMS === "true";
   const liveStreamingProjects = useMemo(
-    () => allPublicProjects.filter((p) => p.is_live === true).slice(0, 4),
-    [allPublicProjects]
+    () =>
+      liveStreamsEnabled
+        ? allPublicProjects.filter((p) => p.is_live === true).slice(0, 4)
+        : [],
+    [allPublicProjects, liveStreamsEnabled]
   );
 
   const featured = useMemo(() => {
