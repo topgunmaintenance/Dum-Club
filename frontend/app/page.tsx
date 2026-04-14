@@ -152,6 +152,36 @@ const LAUNCH_PROGRESS = [
   "Almost there...",
 ];
 
+/**
+ * Universal category mapper used by both the homepage category grid and
+ * the /discover filter bar. Kept in one place so the homepage counts and
+ * the discover filters agree on category boundaries. Topgun Maintenance
+ * lands in "Aviation" via the aircraft/aviation/avionics keyword match.
+ */
+export const HOME_CATEGORIES = [
+  { key: "restaurants",  label: "Restaurants",    icon: "🍕" },
+  { key: "auto",         label: "Auto Services",  icon: "🚗" },
+  { key: "home",         label: "Home Services",  icon: "🏠" },
+  { key: "aviation",     label: "Aviation",       icon: "✈️" },
+  { key: "beauty",       label: "Beauty",         icon: "💇" },
+  { key: "pets",         label: "Pets",           icon: "🐕" },
+  { key: "health",       label: "Health",         icon: "🏋️" },
+  { key: "entertainment",label: "Entertainment",  icon: "🎭" },
+] as const;
+
+export function categorizeProjectForHome(project: any): string {
+  const source = `${project?.title || ""} ${project?.name || ""} ${project?.description || ""} ${project?.category || ""} ${project?.template_type || ""}`.toLowerCase();
+  if (/\b(aircraft|aviation|avionics|pilot|drone|hangar|airport|helicopter|airplane|plane|far\s*91|far\s*part)/.test(source)) return "aviation";
+  if (/\b(restaurant|pizza|food|cafe|diner|bakery|bar|grill|kitchen|menu|chef|sushi|taco|burger)/.test(source)) return "restaurants";
+  if (/\b(auto|car|mechanic|oil\s*change|detailing|tire|transmission|brake|wash|body\s*shop)/.test(source)) return "auto";
+  if (/\b(hvac|plumb|electric|roof|landscap|lawn|cleaning|handyman|painter|carpentry|contractor|home\s*repair|garden)/.test(source)) return "home";
+  if (/\b(salon|barber|hair|nails|spa|massage|makeup|waxing|lashes|beauty|skincare)/.test(source)) return "beauty";
+  if (/\b(pet|dog|cat|grooming|vet|kennel|walking|boarding|aquarium)/.test(source)) return "pets";
+  if (/\b(fitness|gym|yoga|pilates|trainer|nutrition|wellness|therap|clinic|dental|chiropract|medical)/.test(source)) return "health";
+  if (/\b(photograph|music|dj|band|comedy|art|gallery|theater|event|wedding|party|entertain|gaming|tattoo)/.test(source)) return "entertainment";
+  return "home"; // default bucket — most service businesses land here
+}
+
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
   if (source.includes("fitness") || source.includes("health")) return "💪";
@@ -1353,6 +1383,52 @@ export default function Home() {
   // small local state so the form controls cleanly.
   const [heroSearch, setHeroSearch] = useState("");
 
+  // Rotating search placeholder — teaches users by example that DUM Club
+  // handles services + products + food + live sales in one search. Rotates
+  // every 3 seconds. Pauses when the user has focused the input.
+  const heroPlaceholders = [
+    "Search for services... try 'aircraft inspection'",
+    "Find food near you... try 'pizza Morris County'",
+    "Shop live sales... try 'sneakers' or 'vintage'",
+    "Book local services... try 'dog grooming' or 'lawn care'",
+    "Find deals... try 'oil change under $50'",
+  ];
+  const [heroPlaceholderIdx, setHeroPlaceholderIdx] = useState(0);
+  useEffect(() => {
+    if (heroSearch.trim()) return; // stop rotating once user starts typing
+    const timer = setInterval(() => {
+      setHeroPlaceholderIdx((i) => (i + 1) % heroPlaceholders.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [heroSearch]);
+
+  // Homepage category grid counts — pulled from /api/projects/public and
+  // grouped by the same categorizer used on /discover. Phase 1 will
+  // replace this with server-side aggregation once volume requires it.
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCategoryCounts() {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list: any[] = Array.isArray(data) ? data : data?.projects || [];
+        if (cancelled) return;
+        const counts: Record<string, number> = {};
+        for (const p of list) {
+          const cat = categorizeProjectForHome(p);
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+        setCategoryCounts(counts);
+      } catch {}
+    }
+    loadCategoryCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ── Launch state ──
   const [heroIdea, setHeroIdea] = useState("");
   const [heroLaunching, setHeroLaunching] = useState(false);
@@ -2039,13 +2115,25 @@ export default function Home() {
               </div>
 
               {/* ── SERVICE FINDER SEARCH BAR ────────────────────────
-                   Google/Yelp-style search that redirects to
-                   /discover?q=<term>. NOT an AI business builder —
-                   this is a simple filter-by-query redirect. The
-                   /discover page has a matching useEffect that reads
-                   ?q= and pre-fills its existing search box. */}
+                   Google/Yelp-style universal search that redirects to
+                   /discover?q=<term>. NOT an AI business builder. The
+                   /discover page classifies results into Live Now /
+                   Services & Businesses / Items for Sale and applies
+                   sort + price + live + deals filters. */}
+
+              {/* Location badge — static "Morris County, NJ" for Phase 0B.
+                  Phase 1 swaps this for a real geolocation lookup. Having
+                  it visible now signals local discovery, not generic mkt. */}
+              <div className="mx-auto mt-10 mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                Near: Morris County, NJ
+              </div>
+
               <form
-                className="mx-auto mt-10 w-full max-w-2xl"
+                className="mx-auto w-full max-w-2xl"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const term = heroSearch.trim();
@@ -2065,7 +2153,7 @@ export default function Home() {
                     type="search"
                     value={heroSearch}
                     onChange={(e) => setHeroSearch(e.target.value)}
-                    placeholder="Search for services... try 'aircraft inspection' or 'mobile detailing'"
+                    placeholder={heroPlaceholders[heroPlaceholderIdx]}
                     aria-label="Search local services"
                     className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
                   />
@@ -2079,24 +2167,36 @@ export default function Home() {
                 </div>
               </form>
 
-              {/* ── QUICK-SEARCH PILLS ────────────────────────────── */}
-              <div className="mx-auto mt-4 flex max-w-2xl flex-wrap items-center justify-center gap-2">
-                {[
-                  "Aircraft Maintenance",
-                  "Mobile Detailing",
-                  "Pizza",
-                  "Lawn Care",
-                  "Dog Grooming",
-                  "Photography",
-                ].map((term) => (
-                  <Link
-                    key={term}
-                    href={`/discover?q=${encodeURIComponent(term)}`}
-                    className="rounded-full border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-[12px] text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300"
-                  >
-                    {term}
-                  </Link>
-                ))}
+              {/* ── CATEGORY GRID ───────────────────────────────────
+                   Google Maps-style category cards. 2 rows of 4 on
+                   desktop, horizontal-scrolling single row on mobile.
+                   Each card links to /discover?category=<key>. Counts
+                   come from /api/projects/public grouped client-side. */}
+              <div className="mx-auto mt-6 w-full max-w-4xl">
+                <div
+                  className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:pb-0"
+                  style={{ scrollSnapType: "x mandatory" }}
+                >
+                  {HOME_CATEGORIES.map((c) => {
+                    const count = categoryCounts[c.key] ?? 0;
+                    return (
+                      <Link
+                        key={c.key}
+                        href={`/discover?category=${c.key}`}
+                        className="group flex min-w-[130px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-zinc-800/60 bg-zinc-950/60 px-4 py-4 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.03] sm:min-w-0"
+                        style={{ scrollSnapAlign: "start" }}
+                      >
+                        <span className="text-2xl" aria-hidden="true">{c.icon}</span>
+                        <span className="text-[12px] font-bold text-zinc-300 transition group-hover:text-emerald-400">
+                          {c.label}
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-600">
+                          {count} {count === 1 ? "biz" : "biz"}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

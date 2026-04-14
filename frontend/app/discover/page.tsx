@@ -48,20 +48,47 @@ import { API_BASE } from "../../lib/apiBase";
 
 const TARGET_MARKET_CAP = 100_000;
 
-const DISCOVER_TABS = [
-  { id: "new", label: "⚡ New" },
-  { id: "top", label: "🏆 Popular" },
-  { id: "live", label: "🟢 Live" },
-  { id: "offers", label: "🛒 Has Offers" },
-  { id: "business", label: "💼 Business" },
-  { id: "gaming", label: "🎮 Entertainment" },
-  { id: "all", label: "All" },
-  { id: "ai", label: "AI" },
-  { id: "health", label: "Health" },
-  { id: "food", label: "Food" },
+/**
+ * Unified category filter (v5.0). Replaces the old DISCOVER_TABS
+ * which mixed sort modes, feature flags, and categories into one
+ * row. Categories live here; sort / live / deals / price are
+ * independent filter state declared on the DiscoverPage component.
+ * Topgun lands in "aviation" via the keyword categorizer below.
+ */
+const DISCOVER_CATEGORIES = [
+  { id: "all",           label: "All",           icon: "◎"  },
+  { id: "restaurants",   label: "Restaurants",   icon: "🍕" },
+  { id: "auto",          label: "Auto",          icon: "🚗" },
+  { id: "home",          label: "Home",          icon: "🏠" },
+  { id: "aviation",      label: "Aviation",      icon: "✈️" },
+  { id: "beauty",        label: "Beauty",        icon: "💇" },
+  { id: "pets",          label: "Pets",          icon: "🐕" },
+  { id: "health",        label: "Health",        icon: "🏋️" },
+  { id: "entertainment", label: "Entertainment", icon: "🎭" },
 ] as const;
 
-type DiscoverTabId = (typeof DISCOVER_TABS)[number]["id"];
+type DiscoverCategoryId = (typeof DISCOVER_CATEGORIES)[number]["id"];
+
+type DiscoverSortId = "newest" | "popular" | "priceAsc" | "priceDesc" | "nearest";
+
+/**
+ * Keyword-based project categorizer — kept in sync with the same
+ * helper on the homepage (frontend/app/page.tsx: categorizeProjectForHome).
+ * Duplicated rather than imported to avoid a page→component import
+ * loop. If you add a keyword on one side, add it on the other.
+ */
+function categorizeProject(project: Project): DiscoverCategoryId {
+  const source = `${project?.title || ""} ${project?.name || ""} ${project?.description || ""} ${(project as any)?.category || ""} ${(project as any)?.template_type || ""}`.toLowerCase();
+  if (/\b(aircraft|aviation|avionics|pilot|drone|hangar|airport|helicopter|airplane|plane|far\s*91|far\s*part)/.test(source)) return "aviation";
+  if (/\b(restaurant|pizza|food|cafe|diner|bakery|bar|grill|kitchen|menu|chef|sushi|taco|burger)/.test(source)) return "restaurants";
+  if (/\b(auto|car|mechanic|oil\s*change|detailing|tire|transmission|brake|wash|body\s*shop)/.test(source)) return "auto";
+  if (/\b(hvac|plumb|electric|roof|landscap|lawn|cleaning|handyman|painter|carpentry|contractor|home\s*repair|garden)/.test(source)) return "home";
+  if (/\b(salon|barber|hair|nails|spa|massage|makeup|waxing|lashes|beauty|skincare)/.test(source)) return "beauty";
+  if (/\b(pet|dog|cat|grooming|vet|kennel|walking|boarding|aquarium)/.test(source)) return "pets";
+  if (/\b(fitness|gym|yoga|pilates|trainer|nutrition|wellness|therap|clinic|dental|chiropract|medical)/.test(source)) return "health";
+  if (/\b(photograph|music|dj|band|comedy|art|gallery|theater|event|wedding|party|entertain|gaming|tattoo)/.test(source)) return "entertainment";
+  return "home";
+}
 
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
@@ -148,29 +175,9 @@ function isPlaceholderDesc(d?: string | null): boolean {
   return lower.startsWith("auto-created") || lower.startsWith("project workspace");
 }
 
-function tabIncludesProject(project: Project, tab: DiscoverTabId): boolean {
-  switch (tab) {
-    case "all":
-    case "new":
-    case "top":
-      return true;
-    case "live":
-      return project.is_live === true;
-    case "offers":
-      return hasOffers(project);
-    case "business":
-      return hasOffers(project) && !isPlaceholderDesc(project.description);
-    case "gaming":
-      return matchesGaming(project);
-    case "health":
-      return getCategory(project) === "Health";
-    case "food":
-      return matchesFood(project);
-    case "ai":
-      return matchesAi(project);
-    default:
-      return true;
-  }
+function categoryIncludesProject(project: Project, category: DiscoverCategoryId): boolean {
+  if (category === "all") return true;
+  return categorizeProject(project) === category;
 }
 
 
@@ -369,7 +376,11 @@ export default function DiscoverPage() {
   const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [flashingProjectIds, setFlashingProjectIds] = useState<Record<string, boolean>>({});
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
-  const [activeTab, setActiveTab] = useState<DiscoverTabId>("new");
+  const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("all");
+  const [sortBy, setSortBy] = useState<DiscoverSortId>("newest");
+  const [liveOnly, setLiveOnly] = useState(false);
+  const [dealsOnly, setDealsOnly] = useState(false);
+  const [priceFilter, setPriceFilter] = useState<"any" | "under25" | "under50" | "under100" | "over100">("any");
   const [searchQuery, setSearchQuery] = useState("");
   const [pulseId, setPulseId] = useState<string | null>(null);
   const [priceFlashDirection, setPriceFlashDirection] = useState<
@@ -498,14 +509,20 @@ export default function DiscoverPage() {
   useEffect(() => {
     loadProjects();
     loadRecentTrades();
-    // Read search query from URL (?q=...) for homepage search routing
+    // Read search query + category from URL for homepage routing.
+    // ?q=<term> sets the search input, ?category=<id> pre-selects a
+    // category pill. Both are additive — you can land on
+    // /discover?q=pizza&category=restaurants and both apply.
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const q = params.get("q");
+      const cat = params.get("category") as DiscoverCategoryId | null;
       if (q) {
         setSearchQuery(q);
-        setActiveTab("all");
         setSearchArrival(true);
+      }
+      if (cat && DISCOVER_CATEGORIES.some((c) => c.id === cat)) {
+        setActiveCategory(cat);
       }
     }
   }, []);
@@ -612,30 +629,78 @@ export default function DiscoverPage() {
   }
 
   const sortedProjects = useMemo(() => {
-    let list = projects.filter((p) => tabIncludesProject(p, activeTab));
+    // 1. Category filter (unified replacement for the old tab row)
+    let list = projects.filter((p) => categoryIncludesProject(p, activeCategory));
 
-    if (activeTab === "new") {
+    // 2. Live Now toggle — only streaming merchants
+    if (liveOnly) {
+      list = list.filter((p) => p.is_live === true);
+    }
+
+    // 3. Deals Only toggle — projects with at least one offer that has
+    // a discount or "deal" signal. Until we have a proper discount flag
+    // on offers, we approximate with presence of any active offer (the
+    // v5.0 founding-merchant free tier IS the deal today).
+    if (dealsOnly) {
+      list = list.filter((p) => hasOffers(p));
+    }
+
+    // 4. Price filter (uses project.store_items lowest price as proxy
+    // for the cheapest thing you could buy from this merchant)
+    if (priceFilter !== "any") {
+      list = list.filter((p) => {
+        const low = lowestOfferPrice(p);
+        if (low == null) return false;
+        if (priceFilter === "under25") return low < 25;
+        if (priceFilter === "under50") return low < 50;
+        if (priceFilter === "under100") return low < 100;
+        if (priceFilter === "over100") return low >= 100;
+        return true;
+      });
+    }
+
+    // 5. Sort (from the dropdown)
+    if (sortBy === "newest") {
       list = [...list].sort(
         (a, b) =>
           new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       );
-    } else if (activeTab === "top") {
+    } else if (sortBy === "popular") {
       list = [...list].sort(
         (a, b) => projectReadinessScore(b) - projectReadinessScore(a)
       );
+    } else if (sortBy === "priceAsc") {
+      list = [...list].sort((a, b) => {
+        const la = lowestOfferPrice(a);
+        const lb = lowestOfferPrice(b);
+        if (la == null && lb == null) return 0;
+        if (la == null) return 1;
+        if (lb == null) return -1;
+        return la - lb;
+      });
+    } else if (sortBy === "priceDesc") {
+      list = [...list].sort((a, b) => {
+        const la = lowestOfferPrice(a);
+        const lb = lowestOfferPrice(b);
+        if (la == null && lb == null) return 0;
+        if (la == null) return 1;
+        if (lb == null) return -1;
+        return lb - la;
+      });
     } else {
+      // "nearest" — no-op for now, geolocation lands in Phase 1. Fall
+      // through to volume_24h as a reasonable stand-in.
       list = [...list].sort(
         (a, b) =>
           (marketByProject[b.id]?.volume_24h || 0) - (marketByProject[a.id]?.volume_24h || 0)
       );
     }
 
-    // Live projects float to top in every tab
+    // 6. Live projects float to top in every tab (same as before)
     list = [...list].sort((a, b) => (b.is_live ? 1 : 0) - (a.is_live ? 1 : 0));
 
-    // Pinned projects (sort_order non-null) float above everything else,
-    // ordered ascending. sort_order=0 is the highest priority. Used for
-    // founding-merchant pinning per CLAUDE.md v5.0 Section 6 Phase 0B.
+    // 7. Pinned projects (sort_order non-null) float above everything,
+    // ascending (0 = highest priority). Founding merchant pinning.
     list = [...list].sort((a, b) => {
       const aPinned = a.sort_order != null;
       const bPinned = b.sort_order != null;
@@ -645,18 +710,80 @@ export default function DiscoverPage() {
       return 0;
     });
 
-    // Apply search filter
+    // 8. Search filter — project name/description match
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (p) =>
           (p.title || p.name || "").toLowerCase().includes(q) ||
-          (p.description || "").toLowerCase().includes(q)
+          (p.description || "").toLowerCase().includes(q) ||
+          (p.token_utility || "").toLowerCase().includes(q)
       );
     }
 
     return list;
-  }, [projects, activeTab, marketByProject, searchQuery]);
+  }, [projects, activeCategory, sortBy, liveOnly, dealsOnly, priceFilter, marketByProject, searchQuery]);
+
+  /**
+   * Smart-search result sections (v5.0). When a search query is active,
+   * sortedProjects gets split into three independent buckets:
+   *   - liveNowResults   — matching merchants currently streaming
+   *   - businessResults  — matching merchant storefronts (not live)
+   *   - itemResults      — individual offers (from store_items) whose
+   *                        title/description matches the query
+   * Each section is rendered independently with its own header; empty
+   * sections collapse rather than showing "no results".
+   */
+  const liveNowResults = useMemo(() => {
+    return sortedProjects.filter((p) => p.is_live === true);
+  }, [sortedProjects]);
+
+  const businessResults = useMemo(() => {
+    return sortedProjects.filter((p) => p.is_live !== true);
+  }, [sortedProjects]);
+
+  type ItemResult = {
+    projectId: string;
+    projectSlug?: string | null;
+    projectName: string;
+    title: string;
+    description?: string;
+    price: number | null;
+  };
+
+  const itemResults = useMemo<ItemResult[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const out: ItemResult[] = [];
+    for (const p of projects) {
+      const items = Array.isArray((p as any).store_items) ? (p as any).store_items : [];
+      for (const item of items) {
+        const title = String(item?.title || item?.name || "");
+        const desc = String(item?.description || "");
+        const price = Number(item?.price_usd ?? item?.price ?? NaN);
+        if (q) {
+          const hit =
+            title.toLowerCase().includes(q) ||
+            desc.toLowerCase().includes(q);
+          if (!hit) continue;
+        }
+        if (priceFilter !== "any" && Number.isFinite(price)) {
+          if (priceFilter === "under25" && !(price < 25)) continue;
+          if (priceFilter === "under50" && !(price < 50)) continue;
+          if (priceFilter === "under100" && !(price < 100)) continue;
+          if (priceFilter === "over100" && !(price >= 100)) continue;
+        }
+        out.push({
+          projectId: p.id,
+          projectSlug: (p as any).slug,
+          projectName: p.title || p.name || "Business",
+          title,
+          description: desc,
+          price: Number.isFinite(price) ? price : null,
+        });
+      }
+    }
+    return out.slice(0, 24);
+  }, [projects, searchQuery, priceFilter]);
 
   const totalPublicProjects = projects.length;
   const newestProject = projects[0];
@@ -724,21 +851,124 @@ export default function DiscoverPage() {
           />
         </div>
 
-        <div id="section-filters" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1">
-          {DISCOVER_TABS.map((tab) => (
+        {/* ── LOCATION BADGE ─────────────────────────────────────
+             Static "Morris County, NJ" for Phase 0B. Phase 1 swaps
+             this for real geolocation. Visible presence signals that
+             DUM Club is a LOCAL discovery platform. */}
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          Near: Morris County, NJ
+        </div>
+
+        {/* ── UNIFIED CATEGORY FILTER PILLS ─────────────────────
+             Replaces the old tab row. Single source of truth for
+             category selection. Horizontal scroll on mobile. */}
+        <div id="section-filters" className="mb-4 flex gap-1.5 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950 p-1.5">
+          {DISCOVER_CATEGORIES.map((cat) => (
             <button
-              key={tab.id}
+              key={cat.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 rounded-lg px-4 py-2 text-xs uppercase tracking-[0.1em] transition ${
-                activeTab === tab.id
-                  ? "bg-emerald-400 font-bold text-black"
+              onClick={() => setActiveCategory(cat.id)}
+              className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition ${
+                activeCategory === cat.id
+                  ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
                   : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
-              {tab.label}
+              <span aria-hidden="true">{cat.icon}</span>
+              <span>{cat.label}</span>
             </button>
           ))}
+        </div>
+
+        {/* ── FILTER BAR: sort + price + toggles ─────────────── */}
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-4 py-3">
+          {/* Sort by */}
+          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+            Sort
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as DiscoverSortId)}
+              className="rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/30 focus:border-emerald-400/60"
+            >
+              <option value="newest">Newest</option>
+              <option value="popular">Most Popular</option>
+              <option value="priceAsc">Price: Low → High</option>
+              <option value="priceDesc">Price: High → Low</option>
+              <option value="nearest">Nearest</option>
+            </select>
+          </label>
+
+          {/* Price */}
+          <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-zinc-500">
+            Price
+            <select
+              value={priceFilter}
+              onChange={(e) => setPriceFilter(e.target.value as typeof priceFilter)}
+              className="rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[12px] text-zinc-200 outline-none transition hover:border-emerald-400/30 focus:border-emerald-400/60"
+            >
+              <option value="any">Any</option>
+              <option value="under25">Under $25</option>
+              <option value="under50">Under $50</option>
+              <option value="under100">Under $100</option>
+              <option value="over100">$100+</option>
+            </select>
+          </label>
+
+          {/* Live Now toggle */}
+          <button
+            type="button"
+            onClick={() => setLiveOnly((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+              liveOnly
+                ? "border-red-400/40 bg-red-400/10 text-red-400"
+                : "border-zinc-800 text-zinc-500 hover:border-emerald-400/30 hover:text-zinc-300"
+            }`}
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              {liveOnly && (
+                <>
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
+                </>
+              )}
+              {!liveOnly && <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-600" />}
+            </span>
+            Live Now
+          </button>
+
+          {/* Deals Only toggle */}
+          <button
+            type="button"
+            onClick={() => setDealsOnly((v) => !v)}
+            className={`rounded-lg border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition ${
+              dealsOnly
+                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                : "border-zinc-800 text-zinc-500 hover:border-emerald-400/30 hover:text-zinc-300"
+            }`}
+          >
+            Deals Only
+          </button>
+
+          {/* Reset (only when at least one filter is active) */}
+          {(activeCategory !== "all" || sortBy !== "newest" || priceFilter !== "any" || liveOnly || dealsOnly) && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveCategory("all");
+                setSortBy("newest");
+                setPriceFilter("any");
+                setLiveOnly(false);
+                setDealsOnly(false);
+              }}
+              className="ml-auto rounded-lg px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] text-zinc-600 transition hover:text-zinc-300"
+            >
+              Reset
+            </button>
+          )}
         </div>
 
         <div className="mb-8 grid grid-cols-2 gap-4 border border-zinc-900 bg-zinc-950/50 px-4 py-5 sm:flex sm:flex-wrap sm:px-6">
@@ -952,14 +1182,69 @@ export default function DiscoverPage() {
             );
           })()}
 
-          {/* Other results label */}
+          {/* ── SECTION 1: LIVE NOW ────────────────────────────
+               Streaming merchants matching the current filter set.
+               Collapses entirely when liveNowResults is empty. Live
+               projects are NOT also rendered in Services & Businesses
+               below — businessResults filters them out. */}
+          {liveNowResults.length > 0 && (
+            <div className="mb-8">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-red-400">
+                  Live Now · {liveNowResults.length}
+                </h2>
+              </div>
+              <div className="grid gap-0 border border-red-500/20 md:grid-cols-2 xl:grid-cols-3">
+                {liveNowResults.map((project) => (
+                  <Link
+                    key={project.id}
+                    href={`/project/${project.slug || project.id}?live=1`}
+                    className="group border-b border-r border-red-500/10 p-6 transition hover:bg-red-500/[0.04]"
+                  >
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-red-400">
+                        Live
+                      </span>
+                    </div>
+                    <div className="text-base font-bold text-white transition group-hover:text-red-400">
+                      {project.title || project.name || "Live business"}
+                    </div>
+                    {project.description && (
+                      <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{project.description}</p>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── SECTION 2: SERVICES & BUSINESSES ──────────────
+               Non-live merchant storefronts matching the filters.
+               This is the "Google Maps replacement" view. */}
+          {businessResults.length > 0 && (
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-400">
+                Services &amp; Businesses · {businessResults.length}
+              </h2>
+            </div>
+          )}
+
+          {/* Other results label (search arrival only) */}
           {searchArrival && searchQuery.trim() && sortedProjects.length > 1 && (
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
               {sortedProjects.length - 1} other result{sortedProjects.length - 1 > 1 ? "s" : ""}
             </div>
           )}
           <div className="grid gap-0 border border-zinc-900 md:grid-cols-2 xl:grid-cols-3">
-            {sortedProjects.map((project, index) => {
+            {businessResults.map((project, index) => {
               const accent = getAccent(index);
               const emoji = getProjectEmoji(project, index);
               const category = getCategory(project);
@@ -1118,6 +1403,54 @@ export default function DiscoverPage() {
               );
             })}
           </div>
+
+          {/* ── SECTION 3: ITEMS FOR SALE ─────────────────────
+               Individual offers (from project.store_items) matching
+               the query + price filter. Collapses entirely when empty.
+               Topgun Maintenance's 6 services will appear here once
+               their store_items are synced from the offers table
+               (follow-up: backend /api/projects/public returns store
+               items or a separate /api/offers/search endpoint). */}
+          {itemResults.length > 0 && (
+            <div className="mt-10">
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.25em] text-sky-400">
+                  Items for Sale · {itemResults.length}
+                </h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {itemResults.map((item, idx) => (
+                  <Link
+                    key={`${item.projectId}-${idx}`}
+                    href={`/project/${item.projectSlug || item.projectId}`}
+                    className="group rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 transition hover:border-sky-400/30 hover:bg-sky-400/[0.03]"
+                  >
+                    <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">
+                      {item.projectName}
+                    </div>
+                    <div className="text-sm font-bold text-white transition group-hover:text-sky-400">
+                      {item.title || "Untitled offer"}
+                    </div>
+                    {item.description && (
+                      <p className="mt-1 line-clamp-2 text-[12px] text-zinc-500">
+                        {item.description}
+                      </p>
+                    )}
+                    {item.price != null && (
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="font-mono text-lg font-extrabold text-emerald-400">
+                          ${item.price < 1 ? item.price.toFixed(2) : Math.round(item.price)}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 transition group-hover:text-sky-400">
+                          View →
+                        </span>
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Supplier capture — after search results */}
           {searchArrival && searchQuery.trim() && (
