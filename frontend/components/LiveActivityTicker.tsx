@@ -3,25 +3,26 @@
 /**
  * LiveActivityTicker — thin horizontal marquee below the navbar.
  *
- * Goal: make dum.club feel alive right now.
+ * REAL DATA ONLY. No demo items, no fallback, no fabricated entries.
+ * The Master Playbook (Phase 0A) is unambiguous: "If there's no real
+ * sales data yet, hide the ticker entirely rather than fake it."
  *
- * - Pulls real data from /api/checkout/recent-sales and /api/projects/public
- * - Falls back to tasteful demo entries at 80% opacity when activity is sparse
- * - rAF-driven scroll (same pattern as the existing DumActivityStrip)
- * - Dismissible (session-persisted in localStorage)
- * - Mobile-first: small text, thin height, safe to leave running all day
- * - Never polls more than once every 30s
+ * Threshold rule: the ticker only renders when there are at least 5
+ * real Stripe sales (paid OR fulfilled) on the platform. Once the
+ * threshold is crossed, it stays on — we deliberately do NOT gate on
+ * a sliding "last 24h" window because the ticker would flicker on and
+ * off as transactions age out, which looks broken. Five paid sales
+ * total, ever, is the floor.
+ *
+ * Data source: GET /api/checkout/recent-sales?limit=10 — the existing
+ * public endpoint that returns the most recent paid/fulfilled orders.
+ * If the array length is < 5, the ticker mounts as null (returns
+ * nothing). If >= 5, the ticker renders the items in a continuous
+ * rAF marquee, dismissible via the × button.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
-
-type TickerItem = {
-  key: string;
-  icon: string;
-  text: string;
-  isDemo?: boolean;
-};
 
 type RecentSale = {
   id: string;
@@ -31,23 +32,14 @@ type RecentSale = {
   created_at?: string;
 };
 
-type PublicProject = {
-  id: string;
-  title?: string;
-  name?: string;
-  is_live?: boolean;
+type TickerItem = {
+  key: string;
+  icon: string;
+  text: string;
 };
 
-// ── Demo items used only when real activity is thin.
-// They're clearly platform-side (not named people) and kept at 80% opacity.
-const DEMO_ITEMS: TickerItem[] = [
-  { key: "demo-dum-earned", icon: "⭐", text: "Someone just earned DUM Points", isDemo: true },
-  { key: "demo-purchase", icon: "🛒", text: "New purchase on DUM Club", isDemo: true },
-  { key: "demo-live", icon: "🔴", text: "Live stream active", isDemo: true },
-  { key: "demo-merchant", icon: "🏪", text: "New merchant joined", isDemo: true },
-  { key: "demo-reward-redeem", icon: "💎", text: "DUM Points redeemed at a local business", isDemo: true },
-  { key: "demo-launch", icon: "⚡", text: "New business launched today", isDemo: true },
-];
+// Real data only. The ticker renders when sales.length >= REAL_SALES_FLOOR.
+const REAL_SALES_FLOOR = 5;
 
 const DISMISS_KEY = "dumclub_ticker_dismissed_at";
 const DISMISS_MS = 60 * 60 * 1000; // 1 hour
@@ -69,9 +61,8 @@ function truncate(text: string, max: number): string {
 }
 
 export function LiveActivityTicker() {
-  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
   const [sales, setSales] = useState<RecentSale[]>([]);
-  const [liveProjects, setLiveProjects] = useState<PublicProject[]>([]);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef(0);
@@ -79,91 +70,61 @@ export function LiveActivityTicker() {
   const pausedRef = useRef(false);
 
   // Dismissal gate: only mount if the user hasn't dismissed in the last hour.
+  // Default to dismissed (true) so the ticker never flashes during SSR/hydration
+  // before the localStorage check runs.
   useEffect(() => {
-    setVisible(shouldShowTicker());
+    setDismissed(!shouldShowTicker());
   }, []);
 
-  // Poll real activity. Sales are the main signal; live projects are a bonus.
+  // Poll real sales every 60s. No live-stream polling — the live-streams
+  // hero is feature-flagged off (03a4999) so showing live-stream items here
+  // would contradict that gate. Sales-only ticker.
   useEffect(() => {
-    if (!visible) return;
+    if (dismissed) return;
     let cancelled = false;
 
     async function loadSales() {
       try {
-        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=8`, { cache: "no-store" });
+        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=10`, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
         setSales(Array.isArray(data?.sales) ? data.sales : []);
       } catch {
-        // silent — ticker degrades gracefully to demo mode
-      }
-    }
-
-    async function loadLive() {
-      try {
-        const res = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        const list: PublicProject[] = Array.isArray(data) ? data : data?.projects || [];
-        setLiveProjects(list.filter((p) => p.is_live === true));
-      } catch {
-        // silent
+        // Silent — empty state correctly hides the ticker.
       }
     }
 
     loadSales();
-    loadLive();
-    const salesTimer = setInterval(() => {
+    const timer = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       loadSales();
-    }, 30000);
-    const liveTimer = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-      loadLive();
     }, 60000);
 
     return () => {
       cancelled = true;
-      clearInterval(salesTimer);
-      clearInterval(liveTimer);
+      clearInterval(timer);
     };
-  }, [visible]);
+  }, [dismissed]);
 
-  // Compose ticker items: real first, demo to fill.
+  // Real sale items only. No padding, no demo, no fallback.
   const items = useMemo<TickerItem[]>(() => {
-    const real: TickerItem[] = [];
-
-    for (const sale of sales) {
+    return sales.map((sale) => {
       const biz = truncate(sale.business_name || "A seller", 26);
       const what = truncate(sale.offer_title || "an offer", 34);
-      real.push({
+      return {
         key: `sale-${sale.id}`,
         icon: "🛒",
         text: `${biz} just sold ${what}`,
-      });
-    }
+      };
+    });
+  }, [sales]);
 
-    for (const project of liveProjects) {
-      const title = truncate(project.title || project.name || "A creator", 28);
-      real.push({
-        key: `live-${project.id}`,
-        icon: "🔴",
-        text: `${title} is live right now`,
-      });
-    }
+  const aboveFloor = items.length >= REAL_SALES_FLOOR;
 
-    // If we have at least 6 real items, use them as-is. Otherwise pad with demo items.
-    if (real.length >= 6) return real;
-
-    const needed = 6 - real.length;
-    return [...real, ...DEMO_ITEMS.slice(0, needed)];
-  }, [sales, liveProjects]);
-
-  // rAF marquee — continuous scroll, pauses on hover, resumes on leave.
+  // rAF marquee — runs only when the ticker is actually rendered.
   useEffect(() => {
-    if (!visible) return;
+    if (dismissed || !aboveFloor) return;
     const track = trackRef.current;
     if (!track) return;
 
@@ -198,22 +159,23 @@ export function LiveActivityTicker() {
       clearTimeout(measureTimer);
       window.removeEventListener("resize", measure);
     };
-  }, [visible, items.length]);
+  }, [dismissed, aboveFloor, items.length]);
 
   function dismiss() {
     if (typeof window !== "undefined") {
       localStorage.setItem(DISMISS_KEY, String(Date.now()));
     }
-    setVisible(false);
+    setDismissed(true);
   }
 
-  if (!visible || items.length === 0) return null;
+  // Hide entirely until the platform crosses the real-sales floor.
+  // Dismissed by user → also hidden.
+  if (dismissed || !aboveFloor) return null;
 
   const renderItem = (item: TickerItem, keyPrefix: string) => (
     <span
       key={`${keyPrefix}-${item.key}`}
       className="flex shrink-0 items-center gap-2 whitespace-nowrap font-mono text-[11px] tracking-wide"
-      style={{ opacity: item.isDemo ? 0.8 : 1 }}
     >
       <span className="text-[13px] leading-none">{item.icon}</span>
       <span className="text-zinc-300">{item.text}</span>
@@ -226,14 +188,14 @@ export function LiveActivityTicker() {
       className="relative w-full border-b border-zinc-900/70 bg-zinc-950/80 backdrop-blur-sm"
       style={{ height: 32 }}
       role="status"
-      aria-label="Live platform activity"
+      aria-label="Recent sales on DUM Club"
     >
       <div
         className="h-full overflow-hidden"
         style={{
           maskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
           WebkitMaskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
-          paddingRight: 36, // leave room for dismiss button
+          paddingRight: 36, // room for dismiss button
         }}
         onMouseEnter={() => { pausedRef.current = true; }}
         onMouseLeave={() => { pausedRef.current = false; }}
