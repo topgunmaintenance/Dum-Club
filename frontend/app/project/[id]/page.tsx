@@ -38,6 +38,7 @@ type Memory = {
 
 type Project = {
   id: string;
+  slug?: string | null;
   owner_id?: string | null;
   privy_id?: string | null;
   wallet_address?: string | null;
@@ -4555,6 +4556,32 @@ return (
           </p>
         )}
       </div>
+
+      {/* ── FOUNDER CARD — Topgun Maintenance only (Phase 0B pilot) ── */}
+      {project?.slug === "topgun-maintenance" && (
+        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-600">Founding Merchant</div>
+          <div className="flex items-start gap-5">
+            <img
+              src="/Julian.jpeg"
+              alt="Julian Mero — founder, Topgun Maintenance LLC"
+              className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-emerald-400/30"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-lg font-bold text-white">Julian Mero</div>
+              <div className="mt-0.5 text-sm text-zinc-400">Founder · A&amp;P Certified Mechanic</div>
+              <div className="mt-1 text-xs text-zinc-500">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.06] px-3 py-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400">Verified Founding Merchant</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-zinc-800 bg-base">

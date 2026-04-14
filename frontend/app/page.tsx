@@ -2912,17 +2912,21 @@ export default function Home() {
               {/* Mini storefront preview */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-400/15 text-sm font-black text-orange-400 border border-orange-400/20">SP</div>
+                  <img
+                    src="/Julian.jpeg"
+                    alt="Julian Mero — founder, Topgun Maintenance LLC"
+                    className="h-10 w-10 rounded-full object-cover border border-emerald-400/25"
+                  />
                   <div>
-                    <div className="text-sm font-bold text-white">Sparkle Pro Mobile Wash</div>
-                    <div className="text-[10px] text-zinc-500">Mobile car wash & detailing</div>
+                    <div className="text-sm font-bold text-white">Topgun Maintenance LLC</div>
+                    <div className="text-[10px] text-zinc-500">Aircraft maintenance · MMU · NY NJ PA CT DE</div>
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
                   {[
-                    { name: "Exterior Wash", price: "$49" },
-                    { name: "Full Detail", price: "$149" },
-                    { name: "Ceramic Coat", price: "$299" },
+                    { name: "Annual Inspection (FAR 91)", price: "$850" },
+                    { name: "100-Hour Inspection", price: "$650" },
+                    { name: "AOG Emergency Response", price: "$500" },
                   ].map((offer) => (
                     <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2">
                       <span className="text-[12px] text-zinc-300">{offer.name}</span>
@@ -2935,22 +2939,30 @@ export default function Home() {
               {/* AI conversation preview */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-400/15 text-[9px] font-bold text-orange-400 border border-orange-400/20">SP</div>
+                  <img
+                    src="/Julian.jpeg"
+                    alt="Julian Mero — founder, Topgun Maintenance LLC"
+                    className="h-6 w-6 rounded-full object-cover border border-emerald-400/25"
+                  />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">AI Assistant</span>
                 </div>
                 <div className="space-y-3">
                   {/* Customer question */}
                   <div className="flex justify-end">
                     <div className="rounded-xl rounded-br-sm bg-zinc-800 px-3 py-2 text-[12px] text-zinc-300">
-                      What&apos;s included in the Full Detail?
+                      What&apos;s included in the annual inspection?
                     </div>
                   </div>
                   {/* AI answer */}
                   <div className="flex gap-2">
-                    <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[7px] font-bold text-orange-400">SP</div>
+                    <img
+                      src="/Julian.jpeg"
+                      alt="Julian Mero — founder, Topgun Maintenance LLC"
+                      className="mt-1 h-5 w-5 shrink-0 rounded-full object-cover border border-emerald-400/25"
+                    />
                     <div className="rounded-xl rounded-bl-sm border border-zinc-800/60 bg-zinc-950/80 px-3 py-2 text-[12px] leading-relaxed text-zinc-400">
-                      Full Detail covers interior deep clean, full exterior wash, tire dressing, and glass polish. Takes about 2 hours. Most customers go with this one.
-                      <span className="mt-1.5 block text-emerald-400/70">Full Detail — $149 →</span>
+                      Full FAR Part 91 airworthiness check per 14 CFR 43 Appendix D — logbook signoff, discrepancy report, and return-to-service docs included. Typical turnaround 2–5 days at MMU.
+                      <span className="mt-1.5 block text-emerald-400/70">Annual Inspection — $850 →</span>
                     </div>
                   </div>
                 </div>
