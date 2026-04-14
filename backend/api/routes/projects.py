@@ -587,19 +587,68 @@ async def list_public_projects():
 
 @router.get("/live-stats")
 async def live_stats():
-    """Public endpoint: real counts for the /business landing page."""
+    """Public endpoint: real counts for ProofOfMotion + landing pages.
+
+    Returns honest counts only. Each field is independently 0 if no
+    real data exists; the caller decides whether to render the cell
+    or hide it. No fallback copy, no 'launching daily' aspirational
+    text — that's a frontend concern.
+
+    `verified_merchants` uses the new merchants.trust_level column
+    (migration 030_merchant_trust_level). A merchant is verified when
+    trust_level is 'verified' OR 'trusted'. The trust_level is set
+    manually by an operator (or by a future periodic recompute job)
+    against the rule:
+      Stripe Connect active + business_profile with photo + >=1
+      published offer with price > 0.
+    Today the count is 0 until Topgun (the Phase 0 pilot) is set up
+    and an operator flips its trust_level to 'verified' via SQL.
+
+    `visibility='public'` filter excludes founder demo storefronts
+    that have been soft-hidden via migration 029.
+    """
     supabase = get_client()
     try:
-        projects_res = supabase.table("projects").select("id", count="exact").eq("status", "live").eq("is_deleted", False).execute()
+        # Live, public, non-deleted projects.
+        projects_res = (
+            supabase.table("projects")
+            .select("id", count="exact")
+            .eq("status", "live")
+            .eq("is_deleted", False)
+            .eq("visibility", "public")
+            .execute()
+        )
         offers_res = supabase.table("offers").select("id", count="exact").eq("is_active", True).execute()
         biz_res = supabase.table("business_profiles").select("id", count="exact").execute()
-    except Exception:
-        return {"live_projects": 0, "active_offers": 0, "businesses": 0}
+
+        # Verified merchants: trust_level set to 'verified' or 'trusted'.
+        # Uses idx_merchants_trust_level partial index (migration 030).
+        verified_res = (
+            supabase.table("merchants")
+            .select("id", count="exact")
+            .in_("trust_level", ["verified", "trusted"])
+            .eq("active", True)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[projects] live-stats query failed: {exc!r}")
+        return {
+            "live_projects": 0,
+            "active_offers": 0,
+            "businesses": 0,
+            "verified_merchants": 0,
+        }
+
+    def _count(res) -> int:
+        if getattr(res, "count", None) is not None:
+            return int(res.count or 0)
+        return len(res.data or [])
 
     return {
-        "live_projects": projects_res.count or len(projects_res.data or []),
-        "active_offers": offers_res.count or len(offers_res.data or []),
-        "businesses": biz_res.count or len(biz_res.data or []),
+        "live_projects": _count(projects_res),
+        "active_offers": _count(offers_res),
+        "businesses": _count(biz_res),
+        "verified_merchants": _count(verified_res),
     }
 
 # -----------------------------

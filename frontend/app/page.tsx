@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Starfield } from "../components/Starfield";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
+import { FounderNote } from "../components/FounderNote";
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -2170,11 +2171,12 @@ export default function Home() {
                 )}
               </div>
 
-              {/* ── PROOF OF MOTION ──────────────────────────────
-                   4 stat cells right under the launch CTA. Real data
-                   from /api/projects/live-stats + /api/checkout/recent-sales,
-                   contextual fallback copy when any stat is zero. */}
-              <ProofOfMotion />
+              {/* ── PROOF OF MOTION (or FounderNote fallback) ─────
+                   Strict 4-cell honest-data rule (Phase 0A). Renders the
+                   stats grid only when ALL 4 cells are >0 with real
+                   30-day-window data. Otherwise renders FounderNote in
+                   the same vertical slot — never empty space. */}
+              <ProofOfMotion fallback={<FounderNote />} />
 
               {/* ── INLINE FIND RESULTS ── */}
               {findResults !== null && !heroLaunching && (

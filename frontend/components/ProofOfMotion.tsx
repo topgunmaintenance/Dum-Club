@@ -1,28 +1,37 @@
 "use client";
 
 /**
- * ProofOfMotion — 4-cell stats strip under the hero CTA.
+ * ProofOfMotion — strict honest-data-only stats strip under the hero CTA.
  *
- * Goal: reinforce activity + legitimacy immediately, every time someone
- * lands on dum.club. Never shows a dead "0" — if a stat is empty we fall
- * back to contextual copy that still reads as positive motion.
+ * Master Playbook Phase 0A: each cell enables independently, but ONLY
+ * when its underlying number is > 0 AND derived from real data within
+ * the last 30 days. No rolling averages. No 'today' labels that secretly
+ * include older data. No fallback copy. No 'launching daily' aspiration.
  *
- * Data sources (all existing, no backend changes):
- *  - /api/projects/live-stats   → live_projects, active_offers, businesses
- *  - /api/checkout/recent-sales → today's purchase volume
+ * The full strip renders only when ALL 4 cells qualify, otherwise the
+ * caller's `fallback` prop renders in the same vertical slot. This is
+ * the reconciliation of "hide entirely" (never show partial state) with
+ * "each cell enables independently" (each cell has its own qualifying
+ * rule). All-or-nothing avoids the asymmetric layout problem of one or
+ * two lonely cells.
  *
- * DUM Points earned today is derived from today's sales amount using the
- * default network reward rate (10 points per $1). This is an estimate —
- * if we ever ship a real "points awarded today" endpoint, swap it in.
+ * Cell definitions:
+ *   1. Sales this month       — count of paid Stripe sales (last 30 days)
+ *   2. DUM Points this month  — sum of points earned (last 30 days)
+ *   3. Verified merchants     — merchants.trust_level in (verified, trusted)
+ *   4. Businesses live        — projects.status='live' & visibility='public'
+ *
+ * Cells 1, 2 require a 30-day window. Cells 3, 4 are current-state counts.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
 
 type LiveStats = {
   live_projects: number;
   active_offers: number;
   businesses: number;
+  verified_merchants: number;
 };
 
 type RecentSale = {
@@ -34,26 +43,24 @@ type RecentSale = {
 type StatCell = {
   label: string;
   value: number;
-  display: string | null; // when non-null, overrides the number (fallback copy)
 };
 
-// ── Reward rate used purely for display-side estimation of points earned today.
-// Backend is source of truth for the real value (env DUM_REWARD_RATE, default 10).
 const DISPLAY_REWARD_RATE = 10;
 
-function startOfTodayIso(): number {
+function startOfWindow(daysBack: number): number {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - daysBack);
   return d.getTime();
 }
 
-function countToday(sales: RecentSale[]): { count: number; total: number } {
-  const start = startOfTodayIso();
+function aggregateLast30Days(sales: RecentSale[]): { count: number; total: number } {
+  const cutoff = startOfWindow(30);
   let count = 0;
   let total = 0;
   for (const s of sales) {
     const t = s.created_at ? new Date(s.created_at).getTime() : 0;
-    if (Number.isFinite(t) && t >= start) {
+    if (Number.isFinite(t) && t >= cutoff) {
       count += 1;
       total += Number(s.amount || 0);
     }
@@ -62,8 +69,8 @@ function countToday(sales: RecentSale[]): { count: number; total: number } {
 }
 
 /**
- * Small hook: animates a number from 0 → target with requestAnimationFrame.
- * Respects prefers-reduced-motion: if set, snaps to target immediately.
+ * Animates a number from 0 → target with rAF. Snaps to target if the
+ * user prefers reduced motion or the target is 0.
  */
 function useCountUp(target: number, durationMs = 900): number {
   const [value, setValue] = useState(0);
@@ -89,7 +96,6 @@ function useCountUp(target: number, durationMs = 900): number {
       if (startRef.current === 0) startRef.current = time;
       const elapsed = time - startRef.current;
       const t = Math.min(1, elapsed / durationMs);
-      // ease-out cubic
       const eased = 1 - Math.pow(1 - t, 3);
       setValue(Math.round(from + (target - from) * eased));
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
@@ -104,16 +110,10 @@ function useCountUp(target: number, durationMs = 900): number {
 
 function StatCard({ cell }: { cell: StatCell }) {
   const animated = useCountUp(cell.value);
-  const showFallback = cell.display !== null;
-
   return (
     <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-zinc-800/60 bg-zinc-950/60 px-3 py-3 text-center backdrop-blur-sm transition hover:border-emerald-400/20">
-      <div
-        className={`font-mono font-extrabold leading-none ${
-          showFallback ? "text-[13px] text-zinc-400" : "text-[22px] text-emerald-400"
-        }`}
-      >
-        {showFallback ? cell.display : animated.toLocaleString()}
+      <div className="font-mono text-[22px] font-extrabold leading-none text-emerald-400">
+        {animated.toLocaleString()}
       </div>
       <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-600">
         {cell.label}
@@ -122,12 +122,27 @@ function StatCard({ cell }: { cell: StatCell }) {
   );
 }
 
-export function ProofOfMotion() {
+interface ProofOfMotionProps {
+  /**
+   * Rendered in the same vertical slot when the strict 4-cell rule isn't met.
+   * Pass <FounderNote /> from the caller. Required so the page never has an
+   * empty slot — the playbook is explicit about not leaving the space blank.
+   */
+  fallback: ReactNode;
+}
+
+export function ProofOfMotion({ fallback }: ProofOfMotionProps) {
   const [stats, setStats] = useState<LiveStats | null>(null);
   const [sales, setSales] = useState<RecentSale[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    let pending = 2;
+    const settle = () => {
+      pending -= 1;
+      if (pending === 0 && !cancelled) setLoaded(true);
+    };
 
     async function loadStats() {
       try {
@@ -139,21 +154,26 @@ export function ProofOfMotion() {
           live_projects: Number(data?.live_projects || 0),
           active_offers: Number(data?.active_offers || 0),
           businesses: Number(data?.businesses || 0),
+          verified_merchants: Number(data?.verified_merchants || 0),
         });
       } catch {
-        // silent — fallback copy kicks in
+        // Silent — fallback renders
+      } finally {
+        settle();
       }
     }
 
     async function loadSales() {
       try {
-        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=20`, { cache: "no-store" });
+        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=50`, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
         setSales(Array.isArray(data?.sales) ? data.sales : []);
       } catch {
-        // silent
+        // Silent
+      } finally {
+        settle();
       }
     }
 
@@ -176,34 +196,23 @@ export function ProofOfMotion() {
   }, []);
 
   const cells = useMemo<StatCell[]>(() => {
-    const today = countToday(sales);
-    const dumToday = Math.round(today.total * DISPLAY_REWARD_RATE);
-    const liveNow = stats?.live_projects ?? 0;
-    const businesses = stats?.businesses ?? 0;
-
+    const last30 = aggregateLast30Days(sales);
+    const dum30 = Math.round(last30.total * DISPLAY_REWARD_RATE);
     return [
-      {
-        label: "Purchases today",
-        value: today.count,
-        display: today.count > 0 ? null : "Purchases landing daily",
-      },
-      {
-        label: "DUM Points earned today",
-        value: dumToday,
-        display: dumToday > 0 ? null : "Rewards moving across the market",
-      },
-      {
-        label: "Businesses live now",
-        value: liveNow,
-        display: liveNow > 0 ? null : "Businesses launching daily",
-      },
-      {
-        label: "Merchants on the network",
-        value: businesses,
-        display: businesses > 0 ? null : "New merchants joining",
-      },
+      { label: "Sales this month",     value: last30.count },
+      { label: "DUM Points this month", value: dum30 },
+      { label: "Verified merchants",   value: stats?.verified_merchants ?? 0 },
+      { label: "Businesses live",      value: stats?.live_projects ?? 0 },
     ];
   }, [stats, sales]);
+
+  // Strict rule: ALL 4 cells must have value > 0. Otherwise fallback.
+  const allCellsQualify = cells.every((c) => c.value > 0);
+
+  // During initial load, render fallback to avoid flash-of-zero-cells.
+  if (!loaded || !allCellsQualify) {
+    return <>{fallback}</>;
+  }
 
   return (
     <div
