@@ -729,8 +729,11 @@ export default function DiscoverPage() {
    * sortedProjects gets split into three independent buckets:
    *   - liveNowResults   — matching merchants currently streaming
    *   - businessResults  — matching merchant storefronts (not live)
-   *   - itemResults      — individual offers (from store_items) whose
-   *                        title/description matches the query
+   *   - offerSearchResults — individual offers fetched from the
+   *                        /api/offers/search endpoint (real offers
+   *                        table, not store_items JSONB). This lights
+   *                        up Topgun's 6 aviation services seeded via
+   *                        migration 031.
    * Each section is rendered independently with its own header; empty
    * sections collapse rather than showing "no results".
    */
@@ -743,6 +746,7 @@ export default function DiscoverPage() {
   }, [sortedProjects]);
 
   type ItemResult = {
+    id?: string;
     projectId: string;
     projectSlug?: string | null;
     projectName: string;
@@ -751,39 +755,76 @@ export default function DiscoverPage() {
     price: number | null;
   };
 
-  const itemResults = useMemo<ItemResult[]>(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const out: ItemResult[] = [];
-    for (const p of projects) {
-      const items = Array.isArray((p as any).store_items) ? (p as any).store_items : [];
-      for (const item of items) {
-        const title = String(item?.title || item?.name || "");
-        const desc = String(item?.description || "");
-        const price = Number(item?.price_usd ?? item?.price ?? NaN);
-        if (q) {
-          const hit =
-            title.toLowerCase().includes(q) ||
-            desc.toLowerCase().includes(q);
-          if (!hit) continue;
-        }
-        if (priceFilter !== "any" && Number.isFinite(price)) {
-          if (priceFilter === "under25" && !(price < 25)) continue;
-          if (priceFilter === "under50" && !(price < 50)) continue;
-          if (priceFilter === "under100" && !(price < 100)) continue;
-          if (priceFilter === "over100" && !(price >= 100)) continue;
-        }
-        out.push({
-          projectId: p.id,
-          projectSlug: (p as any).slug,
-          projectName: p.title || p.name || "Business",
-          title,
-          description: desc,
-          price: Number.isFinite(price) ? price : null,
-        });
-      }
+  // Offers fetched from the backend /api/offers/search endpoint.
+  // Debounced 300ms so we don't hammer the API on every keystroke.
+  const [offerSearchResults, setOfferSearchResults] = useState<ItemResult[]>([]);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setOfferSearchResults([]);
+      return;
     }
-    return out.slice(0, 24);
-  }, [projects, searchQuery, priceFilter]);
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/offers/search?q=${encodeURIComponent(q)}&limit=20`,
+          { signal: controller.signal, cache: "no-store" }
+        );
+        if (!res.ok) {
+          setOfferSearchResults([]);
+          return;
+        }
+        const data = await res.json();
+        const rows: ItemResult[] = (Array.isArray(data) ? data : []).map((o: any) => {
+          const rawPrice = o?.price_usd;
+          const price =
+            typeof rawPrice === "number"
+              ? rawPrice
+              : rawPrice != null && Number.isFinite(Number(rawPrice))
+                ? Number(rawPrice)
+                : null;
+          return {
+            id: o?.id,
+            projectId: o?.project_id,
+            projectSlug: o?.project_slug ?? null,
+            projectName: o?.project_name || "Business",
+            title: o?.title || "",
+            description: o?.description || "",
+            price,
+          };
+        });
+        setOfferSearchResults(rows);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("[discover] offer search failed:", err);
+          setOfferSearchResults([]);
+        }
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery]);
+
+  // Respect the price filter client-side so the Items for Sale
+  // section stays in sync with the toolbar filter applied to
+  // Services & Businesses.
+  const itemResults = useMemo<ItemResult[]>(() => {
+    if (priceFilter === "any") return offerSearchResults;
+    return offerSearchResults.filter((item) => {
+      if (item.price == null) return false;
+      if (priceFilter === "under25") return item.price < 25;
+      if (priceFilter === "under50") return item.price < 50;
+      if (priceFilter === "under100") return item.price < 100;
+      if (priceFilter === "over100") return item.price >= 100;
+      return true;
+    });
+  }, [offerSearchResults, priceFilter]);
 
   const totalPublicProjects = projects.length;
   const newestProject = projects[0];
@@ -1405,12 +1446,13 @@ export default function DiscoverPage() {
           </div>
 
           {/* ── SECTION 3: ITEMS FOR SALE ─────────────────────
-               Individual offers (from project.store_items) matching
-               the query + price filter. Collapses entirely when empty.
-               Topgun Maintenance's 6 services will appear here once
-               their store_items are synced from the offers table
-               (follow-up: backend /api/projects/public returns store
-               items or a separate /api/offers/search endpoint). */}
+               Individual offers from the real `offers` table via
+               /api/offers/search?q=<term>. Debounced 300ms in the
+               useEffect above. Lights up Topgun's 6 aviation services
+               seeded via migration 031. Collapses entirely when
+               empty (no query or no matches). Price filter is
+               applied client-side in the itemResults useMemo so it
+               stays in sync with the Services & Businesses toolbar. */}
           {itemResults.length > 0 && (
             <div className="mt-10">
               <div className="mb-3 flex items-center gap-2">
@@ -1421,9 +1463,9 @@ export default function DiscoverPage() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {itemResults.map((item, idx) => (
                   <Link
-                    key={`${item.projectId}-${idx}`}
-                    href={`/project/${item.projectSlug || item.projectId}`}
-                    className="group rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 transition hover:border-sky-400/30 hover:bg-sky-400/[0.03]"
+                    key={item.id || `${item.projectId}-${idx}`}
+                    href={`/project/${item.projectSlug || item.projectId}#offers-section`}
+                    className="group flex flex-col rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 transition hover:border-sky-400/30 hover:bg-sky-400/[0.03]"
                   >
                     <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">
                       {item.projectName}
@@ -1436,16 +1478,20 @@ export default function DiscoverPage() {
                         {item.description}
                       </p>
                     )}
-                    {item.price != null && (
-                      <div className="mt-3 flex items-center justify-between">
+                    <div className="mt-auto pt-4 flex items-center justify-between gap-3">
+                      {item.price != null ? (
                         <span className="font-mono text-lg font-extrabold text-emerald-400">
                           ${item.price < 1 ? item.price.toFixed(2) : Math.round(item.price)}
                         </span>
-                        <span className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 transition group-hover:text-sky-400">
-                          View →
+                      ) : (
+                        <span className="text-[11px] uppercase tracking-[0.15em] text-zinc-600">
+                          Contact for quote
                         </span>
-                      </div>
-                    )}
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-400 transition group-hover:bg-emerald-400 group-hover:text-black">
+                        Book Now →
+                      </span>
+                    </div>
                   </Link>
                 ))}
               </div>

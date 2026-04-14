@@ -2,6 +2,7 @@
 Offers CRUD — structured items available for purchase on a project.
 Separate from store_items JSONB (which remains untouched).
 """
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -11,6 +12,26 @@ from db.supabase import get_client
 from auth.privy import get_current_user
 
 router = APIRouter()
+
+
+# ── PostgREST filter sanitizer ─────────────────────────────────
+#
+# `.or_()` / `.ilike()` in the Supabase Python SDK pass their filter
+# value as a raw string in the URL query. PostgREST uses ',' '(' ')'
+# '"' as filter delimiters, and SQL LIKE treats '%' and '_' as
+# wildcards. To prevent a search query from breaking the filter
+# parser or smuggling in extra clauses, we strip everything except
+# a conservative safe set (alphanumerics, whitespace, hyphens,
+# apostrophes, periods) and cap length.
+_SAFE_Q_CHARS = re.compile(r"[^\w\s\-'.]", re.UNICODE)
+
+
+def _sanitize_q(q: Optional[str]) -> str:
+    if not q:
+        return ""
+    cleaned = _SAFE_Q_CHARS.sub(" ", q)
+    cleaned = " ".join(cleaned.split())
+    return cleaned[:80]
 
 
 # ── Models ────────────────────────────────────────────────────
@@ -146,6 +167,87 @@ async def create_offer(
 
     print(f"[offers] CREATE success: id={res.data[0].get('id')}, title='{res.data[0].get('title')}'")
     return res.data[0]
+
+
+@router.get("/search")
+async def search_offers(q: str = "", limit: int = 20):
+    """Public full-text-ish search over active offers.
+
+    Returns offers whose title or description contains the query
+    string (case-insensitive), joined to their parent project to
+    include the project name and slug for linking back. Only active
+    offers on approved, non-deleted projects are returned.
+
+    This endpoint powers the "Items for Sale" section on /discover —
+    which previously read from project.store_items JSONB (empty for
+    Topgun). Now it reads from the real offers table so Topgun's
+    6 aviation services (seeded via migration 031) surface properly.
+
+    Query params:
+      q:     search string, sanitized to [\\w\\s\\-'.]+, max 80 chars
+      limit: result cap, default 20, clamped to [1, 50]
+
+    Returns: JSON array of offer rows with flattened project fields.
+    Empty array on empty query or on any DB error (search must never
+    500 the discover page).
+
+    Route ordering: this MUST stay above GET /{project_id} or FastAPI
+    will match 'search' as a project_id and return 500.
+    """
+    q_clean = _sanitize_q(q)
+    if not q_clean:
+        return []
+
+    try:
+        limit_int = max(1, min(int(limit or 20), 50))
+    except (TypeError, ValueError):
+        limit_int = 20
+
+    supabase = get_client()
+
+    try:
+        # Inner join to projects via PostgREST embedded resources so
+        # we get name/slug/review_status/is_deleted in one round trip.
+        # !inner gates rows where the project join doesn't match.
+        res = (
+            supabase.table("offers")
+            .select(
+                "id, title, description, price_usd, primary_image_url, "
+                "is_active, created_at, project_id, "
+                "projects!inner(name, slug, review_status, is_deleted)"
+            )
+            .eq("is_active", True)
+            .eq("projects.review_status", "approved")
+            .eq("projects.is_deleted", False)
+            .or_(f"title.ilike.*{q_clean}*,description.ilike.*{q_clean}*")
+            .order("created_at", desc=True)
+            .limit(limit_int)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[offers] search q='{q_clean}' failed: {exc!r}")
+        return []
+
+    # Flatten the embedded project into top-level fields so the
+    # frontend consumer doesn't have to deal with nested shapes.
+    results = []
+    for row in (res.data or []):
+        proj = row.get("projects") or {}
+        results.append({
+            "id": row.get("id"),
+            "title": row.get("title"),
+            "description": row.get("description"),
+            "price_usd": row.get("price_usd"),
+            "primary_image_url": row.get("primary_image_url"),
+            "is_active": row.get("is_active"),
+            "created_at": row.get("created_at"),
+            "project_id": row.get("project_id"),
+            "project_name": proj.get("name"),
+            "project_slug": proj.get("slug"),
+        })
+
+    print(f"[offers] search q='{q_clean}' limit={limit_int}: {len(results)} results")
+    return results
 
 
 @router.get("/{project_id}")
