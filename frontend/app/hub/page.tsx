@@ -197,69 +197,21 @@ function PointsTab({
         </div>
       </div>
 
-      {/* Buy Points (Stripe) */}
-      <div className="mb-6 rounded-2xl border border-sky-400/15 bg-gradient-to-br from-sky-400/[0.03] to-zinc-950 p-6">
-        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-sky-400/70">Buy DUM Points</div>
-        <p className="mb-4 text-[12px] text-zinc-500">Card payment via Stripe. Added to your balance immediately.</p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {[
-            { id: "tier_100", points: 100, price: "$10", bonus: null, best: false },
-            { id: "tier_275", points: 275, price: "$25", bonus: "10% bonus", best: true },
-            { id: "tier_600", points: 600, price: "$50", bonus: "20% bonus", best: false },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={async () => {
-                setPurchasing(t.id);
-                try {
-                  const token = await getToken();
-                  const res = await fetch(`${API_BASE}/api/dum/purchase`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                    body: JSON.stringify({ tier_id: t.id, success_url: window.location.origin + "/hub", cancel_url: window.location.origin + "/hub" }),
-                  });
-                  if (!res.ok) { const err = await res.json().catch(() => ({})); setPurchaseError(err.detail || "Purchase failed"); setPurchasing(null); return; }
-                  const data = await res.json();
-                  if (data.checkout_url) window.location.href = data.checkout_url;
-                } catch { setPurchaseError("Network error"); setPurchasing(null); }
-              }}
-              disabled={!!purchasing}
-              className={`relative rounded-xl border p-5 text-center transition hover:-translate-y-1 ${t.best ? "border-sky-400/30 bg-sky-400/[0.06] shadow-[0_0_16px_rgba(56,189,248,0.06)]" : "border-zinc-800 bg-zinc-900/50"} ${purchasing === t.id ? "opacity-60" : ""}`}
-            >
-              {t.best && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-sky-400 px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-black">Best Value</div>}
-              <div className="mb-1 text-2xl font-black text-white">{t.points}</div>
-              <div className="mb-2 text-[11px] text-zinc-500">points</div>
-              <div className="text-lg font-bold text-sky-400">{t.price}</div>
-              {t.bonus && <div className="mt-1 text-[10px] font-semibold text-sky-400/70">{t.bonus}</div>}
-              <div className="mt-3 rounded-lg bg-sky-400/10 px-3 py-1.5 text-[11px] font-bold text-sky-400">
-                {purchasing === t.id ? "Processing..." : "Buy Now"}
-              </div>
-            </button>
-          ))}
-        </div>
-        {purchaseError && <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-400">{purchaseError}</div>}
-        {purchaseSuccess && (
-          <div className="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/5 px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sky-400">✓</span>
-                <span className="text-xs font-bold text-sky-300">Purchase complete</span>
-              </div>
-              <span className="text-[9px] text-zinc-500">just now</span>
-            </div>
-            {purchaseSuccess.added > 0 && (
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="font-mono text-lg font-black text-sky-400">+{purchaseSuccess.added.toLocaleString()}</span>
-                <span className="text-[11px] text-zinc-500">DUM added</span>
-              </div>
-            )}
-            <div className="mt-1.5 flex items-center justify-between text-[10px] text-zinc-600">
-              <span>Paid via Stripe</span>
-              <span className="font-mono text-zinc-500">Balance: {purchaseSuccess.newBalance.toLocaleString()}</span>
-            </div>
-          </div>
-        )}
-        <p className="mt-3 text-center text-[10px] text-zinc-600">💳 Stripe checkout · Instant delivery · No waiting</p>
+      {/* Buy Points (Stripe) — HIDDEN in Phase 0A.
+          The full purchase flow is gated on a written legal review of
+          selling a utility token to US consumers via Stripe (money
+          transmission, stored-value-card rules, state-by-state prepaid
+          card regulations, SEC investment-contract risk). See BACKLOG.md
+          and Master Playbook Phase 3C. The UI panel below is a passive
+          notice; the underlying /api/dum/purchase endpoint and the
+          purchaseSuccess / purchaseError / purchasing state are still
+          mounted so a future re-enable is one PR, not a rebuild. */}
+      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Points</div>
+        <p className="text-[13px] leading-relaxed text-zinc-400">
+          Points are earned through purchases.{" "}
+          <span className="text-zinc-500">Purchased top-ups coming soon.</span>
+        </p>
       </div>
 
       {/* Purchase History */}
