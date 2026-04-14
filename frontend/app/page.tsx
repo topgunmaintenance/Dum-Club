@@ -1387,11 +1387,11 @@ export default function Home() {
   // handles services + products + food + live sales in one search. Rotates
   // every 3 seconds. Pauses when the user has focused the input.
   const heroPlaceholders = [
-    "Search for services... try 'aircraft inspection'",
-    "Find food near you... try 'pizza Morris County'",
-    "Shop live sales... try 'sneakers' or 'vintage'",
-    "Book local services... try 'dog grooming' or 'lawn care'",
-    "Find deals... try 'oil change under $50'",
+    "Find the best pizza near Morris County...",
+    "Search live sales... sneakers, vintage, collectibles",
+    "Book a service... detailing, lawn care, inspections",
+    "Discover local deals... restaurants, shops, salons",
+    "What are you looking for today?",
   ];
   const [heroPlaceholderIdx, setHeroPlaceholderIdx] = useState(0);
   useEffect(() => {
@@ -1402,32 +1402,12 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [heroSearch]);
 
-  // Homepage category grid counts — pulled from /api/projects/public and
-  // grouped by the same categorizer used on /discover. Phase 1 will
-  // replace this with server-side aggregation once volume requires it.
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCategoryCounts() {
-      try {
-        const res = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        const list: any[] = Array.isArray(data) ? data : data?.projects || [];
-        if (cancelled) return;
-        const counts: Record<string, number> = {};
-        for (const p of list) {
-          const cat = categorizeProjectForHome(p);
-          counts[cat] = (counts[cat] || 0) + 1;
-        }
-        setCategoryCounts(counts);
-      } catch {}
-    }
-    loadCategoryCounts();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Homepage used to render a category grid with live counts from
+  // /api/projects/public. That grid was replaced by a simple quick-
+  // search pill row that routes to /discover?q=<label>, so the
+  // count-fetching effect is intentionally gone. HOME_CATEGORIES and
+  // categorizeProjectForHome are still exported in case /discover or
+  // a future page wants to reuse the same classifier.
 
   // ── Launch state ──
   const [heroIdea, setHeroIdea] = useState("");
@@ -2167,36 +2147,33 @@ export default function Home() {
                 </div>
               </form>
 
-              {/* ── CATEGORY GRID ───────────────────────────────────
-                   Google Maps-style category cards. 2 rows of 4 on
-                   desktop, horizontal-scrolling single row on mobile.
-                   Each card links to /discover?category=<key>. Counts
-                   come from /api/projects/public grouped client-side. */}
-              <div className="mx-auto mt-6 w-full max-w-4xl">
-                <div
-                  className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:pb-0"
-                  style={{ scrollSnapType: "x mandatory" }}
-                >
-                  {HOME_CATEGORIES.map((c) => {
-                    const count = categoryCounts[c.key] ?? 0;
-                    return (
-                      <Link
-                        key={c.key}
-                        href={`/discover?category=${c.key}`}
-                        className="group flex min-w-[130px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-zinc-800/60 bg-zinc-950/60 px-4 py-4 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.03] sm:min-w-0"
-                        style={{ scrollSnapAlign: "start" }}
-                      >
-                        <span className="text-2xl" aria-hidden="true">{c.icon}</span>
-                        <span className="text-[12px] font-bold text-zinc-300 transition group-hover:text-emerald-400">
-                          {c.label}
-                        </span>
-                        <span className="font-mono text-[10px] text-zinc-600">
-                          {count} {count === 1 ? "biz" : "biz"}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
+              {/* ── QUICK-SEARCH PILLS ──────────────────────────────
+                   8 pills covering food + services + shopping + live
+                   sales. Each links to /discover?q=<encoded label> so
+                   the pill runs a real text search rather than a
+                   category filter (which is the discover-side control
+                   for narrowing the result set). Emoji + label inline,
+                   flex-wrap, centered. */}
+              <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+                {[
+                  { icon: "🍕", label: "Pizza & Food" },
+                  { icon: "🚗", label: "Auto Services" },
+                  { icon: "🏠", label: "Home Services" },
+                  { icon: "✈️", label: "Aviation" },
+                  { icon: "🛍️", label: "Live Sales" },
+                  { icon: "💇", label: "Beauty & Wellness" },
+                  { icon: "🐕", label: "Pet Services" },
+                  { icon: "📸", label: "Photography" },
+                ].map((pill) => (
+                  <Link
+                    key={pill.label}
+                    href={`/discover?q=${encodeURIComponent(pill.label)}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-[12px] text-zinc-400 transition hover:border-emerald-400/30 hover:text-zinc-200"
+                  >
+                    <span aria-hidden="true">{pill.icon}</span>
+                    <span>{pill.label}</span>
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -2242,7 +2219,7 @@ export default function Home() {
         <RecentSalesFeed />
 
         {/* ── Platform Activity ── */}
-        <div className="mx-auto mt-10 max-w-4xl">
+        <div className="mx-auto mt-6 max-w-4xl">
           <PlatformActivity projectCount={allPublicProjects.length} />
         </div>
 
@@ -2255,7 +2232,7 @@ export default function Home() {
 
         <div
           id="section-how"
-          className="scroll-mt-28 mx-auto mt-20 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-16 sm:px-12 sm:py-20"
+          className="scroll-mt-28 mx-auto mt-12 max-w-6xl border border-zinc-900 bg-zinc-950/40 px-8 py-12 sm:px-12 sm:py-16"
         >
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             How it works
@@ -2284,8 +2261,17 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Animated Product Demo ── */}
-          <ProductDemo />
+          {/* Animated ProductDemo (Sparkle Mobile Wash v1 AI-builder
+              animation) was previously rendered here. Removed per
+              CLAUDE.md v5.0 Section 12 Rule 7 ("We are NOT an AI
+              business launcher — deprecated v1 positioning") and to
+              eliminate the perceived black void on the homepage:
+              ProductDemo reserved a ~500px minHeight container that
+              animated through mostly-empty phases (typing, building,
+              live, purchase) showing content thematically unrelated
+              to the v5.0 flat-fee marketplace pitch. The function
+              itself (lines ~812-1136) is left in place as dead code
+              for now; a follow-up PR can tombstone it. */}
         </div>
 
         {/* ── FEATURES ── */}

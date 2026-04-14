@@ -84,7 +84,7 @@ export function FeeCalculator() {
   }, [monthlyGmv]);
 
   return (
-    <section className="mx-auto mt-16 max-w-4xl px-4">
+    <section className="mx-auto mt-10 max-w-4xl px-4">
       <div className="rounded-3xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-10">
         {/* Header */}
         <div className="mb-8 text-center">
