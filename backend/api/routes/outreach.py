@@ -1,6 +1,25 @@
 """
 Merchant Outreach — manual cold-outreach layer.
 
+╔════════════════════════════════════════════════════════════════════╗
+║  DORMANT until Phase 1B. Do not trigger without deciding on        ║
+║  target list and geography (Master Playbook Phase 0C / 1B).        ║
+║                                                                    ║
+║  Phase 0 demand acquisition is personal SMS to ~20 known contacts, ║
+║  not cold email blasts to people you don't know. Triggering this   ║
+║  module before you have a vetted target list risks burning Resend  ║
+║  sender reputation, looking spammy, and undermining the trust the  ║
+║  rest of the platform is trying to build.                          ║
+║                                                                    ║
+║  Re-enable condition: Phase 0 complete (≥3 real paid Stripe        ║
+║  transactions from 3 different real customers) AND a target list   ║
+║  of 20 Morris County mobile/home services merchants is in hand.    ║
+║                                                                    ║
+║  The endpoints below remain mounted and admin-gated by             ║
+║  require_admin so they're testable, but should not be used in      ║
+║  Phase 0 cleanup. See BACKLOG.md.                                  ║
+╚════════════════════════════════════════════════════════════════════╝
+
 Distinct from backend/api/routes/external_business.py's
 merchant_outreach_queue flow, which is reactive (auto-queued after a
 customer submits a verified purchase proof for an off-platform

@@ -545,12 +545,17 @@ async def list_public_projects():
     supabase = get_client()
 
     try:
+        # visibility='public' filter added in migration 029_project_visibility.
+        # Hidden projects (founder demo storefronts, test fixtures) are excluded
+        # from the public listing without being deleted. Queried via the
+        # idx_projects_visibility_public partial index.
         res = (
             supabase.table("projects")
             .select("*")
             .eq("review_status", "approved")
             .eq("status", "live")
             .eq("is_deleted", False)
+            .eq("visibility", "public")
             .order("created_at", desc=True)
             .limit(50)
             .execute()
