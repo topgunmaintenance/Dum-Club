@@ -1348,6 +1348,11 @@ export default function Home() {
   const { wallets, createWallet } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
+  // Hero service-finder search bar (v5.0). Simple redirect to
+  // /discover?q=<term> — not the old AI-builder textarea. Kept as a
+  // small local state so the form controls cleanly.
+  const [heroSearch, setHeroSearch] = useState("");
+
   // ── Launch state ──
   const [heroIdea, setHeroIdea] = useState("");
   const [heroLaunching, setHeroLaunching] = useState(false);
@@ -2031,6 +2036,67 @@ export default function Home() {
                 >
                   Browse the Marketplace →
                 </Link>
+              </div>
+
+              {/* ── SERVICE FINDER SEARCH BAR ────────────────────────
+                   Google/Yelp-style search that redirects to
+                   /discover?q=<term>. NOT an AI business builder —
+                   this is a simple filter-by-query redirect. The
+                   /discover page has a matching useEffect that reads
+                   ?q= and pre-fills its existing search box. */}
+              <form
+                className="mx-auto mt-10 w-full max-w-2xl"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const term = heroSearch.trim();
+                  if (!term) return;
+                  router.push(`/discover?q=${encodeURIComponent(term)}`);
+                }}
+              >
+                <div className="relative">
+                  {/* Magnifier icon */}
+                  <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                  </span>
+                  <input
+                    type="search"
+                    value={heroSearch}
+                    onChange={(e) => setHeroSearch(e.target.value)}
+                    placeholder="Search for services... try 'aircraft inspection' or 'mobile detailing'"
+                    aria-label="Search local services"
+                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!heroSearch.trim()}
+                    className="absolute right-2 top-1/2 flex h-10 -translate-y-1/2 items-center justify-center rounded-xl bg-emerald-400 px-5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.25)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Search →
+                  </button>
+                </div>
+              </form>
+
+              {/* ── QUICK-SEARCH PILLS ────────────────────────────── */}
+              <div className="mx-auto mt-4 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+                {[
+                  "Aircraft Maintenance",
+                  "Mobile Detailing",
+                  "Pizza",
+                  "Lawn Care",
+                  "Dog Grooming",
+                  "Photography",
+                ].map((term) => (
+                  <Link
+                    key={term}
+                    href={`/discover?q=${encodeURIComponent(term)}`}
+                    className="rounded-full border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-[12px] text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300"
+                  >
+                    {term}
+                  </Link>
+                ))}
               </div>
             </div>
 
