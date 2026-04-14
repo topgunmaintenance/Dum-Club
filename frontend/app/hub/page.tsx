@@ -30,13 +30,19 @@ const REASON_LABELS: Record<string, string> = {
   discount_spend: "Discount used",
   stripe_purchase: "Points purchased",
   discount: "Discount applied",
-  swap_buy: "Swapped SOL → DUM",
-  swap_sell: "Swapped DUM → SOL",
-  demo_swap: "Demo swap SOL → DUM",
-  claim: "Claimed to wallet",
+  swap_buy: "Advanced · on-chain claim",
+  swap_sell: "Advanced · on-chain swap",
+  demo_swap: "Advanced · demo swap",
+  claim: "Advanced · on-chain claim",
   referral_bonus: "Referral reward",
   referral_welcome: "Welcome bonus",
 };
+
+// Transaction reasons that are power-user-only (on-chain / wallet flows).
+// Hidden from RecentActivity by default; surfaced when the Advanced toggle
+// is expanded. Kept in one place so any new on-chain reason gets gated
+// automatically if it's added here.
+const ADVANCED_REASONS = new Set(["claim", "swap_buy", "swap_sell", "demo_swap"]);
 
 /* ════════════════════════════════════════════════════════════════
    POINTS TAB
@@ -150,7 +156,9 @@ function PointsTab({
                 <span className="animate-pulse font-mono text-sm font-bold text-sky-400">+{deltaAccent.toLocaleString()}</span>
               )}
             </div>
-            <div className="mt-1 text-[10px] text-zinc-600">Earned + purchased. Use for discounts or claim to wallet.</div>
+            <div className="mt-1 text-[10px] text-zinc-600">
+              Worth ${(displayBalance * 0.1).toFixed(2)} in discounts at participating merchants · 1 DUM = $0.10
+            </div>
             {hubClaimable > 0 && (
               <button onClick={onNavigateClaim} className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 transition hover:text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />
@@ -269,6 +277,11 @@ function RecentActivity() {
   const [txns, setTxns] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "earned" | "spent" | "purchased">("all");
+  // Phase 0A: on-chain / wallet-flavored rows are hidden by default. Power
+  // users can expand the Advanced toggle at the bottom of the list to see
+  // claim/swap history + the View-on-Explorer links. Data is untouched;
+  // this is purely a rendering filter.
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -281,12 +294,19 @@ function RecentActivity() {
       .finally(() => setLoading(false));
   }, [user?.privyId]);
 
-  const filtered = txns.filter((tx) => {
+  // First filter by the row filter (all/earned/spent/purchased).
+  const byRowFilter = txns.filter((tx) => {
     if (filter === "earned") return tx.amount > 0 && !["swap_buy", "stripe_purchase", "demo_swap"].includes(tx.reason);
     if (filter === "spent") return tx.amount < 0;
     if (filter === "purchased") return ["swap_buy", "stripe_purchase", "demo_swap"].includes(tx.reason);
     return true;
   });
+
+  // Then gate advanced (on-chain / wallet) reasons behind the toggle.
+  // Default view = merchant-credit semantics only. Advanced toggle brings
+  // the wallet / claim / explorer surface back.
+  const visible = byRowFilter.filter((tx) => showAdvanced || !ADVANCED_REASONS.has(tx.reason));
+  const hiddenAdvancedCount = byRowFilter.length - visible.length;
 
   return (
     <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
@@ -315,13 +335,13 @@ function RecentActivity() {
       </div>
       {loading ? (
         <div className="py-4 text-center text-xs text-zinc-600">Loading...</div>
-      ) : filtered.length === 0 ? (
+      ) : visible.length === 0 && hiddenAdvancedCount === 0 ? (
         <div className="py-4 text-center text-xs text-zinc-600">
           {filter === "all" ? "No activity yet. Earn DUM Points by creating businesses and making purchases." : `No ${filter} activity yet.`}
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.slice(0, 15).map((tx) => (
+          {visible.slice(0, 15).map((tx) => (
             <div key={tx.id} className="rounded-xl bg-zinc-900/50 px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -335,7 +355,11 @@ function RecentActivity() {
                 </div>
                 <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
               </div>
-              {(tx.reason === "swap_buy" || tx.reason === "claim") && tx.reference_id && tx.reference_id.length > 30 && (
+              {/* Explorer link only renders when Advanced is expanded.
+                  Since the row itself is advanced-gated, this is belt-and-
+                  suspenders — if showAdvanced is false, the row won't
+                  render at all and this block never runs. */}
+              {showAdvanced && (tx.reason === "swap_buy" || tx.reason === "claim") && tx.reference_id && tx.reference_id.length > 30 && (
                 <a
                   href={`https://explorer.solana.com/tx/${tx.reference_id}?cluster=devnet`}
                   target="_blank"
@@ -351,6 +375,31 @@ function RecentActivity() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Advanced toggle — reveals on-chain / wallet / claim / swap rows.
+          Phase 0A: hidden by default. Phase 3A may redesign this once the
+          full /hub consumer rewrite ships. */}
+      {hiddenAdvancedCount > 0 && !showAdvanced && (
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(true)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 transition hover:border-zinc-700 hover:text-zinc-400"
+        >
+          <span>Advanced</span>
+          <span>▸</span>
+          <span className="font-mono text-zinc-700">{hiddenAdvancedCount}</span>
+        </button>
+      )}
+      {showAdvanced && (
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(false)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 transition hover:border-zinc-700 hover:text-zinc-400"
+        >
+          <span>Hide advanced</span>
+          <span>▾</span>
+        </button>
       )}
     </div>
   );
@@ -912,17 +961,17 @@ export default function HubPage() {
       <div className="relative z-10 mx-auto max-w-2xl px-4 py-16">
         {/* Header */}
         <div className="mb-6 text-center">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Digital Utility Market · Powered by Solana</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Your Local Rewards Balance</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DUM Hub</h1>
-          <p className="mt-2 text-sm text-zinc-500">Balance · Claim · Refer</p>
+          <p className="mt-2 text-sm text-zinc-500">Earn at one merchant, spend at another</p>
         </div>
 
         {/* How DUM works — explainer strip */}
         <div className="mb-6 grid grid-cols-3 gap-2 text-center">
           {[
             { step: "1", label: "Earn", desc: "Get DUM Points from purchases and businesses" },
-            { step: "2", label: "Claim", desc: "Claim eligible DUM to your Solana wallet" },
-            { step: "3", label: "Use", desc: "Spend DUM for discounts and perks" },
+            { step: "2", label: "Spend", desc: "Use your balance for discounts at participating merchants" },
+            { step: "3", label: "Return", desc: "Every shop on the network accepts your points" },
           ].map((s) => (
             <div key={s.step} className="rounded-xl border border-zinc-800/50 bg-zinc-950/60 px-2 py-3">
               <div className="text-[9px] font-bold text-emerald-400/50">{s.step}</div>
