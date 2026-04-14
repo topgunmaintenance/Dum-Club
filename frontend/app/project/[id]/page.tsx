@@ -887,10 +887,13 @@ export default function ProjectPage() {
   }
 
   async function loadMemories() {
-    if (!id) return;
+    // Use the resolved project UUID, not the URL param — the URL param
+    // may be a slug (e.g. "topgun-maintenance") which the memories
+    // endpoint does not support.
+    if (!project?.id) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/memories/?project_id=${id}`);
+      const res = await fetch(`${API_BASE}/api/memories/?project_id=${project.id}`);
       if (!res.ok) throw new Error("Failed to load memories");
 
       const data = await res.json();
@@ -902,9 +905,12 @@ export default function ProjectPage() {
   }
 
   async function loadOffers() {
-    if (!id) return;
+    // Use the resolved project UUID, not the URL param — the URL param
+    // may be a slug (e.g. "topgun-maintenance") which the offers
+    // endpoint does not support.
+    if (!project?.id) return;
     try {
-      const res = await fetch(`${API_BASE}/api/offers/${id}`, { cache: "no-store" });
+      const res = await fetch(`${API_BASE}/api/offers/${project.id}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load offers");
       const data = await res.json();
       console.log("OFFERS DATA:", data);
@@ -2805,12 +2811,21 @@ export default function ProjectPage() {
 
   useEffect(() => {
     loadProject();
-    loadMemories();
-    loadOffers();
     loadTokenMetadata();
     refreshMarketData();
     loadRedemptions();
   }, [id]);
+
+  // Offers and memories are keyed by project UUID, not the URL param.
+  // When the URL param is a slug (e.g. "topgun-maintenance") we can't
+  // fetch these until loadProject() has resolved the real UUID. Fire
+  // this effect on project?.id so they run as soon as the project
+  // lands and re-run if the user navigates between projects.
+  useEffect(() => {
+    if (!project?.id) return;
+    loadMemories();
+    loadOffers();
+  }, [project?.id]);
 
   // ── Viewer fast-poll while watching a live stream ─────────────────────
   // When a project is_live and the current user is NOT the owner, poll
