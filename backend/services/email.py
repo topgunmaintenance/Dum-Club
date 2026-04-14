@@ -249,7 +249,7 @@ OUTREACH_TEMPLATES: dict = {
             "We built DUM Club — a platform where you keep 100% of your "
             "revenue and get built-in customer loyalty rewards automatically.\n\n"
             "We already set up a store page for you. Want access?\n\n"
-            "We're onboarding our first 50 founding merchants — free "
+            "We're onboarding our first 100 founding merchants — free "
             "forever, no commission, no catch. Spots are filling fast.\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
@@ -275,7 +275,7 @@ OUTREACH_TEMPLATES: dict = {
         "subject": "Still saving your founding spot",
         "body": (
             "Hi {business_name},\n\n"
-            "Your founding-merchant spot is still open. Once the 50 "
+            "Your founding-merchant spot is still open. Once the 100 "
             "founding slots are filled, the plan shifts to the standard "
             "tier — but founding members are free forever.\n\n"
             "Takes 60 seconds to claim.\n\n"

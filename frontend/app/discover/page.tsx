@@ -9,6 +9,7 @@ const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false })
 
 type Project = {
   id: string;
+  slug?: string | null;
   name?: string;
   title?: string;
   description?: string | null;
@@ -20,6 +21,10 @@ type Project = {
   promo_copy?: string | null;
   store_items?: any[] | null;
   owner_verified?: boolean;
+  verified?: boolean;
+  is_verified?: boolean;
+  profile_strength?: number | null;
+  sort_order?: number | null;
   is_live?: boolean;
   live_playback_id?: string | null;
   live_provider?: string | null;
@@ -314,7 +319,7 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
           return (
             <Link
               key={project.id}
-              href={`/project/${project.id}?live=1`}
+              href={`/project/${project.slug || project.id}?live=1`}
               className="flex-shrink-0 cursor-pointer rounded-2xl border border-zinc-800 transition-all duration-300 hover:border-red-500/30 hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]"
               style={{ width: 300, scrollSnapAlign: "start" }}
             >
@@ -628,6 +633,18 @@ export default function DiscoverPage() {
     // Live projects float to top in every tab
     list = [...list].sort((a, b) => (b.is_live ? 1 : 0) - (a.is_live ? 1 : 0));
 
+    // Pinned projects (sort_order non-null) float above everything else,
+    // ordered ascending. sort_order=0 is the highest priority. Used for
+    // founding-merchant pinning per CLAUDE.md v5.0 Section 6 Phase 0B.
+    list = [...list].sort((a, b) => {
+      const aPinned = a.sort_order != null;
+      const bPinned = b.sort_order != null;
+      if (aPinned && bPinned) return (a.sort_order as number) - (b.sort_order as number);
+      if (aPinned) return -1;
+      if (bPinned) return 1;
+      return 0;
+    });
+
     // Apply search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -775,7 +792,7 @@ export default function DiscoverPage() {
               {rankedProjects.slice(0, 5).map((p, i) => {
                 const rsColor = p.readiness >= 75 ? "text-emerald-400" : p.readiness >= 50 ? "text-amber-400" : "text-zinc-500";
                 return (
-                  <Link key={p.id} href={`/project/${p.id}`}>
+                  <Link key={p.id} href={`/project/${p.slug || p.id}`}>
                     <div className="flex items-center gap-4 rounded-xl px-3 py-2.5 transition hover:bg-zinc-900">
                       <span className="w-6 text-center font-mono text-sm font-bold text-zinc-600">
                         {i + 1}
@@ -909,7 +926,7 @@ export default function DiscoverPage() {
                 </div>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
-                    <Link href={`/project/${top.id}`} className="group">
+                    <Link href={`/project/${top.slug || top.id}`} className="group">
                       <h3 className="text-xl font-bold text-white transition group-hover:text-emerald-400">{top.title || top.name}</h3>
                     </Link>
                     <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{top.description || "No description."}</p>
@@ -926,7 +943,7 @@ export default function DiscoverPage() {
                         <div className="font-mono text-2xl font-black text-emerald-400">${topPrice < 1 ? topPrice.toFixed(2) : Math.round(topPrice)}</div>
                       </div>
                     )}
-                    <Link href={`/project/${top.id}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]">
+                    <Link href={`/project/${top.slug || top.id}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_16px_rgba(0,255,163,0.15)]">
                       View Offers →
                     </Link>
                   </div>
@@ -949,7 +966,7 @@ export default function DiscoverPage() {
               const pulsing = pulseId === project.id;
 
               return (
-                <Link key={project.id} href={`/project/${project.id}${project.is_live ? "?live=1" : ""}`} className="group">
+                <Link key={project.id} href={`/project/${project.slug || project.id}${project.is_live ? "?live=1" : ""}`} className="group">
                   <div
                     className={`h-full rounded-2xl border bg-card p-6 transition-all duration-300 md:p-7 ${
                       pulsing

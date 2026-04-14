@@ -31,20 +31,6 @@ Run the relevant section(s) after any change to offers, checkout, or token tradi
 - [ ] Owner page reflects new order in seller orders
 - [ ] Public page reflects updated inventory
 
-## Flow C -- Token Buy/Sell
-
-- [ ] Buy fires correct request (`[executeTrade] sending POST /trade` with `side=buy`)
-- [ ] Sell fires correct request (same log with `side=sell`)
-- [ ] Backend trade route executes (`[trade] POST /trade` in server logs)
-- [ ] Trade row inserted into `project_trades` (`[trade] Trade inserted`)
-- [ ] Market state updated in `project_market_state` (`[trade] Market state updated`)
-- [ ] Wallet balance updated in `project_balances` (`[trade] Balance updated`)
-- [ ] `refreshMarketData()` fires after trade
-- [ ] Price and market cap update in UI
-- [ ] Trade appears in recent trades list
-- [ ] No effect on offers state (offers list unchanged after token trade)
-- [ ] No effect on checkout state (orders unchanged after token trade)
-
 ## Deployment Check
 
 - [ ] GitHub `main` commit hash recorded: ___

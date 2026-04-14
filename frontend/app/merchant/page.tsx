@@ -181,7 +181,7 @@ export default function MerchantPage() {
   if (showSignup) {
     const programOpen = foundingStatus?.founding_program_open ?? true;
     const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
-    const totalCap = foundingStatus?.total_cap ?? 50;
+    const totalCap = foundingStatus?.total_cap ?? 100;
 
     return (
       <div className="min-h-screen bg-zinc-950 pt-28 px-4">
