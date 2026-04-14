@@ -30,7 +30,7 @@ _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # Total cap for the founding program. Source of truth for both the
 # slot assignment during signup and the /founding-status counter.
 # CLAUDE.md Section 7 is kept in sync with this value.
-FOUNDING_CAP = 50
+FOUNDING_CAP = 100
 
 
 class MerchantSignup(BaseModel):
@@ -212,7 +212,7 @@ async def get_founding_status():
         "founding_program_open": bool,     # true if slots_remaining > 0
       }
 
-    No auth required — this drives the "X of 50 spots remaining" counter
+    No auth required — this drives the "X of 100 spots remaining" counter
     on the /merchant signup page, which non-authenticated visitors see.
     """
     try:

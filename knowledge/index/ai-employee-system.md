@@ -1,5 +1,11 @@
 # AI Employee System
 
+> STATUS (Phase 0 — April 2026): This subsystem is
+> technically active but de-emphasized in the current
+> product direction. See CLAUDE.md v5.0 for current
+> positioning. Do not surface these features in UI
+> until phase unlock conditions are met.
+
 ## Architecture
 
 - Backend: POST /api/ai/project-chat (ai_chat.py)

@@ -39,6 +39,10 @@
 | /build | Dedicated launch page |
 | /business | For Business landing page |
 | /dashboard | User's businesses |
+| /merchant | Founding seller signup (100 slots) |
+| /technology | Solana/tech details (footer only) |
+| /admin/outreach | Email outreach admin (gated) |
+| /live/[slug] | Live stream viewer — Phase 1 |
 
 ## Database tables (critical)
 

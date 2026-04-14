@@ -16,40 +16,11 @@ export function Navbar() {
   const [navHover, setNavHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [dumBalance, setDumBalance] = useState(0);
   const [latestProjectId, setLatestProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-
-    // Try backend balance first, fall back to localStorage
-    async function loadBalance() {
-      const privyId = user?.privyId;
-      if (privyId) {
-        try {
-          const res = await fetch(`${API_BASE}/api/dum/balance/${encodeURIComponent(privyId)}`);
-          if (res.ok) {
-            const data = await res.json();
-            setDumBalance(data.balance ?? 0);
-            localStorage.setItem("dum_points", String(data.balance ?? 0));
-            return;
-          }
-        } catch {}
-      }
-      // Fallback: localStorage (no hardcoded default — 0 until API confirms)
-      const stored = localStorage.getItem("dum_points");
-      setDumBalance(stored ? Number(stored) : 0);
-    }
-    loadBalance();
-
-    // Listen for balance updates from other components
-    const handler = () => {
-      const val = Number(localStorage.getItem("dum_points") || "0");
-      setDumBalance(val);
-    };
-    window.addEventListener("dum-points-update", handler);
-    return () => window.removeEventListener("dum-points-update", handler);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (!user?.privyId) { setLatestProjectId(null); return; }
@@ -85,9 +56,10 @@ export function Navbar() {
 
   // Primary nav — simplified to the active-growth priorities.
   // Build, Dashboard, and AI Chat live in the authenticated user dropdown.
+  // DUM Points link removed per CLAUDE.md v5.0 — Phase 2 unlock condition.
+  // /hub page still works at direct URL, just not surfaced in nav.
   const links = [
     { href: "/discover", label: "Explore" },
-    { href: "/hub", label: "DUM Points" },
     { href: "/business", label: "For Business" },
     { href: "/merchant", label: "Merchant" },
   ];
@@ -285,30 +257,7 @@ export function Navbar() {
                   Go Live
                 </Link>
               )}
-              {user && dumBalance > 0 && (
-                <Link
-                  href="/hub"
-                  style={{
-                    fontFamily: "var(--font-geist-mono), monospace",
-                    fontSize: "11px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.1em",
-                    border: "1px solid rgba(0,255,178,0.2)",
-                    background: "rgba(0,255,178,0.05)",
-                    borderRadius: "10px",
-                    padding: "8px 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    whiteSpace: "nowrap",
-                    textDecoration: "none",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <span style={{ fontSize: "13px" }}>◆</span>
-                  {dumBalance} DUM
-                </Link>
-              )}
+              {/* DUM balance badge removed — CLAUDE.md v5.0 Phase 2 unlock. */}
               {loading ? (
                 <button
                   type="button"
@@ -541,35 +490,7 @@ export function Navbar() {
           );
         })}
 
-        {/* DUM balance badge — visible in the mobile menu for logged-in users. */}
-        {mounted && user && dumBalance > 0 && (
-          <Link
-            href="/hub"
-            onClick={() => setMenuOpen(false)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              margin: "12px 20px 0",
-              padding: "12px 16px",
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "13px",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textDecoration: "none",
-              color: "#00FFB2",
-              border: "1px solid rgba(0,255,178,0.22)",
-              background: "rgba(0,255,178,0.05)",
-              borderRadius: "14px",
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "15px" }}>◆</span>
-              {dumBalance} DUM POINTS
-            </span>
-            <span style={{ fontSize: "10px", opacity: 0.7 }}>VIEW →</span>
-          </Link>
-        )}
+        {/* DUM balance badge removed — CLAUDE.md v5.0 Phase 2 unlock. */}
 
         {mounted && user && latestProjectId && (
           <Link
