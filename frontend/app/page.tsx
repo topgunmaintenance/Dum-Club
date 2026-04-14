@@ -7,6 +7,7 @@ import { Starfield } from "../components/Starfield";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
+import { FeeCalculator } from "../components/FeeCalculator";
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -2078,6 +2079,13 @@ export default function Home() {
         <div className="mx-auto mt-10 max-w-4xl">
           <PlatformActivity projectCount={allPublicProjects.length} />
         </div>
+
+        {/* ── Fee savings calculator ──
+             Interactive slider from $1k to $100k monthly GMV showing
+             Whatnot / Commonsold / DUM Club side by side. Lives between
+             the hero/FounderNote slot and the How It Works section per
+             the v5.0 sprint plan. */}
+        <FeeCalculator />
 
         <div
           id="section-how"
