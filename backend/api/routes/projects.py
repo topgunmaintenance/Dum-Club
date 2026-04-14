@@ -786,26 +786,50 @@ async def delete_project(
 async def get_project(project_id: str):
     supabase = get_client()
 
-    project_res = (
-        supabase.table("projects")
-        .select("*")
-        .eq("id", project_id)
-        .eq("is_deleted", False)
-        .limit(1)
-        .execute()
-    )
+    # Resolve by UUID first, fall back to slug. The path param is named
+    # project_id for historical reasons but may be either a UUID or a
+    # human-readable slug (e.g. 'topgun-maintenance'). We try UUID first
+    # because the legacy /project/{uuid} URLs are the vast majority of
+    # reads. If the param isn't a valid UUID shape at all we skip the
+    # UUID branch and go straight to slug lookup — this avoids a
+    # Postgres type error on the .eq("id", ...) query.
+    _UUID_SHAPE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+
+    project_res = None
+    if _UUID_SHAPE.match(project_id):
+        project_res = (
+            supabase.table("projects")
+            .select("*")
+            .eq("id", project_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+
+    if not project_res or not project_res.data:
+        project_res = (
+            supabase.table("projects")
+            .select("*")
+            .eq("slug", project_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
 
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    resolved = project_res.data[0]
+    resolved_id = resolved["id"]
+
     # Increment view count (fire-and-forget, non-blocking)
     try:
-        current_views = project_res.data[0].get("view_count", 0) or 0
-        supabase.table("projects").update({"view_count": current_views + 1}).eq("id", project_id).execute()
+        current_views = resolved.get("view_count", 0) or 0
+        supabase.table("projects").update({"view_count": current_views + 1}).eq("id", resolved_id).execute()
     except Exception:
         pass  # Never block page load for analytics
 
-    return _attach_token_mode(project_res.data[0])
+    return _attach_token_mode(resolved)
 
 
 # -----------------------------
