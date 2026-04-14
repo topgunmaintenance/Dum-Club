@@ -1214,7 +1214,7 @@ function ComparisonTabs() {
                 { f: "Revenue on day one", b: "No", l: "No", v: "No", d: "Yes — Stripe built in" },
                 { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
                 { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
-                { f: "Blockchain", b: "None", l: "None", v: "Privacy chain", d: "Solana wallets" },
+                { f: "Payouts", b: "—", l: "—", v: "—", d: "Stripe direct, ~2-day" },
                 { f: "Token rewards", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — real loyalty currency" },
                 { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
                 { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
@@ -1286,7 +1286,7 @@ function ComparisonTabs() {
             </span>
           </div>
           <div className="mt-2 text-center text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
-            Solana wallet infrastructure · Stripe-powered payments
+            Verified merchants · Stripe-powered payments
           </div>
         </div>
       )}
@@ -2782,9 +2782,10 @@ export default function Home() {
               {/* ── Trust line ── */}
               <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
                 <p className="text-[13px] text-zinc-600">
-                  Stripe checkout · Built on Solana · Live in 60 seconds
+                  Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
-                {/* Payment + chain icons */}
+                {/* Payment icons — consumer-facing payment methods only.
+                    Solana removed per Phase 0A and consolidated on /technology. */}
                 <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
                   <span className="flex items-center gap-1.5">
                     <svg width="20" height="13" viewBox="0 0 24 16" fill="none" className="text-zinc-600"><rect x="0.5" y="0.5" width="23" height="15" rx="2" stroke="currentColor"/><rect x="0" y="4" width="24" height="4" fill="currentColor" opacity="0.3"/></svg>
@@ -2796,12 +2797,9 @@ export default function Home() {
                     Mastercard
                   </span>
                   <span className="text-zinc-800">·</span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-zinc-600"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5"/></svg>
-                    Solana
-                  </span>
-                  <span className="text-zinc-800">·</span>
                   <span className="text-zinc-600">Apple Pay</span>
+                  <span className="text-zinc-800">·</span>
+                  <span className="text-zinc-600">Stripe Checkout</span>
                 </div>
               </div>
 
@@ -3041,14 +3039,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Honest stack strip (no fake press logos) */}
+      {/* Honest stack strip — payment + infra brands only.
+          Solana removed per Phase 0A and consolidated on /technology. */}
       <div className="border-t border-zinc-900 py-10">
         <div className="mx-auto max-w-5xl px-4">
           <div className="mb-5 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
             Built with
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
-            {["Solana", "Stripe", "Supabase", "Next.js"].map((name) => (
+            {["Stripe", "Supabase", "Next.js", "Vercel"].map((name) => (
               <span
                 key={name}
                 className="text-sm font-bold tracking-wide text-zinc-400"
@@ -3070,10 +3069,10 @@ export default function Home() {
                 </span>
               </div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                Digital Utility Market
+                Local Commerce, Real Rewards
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
-                Turn any idea into a live business with payments, loyalty, and a storefront — in 60 seconds. Built on Solana.
+                Book local home and auto services in Morris County. Stripe payments, verified merchants, and rewards that work at every shop on the network.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
@@ -3081,7 +3080,7 @@ export default function Home() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                 </span>
                 <span className="font-mono text-[10px] text-emerald-500">
-                  LIVE ON SOLANA
+                  EARLY ACCESS · DOVER, NJ
                 </span>
               </div>
             </div>
@@ -3147,6 +3146,7 @@ export default function Home() {
                   { label: "How it works", href: "/#section-how" },
                   { label: "For Business", href: "/business" },
                   { label: "Discover", href: "/discover" },
+                  { label: "Technology", href: "/technology" },
                 ].map((link) => (
                   <li key={link.label}>
                     <a
@@ -3163,11 +3163,16 @@ export default function Home() {
 
           <div className="mt-16 border-t border-zinc-900 pt-8">
             <p className="mb-4 text-[11px] leading-relaxed text-zinc-700">
-              The content on this platform is for informational purposes only and does not
-              constitute financial, legal, or investment advice. Token prices are determined by
-              market activity and may be volatile. You assume sole responsibility for evaluating any
-              risks associated with participating in DUM Club projects or purchasing tokens. DUM Club
-              is built on Solana and operates in early access.
+              DUM Club operates in early access. Content on this platform is for
+              informational purposes only and does not constitute financial, legal, or
+              investment advice. DUM Points are a loyalty unit redeemable for discounts at
+              participating merchants — not an investment, with no secondary market and no
+              expectation of price appreciation. For technical details on how the platform
+              is built, see the{" "}
+              <Link href="/technology" className="text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline">
+                Technology page
+              </Link>
+              .
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">

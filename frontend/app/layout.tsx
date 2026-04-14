@@ -8,21 +8,21 @@ import { DumPill } from "../components/DumPill";
 import { LiveActivityTicker } from "../components/LiveActivityTicker";
 
 export const metadata: Metadata = {
-  title: "DUM Club — Digital Utility Market",
+  title: "DUM Club — Book local home and auto services in Morris County",
   description:
-    "DUM Club (Digital Utility Market) — Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
+    "DUM Club — Book local home and auto services in Morris County. Stripe payments, verified merchants, rewards that work.",
   openGraph: {
-    title: "DUM Club — Digital Utility Market",
+    title: "DUM Club — Local home and auto services in Morris County",
     description:
-      "DUM Club (Digital Utility Market) — Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
+      "Book mobile detailers, handymen, lawn crews, and more — all in one place. Stripe checkout, verified merchants, rewards that work.",
     siteName: "DUM Club",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DUM Club — Digital Utility Market",
+    title: "DUM Club — Local home and auto services in Morris County",
     description:
-      "DUM Club (Digital Utility Market) — Turn any idea into a live business with Stripe payments, AI-generated storefronts, and built-in loyalty rewards. Built on Solana.",
+      "Book mobile detailers, handymen, lawn crews, and more — all in one place. Stripe checkout, verified merchants, rewards that work.",
   },
 };
 
