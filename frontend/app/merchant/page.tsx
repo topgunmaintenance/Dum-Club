@@ -16,8 +16,6 @@ type Merchant = {
   subscription_price_usd: number;
   stripe_connect_id: string | null;
   stripe_connect_status: string;
-  square_location_id: string | null;
-  square_status: string;
   created_at: string;
 };
 
@@ -136,19 +134,6 @@ export default function MerchantPage() {
     try {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/merchant/stripe-connect/authorize`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        window.location.href = data.url;
-      }
-    } catch {}
-  }
-
-  async function connectSquare() {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/merchant/square/authorize`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -362,24 +347,6 @@ export default function MerchantPage() {
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Connected</span>
               ) : (
                 <button onClick={connectStripe} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20">
-                  Connect
-                </button>
-              )}
-            </div>
-
-            {/* Square */}
-            <div className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-sm font-bold text-blue-400">Q</span>
-                <div>
-                  <div className="text-sm font-semibold text-white">Square</div>
-                  <div className="text-[11px] text-zinc-500">Auto-award DUM Points on POS sales</div>
-                </div>
-              </div>
-              {merchant.square_status === "connected" ? (
-                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Connected</span>
-              ) : (
-                <button onClick={connectSquare} className="rounded-lg border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-xs font-bold text-blue-400 transition hover:bg-blue-400/20">
                   Connect
                 </button>
               )}
