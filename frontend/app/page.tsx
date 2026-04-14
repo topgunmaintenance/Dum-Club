@@ -1202,28 +1202,28 @@ function ComparisonTabs() {
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600"> </th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Base44</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Lovable</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Venice.ai</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Whatnot</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Commonsold</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Google Maps</th>
                 <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-emerald-400" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { f: "What it builds", b: "Web apps", l: "Web apps", v: "AI models", d: "Revenue businesses" },
-                { f: "Revenue on day one", b: "No", l: "No", v: "No", d: "Yes — Stripe built in" },
-                { f: "Customer retention", b: "None", l: "None", v: "None", d: "DUM Points loyalty" },
-                { f: "Marketplace", b: "None", l: "None", v: "None", d: "Discover — built in" },
-                { f: "Payouts", b: "—", l: "—", v: "—", d: "Stripe direct, ~2-day" },
-                { f: "Token rewards", b: "None", l: "None", v: "VEN (no commerce)", d: "DUM Points — real loyalty currency" },
-                { f: "Target user", b: "Developers", l: "Developers", v: "AI users", d: "Business owners" },
-                { f: "End result", b: "An app prototype", l: "An app prototype", v: "AI output", d: "A running business" },
+                { f: "Fee model", w: "8% + 2.9% + $0.30", c: "% per sale + monthly", g: "Pay for ads", d: "Flat $29–$99/mo" },
+                { f: "Per-sale commission", w: "8%", c: "% per sale", g: "—", d: "0% — ever" },
+                { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
+                { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
+                { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
+                { f: "AI retention", w: "None", c: "None", g: "None", d: "Built in" },
+                { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
+                { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
               ].map((row, i) => (
                 <tr key={i} className="border-b border-zinc-800/40">
                   <td className="py-3 pr-4 text-[12px] font-medium text-zinc-500" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.b}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.l}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.v}</td>
+                  <td className="px-3 py-3 text-center text-zinc-600">{row.w}</td>
+                  <td className="px-3 py-3 text-center text-zinc-600">{row.c}</td>
+                  <td className="px-3 py-3 text-center text-zinc-600">{row.g}</td>
                   <td className="px-4 py-3 text-center font-semibold text-emerald-400" style={{
                     background: "rgba(0,255,135,0.04)",
                     borderLeft: "1px solid rgba(0,255,135,0.12)",
@@ -1244,18 +1244,17 @@ function ComparisonTabs() {
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600">Platform</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Energy Use</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Operating Cost</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Model</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Monthly Base</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Per-Sale Cut</th>
+                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">On $10k/mo GMV</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { p: "Amazon (AWS)", energy: "Power plant level", cost: "$100M+", model: "Infra provider", accent: false },
-                { p: "Shopify", energy: "Very high", cost: "$10M+", model: "Commerce infra", accent: false },
-                { p: "Venice / AI builders", energy: "High (AI-heavy)", cost: "$100K–$10M", model: "AI compute", accent: false },
-                { p: "Base44 / Lovable", energy: "Medium-high", cost: "$50K–$1M", model: "AI + builder", accent: false },
-                { p: "DUM Club (you)", energy: "LOW → Medium", cost: "$100 → $300K", model: "Marketplace + AI", accent: true },
+                { p: "Whatnot", base: "$0/mo", cut: "8% + 2.9% + $0.30", total: "~$1,090 in fees", accent: false },
+                { p: "Commonsold", base: "$49+/mo", cut: "% per sale", total: "$500+ in fees", accent: false },
+                { p: "Google Maps", base: "$0/mo", cut: "$500–$2,000/mo in ads", total: "Pay just to rank", accent: false },
+                { p: "DUM Club (you)", base: "$29–$99/mo", cut: "0% — ever", total: "$29–$99 flat", accent: true },
               ].map((row, i) => (
                 <tr key={i} className={`border-b border-zinc-800/40 ${row.accent ? "" : ""}`}
                   style={row.accent ? { background: "rgba(0,255,135,0.04)" } : {}}
@@ -1265,13 +1264,13 @@ function ComparisonTabs() {
                     {row.p}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.energy}
+                    {row.base}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.cost}
+                    {row.cut}
                   </td>
                   <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-semibold" : "text-zinc-600"}`}>
-                    {row.model}
+                    {row.total}
                   </td>
                 </tr>
               ))}
@@ -1281,8 +1280,8 @@ function ComparisonTabs() {
           {/* Bottom callout */}
           <div className="mt-4 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-5 py-3 text-center">
             <span className="text-[12px] text-zinc-400">
-              They burn millions to operate.{" "}
-              <span className="font-bold text-emerald-400">DUM Club scales from $100 — and you keep the revenue.</span>
+              Sell $10,000 or $100,000 a month —{" "}
+              <span className="font-bold text-emerald-400">your fee never changes.</span>
             </span>
           </div>
           <div className="mt-2 text-center text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
@@ -2912,17 +2911,17 @@ export default function Home() {
               {/* Mini storefront preview */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-400/15 text-sm font-black text-orange-400 border border-orange-400/20">SP</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400/15 text-sm font-black text-emerald-400 border border-emerald-400/20">TG</div>
                   <div>
-                    <div className="text-sm font-bold text-white">Sparkle Pro Mobile Wash</div>
-                    <div className="text-[10px] text-zinc-500">Mobile car wash & detailing</div>
+                    <div className="text-sm font-bold text-white">Topgun Maintenance LLC</div>
+                    <div className="text-[10px] text-zinc-500">Aircraft maintenance · MMU · NY NJ PA CT DE</div>
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
                   {[
-                    { name: "Exterior Wash", price: "$49" },
-                    { name: "Full Detail", price: "$149" },
-                    { name: "Ceramic Coat", price: "$299" },
+                    { name: "Annual Inspection (FAR 91)", price: "from $850" },
+                    { name: "100-Hour Inspection", price: "from $650" },
+                    { name: "AOG Emergency Response", price: "from $500" },
                   ].map((offer) => (
                     <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2">
                       <span className="text-[12px] text-zinc-300">{offer.name}</span>
@@ -2935,22 +2934,22 @@ export default function Home() {
               {/* AI conversation preview */}
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
                 <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-400/15 text-[9px] font-bold text-orange-400 border border-orange-400/20">SP</div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/15 text-[9px] font-bold text-emerald-400 border border-emerald-400/20">TG</div>
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">AI Assistant</span>
                 </div>
                 <div className="space-y-3">
                   {/* Customer question */}
                   <div className="flex justify-end">
                     <div className="rounded-xl rounded-br-sm bg-zinc-800 px-3 py-2 text-[12px] text-zinc-300">
-                      What&apos;s included in the Full Detail?
+                      What&apos;s included in the annual inspection?
                     </div>
                   </div>
                   {/* AI answer */}
                   <div className="flex gap-2">
-                    <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[7px] font-bold text-orange-400">SP</div>
+                    <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-[7px] font-bold text-emerald-400">TG</div>
                     <div className="rounded-xl rounded-bl-sm border border-zinc-800/60 bg-zinc-950/80 px-3 py-2 text-[12px] leading-relaxed text-zinc-400">
-                      Full Detail covers interior deep clean, full exterior wash, tire dressing, and glass polish. Takes about 2 hours. Most customers go with this one.
-                      <span className="mt-1.5 block text-emerald-400/70">Full Detail — $149 →</span>
+                      Full FAR Part 91 airworthiness check per 14 CFR 43 Appendix D — logbook signoff, discrepancy report, and return-to-service docs included. Typical turnaround 2–5 days at MMU.
+                      <span className="mt-1.5 block text-emerald-400/70">Annual Inspection — from $850 →</span>
                     </div>
                   </div>
                 </div>
