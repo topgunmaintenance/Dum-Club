@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Starfield } from "../../components/Starfield";
+import { CATEGORIES, classifyProject, type CategoryId } from "../../lib/categories";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
@@ -49,46 +50,32 @@ import { API_BASE } from "../../lib/apiBase";
 const TARGET_MARKET_CAP = 100_000;
 
 /**
- * Unified category filter (v5.0). Replaces the old DISCOVER_TABS
- * which mixed sort modes, feature flags, and categories into one
- * row. Categories live here; sort / live / deals / price are
- * independent filter state declared on the DiscoverPage component.
- * Topgun lands in "aviation" via the keyword categorizer below.
+ * Unified category filter (v5.0). Categories come from the shared
+ * taxonomy in frontend/lib/categories.ts so the homepage and the
+ * discover filter bar agree on labels, icons, and classification
+ * rules. "All" is prepended locally because it's a discover-only
+ * filter state (not a category a project can belong to).
+ *
+ * Sort / live / deals / price are independent filter state declared
+ * directly on the DiscoverPage component.
+ *
+ * Topgun lands in "aviation" via classifyProject() — the shared
+ * keyword categorizer from lib/categories.ts.
  */
-const DISCOVER_CATEGORIES = [
-  { id: "all",           label: "All",           icon: "◎"  },
-  { id: "restaurants",   label: "Restaurants",   icon: "🍕" },
-  { id: "auto",          label: "Auto",          icon: "🚗" },
-  { id: "home",          label: "Home",          icon: "🏠" },
-  { id: "aviation",      label: "Aviation",      icon: "✈️" },
-  { id: "beauty",        label: "Beauty",        icon: "💇" },
-  { id: "pets",          label: "Pets",          icon: "🐕" },
-  { id: "health",        label: "Health",        icon: "🏋️" },
-  { id: "entertainment", label: "Entertainment", icon: "🎭" },
-] as const;
+type DiscoverCategoryId = "all" | CategoryId;
 
-type DiscoverCategoryId = (typeof DISCOVER_CATEGORIES)[number]["id"];
+type DiscoverCategoryDef = {
+  readonly id: DiscoverCategoryId;
+  readonly label: string;
+  readonly icon: string;
+};
+
+const DISCOVER_CATEGORIES: readonly DiscoverCategoryDef[] = [
+  { id: "all", label: "All", icon: "◎" },
+  ...CATEGORIES.map((c) => ({ id: c.key, label: c.label, icon: c.icon })),
+];
 
 type DiscoverSortId = "newest" | "popular" | "priceAsc" | "priceDesc" | "nearest";
-
-/**
- * Keyword-based project categorizer — kept in sync with the same
- * helper on the homepage (frontend/app/page.tsx: categorizeProjectForHome).
- * Duplicated rather than imported to avoid a page→component import
- * loop. If you add a keyword on one side, add it on the other.
- */
-function categorizeProject(project: Project): DiscoverCategoryId {
-  const source = `${project?.title || ""} ${project?.name || ""} ${project?.description || ""} ${(project as any)?.category || ""} ${(project as any)?.template_type || ""}`.toLowerCase();
-  if (/\b(aircraft|aviation|avionics|pilot|drone|hangar|airport|helicopter|airplane|plane|far\s*91|far\s*part)/.test(source)) return "aviation";
-  if (/\b(restaurant|pizza|food|cafe|diner|bakery|bar|grill|kitchen|menu|chef|sushi|taco|burger)/.test(source)) return "restaurants";
-  if (/\b(auto|car|mechanic|oil\s*change|detailing|tire|transmission|brake|wash|body\s*shop)/.test(source)) return "auto";
-  if (/\b(hvac|plumb|electric|roof|landscap|lawn|cleaning|handyman|painter|carpentry|contractor|home\s*repair|garden)/.test(source)) return "home";
-  if (/\b(salon|barber|hair|nails|spa|massage|makeup|waxing|lashes|beauty|skincare)/.test(source)) return "beauty";
-  if (/\b(pet|dog|cat|grooming|vet|kennel|walking|boarding|aquarium)/.test(source)) return "pets";
-  if (/\b(fitness|gym|yoga|pilates|trainer|nutrition|wellness|therap|clinic|dental|chiropract|medical)/.test(source)) return "health";
-  if (/\b(photograph|music|dj|band|comedy|art|gallery|theater|event|wedding|party|entertain|gaming|tattoo)/.test(source)) return "entertainment";
-  return "home";
-}
 
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
@@ -177,7 +164,7 @@ function isPlaceholderDesc(d?: string | null): boolean {
 
 function categoryIncludesProject(project: Project, category: DiscoverCategoryId): boolean {
   if (category === "all") return true;
-  return categorizeProject(project) === category;
+  return classifyProject(project) === category;
 }
 
 

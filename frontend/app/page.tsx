@@ -152,36 +152,6 @@ const LAUNCH_PROGRESS = [
   "Almost there...",
 ];
 
-/**
- * Universal category mapper used by both the homepage category grid and
- * the /discover filter bar. Kept in one place so the homepage counts and
- * the discover filters agree on category boundaries. Topgun Maintenance
- * lands in "Aviation" via the aircraft/aviation/avionics keyword match.
- */
-export const HOME_CATEGORIES = [
-  { key: "restaurants",  label: "Restaurants",    icon: "🍕" },
-  { key: "auto",         label: "Auto Services",  icon: "🚗" },
-  { key: "home",         label: "Home Services",  icon: "🏠" },
-  { key: "aviation",     label: "Aviation",       icon: "✈️" },
-  { key: "beauty",       label: "Beauty",         icon: "💇" },
-  { key: "pets",         label: "Pets",           icon: "🐕" },
-  { key: "health",       label: "Health",         icon: "🏋️" },
-  { key: "entertainment",label: "Entertainment",  icon: "🎭" },
-] as const;
-
-export function categorizeProjectForHome(project: any): string {
-  const source = `${project?.title || ""} ${project?.name || ""} ${project?.description || ""} ${project?.category || ""} ${project?.template_type || ""}`.toLowerCase();
-  if (/\b(aircraft|aviation|avionics|pilot|drone|hangar|airport|helicopter|airplane|plane|far\s*91|far\s*part)/.test(source)) return "aviation";
-  if (/\b(restaurant|pizza|food|cafe|diner|bakery|bar|grill|kitchen|menu|chef|sushi|taco|burger)/.test(source)) return "restaurants";
-  if (/\b(auto|car|mechanic|oil\s*change|detailing|tire|transmission|brake|wash|body\s*shop)/.test(source)) return "auto";
-  if (/\b(hvac|plumb|electric|roof|landscap|lawn|cleaning|handyman|painter|carpentry|contractor|home\s*repair|garden)/.test(source)) return "home";
-  if (/\b(salon|barber|hair|nails|spa|massage|makeup|waxing|lashes|beauty|skincare)/.test(source)) return "beauty";
-  if (/\b(pet|dog|cat|grooming|vet|kennel|walking|boarding|aquarium)/.test(source)) return "pets";
-  if (/\b(fitness|gym|yoga|pilates|trainer|nutrition|wellness|therap|clinic|dental|chiropract|medical)/.test(source)) return "health";
-  if (/\b(photograph|music|dj|band|comedy|art|gallery|theater|event|wedding|party|entertain|gaming|tattoo)/.test(source)) return "entertainment";
-  return "home"; // default bucket — most service businesses land here
-}
-
 function getProjectEmoji(project: Project, index: number) {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
   if (source.includes("fitness") || source.includes("health")) return "💪";
@@ -1405,9 +1375,8 @@ export default function Home() {
   // Homepage used to render a category grid with live counts from
   // /api/projects/public. That grid was replaced by a simple quick-
   // search pill row that routes to /discover?q=<label>, so the
-  // count-fetching effect is intentionally gone. HOME_CATEGORIES and
-  // categorizeProjectForHome are still exported in case /discover or
-  // a future page wants to reuse the same classifier.
+  // count-fetching effect is intentionally gone. The shared taxonomy
+  // lives at frontend/lib/categories.ts.
 
   // ── Launch state ──
   const [heroIdea, setHeroIdea] = useState("");
