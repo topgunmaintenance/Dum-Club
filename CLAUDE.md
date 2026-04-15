@@ -88,6 +88,54 @@ You must:
 
 ---
 
+### TASK QUEUE SYSTEM
+
+The queue lives at `.claude/tasks/queue.md`. It lists product tasks in
+execution order. Markers: `[ ]` = not done, `[x]` = committed.
+
+**If the user says: "run next task"**
+
+You MUST:
+
+1. Read `.claude/tasks/queue.md`
+2. Find the first entry with a `[ ]` marker (top to bottom)
+3. Load that task's file at `.claude/tasks/<name>.md`
+4. Follow the PRE-TASK ROUTINE (confirm branch ≠ main, pull latest
+   main, create `feature/<task-name>`)
+5. Execute the task per BUILD RULES
+6. Run POST-TASK ROUTINE (`git status`, `npm run build`, fix only
+   build errors, summarize)
+7. Commit the feature work per the COMMIT RULE. In the SAME commit,
+   update `.claude/tasks/queue.md` to flip the queue item from `[ ]`
+   to `[x]` and append the new commit's short SHA
+8. STOP per the HARD STOP RULE. Do NOT advance to the next queue
+   item automatically.
+
+Edge cases:
+- Queue empty or every item `[x]` → report "queue complete" and
+  STOP without starting any work
+- Next task has no matching `.claude/tasks/<name>.md` file → report
+  "missing task file: <name>" and STOP without guessing at
+  requirements
+
+**If the user says: "continue"**
+
+You MUST:
+- Resume the previous task only if it ended mid-execution (incomplete
+  commit, unresolved build error, explicit pause)
+- Do NOT automatically advance to the next queue item
+- If nothing is in progress → report "nothing to continue" and STOP
+
+**If the user says: "stop"**
+
+You MUST:
+- Halt all execution immediately
+- Do NOT commit partial work without asking first
+- Report current state: branch, working tree status, last commit,
+  what was in progress
+
+---
+
 ### EXECUTION SYSTEM vs DOCTRINE
 
 This section is the **execution contract**: how Claude should run.
