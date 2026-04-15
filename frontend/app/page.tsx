@@ -1416,6 +1416,104 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
   );
 }
 
+/* ─── Deals Section ─── */
+type DealCard = {
+  id: string;
+  project_id: string;
+  business_name: string;
+  offer_title: string;
+  price: number;
+};
+
+function DealsSection({ projects }: { projects: Project[] }) {
+  const [cards, setCards] = useState<DealCard[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!projects.length) {
+      setCards([]);
+      setLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    setLoaded(false);
+    (async () => {
+      const perProject = await Promise.all(
+        projects.map(async (p) => {
+          try {
+            const res = await fetch(`${API_BASE}/api/offers/${p.id}`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            if (!Array.isArray(data)) return [];
+            const active = data.filter(
+              (o: { is_active?: boolean }) => o.is_active !== false
+            );
+            return active
+              .map((o: { id?: string; title?: string; price_usd?: number }) => {
+                const price = Number(o.price_usd || 0);
+                if (!price || !o.id) return null;
+                return {
+                  id: String(o.id),
+                  project_id: p.id,
+                  business_name: p.title || p.name || "Untitled",
+                  offer_title: String(o.title || ""),
+                  price,
+                } as DealCard;
+              })
+              .filter((c: DealCard | null): c is DealCard => c !== null);
+          } catch {
+            return [];
+          }
+        })
+      );
+      if (cancelled) return;
+      const flat = perProject.flat().sort((a, b) => a.price - b.price).slice(0, 12);
+      setCards(flat);
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projects]);
+
+  // Real-data gate: hide the section entirely if there are no real
+  // active offers with a real price across the visible project set.
+  if (!loaded) return null;
+  if (cards.length === 0) return null;
+
+  return (
+    <div className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20">
+      <div className="mb-6 flex items-center gap-3">
+        <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+          Deals
+        </h2>
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+          {cards.length} active
+        </span>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((c) => (
+          <Link
+            key={c.id}
+            href={`/project/${c.project_id}`}
+            className="group rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+          >
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+              {c.business_name}
+            </div>
+            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
+              {c.offer_title}
+            </div>
+            <div className="mt-3 font-mono text-xl font-extrabold text-emerald-400">
+              ${c.price.toLocaleString()}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Customer Retention Automation Section ─── */
 function RetentionSection() {
   const [month, setMonth] = useState(3);
@@ -2615,6 +2713,9 @@ export default function Home() {
 
         {/* ── SEARCH RESULTS ── rendered only after the user runs a search */}
         <SearchResults results={findResults} />
+
+        {/* ── DEALS ── hidden when no real active offers exist */}
+        <DealsSection projects={allPublicProjects} />
 
         {/* ── Recent Sales Proof ── */}
         <RecentSalesFeed />
