@@ -1316,6 +1316,106 @@ function SearchResults({ results }: { results: Project[] | null }) {
   );
 }
 
+/* ─── Live Now Section ─── */
+type LiveNowCard = {
+  id: string;
+  name: string;
+  product: string;
+  price: number;
+};
+
+function LiveNowSection({ projects }: { projects: Project[] }) {
+  const [cards, setCards] = useState<LiveNowCard[]>([]);
+
+  useEffect(() => {
+    if (!projects.length) {
+      setCards([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(
+        projects.map(async (p) => {
+          try {
+            const res = await fetch(`${API_BASE}/api/offers/${p.id}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            const active = Array.isArray(data)
+              ? data.filter((o: { is_active?: boolean }) => o.is_active !== false)
+              : [];
+            if (active.length === 0) return null;
+            const cheapest = [...active].sort(
+              (a: { price_usd?: number }, b: { price_usd?: number }) =>
+                Number(a.price_usd || 0) - Number(b.price_usd || 0)
+            )[0] as { title?: string; price_usd?: number };
+            const price = Number(cheapest?.price_usd || 0);
+            if (!price) return null;
+            return {
+              id: p.id,
+              name: p.title || p.name || "Untitled",
+              product: String(cheapest?.title || ""),
+              price,
+            } as LiveNowCard;
+          } catch {
+            return null;
+          }
+        })
+      );
+      if (cancelled) return;
+      setCards(results.filter((c): c is LiveNowCard => c !== null));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projects]);
+
+  // Real-data gate: if no live projects or none have a real active
+  // offer with a real price, hide the section entirely. No placeholders.
+  if (cards.length === 0) return null;
+
+  return (
+    <div className="mt-12 sm:mt-16">
+      <div className="mb-5 flex items-center gap-3">
+        <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+          Live Now
+        </h2>
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+      </div>
+      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+        {cards.map((c) => (
+          <Link
+            key={c.id}
+            href={`/project/${c.id}`}
+            className="group min-w-[260px] max-w-[280px] shrink-0 snap-start rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                Live
+              </span>
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+              {c.name}
+            </div>
+            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
+              {c.product}
+            </div>
+            <div className="mt-3 font-mono text-xl font-extrabold text-emerald-400">
+              ${c.price.toLocaleString()}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Customer Retention Automation Section ─── */
 function RetentionSection() {
   const [month, setMonth] = useState(3);
@@ -2125,6 +2225,14 @@ export default function Home() {
     [allPublicProjects, liveStreamsEnabled]
   );
 
+  // Live Now section (top-of-homepage) — real data only, not gated by
+  // the live-streams env flag because the section is hidden at render
+  // time when no projects have is_live === true.
+  const liveNowProjects = useMemo(
+    () => allPublicProjects.filter((p) => p.is_live === true),
+    [allPublicProjects]
+  );
+
   const featured = useMemo(() => {
     const quality = allPublicProjects.filter((p) => !isPlaceholderDescription(p.description));
     const pool = quality.length > 0 ? quality : allPublicProjects;
@@ -2333,6 +2441,9 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* ── LIVE NOW ── hidden when no real live projects */}
+        <LiveNowSection projects={liveNowProjects} />
 
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
