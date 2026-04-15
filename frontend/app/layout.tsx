@@ -8,21 +8,21 @@ import { DumPill } from "../components/DumPill";
 import { LiveActivityTicker } from "../components/LiveActivityTicker";
 
 export const metadata: Metadata = {
-  title: "DUM Club — Book local home and auto services in Morris County",
+  title: "DUM Club — Sell Live. Keep Everything. Zero Commission Marketplace.",
   description:
-    "DUM Club — Book local home and auto services in Morris County. Stripe payments, verified merchants, rewards that work.",
+    "DUM Club is the flat-fee live selling marketplace. Zero commission, AI-powered customer retention, and local deals discovery. The first 100 merchants join free.",
   openGraph: {
-    title: "DUM Club — Local home and auto services in Morris County",
+    title: "DUM Club — Sell Live. Keep Everything.",
     description:
-      "Book mobile detailers, handymen, lawn crews, and more — all in one place. Stripe checkout, verified merchants, rewards that work.",
+      "Flat $29–$99/mo. Zero commission. Live selling, AI retention, and deals discovery. It's DUM to pay per-sale fees.",
     siteName: "DUM Club",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DUM Club — Local home and auto services in Morris County",
+    title: "DUM Club — Sell Live. Keep Everything.",
     description:
-      "Book mobile detailers, handymen, lawn crews, and more — all in one place. Stripe checkout, verified merchants, rewards that work.",
+      "Flat $29–$99/mo. Zero commission. Live selling, AI retention, and deals discovery. It's DUM to pay per-sale fees.",
   },
 };
 

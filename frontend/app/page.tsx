@@ -2738,7 +2738,7 @@ export default function Home() {
                 Local Commerce, Real Rewards
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
-                Book local home and auto services in Morris County. Stripe payments, verified merchants, and rewards that work at every shop on the network.
+                Sell live. Keep everything. Flat-fee marketplace with zero commission, AI-powered retention, and rewards that work at every shop on the network.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
@@ -2746,7 +2746,7 @@ export default function Home() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                 </span>
                 <span className="font-mono text-[10px] text-emerald-500">
-                  EARLY ACCESS · DOVER, NJ
+                  EARLY ACCESS · MORRISTOWN, NJ
                 </span>
               </div>
             </div>
