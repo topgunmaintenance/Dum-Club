@@ -1450,7 +1450,7 @@ export default function ProjectPage() {
 
     const wallet = userWallet?.trim();
     if (!wallet || wallet.length < 8) {
-      setTradeMessage("A connected Solana wallet is required to trade. Sign in with a wallet-linked account or connect a Solana wallet.");
+      setTradeMessage("Tokenized trading is a future-phase feature and not yet live on DUM Club. DUM Points power discounts from Stripe purchases today.");
       setTradeIsError(true);
       return;
     }
@@ -1796,7 +1796,7 @@ export default function ProjectPage() {
       field: null,
       group: "store",
       prompt: (p, items) =>
-        `You are a product strategist for crypto/web3 projects. Generate 2-3 product or service ideas for this project that the owner could sell.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}${storeCtx(items || [])}\n\nReturn ONLY a valid JSON array of objects with these fields: name, description, price (string like "0.5 SOL"), type (one of: physical, digital, service, subscription). For subscription type, also include a "benefits" array of 2-3 short strings.\n\nExample: [{"name":"...", "description":"...", "price":"0.5 SOL", "type":"digital"}]\n\nReturn ONLY the JSON array, no markdown, no explanation.`,
+        `You are a product strategist for local business projects. Generate 2-3 product or service ideas for this project that the owner could sell.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nCategory: ${p.template_type || "General"}${storeCtx(items || [])}\n\nReturn ONLY a valid JSON array of objects with these fields: name, description, price (string like "$29"), type (one of: physical, digital, service, subscription). For subscription type, also include a "benefits" array of 2-3 short strings.\n\nExample: [{"name":"...", "description":"...", "price":"$29", "type":"digital"}]\n\nReturn ONLY the JSON array, no markdown, no explanation.`,
     },
     {
       key: "store_improve_desc",
@@ -1814,7 +1814,7 @@ export default function ProjectPage() {
       group: "store",
       needsItem: true,
       prompt: (p, items, target) =>
-        `You are a pricing strategist for crypto/web3 projects. Suggest an optimal price for this product.\n\nProject: "${p.title || p.name || "Untitled"}"\nProduct: "${target?.name || "N/A"}"\nDescription: "${target?.description || "N/A"}"\nType: ${target?.type || "N/A"}\nCurrent price: ${target?.price || "N/A"}${storeCtx(items || [])}\n\nReturn ONLY the suggested price as a short string (e.g. "0.25 SOL" or "1.5 SOL/month"). Nothing else.`,
+        `You are a pricing strategist for local business products. Suggest an optimal price for this product.\n\nProject: "${p.title || p.name || "Untitled"}"\nProduct: "${target?.name || "N/A"}"\nDescription: "${target?.description || "N/A"}"\nType: ${target?.type || "N/A"}\nCurrent price: ${target?.price || "N/A"}${storeCtx(items || [])}\n\nReturn ONLY the suggested price as a short string (e.g. "$29" or "$29/month"). Nothing else.`,
     },
     {
       key: "store_subscription",
@@ -1822,7 +1822,7 @@ export default function ProjectPage() {
       field: null,
       group: "store",
       prompt: (p, items) =>
-        `You are a subscription product designer for crypto/web3 projects. Create a subscription offer for this project.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeCtx(items || [])}\n\nReturn ONLY a valid JSON object with these fields: name, description, price (string like "1 SOL/month"), type (must be "subscription"), benefits (array of 3-4 short benefit strings).\n\nExample: {"name":"...", "description":"...", "price":"1 SOL/month", "type":"subscription", "benefits":["...", "..."]}\n\nReturn ONLY the JSON object, no markdown, no explanation.`,
+        `You are a subscription product designer for local business projects. Create a subscription offer for this project.\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"${storeCtx(items || [])}\n\nReturn ONLY a valid JSON object with these fields: name, description, price (string like "$29/month"), type (must be "subscription"), benefits (array of 3-4 short benefit strings).\n\nExample: {"name":"...", "description":"...", "price":"$29/month", "type":"subscription", "benefits":["...", "..."]}\n\nReturn ONLY the JSON object, no markdown, no explanation.`,
     },
   ];
 
@@ -4602,7 +4602,7 @@ return (
         <div className="mb-8 border-b border-t border-zinc-800 bg-base">
           {isSimulated && (
             <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
-              Demo market · simulated ledger · not on-chain
+              Preview only — trading is a future-phase feature
             </div>
           )}
           <div className="mx-auto max-w-6xl px-2">
@@ -5104,7 +5104,7 @@ return (
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Price (e.g. 0.5 SOL)"
+                placeholder="Price (e.g. $29)"
                 value={storeEditing.price}
                 onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
                 className="flex-1 rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
@@ -5873,7 +5873,7 @@ return (
                               key: `improve_${dim}`,
                               label: `Improve ${label}`,
                               prompt: (p) =>
-                                `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                                `You are a local business advisor. The user's business scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
                             };
                             runBuilderAction(improveAction, null);
                           }}
@@ -6103,7 +6103,7 @@ return (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
-              {isSimulated ? "Demo analytics (simulated ledger)" : "Advanced Analytics"}
+              {isSimulated ? "Preview Analytics" : "Advanced Analytics"}
             </div>
             <div className="mt-2 flex items-center gap-3">
               <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
@@ -6143,7 +6143,7 @@ return (
                   </h3>
                   <p className="mt-3 max-w-sm text-zinc-400">
                     {isSimulated
-                      ? "No demo trades yet. This Exchange tab is a simulated in-app ledger — no real tokens are minted and no on-chain trades occur."
+                      ? "No activity yet. Tokenized rewards and on-chain trading are planned for a future phase, subject to legal and regulatory review."
                       : "No trades yet. Early supporters back ideas before the market does — and shape the token's opening price history."}
                   </p>
                 </div>
@@ -6327,7 +6327,7 @@ return (
                 </span>
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${userWallet ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400" : "border-zinc-700 bg-zinc-900 text-zinc-500"}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${userWallet ? "bg-emerald-400" : "bg-zinc-600"}`} />
-                  {userWallet ? "Wallet connected" : "Wallet required"}
+                  {userWallet ? "Wallet linked" : "Wallet optional"}
                 </span>
               </div>
 
@@ -6344,17 +6344,10 @@ return (
                   </button>
                 </div>
               ) : !userWallet ? (
-                /* Signed in but no Solana wallet */
+                /* Signed in but wallet not linked — preview state for a future-phase feature */
                 <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                  <p className="text-sm text-zinc-400">A connected Solana wallet is required to trade.</p>
-                  <p className="mt-2 text-xs text-zinc-600">Connect a Phantom, Solflare, or Backpack wallet to continue.</p>
-                  <button
-                    type="button"
-                    onClick={login}
-                    className="mt-4 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500"
-                  >
-                    Connect wallet
-                  </button>
+                  <p className="text-sm text-zinc-400">Tokenized trading is a future-phase feature and not yet live on DUM Club.</p>
+                  <p className="mt-2 text-xs text-zinc-600">DUM Points power discounts from Stripe purchases today. Wallet linking is optional and reserved for future rewards features.</p>
                 </div>
               ) : (
                 /* Signed in + wallet connected — full trade form */
@@ -6422,7 +6415,7 @@ return (
 
                   {isSimulated && (
                     <p className="text-center text-[11px] text-amber-200/80">
-                      Demo trade — updates the in-app ledger only. No on-chain transaction.
+                      Preview only — tokenized rewards are planned for a future phase, subject to legal and regulatory review.
                     </p>
                   )}
 
@@ -6555,7 +6548,7 @@ return (
         <div className="mt-4 rounded-lg border border-zinc-800 bg-base/40 px-3 py-2">
           <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
             {isSimulatedToken(project.token_mint_address)
-              ? "Demo mint · Not on-chain"
+              ? "Preview · future-phase feature"
               : "Verified on DUM Club"}
           </div>
           <div className="mt-1 break-all font-mono text-[11px] text-zinc-400">
