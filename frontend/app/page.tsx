@@ -1108,7 +1108,6 @@ function ProductDemo() {
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
-  { id: "section-deals", label: "Deals" },
   { id: "section-how", label: "How It Works" },
   { id: "section-retention", label: "Retention" },
   { id: "section-compare", label: "Why Us" },
@@ -1209,67 +1208,6 @@ function ComparisonTable() {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Best Deals This Week (Groupon 2.0) ─── */
-function BestDealsSection() {
-  const DEALS = [
-    { biz: "Sparkle Pro Mobile Wash", deal: "Full Detail Package", was: 120, now: 89, tag: "Most Popular", emoji: "🚗", saves: "26%" },
-    { biz: "Date Night Box Co.", deal: "Standard Date Night Box", was: 55, now: 39, tag: "Date Night", emoji: "💝", saves: "29%" },
-    { biz: "GrowthKit", deal: "50 Viral Hooks Pack", was: 29, now: 19, tag: "Digital", emoji: "📈", saves: "34%" },
-    { biz: "Silver Market Hub", deal: "5lb Copper Pyramid .9999", was: 149, now: 125, tag: "Collectible", emoji: "🥇", saves: "16%" },
-  ];
-
-  return (
-    <div className="mx-auto mt-20 max-w-6xl px-4">
-      <div className="mb-2 flex items-center gap-3">
-        <span className="text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Best Deals This Week</span>
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-        </span>
-      </div>
-      <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-        Save big at local businesses.{" "}
-        <span className="text-emerald-400">Earn points everywhere.</span>
-      </h2>
-      <p className="mb-8 max-w-xl text-sm text-zinc-400">
-        Every purchase earns DUM Points redeemable at any business on the network. It&apos;s like Groupon, but you get rewarded for coming back.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {DEALS.map((deal) => (
-          <Link
-            key={deal.deal}
-            href="/discover"
-            className="group relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-b from-zinc-900/80 to-zinc-950 p-5 transition-all duration-300 hover:border-emerald-400/30 hover:shadow-[0_0_24px_rgba(0,255,163,0.06)]"
-          >
-            {/* Save badge */}
-            <div className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-extrabold text-black">
-              SAVE {deal.saves}
-            </div>
-            <div className="mb-3 text-2xl">{deal.emoji}</div>
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">{deal.biz}</div>
-            <div className="mb-3 text-[15px] font-bold text-white">{deal.deal}</div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-extrabold text-emerald-400">${deal.now}</span>
-              <span className="text-sm text-zinc-600 line-through">${deal.was}</span>
-            </div>
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2.5 py-1 text-[9px] font-bold text-emerald-400">
-              <span className="inline-block h-1 w-1 rounded-full bg-emerald-400" />
-              +{Math.floor(deal.now / 10)} DUM Points
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-6 text-center">
-        <Link href="/discover" className="inline-flex items-center gap-2 text-[13px] font-bold text-emerald-400 transition hover:text-emerald-300">
-          Browse all deals →
-        </Link>
       </div>
     </div>
   );
@@ -2606,11 +2544,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ── BEST DEALS THIS WEEK ── */}
-        <div id="section-deals">
-          <BestDealsSection />
         </div>
 
         {/* ── CUSTOMER RETENTION AUTOMATION ── */}
