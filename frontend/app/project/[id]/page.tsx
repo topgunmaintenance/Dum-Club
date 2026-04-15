@@ -5873,7 +5873,7 @@ return (
                               key: `improve_${dim}`,
                               label: `Improve ${label}`,
                               prompt: (p) =>
-                                `You are a startup advisor. The user's project scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nProject: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nToken: ${p.token_symbol || "N/A"}\nUtility: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
+                                `You are a local business advisor. The user's business scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
                             };
                             runBuilderAction(improveAction, null);
                           }}
