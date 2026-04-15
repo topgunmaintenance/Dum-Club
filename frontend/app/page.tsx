@@ -2426,7 +2426,7 @@ export default function Home() {
             Sell live. Keep customers. <span className="text-emerald-400">Grow on autopilot.</span>
           </h2>
           <p className="mb-10 max-w-xl text-sm text-zinc-400">
-            Live selling + loyalty points + AI retention + local deals discovery. Everything Whatnot, Groupon, and Yotpo do — in one flat-fee platform.
+            Live selling, loyalty points, AI retention, and local deals discovery — all in one flat-fee platform. No commission, no per-sale fees, ever.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -2448,7 +2448,7 @@ export default function Home() {
               {
                 tag: "Deals",
                 title: "Best Deals Discovery",
-                desc: "Customers find your deals like Groupon — but with loyalty points that bring them back week after week.",
+                desc: "Customers discover your deals through local search — and earn loyalty points that bring them back week after week.",
               },
               {
                 tag: "Social",
