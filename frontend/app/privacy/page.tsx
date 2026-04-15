@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold text-white">6. Third-Party Services</h2>
             <p>
-              DUM Club uses Stripe (payments), Privy (authentication), Supabase (database), and Solana (wallet infrastructure). Each service has its own privacy policy governing data they process.
+              DUM Club uses Stripe (payments), Privy (authentication), and Supabase (database). Each service has its own privacy policy governing data they process.
             </p>
           </section>
 

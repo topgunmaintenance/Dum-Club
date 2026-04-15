@@ -1,368 +1,438 @@
 "use client";
 
-/**
- * /business — seller recruitment landing page.
- *
- * This is the page we send to Whatnot/Commonsold sellers and local
- * business owners to convince them to switch. Flat fee, zero
- * commission, founding-100 free tier. Built to match the dark
- * emerald aesthetic of the rest of the site. CLAUDE.md v5.0
- * Section 3 pricing is the source of truth for every number below.
- */
-
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { Starfield } from "../../components/Starfield";
+
 import { API_BASE } from "../../lib/apiBase";
 
-type FoundingStatus = {
-  founding_slots_remaining: number;
-  total_cap: number;
-  founding_program_open: boolean;
-};
+/* ── Scroll reveal hook ── */
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return { ref, visible };
+}
 
-export default function BusinessPage() {
-  const [founding, setFounding] = useState<FoundingStatus | null>(null);
+function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+  const { ref, visible } = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "none" : "translateY(20px)",
+        transition: `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── Hero Product Demo ── */
+const DEMO_PHASES = [
+  { label: "Typing your idea...", text: "mobile car wash business" },
+  { label: "AI is building your storefront...", text: "" },
+  { label: "Generating offers and pricing...", text: "" },
+  { label: "Your business is live!", text: "" },
+];
+
+const DEMO_OFFERS = [
+  { title: "Basic Exterior Wash", price: "$29", tag: "Popular" },
+  { title: "Full Detail Package", price: "$89", tag: "Best Value" },
+  { title: "Monthly Membership", price: "$49/mo", tag: "Recurring" },
+];
+
+function HeroDemo() {
+  const [phase, setPhase] = useState(0);
+  const [typed, setTyped] = useState("");
+  const target = DEMO_PHASES[0].text;
 
   useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_BASE}/api/merchant/founding-status`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setFounding(data);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const slotsRemaining = founding?.founding_slots_remaining ?? null;
-  const totalCap = founding?.total_cap ?? 100;
-  const programOpen = founding?.founding_program_open ?? true;
+    if (phase === 0) {
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setTyped(target.slice(0, i));
+        if (i >= target.length) { clearInterval(interval); setTimeout(() => setPhase(1), 800); }
+      }, 50);
+      return () => clearInterval(interval);
+    }
+    if (phase === 1) { const t = setTimeout(() => setPhase(2), 1500); return () => clearTimeout(t); }
+    if (phase === 2) { const t = setTimeout(() => setPhase(3), 1500); return () => clearTimeout(t); }
+    if (phase === 3) { const t = setTimeout(() => setPhase(0), 4000); return () => { clearTimeout(t); setTyped(""); }; }
+  }, [phase]);
 
   return (
-    <main className="min-h-screen bg-[#060606] text-white">
-      {/* ── Hero ────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-4 pb-16 pt-28 sm:pt-32">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_top,rgba(0,255,163,0.12),transparent_65%)]" />
-        </div>
+    <div style={{
+      background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "16px", padding: "20px", maxWidth: "420px", width: "100%",
+      margin: "0 auto", position: "relative", overflow: "hidden",
+    }}>
+      <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "160px", height: "160px", background: "radial-gradient(circle, rgba(0,255,135,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-        <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.06] px-4 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-              Founding 100 · {slotsRemaining != null ? `${slotsRemaining} spots left` : "spots limited"}
-            </span>
+      {phase <= 1 && (
+        <div>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#444", textTransform: "uppercase", marginBottom: "8px" }}>
+            Describe your business
           </div>
+          <div style={{ background: "#161616", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "10px", padding: "14px 16px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "14px", color: phase === 0 ? "#f0f0f0" : "#888", minHeight: "48px" }}>
+            {phase === 0 ? <>{typed}<span style={{ opacity: 0.6, animation: "blink 1s infinite" }}>|</span></> : target}
+          </div>
+          {phase === 1 && (
+            <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", color: "#00FF87" }}>
+              <span style={{ width: "6px", height: "6px", background: "#00FF87", borderRadius: "50%", display: "inline-block" }} className="pulse-dot" />
+              AI is building your storefront...
+            </div>
+          )}
+        </div>
+      )}
 
-          <h1 className="text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            Keep Everything{" "}
-            <span className="text-emerald-400" style={{ textShadow: "0 0 40px rgba(0,255,163,0.35)" }}>
-              You Earn.
-            </span>
+      {phase === 2 && (
+        <div>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.14em", color: "#00FF87", textTransform: "uppercase", marginBottom: "12px" }}>Generating offers</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {DEMO_OFFERS.map((o, i) => (
+              <div key={i} style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", animation: `fadeUp 0.3s ease ${i * 0.15}s both` }}>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#f0f0f0" }}>{o.title}</div>
+                  <div style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}>{o.tag}</div>
+                </div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "14px", fontWeight: 700, color: "#00FF87" }}>{o.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {phase === 3 && (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+            <div>
+              <div style={{ fontSize: "16px", fontWeight: 800, color: "#f0f0f0" }}>Sparkle Mobile Wash</div>
+              <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.1em", color: "#888", marginTop: "2px" }}>SERVICES · DUM CLUB</div>
+            </div>
+            <div style={{ background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)", borderRadius: "20px", padding: "4px 10px", fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", color: "#00FF87", letterSpacing: "0.1em" }}>LIVE</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {DEMO_OFFERS.map((o, i) => (
+              <div key={i} style={{ background: "#161616", borderRadius: "8px", padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "12px", color: "#ccc" }}>{o.title}</span>
+                <span style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "12px", fontWeight: 600, color: "#00FF87" }}>{o.price}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: "12px", textAlign: "center", fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", color: "#444", letterSpacing: "0.1em" }}>
+            PAYMENTS · REWARDS · ANALYTICS — ALL ACTIVE
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+export default function BusinessPage() {
+  const [liveStats, setLiveStats] = useState<{ live_projects: number; active_offers: number; businesses: number } | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/projects/live-stats`).then(r => r.json()).then(setLiveStats).catch(() => {});
+  }, []);
+
+  return (
+    <div style={{ background: "#030303", color: "#f0f0f0", fontFamily: "'DM Sans', -apple-system, sans-serif", minHeight: "100vh", overflowX: "clip" as any, position: "relative" }}>
+      <Starfield count={40} />
+      <style>{`
+        .biz-cta-primary {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          background: #00FF87; color: #000; font-weight: 700; font-size: 14px;
+          letter-spacing: 0.04em; padding: 16px 32px; border-radius: 10px;
+          border: none; cursor: pointer; width: 100%; text-decoration: none;
+          transition: all 0.22s ease; position: relative; overflow: hidden;
+          box-shadow: 0 0 0 rgba(0,255,135,0);
+        }
+        .biz-cta-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(0,255,135,0.3);
+        }
+        .biz-cta-secondary {
+          display: flex; align-items: center; justify-content: center;
+          background: transparent; color: #f0f0f0; font-size: 13px;
+          padding: 13px 24px; border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.08); text-decoration: none;
+          transition: all 0.22s ease; cursor: pointer;
+        }
+        .biz-cta-secondary:hover {
+          border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.04); color: #00FF87;
+        }
+        .biz-feature-card {
+          background: #0b0b0b; border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px; padding: 22px;
+          transition: all 0.25s ease; cursor: default;
+        }
+        .biz-feature-card:hover {
+          border-color: rgba(0,255,135,0.25); transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,255,135,0.06);
+        }
+        .biz-hero-glow {
+          text-shadow: 0 0 40px rgba(0,255,135,0.25), 0 0 80px rgba(0,255,135,0.1);
+        }
+        .pulse-dot { animation: pulse 1.5s infinite !important; }
+        @keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.4) } }
+        @keyframes blink { 0%,50% { opacity: 1 } 51%,100% { opacity: 0 } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+        @keyframes borderGlow { 0%,100% { border-color: rgba(0,255,135,0.15) } 50% { border-color: rgba(0,255,135,0.5) } }
+        @keyframes heroFloat { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+        .biz-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .biz-grid-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        @media (max-width: 640px) {
+          .biz-grid-2col { grid-template-columns: 1fr; }
+          .biz-grid-3col { grid-template-columns: 1fr 1fr; }
+        }
+      `}</style>
+
+      {/* ═══════════════ SECTION 1: HERO ═══════════════ */}
+      <section style={{ padding: "72px 20px 32px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.16em",
+            color: "#444", border: "1px solid rgba(255,255,255,0.06)", padding: "5px 14px", borderRadius: "20px", marginBottom: "24px",
+          }}>
+            <span style={{ color: "#00FF87" }}>★</span> DUM CLUB · DIGITAL UTILITY MARKET
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <h1 style={{
+            fontFamily: "var(--font-geist-mono), monospace", fontSize: "clamp(32px, 9vw, 52px)",
+            fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: "20px",
+          }}>
+            Your business.<br />
+            Online and <span className="biz-hero-glow" style={{ color: "#00FF87" }}>selling.</span><br />
+            In 60 seconds.
           </h1>
+        </Reveal>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Flat monthly fee. Zero commission. Zero per-sale fees. The first 100 merchants join free and lock in $29/month forever after the founding period.
+        <Reveal delay={0.2}>
+          <p style={{ fontSize: "16px", color: "#999", lineHeight: 1.65, marginBottom: "32px", maxWidth: "480px", margin: "0 auto 32px" }}>
+            DUM Club gives you a storefront, Stripe payments, and built-in loyalty
+            — <strong style={{ color: "#f0f0f0", fontWeight: 500 }}>founding merchants pay $0/month, forever.</strong>
           </p>
+        </Reveal>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/merchant"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black shadow-[0_0_32px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_48px_rgba(0,255,163,0.4)]"
-            >
-              Claim Your Free Spot →
+        <Reveal delay={0.3}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "28px", maxWidth: "360px", margin: "0 auto 28px" }}>
+            <Link href="/merchant" className="biz-cta-primary">
+              Become a Founding Merchant — Free →
             </Link>
-            <Link
-              href="/discover"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950/60 px-8 py-4 text-sm font-bold text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
-            >
-              See the Marketplace
+            <Link href="/discover" className="biz-cta-secondary">
+              Explore Businesses →
             </Link>
           </div>
+        </Reveal>
 
-          <p className="mt-6 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-600">
-            Stripe checkout · 0% commission · Live in 60 seconds
-          </p>
-        </div>
+        <Reveal delay={0.4}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", fontSize: "10px", fontFamily: "var(--font-geist-mono), monospace", letterSpacing: "0.08em", color: "#444" }}>
+            <span><span style={{ color: "#00FF87" }}>✓</span> Free to start</span>
+            <span><span style={{ color: "#00FF87" }}>✓</span> Stripe payments</span>
+            <span><span style={{ color: "#00FF87" }}>✓</span>{liveStats && liveStats.live_projects > 0 ? ` ${liveStats.live_projects} businesses live` : " Live in minutes"}</span>
+          </div>
+        </Reveal>
       </section>
 
-      {/* ── Fee comparison cards ──────────────────────── */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="mb-10 text-center">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-            What you really pay
-          </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            On $10,000/month in sales
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
-            Other platforms take a cut of every transaction. DUM Club charges one flat fee — no matter how much you sell.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { name: "Whatnot", fees: "~$1,090", detail: "8% + 2.9% + $0.30 per sale", muted: true },
-            { name: "Commonsold", fees: "$500+", detail: "% per sale + monthly", muted: true },
-            { name: "Google Maps", fees: "$500–$2,000", detail: "monthly ads to rank", muted: true },
-            { name: "DUM Club", fees: "$29–$99", detail: "flat monthly, 0% per sale", muted: false },
-          ].map((p) => (
-            <div
-              key={p.name}
-              className={`rounded-2xl border p-6 text-center backdrop-blur-sm transition ${
-                p.muted
-                  ? "border-red-500/20 bg-zinc-900/60"
-                  : "border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_40px_rgba(0,255,163,0.2)]"
-              }`}
-            >
-              <div
-                className={`mb-2 text-[10px] font-bold uppercase tracking-[0.2em] ${
-                  p.muted ? "text-zinc-400" : "text-emerald-400"
-                }`}
-              >
-                {p.name}
+      {/* ═══════════════ SECTION 2: HOW IT WORKS ═══════════════ */}
+      <section style={{ padding: "0 20px 48px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        {/* Animated demo */}
+        <Reveal delay={0.2}>
+          <div style={{ animation: "heroFloat 6s ease-in-out infinite", maxWidth: "460px", margin: "0 auto 40px" }}>
+            <div style={{ borderRadius: "18px", padding: "2px", background: "linear-gradient(135deg, rgba(0,255,135,0.3), rgba(79,158,255,0.15), rgba(0,255,135,0.3))", backgroundSize: "200% 200%", animation: "borderGlow 4s ease infinite" }}>
+              <div style={{ borderRadius: "16px", overflow: "hidden" }}>
+                <HeroDemo />
               </div>
-              <div
-                className={`font-mono text-3xl font-extrabold ${
-                  p.muted ? "text-red-400/80" : "neon-emerald text-emerald-400"
-                }`}
-              >
-                {p.fees}
-              </div>
-              <div className="mt-2 text-[11px] text-zinc-400">{p.detail}</div>
             </div>
+          </div>
+        </Reveal>
+
+        {/* 4 steps */}
+        <Reveal>
+          <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "6px", textAlign: "center" }}>
+            Live in 4 steps. <span style={{ color: "#00FF87" }}>No friction.</span>
+          </h2>
+          <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px", textAlign: "center" }}>From idea to customers paying you — the same afternoon.</p>
+        </Reveal>
+
+        <div className="biz-grid-2col">
+          {[
+            { n: "01", t: "Sign in with Google", time: "3 sec" },
+            { n: "02", t: "Describe your business", time: "2 min" },
+            { n: "03", t: "AI builds your storefront", time: "Instant" },
+            { n: "04", t: "Start selling & grow", time: "Same day" },
+          ].map((s, i) => (
+            <Reveal key={i} delay={i * 0.1}>
+              <div style={{
+                background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "12px", padding: "18px 16px", textAlign: "center",
+              }}>
+                <div style={{
+                  width: "28px", height: "28px", margin: "0 auto 10px",
+                  borderRadius: "8px", background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", color: "#00FF87",
+                }}>{s.n}</div>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "6px" }}>{s.t}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "11px", fontWeight: 700, color: "#00FF87", letterSpacing: "0.06em" }}>{s.time}</div>
+              </div>
+            </Reveal>
           ))}
         </div>
-
-        <p className="mt-8 text-center text-sm text-zinc-300">
-          Sell $10,000 or $100,000 a month —{" "}
-          <span className="font-bold text-emerald-400">your fee never changes.</span>
-        </p>
       </section>
 
-      {/* ── Tier cards ───────────────────────────────────── */}
-      <section className="border-t border-zinc-800 px-4 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Pricing
+      {/* ═══════════════ SECTION 3: WHAT YOU GET ═══════════════ */}
+      <section style={{ padding: "0 20px 72px", maxWidth: "680px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>What you get</div>
+          <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "26px", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: "20px" }}>
+            Everything you need.<br />Nothing you don{"'"}t.
+          </h2>
+        </Reveal>
+
+        {/* ── Founding merchant callout — emerald-bordered premium emphasis. */}
+        <Reveal delay={0.05}>
+          <div
+            style={{
+              background: "linear-gradient(180deg, rgba(0,255,135,0.08), rgba(0,255,135,0.02))",
+              border: "1px solid rgba(0,255,135,0.35)",
+              borderRadius: "14px",
+              padding: "18px 22px",
+              marginBottom: "22px",
+              position: "relative",
+              overflow: "hidden",
+              boxShadow: "0 0 24px rgba(0,255,135,0.08)",
+            }}
+          >
+            <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "140px", height: "140px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#00FF87", textTransform: "uppercase", marginBottom: "8px", fontWeight: 700 }}>
+              ★ Founding Merchant Program
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Pick the tier that fits.
+            <div style={{ fontSize: "15px", lineHeight: 1.55, color: "#f0f0f0", fontWeight: 500 }}>
+              First 100 merchants pay <strong style={{ color: "#00FF87" }}>$0/month</strong> during the founding period — then locked at $29/mo forever. No commission. No new hardware. No catch.
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="biz-grid-2col">
+          {[
+            { icon: "⚡", tag: "STOREFRONT", title: "Live in under 60 seconds", body: "Describe what you sell. AI builds your page — offers, pricing, descriptions." },
+            { icon: "💳", tag: "PAYMENTS", title: "Stripe checkout built in", body: "Customers pay by card. You get paid. No merchant account needed." },
+            { icon: "🔁", tag: "REWARDS", title: "Customers earn DUM Points — and come back", body: "Every purchase at your business earns DUM Points redeemable across the entire network. That cross-merchant loyalty is what brings customers back." },
+            { icon: "🤖", tag: "AI POWERED", title: "Your storefront writes itself", body: "AI generates offers, descriptions, and pricing. Edit anything, or don't." },
+            { icon: "📊", tag: "ANALYTICS", title: "See what sells", body: "Views, sales, and customer activity. One dashboard." },
+            { icon: "✓", tag: "TRUST", title: "Verified business badge", body: "Get reviewed. Earn a trust badge. Rank higher." },
+          ].map((f, i) => (
+            <Reveal key={i} delay={i * 0.06}>
+              <div className="biz-feature-card">
+                <div style={{ fontSize: "20px", marginBottom: "8px" }}>{f.icon}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#00FF87", textTransform: "uppercase", marginBottom: "5px" }}>{f.tag}</div>
+                <div style={{ fontWeight: 700, fontSize: "14px", color: "#f0f0f0", marginBottom: "6px" }}>{f.title}</div>
+                <div style={{ fontSize: "12px", color: "#888", lineHeight: 1.55 }}>{f.body}</div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════ SECTION 4: PROOF ═══════════════ */}
+      <section style={{ padding: "0 20px 72px", maxWidth: "780px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.18em", color: "#444", textTransform: "uppercase", marginBottom: "12px" }}>See yourself here</div>
+            <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "22px", fontWeight: 800, letterSpacing: "-0.02em" }}>Built for every business</h2>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <div className="biz-grid-3col">
+            {[
+              { cat: "Auto Detail", name: "Mobile Car Wash", dum: "+2 DUM/wash" },
+              { cat: "Food & Drink", name: "Local Pizza Shop", dum: "+2 DUM/order" },
+              { cat: "Salon", name: "Hair & Beauty Studio", dum: "+2 DUM/visit" },
+              { cat: "Services", name: "Roofing Company", dum: "+2 DUM/job" },
+              { cat: "Fitness", name: "Personal Training", dum: "+2 DUM/session" },
+              { cat: "Digital", name: "Design Studio", dum: "+2 DUM/project" },
+            ].map((u, i) => (
+              <div key={i} style={{ background: "#0b0b0b", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "16px" }}>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#00FF87", marginBottom: "6px", textTransform: "uppercase" }}>{u.cat}</div>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "#f0f0f0", marginBottom: "3px" }}>{u.name}</div>
+                <div style={{ fontSize: "11px", color: "#888" }}>{u.dum}</div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+
+        {/* Live stats */}
+        {liveStats && (liveStats.live_projects > 0 || liveStats.businesses > 0) && (
+          <Reveal delay={0.2}>
+            <div style={{ marginTop: "24px" }} className="biz-grid-3col">
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(0,255,135,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#00FF87", lineHeight: 1 }}>{liveStats.live_projects}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>LIVE BUSINESSES</div>
+              </div>
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(245,166,35,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#F5A623", lineHeight: 1 }}>{liveStats.active_offers}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>ACTIVE OFFERS</div>
+              </div>
+              <div style={{ background: "#0b0b0b", border: "1px solid rgba(79,158,255,0.15)", borderRadius: "14px", padding: "20px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "28px", fontWeight: 800, color: "#4F9EFF", lineHeight: 1 }}>{liveStats.businesses}</div>
+                <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "9px", letterSpacing: "0.1em", color: "#555", marginTop: "6px" }}>VERIFIED BUSINESSES</div>
+              </div>
+            </div>
+          </Reveal>
+        )}
+      </section>
+
+      {/* ═══════════════ SECTION 5: FINAL CTA ═══════════════ */}
+      <section style={{ padding: "48px 20px 64px", maxWidth: "680px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+        <Reveal>
+          <div style={{
+            background: "linear-gradient(180deg, rgba(0,255,135,0.06), rgba(0,255,135,0.01), transparent)",
+            border: "1px solid rgba(0,255,135,0.12)",
+            borderRadius: "24px", padding: "52px 28px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "200px", height: "200px", background: "radial-gradient(circle, rgba(0,255,135,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+            <h2 style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "clamp(26px, 7vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: "16px" }}>
+              Your business could be<br /><span className="biz-hero-glow" style={{ color: "#00FF87" }}>selling right now.</span>
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
-              Every tier includes DUM Points loyalty, Stripe direct payouts, and zero commission. Upgrade anytime. Founding merchants pay $0 during the founding period.
+            <p style={{ fontSize: "15px", color: "#888", marginBottom: "32px", lineHeight: 1.6, maxWidth: "440px", margin: "0 auto 32px" }}>
+              Describe what you sell. AI builds your storefront with payments included. Share your link — you{"'"}re open for business.
             </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                name: "Starter",
-                price: "$29",
-                tagline: "Everything you need to sell",
-                features: [
-                  "Storefront on the marketplace",
-                  "DUM Points loyalty",
-                  "Stripe direct payouts",
-                  "Basic sales analytics",
-                  "Listed on /discover",
-                ],
-                highlight: false,
-              },
-              {
-                name: "Growth",
-                price: "$49",
-                tagline: "Replace your direct mail agency",
-                features: [
-                  "Everything in Starter",
-                  "Featured in category browse",
-                  "AI retention agent",
-                  "Google reviews on storefront",
-                  "Best Deals This Week eligibility",
-                ],
-                highlight: true,
-              },
-              {
-                name: "Pro",
-                price: "$99",
-                tagline: "Replace your social media agency",
-                features: [
-                  "Everything in Growth",
-                  "AI social media management",
-                  "Homepage featured slot",
-                  "Full analytics dashboard",
-                  "Priority placement in search",
-                ],
-                highlight: false,
-              },
-            ].map((tier) => (
-              <div
-                key={tier.name}
-                className={`relative rounded-2xl border p-8 backdrop-blur-sm transition ${
-                  tier.highlight
-                    ? "border-2 border-emerald-400/60 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_48px_rgba(0,255,163,0.2)]"
-                    : "border-zinc-700/50 bg-zinc-900/60 hover:border-emerald-400/30"
-                }`}
-              >
-                {tier.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-emerald-400/60 bg-[var(--color-bg-base)] px-3 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-400 shadow-[0_0_20px_rgba(0,255,163,0.3)]">
-                    Most Popular
-                  </div>
-                )}
-                <div className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
-                  {tier.name}
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold text-white">{tier.price}</span>
-                  <span className="text-sm text-zinc-500">/month</span>
-                </div>
-                <p className="mt-2 text-sm text-zinc-400">{tier.tagline}</p>
-                <ul className="mt-6 space-y-2.5">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-[10px] font-bold text-emerald-400">
-                        ✓
-                      </span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-8 text-center text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-            0% commission on every tier · No listing fees · Stripe processing paid by buyer
-          </p>
-        </div>
-      </section>
-
-      {/* ── What's included in every tier ───────────────── */}
-      <section className="border-t border-zinc-800 px-4 py-20">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-10 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Every tier includes
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "380px", margin: "0 auto 20px" }}>
+              <Link href="/merchant" className="biz-cta-primary" style={{ fontSize: "15px", padding: "18px 32px" }}>
+                Become a Founding Merchant — Free →
+              </Link>
+              <Link href="/discover" className="biz-cta-secondary">
+                Explore Businesses →
+              </Link>
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              The basics come standard.
-            </h2>
+            <div style={{ fontFamily: "var(--font-geist-mono), monospace", fontSize: "10px", letterSpacing: "0.08em", color: "#555" }}>
+              No credit card · No developer needed · Live in minutes
+            </div>
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              {
-                title: "DUM Points loyalty",
-                desc: "Customers earn points on every purchase. Redeemable at any DUM Club seller — the loyalty network that makes them come back.",
-              },
-              {
-                title: "Stripe direct payouts",
-                desc: "Money goes straight to your bank via Stripe Connect. No marketplace holding your funds. No payout delays.",
-              },
-              {
-                title: "Storefront on the marketplace",
-                desc: "A real buyable page at /project/[your-slug] with your offers, photos, and Stripe checkout. Shareable anywhere.",
-              },
-              {
-                title: "AI sales assistant",
-                desc: "A customer-facing chatbot that answers questions using your real offer data. Helps close sales 24/7.",
-              },
-              {
-                title: "Listed on /discover",
-                desc: "The marketplace browse page with search, live streaming, and local discovery. Free organic traffic.",
-              },
-              {
-                title: "Founding merchant badge",
-                desc: "Permanent badge on your profile if you join the founding 100. You locked in early — we don't forget it.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-5 backdrop-blur-sm transition hover:border-emerald-400/30"
-              >
-                <div className="mb-2 text-sm font-bold text-white">{item.title}</div>
-                <p className="text-[13px] leading-relaxed text-zinc-400">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        </Reveal>
       </section>
 
-      {/* ── Founding 100 section ────────────────────────── */}
-      <section className="border-t border-zinc-800 px-4 py-20">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.08] to-zinc-950 p-10 text-center shadow-[0_0_48px_rgba(0,255,163,0.1)]">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-            Limited · Founding 100
-          </div>
-          <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
-            The first 100 merchants get in free.
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
-            $0 during the founding period. Locked at $29/month after. Founding merchant badge permanent on your profile. Once 100 slots fill, the program closes and standard tiers apply to everyone new.
-          </p>
-
-          <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/60 px-6 py-4 backdrop-blur-sm">
-            <span className="font-mono text-4xl font-extrabold text-emerald-400">
-              {slotsRemaining != null ? slotsRemaining : "—"}
-            </span>
-            <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-              of {totalCap} spots remaining
-            </span>
-          </div>
-
-          <div className="mt-8">
-            <Link
-              href="/merchant"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black shadow-[0_0_32px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_48px_rgba(0,255,163,0.4)]"
-            >
-              {programOpen ? "Claim a Founding Spot →" : "Join the Waitlist →"}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Talk to Julian CTA ─────────────────────────── */}
-      <section className="border-t border-zinc-800 px-4 py-20">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-10 text-center backdrop-blur-sm">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-            Questions?
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-            Talk to Julian.
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm text-zinc-400">
-            I built DUM Club. I also run Topgun Maintenance LLC, the founding merchant. Email or call me directly — I'll get back same day.
-          </p>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
-            <a
-              href="mailto:julian@topgunmaintenance.com"
-              className="font-mono text-sm text-emerald-400 transition hover:text-emerald-300"
-            >
-              julian@topgunmaintenance.com
-            </a>
-            <span className="hidden text-zinc-700 sm:inline">·</span>
-            <a
-              href="tel:+12014521986"
-              className="font-mono text-sm text-emerald-400 transition hover:text-emerald-300"
-            >
-              +1 (201) 452-1986
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Bottom footer strip ────────────────────────── */}
-      <div className="border-t border-zinc-800 px-4 py-10 text-center">
-        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-700">
-          Stripe-powered payments · 0% commission · Founding 100 · DUM Club v5.0
-        </p>
-      </div>
-    </main>
+    </div>
   );
 }

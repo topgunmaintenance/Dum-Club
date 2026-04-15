@@ -4455,7 +4455,7 @@ return (
                   </div>
                 </div>
                 <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500">
-                  Powered by Solana · Stripe payments
+                  Powered by Stripe payments
                 </div>
               </div>
             ) : null}
@@ -4852,7 +4852,7 @@ return (
             </div>
             {!isOwner && (
               <p className="mt-2 text-xs text-emerald-400/60">
-                Every purchase earns DUM rewards. DUM will power discounts, boosts, and future on-chain utility on Solana.
+                Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
               </p>
             )}
           </div>
@@ -6556,7 +6556,7 @@ return (
           <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
             {isSimulatedToken(project.token_mint_address)
               ? "Demo mint · Not on-chain"
-              : "Verified on Solana"}
+              : "Verified on DUM Club"}
           </div>
           <div className="mt-1 break-all font-mono text-[11px] text-zinc-400">
             {isSimulatedToken(project.token_mint_address) ? "Demo mint · " : "Mint · "}

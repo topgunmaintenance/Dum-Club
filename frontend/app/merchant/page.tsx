@@ -16,6 +16,8 @@ type Merchant = {
   subscription_price_usd: number;
   stripe_connect_id: string | null;
   stripe_connect_status: string;
+  square_location_id: string | null;
+  square_status: string;
   created_at: string;
 };
 
@@ -142,6 +144,8 @@ export default function MerchantPage() {
       }
     } catch {}
   }
+
+  // Square integration removed — Stripe is the ONLY payment processor per CLAUDE.md
 
   if (loading) {
     return (
@@ -351,6 +355,8 @@ export default function MerchantPage() {
                 </button>
               )}
             </div>
+
+            {/* Square removed per CLAUDE.md — Stripe is ONLY payment processor */}
           </div>
         </div>
 
