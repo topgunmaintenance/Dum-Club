@@ -1108,9 +1108,11 @@ function ProductDemo() {
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
+  { id: "section-deals", label: "Deals" },
   { id: "section-how", label: "How It Works" },
-  { id: "section-features", label: "Features" },
+  { id: "section-retention", label: "Retention" },
   { id: "section-compare", label: "Why Us" },
+  { id: "section-pricing", label: "Pricing" },
   { id: "section-cta", label: "Get Started" },
 ];
 
@@ -1166,130 +1168,362 @@ function LiveSaleToast() {
   );
 }
 
-/* ─── Comparison Tabs: Features vs Cost ─── */
-function ComparisonTabs() {
-  const [tab, setTab] = useState<"features" | "cost">("features");
-
+/* ─── Comparison Table: Whatnot vs Commonsold vs Google Maps vs DUM Club ─── */
+function ComparisonTable() {
   return (
     <div className="mx-auto mt-10 max-w-4xl">
-      {/* Tab buttons */}
-      <div className="mb-6 flex items-center justify-center gap-1 rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-xs mx-auto">
-        <button
-          onClick={() => setTab("features")}
-          className={`flex-1 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-200 ${
-            tab === "features"
-              ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 shadow-[0_0_12px_rgba(0,255,163,0.08)]"
-              : "text-zinc-500 border border-transparent hover:text-zinc-300"
-          }`}
-        >
-          Why Us
-        </button>
-        <button
-          onClick={() => setTab("cost")}
-          className={`flex-1 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-200 ${
-            tab === "cost"
-              ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 shadow-[0_0_12px_rgba(0,255,163,0.08)]"
-              : "text-zinc-500 border border-transparent hover:text-zinc-300"
-          }`}
-        >
-          Cost
-        </button>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "600px" }}>
+          <thead>
+            <tr className="border-b border-zinc-800">
+              <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600"> </th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Whatnot</th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Commonsold</th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Google Maps</th>
+              <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-emerald-400" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29–$99/mo" },
+              { f: "Per-sale commission", w: "8%", c: "Varies", g: "—", d: "0% ever" },
+              { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
+              { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
+              { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
+              { f: "AI retention", w: "None", c: "None", g: "None", d: "Built in" },
+              { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
+              { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
+            ].map((row, i) => (
+              <tr key={i} className="border-b border-zinc-800/40">
+                <td className="py-3 pr-4 text-[12px] font-medium text-zinc-500" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
+                <td className="px-3 py-3 text-center text-zinc-600">{row.w}</td>
+                <td className="px-3 py-3 text-center text-zinc-600">{row.c}</td>
+                <td className="px-3 py-3 text-center text-zinc-600">{row.g}</td>
+                <td className="px-4 py-3 text-center font-semibold text-emerald-400" style={{
+                  background: "rgba(0,255,135,0.04)",
+                  borderLeft: "1px solid rgba(0,255,135,0.12)",
+                  borderRight: "1px solid rgba(0,255,135,0.12)",
+                  ...(i === 7 ? { borderBottom: "1px solid rgba(0,255,135,0.12)", borderRadius: "0 0 8px 8px" } : {}),
+                }}>{row.d}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Best Deals This Week (Groupon 2.0) ─── */
+function BestDealsSection() {
+  const DEALS = [
+    { biz: "Sparkle Pro Mobile Wash", deal: "Full Detail Package", was: 120, now: 89, tag: "Most Popular", emoji: "🚗", saves: "26%" },
+    { biz: "Date Night Box Co.", deal: "Standard Date Night Box", was: 55, now: 39, tag: "Date Night", emoji: "💝", saves: "29%" },
+    { biz: "GrowthKit", deal: "50 Viral Hooks Pack", was: 29, now: 19, tag: "Digital", emoji: "📈", saves: "34%" },
+    { biz: "Silver Market Hub", deal: "5lb Copper Pyramid .9999", was: 149, now: 125, tag: "Collectible", emoji: "🥇", saves: "16%" },
+  ];
+
+  return (
+    <div className="mx-auto mt-20 max-w-6xl px-4">
+      <div className="mb-2 flex items-center gap-3">
+        <span className="text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Best Deals This Week</span>
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        </span>
+      </div>
+      <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+        Save big at local businesses.{" "}
+        <span className="text-emerald-400">Earn points everywhere.</span>
+      </h2>
+      <p className="mb-8 max-w-xl text-sm text-zinc-400">
+        Every purchase earns DUM Points redeemable at any business on the network. It&apos;s like Groupon, but you get rewarded for coming back.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {DEALS.map((deal) => (
+          <Link
+            key={deal.deal}
+            href="/discover"
+            className="group relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-b from-zinc-900/80 to-zinc-950 p-5 transition-all duration-300 hover:border-emerald-400/30 hover:shadow-[0_0_24px_rgba(0,255,163,0.06)]"
+          >
+            {/* Save badge */}
+            <div className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-extrabold text-black">
+              SAVE {deal.saves}
+            </div>
+            <div className="mb-3 text-2xl">{deal.emoji}</div>
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">{deal.biz}</div>
+            <div className="mb-3 text-[15px] font-bold text-white">{deal.deal}</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-extrabold text-emerald-400">${deal.now}</span>
+              <span className="text-sm text-zinc-600 line-through">${deal.was}</span>
+            </div>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-2.5 py-1 text-[9px] font-bold text-emerald-400">
+              <span className="inline-block h-1 w-1 rounded-full bg-emerald-400" />
+              +{Math.floor(deal.now / 10)} DUM Points
+            </div>
+          </Link>
+        ))}
       </div>
 
-      {/* ── FEATURES TABLE ── */}
-      {tab === "features" && (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "560px" }}>
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600"> </th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Whatnot</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Commonsold</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Google Maps</th>
-                <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-emerald-400" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { f: "Fee model", w: "8% + 2.9% + $0.30", c: "% per sale + monthly", g: "Pay for ads", d: "Flat $29–$99/mo" },
-                { f: "Per-sale commission", w: "8%", c: "varies", g: "—", d: "0% ever" },
-                { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
-                { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
-                { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
-                { f: "AI retention", w: "None", c: "None", g: "None", d: "Built in" },
-                { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
-                { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
-              ].map((row, i) => (
-                <tr key={i} className="border-b border-zinc-800/40">
-                  <td className="py-3 pr-4 text-[12px] font-medium text-zinc-500" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.w}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.c}</td>
-                  <td className="px-3 py-3 text-center text-zinc-600">{row.g}</td>
-                  <td className="px-4 py-3 text-center font-semibold text-emerald-400" style={{
-                    background: "rgba(0,255,135,0.04)",
-                    borderLeft: "1px solid rgba(0,255,135,0.12)",
-                    borderRight: "1px solid rgba(0,255,135,0.12)",
-                    ...(i === 7 ? { borderBottom: "1px solid rgba(0,255,135,0.12)", borderRadius: "0 0 8px 8px" } : {}),
-                  }}>{row.d}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="mt-6 text-center">
+        <Link href="/discover" className="inline-flex items-center gap-2 text-[13px] font-bold text-emerald-400 transition hover:text-emerald-300">
+          Browse all deals →
+        </Link>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── COST TABLE ── */}
-      {tab === "cost" && (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "560px" }}>
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600">Platform</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Monthly Base</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Per-Sale Cut</th>
-                <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">On $10k/mo GMV</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { p: "Whatnot", base: "$0/mo", cut: "8% + 2.9% + $0.30", total: "~$1,090 in fees", accent: false },
-                { p: "Commonsold", base: "$49+/mo", cut: "% per sale", total: "$500+ in fees", accent: false },
-                { p: "Google Maps", base: "$0/mo", cut: "—", total: "$500–$2,000/mo in ads", accent: false },
-                { p: "DUM Club (you)", base: "$29–$99/mo", cut: "0% ever", total: "$29–$99 flat", accent: true },
-              ].map((row, i) => (
-                <tr key={i} className={`border-b border-zinc-800/40 ${row.accent ? "" : ""}`}
-                  style={row.accent ? { background: "rgba(0,255,135,0.04)" } : {}}
-                >
-                  <td className={`py-4 pr-4 text-[12px] font-bold ${row.accent ? "text-emerald-400" : "text-zinc-400"}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                    {row.accent && <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />}
-                    {row.p}
-                  </td>
-                  <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.base}
-                  </td>
-                  <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-bold text-[13px]" : "text-zinc-600"}`}>
-                    {row.cut}
-                  </td>
-                  <td className={`px-3 py-4 text-center ${row.accent ? "text-emerald-400 font-semibold" : "text-zinc-600"}`}>
-                    {row.total}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+/* ─── Customer Retention Automation Section ─── */
+function RetentionSection() {
+  const [month, setMonth] = useState(3);
+  // Simulate retention math: $49/mo DUM Club vs $500+/mo direct mail
+  const dumCost = 49 * month;
+  const mailCost = 750 * month;
+  const saved = mailCost - dumCost;
+  const retainedCustomers = Math.round(month * 22);
+  const repeatRevenue = retainedCustomers * 45;
 
-          {/* Bottom callout */}
-          <div className="mt-4 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-5 py-3 text-center">
-            <span className="text-[12px] text-zinc-400">
-              Sell $10,000 or $100,000 a month —{" "}
-              <span className="font-bold text-emerald-400">your fee never changes.</span>
-            </span>
+  return (
+    <div className="mx-auto mt-20 max-w-6xl px-4">
+      <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-10">
+        <div className="mb-2 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Customer Retention</div>
+        <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+          Stop losing customers.{" "}
+          <span className="text-emerald-400">Automate repeat business.</span>
+        </h2>
+        <p className="mb-8 max-w-xl text-sm text-zinc-400">
+          DUM Points bring customers back automatically. Our AI retention agent sends reminders, deal pushes, and expiry alerts — so you never lose a customer to a competitor again.
+        </p>
+
+        <div className="grid gap-8 sm:grid-cols-2">
+          {/* Left: How it works flow */}
+          <div className="space-y-4">
+            {[
+              { step: "1", title: "Customer buys from you", desc: "They earn DUM Points automatically at checkout. No stamps, no cards.", icon: "💳" },
+              { step: "2", title: "AI sends them back", desc: "Automated point reminders and deal pushes via email. Zero effort from you.", icon: "🤖" },
+              { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Cross-merchant discovery grows your network.", icon: "🔄" },
+              { step: "4", title: "You keep them forever", desc: "The switching cost is high. Points + deals + AI = a loyalty moat no competitor can touch.", icon: "🏆" },
+            ].map((s) => (
+              <div key={s.step} className="flex gap-4 rounded-xl border border-zinc-800/40 bg-zinc-900/30 p-4 transition hover:border-emerald-400/15">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{s.icon}</div>
+                <div>
+                  <div className="text-[13px] font-bold text-white">{s.title}</div>
+                  <div className="mt-0.5 text-[12px] text-zinc-400">{s.desc}</div>
+                </div>
+              </div>
+            ))}
+
           </div>
-          <div className="mt-2 text-center text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-700">
-            Verified merchants · Stripe-powered payments
+
+          {/* Right: ROI calculator */}
+          <div className="rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
+            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Retention ROI Calculator</div>
+            <div className="mb-4">
+              <label className="mb-2 block text-[11px] font-bold text-zinc-500">Time period: {month} month{month > 1 ? "s" : ""}</label>
+              <input
+                type="range"
+                min={1}
+                max={12}
+                value={month}
+                onChange={(e) => setMonth(Number(e.target.value))}
+                className="w-full accent-emerald-400"
+              />
+              <div className="mt-1 flex justify-between text-[9px] text-zinc-700">
+                <span>1 mo</span>
+                <span>6 mo</span>
+                <span>12 mo</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                <div>
+                  <div className="text-[10px] text-zinc-500">Direct mail cost</div>
+                  <div className="text-[10px] text-zinc-600">$750/mo avg</div>
+                </div>
+                <div className="font-mono text-lg font-bold text-red-400">${mailCost.toLocaleString()}</div>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] p-3">
+                <div>
+                  <div className="text-[10px] text-emerald-400">DUM Club Growth tier</div>
+                  <div className="text-[10px] text-emerald-400/50">$49/mo flat</div>
+                </div>
+                <div className="font-mono text-lg font-bold text-emerald-400">${dumCost.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70">You save</div>
+              <div className="font-mono text-3xl font-black text-emerald-400">${saved.toLocaleString()}</div>
+              <div className="mt-1 text-[11px] text-zinc-400">
+                ~{retainedCustomers} customers retained · ~${repeatRevenue.toLocaleString()} repeat revenue
+              </div>
+            </div>
+
+            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-emerald-400 py-3 text-center text-[13px] font-bold text-black transition hover:bg-emerald-300">
+              Start Retaining Customers →
+            </Link>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Pricing Tiers Section ─── */
+function PricingTiers() {
+  const tiers = [
+    {
+      name: "Starter",
+      price: "$29",
+      period: "/mo",
+      desc: "Everything you need to sell online",
+      features: ["Storefront on marketplace", "DUM Points built in", "Basic analytics", "Stripe direct payouts", "Listed on Discover"],
+      cta: "Get Started",
+      highlight: false,
+    },
+    {
+      name: "Growth",
+      price: "$49",
+      period: "/mo",
+      desc: "Retain customers automatically",
+      features: ["Everything in Starter", "Featured placement", "AI retention agent", "Google review display", "Best Deals eligibility"],
+      cta: "Most Popular",
+      highlight: true,
+    },
+    {
+      name: "Pro",
+      price: "$99",
+      period: "/mo",
+      desc: "Full automation + social media",
+      features: ["Everything in Growth", "AI social media management", "Homepage featured slot", "Cross-business promos", "Full analytics dashboard"],
+      cta: "Go Pro",
+      highlight: false,
+    },
+  ];
+
+  return (
+    <div className="mx-auto mt-20 max-w-5xl px-4">
+      <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Pricing</div>
+      <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+        Flat fee. <span className="text-emerald-400">Zero commission. Ever.</span>
+      </h2>
+      <p className="mx-auto mb-10 max-w-md text-center text-sm text-zinc-400">
+        The first 100 merchants join free and lock in $29/mo forever. No percentage cut on any sale.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {tiers.map((tier) => (
+          <div
+            key={tier.name}
+            className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${
+              tier.highlight
+                ? "border-emerald-400/40 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-950 shadow-[0_0_40px_rgba(0,255,163,0.08)]"
+                : "border-zinc-800/60 bg-zinc-950/80 hover:border-zinc-700"
+            }`}
+          >
+            {tier.highlight && (
+              <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+            )}
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-zinc-500">{tier.name}</div>
+            <div className="mb-1 flex items-baseline gap-1">
+              <span className="text-3xl font-black text-white">{tier.price}</span>
+              <span className="text-sm text-zinc-500">{tier.period}</span>
+            </div>
+            <div className="mb-5 text-[12px] text-zinc-400">{tier.desc}</div>
+            <div className="mb-5 space-y-2">
+              {tier.features.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                  <span className="text-emerald-400">✓</span>
+                  {f}
+                </div>
+              ))}
+            </div>
+            <Link
+              href="/merchant"
+              className={`block w-full rounded-xl py-2.5 text-center text-[12px] font-bold transition ${
+                tier.highlight
+                  ? "bg-emerald-400 text-black hover:bg-emerald-300"
+                  : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+              }`}
+            >
+              {tier.cta} →
+            </Link>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 text-center text-[11px] text-zinc-500">
+        Need white-label loyalty? <Link href="/business" className="font-bold text-emerald-400 hover:text-emerald-300">Business tier from $499/mo →</Link>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Whatnot Seller Pitch Section ─── */
+function WhatnotPitch() {
+  return (
+    <div className="mx-auto mt-20 max-w-5xl px-4">
+      <div className="overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/[0.04] to-zinc-950">
+        <div className="grid gap-0 sm:grid-cols-2">
+          {/* Left: The problem */}
+          <div className="border-b border-zinc-800/40 p-8 sm:border-b-0 sm:border-r">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-red-400">The Whatnot tax</div>
+            <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
+              You sell $10,000/mo on Whatnot.
+              <br />
+              <span className="text-red-400">They keep $1,150.</span>
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-red-500/[0.04] px-4 py-2">
+                <span className="text-[12px] text-zinc-400">Platform fee (8%)</span>
+                <span className="font-mono text-[13px] font-bold text-red-400">−$800</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-red-500/[0.04] px-4 py-2">
+                <span className="text-[12px] text-zinc-400">Processing (2.9% + $0.30)</span>
+                <span className="font-mono text-[13px] font-bold text-red-400">−$350</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2">
+                <span className="text-[12px] font-bold text-zinc-300">You keep</span>
+                <span className="font-mono text-[14px] font-bold text-zinc-300">$8,850</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: The solution */}
+          <div className="p-8">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">The DUM Club way</div>
+            <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
+              Same $10,000/mo.
+              <br />
+              <span className="text-emerald-400">You keep $9,951.</span>
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-4 py-2">
+                <span className="text-[12px] text-zinc-400">Flat monthly fee</span>
+                <span className="font-mono text-[13px] font-bold text-emerald-400">−$49</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2">
+                <span className="text-[12px] text-zinc-400">Commission on sales</span>
+                <span className="font-mono text-[13px] font-bold text-emerald-400">$0</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-2">
+                <span className="text-[12px] font-bold text-emerald-300">You keep</span>
+                <span className="font-mono text-[14px] font-bold text-emerald-400">$9,951</span>
+              </div>
+            </div>
+            <div className="mt-5 rounded-xl bg-emerald-400/10 border border-emerald-400/20 p-3 text-center">
+              <span className="font-mono text-2xl font-black text-emerald-400">+$1,101</span>
+              <span className="ml-2 text-[12px] text-emerald-400/70">more in your pocket every month</span>
+            </div>
+            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-emerald-400 py-3 text-center text-[13px] font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]">
+              Switch from Whatnot — Free →
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2250,35 +2484,43 @@ export default function Home() {
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
             Platform
           </div>
-          <h2 className="mb-10 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Everything you need. Nothing you don&apos;t.
+          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Sell live. Keep customers. <span className="text-emerald-400">Grow on autopilot.</span>
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <p className="mb-10 max-w-xl text-sm text-zinc-400">
+            Live selling + loyalty points + AI retention + local deals discovery. Everything Whatnot, Groupon, and Yotpo do — in one flat-fee platform.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                tag: "AI",
-                title: "AI-Powered Marketplace",
-                desc: "Describe what you sell or what you need. AI builds the storefront and connects it to the marketplace.",
-              },
-              {
-                tag: "Store",
-                title: "Buy & Sell Anything",
-                desc: "Sell services, products, or access — or find and buy from others. One link. Instant transactions.",
-              },
-              {
-                tag: "Assistant",
-                title: "AI Sales Assistant",
-                desc: "Every business gets a trained assistant that knows your offers and helps customers buy.",
+                tag: "Live",
+                title: "Live Selling",
+                desc: "Go live and sell to your audience in real time. Just like Whatnot — but you keep 100% of every sale.",
               },
               {
                 tag: "Loyalty",
-                title: "Automatic Rewards",
-                desc: "Repeat customers earn rewards automatically. No extra work.",
+                title: "DUM Points Loyalty Network",
+                desc: "Every purchase earns points redeemable at ANY business on the platform. Customers come back automatically.",
+              },
+              {
+                tag: "AI",
+                title: "AI Retention Agent",
+                desc: "Automated point reminders, deal pushes, and expiry alerts. Replace $500+/mo direct mail campaigns.",
+              },
+              {
+                tag: "Deals",
+                title: "Best Deals Discovery",
+                desc: "Customers find your deals like Groupon — but with loyalty points that bring them back week after week.",
+              },
+              {
+                tag: "Social",
+                title: "AI Social Media Manager",
+                desc: "Automated Instagram, TikTok, and Facebook posting based on your active deals. Replace agency bills.",
               },
               {
                 tag: "Payments",
-                title: "Stripe Payments Built In",
-                desc: "Customers pay by card. You get paid. No setup, no merchant account.",
+                title: "Stripe Direct Payouts",
+                desc: "Customers pay by card. You get paid direct to your bank. No middleman taking a cut of your sales.",
               },
             ].map((f) => (
               <div
@@ -2366,33 +2608,46 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── CONDENSED: WHY DUM CLUB WINS ── */}
+        {/* ── BEST DEALS THIS WEEK ── */}
+        <div id="section-deals">
+          <BestDealsSection />
+        </div>
+
+        {/* ── CUSTOMER RETENTION AUTOMATION ── */}
+        <div id="section-retention">
+          <RetentionSection />
+        </div>
+
+        {/* ── WHATNOT SELLER PITCH ── */}
+        <WhatnotPitch />
+
+        {/* ── WHY DUM CLUB WINS ── */}
         <div id="section-compare" className="border-t border-zinc-900 px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               The real difference
             </div>
             <h2 className="mx-auto max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
-              See what other platforms{" "}
+              Whatnot takes 8%.{" "}
               <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.25)" }}>
-                really cost you.
+                DUM Club takes $0 per sale.
               </span>
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-500">
-              Whatnot, Commonsold, and Google Maps all take a cut of every sale or charge you to be seen. DUM Club is flat monthly fee — zero commission, forever.
+              Flat fee. Zero commission. Live selling. AI retention. Local discovery. All in one platform.
             </p>
           </div>
 
-          {/* ── Tab switcher ── */}
-          <ComparisonTabs />
+          {/* ── Comparison table ── */}
+          <ComparisonTable />
 
           {/* Compact win cards */}
           <div className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { icon: "📉", title: "Zero commission", color: "#FF6B6B" },
-              { icon: "💰", title: "Flat monthly fee", color: "#00FF87" },
-              { icon: "🔁", title: "Loyalty built in", color: "#A78BFA" },
-              { icon: "⚡", title: "Stripe payouts", color: "#38BDF8" },
+              { icon: "🚫", title: "Zero commission" },
+              { icon: "💰", title: "Flat monthly fee" },
+              { icon: "🔁", title: "Loyalty built in" },
+              { icon: "⚡", title: "Stripe payouts" },
             ].map((c) => (
               <div key={c.title} className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4 text-center transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.02]">
                 <div className="mb-2 text-xl">{c.icon}</div>
@@ -2411,36 +2666,40 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ── PRICING TIERS ── */}
+        <div id="section-pricing">
+          <PricingTiers />
+        </div>
+
         {/* Bottom CTA */}
         <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Ready?
+              It&apos;s DUM to pay per-sale fees
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Your next move.
-              <br />
-              <span className="text-emerald-400">Live today.</span>
+              Sell live.{" "}
+              <span className="text-emerald-400">Keep everything.</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Sell something new, find what you need, or earn rewards along the way. AI builds the storefront and connects it to the marketplace.
+              Flat $29–$99/mo. Zero commission. AI-powered customer retention. The first 100 merchants join free.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
-                href="/build"
+                href="/merchant"
                 className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
-                Get Started Free →
+                Claim Your Free Spot →
               </Link>
               <Link
                 href="/discover"
                 className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                Browse the Marketplace
+                Browse Deals
               </Link>
             </div>
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
-              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — redeemable at <strong className="text-zinc-300">any</strong> business on the platform.
+              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — redeemable at <strong className="text-zinc-300">any</strong> business on the platform. Customers come back automatically.
             </div>
           </div>
         </div>
