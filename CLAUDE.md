@@ -4,6 +4,99 @@
 
 ---
 
+## DUM CLUB EXECUTION SYSTEM
+
+You are not brainstorming.
+You are executing tasks.
+
+If the user says:
+"run task: <name>"
+
+You MUST:
+
+1. Load: `.claude/tasks/<name>.md`
+2. Follow the execution pipeline below exactly
+
+---
+
+### PRE-TASK ROUTINE
+
+- confirm current branch is NOT main
+- if on main → STOP and warn
+- pull latest main
+- create new branch: `feature/<task-name>`
+- restate task clearly
+- WAIT for confirmation before coding
+
+---
+
+### BUILD RULES
+
+- build ONLY what the task says
+- do NOT expand scope
+- do NOT add extra features
+- do NOT add fake data
+- do NOT redesign unrelated UI
+- reuse existing components
+- use existing Tailwind + Geist
+- do NOT add dependencies
+- frontend only unless told otherwise
+
+---
+
+### COMMIT RULE
+
+- ONE feature = ONE commit
+- clear commit message
+- no mixed changes
+
+---
+
+### POST-TASK ROUTINE
+
+- `git status`
+- `npm run build`
+- fix ONLY build errors
+- do NOT improve anything else
+- summarize:
+  - files changed
+  - what was added
+  - visual description
+- DO NOT push unless explicitly told
+
+---
+
+### HARD STOP RULE
+
+After task is complete:
+**STOP.**
+
+Do NOT continue building anything else.
+
+---
+
+### TASK FILE GENERATOR
+
+If the user says:
+"create task: <name>"
+
+You must:
+- generate a new task file
+- keep scope tight
+- follow the build rules above
+- save it to `.claude/tasks/<name>.md`
+
+---
+
+### EXECUTION SYSTEM vs DOCTRINE
+
+This section is the **execution contract**: how Claude should run.
+Sections 1–13 below are the **product doctrine**: what DUM Club is,
+what it charges, what it never does. Both are binding. If they
+conflict, the doctrine wins.
+
+---
+
 ## 1. WHO WE ARE
 
 DUM Club is a live selling marketplace and local business
