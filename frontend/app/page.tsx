@@ -1213,6 +1213,109 @@ function ComparisonTable() {
   );
 }
 
+/* ─── Search Results ─── */
+type SearchResultCard = {
+  id: string;
+  name: string;
+  product: string;
+  price: number;
+};
+
+function SearchResults({ results }: { results: Project[] | null }) {
+  const [cards, setCards] = useState<SearchResultCard[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (results === null) {
+      setCards([]);
+      setLoaded(false);
+      return;
+    }
+    if (results.length === 0) {
+      setCards([]);
+      setLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    setLoaded(false);
+    (async () => {
+      const out = await Promise.all(
+        results.map(async (p) => {
+          try {
+            const res = await fetch(`${API_BASE}/api/offers/${p.id}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            const active = Array.isArray(data)
+              ? data.filter((o: { is_active?: boolean }) => o.is_active !== false)
+              : [];
+            if (!active.length) return null;
+            const cheapest = [...active].sort(
+              (a: { price_usd?: number }, b: { price_usd?: number }) =>
+                Number(a.price_usd || 0) - Number(b.price_usd || 0)
+            )[0] as { title?: string; price_usd?: number };
+            const price = Number(cheapest?.price_usd || 0);
+            if (!price) return null;
+            return {
+              id: p.id,
+              name: p.title || p.name || "Untitled",
+              product: String(cheapest?.title || ""),
+              price,
+            } as SearchResultCard;
+          } catch {
+            return null;
+          }
+        })
+      );
+      if (cancelled) return;
+      setCards(out.filter((c): c is SearchResultCard => c !== null));
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [results]);
+
+  // Hidden until the user has actually run a search.
+  if (results === null) return null;
+
+  return (
+    <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
+      <div className="mb-4 flex items-center gap-3">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+          Results
+        </h3>
+      </div>
+      {loaded && cards.length === 0 ? (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+          <p className="text-sm text-zinc-400">No results yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {cards.map((c) => (
+            <Link
+              key={c.id}
+              href={`/project/${c.id}`}
+              className="group flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+                  {c.name}
+                </div>
+                <div className="mt-1 truncate text-[15px] font-bold text-white">
+                  {c.product}
+                </div>
+              </div>
+              <div className="shrink-0 font-mono text-xl font-extrabold text-emerald-400">
+                ${c.price.toLocaleString()}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Customer Retention Automation Section ─── */
 function RetentionSection() {
   const [month, setMonth] = useState(3);
@@ -2355,6 +2458,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* ── SEARCH RESULTS ── rendered only after the user runs a search */}
+        <SearchResults results={findResults} />
 
         {/* ── Recent Sales Proof ── */}
         <RecentSalesFeed />
