@@ -2291,6 +2291,30 @@ export default function Home() {
       <Starfield count={60} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
+        {/* ── SEARCH HERO ── */}
+        <div className="mx-auto max-w-2xl py-20 text-center sm:py-24">
+          <input
+            type="text"
+            placeholder="Search services, products, or ideas..."
+            aria-label="Search"
+            className="w-full rounded-2xl border border-zinc-700/60 bg-zinc-900/60 px-6 py-5 text-base text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-400/50 focus:bg-zinc-900/80 sm:text-lg"
+          />
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link
+              href="/business"
+              className="inline-flex items-center justify-center rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300"
+            >
+              Start Selling →
+            </Link>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-xl border border-zinc-700/60 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+            >
+              Browse →
+            </button>
+          </div>
+        </div>
+
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
           {/* Ambient background */}
