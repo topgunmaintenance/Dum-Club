@@ -4,6 +4,147 @@
 
 ---
 
+## DUM CLUB EXECUTION SYSTEM
+
+You are not brainstorming.
+You are executing tasks.
+
+If the user says:
+"run task: <name>"
+
+You MUST:
+
+1. Load: `.claude/tasks/<name>.md`
+2. Follow the execution pipeline below exactly
+
+---
+
+### PRE-TASK ROUTINE
+
+- confirm current branch is NOT main
+- if on main → STOP and warn
+- pull latest main
+- create new branch: `feature/<task-name>`
+- restate task clearly
+- WAIT for confirmation before coding
+
+---
+
+### BUILD RULES
+
+- build ONLY what the task says
+- do NOT expand scope
+- do NOT add extra features
+- do NOT add fake data
+- do NOT redesign unrelated UI
+- reuse existing components
+- use existing Tailwind + Geist
+- do NOT add dependencies
+- frontend only unless told otherwise
+
+---
+
+### COMMIT RULE
+
+- ONE feature = ONE commit
+- clear commit message
+- no mixed changes
+
+---
+
+### POST-TASK ROUTINE
+
+- `git status`
+- `npm run build`
+- fix ONLY build errors
+- do NOT improve anything else
+- summarize:
+  - files changed
+  - what was added
+  - visual description
+- DO NOT push unless explicitly told
+
+---
+
+### HARD STOP RULE
+
+After task is complete:
+**STOP.**
+
+Do NOT continue building anything else.
+
+---
+
+### TASK FILE GENERATOR
+
+If the user says:
+"create task: <name>"
+
+You must:
+- generate a new task file
+- keep scope tight
+- follow the build rules above
+- save it to `.claude/tasks/<name>.md`
+
+---
+
+### TASK QUEUE SYSTEM
+
+The queue lives at `.claude/tasks/queue.md`. It lists product tasks in
+execution order. Markers: `[ ]` = not done, `[x]` = committed.
+
+**If the user says: "run next task"**
+
+You MUST:
+
+1. Read `.claude/tasks/queue.md`
+2. Find the first entry with a `[ ]` marker (top to bottom)
+3. Load that task's file at `.claude/tasks/<name>.md`
+4. Follow the PRE-TASK ROUTINE (confirm branch ≠ main, pull latest
+   main, create `feature/<task-name>`)
+5. Execute the task per BUILD RULES
+6. Run POST-TASK ROUTINE (`git status`, `npm run build`, fix only
+   build errors, summarize)
+7. Commit the feature work per the COMMIT RULE. In the SAME commit,
+   update `.claude/tasks/queue.md` to flip the queue item from `[ ]`
+   to `[x]` and append the new commit's short SHA
+8. STOP per the HARD STOP RULE. Do NOT advance to the next queue
+   item automatically.
+
+Edge cases:
+- Queue empty or every item `[x]` → report "queue complete" and
+  STOP without starting any work
+- Next task has no matching `.claude/tasks/<name>.md` file → report
+  "missing task file: <name>" and STOP without guessing at
+  requirements
+
+**If the user says: "continue"**
+
+You MUST:
+- Resume the previous task only if it ended mid-execution (incomplete
+  commit, unresolved build error, explicit pause)
+- Do NOT automatically advance to the next queue item
+- If nothing is in progress → report "nothing to continue" and STOP
+
+**If the user says: "stop"**
+
+You MUST:
+- Halt all execution immediately
+- Do NOT commit partial work without asking first
+- Report current state: branch, working tree status, last commit,
+  what was in progress
+
+---
+
+### EXECUTION SYSTEM vs DOCTRINE
+
+This section is the **execution contract**: how Claude should run.
+Sections 1–13 below are the **product doctrine**: what DUM Club is,
+what it charges, what it never does. Both are binding. If they
+conflict, the doctrine wins.
+
+---
+
 ## 1. WHO WE ARE
 
 DUM Club is a live selling marketplace and local business
