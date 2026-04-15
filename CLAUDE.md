@@ -107,7 +107,16 @@ You MUST:
    build errors, summarize)
 7. Commit the feature work per the COMMIT RULE. In the SAME commit,
    update `.claude/tasks/queue.md` to flip the queue item from `[ ]`
-   to `[x]` and append the new commit's short SHA
+   to `[x]` and record, on the same line, the feature branch name
+   and the completion date in `YYYY-MM-DD` format. Example entry:
+
+       2. [x] search-results  — `feature/search-results` · 2026-04-15
+
+   Do NOT attempt to embed the commit's own short SHA in the queue
+   entry. A commit cannot self-reference its own hash without a
+   fixed-point paradox during `git commit --amend`. Branch name +
+   date is the canonical record; the commit SHA is always
+   recoverable via `git log <branch>`.
 8. STOP per the HARD STOP RULE. Do NOT advance to the next queue
    item automatically.
 
