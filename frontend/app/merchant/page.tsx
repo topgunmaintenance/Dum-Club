@@ -359,6 +359,18 @@ export default function MerchantPage() {
 
   const qrUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/business/${merchant.id}`;
 
+  // ── Onboarding progress ──
+  // A merchant who just signed up has an account + a founding spot. They
+  // have NOT yet: connected Stripe (required to get paid), and made
+  // their first sale. Surface those as a checklist at the very top of
+  // the dashboard so "what's my next step?" is never ambiguous.
+  const stepAccount = true;
+  const stepStripe = merchant.stripe_connect_status === "connected";
+  const stepFirstSale = (analytics?.total_orders ?? 0) > 0;
+  const completedSteps = [stepAccount, stepStripe, stepFirstSale].filter(Boolean).length;
+  const totalSteps = 3;
+  const onboardingComplete = completedSteps === totalSteps;
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 px-4 pb-12">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -376,6 +388,103 @@ export default function MerchantPage() {
           </div>
         )}
 
+        {/* ── Onboarding checklist ──
+            Only rendered while the merchant still has steps to complete.
+            Once everything's done this disappears and the normal
+            dashboard takes over. Stripe Connect is the primary CTA
+            when it's the blocking step. */}
+        {!onboardingComplete && (
+          <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-900/60 p-5 shadow-[0_0_32px_rgba(0,255,163,0.08)]">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Get Set Up</div>
+                <div className="mt-1 text-sm font-semibold text-white">
+                  {completedSteps} of {totalSteps} complete —{" "}
+                  <span className="text-emerald-400">
+                    {!stepStripe ? "Connect Stripe to start getting paid" : "Waiting on your first sale"}
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs font-mono text-emerald-400/70">
+                {Math.round((completedSteps / totalSteps) * 100)}%
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mb-5 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all"
+                style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
+              />
+            </div>
+
+            <ul className="space-y-3">
+              {/* Step 1: Account created */}
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-white line-through decoration-emerald-400/40">Founding spot claimed</div>
+                  <div className="text-xs text-zinc-500">You're locked into the founding rate forever.</div>
+                </div>
+              </li>
+
+              {/* Step 2: Connect Stripe */}
+              <li className="flex items-start gap-3">
+                {stepStripe ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400/50" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${stepStripe ? "text-white line-through decoration-emerald-400/40" : "text-white"}`}>
+                    Connect Stripe to receive payouts
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {stepStripe
+                      ? "You'll get paid directly on every sale — 0% commission."
+                      : "Required to accept payments. Takes about 2 minutes."}
+                  </div>
+                  {!stepStripe && (
+                    <button
+                      onClick={connectStripe}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                    >
+                      Connect Stripe →
+                    </button>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 3: First sale */}
+              <li className="flex items-start gap-3">
+                {stepFirstSale ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-zinc-700" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${stepFirstSale ? "text-white line-through decoration-emerald-400/40" : "text-zinc-300"}`}>
+                    Make your first sale
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {stepFirstSale
+                      ? "You're live. DUM Points are being issued automatically."
+                      : "Share your storefront link or print the QR below."}
+                  </div>
+                  {!stepFirstSale && stepStripe && (
+                    <Link
+                      href={`/business/${merchant.id}`}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/[0.06] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-emerald-400 transition hover:bg-emerald-400/10"
+                    >
+                      View My Storefront →
+                    </Link>
+                  )}
+                </div>
+              </li>
+            </ul>
+          </div>
+        )}
+
         {/* Business info */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h2 className="text-lg font-bold text-white">{merchant.business_name}</h2>
@@ -387,7 +496,12 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Connections */}
+        {/* Connections — once onboarding is done this is the durable
+            surface for managing the Stripe connection. While onboarding
+            is in progress the checklist above is the primary CTA, so we
+            only render this card when Stripe is already connected (to
+            avoid duplicate "Connect" buttons). */}
+        {stepStripe && (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
           <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Payment Connections</h3>
           <div className="space-y-3">
@@ -410,6 +524,7 @@ export default function MerchantPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
