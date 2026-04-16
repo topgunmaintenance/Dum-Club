@@ -2497,49 +2497,6 @@ export default function Home() {
       <Starfield count={60} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
-        {/* ── SEARCH HERO ── */}
-        <div className="mx-auto max-w-2xl py-20 text-center sm:py-28">
-          <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Replace all those dumb expenses with{" "}
-            <span className="text-emerald-400">one simple system.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:mt-6 sm:text-lg">
-            DUM Club brings together AI tools, built-in storefronts that work
-            with your website or act as a powerful supplement, and real profit
-            insights&mdash;so you can launch faster, sell smarter, and know
-            what you&rsquo;re making.
-          </p>
-
-          <div className="mt-10 sm:mt-12">
-            <input
-              type="text"
-              placeholder="Search services, products, or ideas..."
-              aria-label="Search"
-              className="w-full rounded-2xl border border-zinc-700/60 bg-zinc-900/60 px-6 py-5 text-base text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-400/50 focus:bg-zinc-900/80 focus:shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:text-lg"
-            />
-          </div>
-
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-            <Link
-              href="/business"
-              className="inline-flex items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black shadow-[0_0_24px_rgba(0,255,163,0.15)] transition hover:bg-emerald-300 hover:shadow-[0_0_32px_rgba(0,255,163,0.25)]"
-            >
-              Start Selling →
-            </Link>
-            <button
-              type="button"
-              onClick={() =>
-                document
-                  .getElementById("section-hero")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-              className="inline-flex items-center justify-center rounded-xl border border-zinc-700/60 px-6 py-3.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white"
-            >
-              Browse →
-            </button>
-          </div>
-        </div>
-
         {/* ── LIVE NOW ── hidden when no real live projects */}
         <LiveNowSection projects={liveNowProjects} />
 
@@ -2569,11 +2526,11 @@ export default function Home() {
                  business launcher (deprecated — v1 positioning)". */}
             <div className="mx-auto mb-10 max-w-4xl text-center">
               <h1 className="text-[clamp(36px,7vw,64px)] font-extrabold leading-[1.03] tracking-[-0.02em] text-white">
-                Sell Live.{" "}
-                <span className="hero-text-glow">Keep Everything.</span>
+                Replace all those dumb expenses with{" "}
+                <span className="hero-text-glow">one simple system.</span>
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-zinc-400 sm:text-base">
-                Flat $29-$99/month. Zero commission. Zero per-sale fees. The first 100 merchants are free.
+                Live selling, loyalty, AI retention, and local deals — all on one flat fee. $29–$99/month. Zero commission. First 100 merchants free.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
                 <Link
