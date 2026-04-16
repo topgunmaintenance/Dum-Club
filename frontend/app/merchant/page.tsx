@@ -33,7 +33,7 @@ const STANDARD_PLAN_PRICE_USD = Number(
 );
 
 export default function MerchantPage() {
-  const { user, getToken } = useAuth();
+  const { user, getToken, login } = useAuth();
 
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,11 +152,49 @@ export default function MerchantPage() {
   }
 
   if (!user) {
+    // CRITICAL FIX: pre-fix this screen had no sign-in button at all —
+    // every "Claim Your Free Spot" homepage click from a logged-out
+    // visitor hit a dead end. Now renders a proper sign-in CTA that
+    // kicks the Privy login flow, plus the founding-100 scarcity hook
+    // so we continue selling while they authenticate.
+    const programOpen = foundingStatus?.founding_program_open ?? true;
+    const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
+    const totalCap = foundingStatus?.total_cap ?? 100;
+    const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
+
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Merchant Portal</h1>
-          <p className="text-sm text-zinc-400">Sign in to get started</p>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 pt-24">
+        <div className="w-full max-w-md text-center">
+          {programOpen && claimed !== null && (
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                {claimed} of {totalCap} founding spots claimed
+              </span>
+            </div>
+          )}
+
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Keep 100% of every sale.{" "}
+            <span className="text-emerald-400">Forever.</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-sm text-base font-medium text-zinc-200">
+            Sign in to claim your founding merchant spot. No credit card. No commission. $0/mo locked in forever.
+          </p>
+
+          <button
+            onClick={() => login()}
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.4)]"
+          >
+            Sign In to Continue →
+          </button>
+
+          <p className="mt-4 text-[11px] text-zinc-500">
+            Secured by Privy · Takes 30 seconds
+          </p>
         </div>
       </div>
     );
