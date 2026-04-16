@@ -545,14 +545,6 @@ function ChatPageInner() {
               <span className={`dc-project-tag${currentProject ? " active" : ""}`}>
                 {currentProject ? `Working on: ${currentProject.name}` : "No project selected"}
               </span>
-              {walletAddress && (
-                <div className="dc-sol-balance">
-                  <span className="dc-sol-icon">◎</span>
-                  <span className="dc-sol-amount">
-                    {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : "—"}
-                  </span>
-                </div>
-              )}
               <div className={`dc-badge${limitReached ? " warn" : ""}`}>
                 {limitReached ? "0 messages left" : `${remaining} left`}
               </div>
