@@ -2940,6 +2940,15 @@ export default function Home() {
               for now; a follow-up PR can tombstone it. */}
         </div>
 
+        {/* ── PRICING TIERS ──
+             Moved up from near-footer position (was section #13 of 14)
+             so high-intent merchants don't scroll past 12 sections
+             before seeing the full tier breakdown. Psych audit: pricing
+             is a top-funnel decision driver, not a closer. */}
+        <div id="section-pricing">
+          <PricingTiers />
+        </div>
+
         {/* ── FEATURES ── */}
         <div id="section-features" className="mx-auto mt-20 max-w-6xl px-2">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
@@ -3124,11 +3133,6 @@ export default function Home() {
               See full comparison →
             </Link>
           </div>
-        </div>
-
-        {/* ── PRICING TIERS ── */}
-        <div id="section-pricing">
-          <PricingTiers />
         </div>
 
         {/* Bottom CTA */}
