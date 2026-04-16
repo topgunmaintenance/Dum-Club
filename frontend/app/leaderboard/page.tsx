@@ -10,28 +10,13 @@ type Project = {
   title?: string;
   description?: string | null;
   template_type?: string;
-  token_symbol?: string | null;
-  token_utility?: string | null;
   promo_copy?: string | null;
   store_items?: any[] | null;
   created_at?: string;
 };
 
-type MarketSnapshot = {
-  price: number;
-  market_cap: number;
-  volume_24h: number;
-};
-
-
-function getTicker(p: Project) {
-  if (p.token_symbol?.trim()) return p.token_symbol.replace(/^\$/, "").toUpperCase().slice(0, 10);
-  return "";
-}
-
 export default function LeaderboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [marketByProject, setMarketByProject] = useState<Record<string, MarketSnapshot>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,22 +27,6 @@ export default function LeaderboardPage() {
         const data = await res.json();
         const list = Array.isArray(data?.projects) ? data.projects : Array.isArray(data) ? data : [];
         setProjects(list);
-
-        const snaps = await Promise.all(
-          list.map(async (p: Project) => {
-            try {
-              const r = await fetch(`${API_BASE}/api/projects/${p.id}/market`, { cache: "no-store" });
-              if (!r.ok) return [p.id, null] as const;
-              const d = await r.json();
-              return [p.id, { price: Number(d?.price || 0), market_cap: Number(d?.market_cap || 0), volume_24h: Number(d?.volume_24h || 0) }] as const;
-            } catch {
-              return [p.id, null] as const;
-            }
-          })
-        );
-        const map: Record<string, MarketSnapshot> = {};
-        for (const [id, snap] of snaps) { if (snap) map[id] = snap; }
-        setMarketByProject(map);
       } catch {
         setProjects([]);
       } finally {
@@ -68,12 +37,10 @@ export default function LeaderboardPage() {
 
   function readinessScore(p: Project): number {
     let s = 0;
-    if (p.description && p.description.length > 20) s += 20;
-    if (p.token_utility && p.token_utility.length > 10) s += 20;
-    if (p.promo_copy && p.promo_copy.length > 10) s += 20;
-    if (Array.isArray(p.store_items) && p.store_items.length > 0) s += 20;
-    if (Array.isArray(p.store_items) && p.store_items.some((i: any) => i.type === "subscription")) s += 10;
-    if ((marketByProject[p.id]?.volume_24h || 0) > 0) s += 10;
+    if (p.description && p.description.length > 20) s += 25;
+    if (p.promo_copy && p.promo_copy.length > 10) s += 25;
+    if (Array.isArray(p.store_items) && p.store_items.length > 0) s += 30;
+    if (Array.isArray(p.store_items) && p.store_items.length >= 3) s += 20;
     return s;
   }
 
@@ -81,7 +48,7 @@ export default function LeaderboardPage() {
     return [...projects]
       .map((p) => ({ ...p, score: readinessScore(p) }))
       .sort((a, b) => b.score - a.score);
-  }, [projects, marketByProject]);
+  }, [projects]);
 
   function scoreColor(s: number) {
     if (s >= 75) return "text-emerald-400";
@@ -119,23 +86,22 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Projects ranked by readiness score — description, utility, offers, and market activity
+          Businesses ranked by storefront completeness — description, offers, and promotions
         </p>
 
         {loading ? (
           <div className="mt-8 rounded-2xl border border-zinc-900 bg-zinc-950 p-8 text-center text-zinc-500">
-            Loading projects...
+            Loading businesses...
           </div>
         ) : ranked.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-zinc-900 bg-zinc-950 p-8 text-center text-zinc-500">
-            No public projects yet
+            No businesses yet
           </div>
         ) : (
           <div className="mt-8 space-y-2">
             {ranked.map((p, i) => {
               const rank = i + 1;
               const medal = rankBadge(rank);
-              const ticker = getTicker(p);
               const offerCount = Array.isArray(p.store_items) ? p.store_items.length : 0;
               return (
                 <Link key={p.id} href={`/project/${p.id}`}>
@@ -161,11 +127,6 @@ export default function LeaderboardPage() {
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1.5">
-                        {p.token_utility && (
-                          <span className="rounded-full border border-purple-400/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-purple-400">
-                            Utility
-                          </span>
-                        )}
                         {offerCount > 0 && (
                           <span className="rounded-full border border-sky-400/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-sky-400">
                             {offerCount} offer{offerCount > 1 ? "s" : ""}
