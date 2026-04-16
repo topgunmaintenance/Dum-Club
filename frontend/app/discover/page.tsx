@@ -343,7 +343,7 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
                     </h3>
                     <div className="flex items-center gap-2 text-[10px] text-zinc-500">
                       <span style={{ color: accent }}>{category}</span>
-                      <span className="text-emerald-400/60">Earn DUM</span>
+                      <span className="text-emerald-400/60">Earn rewards</span>
                     </div>
                   </div>
                 </div>
@@ -1088,7 +1088,7 @@ export default function DiscoverPage() {
                 <div className="mb-3 text-3xl">🔍</div>
                 <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
                 <p className="mt-2 text-sm text-zinc-300">
-                  Know a business that should be here? Help bring them to DUM Club — every new local merchant makes your points go further.
+                  Know a business that should be here? Suggest them below and we&apos;ll invite them to join the DUM Club network.
                 </p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <button onClick={() => { setSearchQuery(""); setSearchArrival(false); }} className="rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">

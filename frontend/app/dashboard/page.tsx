@@ -14,16 +14,13 @@ type Project = {
   template_type?: string;
   status?: string;
   review_status?: string | null;
-  token_symbol?: string | null;
-  token_status?: string | null;
+  // token_symbol and token_status removed — Phase 3 infrastructure only.
 };
 
 import { API_BASE } from "../../lib/apiBase";
 
 function statusLabel(project: Project): { text: string; color: string } {
   const s = project.status || "draft";
-  const ts = project.token_status;
-  if (s === "live" && ts === "trading_live") return { text: "Live", color: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" };
   if (s === "live") return { text: "Live", color: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" };
   if (project.review_status === "submitted") return { text: "In Review", color: "text-amber-400 border-amber-400/30 bg-amber-400/10" };
   if (project.review_status === "approved") return { text: "Approved", color: "text-sky-400 border-sky-400/30 bg-sky-400/10" };
