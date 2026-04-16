@@ -47,8 +47,6 @@ type RecentTrade = {
 import { API_BASE } from "../../lib/apiBase";
 /** Recent trades: GET /api/activity/recent-trades (see backend/api/routes/market.py) */
 
-const TARGET_MARKET_CAP = 100_000;
-
 /**
  * Unified category filter (v5.0). Categories come from the shared
  * taxonomy in frontend/lib/categories.ts so the homepage and the
@@ -816,12 +814,6 @@ export default function DiscoverPage() {
   const totalPublicProjects = projects.length;
   const newestProject = projects[0];
   const newTodayCount = projects.filter((p) => isToday(p.created_at)).length;
-  const totalVolume24h = useMemo(() => {
-    return Object.values(marketByProject).reduce(
-      (sum, m) => sum + (Number.isFinite(m.volume_24h) ? m.volume_24h : 0),
-      0
-    );
-  }, [marketByProject]);
 
   // Global ranking by readiness score
   const rankedProjects = useMemo(() => {
@@ -840,28 +832,20 @@ export default function DiscoverPage() {
     <main className="relative min-h-screen bg-base text-white">
       <Starfield count={50} />
       <DiscoverSectionNav />
-      {/* Branded activity strip */}
-      <div className="border-b border-zinc-900 bg-zinc-950/50 py-2">
-        <p className="text-center font-mono text-[10px] text-zinc-500">
-          <span className="text-emerald-400">↑</span>{" "}
-          <span className="font-bold text-emerald-400/80">DUM</span>{" "}
-          <span className="text-zinc-700">·</span>{" "}
-          Activity rising{" "}
-          <span className="text-zinc-700">·</span>{" "}
-          Activity happening on DUM Club
-        </p>
-      </div>
 
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div id="section-top" className="mb-6">
           <div className="mb-4 text-xs uppercase tracking-[0.35em] text-zinc-400">
-            ◆ DUM Club · Digital Utility Market
+            ◆ DUM Club · Local Businesses · Live Sellers
           </div>
           <h1 className="neon-emerald text-3xl font-bold uppercase tracking-[-0.04em] text-white sm:text-5xl">
-            Live Marketplace
+            Shop Local. Earn Everywhere.
           </h1>
+          <p className="mt-4 max-w-2xl text-sm text-zinc-400 sm:text-base">
+            Live sellers and local deals on one platform. Every purchase earns DUM Points — redeem them at <span className="font-semibold text-emerald-400">any</span> business on the network.
+          </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/[0.08] px-4 py-2 text-[12px] text-emerald-400">
-            <span>◆</span> DUM Points earned here work at every business on the platform
+            <span>◆</span> One points wallet works at every merchant — no stamps, no cards, no apps per store
           </div>
           {searchArrival && searchQuery.trim() && (
             <p className="mt-3 text-[11px] tracking-[0.1em] text-zinc-600">Sell anything. Buy anything. Reward everyone.</p>
