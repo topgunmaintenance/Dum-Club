@@ -1221,7 +1221,24 @@ type SearchResultCard = {
   price: number;
 };
 
-function SearchResults({ results }: { results: Project[] | null }) {
+type ExternalTopResult = {
+  id: string;
+  name: string;
+  address: string;
+  category: string;
+  rating: number | null;
+  review_count: number;
+  external_source: string;
+  external_place_id: string;
+};
+
+function SearchResults({
+  results,
+  externalTop,
+}: {
+  results: Project[] | null;
+  externalTop: ExternalTopResult | null;
+}) {
   const [cards, setCards] = useState<SearchResultCard[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -1275,8 +1292,15 @@ function SearchResults({ results }: { results: Project[] | null }) {
     };
   }, [results]);
 
-  // Hidden until the user has actually run a search.
-  if (results === null) return null;
+  // Hidden until the user has actually run a search. Once search runs we may
+  // have either DUM Club cards or a Google fallback — both require rendering.
+  if (results === null && !externalTop) return null;
+
+  const hasDumResults = cards.length > 0;
+  // External fallback renders ONLY when DUM Club returned nothing. Google is
+  // the "there's no one on DUM Club for this yet" safety net — never shown
+  // alongside on-platform results.
+  const showExternalFallback = loaded && !hasDumResults && !!externalTop;
 
   return (
     <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
@@ -1285,11 +1309,7 @@ function SearchResults({ results }: { results: Project[] | null }) {
           Results
         </h3>
       </div>
-      {loaded && cards.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-          <p className="text-sm text-zinc-400">No results yet</p>
-        </div>
-      ) : (
+      {hasDumResults ? (
         <div className="space-y-3">
           {cards.map((c) => (
             <Link
@@ -1311,7 +1331,44 @@ function SearchResults({ results }: { results: Project[] | null }) {
             </Link>
           ))}
         </div>
-      )}
+      ) : showExternalFallback && externalTop ? (
+        <ExternalTopCard data={externalTop} />
+      ) : loaded ? (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+          <p className="text-sm text-zinc-400">No results yet</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ExternalTopCard({ data }: { data: ExternalTopResult }) {
+  const rating = typeof data.rating === "number" ? data.rating.toFixed(1) : null;
+  const reviews = data.review_count > 0 ? data.review_count.toLocaleString() : null;
+  return (
+    <div>
+      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+        Nearest top-rated match on Google Maps
+      </div>
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5">
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-bold text-white">{data.name}</div>
+          {data.address ? (
+            <div className="mt-1 truncate text-[12px] text-zinc-400">{data.address}</div>
+          ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400">
+            {rating ? (
+              <span className="inline-flex items-center gap-1 text-amber-300">
+                <span aria-hidden>★</span>
+                <span className="font-mono">{rating}</span>
+              </span>
+            ) : null}
+            {reviews ? <span className="text-zinc-500">{reviews} reviews</span> : null}
+            {data.category ? <span className="text-zinc-500">· {data.category}</span> : null}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-zinc-500">Not on DUM Club yet.</p>
     </div>
   );
 }
@@ -2571,7 +2628,62 @@ export default function Home() {
                   e.preventDefault();
                   const term = heroSearch.trim();
                   if (!term) return;
-                  router.push(`/discover?q=${encodeURIComponent(term)}`);
+
+                  // Clear prior results before firing a new search. Keeps the
+                  // panel from flashing stale cards while the request is in
+                  // flight.
+                  setFindResults(null);
+                  setFindExternalResults([]);
+
+                  // Ask the backend who we have on DUM Club first, and what
+                  // Google Places says nearby. The same endpoint powers both
+                  // result sets — no second round-trip.
+                  fetch(`${API_BASE}/api/search/homepage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: term, city: "" }),
+                  })
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((data) => {
+                      if (!data) {
+                        // Endpoint unreachable or non-OK — keep the page
+                        // usable by routing to /discover so the user still
+                        // gets somewhere.
+                        router.push(`/discover?q=${encodeURIComponent(term)}`);
+                        return;
+                      }
+
+                      // Map MatchResult[] → Project[] the existing
+                      // SearchResults consumer already understands.
+                      const projects: Project[] = [];
+                      if (data.best_match?.project) {
+                        projects.push({
+                          id: data.best_match.project.id,
+                          title: data.best_match.project.title,
+                          description: data.best_match.project.description,
+                          template_type: data.best_match.project.category,
+                        } as Project);
+                      }
+                      for (const opt of (data.other_options || []) as Array<{ project?: { id?: string; title?: string; description?: string; category?: string } }>) {
+                        if (opt?.project?.id) {
+                          projects.push({
+                            id: opt.project.id,
+                            title: opt.project.title,
+                            description: opt.project.description,
+                            template_type: opt.project.category,
+                          } as Project);
+                        }
+                      }
+
+                      setFindResults(projects);
+                      setFindExternalResults(
+                        Array.isArray(data.nearby_external) ? data.nearby_external : []
+                      );
+                    })
+                    .catch(() => {
+                      // Network failure — same graceful fallback as !data.
+                      router.push(`/discover?q=${encodeURIComponent(term)}`);
+                    });
                 }}
               >
                 <div className="relative">
@@ -2669,7 +2781,10 @@ export default function Home() {
         </div>
 
         {/* ── SEARCH RESULTS ── rendered only after the user runs a search */}
-        <SearchResults results={findResults} />
+        <SearchResults
+          results={findResults}
+          externalTop={findExternalResults.length > 0 ? findExternalResults[0] : null}
+        />
 
         {/* ── DEALS ── hidden when no real active offers exist */}
         <DealsSection projects={allPublicProjects} />
