@@ -7,7 +7,7 @@ import { Starfield } from "../components/Starfield";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
-import { FeeCalculator } from "../components/FeeCalculator";
+// FeeCalculator moved to /business page — seller content lives there now.
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -1108,10 +1108,6 @@ function ProductDemo() {
 /* ─── Homepage Section Nav ─── */
 const HOME_SECTIONS = [
   { id: "section-hero", label: "Top" },
-  { id: "section-how", label: "How It Works" },
-  { id: "section-retention", label: "Retention" },
-  { id: "section-compare", label: "Why Us" },
-  { id: "section-pricing", label: "Pricing" },
   { id: "section-cta", label: "Get Started" },
 ];
 
@@ -2780,7 +2776,7 @@ export default function Home() {
                     Claim Your Free Spot →
                   </Link>
                   <Link
-                    href="#section-pricing"
+                    href="/business"
                     className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
                   >
                     See Pricing →
@@ -2923,252 +2919,30 @@ export default function Home() {
           <PlatformActivity projectCount={allPublicProjects.length} />
         </div>
 
-        {/* ── Fee savings calculator ──
-             Interactive slider from $1k to $100k monthly GMV showing
-             Whatnot / Commonsold / DUM Club side by side. Lives between
-             the hero/FounderNote slot and the How It Works section per
-             the v5.0 sprint plan. */}
-        <FeeCalculator />
+        {/* ── FeeCalculator, PricingTiers, RetentionSection, WhatnotPitch,
+             ComparisonTable, Features grid, and AI assistant demo all
+             moved to /business page (sub-tabs). Homepage stays buyer-
+             focused: live grid + search + featured sellers. ── */}
 
-        <div
-          id="section-how"
-          className="scroll-mt-28 mx-auto mt-12 max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-900/40 px-8 py-12 backdrop-blur-sm sm:px-12 sm:py-16"
-        >
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
-            How it works
-          </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Why sellers leave Whatnot for DUM Club.
-          </h2>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-200 sm:text-lg">
-            One flat fee. Zero commission. Customers who come back.
-          </p>
-          <div className="mt-12 grid gap-3 pt-10 sm:grid-cols-3">
-            {[
-              { n: "01", title: "No 8% Tax on Every Sale", desc: "Whatnot charges 8% + 2.9%. We charge $29–$99/month. Flat. Forever. First 100 merchants free." },
-              { n: "02", title: "Stripe Pays You Direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
-              { n: "03", title: "Customers Come Back Automatically", desc: "DUM Points turn one-time buyers into regulars. No other live-selling platform has this." },
-            ].map((step) => (
-              <div
-                key={step.n}
-                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
-              >
-                <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-400/[0.06] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/20 font-mono text-sm font-extrabold text-emerald-400">
-                  {step.n}
-                </div>
-                <div className="mt-3 text-base font-bold text-white">{step.title}</div>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Animated ProductDemo (Sparkle Mobile Wash v1 AI-builder
-              animation) was previously rendered here. Removed per
-              CLAUDE.md v5.0 Section 12 Rule 7 ("We are NOT an AI
-              business launcher — deprecated v1 positioning") and to
-              eliminate the perceived black void on the homepage:
-              ProductDemo reserved a ~500px minHeight container that
-              animated through mostly-empty phases (typing, building,
-              live, purchase) showing content thematically unrelated
-              to the v5.0 flat-fee marketplace pitch. The function
-              itself (lines ~812-1136) is left in place as dead code
-              for now; a follow-up PR can tombstone it. */}
-        </div>
-
-        {/* ── PRICING TIERS ──
-             Moved up from near-footer position (was section #13 of 14)
-             so high-intent merchants don't scroll past 12 sections
-             before seeing the full tier breakdown. Psych audit: pricing
-             is a top-funnel decision driver, not a closer. */}
-        <div id="section-pricing">
-          <PricingTiers />
-        </div>
-
-        {/* ── FEATURES ── */}
-        <div id="section-features" className="mx-auto mt-20 max-w-6xl px-2">
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">
-            Platform
-          </div>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Everything you need. <span className="text-emerald-400">Nothing you don't pay for.</span>
-          </h2>
-          <p className="mb-10 max-w-xl text-base font-medium text-white">
-            Live selling, loyalty points, AI retention, and local deals discovery — all in one flat-fee platform. No commission, no per-sale fees, ever.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                tag: "Live",
-                title: "Live Selling",
-                desc: "Go live and sell to your audience in real time. Just like Whatnot — but you keep 100% of every sale.",
-              },
-              {
-                tag: "Loyalty",
-                title: "DUM Points Loyalty Network",
-                desc: "Every purchase earns points redeemable at ANY business on the platform. Customers come back automatically.",
-              },
-              {
-                tag: "AI",
-                title: "AI Retention Agent",
-                desc: "Automated point reminders, deal pushes, and expiry alerts. Replace $500+/mo direct mail campaigns.",
-              },
-              {
-                tag: "Deals",
-                title: "Best Deals Discovery",
-                desc: "Customers discover your deals through local search — and earn loyalty points that bring them back week after week.",
-              },
-              {
-                tag: "Social",
-                title: "AI Social Media Manager",
-                desc: "Automated Instagram, TikTok, and Facebook posting based on your active deals. Replace agency bills.",
-              },
-              {
-                tag: "Payments",
-                title: "Stripe Direct Payouts",
-                desc: "Customers pay by card. You get paid direct to your bank. No middleman taking a cut of your sales.",
-              },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="card-premium group relative overflow-hidden rounded-xl border border-zinc-800/40 bg-gradient-to-br from-zinc-900/60 to-zinc-950 p-7 hover:border-emerald-400/15"
-              >
-                <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-emerald-400/[0.03] blur-2xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="mb-3 inline-block rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                  {f.tag}
-                </div>
-                <h3 className="mb-2 text-lg font-bold text-white">{f.title}</h3>
-                <p className="text-sm leading-relaxed text-zinc-400">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── AI CUSTOMER ASSISTANT DEMO ──
-             Reframed away from the v1 "AI builds your business" pitch.
-             This is a CUSTOMER-facing retention tool that answers your
-             buyers' questions 24/7 — not a business builder. CLAUDE.md
-             v5.0 Section 12 Rule 7. */}
-        <div className="mx-auto mt-16 max-w-3xl px-4">
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-8">
-            <div className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400/60">Customer retention, automated</div>
-            <h3 className="text-xl font-extrabold text-white sm:text-2xl">Your customers get 24/7 answers about your business.</h3>
-            <p className="mt-2 max-w-lg text-base font-medium text-zinc-200">Built into every storefront. Answers buyer questions instantly, books services, and closes sales — while you sleep. No setup. No training.</p>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {/* Mini storefront preview */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/Julian.jpeg"
-                    alt="Julian Mero — founder, Topgun Maintenance LLC"
-                    className="h-10 w-10 rounded-full object-cover border border-emerald-400/25"
-                  />
-                  <div>
-                    <div className="text-sm font-bold text-white">Topgun Maintenance LLC</div>
-                    <div className="text-[10px] text-zinc-500">Aircraft maintenance · MMU · NY NJ PA CT DE</div>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {[
-                    { name: "Annual Inspection (FAR 91)", price: "$850" },
-                    { name: "100-Hour Inspection", price: "$650" },
-                    { name: "AOG Emergency Response", price: "$500" },
-                  ].map((offer) => (
-                    <div key={offer.name} className="flex items-center justify-between rounded-lg border border-zinc-800/60 bg-zinc-950/60 px-3 py-2">
-                      <span className="text-[12px] text-zinc-300">{offer.name}</span>
-                      <span className="font-mono text-[12px] font-bold text-emerald-400">{offer.price}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI conversation preview */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <img
-                    src="/Julian.jpeg"
-                    alt="Julian Mero — founder, Topgun Maintenance LLC"
-                    className="h-6 w-6 rounded-full object-cover border border-emerald-400/25"
-                  />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">AI Assistant</span>
-                </div>
-                <div className="space-y-3">
-                  {/* Customer question */}
-                  <div className="flex justify-end">
-                    <div className="rounded-xl rounded-br-sm bg-zinc-800 px-3 py-2 text-[12px] text-zinc-300">
-                      What&apos;s included in the annual inspection?
-                    </div>
-                  </div>
-                  {/* AI answer */}
-                  <div className="flex gap-2">
-                    <img
-                      src="/Julian.jpeg"
-                      alt="Julian Mero — founder, Topgun Maintenance LLC"
-                      className="mt-1 h-5 w-5 shrink-0 rounded-full object-cover border border-emerald-400/25"
-                    />
-                    <div className="rounded-xl rounded-bl-sm border border-zinc-800/60 bg-zinc-950/80 px-3 py-2 text-[12px] leading-relaxed text-zinc-400">
-                      Full FAR Part 91 airworthiness check per 14 CFR 43 Appendix D — logbook signoff, discrepancy report, and return-to-service docs included. Typical turnaround 2–5 days at MMU.
-                      <span className="mt-1.5 block text-emerald-400/70">Annual Inspection — $850 →</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* ── SELLER BANNER — compact CTA pointing to /business ── */}
+        <div className="mx-auto mt-12 max-w-5xl">
+          <Link
+            href="/business"
+            className="group flex flex-col items-center gap-4 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.06] to-zinc-950 p-8 text-center transition hover:border-emerald-400/40 hover:shadow-[0_0_40px_rgba(0,255,163,0.08)] sm:flex-row sm:text-left"
+          >
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10">
+              <span className="text-2xl">🏪</span>
             </div>
-          </div>
-        </div>
-
-        {/* ── CUSTOMER RETENTION AUTOMATION ── */}
-        <div id="section-retention">
-          <RetentionSection />
-        </div>
-
-        {/* ── WHATNOT SELLER PITCH ── */}
-        <WhatnotPitch />
-
-        {/* ── WHY DUM CLUB WINS ── */}
-        <div id="section-compare" className="border-t border-zinc-900 px-4 py-16 sm:py-20">
-          <div className="mx-auto max-w-5xl text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              The real difference
+            <div className="flex-1">
+              <div className="text-lg font-extrabold text-white">Selling on Whatnot? Keep everything you earn instead.</div>
+              <p className="mt-1 text-sm text-zinc-400">
+                Flat $29–$99/mo. Zero commission. First 100 merchants free. See pricing, calculators, and comparisons.
+              </p>
             </div>
-            <h2 className="mx-auto max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
-              Whatnot takes 8%.{" "}
-              <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.25)" }}>
-                DUM Club takes $0 per sale.
-              </span>
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-zinc-500">
-              Flat fee. Zero commission. Live selling. AI retention. Local discovery. All in one platform.
-            </p>
-          </div>
-
-          {/* ── Comparison table ── */}
-          <ComparisonTable />
-
-          {/* Compact win cards */}
-          <div className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { icon: "🚫", title: "Zero commission" },
-              { icon: "💰", title: "Flat monthly fee" },
-              { icon: "🔁", title: "Loyalty built in" },
-              { icon: "⚡", title: "Stripe payouts" },
-            ].map((c) => (
-              <div key={c.title} className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4 text-center transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.02]">
-                <div className="mb-2 text-xl">{c.icon}</div>
-                <div className="text-[12px] font-bold text-zinc-300">{c.title}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center">
-            <Link
-              href="/business"
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-6 py-3 text-[13px] font-bold text-emerald-400 transition hover:bg-emerald-400/10 hover:border-emerald-400/40"
-            >
-              See full comparison →
-            </Link>
-          </div>
+            <span className="shrink-0 rounded-xl bg-emerald-400 px-5 py-2.5 text-[12px] font-bold text-black transition group-hover:bg-emerald-300">
+              For Business →
+            </span>
+          </Link>
         </div>
 
         {/* Bottom CTA */}
@@ -3309,7 +3083,6 @@ export default function Home() {
               </div>
               <ul className="space-y-3">
                 {[
-                  { label: "How it works", href: "/#section-how" },
                   { label: "For Business", href: "/business" },
                   { label: "Discover", href: "/discover" },
                   { label: "Technology", href: "/technology" },
