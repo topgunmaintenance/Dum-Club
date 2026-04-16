@@ -1977,6 +1977,78 @@ export default function Home() {
   const voiceInitiatedRef = useRef(false);
   const [voiceMuted, setVoiceMuted] = useState(false);
 
+  // Wraps the SearchResults component so category-chip clicks can scroll the
+  // newly-populated results panel into view.
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+
+  // Single source of truth for hero / category-chip search. Mirrors `term`
+  // into the hero input so the user sees what they searched, clears prior
+  // results, fires the same POST /api/search/homepage the hero form uses,
+  // and scrolls the results panel into view when data lands.
+  //
+  // City MUST be non-empty or the backend's local_intent gate stays off and
+  // no Google fallback appears — see backend/services/agents/_search_helpers.has_local_intent.
+  const runHomepageSearch = (rawTerm: string) => {
+    const term = rawTerm.trim();
+    if (!term) return;
+
+    setHeroSearch(term);
+    setFindResults(null);
+    setFindExternalResults([]);
+
+    fetch(`${API_BASE}/api/search/homepage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: term, city: "Morris County, NJ" }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) {
+          router.push(`/discover?q=${encodeURIComponent(term)}`);
+          return;
+        }
+
+        const projects: Project[] = [];
+        if (data.best_match?.project) {
+          projects.push({
+            id: data.best_match.project.id,
+            title: data.best_match.project.title,
+            description: data.best_match.project.description,
+            template_type: data.best_match.project.category,
+          } as Project);
+        }
+        for (const opt of (data.other_options || []) as Array<{
+          project?: { id?: string; title?: string; description?: string; category?: string };
+        }>) {
+          if (opt?.project?.id) {
+            projects.push({
+              id: opt.project.id,
+              title: opt.project.title,
+              description: opt.project.description,
+              template_type: opt.project.category,
+            } as Project);
+          }
+        }
+
+        setFindResults(projects);
+        setFindExternalResults(
+          Array.isArray(data.nearby_external) ? data.nearby_external : []
+        );
+
+        // Let React commit before scrolling so the populated panel has a
+        // non-zero height for scrollIntoView to land on.
+        requestAnimationFrame(() => {
+          searchResultsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        });
+      })
+      .catch(() => {
+        router.push(`/discover?q=${encodeURIComponent(term)}`);
+      });
+  };
+
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
     if (heroIdea.trim() || heroLaunching || ctaHovered) return;
@@ -2654,72 +2726,7 @@ export default function Home() {
                 className="mx-auto w-full max-w-2xl"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  const term = heroSearch.trim();
-                  if (!term) return;
-
-                  // Clear prior results before firing a new search. Keeps the
-                  // panel from flashing stale cards while the request is in
-                  // flight.
-                  setFindResults(null);
-                  setFindExternalResults([]);
-
-                  // Ask the backend who we have on DUM Club first, and what
-                  // Google Places says nearby. The same endpoint powers both
-                  // result sets — no second round-trip.
-                  //
-                  // City MUST be non-empty or the backend's local_intent gate
-                  // (backend/services/agents/_search_helpers.py:has_local_intent)
-                  // never fires external search — search_nearby stays silent
-                  // even when the API key is configured. The hero already
-                  // labels "Near: Morris County, NJ" as a hardcoded pill, so
-                  // sending that same string keeps the frontend and backend
-                  // consistent. When we add geolocation this becomes dynamic.
-                  fetch(`${API_BASE}/api/search/homepage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ query: term, city: "Morris County, NJ" }),
-                  })
-                    .then((r) => (r.ok ? r.json() : null))
-                    .then((data) => {
-                      if (!data) {
-                        // Endpoint unreachable or non-OK — keep the page
-                        // usable by routing to /discover so the user still
-                        // gets somewhere.
-                        router.push(`/discover?q=${encodeURIComponent(term)}`);
-                        return;
-                      }
-
-                      // Map MatchResult[] → Project[] the existing
-                      // SearchResults consumer already understands.
-                      const projects: Project[] = [];
-                      if (data.best_match?.project) {
-                        projects.push({
-                          id: data.best_match.project.id,
-                          title: data.best_match.project.title,
-                          description: data.best_match.project.description,
-                          template_type: data.best_match.project.category,
-                        } as Project);
-                      }
-                      for (const opt of (data.other_options || []) as Array<{ project?: { id?: string; title?: string; description?: string; category?: string } }>) {
-                        if (opt?.project?.id) {
-                          projects.push({
-                            id: opt.project.id,
-                            title: opt.project.title,
-                            description: opt.project.description,
-                            template_type: opt.project.category,
-                          } as Project);
-                        }
-                      }
-
-                      setFindResults(projects);
-                      setFindExternalResults(
-                        Array.isArray(data.nearby_external) ? data.nearby_external : []
-                      );
-                    })
-                    .catch(() => {
-                      // Network failure — same graceful fallback as !data.
-                      router.push(`/discover?q=${encodeURIComponent(term)}`);
-                    });
+                  runHomepageSearch(heroSearch);
                 }}
               >
                 <div className="relative">
@@ -2750,30 +2757,34 @@ export default function Home() {
 
               {/* ── QUICK-SEARCH PILLS ──────────────────────────────
                    8 pills covering food + services + shopping + live
-                   sales. Each links to /discover?q=<encoded label> so
-                   the pill runs a real text search rather than a
-                   category filter (which is the discover-side control
-                   for narrowing the result set). Emoji + label inline,
-                   flex-wrap, centered. */}
+                   sales. Each pill fires the same homepage search the
+                   hero form uses — showing DUM Club matches when they
+                   exist, otherwise top-rated nearby businesses from
+                   Google Places (with free Maps-URL directions). The
+                   `query` string is the actual search term sent to the
+                   backend; `label` is the display text. Keeping them
+                   separate lets the button read naturally while the
+                   query targets what Google Places indexes best. */}
               <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
                 {[
-                  { icon: "🍕", label: "Pizza & Food" },
-                  { icon: "🚗", label: "Auto Services" },
-                  { icon: "🏠", label: "Home Services" },
-                  { icon: "✈️", label: "Aviation" },
-                  { icon: "🛍️", label: "Live Sales" },
-                  { icon: "💇", label: "Beauty & Wellness" },
-                  { icon: "🐕", label: "Pet Services" },
-                  { icon: "📸", label: "Photography" },
+                  { icon: "🍕", label: "Pizza & Food", query: "pizza" },
+                  { icon: "🚗", label: "Auto Services", query: "auto detailing" },
+                  { icon: "🏠", label: "Home Services", query: "home services" },
+                  { icon: "✈️", label: "Aviation", query: "aviation maintenance" },
+                  { icon: "🛍️", label: "Live Sales", query: "live selling" },
+                  { icon: "💇", label: "Beauty & Wellness", query: "beauty salon" },
+                  { icon: "🐕", label: "Pet Services", query: "pet services" },
+                  { icon: "📸", label: "Photography", query: "photographer" },
                 ].map((pill) => (
-                  <Link
+                  <button
                     key={pill.label}
-                    href={`/discover?q=${encodeURIComponent(pill.label)}`}
+                    type="button"
+                    onClick={() => runHomepageSearch(pill.query)}
                     className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/40 bg-zinc-800/80 px-3.5 py-1.5 text-[12px] text-zinc-300 transition hover:border-emerald-400/40 hover:bg-zinc-800 hover:text-white"
                   >
                     <span aria-hidden="true">{pill.icon}</span>
                     <span>{pill.label}</span>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
@@ -2816,11 +2827,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── SEARCH RESULTS ── rendered only after the user runs a search */}
-        <SearchResults
-          results={findResults}
-          externalResults={findExternalResults}
-        />
+        {/* ── SEARCH RESULTS ── rendered only after the user runs a search.
+             The outer div ALWAYS mounts so category-chip clicks have a
+             scrollIntoView target even before data arrives. */}
+        <div ref={searchResultsRef}>
+          <SearchResults
+            results={findResults}
+            externalResults={findExternalResults}
+          />
+        </div>
 
         {/* ── DEALS ── hidden when no real active offers exist */}
         <DealsSection projects={allPublicProjects} />
