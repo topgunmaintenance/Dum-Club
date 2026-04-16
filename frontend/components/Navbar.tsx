@@ -26,7 +26,10 @@ export function Navbar() {
     if (!user?.privyId) { setLatestProjectId(null); return; }
     async function loadProjects() {
       try {
-        const res = await fetch(`${API_BASE}/api/projects?owner_id=${encodeURIComponent(user!.privyId)}`);
+        // Trailing slash is REQUIRED. The FastAPI route is registered at
+        // /api/projects/ and the app has redirect_slashes=False, so a slash-
+        // less URL 404s instead of redirecting. Matches the dashboard caller.
+        const res = await fetch(`${API_BASE}/api/projects/?owner_id=${encodeURIComponent(user!.privyId)}`);
         if (res.ok) {
           const data = await res.json();
           const projects = Array.isArray(data) ? data : data.projects ?? [];
