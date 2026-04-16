@@ -473,10 +473,10 @@ export default function MerchantPage() {
                   </div>
                   {!stepFirstSale && stepStripe && (
                     <Link
-                      href={`/business/${merchant.id}`}
+                      href="/dashboard"
                       className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/[0.06] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-emerald-400 transition hover:bg-emerald-400/10"
                     >
-                      View My Storefront →
+                      Manage My Business →
                     </Link>
                   )}
                 </div>
@@ -567,10 +567,10 @@ export default function MerchantPage() {
               No data yet — let's get you your first sale.
             </p>
             <Link
-              href={`/business/${merchant.id}`}
+              href="/dashboard"
               className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
             >
-              Share My Storefront →
+              Set Up My Listing →
             </Link>
           </div>
         )}
@@ -602,17 +602,18 @@ export default function MerchantPage() {
         </div>
 
         {/* Quick links — two things a logged-in merchant actually needs
-            fast access to: preview their public storefront (how
-            customers see them), and jump back to the marketplace. The
-            old "Dashboard" / "For Business" pair was a dead end — the
-            /business link was the seller-recruitment page that this
-            user has already converted on. */}
+            fast access to: the projects/business-profile dashboard
+            (where they configure their storefront), and the public
+            marketplace (to see how listings look to customers). The
+            old "For Business" link was a dead end — it pointed to
+            the seller-recruitment landing page the merchant had
+            already converted on. */}
         <div className="flex gap-3">
           <Link
-            href={`/business/${merchant.id}`}
+            href="/dashboard"
             className="flex-1 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.04] px-4 py-3 text-center text-sm font-semibold text-emerald-400 transition hover:bg-emerald-400/[0.08]"
           >
-            View My Storefront
+            Manage My Business
           </Link>
           <Link
             href="/discover"
