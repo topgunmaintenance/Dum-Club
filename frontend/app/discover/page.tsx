@@ -848,7 +848,9 @@ export default function DiscoverPage() {
             <span>◆</span> One points wallet works at every merchant — no stamps, no cards, no apps per store
           </div>
           {searchArrival && searchQuery.trim() && (
-            <p className="mt-3 text-[11px] tracking-[0.1em] text-zinc-600">Sell anything. Buy anything. Reward everyone.</p>
+            <p className="mt-3 text-[11px] tracking-[0.1em] text-zinc-500">
+              Showing results for <span className="text-emerald-400">&quot;{searchQuery}&quot;</span>
+            </p>
           )}
         </div>
 
@@ -1085,12 +1087,10 @@ export default function DiscoverPage() {
               <div className="mx-auto max-w-md">
                 <div className="mb-3 text-3xl">🔍</div>
                 <p className="text-lg font-bold text-white">No businesses match &quot;{searchQuery}&quot;</p>
-                <p className="mt-2 text-sm text-zinc-300">This could be yours — or help bring it to DUM Club.</p>
-                <p className="mt-1 text-[10px] tracking-[0.1em] text-zinc-500">Sell anything. Buy anything. Reward everyone.</p>
+                <p className="mt-2 text-sm text-zinc-300">
+                  Know a business that should be here? Help bring them to DUM Club — every new local merchant makes your points go further.
+                </p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <Link href={`/?idea=${encodeURIComponent(searchQuery)}`} className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
-                    Create this business →
-                  </Link>
                   <button onClick={() => { setSearchQuery(""); setSearchArrival(false); }} className="rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
                     Clear search
                   </button>
