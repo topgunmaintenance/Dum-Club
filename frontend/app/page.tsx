@@ -1981,6 +1981,16 @@ export default function Home() {
   // newly-populated results panel into view.
   const searchResultsRef = useRef<HTMLDivElement>(null);
 
+  // ── Hero audience mode ──────────────────────────────────────
+  // Two-sided-marketplace sin: pre-fix, the hero was talking to
+  // sellers AND buyers in the same 600px of scroll — CTAs pointed
+  // at merchant signup, search bar pointed at discovery. This mode
+  // toggle lets each visitor see only what they came for.
+  //
+  // Default to "merchant" because merchant recruitment is the
+  // Phase-1 gate per CLAUDE.md Section 6 (100 founding sellers).
+  const [heroMode, setHeroMode] = useState<"merchant" | "customer">("merchant");
+
   // ── Founding-100 scarcity counter (public endpoint, no auth) ──
   // Drives the "X of 100 founding spots claimed" pill above the hero H1.
   // Graceful fail: if the endpoint errors, we just don't render the pill
@@ -2727,105 +2737,132 @@ export default function Home() {
               <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-relaxed text-white sm:text-lg">
                 Live selling, loyalty, AI retention, and local deals — all on one flat fee. <span className="text-emerald-400">$29–$99/month.</span> Zero commission. <span className="text-emerald-400">First 100 merchants free.</span>
               </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
-                <Link
-                  href="/merchant"
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
+
+              {/* ── AUDIENCE MODE TOGGLE ─────────────────────────────
+                   Two-sided-marketplace disambiguator. Merchant mode
+                   shows the signup CTAs; customer mode shows the local
+                   search bar + category chips. Each visitor sees only
+                   what they came for. Default = merchant per Phase-1
+                   goal of 100 founding sellers. */}
+              <div className="mx-auto mt-8 inline-flex items-center rounded-full border border-zinc-700/60 bg-zinc-950/60 p-1 text-[12px] font-bold uppercase tracking-[0.12em]">
+                <button
+                  type="button"
+                  onClick={() => setHeroMode("merchant")}
+                  className={`rounded-full px-4 py-2 transition ${
+                    heroMode === "merchant"
+                      ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                  aria-pressed={heroMode === "merchant"}
                 >
-                  Claim Your Free Spot →
-                </Link>
-                <Link
-                  href="/discover"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  I&apos;m selling
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHeroMode("customer")}
+                  className={`rounded-full px-4 py-2 transition ${
+                    heroMode === "customer"
+                      ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                  aria-pressed={heroMode === "customer"}
                 >
-                  Browse the Marketplace →
-                </Link>
+                  I&apos;m shopping
+                </button>
               </div>
 
-              {/* ── SERVICE FINDER SEARCH BAR ────────────────────────
-                   Google/Yelp-style universal search that redirects to
-                   /discover?q=<term>. NOT an AI business builder. The
-                   /discover page classifies results into Live Now /
-                   Services & Businesses / Items for Sale and applies
-                   sort + price + live + deals filters. */}
-
-              {/* Location badge — static "Morris County, NJ" for Phase 0B.
-                  Phase 1 swaps this for a real geolocation lookup. Having
-                  it visible now signals local discovery, not generic mkt. */}
-              <div className="mx-auto mt-10 mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                Near: Morris County, NJ
-              </div>
-
-              <form
-                className="mx-auto w-full max-w-2xl"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  runHomepageSearch(heroSearch);
-                }}
-              >
-                <div className="relative">
-                  {/* Magnifier icon */}
-                  <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="7" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                  </span>
-                  <input
-                    type="search"
-                    value={heroSearch}
-                    onChange={(e) => setHeroSearch(e.target.value)}
-                    placeholder={heroPlaceholders[heroPlaceholderIdx]}
-                    aria-label="Search local services"
-                    className="w-full rounded-2xl border border-zinc-600/50 bg-zinc-800/60 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-500 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!heroSearch.trim()}
-                    className="absolute right-2 top-1/2 flex h-10 -translate-y-1/2 items-center justify-center rounded-xl bg-emerald-400 px-5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.25)] disabled:cursor-not-allowed disabled:opacity-40"
+              {heroMode === "merchant" ? (
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
+                  <Link
+                    href="/merchant"
+                    className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
                   >
-                    Search →
-                  </button>
+                    Claim Your Free Spot →
+                  </Link>
+                  <Link
+                    href="#section-pricing"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  >
+                    See Pricing →
+                  </Link>
                 </div>
-              </form>
+              ) : (
+                <>
+                  {/* ── SERVICE FINDER SEARCH BAR ────────────────────
+                       Google/Yelp-style universal search. Each submit
+                       runs the same homepage search the chip clicks use
+                       — showing DUM Club matches when they exist, else
+                       top-rated nearby businesses from Google Places
+                       (with free Maps-URL directions). */}
 
-              {/* ── QUICK-SEARCH PILLS ──────────────────────────────
-                   8 pills covering food + services + shopping + live
-                   sales. Each pill fires the same homepage search the
-                   hero form uses — showing DUM Club matches when they
-                   exist, otherwise top-rated nearby businesses from
-                   Google Places (with free Maps-URL directions). The
-                   `query` string is the actual search term sent to the
-                   backend; `label` is the display text. Keeping them
-                   separate lets the button read naturally while the
-                   query targets what Google Places indexes best. */}
-              <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-                {[
-                  { icon: "🍕", label: "Pizza & Food", query: "pizza" },
-                  { icon: "🚗", label: "Auto Services", query: "auto detailing" },
-                  { icon: "🏠", label: "Home Services", query: "home services" },
-                  { icon: "✈️", label: "Flights", query: "flight school" },
-                  { icon: "🔧", label: "A&P Mechanic", query: "aircraft maintenance" },
-                  { icon: "🛍️", label: "Live Sales", query: "live selling" },
-                  { icon: "💇", label: "Beauty & Wellness", query: "beauty salon" },
-                  { icon: "🐕", label: "Pet Services", query: "pet services" },
-                  { icon: "📸", label: "Photography", query: "photographer" },
-                ].map((pill) => (
-                  <button
-                    key={pill.label}
-                    type="button"
-                    onClick={() => runHomepageSearch(pill.query)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/40 bg-zinc-800/80 px-3.5 py-1.5 text-[12px] text-zinc-300 transition hover:border-emerald-400/40 hover:bg-zinc-800 hover:text-white"
+                  {/* Location badge — static "Morris County, NJ" for Phase 0B. */}
+                  <div className="mx-auto mt-8 mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    Near: Morris County, NJ
+                  </div>
+
+                  <form
+                    className="mx-auto w-full max-w-2xl"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      runHomepageSearch(heroSearch);
+                    }}
                   >
-                    <span aria-hidden="true">{pill.icon}</span>
-                    <span>{pill.label}</span>
-                  </button>
-                ))}
-              </div>
+                    <div className="relative">
+                      {/* Magnifier icon */}
+                      <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="7" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </span>
+                      <input
+                        type="search"
+                        value={heroSearch}
+                        onChange={(e) => setHeroSearch(e.target.value)}
+                        placeholder={heroPlaceholders[heroPlaceholderIdx]}
+                        aria-label="Search local services"
+                        className="w-full rounded-2xl border border-zinc-600/50 bg-zinc-800/60 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-500 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!heroSearch.trim()}
+                        className="absolute right-2 top-1/2 flex h-10 -translate-y-1/2 items-center justify-center rounded-xl bg-emerald-400 px-5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.25)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Search →
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* ── QUICK-SEARCH PILLS ─────────────────────────── */}
+                  <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+                    {[
+                      { icon: "🍕", label: "Pizza & Food", query: "pizza" },
+                      { icon: "🚗", label: "Auto Services", query: "auto detailing" },
+                      { icon: "🏠", label: "Home Services", query: "home services" },
+                      { icon: "💇", label: "Beauty & Wellness", query: "beauty salon" },
+                      { icon: "🐕", label: "Pet Services", query: "pet services" },
+                      { icon: "📸", label: "Photography", query: "photographer" },
+                      { icon: "🛍️", label: "Live Sales", query: "live selling" },
+                      { icon: "✈️", label: "Flights", query: "flight school" },
+                      { icon: "🔧", label: "A&P Mechanic", query: "aircraft maintenance" },
+                    ].map((pill) => (
+                      <button
+                        key={pill.label}
+                        type="button"
+                        onClick={() => runHomepageSearch(pill.query)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/40 bg-zinc-800/80 px-3.5 py-1.5 text-[12px] text-zinc-300 transition hover:border-emerald-400/40 hover:bg-zinc-800 hover:text-white"
+                      >
+                        <span aria-hidden="true">{pill.icon}</span>
+                        <span>{pill.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="mx-auto max-w-3xl text-center">
