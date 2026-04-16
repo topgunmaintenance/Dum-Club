@@ -2913,11 +2913,10 @@ export default function Home() {
           />
         </div>
 
-        {/* ── DEALS ── hidden when no real active offers exist */}
-        <DealsSection projects={allPublicProjects} />
-
-        {/* ── Recent Sales Proof ── */}
-        <RecentSalesFeed />
+        {/* ── DEALS + RECENT SALES removed — too noisy on homepage
+             per product review. Deals are visible on /discover and
+             individual storefronts. Sales proof can return when GMV
+             volume is high enough to be impressive, not distracting. ── */}
 
         {/* ── Platform Activity ── */}
         <div className="mx-auto mt-6 max-w-4xl">
