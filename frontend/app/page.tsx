@@ -2908,9 +2908,9 @@ export default function Home() {
             Platform
           </div>
           <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Sell live. Keep customers. <span className="text-emerald-400">Grow on autopilot.</span>
+            Everything you need. <span className="text-emerald-400">Nothing you don't pay for.</span>
           </h2>
-          <p className="mb-10 max-w-xl text-sm text-zinc-400">
+          <p className="mb-10 max-w-xl text-base font-medium text-white">
             Live selling, loyalty points, AI retention, and local deals discovery — all in one flat-fee platform. No commission, no per-sale fees, ever.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -3093,7 +3093,7 @@ export default function Home() {
         <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              It&apos;s DUM to pay per-sale fees
+              Smart sellers don&apos;t pay per sale
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
               Sell live.{" "}
@@ -3176,7 +3176,7 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "Discover", href: "/discover" },
-                  { label: "Start a business", href: "/build" },
+                  { label: "Become a merchant", href: "/merchant" },
                   { label: "Dashboard", href: "/dashboard" },
                   { label: "AI Chat", href: "/chat" },
                 ].map((link) => (
