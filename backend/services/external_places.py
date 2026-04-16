@@ -28,6 +28,37 @@ _GOOGLE_API_KEY = (
 _SEARCH_RADIUS = int(os.getenv("GOOGLE_MAPS_SEARCH_RADIUS", "10000"))  # meters
 _TIMEOUT = 4.0  # seconds — fast fail to keep homepage responsive
 
+# ── In-memory TTL cache ──
+# The homepage chip grid fires a handful of identical queries all day
+# ("pizza", "auto detailing", "flight school", etc.). Every click currently
+# bills ~$0.035-$0.04 against Places API (New) at Enterprise tier. A short
+# in-process cache collapses bursts of identical queries to a single billed
+# call and cuts realistic daily billing by ~90%+.
+#
+# Caveats:
+#   - Per-instance (not shared across Railway replicas). When we scale out,
+#     swap this for Redis/Upstash. Until then, one instance is the norm and
+#     the win is real.
+#   - Only SUCCESSFUL responses are cached (including successful-but-empty).
+#     Errors (403, timeout, exception) return None from the underlying
+#     fetcher so we retry immediately on the next request rather than
+#     pinning a bad state for 10 minutes.
+_CACHE_TTL_SECONDS = int(os.getenv("EXTERNAL_PLACES_CACHE_TTL", "600"))  # 10 min
+_cache: dict[str, tuple[float, list["ExternalPlace"]]] = {}
+
+
+def _cache_key(
+    query: str,
+    city: str,
+    latitude: Optional[float],
+    longitude: Optional[float],
+    limit: int,
+) -> str:
+    """Stable key for (query, city, coarse lat/lng, limit)."""
+    lat_r = round(latitude, 3) if latitude is not None else None
+    lng_r = round(longitude, 3) if longitude is not None else None
+    return f"{query.lower().strip()}|{city.lower().strip()}|{lat_r}|{lng_r}|{limit}"
+
 
 class ExternalPlace:
     """Normalised external business result."""
@@ -99,15 +130,38 @@ async def search_nearby(
     - Feature flag is off
     - No API key configured
     - External API call fails or times out
+
+    Successful responses are cached in-process for `_CACHE_TTL_SECONDS`
+    to collapse bursts of identical chip-click queries into a single
+    billed call. Error responses are NOT cached so retries happen
+    immediately.
     """
     if not get_flag("external_local_search_enabled"):
         return []
 
-    if _GOOGLE_API_KEY:
-        return await _search_google_places(query, city, latitude, longitude, limit)
+    if not _GOOGLE_API_KEY:
+        print("[external-places] no API key configured, skipping")
+        return []
 
-    print("[external-places] no API key configured, skipping")
-    return []
+    key = _cache_key(query, city, latitude, longitude, limit)
+    now = time.monotonic()
+
+    cached = _cache.get(key)
+    if cached is not None:
+        stored_at, value = cached
+        if now - stored_at < _CACHE_TTL_SECONDS:
+            print(f"[external-places] cache hit key=\"{key}\" results={len(value)}")
+            return value
+        # expired
+        _cache.pop(key, None)
+
+    result = await _search_google_places(query, city, latitude, longitude, limit)
+    if result is None:
+        # Upstream error (403, timeout, exception). Do NOT cache — retry next call.
+        return []
+
+    _cache[key] = (now, result)
+    return result
 
 
 async def _search_google_places(
@@ -116,8 +170,14 @@ async def _search_google_places(
     latitude: Optional[float],
     longitude: Optional[float],
     limit: int,
-) -> list[ExternalPlace]:
-    """Search Google Places Text Search (New) API."""
+) -> Optional[list[ExternalPlace]]:
+    """
+    Search Google Places Text Search (New) API.
+
+    Returns:
+        list[ExternalPlace] on HTTP 200 (possibly empty) — caller may cache.
+        None on any failure (non-200, timeout, exception) — caller should NOT cache.
+    """
     search_text = f"{query} in {city}" if city else query
     t0 = time.monotonic()
 
@@ -151,7 +211,7 @@ async def _search_google_places(
 
             if resp.status_code != 200:
                 print(f"[external-places] Google API error: {resp.status_code} ({elapsed}ms)")
-                return []
+                return None
 
             data = resp.json()
             places = data.get("places", [])
@@ -192,8 +252,8 @@ async def _search_google_places(
     except httpx.TimeoutException:
         elapsed = round((time.monotonic() - t0) * 1000)
         print(f"[external-places] timeout after {elapsed}ms for query=\"{search_text}\"")
-        return []
+        return None
     except Exception as e:
         elapsed = round((time.monotonic() - t0) * 1000)
         print(f"[external-places] error: {e} ({elapsed}ms)")
-        return []
+        return None
