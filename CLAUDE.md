@@ -28,6 +28,13 @@ You MUST:
 - restate task clearly
 - WAIT for confirmation before coding
 
+**Exemption for read-only tasks:** If the task file's WHAT NOT TO
+DO section explicitly forbids editing code, creating files, and
+committing (e.g. `scope-audit`), the branch-creation step does
+not apply. Read-only tasks may run from `main`. The actual task
+that follows the audit MUST still create a `feature/<task-name>`
+branch per the standard routine.
+
 ---
 
 ### BUILD RULES

@@ -50,6 +50,13 @@ Before starting the requested task:
 - Do NOT proceed to the actual task even if the audit looks
   clean. Always wait for user confirmation.
 
+**Read-only exemption:** Because this task is strictly
+read-only (no edits, no files, no commits), it is exempt from
+the PRE-TASK ROUTINE branch-creation step in `CLAUDE.md`.
+`scope-audit` may run from `main`. The actual task that follows
+this audit MUST still create a `feature/<task-name>` branch
+per the standard routine.
+
 ---
 
 ## OUTPUT FORMAT
