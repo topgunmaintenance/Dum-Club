@@ -2726,7 +2726,7 @@ export default function Home() {
                   </span>
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
                     {foundingStatus.total_cap - foundingStatus.founding_slots_remaining} of {foundingStatus.total_cap} founding spots claimed
-                    <span className="ml-2 text-emerald-400/80">· $0/mo locked in forever</span>
+                    <span className="ml-2 text-emerald-400/80">· $0 now · $29/mo locked in forever</span>
                   </span>
                 </div>
               )}

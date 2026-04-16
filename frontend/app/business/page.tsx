@@ -39,6 +39,10 @@ export default function BusinessPage() {
   const slotsRemaining = founding?.founding_slots_remaining ?? null;
   const totalCap = founding?.total_cap ?? 100;
   const programOpen = founding?.founding_program_open ?? true;
+  // Display as "claimed" (progress/social-proof) instead of "remaining"
+  // (countdown/anxiety). Keeps scarcity framing consistent with the
+  // homepage pill and the /merchant signup surface.
+  const claimed = slotsRemaining != null ? totalCap - slotsRemaining : null;
 
   return (
     <main className="min-h-screen bg-[#060606] text-white">
@@ -55,7 +59,8 @@ export default function BusinessPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-              Founding 100 · {slotsRemaining != null ? `${slotsRemaining} spots left` : "spots limited"}
+              {claimed != null ? `${claimed} of ${totalCap} founding spots claimed` : "Founding 100 · spots limited"}
+              <span className="ml-2 text-emerald-400/70">· $0 now · $29/mo locked in forever</span>
             </span>
           </div>
 
@@ -304,15 +309,15 @@ export default function BusinessPage() {
             The first 100 merchants get in free.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
-            $0 during the founding period. Locked at $29/month after. Founding merchant badge permanent on your profile. Once 100 slots fill, the program closes and standard tiers apply to everyone new.
+            $0 during the founding period. Locked at $29/month forever after. Founding merchant badge permanent on your profile. Once 100 slots fill, the program closes and standard tiers apply to everyone new.
           </p>
 
           <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/60 px-6 py-4 backdrop-blur-sm">
             <span className="font-mono text-4xl font-extrabold text-emerald-400">
-              {slotsRemaining != null ? slotsRemaining : "—"}
+              {claimed != null ? claimed : "—"}
             </span>
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-              of {totalCap} spots remaining
+              of {totalCap} founding spots claimed
             </span>
           </div>
 
