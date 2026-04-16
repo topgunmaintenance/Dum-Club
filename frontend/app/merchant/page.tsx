@@ -526,29 +526,54 @@ export default function MerchantPage() {
         </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Transactions</div>
-            <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_orders ?? 0}</div>
-            <div className="text-xs text-zinc-500">total</div>
+        {/* Stats
+            Empty-state: until the first sale lands, showing four zeros
+            is demoralising and useless. Replace with a single "no data
+            yet" panel and a concrete next-action CTA. The real grid
+            only kicks in once there's something to measure. */}
+        {stepFirstSale ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Transactions</div>
+              <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_orders ?? 0}</div>
+              <div className="text-xs text-zinc-500">total</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Revenue</div>
+              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue ?? 0).toFixed(2)}</div>
+              <div className="text-xs text-zinc-500">you keep 100% · 0% commission</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Issued</div>
+              <div className="mt-2 text-2xl font-bold text-amber-400">{analytics?.total_dum_received ?? 0}</div>
+              <div className="text-xs text-zinc-500">to customers</div>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Page Views</div>
+              <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_views ?? 0}</div>
+              <div className="text-xs text-zinc-500">total</div>
+            </div>
           </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Revenue</div>
-            <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue ?? 0).toFixed(2)}</div>
-            <div className="text-xs text-zinc-500">total</div>
+        ) : (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center">
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+              Your numbers show up here
+            </div>
+            <div className="text-base font-semibold text-white">
+              Transactions · Revenue · DUM Issued · Page Views
+            </div>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-400">
+              Once your first sale lands, this panel lights up with live stats.
+              No data yet — let's get you your first sale.
+            </p>
+            <Link
+              href={`/business/${merchant.id}`}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
+            >
+              Share My Storefront →
+            </Link>
           </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Issued</div>
-            <div className="mt-2 text-2xl font-bold text-amber-400">{analytics?.total_dum_received ?? 0}</div>
-            <div className="text-xs text-zinc-500">to customers</div>
-          </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Page Views</div>
-            <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_views ?? 0}</div>
-            <div className="text-xs text-zinc-500">total</div>
-          </div>
-        </div>
+        )}
 
         {/* QR Code */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
@@ -576,13 +601,24 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Quick links */}
+        {/* Quick links — two things a logged-in merchant actually needs
+            fast access to: preview their public storefront (how
+            customers see them), and jump back to the marketplace. The
+            old "Dashboard" / "For Business" pair was a dead end — the
+            /business link was the seller-recruitment page that this
+            user has already converted on. */}
         <div className="flex gap-3">
-          <Link href="/dashboard" className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white">
-            Dashboard
+          <Link
+            href={`/business/${merchant.id}`}
+            className="flex-1 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.04] px-4 py-3 text-center text-sm font-semibold text-emerald-400 transition hover:bg-emerald-400/[0.08]"
+          >
+            View My Storefront
           </Link>
-          <Link href="/business" className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white">
-            For Business
+          <Link
+            href="/discover"
+            className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+          >
+            Browse Marketplace
           </Link>
         </div>
       </div>
