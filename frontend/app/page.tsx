@@ -1981,6 +1981,28 @@ export default function Home() {
   // newly-populated results panel into view.
   const searchResultsRef = useRef<HTMLDivElement>(null);
 
+  // ── Founding-100 scarcity counter (public endpoint, no auth) ──
+  // Drives the "X of 100 founding spots claimed" pill above the hero H1.
+  // Graceful fail: if the endpoint errors, we just don't render the pill
+  // rather than showing a bogus/stale number.
+  const [foundingStatus, setFoundingStatus] = useState<{
+    founding_slots_remaining: number;
+    total_cap: number;
+    founding_program_open: boolean;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/merchant/founding-status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setFoundingStatus(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Single source of truth for hero / category-chip search. Mirrors `term`
   // into the hero input so the user sees what they searched, clears prior
   // results, fires the same POST /api/search/homepage the hero form uses,
@@ -2682,6 +2704,22 @@ export default function Home() {
                  CLAUDE.md v5.0 Section 12 Rule 7: "We are NOT an AI
                  business launcher (deprecated — v1 positioning)". */}
             <div className="mx-auto mb-10 max-w-4xl text-center">
+              {/* ── Founding-100 scarcity pill ──
+                   Only renders when we have live data AND the program is
+                   still open. Creates the scarcity + loss-aversion trigger
+                   above the H1 per the homepage psych audit. */}
+              {foundingStatus && foundingStatus.founding_program_open && (
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                    {foundingStatus.total_cap - foundingStatus.founding_slots_remaining} of {foundingStatus.total_cap} founding spots claimed
+                    <span className="ml-2 text-emerald-400/80">· $0/mo locked in forever</span>
+                  </span>
+                </div>
+              )}
               <h1 className="text-[clamp(36px,7vw,64px)] font-extrabold leading-[1.03] tracking-[-0.02em] text-white">
                 Replace all those dumb expenses with{" "}
                 <span className="hero-text-glow">one simple system.</span>
