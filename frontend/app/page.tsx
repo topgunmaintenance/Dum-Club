@@ -2864,16 +2864,16 @@ export default function Home() {
             How it works
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Three steps. Live today.
+            Why sellers leave Whatnot for DUM Club.
           </h2>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            No developers. No technical knowledge. Just describe what you need.
+          <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-200 sm:text-lg">
+            One flat fee. Zero commission. Customers who come back.
           </p>
           <div className="mt-12 grid gap-3 pt-10 sm:grid-cols-3">
             {[
-              { n: "01", title: "Describe It", desc: "Tell the AI what you sell or what you need — coaching, services, products, anything." },
-              { n: "02", title: "We Launch It", desc: "Your storefront and marketplace listing go live automatically. No setup needed." },
-              { n: "03", title: "You Earn", desc: "Sell and get paid. Buy and earn rewards. Everyone wins." },
+              { n: "01", title: "No 8% Tax on Every Sale", desc: "Whatnot charges 8% + 2.9%. We charge $29–$99/month. Flat. Forever. First 100 merchants free." },
+              { n: "02", title: "Stripe Pays You Direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
+              { n: "03", title: "Customers Come Back Automatically", desc: "DUM Points turn one-time buyers into regulars. No other live-selling platform has this." },
             ].map((step) => (
               <div
                 key={step.n}
