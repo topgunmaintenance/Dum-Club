@@ -205,58 +205,80 @@ export default function MerchantPage() {
     const programOpen = foundingStatus?.founding_program_open ?? true;
     const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
     const totalCap = foundingStatus?.total_cap ?? 100;
+    const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
-      <div className="min-h-screen bg-zinc-950 pt-28 px-4">
-        <div className="mx-auto max-w-md">
-          {/* Founding status banner — renders whether the program is open
-              or closed. Driven by /api/merchant/founding-status. */}
-          {programOpen ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.05] px-5 py-4 shadow-[0_0_24px_rgba(0,255,135,0.08)]">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">⚡</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-emerald-400">
-                    {slotsRemaining !== null ? (
-                      <>
-                        {slotsRemaining} of {totalCap} founding merchant spots remaining
-                      </>
-                    ) : (
-                      <>Founding merchant program — {totalCap} spots</>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-xs text-emerald-400/70">
-                    $0/month forever · No commission · No catch
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mb-4 rounded-2xl border border-zinc-700 bg-zinc-900/60 px-5 py-4">
-              <div className="text-sm font-bold text-zinc-200">
-                Founding program closed
-              </div>
-              <div className="mt-1 text-xs text-zinc-500">
-                Standard plan ${STANDARD_PLAN_PRICE_USD}/month. Unlimited transactions, loyalty built in.
+      <div className="min-h-screen bg-zinc-950 pt-24 px-4 pb-16">
+        <div className="mx-auto max-w-2xl">
+
+          {/* ── HERO ──
+               Continues the homepage pitch instead of dropping a form
+               in a void. Scarcity pill matches homepage framing
+               ("claimed" not "remaining" — progress/social-proof). */}
+          {programOpen && claimed !== null && (
+            <div className="mb-6 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                  {claimed} of {totalCap} founding spots claimed
+                </span>
               </div>
             </div>
           )}
 
-          {/* ── Why DUM Club for merchants — 3 direct selling points.
-               Only rendered inside the `if (showSignup)` branch, so
-               it never shows on the merchant dashboard view. ── */}
-          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
-            <ul className="space-y-2.5">
+          <div className="mb-10 text-center">
+            <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl">
+              Keep{" "}
+              <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
+                100% of every sale.
+              </span>{" "}
+              Forever.
+            </h1>
+            <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-zinc-200">
+              {programOpen
+                ? "Founding 100 get $0/month — locked in forever. No credit card. No commission. Ever."
+                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. Zero commission, loyalty built in. No card today.`}
+            </p>
+          </div>
+
+          {/* ── Whatnot contrast callout — direct fee comparison ── */}
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
+              The math
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4">
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500">Whatnot</div>
+                <div className="mt-1 text-lg font-bold text-red-400">8% + 2.9%</div>
+                <div className="text-xs text-zinc-500">per sale, forever</div>
+              </div>
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">DUM Club</div>
+                <div className="mt-1 text-lg font-bold text-emerald-400">$0 per sale</div>
+                <div className="text-xs text-emerald-400/80">flat $29–$99/mo · founding 100 free</div>
+              </div>
+            </div>
+            <div className="mt-3 text-center text-xs text-zinc-400">
+              On $10k/mo in sales, you keep <span className="font-bold text-emerald-400">~$1,090 more</span> per month with DUM Club.
+            </div>
+          </div>
+
+          {/* ── 3-point sell ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
+            <ul className="space-y-3">
               {[
-                "Keep more of every sale — no platform commissions, ever",
+                "Keep 100% of every sale — zero platform commission, forever",
                 "Customers earn DUM Points automatically — they come back without you paying for ads",
-                "Free forever for founding merchants — $0/month, no catch",
+                "Founding 100 get $0/month locked in forever — no card required",
               ].map((line) => (
                 <li
                   key={line}
-                  className="flex items-start gap-2.5 text-sm leading-relaxed text-zinc-200"
+                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
                 >
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-bold text-emerald-400">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
                     ✓
                   </span>
                   <span>{line}</span>
@@ -265,69 +287,66 @@ export default function MerchantPage() {
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-              {programOpen ? "Founding Merchant" : "Standard Plan"}
+          {/* ── Founder testimonial — social proof, real face ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <img
+                src="/Julian.jpeg"
+                alt="Julian Mero — founder, Topgun Maintenance LLC"
+                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-relaxed text-zinc-200">
+                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, zero commission — it just works.&rdquo;
+                </p>
+                <div className="mt-3 text-[11px] text-zinc-500">
+                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
+                </div>
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-white mb-1">Join DUM Club</h1>
-            <p className="text-sm text-zinc-400 mb-6">
-              {programOpen
-                ? "Free forever for founding members. No credit card required."
-                : `Standard plan — $${STANDARD_PLAN_PRICE_USD}/month when billing launches. No card required today.`}
-            </p>
+          </div>
+
+          {/* ── The form — one field only ──
+               Dropped from 4 fields to 1. Rule of thumb: each extra
+               field on a cold signup CTA costs ~10% completion. Biz
+               type + city + state move to progressive profile after
+               signup. */}
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+              {programOpen ? "Claim your founding spot" : "Start a merchant account"}
+            </div>
+            <h2 className="mb-5 text-2xl font-extrabold text-white">
+              {programOpen ? "60 seconds. No card." : `$${STANDARD_PLAN_PRICE_USD}/mo. Cancel anytime.`}
+            </h2>
 
             {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs text-zinc-500">Business Name *</label>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Business Name</label>
                 <input
                   value={bizName}
                   onChange={(e) => setBizName(e.target.value)}
-                  placeholder="Your business name"
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSignup(); }}
+                  placeholder="e.g. Topgun Maintenance LLC"
+                  autoFocus
+                  className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-base text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/20"
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-zinc-500">Business Type</label>
-                <input
-                  value={bizType}
-                  onChange={(e) => setBizType(e.target.value)}
-                  placeholder="e.g. Restaurant, Retail, Salon"
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">City</label>
-                  <input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-zinc-500">State</label>
-                  <input
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    placeholder="State"
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
-                  />
-                </div>
               </div>
               <button
                 onClick={handleSignup}
-                disabled={saving}
-                className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-50"
+                disabled={saving || !bizName.trim()}
+                className="w-full rounded-xl bg-emerald-400 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
-                  ? "Creating..."
+                  ? "Claiming your spot..."
                   : programOpen
-                  ? "Become a Founding Merchant — Free"
-                  : "Continue to signup"}
+                  ? "Claim My Founding Spot — Free Forever →"
+                  : "Create Merchant Account →"}
               </button>
+              <p className="text-center text-[11px] text-zinc-500">
+                You can add business type, location, and offers on the next step.
+              </p>
             </div>
           </div>
         </div>
