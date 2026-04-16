@@ -2638,10 +2638,18 @@ export default function Home() {
                   // Ask the backend who we have on DUM Club first, and what
                   // Google Places says nearby. The same endpoint powers both
                   // result sets — no second round-trip.
+                  //
+                  // City MUST be non-empty or the backend's local_intent gate
+                  // (backend/services/agents/_search_helpers.py:has_local_intent)
+                  // never fires external search — search_nearby stays silent
+                  // even when the API key is configured. The hero already
+                  // labels "Near: Morris County, NJ" as a hardcoded pill, so
+                  // sending that same string keeps the frontend and backend
+                  // consistent. When we add geolocation this becomes dynamic.
                   fetch(`${API_BASE}/api/search/homepage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ query: term, city: "" }),
+                    body: JSON.stringify({ query: term, city: "Morris County, NJ" }),
                   })
                     .then((r) => (r.ok ? r.json() : null))
                     .then((data) => {
