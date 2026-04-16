@@ -137,7 +137,7 @@ async def _search_google_places(
                 json={
                     "textQuery": search_text,
                     "languageCode": "en",
-                    "maxResultCount": min(limit, 5),
+                    "maxResultCount": min(limit, 20),
                     **({"locationBias": {
                         "circle": {
                             "center": {"latitude": latitude, "longitude": longitude},

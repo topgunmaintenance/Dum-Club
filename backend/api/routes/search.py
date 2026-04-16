@@ -162,7 +162,7 @@ async def _homepage_search_via_agent(req: SearchRequest) -> SearchResponse:
         "query": req.query,
         "city": req.city,
         "limit": req.limit,
-        "external_limit": 5,
+        "external_limit": 10,
     })
 
     data = result.data or {}
@@ -255,7 +255,7 @@ async def _homepage_search_legacy(req: SearchRequest) -> SearchResponse:
     has_dum_match = top and top[0][1] >= _FALLBACK_THRESHOLD
 
     if local_intent and not has_dum_match:
-        places = await search_nearby(query=query, city=city, limit=5)
+        places = await search_nearby(query=query, city=city, limit=10)
         for p in places:
             db_id = ""
             try:
@@ -394,7 +394,7 @@ async def discover(req: SearchRequest):
         "query": req.query,
         "city": req.city,
         "limit": req.limit,
-        "external_limit": 5,
+        "external_limit": 10,
     })
 
     return {

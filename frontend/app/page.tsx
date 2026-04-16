@@ -1234,10 +1234,10 @@ type ExternalTopResult = {
 
 function SearchResults({
   results,
-  externalTop,
+  externalResults,
 }: {
   results: Project[] | null;
-  externalTop: ExternalTopResult | null;
+  externalResults: ExternalTopResult[];
 }) {
   const [cards, setCards] = useState<SearchResultCard[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -1294,13 +1294,14 @@ function SearchResults({
 
   // Hidden until the user has actually run a search. Once search runs we may
   // have either DUM Club cards or a Google fallback — both require rendering.
-  if (results === null && !externalTop) return null;
+  if (results === null && externalResults.length === 0) return null;
 
   const hasDumResults = cards.length > 0;
   // External fallback renders ONLY when DUM Club returned nothing. Google is
   // the "there's no one on DUM Club for this yet" safety net — never shown
   // alongside on-platform results.
-  const showExternalFallback = loaded && !hasDumResults && !!externalTop;
+  const showExternalFallback =
+    loaded && !hasDumResults && externalResults.length > 0;
 
   return (
     <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
@@ -1331,8 +1332,18 @@ function SearchResults({
             </Link>
           ))}
         </div>
-      ) : showExternalFallback && externalTop ? (
-        <ExternalTopCard data={externalTop} />
+      ) : showExternalFallback ? (
+        <div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+            Top-rated nearby on Google Maps
+          </div>
+          <div className="space-y-3">
+            {externalResults.map((r) => (
+              <ExternalTopCard key={r.external_place_id || r.id} data={r} />
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-zinc-500">Not on DUM Club yet.</p>
+        </div>
       ) : loaded ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
           <p className="text-sm text-zinc-400">No results yet</p>
@@ -1345,30 +1356,47 @@ function SearchResults({
 function ExternalTopCard({ data }: { data: ExternalTopResult }) {
   const rating = typeof data.rating === "number" ? data.rating.toFixed(1) : null;
   const reviews = data.review_count > 0 ? data.review_count.toLocaleString() : null;
+
+  // Google Maps URLs API — free, no API-key billing. Opens Google Maps with
+  // driving directions to the business. Using place_id is the precise match;
+  // destination text is a fallback label for clients that don't honour place_id.
+  // https://developers.google.com/maps/documentation/urls/get-started
+  const directionsHref = (() => {
+    const params = new URLSearchParams({ api: "1" });
+    const destLabel = data.address ? `${data.name}, ${data.address}` : data.name;
+    params.set("destination", destLabel);
+    if (data.external_place_id) {
+      params.set("destination_place_id", data.external_place_id);
+    }
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  })();
+
   return (
-    <div>
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
-        Nearest top-rated match on Google Maps
-      </div>
-      <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5">
-        <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold text-white">{data.name}</div>
-          {data.address ? (
-            <div className="mt-1 truncate text-[12px] text-zinc-400">{data.address}</div>
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5">
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-bold text-white">{data.name}</div>
+        {data.address ? (
+          <div className="mt-1 truncate text-[12px] text-zinc-400">{data.address}</div>
+        ) : null}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400">
+          {rating ? (
+            <span className="inline-flex items-center gap-1 text-amber-300">
+              <span aria-hidden>★</span>
+              <span className="font-mono">{rating}</span>
+            </span>
           ) : null}
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400">
-            {rating ? (
-              <span className="inline-flex items-center gap-1 text-amber-300">
-                <span aria-hidden>★</span>
-                <span className="font-mono">{rating}</span>
-              </span>
-            ) : null}
-            {reviews ? <span className="text-zinc-500">{reviews} reviews</span> : null}
-            {data.category ? <span className="text-zinc-500">· {data.category}</span> : null}
-          </div>
+          {reviews ? <span className="text-zinc-500">{reviews} reviews</span> : null}
+          {data.category ? <span className="text-zinc-500">· {data.category}</span> : null}
         </div>
       </div>
-      <p className="mt-2 text-[11px] text-zinc-500">Not on DUM Club yet.</p>
+      <a
+        href={directionsHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300 transition hover:border-emerald-300 hover:bg-emerald-400/20"
+      >
+        Directions
+      </a>
     </div>
   );
 }
@@ -2791,7 +2819,7 @@ export default function Home() {
         {/* ── SEARCH RESULTS ── rendered only after the user runs a search */}
         <SearchResults
           results={findResults}
-          externalTop={findExternalResults.length > 0 ? findExternalResults[0] : null}
+          externalResults={findExternalResults}
         />
 
         {/* ── DEALS ── hidden when no real active offers exist */}
