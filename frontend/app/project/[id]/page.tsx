@@ -3288,11 +3288,11 @@ const heroUtility =
         .filter((s) => s.length > 4)
         .slice(0, 3);
     }
-    const first = raw || "Unlock premium access";
+    const first = raw || "Premium business features";
     return [
       first,
-      "AI-powered features for holders",
-      "Ecosystem growth benefits",
+      "AI-powered assistant included",
+      "DUM Points on every purchase",
     ].slice(0, 3);
   }, [project?.utility_value]);
 
@@ -3549,7 +3549,7 @@ return (
                       <div className="mt-auto pt-4 flex items-center justify-between">
                         <div>
                           {pitchFree ? (
-                            <span className="text-lg font-bold text-emerald-400">Free for holders</span>
+                            <span className="text-lg font-bold text-emerald-400">Free for members</span>
                           ) : (
                             <span className="font-mono text-lg font-bold text-white">{pitchPrice}</span>
                           )}
@@ -5467,49 +5467,33 @@ return (
       </div>
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Workspace</div>
+        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Assistant</div>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-            {chatMeta.is_holder ? "Holder" : "Non-holder"}
-          </span>
-
-          <span
-            className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${
-              chatMeta.locked ? "border-red-400/30 text-red-300" : "border-zinc-700 text-zinc-300"
-            }`}
-          >
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/5 px-3 py-1 text-xs uppercase tracking-[0.18em] text-emerald-300">
             {chatMeta.is_holder && chatMeta.holder_unlimited
               ? "Unlimited AI"
               : chatMeta.free_questions_left > 0
-              ? `${chatMeta.free_questions_left} FREE QUESTION${
-                  chatMeta.free_questions_left === 1 ? "" : "S"
-                }`
-              : "SUPPORT TO UNLOCK"}
+              ? `${chatMeta.free_questions_left} free question${
+                  chatMeta.free_questions_left === 1 ? "" : "s"
+                } remaining`
+              : "Upgrade for more"}
           </span>
-
-          {projectView === "analytics" && (
-            <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
-              Mint: {shortMint(chatMeta.token_mint_address || project?.token_mint_address)}
-            </span>
-          )}
         </div>
 
         <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Supporter Perks</div>
+          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Built-in AI</div>
           <div className="text-sm text-zinc-300">
             {chatMeta.is_holder && chatMeta.holder_unlimited
-              ? `Supporter recognized. You have unlimited AI access on this project.`
-              : `This project gives ${chatMeta.free_limit} free AI questions. Purchase an offer to unlock unlimited access.`}
+              ? `You have unlimited AI access for this business.`
+              : `This business includes ${chatMeta.free_limit} free AI questions. Purchase any offer to unlock unlimited access.`}
           </div>
         </div>
 
         <h2 className="text-2xl font-bold text-white">Ask AI</h2>
 
         <p className="mt-3 text-zinc-500">
-          This project includes {chatMeta.free_limit} free AI question
-          {chatMeta.free_limit === 1 ? "" : "s"}. Purchase an offer to unlock
-          unlimited AI access.
+          Ask anything about this business — services, pricing, availability. {chatMeta.free_limit} free question{chatMeta.free_limit === 1 ? "" : "s"} included.
         </p>
 
         {chatMeta.locked && (
@@ -5521,7 +5505,7 @@ return (
                 onClick={scrollToBuyPanel}
                 className="mt-3 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
               >
-                Purchase an offer to unlock →
+                Browse offers to unlock →
               </button>
             )}
           </div>
@@ -5542,7 +5526,7 @@ return (
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
             className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
           >
-            {loadingAsk ? "Asking..." : chatMeta.locked ? "Support to Unlock" : "Ask AI"}
+            {loadingAsk ? "Asking..." : chatMeta.locked ? "Purchase to Unlock" : "Ask AI"}
           </button>
         </form>
 
@@ -6927,7 +6911,7 @@ return (
             <h2 className="text-3xl font-bold text-white">Add Memory</h2>
 
             <p className="mt-3 max-w-2xl text-zinc-500">
-              Paste a memory, note, creator post, transcript, or product insight so your AI can use it
+              Paste a memory, note, social post, transcript, or product insight so your AI can use it
               later.
             </p>
 
@@ -6936,7 +6920,7 @@ return (
               <textarea
                 value={memoryText}
                 onChange={(e) => setMemoryText(e.target.value)}
-                placeholder="Paste a memory, story, creator post, transcript, or note..."
+                placeholder="Paste a memory, story, social post, transcript, or note..."
                 rows={7}
                 className="w-full rounded-2xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none transition focus:border-emerald-400"
               />

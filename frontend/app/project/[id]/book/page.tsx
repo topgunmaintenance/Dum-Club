@@ -222,7 +222,7 @@ export default function BookPage() {
             <div className="mb-3 text-3xl">📅</div>
             <p className="text-zinc-400">No available slots right now.</p>
             <p className="mt-2 text-sm text-zinc-600">
-              Check back soon or contact the creator.
+              Check back soon or contact the business directly.
             </p>
           </div>
         ) : (

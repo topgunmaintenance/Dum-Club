@@ -140,7 +140,7 @@ const TEMPLATE_STARTERS = [
   { label: "Find food", prompt: "Find me a meal prep or catering service" },
   { label: "Sell design", prompt: "A freelance design studio offering logo, brand, and web packages" },
   { label: "Find designers", prompt: "Find me a logo designer or brand studio" },
-  { label: "Sell digital goods", prompt: "A creator selling online courses, templates, and digital downloads" },
+  { label: "Sell digital goods", prompt: "A business selling online courses, templates, and digital downloads" },
   { label: "Find courses", prompt: "Find me online courses or digital templates" },
 ];
 
