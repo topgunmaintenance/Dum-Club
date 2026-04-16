@@ -4794,7 +4794,7 @@ return (
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
-              Creator Offers
+              Offers
             </span>
             {isDemo && (
               <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400/60">
@@ -4829,7 +4829,7 @@ return (
           </span>
         </div>
         <p className="mt-2 text-sm text-zinc-500">
-          {isOwner ? "Products, services, and subscriptions for your community" : "Browse what this creator has to offer"}
+          {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
         </p>
 
         {/* Demo mode indicator (section-level) */}
@@ -5452,7 +5452,7 @@ return (
           <div className="mt-6 rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
             <div className="text-2xl mb-3 opacity-30">🛍</div>
             <p className="text-sm font-medium text-zinc-500">
-              {isOwner ? "You haven't listed any offers yet" : "This creator hasn't listed any offers yet."}
+              {isOwner ? "You haven't listed any offers yet" : "This business hasn't listed any offers yet."}
             </p>
             {isOwner && !offerFormOpen && (
               <button
@@ -6544,26 +6544,15 @@ return (
       <p className="mt-3 text-xs text-zinc-500">
         Share this code with your team or drop it in Discord.
       </p>
-      {project?.token_mint_address && (
-        <div className="mt-4 rounded-lg border border-zinc-800 bg-base/40 px-3 py-2">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-            {isSimulatedToken(project.token_mint_address)
-              ? "Preview · future-phase feature"
-              : "Verified on DUM Club"}
-          </div>
-          <div className="mt-1 break-all font-mono text-[11px] text-zinc-400">
-            {isSimulatedToken(project.token_mint_address) ? "Demo mint · " : "Mint · "}
-            {project.token_mint_address}
-          </div>
-        </div>
-      )}
+      {/* Mint address hidden per doctrine §12.3 — no blockchain on consumer pages.
+           Will return in Phase 3 when Solana claim flow is legally cleared. */}
     </div>
   )}
 
   <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-3">
-    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Rewards &amp; Perks</div>
+    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Points Perks</div>
     <div className="mt-2 text-sm text-zinc-300">
-      {parsedAiOutput?.token_utility || project?.token_utility || "Rewards details are not configured yet."}
+      Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
     </div>
   </div>
 
