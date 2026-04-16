@@ -8,21 +8,21 @@ import { DumPill } from "../components/DumPill";
 import { LiveActivityTicker } from "../components/LiveActivityTicker";
 
 export const metadata: Metadata = {
-  title: "DUM Club — Sell Live. Keep Everything. Zero Commission Marketplace.",
+  title: "DUM Club — Live Selling Marketplace. Flat Fee. Zero Commission.",
   description:
-    "DUM Club is the flat-fee live selling marketplace. Zero commission, AI-powered customer retention, and local deals discovery. The first 100 merchants join free.",
+    "Live selling, local deals, and rewards that bring customers back. Sellers pay one flat fee — $29 to $99/mo — and keep 100% of every sale. No commission, ever. First 100 merchants join free.",
   openGraph: {
-    title: "DUM Club — Sell Live. Keep Everything.",
+    title: "DUM Club — Live Selling Marketplace. Zero Commission.",
     description:
-      "Flat $29–$99/mo. Zero commission. Live selling, AI retention, and deals discovery. It's DUM to pay per-sale fees.",
+      "Watch live sellers. Discover local deals. Earn rewards everywhere. Sellers keep everything — flat fee, no commission. The Whatnot alternative that doesn't tax every sale.",
     siteName: "DUM Club",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DUM Club — Sell Live. Keep Everything.",
+    title: "DUM Club — Live Selling Marketplace. Zero Commission.",
     description:
-      "Flat $29–$99/mo. Zero commission. Live selling, AI retention, and deals discovery. It's DUM to pay per-sale fees.",
+      "Watch live sellers. Discover local deals. Earn rewards everywhere. Sellers keep everything — flat fee, no commission. The Whatnot alternative that doesn't tax every sale.",
   },
 };
 
