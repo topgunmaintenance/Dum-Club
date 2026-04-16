@@ -44,6 +44,52 @@ You MUST:
 
 ---
 
+### SCOPE PROTECTION RULE
+
+For every task, before editing code, you MUST:
+
+1. Identify the minimum set of files required.
+2. List those files before making changes.
+3. Preserve existing working functionality unless the task
+   explicitly says to replace or delete it.
+4. Never add a second version of an existing section if one
+   already exists.
+5. Never remove code outside the named scope.
+6. If a requested change conflicts with existing working
+   behavior, STOP and explain the conflict before editing.
+7. Prefer modifying the existing component over creating a
+   duplicate.
+8. After changes, report:
+   - files touched
+   - what was added
+   - what was removed
+   - why each removal was necessary
+
+**Hard-stop phrase for task files:**
+
+> Do not modify any code outside the named files for this task.
+> If more files are needed, stop and ask first.
+
+Every new task file should end with this phrase verbatim.
+
+**Pre-flight workflow:**
+
+For non-trivial changes (anything touching a page that already
+has working sections), the user will run:
+
+1. `run task: scope-audit` — Claude inspects the target
+   surface, lists exactly what will be touched, flags
+   duplication/deletion risk, then STOPS.
+2. User reviews the audit.
+3. `run task: <actual-task>` — Claude executes the actual
+   work with the audit as a contract.
+
+If the user skips the audit and goes straight to the task,
+Claude should still follow the SCOPE PROTECTION RULE — but
+the audit is the cleanest path.
+
+---
+
 ### COMMIT RULE
 
 - ONE feature = ONE commit
