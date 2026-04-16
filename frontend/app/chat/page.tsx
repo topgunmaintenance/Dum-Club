@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { Starfield } from "../../components/Starfield";
 
 import { API_BASE } from "../../lib/apiBase";
@@ -77,9 +76,6 @@ function formatMessage(text: string) {
 /* ── Component ─────────────────────────────────────── */
 function ChatPageInner() {
   const { user } = useAuth();
-  const { wallets } = useSolanaWallets();
-  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
-
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -89,28 +85,9 @@ function ChatPageInner() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatMode, setChatMode] = useState<"general" | "project">("general");
   const [currentProject, setCurrentProject] = useState<{ id: string; name: string } | null>(null);
-  const [solBalance, setSolBalance] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
-
-  /* ── Fetch SOL balance from same endpoint as dashboard ── */
-  useEffect(() => {
-    if (!walletAddress) {
-      setSolBalance(null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`${API_BASE}/api/sol-balance/${walletAddress}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setSolBalance(data.sol ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setSolBalance(null);
-      });
-    return () => { cancelled = true; };
-  }, [walletAddress]);
 
   const remaining = Math.max(0, FREE_MESSAGE_LIMIT - usedCount);
   const limitReached = remaining <= 0;
@@ -606,7 +583,7 @@ function ChatPageInner() {
                 <div className="dc-empty-title">What does your business need?</div>
                 <div className="dc-empty-sub">
                   <span className="dc-empty-sub-full">DUM AI is your business co-pilot &mdash; powered by Claude. It understands offers, pricing, growth strategy, and marketing so you can sell smarter and grow faster.</span>
-                  <span className="dc-empty-sub-short">DUM AI helps with launch strategy, growth, monetization, and tokenomics.</span>
+                  <span className="dc-empty-sub-short">DUM AI helps with selling strategy, growth, pricing, and marketing.</span>
                 </div>
                 <div className="dc-suggestions">
                   {suggestions.map((s) => (
@@ -679,7 +656,7 @@ function ChatPageInner() {
                     style={{ width: "auto", padding: "10px 24px", fontSize: 11 }}
                     onClick={() => setShowLimitModal(true)}
                   >
-                    Unlock with token
+                    Learn more
                   </button>
                 </div>
               </div>
@@ -721,7 +698,7 @@ function ChatPageInner() {
             <div className="dc-modal-eyebrow">You&apos;re building fast.</div>
             <h2 className="dc-modal-title">You&apos;ve used your free AI messages.</h2>
             <p className="dc-modal-desc">
-              Upgrade for unlimited access, or purchase an offer to continue.
+              Upgrade your merchant tier for unlimited AI access.
             </p>
             <button
               className="dc-btn-primary"
@@ -731,15 +708,8 @@ function ChatPageInner() {
               Upgrade
             </button>
             <button
-              className="dc-btn-secondary"
-              style={{ marginTop: 10 }}
-              onClick={() => setShowLimitModal(false)}
-            >
-              Unlock with token
-            </button>
-            <button
               className="dc-btn-dismiss"
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 10 }}
               onClick={() => setShowLimitModal(false)}
             >
               Dismiss
