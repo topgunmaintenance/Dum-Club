@@ -17,7 +17,14 @@ import httpx
 
 from api.routes.feature_flags import get_flag
 
-_GOOGLE_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+# Prefer a backend-only key (no HTTP referrer restriction). Fall back to the
+# shared frontend key only if a dedicated backend key isn't set — this lets
+# us keep the frontend-facing key locked to HTTP referrers while still
+# reaching Places API (New) from Railway.
+_GOOGLE_API_KEY = (
+    os.getenv("GOOGLE_MAPS_API_KEY_BACKEND")
+    or os.getenv("GOOGLE_MAPS_API_KEY", "")
+)
 _SEARCH_RADIUS = int(os.getenv("GOOGLE_MAPS_SEARCH_RADIUS", "10000"))  # meters
 _TIMEOUT = 4.0  # seconds — fast fail to keep homepage responsive
 
