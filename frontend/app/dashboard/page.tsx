@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { getTier } from "../../lib/dumTiers";
@@ -21,10 +20,6 @@ type Project = {
 
 import { API_BASE } from "../../lib/apiBase";
 
-function shortAddress(addr: string): string {
-  return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
-}
-
 function statusLabel(project: Project): { text: string; color: string } {
   const s = project.status || "draft";
   const ts = project.token_status;
@@ -37,12 +32,7 @@ function statusLabel(project: Project): { text: string; color: string } {
 
 export default function DashboardPage() {
   const { user, getToken } = useAuth();
-  const { wallets } = useSolanaWallets();
-  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
-
   const [projects, setProjects] = useState<Project[]>([]);
-  const [solBalance, setSolBalance] = useState<number | null>(null);
-  const [copied, setCopied] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [dumBalance, setDumBalance] = useState(0);
   const [bizProfile, setBizProfile] = useState<any>(null);
@@ -78,23 +68,6 @@ export default function DashboardPage() {
     window.addEventListener("dum-points-update", handler);
     return () => window.removeEventListener("dum-points-update", handler);
   }, [user]);
-
-  useEffect(() => {
-    if (!walletAddress) {
-      setSolBalance(null);
-      return;
-    }
-    let cancelled = false;
-    fetch(`${API_BASE}/api/sol-balance/${walletAddress}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setSolBalance(data.sol ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setSolBalance(null);
-      });
-    return () => { cancelled = true; };
-  }, [walletAddress]);
 
   const loadProjects = useCallback(async () => {
     if (!user?.privyId) {
@@ -227,13 +200,6 @@ export default function DashboardPage() {
     }
   }
 
-  function copyAddress() {
-    if (!walletAddress) return;
-    navigator.clipboard.writeText(walletAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   const liveCount = projects.filter((p) => p.status === "live").length;
 
   return (
@@ -274,29 +240,23 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Account + Balance */}
+          {/* Account */}
           <div className="rounded-2xl border border-zinc-800 bg-card p-6 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Account
             </div>
-            {walletAddress ? (
+            {user ? (
               <div className="mt-2 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-400">Active</span>
-                  </span>
-                  <span className="font-mono text-lg font-bold text-white">
-                    {solBalance !== null ? `${solBalance.toFixed(4)}` : "—"}
-                    <span className="ml-1 text-xs font-normal text-zinc-500">balance</span>
-                  </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-400">Signed in</span>
                 </div>
                 <div className="mt-1 text-[11px] text-zinc-600">
-                  Payments and ownership secured
+                  {user.email || "Account active"}
                 </div>
               </div>
             ) : (
-              <div className="mt-2 text-sm text-zinc-600">No wallet connected</div>
+              <div className="mt-2 text-sm text-zinc-600">Not signed in</div>
             )}
           </div>
         </div>
@@ -596,11 +556,11 @@ export default function DashboardPage() {
           <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">What to do next</div>
           <div className="space-y-2">
             {projects.length === 0 && (
-              <Link href="/build" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
-                <span className="text-base">🚀</span>
+              <Link href="/merchant" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
+                <span className="text-base">🏪</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Launch your first storefront</div>
-                  <div className="text-[11px] text-zinc-500">Earn +25 DUM Points</div>
+                  <div className="text-sm font-bold text-white">Become a founding merchant</div>
+                  <div className="text-[11px] text-zinc-500">$0 now · spots limited to 100</div>
                 </div>
               </Link>
             )}
@@ -614,11 +574,11 @@ export default function DashboardPage() {
               </Link>
             )}
             {dumBalance < 50 && (
-              <Link href="/" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+              <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
                 <span className="text-base">💡</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Launch another project</div>
-                  <div className="text-[11px] text-zinc-500">Earn +25 DUM Points to reach Builder tier</div>
+                  <div className="text-sm font-bold text-white">Discover local businesses</div>
+                  <div className="text-[11px] text-zinc-500">Earn DUM Points with every purchase</div>
                 </div>
               </Link>
             )}
@@ -635,11 +595,11 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
           <Link
-            href="/build"
+            href="/merchant"
             className="group flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-6 transition hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
           >
-            <span className="text-2xl">🚀</span>
-            <span className="text-lg font-bold text-emerald-400">Create Business</span>
+            <span className="text-2xl">🏪</span>
+            <span className="text-lg font-bold text-emerald-400">Become a Merchant</span>
           </Link>
           <Link
             href="/orders"
@@ -655,14 +615,14 @@ export default function DashboardPage() {
           <div className="mb-10">
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
-                <div className="mb-2 text-2xl">💡</div>
-                <div className="mb-1 text-base font-bold text-white">Launch your first storefront</div>
-                <p className="mb-4 text-sm text-zinc-400">Describe your idea and AI builds your storefront with offers in under 60 seconds.</p>
+                <div className="mb-2 text-2xl">🏪</div>
+                <div className="mb-1 text-base font-bold text-white">Start selling on DUM Club</div>
+                <p className="mb-4 text-sm text-zinc-400">Join as a founding merchant — $0 during the founding period, locked at $29/month forever after. No commission, ever.</p>
                 <Link
-                  href="/build"
+                  href="/merchant"
                   className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
                 >
-                  Get Started →
+                  Claim Your Spot →
                 </Link>
               </div>
             ) : (

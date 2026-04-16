@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useAuth } from "../lib/auth/AuthContext";
 import { API_BASE } from "../lib/apiBase";
 
 export function Navbar() {
   const path = usePathname();
-  const { publicKey, connected } = useWallet();
   const { user, loading, login, logout } = useAuth();
 
   const [mounted, setMounted] = useState(false);
@@ -69,14 +67,10 @@ export function Navbar() {
 
   // Items in the authenticated-user dropdown (and mirrored into mobile menu).
   const userMenuLinks = [
-    { href: "/build", label: "Build" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/orders", label: "Orders" },
     { href: "/chat", label: "AI Chat" },
   ];
-
-  const shortAddress = publicKey
-    ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
-    : "";
 
   const shortEmail =
     user?.email && user.email.length > 26
@@ -426,20 +420,6 @@ export function Navbar() {
                 </button>
               )}
 
-              {connected && (
-                <div
-                  style={{
-                    fontFamily: "var(--font-geist-mono), monospace",
-                    fontSize: "12px",
-                    color: "#00FFB2",
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Account Active
-                </div>
-              )}
             </>
           )}
         </div>
@@ -632,19 +612,6 @@ export function Navbar() {
               </button>
             )}
 
-            {connected && (
-              <div
-                style={{
-                  fontFamily: "var(--font-geist-mono), monospace",
-                  fontSize: "11px",
-                  color: "#00FFB2",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Account Active
-              </div>
-            )}
           </div>
         )}
       </div>
