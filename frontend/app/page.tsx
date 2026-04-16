@@ -2686,7 +2686,7 @@ export default function Home() {
                 Replace all those dumb expenses with{" "}
                 <span className="hero-text-glow">one simple system.</span>
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-zinc-200 sm:text-base">
+              <p className="mx-auto mt-5 max-w-2xl text-[15px] font-medium leading-relaxed text-white sm:text-base">
                 Live selling, loyalty, AI retention, and local deals — all on one flat fee. $29–$99/month. Zero commission. First 100 merchants free.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
