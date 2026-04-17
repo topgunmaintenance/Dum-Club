@@ -1184,7 +1184,7 @@ export default function ProjectPage() {
     const oid = offer.id;
     console.log("[buyOffer] clicked, offer:", oid, offer.title);
     // Automation: capture offer click
-    captureOfferClick(id as string, offer.title, Number(offer.price_usd || 0), authUser?.id);
+    captureOfferClick(id as string, offer.title, Number(offer.price_usd || 0), authUser?.privyId);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
     setBuyError((p) => ({ ...p, [oid]: "" }));
 
@@ -1287,7 +1287,7 @@ export default function ProjectPage() {
         const buyPrice = overridePrice ?? Number(offer.price_usd || 0);
         sessionStorage.setItem("liveLastBuyPrice", String(buyPrice));
         // Automation: capture purchase event before redirect
-        capturePurchase(id as string, offer.title, buyPrice, data.order_id, authUser?.id);
+        capturePurchase(id as string, offer.title, buyPrice, data.order_id, authUser?.privyId);
         window.location.href = data.checkout_url;
       } else {
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
@@ -1671,7 +1671,7 @@ export default function ProjectPage() {
     const sessionId = getOrCreateSessionId(id);
 
     // Automation: capture inquiry event
-    captureInquiry(id, currentQuestion, authUser?.id);
+    captureInquiry(id, currentQuestion, authUser?.privyId);
 
     try {
       setLoadingAsk(true);
