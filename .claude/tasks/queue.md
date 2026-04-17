@@ -20,6 +20,7 @@ System in CLAUDE.md.
 3. [x] live-section      — `30d702b` on `feature/search-hero`
 4. [x] deals-section     — `feature/deals-section` · 2026-04-15
 5. [x] automation-layer  — `feature/automation-layer` · 2026-04-17
+6. [ ] discover-rebuild  — Pass 1: frontend-only buyer-page rebuild
 
 ## Notes
 
