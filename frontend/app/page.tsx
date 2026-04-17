@@ -1111,34 +1111,55 @@ const HOME_SECTIONS = [
   { id: "section-cta", label: "Get Started" },
 ];
 
-/* ─── Live Sale Toast (cycles realistic sale notifications) ─── */
-const SALE_NOTIFICATIONS = [
-  { item: "Full Detail Package", price: "$89.00", time: "2m ago" },
-  { item: "Monthly Membership", price: "$49.00", time: "5m ago" },
-  { item: "8-Week Coaching Program", price: "$149.00", time: "8m ago" },
-  { item: "Basic Exterior Wash", price: "$29.00", time: "12m ago" },
-  { item: "Brand Design Package", price: "$299.00", time: "15m ago" },
-  { item: "Resume Review Session", price: "$35.00", time: "22m ago" },
-];
+/* ─── Live Sale Toast (real Stripe sales only — no demo data) ─── */
+const SALE_TOAST_FLOOR = 1; // minimum real sales before toast appears
+
+interface RealSale {
+  item: string;
+  price: string;
+  time: string;
+}
 
 function LiveSaleToast() {
+  const [sales, setSales] = useState<RealSale[]>([]);
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Fetch real Stripe-verified sales — same endpoint LiveActivityTicker uses
+    fetch("/api/checkout/recent-sales?limit=6")
+      .then((r) => (r.ok ? r.json() : { sales: [] }))
+      .then((data) => {
+        const rows: RealSale[] = (data.sales || []).map(
+          (s: { item_name?: string; amount?: number; created_at?: string }) => ({
+            item: s.item_name || "Purchase",
+            price: `$${((s.amount || 0) / 100).toFixed(2)}`,
+            time: s.created_at
+              ? `${Math.max(1, Math.round((Date.now() - new Date(s.created_at).getTime()) / 60000))}m ago`
+              : "just now",
+          })
+        );
+        if (rows.length >= SALE_TOAST_FLOOR) setSales(rows);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (sales.length === 0) return;
     // Show first toast after 4s, then cycle every 18s
     const initialDelay = setTimeout(() => setVisible(true), 4000);
     const cycle = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
-        setIdx((i) => (i + 1) % SALE_NOTIFICATIONS.length);
+        setIdx((i) => (i + 1) % sales.length);
         setVisible(true);
       }, 400);
     }, 18000);
     return () => { clearTimeout(initialDelay); clearInterval(cycle); };
-  }, []);
+  }, [sales]);
 
-  const sale = SALE_NOTIFICATIONS[idx];
+  if (sales.length === 0) return null;
+  const sale = sales[idx];
 
   return (
     <div

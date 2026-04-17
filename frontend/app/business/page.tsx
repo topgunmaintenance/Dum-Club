@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "../../lib/apiBase";
 
@@ -29,8 +30,12 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default function BusinessPage() {
+  const searchParams = useSearchParams();
   const [founding, setFounding] = useState<FoundingStatus | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const initialTab = (searchParams.get("tab") as TabId) || "overview";
+  const [activeTab, setActiveTab] = useState<TabId>(
+    TABS.some((t) => t.id === initialTab) ? initialTab : "overview"
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -399,6 +404,133 @@ function PricingTab() {
 
         <div className="mt-6 text-center text-[11px] text-zinc-500">
           Need white-label loyalty? <span className="font-bold text-emerald-400">Business tier from $499/mo</span> · Enterprise from $2,000/mo
+        </div>
+      </section>
+
+      {/* ── Paid Placement Surfaces ── */}
+      <section className="mb-16">
+        <div className="mb-10 text-center">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">Boost your visibility</div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Get discovered <span className="text-emerald-400">faster.</span>
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-zinc-400">
+            Flat-rate placements — no bidding, no per-click fees. Pay once, stay visible.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              name: "Featured Merchant",
+              price: "$49",
+              period: "/week",
+              desc: "Top of Discover page",
+              perks: ["Featured badge on your storefront", "Priority in category browse", "Highlighted in search results"],
+              icon: "⭐",
+            },
+            {
+              name: "Category Sponsor",
+              price: "$199",
+              period: "/mo",
+              desc: "Own your category",
+              perks: ["Top position in your category", "Sponsor badge on category page", "Included in Best Deals This Week"],
+              icon: "🏷️",
+            },
+            {
+              name: "Ticker Boost",
+              price: "$19",
+              period: "/week",
+              desc: "Homepage live ticker",
+              perks: ["Your sales appear in the live ticker", "Emerald highlight on your entries", "Visible to every homepage visitor"],
+              icon: "📡",
+            },
+          ].map((placement) => (
+            <div
+              key={placement.name}
+              className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 transition-all duration-300 hover:border-emerald-400/30"
+            >
+              <div className="mb-3 text-2xl">{placement.icon}</div>
+              <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-zinc-500">{placement.name}</div>
+              <div className="mb-1 flex items-baseline gap-1">
+                <span className="text-3xl font-black text-white">{placement.price}</span>
+                <span className="text-sm text-zinc-500">{placement.period}</span>
+              </div>
+              <div className="mb-5 text-[12px] text-zinc-400">{placement.desc}</div>
+              <div className="space-y-2">
+                {placement.perks.map((p) => (
+                  <div key={p} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                    <span className="text-emerald-400">✓</span>
+                    {p}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-[11px] text-zinc-500">
+          All placements are flat-rate — no per-click, no bidding, no percentage of sales. Ever.
+        </p>
+      </section>
+
+      {/* ── Flat-fee Add-ons ── */}
+      <section className="mb-16">
+        <div className="mb-10 text-center">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">Stack on any tier</div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Add-ons. <span className="text-emerald-400">Flat fee. No surprises.</span>
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-zinc-400">
+            Layer these onto any tier to unlock more without upgrading. Every add-on is a flat monthly fee.
+          </p>
+        </div>
+
+        <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1">
+              <span className="text-sm">🚀</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Points Boost</span>
+            </div>
+            <div className="mb-1 flex items-baseline gap-1">
+              <span className="text-3xl font-black text-white">$19</span>
+              <span className="text-sm text-zinc-500">/mo</span>
+              <span className="ml-2 text-[11px] text-zinc-600">or $49/mo for 3× multiplier</span>
+            </div>
+            <p className="mb-4 text-[12px] leading-relaxed text-zinc-400">
+              Give your customers a higher DUM Points multiplier on every purchase. More points means they come back faster and spend more at your store.
+            </p>
+            <div className="space-y-2">
+              {["2× points at $19/mo · 3× points at $49/mo", "Customers earn faster at YOUR store", "Boosts repeat purchase rate", "Stackable with any tier"].map((f) => (
+                <div key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                  <span className="text-emerald-400">✓</span>
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1">
+              <span className="text-sm">📅</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Service Pro</span>
+            </div>
+            <div className="mb-1 flex items-baseline gap-1">
+              <span className="text-3xl font-black text-white">$29</span>
+              <span className="text-sm text-zinc-500">/mo</span>
+            </div>
+            <p className="mb-4 text-[12px] leading-relaxed text-zinc-400">
+              Built for service businesses. Unlock Book-Now, calendar scheduling, and automated appointment reminders on your storefront.
+            </p>
+            <div className="space-y-2">
+              {["Book-Now button on your storefront", "Calendar sync + availability slots", "Automated appointment reminders", "Starter + Service Pro = $58/mo total"].map((f) => (
+                <div key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
+                  <span className="text-emerald-400">✓</span>
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
