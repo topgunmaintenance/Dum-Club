@@ -20,6 +20,7 @@ import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
+import { captureInquiry, captureOfferClick, capturePurchase } from "../../../lib/automation";
 import {
   LineChart,
   Line,
@@ -1182,6 +1183,8 @@ export default function ProjectPage() {
   async function buyOffer(offer: Offer, auctionId?: string, overridePrice?: number) {
     const oid = offer.id;
     console.log("[buyOffer] clicked, offer:", oid, offer.title);
+    // Automation: capture offer click
+    captureOfferClick(id as string, offer.title, Number(offer.price_usd || 0), authUser?.id);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
     setBuyError((p) => ({ ...p, [oid]: "" }));
 
@@ -1283,6 +1286,8 @@ export default function ProjectPage() {
         setBuyStep((p) => ({ ...p, [oid]: "redirecting" }));
         const buyPrice = overridePrice ?? Number(offer.price_usd || 0);
         sessionStorage.setItem("liveLastBuyPrice", String(buyPrice));
+        // Automation: capture purchase event before redirect
+        capturePurchase(id as string, offer.title, buyPrice, data.order_id, authUser?.id);
         window.location.href = data.checkout_url;
       } else {
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
@@ -1664,6 +1669,9 @@ export default function ProjectPage() {
 
     const currentQuestion = question.trim();
     const sessionId = getOrCreateSessionId(id);
+
+    // Automation: capture inquiry event
+    captureInquiry(id, currentQuestion, authUser?.id);
 
     try {
       setLoadingAsk(true);

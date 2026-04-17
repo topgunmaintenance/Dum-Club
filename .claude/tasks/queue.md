@@ -19,7 +19,7 @@ System in CLAUDE.md.
 2. [x] search-results    — committed on `feature/search-results`
 3. [x] live-section      — `30d702b` on `feature/search-hero`
 4. [x] deals-section     — `feature/deals-section` · 2026-04-15
-5. [ ] automation-layer
+5. [x] automation-layer  — `feature/automation-layer` · 2026-04-17
 
 ## Notes
 
