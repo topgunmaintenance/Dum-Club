@@ -9,7 +9,7 @@
  * Section 3 pricing is the source of truth for every number.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "../../lib/apiBase";
@@ -30,6 +30,14 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default function BusinessPage() {
+  return (
+    <Suspense fallback={null}>
+      <BusinessPageInner />
+    </Suspense>
+  );
+}
+
+function BusinessPageInner() {
   const searchParams = useSearchParams();
   const [founding, setFounding] = useState<FoundingStatus | null>(null);
   const initialTab = (searchParams.get("tab") as TabId) || "overview";
