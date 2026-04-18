@@ -70,35 +70,27 @@ export async function createStripeCheckoutLink(
           quantity: input.quantity,
         };
 
-    const createParams: Record<string, unknown> = {
-      mode: "payment",
-      line_items: [lineItem],
-      success_url: config.tools.stripe_link.success_url || "https://dum.club/orders?checkout=success",
-      cancel_url: config.tools.stripe_link.cancel_url || "https://dum.club?checkout=cancelled",
-      metadata: {
-        business_id: input.business_id,
-        service_id: input.service_id,
-        source: "ai_agent",
-        ...input.metadata,
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: "payment",
+        line_items: [lineItem],
+        success_url: config.tools.stripe_link.success_url || "https://dum.club/orders?checkout=success",
+        cancel_url: config.tools.stripe_link.cancel_url || "https://dum.club?checkout=cancelled",
+        customer_email: input.customer_email || undefined,
+        metadata: {
+          business_id: input.business_id,
+          service_id: input.service_id,
+          source: "ai_agent",
+          ...input.metadata,
+        },
       },
-    };
+      {
+        idempotencyKey: input.idempotency_key,
+        ...(connectId ? { stripeAccount: connectId } : {}),
+      }
+    );
 
-    if (input.customer_email) {
-      createParams.customer_email = input.customer_email;
-    }
-
-    const requestOpts: Record<string, string> = {
-      idempotencyKey: input.idempotency_key,
-    };
-    if (connectId) {
-      requestOpts.stripeAccount = connectId;
-    }
-
-    // Stripe SDK typing varies across major versions; we pass validated
-    // params and let the runtime handle it.
-    const session = await (stripe.checkout.sessions.create as Function)(createParams, requestOpts);
-
-    const url: string = session.url ?? "";
+    const url = session.url ?? "";
     const expiresAt = session.expires_at
       ? new Date(session.expires_at * 1000).toISOString()
       : new Date(Date.now() + 30 * 60 * 1000).toISOString();
