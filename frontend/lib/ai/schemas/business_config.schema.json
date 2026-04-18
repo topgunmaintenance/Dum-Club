@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dum.club/schemas/business_config.schema.json",
+  "title": "DUM Club AI Agent — Business Config",
+  "type": "object",
+  "required": ["version", "identity", "scope", "tools", "channels"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1"
+    },
+    "identity": {
+      "type": "object",
+      "required": ["business_name", "business_slug", "voice_persona"],
+      "additionalProperties": false,
+      "properties": {
+        "business_name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "business_slug": { "type": "string", "pattern": "^[a-z0-9-]{2,60}$" },
+        "owner_display_name": { "type": "string", "maxLength": 80 },
+        "voice_persona": {
+          "type": "string",
+          "enum": ["friendly", "professional", "casual", "concierge"]
+        },
+        "language": { "type": "string", "default": "en-US" },
+        "timezone": { "type": "string", "default": "America/New_York" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "required": ["services", "hours"],
+      "additionalProperties": false,
+      "properties": {
+        "services": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "price_cents"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9_-]{1,40}$" },
+              "name": { "type": "string", "maxLength": 120 },
+              "description": { "type": "string", "maxLength": 500 },
+              "price_cents": { "type": "integer", "minimum": 0 },
+              "duration_minutes": { "type": "integer", "minimum": 0 },
+              "stripe_price_id": { "type": "string" },
+              "bookable": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "hours": {
+          "type": "object",
+          "patternProperties": {
+            "^(mon|tue|wed|thu|fri|sat|sun)$": {
+              "type": "object",
+              "properties": {
+                "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+                "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+                "closed": { "type": "boolean" }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "faqs": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "required": ["q", "a"],
+            "properties": {
+              "q": { "type": "string", "maxLength": 240 },
+              "a": { "type": "string", "maxLength": 800 }
+            }
+          }
+        },
+        "do_not_discuss": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 120 },
+          "maxItems": 20
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "required": ["stripe_link", "sms", "booking"],
+      "additionalProperties": false,
+      "properties": {
+        "stripe_link": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "success_url": { "type": "string", "format": "uri" },
+            "cancel_url": { "type": "string", "format": "uri" },
+            "currency": { "type": "string", "default": "usd" }
+          }
+        },
+        "sms": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "from_number_e164": { "type": "string", "pattern": "^\\+[1-9]\\d{6,14}$" },
+            "daily_send_cap": { "type": "integer", "minimum": 0, "default": 200 }
+          }
+        },
+        "booking": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "slot_minutes": { "type": "integer", "minimum": 5, "default": 30 },
+            "lead_time_minutes": { "type": "integer", "minimum": 0, "default": 60 },
+            "max_days_ahead": { "type": "integer", "minimum": 1, "default": 30 }
+          }
+        }
+      }
+    },
+    "channels": {
+      "type": "object",
+      "required": ["voice", "sms", "web"],
+      "additionalProperties": false,
+      "properties": {
+        "voice": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "greeting": { "type": "string", "maxLength": 300 },
+            "max_call_seconds": { "type": "integer", "minimum": 30, "default": 600 }
+          }
+        },
+        "sms": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "auto_reply_after_hours": { "type": "boolean", "default": true }
+          }
+        },
+        "web": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "widget_color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+          }
+        }
+      }
+    },
+    "rewards": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dum_points_enabled": { "type": "boolean", "default": true },
+        "points_per_dollar": { "type": "number", "minimum": 0, "default": 1 },
+        "mention_on_checkout": { "type": "boolean", "default": true }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handoff_number_e164": { "type": "string", "pattern": "^\\+[1-9]\\d{6,14}$" },
+        "handoff_triggers": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["complaint", "refund", "urgent", "unknown_request"] }
+        },
+        "notify_owner_on_handoff": { "type": "boolean", "default": true }
+      }
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "never_promise_prices_outside_services": { "type": "boolean", "default": true },
+        "require_consent_before_sms": { "type": "boolean", "default": true },
+        "max_tool_calls_per_conversation": { "type": "integer", "minimum": 1, "default": 6 }
+      }
+    }
+  }
+}
