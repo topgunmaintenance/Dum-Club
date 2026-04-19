@@ -87,6 +87,74 @@ def _resolve_privy_to_owner(supabase, privy_id: str) -> Optional[str]:
     return profile_res.data[0].get("id")
 
 
+def _get_seller_stripe_connect_id(supabase, seller_user_id: str) -> Optional[str]:
+    """
+    Return the seller's Stripe Connect account id if they've completed
+    OAuth (merchants.stripe_connect_id is set), else None. Joining on
+    merchants.owner_privy_id — matches the column the OAuth callback
+    writes in merchant.py:304.
+    """
+    if not seller_user_id:
+        return None
+    res = (
+        supabase.table("merchants")
+        .select("stripe_connect_id")
+        .eq("owner_privy_id", seller_user_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        return None
+    return res.data[0].get("stripe_connect_id") or None
+
+
+def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
+    """
+    Refuse to create a checkout session unless Stripe's live account
+    state says the merchant can actually accept charges. This is the
+    guard that prevents the "connected but not verified yet" class of
+    bug — OAuth completes in seconds but Stripe's identity review
+    takes 24-48h, and until charges_enabled flips true on Stripe's
+    side, any Session created here would fail at the customer-paying
+    step (or worse, succeed and strand the funds).
+
+    Raises HTTPException(400, ...) with a stable error code so the
+    frontend can show the right message.
+    """
+    try:
+        account = stripe_sdk.Account.retrieve(connect_id)
+    except Exception as exc:
+        print(f"[checkout] Stripe Account.retrieve failed for {connect_id}: {exc!r}")
+        raise HTTPException(
+            status_code=502,
+            detail="stripe_account_retrieve_failed",
+        )
+
+    if not getattr(account, "charges_enabled", False):
+        currently_due = []
+        try:
+            reqs = getattr(account, "requirements", None)
+            if reqs is not None:
+                currently_due = list(getattr(reqs, "currently_due", []) or [])
+        except Exception:
+            currently_due = []
+        print(
+            f"[checkout] Merchant {connect_id} cannot accept charges: "
+            f"currently_due={currently_due}"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "merchant_stripe_not_verified",
+                "message": (
+                    "Merchant's Stripe account is still being verified. "
+                    "Try again in a few hours."
+                ),
+                "requirements_due": currently_due,
+            },
+        )
+
+
 # ── Payment Intent ────────────────────────────────────────────
 
 @router.post("/create-payment-intent")
@@ -220,10 +288,52 @@ async def create_payment_intent(
         new_query = urlencode(params, doseq=True)
         return urlunparse(parsed._replace(query=new_query))
 
-    print(f"[checkout] Creating Stripe session: offer={offer['id']}, amount_cents={amount_cents}, buyer={buyer_user_id}")
+    # ── Stripe Connect routing ───────────────────────────────────
+    # Direct-charge model: the Session is created *in the merchant's
+    # connected account* (via the stripe_account request option), and
+    # the platform's cut comes out as application_fee_amount on the
+    # PaymentIntent. Funds settle directly into the merchant's Stripe
+    # balance and pay out on their schedule. Platform never holds the
+    # money.
+    #
+    # Guard: if the seller hasn't finished OAuth OR Stripe says their
+    # account isn't charges_enabled yet, we refuse up front. Better a
+    # visible 400 than a stranded payment.
+    merchant_stripe_id = _get_seller_stripe_connect_id(supabase, seller_user_id)
+    if not merchant_stripe_id:
+        print(
+            f"[checkout] Refusing session: seller {seller_user_id} has no "
+            f"stripe_connect_id in merchants table"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "merchant_stripe_not_connected",
+                "message": (
+                    "This merchant hasn't finished connecting their "
+                    "Stripe account yet."
+                ),
+            },
+        )
+    _assert_merchant_can_receive(s, merchant_stripe_id)
+
+    application_fee_cents = int(round(platform_fee * 100))
+
+    print(
+        f"[checkout] Creating Stripe session: offer={offer['id']}, "
+        f"amount_cents={amount_cents}, buyer={buyer_user_id}, "
+        f"merchant={merchant_stripe_id}, "
+        f"application_fee_cents={application_fee_cents}"
+    )
 
     try:
-        session_params = {
+        payment_intent_data: dict = {}
+        if application_fee_cents > 0:
+            payment_intent_data["application_fee_amount"] = application_fee_cents
+        if buyer_email:
+            payment_intent_data["receipt_email"] = buyer_email
+
+        session_params: dict = {
             "mode": "payment",
             "line_items": [{
                 "price_data": {
@@ -241,14 +351,27 @@ async def create_payment_intent(
                 "buyer_user_id": buyer_user_id,
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
+                "stripe_connect_account_id": merchant_stripe_id,
             },
             "success_url": _append_query_param(success_url, "checkout", "success"),
             "cancel_url": _append_query_param(cancel_url, "checkout", "cancelled"),
         }
         if buyer_email:
             session_params["customer_email"] = buyer_email
-            session_params["payment_intent_data"] = {"receipt_email": buyer_email}
-        session = s.checkout.Session.create(**session_params)
+        if payment_intent_data:
+            session_params["payment_intent_data"] = payment_intent_data
+
+        # stripe_account is a Stripe SDK request option (becomes the
+        # Stripe-Account HTTP header), not a payload field. Passing it
+        # as a kwarg to Session.create makes the whole call execute
+        # against the connected account — which is what direct charges
+        # require.
+        session = s.checkout.Session.create(
+            **session_params,
+            stripe_account=merchant_stripe_id,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Stripe error: {str(e)}")
 
@@ -281,30 +404,44 @@ async def create_payment_intent(
     order = order_res.data[0]
     print(f"[checkout] Order created: id={order['id']}")
 
-    # Backfill order_id into Stripe session metadata for webhook reliability
+    # Backfill order_id into Stripe session metadata for webhook reliability.
+    # The session lives inside the merchant's connected account (direct
+    # charges), so every subsequent Stripe API call for this session needs
+    # the same stripe_account scoping.
     try:
-        s.checkout.Session.modify(session.id, metadata={
-            "offer_id": offer["id"],
-            "buyer_user_id": buyer_user_id,
-            "seller_user_id": seller_user_id,
-            "project_id": project_id,
-            "order_id": order["id"],
-        })
-        print(f"[checkout] Session metadata updated with order_id={order['id']}")
-    except Exception as meta_err:
-        print(f"[checkout] Warning: could not update session metadata: {meta_err}")
-
-    # Also set metadata on the Payment Intent so payment_intent.succeeded
-    # webhooks can find the order without an extra Stripe API call
-    if session.payment_intent:
-        try:
-            s.PaymentIntent.modify(session.payment_intent, metadata={
+        s.checkout.Session.modify(
+            session.id,
+            metadata={
                 "offer_id": offer["id"],
                 "buyer_user_id": buyer_user_id,
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
                 "order_id": order["id"],
-            })
+                "stripe_connect_account_id": merchant_stripe_id,
+            },
+            stripe_account=merchant_stripe_id,
+        )
+        print(f"[checkout] Session metadata updated with order_id={order['id']}")
+    except Exception as meta_err:
+        print(f"[checkout] Warning: could not update session metadata: {meta_err}")
+
+    # Also set metadata on the Payment Intent so payment_intent.succeeded
+    # webhooks can find the order without an extra Stripe API call. Same
+    # connected-account scoping as above.
+    if session.payment_intent:
+        try:
+            s.PaymentIntent.modify(
+                session.payment_intent,
+                metadata={
+                    "offer_id": offer["id"],
+                    "buyer_user_id": buyer_user_id,
+                    "seller_user_id": seller_user_id,
+                    "project_id": project_id,
+                    "order_id": order["id"],
+                    "stripe_connect_account_id": merchant_stripe_id,
+                },
+                stripe_account=merchant_stripe_id,
+            )
             print(f"[checkout] Payment Intent metadata updated: PI={session.payment_intent}")
         except Exception as pi_meta_err:
             print(f"[checkout] Warning: could not update PI metadata: {pi_meta_err}")
@@ -671,6 +808,52 @@ async def stripe_webhook(request: Request):
             _process_paid(order, "", pi_id, "payment_intent.succeeded")
         else:
             print(f"[webhook] No order found for PI={pi_id} (may already be processed by session event)")
+
+    elif event["type"] == "account.updated":
+        # Connected-account verification events. Fires whenever Stripe
+        # advances a Connect account's state — identity review clears,
+        # requirements change, or the account is disabled. We sync the
+        # cached merchants.stripe_connect_status column so the merchant
+        # dashboard reflects reality without a live Account.retrieve on
+        # every page render.
+        #
+        # Status vocabulary:
+        #   "verified"             — charges_enabled AND no outstanding
+        #                            requirements.currently_due
+        #   "restricted"           — Stripe has disabled the account
+        #                            (requirements.disabled_reason set)
+        #   "pending_verification" — anything else (e.g. partial review,
+        #                            docs uploaded but not yet reviewed)
+        account = event["data"]["object"]
+        acct_id = account.get("id")
+        charges_enabled = bool(account.get("charges_enabled", False))
+        payouts_enabled = bool(account.get("payouts_enabled", False))
+        requirements = account.get("requirements") or {}
+        currently_due = requirements.get("currently_due") or []
+        disabled_reason = requirements.get("disabled_reason")
+
+        if disabled_reason:
+            new_status = "restricted"
+        elif charges_enabled and not currently_due:
+            new_status = "verified"
+        else:
+            new_status = "pending_verification"
+
+        print(
+            f"[webhook] account.updated: acct={acct_id}, "
+            f"charges_enabled={charges_enabled}, payouts_enabled={payouts_enabled}, "
+            f"currently_due={currently_due}, disabled_reason={disabled_reason}, "
+            f"→ status={new_status}"
+        )
+
+        if acct_id:
+            try:
+                supabase.table("merchants").update({
+                    "stripe_connect_status": new_status,
+                }).eq("stripe_connect_id", acct_id).execute()
+                print(f"[webhook] ✓ merchants.stripe_connect_status → {new_status} for {acct_id}")
+            except Exception as exc:
+                print(f"[webhook] ✗ Failed to update merchants row for {acct_id}: {exc!r}")
 
     else:
         print(f"[webhook] Unhandled event: {event['type']}")

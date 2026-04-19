@@ -283,6 +283,93 @@ async def stripe_connect_authorize(current_user: dict = Depends(get_current_user
     return {"url": url}
 
 
+@router.get("/stripe-connect/status")
+async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
+    """
+    Live status of the caller's Stripe Connect account.
+
+    Source of truth: Stripe. We do a fresh Account.retrieve on every
+    call so the merchant UI never shows stale "connected" while the
+    real account state is still pending identity review. Side-effect:
+    write the computed status back to merchants.stripe_connect_status
+    so downstream callers (checkout guards, dashboards) don't need to
+    re-hit Stripe for the cached read.
+
+    Returns a stable shape the frontend can render without Stripe-
+    specific knowledge:
+
+      {
+        "status": "not_connected" | "pending_verification"
+                 | "verified" | "restricted",
+        "charges_enabled": bool,
+        "payouts_enabled": bool,
+        "requirements_currently_due": [str, ...],
+        "disabled_reason": str | null,
+        "stripe_connect_id": str | null,
+      }
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    merchant = _get_merchant_or_404(privy_id)
+    connect_id = merchant.get("stripe_connect_id")
+    if not connect_id:
+        return {
+            "status": "not_connected",
+            "charges_enabled": False,
+            "payouts_enabled": False,
+            "requirements_currently_due": [],
+            "disabled_reason": None,
+            "stripe_connect_id": None,
+        }
+
+    if not _STRIPE_SECRET:
+        raise HTTPException(status_code=503, detail="STRIPE_SECRET_KEY not configured")
+    stripe.api_key = _STRIPE_SECRET
+
+    try:
+        account = stripe.Account.retrieve(connect_id)
+    except Exception as exc:
+        print(f"[merchant] stripe-connect/status Account.retrieve failed for {connect_id}: {exc!r}")
+        raise HTTPException(status_code=502, detail="stripe_account_retrieve_failed")
+
+    charges_enabled = bool(getattr(account, "charges_enabled", False))
+    payouts_enabled = bool(getattr(account, "payouts_enabled", False))
+    requirements = getattr(account, "requirements", None)
+    currently_due: list[str] = []
+    disabled_reason: Optional[str] = None
+    if requirements is not None:
+        currently_due = list(getattr(requirements, "currently_due", []) or [])
+        disabled_reason = getattr(requirements, "disabled_reason", None) or None
+
+    if disabled_reason:
+        new_status = "restricted"
+    elif charges_enabled and not currently_due:
+        new_status = "verified"
+    else:
+        new_status = "pending_verification"
+
+    # Write-through cache so the merchants row stays fresh without
+    # waiting for the account.updated webhook.
+    try:
+        supabase = get_client()
+        supabase.table("merchants").update({
+            "stripe_connect_status": new_status,
+        }).eq("owner_privy_id", privy_id).execute()
+    except Exception as exc:
+        print(f"[merchant] stripe-connect/status write-through failed: {exc!r}")
+
+    return {
+        "status": new_status,
+        "charges_enabled": charges_enabled,
+        "payouts_enabled": payouts_enabled,
+        "requirements_currently_due": currently_due,
+        "disabled_reason": disabled_reason,
+        "stripe_connect_id": connect_id,
+    }
+
+
 @router.get("/stripe-connect/callback")
 async def stripe_connect_callback(code: str, state: str):
     if not _STRIPE_SECRET:

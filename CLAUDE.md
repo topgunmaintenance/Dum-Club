@@ -469,6 +469,12 @@ Payments: Stripe Connect ONLY
   - No Square, no GoDaddy, no PayPal integration
   - Stripe is what Whatnot uses for payouts
   - Already fully built into codebase
+  - Connect account type: Express (via OAuth) — Stripe-managed
+    onboarding, merchant gets their own dashboard, identity review
+    handled by Stripe. Charge model: Direct charges — session is
+    created inside the merchant's connected account via the
+    `stripe_account` request option; platform takes its cut via
+    `application_fee_amount` on the PaymentIntent.
 Auth: Privy
 Live streaming: AWS IVS (dormant — activating Phase 1)
 Font: Geist (GeistSans + GeistMono)
