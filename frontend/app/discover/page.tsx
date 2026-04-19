@@ -66,9 +66,19 @@ export default function DiscoverPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
     const cat = params.get("category") as DiscoverCategoryId | null;
+    const sort = params.get("sort");
+    const price = params.get("price");
     if (q) setSearchQuery(q);
     if (cat) setActiveCategory(cat);
     if (params.get("live") === "1") setLiveOnly(true);
+    if (params.get("deals") === "1") setDealsOnly(true);
+    // Validate against the enum unions before assigning — silently
+    // ignore unknown values so a stale or hand-crafted URL can't
+    // break sorting or price filtering.
+    const VALID_SORTS: readonly DiscoverSortId[] = ["newest", "popular", "priceAsc", "priceDesc"];
+    const VALID_PRICES: readonly PriceFilter[] = ["any", "under25", "under50", "under100", "over100"];
+    if (sort && (VALID_SORTS as readonly string[]).includes(sort)) setSortBy(sort as DiscoverSortId);
+    if (price && (VALID_PRICES as readonly string[]).includes(price)) setPriceFilter(price as PriceFilter);
   }, []);
 
   /* ─── Offer search debounce (300ms) ─── */
