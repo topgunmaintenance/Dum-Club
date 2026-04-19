@@ -14,7 +14,11 @@
 | **Next unlock** | Phase 0B → Phase 1 (100 founding seller recruitment sprint) |
 
 ### Active diagnostics
-- ⚠️ `/project/topgun-maintenance` loading but rendering as "Untitled Project" with no offers. Migration 031 may not have fully applied in Supabase, or the slug column + seed rows aren't both present. See [External blockers](#external-blockers) for the fix path.
+- ⚠️ `/project/topgun-maintenance` renders as "Untitled Project" in production despite a fully healthy DB. Confirmed via direct SQL against Supabase: project row, business_profile, and all 6 offers exist with correct values; project is `live` / `public` / `verified=TRUE`; `business_profile_id` is linked. Railway backend is up and serving 200s. **The bug:** the client-side `loadProject()` call at `frontend/app/project/[id]/page.tsx:801` never hits Railway — across hours of production logs, no bare `GET /api/projects/<id>` request appears for any storefront (only `/api/projects/<uuid>/market` calls). Page falls back to its initial empty state. Investigation deferred until Stripe Connect onboarding so it can ship in the same sitting. Next step on resume: open DevTools Network + Console on `dum.club/project/topgun-maintenance` and capture whether the fetch fires at all, what URL it targets, and any console error.
+
+### Known issues — non-blocking
+- `_resolve_owner_uuid` in `backend/api/routes/projects.py` raises `AttributeError("'SyncQueryRequestBuilder' object has no attribute 'select'")` on profile upsert (visible in Railway logs at the `/api/projects/?owner_id=...` endpoint). Supabase SDK version mismatch — the endpoint still returns 200, only pollutes logs. Fix when next touching that file.
+- `frontend/lib/apiBase.ts:8` falls back to `http://localhost:8000` when `NEXT_PUBLIC_API_URL` is unset. The HTTPS auto-upgrade on line 14 explicitly skips localhost, so a missing env var in a Vercel build silently ships a broken production frontend. Should hard-fail in production builds instead. Currently masked because the env var IS set — but a teammate redeploying without it would re-break the world.
 
 ---
 
@@ -161,7 +165,6 @@ Things that aren't Claude-solvable and need a human decision or action.
 
 | Status | Blocker | Owner | Blocks |
 |---|---|---|---|
-| ⚠️ | Migration 031 diagnostic — Topgun project loading as "Untitled Project" with no offers. Run diagnostic SQL in Supabase to confirm whether the INSERT actually landed, slug column exists, and offers rows were seeded. Fix SQL lives in the session handoff for the run that flagged this. | Julian + Claude | Phase 0B |
 | ⏸️ | Run `bash scripts/fetch-topgun-photos.sh` from the repo root to mirror the 5 plane photos into `frontend/public/images/topgun/` | Julian | Storefront render quality (image 404s) |
 | ⏸️ | Rebind Topgun `business_profiles.owner_privy_id` from the seed sentinel `seed:topgun-maintenance` to Julian's real Privy DID once he signs in. SQL: `UPDATE business_profiles SET owner_privy_id = '<real-did>' WHERE owner_privy_id = 'seed:topgun-maintenance';` plus the matching `UPDATE projects SET privy_id = '<real-did>' WHERE slug = 'topgun-maintenance';` | Julian | Merchant dashboard access for Topgun |
 | ⏸️ | **Send `/project/topgun-maintenance` link to 20 real contacts** | Julian | Phase 0B → Phase 1 |
