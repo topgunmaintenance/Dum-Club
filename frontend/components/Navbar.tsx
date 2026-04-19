@@ -31,7 +31,16 @@ export function Navbar() {
         if (res.ok) {
           const data = await res.json();
           const projects = Array.isArray(data) ? data : data.projects ?? [];
-          if (projects.length > 0) setLatestProjectId(String(projects[0].id));
+          // Merchant-role gate for the Go Live button: only surface it
+          // when the user owns at least one project that's actually
+          // live-eligible (status=live, review_status=approved, not
+          // deleted). Drafts and pending projects don't qualify, so
+          // non-merchants who only have an in-progress project don't
+          // see Go Live in the navbar.
+          const goLiveable = projects.filter((p: any) =>
+            p && p.status === "live" && p.review_status === "approved" && p.is_deleted !== true
+          );
+          setLatestProjectId(goLiveable.length > 0 ? String(goLiveable[0].id) : null);
         }
       } catch {}
     }
