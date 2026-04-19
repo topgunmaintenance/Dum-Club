@@ -3,14 +3,22 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_BASE } from "../../../lib/apiBase";
+import { useAuth } from "../../../lib/auth/AuthContext";
 
 function StripeCallbackInner() {
   const params = useSearchParams();
   const router = useRouter();
+  const { getToken, loading: authLoading, user } = useAuth();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Wait for Privy to rehydrate the session after Stripe's browser
+    // redirect. Without this, getToken() returns null and the backend
+    // correctly rejects the request — producing a confusing "Connection
+    // failed" even though the user is signed in.
+    if (authLoading) return;
+
     const code = params.get("code");
     const state = params.get("state");
     if (!code || !state) {
@@ -19,8 +27,28 @@ function StripeCallbackInner() {
       return;
     }
 
-    fetch(`${API_BASE}/api/merchant/stripe-connect/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`)
-      .then(async (res) => {
+    if (!user) {
+      setStatus("error");
+      setError("You must be signed in to complete Stripe Connect. Sign in and try again.");
+      return;
+    }
+
+    (async () => {
+      // Backend requires a Privy bearer token: the callback is now an
+      // authenticated endpoint so an attacker who only knows a victim's
+      // Privy DID can't complete OAuth on their behalf.
+      const token = await getToken();
+      if (!token) {
+        setStatus("error");
+        setError("Could not get auth token. Sign in and retry.");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/merchant/stripe-connect/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
         if (res.ok) {
           setStatus("success");
           setTimeout(() => router.push("/merchant"), 2000);
@@ -29,12 +57,13 @@ function StripeCallbackInner() {
           setStatus("error");
           setError(data.detail || "Connection failed");
         }
-      })
-      .catch(() => {
+      } catch {
         setStatus("error");
         setError("Network error");
-      });
-  }, []);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-950">

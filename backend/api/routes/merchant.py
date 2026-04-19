@@ -4,7 +4,11 @@ Merchant API — signup, Stripe Connect, Square OAuth, dashboard.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
+import secrets as _py_secrets
+import time
 import urllib.parse
 
 import httpx
@@ -25,6 +29,110 @@ _SQUARE_APP_SECRET = os.getenv("SQUARE_APPLICATION_SECRET", "")
 _SQUARE_ENV = os.getenv("SQUARE_ENVIRONMENT", "sandbox")
 
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+# ── OAuth state signing ─────────────────────────────────────────────
+# HMAC-signed state tokens for the Stripe Connect OAuth flow. Replaces
+# the old implementation that used a raw Privy DID as state — which was
+# vulnerable to the OAuth confused-deputy attack: any attacker who knew a
+# victim's Privy DID could initiate OAuth with their own Stripe account,
+# use state=<victim's DID>, and the callback would attach the attacker's
+# stripe_user_id to the victim's merchants row. Every subsequent customer
+# payment for the victim's storefront would route to the attacker.
+#
+# Mitigation: bind the state token to the initiating user via HMAC,
+# enforce a short TTL, and additionally require the callback to carry a
+# valid Privy auth token whose `sub` matches the state's privy_id. Both
+# checks must pass — belt-and-suspenders against session theft and
+# phishing.
+#
+# Secret source (priority order):
+#   1. OAUTH_STATE_SECRET — purpose-specific, safest to rotate alone
+#   2. STRIPE_WEBHOOK_SECRET — already provisioned in Railway for HMAC
+#      use, reasonable fallback
+#   3. Process-lifetime random — only for local dev; state tokens
+#      become invalid on every restart. Dockerfile runs --workers 1 so
+#      this is safe in single-container deploys.
+_OAUTH_STATE_TTL_SECONDS = 600  # 10 minutes — OAuth round-trips finish fast
+
+_OAUTH_STATE_SECRET: str = (
+    os.getenv("OAUTH_STATE_SECRET", "").strip()
+    or os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
+    or _py_secrets.token_hex(32)
+)
+
+
+def _make_oauth_state(privy_id: str) -> str:
+    """
+    Issue a tamper-evident state token for the OAuth authorize step.
+
+    Format: `{privy_id}.{unix_ts}.{hmac_sha256_hex}`. Privy DIDs contain
+    colons but no periods, so splitting on '.' is safe; the HMAC hex is
+    URL-safe as-is.
+    """
+    ts = str(int(time.time()))
+    payload = f"{privy_id}|{ts}"
+    sig = hmac.new(
+        _OAUTH_STATE_SECRET.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{privy_id}.{ts}.{sig}"
+
+
+def _verify_oauth_state(state: str, expected_privy_id: str) -> None:
+    """
+    Verify a state token from the OAuth callback.
+
+    Raises `HTTPException(403, ...)` with a stable error code if the state
+    is malformed, tampered, expired, or bound to a different user. Returns
+    None on success.
+
+    Defenses:
+      - Signature mismatch → token was tampered or signed by a different
+        server; reject.
+      - Age > TTL → replay of an old token; reject.
+      - Negative age beyond small clock skew → manufactured future
+        timestamp; reject.
+      - privy_id mismatch → attacker tried to reuse someone else's state
+        against their own session; reject.
+
+    Uses `hmac.compare_digest` for constant-time signature comparison to
+    avoid timing-based secret extraction.
+    """
+    if not state:
+        raise HTTPException(status_code=403, detail="oauth_state_missing")
+
+    parts = state.split(".")
+    if len(parts) != 3:
+        raise HTTPException(status_code=403, detail="oauth_state_malformed")
+    privy_id_in_state, ts_str, sig_hex = parts
+
+    try:
+        ts = int(ts_str)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="oauth_state_malformed")
+
+    payload = f"{privy_id_in_state}|{ts_str}"
+    expected_sig = hmac.new(
+        _OAUTH_STATE_SECRET.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(sig_hex, expected_sig):
+        raise HTTPException(status_code=403, detail="oauth_state_signature_invalid")
+
+    now = int(time.time())
+    age = now - ts
+    if age > _OAUTH_STATE_TTL_SECONDS:
+        raise HTTPException(status_code=403, detail="oauth_state_expired")
+    if age < -60:
+        # Small negative tolerance for clock skew between workers; anything
+        # further in the future was manufactured.
+        raise HTTPException(status_code=403, detail="oauth_state_future")
+
+    if privy_id_in_state != expected_privy_id:
+        raise HTTPException(status_code=403, detail="oauth_state_user_mismatch")
+
 
 # ── Founding merchant program ──────────────────────────────────────
 # Total cap for the founding program. Source of truth for both the
@@ -272,12 +380,15 @@ async def stripe_connect_authorize(current_user: dict = Depends(get_current_user
     _get_merchant_or_404(privy_id)
 
     redirect_uri = f"{_FRONTEND_URL}/merchant/stripe-callback"
+    # state is an HMAC-signed token bound to this privy_id with a 10-min
+    # TTL. The callback verifies the signature and additionally requires
+    # the caller to be authenticated as the same privy_id.
     params = urllib.parse.urlencode({
         "response_type": "code",
         "client_id": _STRIPE_CONNECT_CLIENT_ID,
         "scope": "read_write",
         "redirect_uri": redirect_uri,
-        "state": privy_id,
+        "state": _make_oauth_state(privy_id),
     })
     url = f"https://connect.stripe.com/oauth/authorize?{params}"
     return {"url": url}
@@ -371,9 +482,35 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/stripe-connect/callback")
-async def stripe_connect_callback(code: str, state: str):
+async def stripe_connect_callback(
+    code: str,
+    state: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Exchange a Stripe Connect OAuth code for a connected account id.
+
+    Security: the caller MUST be authenticated via Privy (Depends on
+    get_current_user), AND the state token MUST be an HMAC-signed token
+    bound to the same authenticated privy_id. Without these, an attacker
+    with a victim's Privy DID could craft a OAuth round-trip that attaches
+    the attacker's Stripe account to the victim's merchants row, then
+    collect all payments meant for the victim's storefront.
+
+    The callback writes ONLY to the authenticated user's own merchants
+    row — we never trust `state` to identify the user anymore; the Privy
+    token is the identity source of truth.
+    """
     if not _STRIPE_SECRET:
         raise HTTPException(status_code=503, detail="STRIPE_SECRET_KEY not configured")
+
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    # Gate 1: HMAC state token must be valid and bound to this user.
+    # Raises 403 with a stable code on any failure mode.
+    _verify_oauth_state(state, privy_id)
 
     stripe.api_key = _STRIPE_SECRET
 
@@ -386,7 +523,10 @@ async def stripe_connect_callback(code: str, state: str):
     if not connected_account_id:
         raise HTTPException(status_code=400, detail="No account ID returned from Stripe")
 
-    privy_id = state
+    # Gate 2: the merchants row we write to is keyed by the authenticated
+    # user's privy_id, never by any value supplied in `state`. Even if
+    # Gate 1 were somehow bypassed, this keeps an attacker's connect id
+    # attached only to their own merchants row.
     supabase = get_client()
     supabase.table("merchants").update({
         "stripe_connect_id": connected_account_id,
