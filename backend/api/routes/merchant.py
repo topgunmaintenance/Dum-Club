@@ -30,6 +30,25 @@ _SQUARE_ENV = os.getenv("SQUARE_ENVIRONMENT", "sandbox")
 
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# Stripe Connect OAuth redirect URI. MUST match a URI registered in the
+# Stripe dashboard verbatim — Stripe rejects the OAuth request with
+# "redirect_uri_mismatch" on any deviation (scheme, host, path, or even
+# a stray trailing slash). Prod is registered as
+#   https://dum.club/api/stripe/oauth/callback
+# which is served by a thin Next.js route handler at
+# frontend/app/api/stripe/oauth/callback/route.ts that 302-redirects the
+# browser to the real hardened callback page at /merchant/stripe-callback.
+# That indirection exists so the authenticated backend endpoint stays
+# the source of truth for code exchange (with Privy bearer auth intact).
+#
+# Dev default falls back to the frontend-hosted path so local `next dev`
+# picks up the route handler. Override per environment via env var —
+# e.g. a preview Vercel alias.
+_STRIPE_CONNECT_REDIRECT_URI = os.getenv(
+    "STRIPE_CONNECT_REDIRECT_URI",
+    "https://dum.club/api/stripe/oauth/callback",
+)
+
 # ── OAuth state signing ─────────────────────────────────────────────
 # HMAC-signed state tokens for the Stripe Connect OAuth flow. Replaces
 # the old implementation that used a raw Privy DID as state — which was
@@ -379,7 +398,11 @@ async def stripe_connect_authorize(current_user: dict = Depends(get_current_user
 
     _get_merchant_or_404(privy_id)
 
-    redirect_uri = f"{_FRONTEND_URL}/merchant/stripe-callback"
+    # redirect_uri MUST match the value registered in the Stripe Connect
+    # dashboard verbatim. Env-overridable so preview environments can
+    # point at their own host without code changes. See the comment on
+    # _STRIPE_CONNECT_REDIRECT_URI for the full flow.
+    redirect_uri = _STRIPE_CONNECT_REDIRECT_URI
     # state is an HMAC-signed token bound to this privy_id with a 10-min
     # TTL. The callback verifies the signature and additionally requires
     # the caller to be authenticated as the same privy_id.
