@@ -184,18 +184,35 @@ async def create_payment_intent(
         raise HTTPException(status_code=404, detail="Offer not found or inactive")
     offer = offer_res.data[0]
 
-    # 2. Determine seller from project owner
+    # 2. Determine seller from project owner.
+    #
+    # The seller is identified by Privy DID across the rest of the pipeline:
+    #   - metadata["seller_user_id"]                  → Stripe metadata
+    #   - orders.seller_user_id (TEXT)                → downstream lookups
+    #   - merchants.owner_privy_id                    → Stripe Connect id lookup
+    #   - users.privy_id                              → seller-email lookup
+    #
+    # projects.privy_id holds the raw Privy DID — this is the field that
+    # matches every downstream consumer. projects.owner_id is a profiles.id
+    # UUID (see migration 005) that does NOT match any of the above; using
+    # it silently broke the seller→merchant lookup because a UUID will
+    # never equal a Privy DID string. Prefer privy_id; fall back to
+    # owner_id only for legacy rows that predate migration 005.
     project_id = offer["project_id"]
     project_res = (
         supabase.table("projects")
-        .select("owner_id")
+        .select("owner_id, privy_id")
         .eq("id", project_id)
         .limit(1)
         .execute()
     )
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
-    seller_user_id = project_res.data[0].get("owner_id") or ""
+    seller_user_id = (
+        project_res.data[0].get("privy_id")
+        or project_res.data[0].get("owner_id")
+        or ""
+    )
 
     # 3. Calculate price (auction override takes precedence)
     if body.override_price is not None and body.auction_id:
