@@ -53,6 +53,44 @@ export default function MerchantPage() {
   // Analytics from existing business profile
   const [analytics, setAnalytics] = useState<any>(null);
 
+  // Stripe Connect return banner. Set from `?stripe=connected` or
+  // `?stripe=error&reason=<code>` which the /merchant/stripe-callback
+  // page redirects here with. We clean the URL after reading so a
+  // refresh doesn't re-trigger the banner.
+  const [stripeBanner, setStripeBanner] = useState<
+    | { kind: "success" }
+    | { kind: "error"; reason: string; detail: string | null }
+    | null
+  >(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const status = sp.get("stripe");
+    if (!status) return;
+
+    if (status === "connected") {
+      setStripeBanner({ kind: "success" });
+    } else if (status === "error") {
+      setStripeBanner({
+        kind: "error",
+        reason: sp.get("reason") || "unknown",
+        detail: sp.get("code"),
+      });
+    }
+
+    // Strip the stripe-related params from the URL without a reload.
+    sp.delete("stripe");
+    sp.delete("reason");
+    sp.delete("code");
+    const clean = sp.toString();
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${clean ? `?${clean}` : ""}`,
+    );
+  }, []);
+
   useEffect(() => {
     // Founding-status is public — fetch on mount regardless of auth so
     // unauthenticated visitors see the counter on the signup form too.
@@ -371,9 +409,93 @@ export default function MerchantPage() {
   const totalSteps = 3;
   const onboardingComplete = completedSteps === totalSteps;
 
+  // Human-readable copy for each Stripe-callback failure reason.
+  // Keep error codes stable; map to friendly text only at render time.
+  const stripeErrorCopy = (reason: string, detail: string | null): string => {
+    switch (reason) {
+      case "missing_code":
+        return "Stripe didn't return an authorization code. Please try connecting again.";
+      case "missing_state":
+        return "The secure connection token was lost between Stripe and this page. Try connecting again — don't use a back-button or stale link.";
+      case "stripe_denied":
+        return detail
+          ? `Stripe declined the connection (${detail}). Try again or contact support.`
+          : "Stripe declined the connection. Try again or contact support.";
+      case "not_signed_in":
+        return "Your session expired during Stripe onboarding. Sign in and retry.";
+      case "no_auth_token":
+        return "Could not retrieve your auth token. Sign out and back in, then retry.";
+      case "backend_error":
+        if (detail === "oauth_state_expired")
+          return "Stripe onboarding took too long (over 10 minutes). Click Connect Stripe again for a fresh link.";
+        if (detail === "oauth_state_user_mismatch")
+          return "The connection link was initiated by a different account. Sign in as the account that started the flow.";
+        if (detail === "oauth_state_signature_invalid")
+          return "The connection token was tampered with or isn't recognized. Click Connect Stripe again.";
+        return detail
+          ? `Backend rejected the connection: ${detail}`
+          : "Backend rejected the connection. Check Railway logs.";
+      case "network_error":
+        return "Network error reaching the backend. Retry, then check your connection.";
+      default:
+        return "Something went wrong connecting Stripe. Please try again.";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 px-4 pb-12">
       <div className="mx-auto max-w-2xl space-y-6">
+
+        {/* Stripe Connect return banner. Populated by the useEffect
+            that reads ?stripe=connected|error from the callback-page
+            redirect, then auto-dismissible. */}
+        {stripeBanner?.kind === "success" && (
+          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.06] px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold text-emerald-400">
+                  Stripe connected
+                </div>
+                <div className="mt-1 text-xs text-emerald-400/80">
+                  We'll show &ldquo;verified&rdquo; below as soon as Stripe
+                  finishes reviewing your account.
+                </div>
+              </div>
+              <button
+                onClick={() => setStripeBanner(null)}
+                className="text-xs text-emerald-400/60 hover:text-emerald-400"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+        {stripeBanner?.kind === "error" && (
+          <div className="rounded-2xl border border-red-400/30 bg-red-400/[0.06] px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-red-400">
+                  Stripe connection didn't go through
+                </div>
+                <div className="mt-1 break-words text-xs text-red-400/80">
+                  {stripeErrorCopy(stripeBanner.reason, stripeBanner.detail)}
+                </div>
+                <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
+                  reason: {stripeBanner.reason}
+                  {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
+                </div>
+              </div>
+              <button
+                onClick={() => setStripeBanner(null)}
+                className="text-xs text-red-400/60 hover:text-red-400"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Founding badge */}
         {merchant.founding_merchant && (

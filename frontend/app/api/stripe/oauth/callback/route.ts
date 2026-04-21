@@ -27,6 +27,12 @@ import { NextRequest, NextResponse } from "next/server";
  * - Uses `req.url` to build the absolute redirect so we stay on the
  *   same host (dum.club stays on dum.club, preview deploys stay on
  *   their preview host).
+ *
+ * Diagnostic logging: we record ONLY the presence/absence of each
+ * OAuth parameter and the request host. No values. This gives us a
+ * forensic trail in Vercel logs when a user reports "code is in my
+ * URL but the page says it's missing" — the actual missing piece
+ * then becomes obvious (usually state).
  */
 export async function GET(req: NextRequest) {
   const incoming = req.nextUrl;
@@ -35,16 +41,28 @@ export async function GET(req: NextRequest) {
   const error = incoming.searchParams.get("error");
   const errorDescription = incoming.searchParams.get("error_description");
 
+  // Safe diagnostic: log presence + host only. No values, no secrets.
+  console.log(
+    `[stripe-oauth-callback] received host=${incoming.host} ` +
+      `code=${code ? "present" : "missing"} ` +
+      `state=${state ? "present" : "missing"} ` +
+      `error=${error ?? "none"}`,
+  );
+
   const next = new URL("/merchant/stripe-callback", req.url);
 
   // Forward every relevant OAuth param exactly as Stripe supplied it.
-  // Missing code/state is an error case the frontend page already
-  // surfaces clearly ("Missing authorization code"), so no special
-  // handling needed here.
+  // The downstream frontend page handles missing/error cases with
+  // specific user-facing messages.
   if (code) next.searchParams.set("code", code);
   if (state) next.searchParams.set("state", state);
   if (error) next.searchParams.set("error", error);
   if (errorDescription) next.searchParams.set("error_description", errorDescription);
+
+  console.log(
+    `[stripe-oauth-callback] forwarding to ${next.pathname} ` +
+      `params=[${Array.from(next.searchParams.keys()).join(",")}]`,
+  );
 
   return NextResponse.redirect(next, { status: 302 });
 }
