@@ -21,14 +21,22 @@ from auth.privy import get_current_user
 
 router = APIRouter()
 
-_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
-_STRIPE_CONNECT_CLIENT_ID = os.getenv("STRIPE_CONNECT_CLIENT_ID", "")
+# Defensive .strip() on every Stripe env var. Railway's variable editor
+# and common copy-paste flows from the Stripe dashboard frequently attach
+# trailing whitespace or newlines. For Stripe OAuth specifically, a
+# trailing \n on STRIPE_CONNECT_CLIENT_ID URL-encodes as %0A and makes
+# Stripe reject the authorize request with "No application matches the
+# supplied client identifier" — indistinguishable from a wrong client_id
+# at a glance. Strip defensively at read time so no code path can ever
+# forward whitespace to Stripe.
+_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "").strip()
+_STRIPE_CONNECT_CLIENT_ID = os.getenv("STRIPE_CONNECT_CLIENT_ID", "").strip()
 
-_SQUARE_APP_ID = os.getenv("SQUARE_APPLICATION_ID", "")
-_SQUARE_APP_SECRET = os.getenv("SQUARE_APPLICATION_SECRET", "")
-_SQUARE_ENV = os.getenv("SQUARE_ENVIRONMENT", "sandbox")
+_SQUARE_APP_ID = os.getenv("SQUARE_APPLICATION_ID", "").strip()
+_SQUARE_APP_SECRET = os.getenv("SQUARE_APPLICATION_SECRET", "").strip()
+_SQUARE_ENV = os.getenv("SQUARE_ENVIRONMENT", "sandbox").strip()
 
-_FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+_FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").strip()
 
 # Stripe Connect OAuth redirect URI. MUST match a URI registered in the
 # Stripe dashboard verbatim — Stripe rejects the OAuth request with
@@ -47,7 +55,7 @@ _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 _STRIPE_CONNECT_REDIRECT_URI = os.getenv(
     "STRIPE_CONNECT_REDIRECT_URI",
     "https://dum.club/api/stripe/oauth/callback",
-)
+).strip()
 
 # ── OAuth state signing ─────────────────────────────────────────────
 # HMAC-signed state tokens for the Stripe Connect OAuth flow. Replaces

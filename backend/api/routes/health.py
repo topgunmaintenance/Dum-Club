@@ -238,7 +238,7 @@ async def health_checkout(_admin=Depends(require_admin)):
     webhook_endpoints = []
     try:
         import stripe
-        stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "").strip()
         endpoints = stripe.WebhookEndpoint.list(limit=10)
         for ep in endpoints.get("data", []):
             webhook_endpoints.append({
