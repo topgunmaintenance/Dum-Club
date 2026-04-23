@@ -66,8 +66,9 @@ def _check_cooldown(
         )
 
 # ── Stripe (lazy import, same pattern as checkout.py) ──
-_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
-_STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# .strip() defensively — see merchant.py for the justification.
+_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "").strip()
+_STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 _stripe = None
 
 def _get_stripe():

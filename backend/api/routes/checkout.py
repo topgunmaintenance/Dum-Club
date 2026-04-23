@@ -20,8 +20,11 @@ router = APIRouter()
 
 # ── Stripe config (lazy import — backend starts without stripe installed) ──
 
-_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
-_STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# .strip() defensively — Railway env var editors and copy-paste flows
+# attach trailing whitespace/newlines often enough that it's worth
+# handling at read time. See merchant.py for the full justification.
+_STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "").strip()
+_STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 _stripe = None
 
 
