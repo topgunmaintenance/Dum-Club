@@ -57,6 +57,53 @@ _STRIPE_CONNECT_REDIRECT_URI = os.getenv(
     "https://dum.club/api/stripe/oauth/callback",
 ).strip()
 
+
+# ── Credential-pair diagnostic helper ───────────────────────────────
+# Stripe's OAuth token exchange returns "Authorization code provided
+# does not belong to you" when STRIPE_SECRET_KEY and
+# STRIPE_CONNECT_CLIENT_ID come from different Stripe accounts — the
+# authorize step issued the code against one account's Connect app,
+# but the exchange is authenticated as a different account. From
+# server logs alone this is indistinguishable from a transient Stripe
+# error, so we log a non-sensitive fingerprint of both values at
+# module load and again before each exchange attempt. Secret keys are
+# reduced to "test" / "live" / "unknown"; client_ids show only the
+# first 7 and last 6 chars (the full value is already public, it's
+# sent verbatim in the authorize URL to Stripe).
+def _stripe_secret_mode(key: str) -> str:
+    if not key:
+        return "empty"
+    if key.startswith("sk_test_"):
+        return "test"
+    if key.startswith("sk_live_"):
+        return "live"
+    return "unknown"
+
+
+def _stripe_client_id_fingerprint(cid: str) -> str:
+    if not cid:
+        return "empty"
+    if not cid.startswith("ca_"):
+        return f"malformed(prefix={cid[:3]!r}, len={len(cid)})"
+    if len(cid) < 14:
+        return f"short(len={len(cid)})"
+    return f"{cid[:7]}...{cid[-6:]}(len={len(cid)})"
+
+
+_STRIPE_SECRET_MODE_AT_BOOT = _stripe_secret_mode(_STRIPE_SECRET)
+_STRIPE_CLIENT_ID_FP_AT_BOOT = _stripe_client_id_fingerprint(_STRIPE_CONNECT_CLIENT_ID)
+
+print(
+    f"[merchant] Stripe config @ startup: "
+    f"secret_mode={_STRIPE_SECRET_MODE_AT_BOOT} "
+    f"client_id_fp={_STRIPE_CLIENT_ID_FP_AT_BOOT} "
+    f"redirect_uri={_STRIPE_CONNECT_REDIRECT_URI}"
+)
+if _STRIPE_SECRET_MODE_AT_BOOT == "unknown" and _STRIPE_SECRET:
+    print("[merchant] WARNING: STRIPE_SECRET_KEY is set but doesn't match sk_test_* or sk_live_* — malformed?")
+if not _STRIPE_CONNECT_CLIENT_ID.startswith("ca_") and _STRIPE_CONNECT_CLIENT_ID:
+    print("[merchant] WARNING: STRIPE_CONNECT_CLIENT_ID is set but doesn't start with ca_ — malformed?")
+
 # ── OAuth state signing ─────────────────────────────────────────────
 # HMAC-signed state tokens for the Stripe Connect OAuth flow. Replaces
 # the old implementation that used a raw Privy DID as state — which was
@@ -411,6 +458,18 @@ async def stripe_connect_authorize(current_user: dict = Depends(get_current_user
     # point at their own host without code changes. See the comment on
     # _STRIPE_CONNECT_REDIRECT_URI for the full flow.
     redirect_uri = _STRIPE_CONNECT_REDIRECT_URI
+
+    # Pre-authorize diag. Mirrors the same fingerprint we log before
+    # token exchange so any credential drift between the two steps is
+    # visible in a single log grep.
+    print(
+        f"[stripe-connect/authorize] building URL: "
+        f"privy_id=...{privy_id[-6:]} "
+        f"secret_mode={_stripe_secret_mode(_STRIPE_SECRET)} "
+        f"client_id_fp={_stripe_client_id_fingerprint(_STRIPE_CONNECT_CLIENT_ID)} "
+        f"redirect_uri={redirect_uri}"
+    )
+
     # state is an HMAC-signed token bound to this privy_id with a 10-min
     # TTL. The callback verifies the signature and additionally requires
     # the caller to be authenticated as the same privy_id.
@@ -545,10 +604,40 @@ async def stripe_connect_callback(
 
     stripe.api_key = _STRIPE_SECRET
 
+    # Pre-exchange diagnostic. Prints a non-sensitive fingerprint of
+    # the credential pair every time we call Stripe. Lets us spot
+    # "code doesn't belong to you" as an account / mode mismatch vs a
+    # transient Stripe issue without re-reading env.
+    secret_mode = _stripe_secret_mode(_STRIPE_SECRET)
+    client_id_fp = _stripe_client_id_fingerprint(_STRIPE_CONNECT_CLIENT_ID)
+    print(
+        f"[stripe-connect/callback] pre-exchange diag: "
+        f"privy_id=...{privy_id[-6:] if privy_id else 'none'} "
+        f"secret_mode={secret_mode} client_id_fp={client_id_fp} "
+        f"code_prefix={code[:6] if code else 'empty'}..."
+    )
+
     try:
         resp = stripe.OAuth.token(grant_type="authorization_code", code=code)
     except stripe.oauth_error.OAuthError as e:
+        # "Authorization code provided does not belong to you" means the
+        # SECRET KEY's Stripe account doesn't own the Connect app that
+        # issued this code. Usually: STRIPE_CONNECT_CLIENT_ID and
+        # STRIPE_SECRET_KEY are from different Stripe accounts.
+        print(
+            f"[stripe-connect/callback] OAuth token exchange FAILED: "
+            f"error_type={type(e).__name__} "
+            f"user_message={e.user_message!r} "
+            f"secret_mode={secret_mode} client_id_fp={client_id_fp}"
+        )
         raise HTTPException(status_code=400, detail=f"Stripe Connect failed: {e.user_message}")
+    except Exception as e:
+        print(
+            f"[stripe-connect/callback] OAuth token exchange CRASHED: "
+            f"error_type={type(e).__name__} "
+            f"secret_mode={secret_mode} client_id_fp={client_id_fp}"
+        )
+        raise
 
     connected_account_id = resp.get("stripe_user_id")
     if not connected_account_id:
