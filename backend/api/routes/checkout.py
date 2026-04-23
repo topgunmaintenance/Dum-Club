@@ -28,6 +28,33 @@ _STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 _stripe = None
 
 
+# ── Test-mode bypass for charges_enabled ─────────────────────────────
+# Allows the full checkout flow to run against a Stripe Connect account
+# that hasn't cleared identity review yet — useful for end-to-end
+# testing while Stripe's verification queue is pending. Only active
+# when one of two explicit opt-ins is set in the environment:
+#
+#   ENVIRONMENT=development      — general dev/staging toggle
+#   STRIPE_TEST_MODE=true        — Stripe-specific override
+#
+# Default (both unset, or ENVIRONMENT set to anything other than
+# "development") is the production behavior: 400
+# merchant_stripe_not_verified when charges_enabled=False. Bypass is
+# NEVER automatic — it must be enabled explicitly, is logged clearly
+# on every use, and is removed the moment the env var is unset.
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "production").strip().lower()
+_STRIPE_TEST_MODE = os.getenv("STRIPE_TEST_MODE", "").strip().lower() == "true"
+
+
+def _checkout_verification_bypass_allowed() -> bool:
+    """
+    True when the checkout's merchant-verification guard should be
+    bypassed. Requires an explicit opt-in; returns False in normal
+    production configurations.
+    """
+    return _ENVIRONMENT == "development" or _STRIPE_TEST_MODE
+
+
 def _get_stripe():
     global _stripe
     if _stripe is None:
@@ -141,6 +168,22 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
                 currently_due = list(getattr(reqs, "currently_due", []) or [])
         except Exception:
             currently_due = []
+
+        # Dev/test bypass: when ENVIRONMENT=development or
+        # STRIPE_TEST_MODE=true, allow checkout to proceed against an
+        # unverified Connect account so we can smoke-test the full
+        # payment flow while Stripe's review is pending. Loud warning
+        # log every time the bypass fires — it's never silent, and it
+        # never activates without an explicit env opt-in.
+        if _checkout_verification_bypass_allowed():
+            print(
+                f"[checkout] ⚠ BYPASS charges_enabled gate: merchant={connect_id} "
+                f"ENVIRONMENT={_ENVIRONMENT!r} STRIPE_TEST_MODE={_STRIPE_TEST_MODE} "
+                f"currently_due={currently_due}. "
+                f"Bypass MUST NOT be enabled with live Stripe keys."
+            )
+            return
+
         print(
             f"[checkout] Merchant {connect_id} cannot accept charges: "
             f"currently_due={currently_due}"
