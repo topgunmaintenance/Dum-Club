@@ -571,10 +571,30 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
     }
 
 
+async def _log_callback_arrival(request: Request) -> None:
+    """
+    Pre-auth arrival log for /stripe-connect/callback. Runs BEFORE
+    Depends(get_current_user) because it's declared first in the
+    path operation signature. This is the single log we trust to
+    prove the request reached the backend — independent of whether
+    the Privy bearer is valid, HMAC state verifies, or Stripe
+    credentials are correct.
+    """
+    print(
+        f"[stripe-connect/callback] HIT: "
+        f"client={request.client.host if request.client else 'unknown'} "
+        f"query_keys={list(request.query_params.keys())} "
+        f"has_auth_header={bool(request.headers.get('authorization'))}"
+    )
+    return None
+
+
 @router.get("/stripe-connect/callback")
 async def stripe_connect_callback(
+    request: Request,
     code: str,
     state: str,
+    _arrival: None = Depends(_log_callback_arrival),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -591,6 +611,21 @@ async def stripe_connect_callback(
     row — we never trust `state` to identify the user anymore; the Privy
     token is the identity source of truth.
     """
+    # Post-auth arrival log. This line prints AFTER Depends(get_current_user)
+    # has successfully resolved — so if we see it, we know the request
+    # reached Railway AND the Privy bearer was accepted. If we do NOT see
+    # it but the request hit the server, the uvicorn access log will show
+    # the 401 and we can stop looking at HMAC / Stripe / everything else.
+    authed_privy_id = current_user.get("sub", "")
+    print(
+        f"[stripe-connect/callback] AUTHED: "
+        f"privy_id=...{authed_privy_id[-6:] if authed_privy_id else 'none'} "
+        f"client={request.client.host if request.client else 'unknown'} "
+        f"has_code={bool(code)} has_state={bool(state)} "
+        f"code_prefix={code[:6] if code else 'empty'}... "
+        f"state_prefix={state[:10] if state else 'empty'}..."
+    )
+
     if not _STRIPE_SECRET:
         raise HTTPException(status_code=503, detail="STRIPE_SECRET_KEY not configured")
 
@@ -599,8 +634,17 @@ async def stripe_connect_callback(
         raise HTTPException(status_code=401, detail="Invalid auth")
 
     # Gate 1: HMAC state token must be valid and bound to this user.
-    # Raises 403 with a stable code on any failure mode.
-    _verify_oauth_state(state, privy_id)
+    # Raises 403 with a stable code on any failure mode. Wrap here so
+    # the stable code lands in Railway logs — otherwise the HMAC failure
+    # is invisible server-side (only the 403 JSON body the frontend sees).
+    try:
+        _verify_oauth_state(state, privy_id)
+    except HTTPException as e:
+        print(
+            f"[stripe-connect/callback] HMAC state verification FAILED: "
+            f"detail={e.detail!r} status={e.status_code}"
+        )
+        raise
 
     stripe.api_key = _STRIPE_SECRET
 
