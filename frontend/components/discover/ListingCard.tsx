@@ -86,8 +86,12 @@ type ListingCardProps = {
 export function ListingCard({ project, index, marketSnapshot, isPulsing }: ListingCardProps) {
   const offers = offerCount(project);
 
-  // Card should not render without offers (filtered upstream, but guard)
-  if (offers === 0) return null;
+  // Card should not render without offers (filtered upstream, but guard).
+  // Verified founding merchants bypass: their offers live in the `offers`
+  // table, not store_items JSONB — the card still renders, just without
+  // the "N offers" badge and price label. Mirrors isDiscoverable() and
+  // /api/projects/public Pass 2 contract.
+  if (offers === 0 && !project.verified) return null;
 
   const emoji = getProjectEmoji(project, index);
   const accent = getAccent(index);
