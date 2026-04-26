@@ -49,10 +49,19 @@ _STRIPE_TEST_MODE = os.getenv("STRIPE_TEST_MODE", "").strip().lower() == "true"
 def _checkout_verification_bypass_allowed() -> bool:
     """
     True when the checkout's merchant-verification guard should be
-    bypassed. Requires an explicit opt-in; returns False in normal
-    production configurations.
+    bypassed. Hard-disabled whenever STRIPE_SECRET_KEY is sk_live_*,
+    regardless of ENVIRONMENT or STRIPE_TEST_MODE — the bypass must
+    never run against live Stripe, even if the env vars request it.
     """
-    return _ENVIRONMENT == "development" or _STRIPE_TEST_MODE
+    requested = _ENVIRONMENT == "development" or _STRIPE_TEST_MODE
+    if requested and _STRIPE_SECRET.startswith("sk_live_"):
+        print(
+            "[checkout] ⚠ IGNORING verification bypass: "
+            f"ENVIRONMENT={_ENVIRONMENT!r} STRIPE_TEST_MODE={_STRIPE_TEST_MODE} "
+            f"but STRIPE_SECRET_KEY is sk_live_*. Bypass disabled in production."
+        )
+        return False
+    return requested
 
 
 def _get_stripe():
@@ -193,8 +202,9 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
             detail={
                 "code": "merchant_stripe_not_verified",
                 "message": (
-                    "Merchant's Stripe account is still being verified. "
-                    "Try again in a few hours."
+                    "Stripe onboarding is not complete yet. "
+                    "Finish Stripe verification before accepting "
+                    "live payments."
                 ),
                 "requirements_due": currently_due,
             },
@@ -373,8 +383,9 @@ async def create_payment_intent(
             detail={
                 "code": "merchant_stripe_not_connected",
                 "message": (
-                    "This merchant hasn't finished connecting their "
-                    "Stripe account yet."
+                    "Stripe onboarding is not complete yet. "
+                    "Finish Stripe verification before accepting "
+                    "live payments."
                 ),
             },
         )

@@ -1006,6 +1006,35 @@ async def go_live(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
+    owner_privy = project.get("privy_id") or user_id
+    merchant_res = (
+        supabase.table("merchants")
+        .select("stripe_connect_status")
+        .eq("owner_privy_id", owner_privy)
+        .limit(1)
+        .execute()
+    )
+    merchant_status = (
+        merchant_res.data[0].get("stripe_connect_status")
+        if merchant_res.data else None
+    )
+    if merchant_status != "verified":
+        print(
+            f"[projects] Refusing go_live: project={project_id} "
+            f"merchant={owner_privy} stripe_connect_status={merchant_status!r}"
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "merchant_stripe_not_verified",
+                "message": (
+                    "Stripe onboarding is not complete yet. "
+                    "Finish Stripe verification before accepting "
+                    "live payments."
+                ),
+            },
+        )
+
     update_fields: dict = {"is_live": True, "live_provider": body.provider}
 
     if body.provider == "native_mux":
