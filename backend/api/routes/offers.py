@@ -118,6 +118,41 @@ def _verify_project_owner(supabase, project_id: str, privy_id: str):
         raise HTTPException(status_code=403, detail="Not the project owner")
 
 
+_STRIPE_NOT_VERIFIED_DETAIL = {
+    "code": "merchant_stripe_not_verified",
+    "message": (
+        "Stripe onboarding is not complete yet. "
+        "Finish Stripe verification before accepting live payments."
+    ),
+}
+
+
+def _assert_merchant_stripe_verified(supabase, privy_id: str) -> None:
+    """
+    Raise 403 unless the merchant's Stripe Connect account is fully
+    verified. Reads the cached merchants.stripe_connect_status; the
+    column is kept fresh by the account.updated webhook in checkout.py
+    and the write-through in /merchant/stripe-connect/status.
+    """
+    res = (
+        supabase.table("merchants")
+        .select("stripe_connect_status")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    status = res.data[0].get("stripe_connect_status") if res.data else None
+    if status != "verified":
+        print(
+            f"[offers] Refusing publish: merchant={privy_id} "
+            f"stripe_connect_status={status!r}"
+        )
+        raise HTTPException(
+            status_code=403,
+            detail=_STRIPE_NOT_VERIFIED_DETAIL,
+        )
+
+
 # ── Routes ────────────────────────────────────────────────────
 
 @router.post("/create")
@@ -138,6 +173,8 @@ async def create_offer(
 
     _verify_project_owner(supabase, body.project_id, privy_id)
     print(f"[offers] CREATE: owner verified for project={body.project_id}")
+
+    _assert_merchant_stripe_verified(supabase, privy_id)
 
     insert = {
         "project_id": body.project_id,
@@ -293,6 +330,9 @@ async def update_offer(
 
     project_id = offer_res.data[0]["project_id"]
     _verify_project_owner(supabase, project_id, privy_id)
+
+    if body.is_active is True:
+        _assert_merchant_stripe_verified(supabase, privy_id)
 
     if body.offer_type and body.offer_type not in VALID_OFFER_TYPES:
         raise HTTPException(
