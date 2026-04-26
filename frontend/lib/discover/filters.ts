@@ -77,9 +77,15 @@ export function categoryIncludesProject(project: Project, category: DiscoverCate
 /**
  * A project is visible on /discover iff it has at least one offer,
  * a non-placeholder description, and isn't auto-generated junk.
+ *
+ * Verified founding merchants bypass the offers check: their offers
+ * live in the `offers` table (read by /api/offers/search), not in the
+ * legacy `store_items` JSONB. This mirrors the backend's Pass 2
+ * contract in /api/projects/public — verified=true projects always
+ * land on /discover regardless of legacy field shape.
  */
 export function isDiscoverable(project: Project): boolean {
-  if (!hasOffers(project)) return false;
+  if (!project.verified && !hasOffers(project)) return false;
   const desc = (project.description || "").trim();
   if (desc.length < 20) return false;
   const title = (project.title || project.name || "").trim().toLowerCase();
