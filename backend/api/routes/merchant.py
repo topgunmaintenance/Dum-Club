@@ -504,10 +504,16 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
                  | "verified" | "restricted",
         "charges_enabled": bool,
         "payouts_enabled": bool,
+        "details_submitted": bool,
         "requirements_currently_due": [str, ...],
+        "requirements_eventually_due": [str, ...],
         "disabled_reason": str | null,
         "stripe_connect_id": str | null,
       }
+
+    "verified" requires: charges_enabled AND payouts_enabled AND
+    details_submitted AND no currently_due AND no disabled_reason.
+    Anything less keeps checkout and go-live gates closed.
     """
     privy_id = current_user.get("sub")
     if not privy_id:
@@ -520,7 +526,9 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
             "status": "not_connected",
             "charges_enabled": False,
             "payouts_enabled": False,
+            "details_submitted": False,
             "requirements_currently_due": [],
+            "requirements_eventually_due": [],
             "disabled_reason": None,
             "stripe_connect_id": None,
         }
@@ -537,19 +545,35 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
 
     charges_enabled = bool(getattr(account, "charges_enabled", False))
     payouts_enabled = bool(getattr(account, "payouts_enabled", False))
+    details_submitted = bool(getattr(account, "details_submitted", False))
     requirements = getattr(account, "requirements", None)
     currently_due: list[str] = []
+    eventually_due: list[str] = []
     disabled_reason: Optional[str] = None
     if requirements is not None:
         currently_due = list(getattr(requirements, "currently_due", []) or [])
+        eventually_due = list(getattr(requirements, "eventually_due", []) or [])
         disabled_reason = getattr(requirements, "disabled_reason", None) or None
 
+    # "verified" requires the full set of live-payment guarantees:
+    # charges enabled, payouts enabled, details submitted, no
+    # outstanding requirements, no Stripe-imposed restriction. Anything
+    # short of that lands in pending_verification or restricted so the
+    # checkout/go-live gates stay closed.
     if disabled_reason:
         new_status = "restricted"
-    elif charges_enabled and not currently_due:
+    elif charges_enabled and payouts_enabled and details_submitted and not currently_due:
         new_status = "verified"
     else:
         new_status = "pending_verification"
+
+    print(
+        f"[merchant] stripe-connect/status: acct={connect_id} "
+        f"charges_enabled={charges_enabled} payouts_enabled={payouts_enabled} "
+        f"details_submitted={details_submitted} "
+        f"currently_due={currently_due} eventually_due={eventually_due} "
+        f"disabled_reason={disabled_reason!r} → status={new_status}"
+    )
 
     # Write-through cache so the merchants row stays fresh without
     # waiting for the account.updated webhook.
@@ -565,7 +589,9 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
         "status": new_status,
         "charges_enabled": charges_enabled,
         "payouts_enabled": payouts_enabled,
+        "details_submitted": details_submitted,
         "requirements_currently_due": currently_due,
+        "requirements_eventually_due": eventually_due,
         "disabled_reason": disabled_reason,
         "stripe_connect_id": connect_id,
     }

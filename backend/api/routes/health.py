@@ -175,17 +175,55 @@ async def health_offers(_admin=Depends(require_admin)):
 
 # ── /api/health/checkout — Stripe + orders ────────────────────
 
+def _stripe_secret_mode_label(key: str) -> str:
+    """Mirror of merchant._stripe_secret_mode without importing the route module."""
+    if not key:
+        return "empty"
+    if key.startswith("sk_test_"):
+        return "test"
+    if key.startswith("sk_live_"):
+        return "live"
+    return "unknown"
+
+
+def _stripe_client_id_fp(cid: str) -> str:
+    """Non-sensitive fingerprint for STRIPE_CONNECT_CLIENT_ID (ca_ values are public)."""
+    if not cid:
+        return "empty"
+    if not cid.startswith("ca_"):
+        return f"malformed(prefix={cid[:3]!r}, len={len(cid)})"
+    if len(cid) < 14:
+        return f"short(len={len(cid)})"
+    return f"{cid[:7]}...{cid[-6:]}(len={len(cid)})"
+
+
 @router.get("/checkout")
 async def health_checkout(_admin=Depends(require_admin)):
     checked_at = _now_iso()
-    stripe_configured = bool(os.getenv("STRIPE_SECRET_KEY", "").strip())
+    stripe_secret = os.getenv("STRIPE_SECRET_KEY", "").strip()
+    stripe_connect_client_id = os.getenv("STRIPE_CONNECT_CLIENT_ID", "").strip()
+    stripe_test_mode = os.getenv("STRIPE_TEST_MODE", "").strip().lower() == "true"
+    environment = os.getenv("ENVIRONMENT", "production").strip().lower()
+    stripe_configured = bool(stripe_secret)
     webhook_configured = bool(os.getenv("STRIPE_WEBHOOK_SECRET", "").strip())
+    secret_mode = _stripe_secret_mode_label(stripe_secret)
+    client_id_fp = _stripe_client_id_fp(stripe_connect_client_id)
 
     issues = []
     if not stripe_configured:
         issues.append("STRIPE_SECRET_KEY not set")
     if not webhook_configured:
         issues.append("STRIPE_WEBHOOK_SECRET not set")
+    if not stripe_connect_client_id:
+        issues.append("STRIPE_CONNECT_CLIENT_ID not set")
+    elif not stripe_connect_client_id.startswith("ca_"):
+        issues.append("STRIPE_CONNECT_CLIENT_ID malformed (must start with ca_)")
+    if stripe_configured and secret_mode == "unknown":
+        issues.append("STRIPE_SECRET_KEY does not match sk_test_*/sk_live_*")
+    if environment == "production" and secret_mode == "test":
+        issues.append("Production env has sk_test_* secret key — live payments will fail")
+    if stripe_test_mode and secret_mode == "live":
+        issues.append("STRIPE_TEST_MODE=true with sk_live_* key — bypass is disabled in code, but env should be cleaned up")
 
     resend_configured = bool(os.getenv("RESEND_API_KEY", "").strip())
     if not resend_configured:
@@ -264,6 +302,10 @@ async def health_checkout(_admin=Depends(require_admin)):
         "checked_at": checked_at,
         "details": {
             "stripe_key_present": stripe_configured,
+            "stripe_secret_mode": secret_mode,
+            "stripe_connect_client_id_fp": client_id_fp,
+            "stripe_test_mode_env": stripe_test_mode,
+            "environment": environment,
             "webhook_secret_present": webhook_configured,
             "resend_key_present": resend_configured,
             "orders_table_readable": orders_ok,

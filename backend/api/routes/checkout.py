@@ -150,12 +150,11 @@ def _get_seller_stripe_connect_id(supabase, seller_user_id: str) -> Optional[str
 def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
     """
     Refuse to create a checkout session unless Stripe's live account
-    state says the merchant can actually accept charges. This is the
-    guard that prevents the "connected but not verified yet" class of
-    bug — OAuth completes in seconds but Stripe's identity review
-    takes 24-48h, and until charges_enabled flips true on Stripe's
-    side, any Session created here would fail at the customer-paying
-    step (or worse, succeed and strand the funds).
+    state says the merchant can actually accept charges AND get paid
+    out. Both flags matter: charges_enabled=true with payouts_enabled=
+    false means funds collect on Stripe's side but can never settle
+    to the merchant's bank — the worst possible state for a flat-fee
+    direct-charge model.
 
     Raises HTTPException(400, ...) with a stable error code so the
     frontend can show the right message.
@@ -169,7 +168,10 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
             detail="stripe_account_retrieve_failed",
         )
 
-    if not getattr(account, "charges_enabled", False):
+    charges_enabled = bool(getattr(account, "charges_enabled", False))
+    payouts_enabled = bool(getattr(account, "payouts_enabled", False))
+
+    if not (charges_enabled and payouts_enabled):
         currently_due = []
         try:
             reqs = getattr(account, "requirements", None)
@@ -179,14 +181,15 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
             currently_due = []
 
         # Dev/test bypass: when ENVIRONMENT=development or
-        # STRIPE_TEST_MODE=true, allow checkout to proceed against an
-        # unverified Connect account so we can smoke-test the full
-        # payment flow while Stripe's review is pending. Loud warning
-        # log every time the bypass fires — it's never silent, and it
-        # never activates without an explicit env opt-in.
+        # STRIPE_TEST_MODE=true (and the secret key is sk_test_*),
+        # allow checkout to proceed against an unverified Connect
+        # account so we can smoke-test the full payment flow while
+        # Stripe's review is pending. Hard-disabled when the secret
+        # key is sk_live_* — see _checkout_verification_bypass_allowed.
         if _checkout_verification_bypass_allowed():
             print(
-                f"[checkout] ⚠ BYPASS charges_enabled gate: merchant={connect_id} "
+                f"[checkout] ⚠ BYPASS verification gate: merchant={connect_id} "
+                f"charges_enabled={charges_enabled} payouts_enabled={payouts_enabled} "
                 f"ENVIRONMENT={_ENVIRONMENT!r} STRIPE_TEST_MODE={_STRIPE_TEST_MODE} "
                 f"currently_due={currently_due}. "
                 f"Bypass MUST NOT be enabled with live Stripe keys."
@@ -194,7 +197,8 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
             return
 
         print(
-            f"[checkout] Merchant {connect_id} cannot accept charges: "
+            f"[checkout] Merchant {connect_id} cannot accept payments: "
+            f"charges_enabled={charges_enabled} payouts_enabled={payouts_enabled} "
             f"currently_due={currently_due}"
         )
         raise HTTPException(
@@ -206,6 +210,8 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
                     "Finish Stripe verification before accepting "
                     "live payments."
                 ),
+                "charges_enabled": charges_enabled,
+                "payouts_enabled": payouts_enabled,
                 "requirements_due": currently_due,
             },
         )
@@ -902,13 +908,19 @@ async def stripe_webhook(request: Request):
         acct_id = account.get("id")
         charges_enabled = bool(account.get("charges_enabled", False))
         payouts_enabled = bool(account.get("payouts_enabled", False))
+        details_submitted = bool(account.get("details_submitted", False))
         requirements = account.get("requirements") or {}
         currently_due = requirements.get("currently_due") or []
+        eventually_due = requirements.get("eventually_due") or []
         disabled_reason = requirements.get("disabled_reason")
 
+        # Match the merchant.py status endpoint: "verified" requires
+        # the full set of live-payment guarantees so checkout/go-live
+        # gates downstream stay closed until the account is truly
+        # ready to receive money AND pay out.
         if disabled_reason:
             new_status = "restricted"
-        elif charges_enabled and not currently_due:
+        elif charges_enabled and payouts_enabled and details_submitted and not currently_due:
             new_status = "verified"
         else:
             new_status = "pending_verification"
@@ -916,7 +928,9 @@ async def stripe_webhook(request: Request):
         print(
             f"[webhook] account.updated: acct={acct_id}, "
             f"charges_enabled={charges_enabled}, payouts_enabled={payouts_enabled}, "
-            f"currently_due={currently_due}, disabled_reason={disabled_reason}, "
+            f"details_submitted={details_submitted}, "
+            f"currently_due={currently_due}, eventually_due={eventually_due}, "
+            f"disabled_reason={disabled_reason}, "
             f"→ status={new_status}"
         )
 

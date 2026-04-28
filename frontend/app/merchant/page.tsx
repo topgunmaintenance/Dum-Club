@@ -25,6 +25,17 @@ type FoundingStatus = {
   founding_program_open: boolean;
 };
 
+type StripeStatus = {
+  status: "not_connected" | "pending_verification" | "verified" | "restricted";
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+  requirements_currently_due: string[];
+  requirements_eventually_due: string[];
+  disabled_reason: string | null;
+  stripe_connect_id: string | null;
+};
+
 // Standard plan price is pulled from an env var so the UI does not
 // hard-code $29 anywhere (CLAUDE.md Section 7 rule). Falls back to 29
 // only when NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD is unset at build time.
@@ -52,6 +63,17 @@ export default function MerchantPage() {
 
   // Analytics from existing business profile
   const [analytics, setAnalytics] = useState<any>(null);
+
+  // Live Stripe Connect verification — fetched from
+  // /api/merchant/stripe-connect/status which does a fresh
+  // Stripe.Account.retrieve and writes the resolved status back to
+  // the merchants row. The shape includes charges/payouts/details
+  // booleans and the requirements lists Stripe surfaces during
+  // onboarding. `null` while loading; `error` if the backend's
+  // Stripe.Account.retrieve fails (typically a key/account mismatch
+  // — most often surfaces while live OAuth is still being set up).
+  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
+  const [stripeStatusError, setStripeStatusError] = useState<string | null>(null);
 
   // Stripe Connect return banner. Set from `?stripe=connected` or
   // `?stripe=error&reason=<code>` which the /merchant/stripe-callback
@@ -118,12 +140,39 @@ export default function MerchantPage() {
         if (data.merchant) {
           setMerchant(data.merchant);
           loadAnalytics(token!);
+          if (data.merchant.stripe_connect_id) {
+            loadStripeStatus(token!);
+          }
         } else {
           setShowSignup(true);
         }
       }
     } catch {}
     setLoading(false);
+  }
+
+  async function loadStripeStatus(token: string) {
+    try {
+      const res = await fetch(`${API_BASE}/api/merchant/stripe-connect/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data: StripeStatus = await res.json();
+        setStripeStatus(data);
+        setStripeStatusError(null);
+        // Keep the merchant row's cached status field aligned with
+        // what the live endpoint just returned. Avoids a stale
+        // "connected" rendering downstream while the page is open.
+        setMerchant((m) => (m ? { ...m, stripe_connect_status: data.status } : m));
+      } else {
+        const detail = await res.json().catch(() => ({}));
+        setStripeStatusError(
+          typeof detail.detail === "string" ? detail.detail : `HTTP ${res.status}`,
+        );
+      }
+    } catch (err) {
+      setStripeStatusError(err instanceof Error ? err.message : "Network error");
+    }
   }
 
   async function loadAnalytics(token: string) {
@@ -645,6 +694,108 @@ export default function MerchantPage() {
               )}
             </div>
           </div>
+        </div>
+        )}
+
+        {/* Stripe Connect verification — live from Stripe.Account.retrieve.
+            Renders whenever a stripe_connect_id is set on the merchant row,
+            independent of the cached status string. Backend gate at
+            checkout.py:_assert_merchant_can_receive blocks payments unless
+            BOTH charges_enabled AND payouts_enabled are true; this card is
+            the diagnostic surface so the merchant can see why. */}
+        {merchant.stripe_connect_id && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe Verification</h3>
+            {stripeStatus && (
+              <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                stripeStatus.status === "verified"
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                  : stripeStatus.status === "restricted"
+                    ? "border-red-400/30 bg-red-400/10 text-red-400"
+                    : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+              }`}>
+                {stripeStatus.status.replace("_", " ")}
+              </span>
+            )}
+          </div>
+
+          {stripeStatusError ? (
+            <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
+              <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
+              <div className="mt-1 text-[11px] text-zinc-400">
+                {stripeStatusError === "stripe_account_retrieve_failed"
+                  ? "The platform's secret key cannot retrieve this Connect account. This typically means the live STRIPE_SECRET_KEY hasn't been swapped in yet, or the Connect account was created in test mode and needs to be re-onboarded with live OAuth."
+                  : stripeStatusError}
+              </div>
+            </div>
+          ) : !stripeStatus ? (
+            <div className="text-[11px] text-zinc-500">Loading…</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {([
+                  ["Charges enabled", stripeStatus.charges_enabled],
+                  ["Payouts enabled", stripeStatus.payouts_enabled],
+                  ["Details submitted", stripeStatus.details_submitted],
+                ] as const).map(([label, ok]) => (
+                  <div key={label} className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2.5">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+                    <div className={`mt-0.5 text-sm font-bold ${ok ? "text-emerald-400" : "text-zinc-600"}`}>
+                      {ok ? "✓ Yes" : "— No"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {stripeStatus.disabled_reason && (
+                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Restricted</div>
+                  <div className="mt-1 text-[11px] text-zinc-400">{stripeStatus.disabled_reason}</div>
+                </div>
+              )}
+
+              {stripeStatus.requirements_currently_due.length > 0 && (
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
+                    Action required ({stripeStatus.requirements_currently_due.length})
+                  </div>
+                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-400">
+                    {stripeStatus.requirements_currently_due.map((r) => (
+                      <li key={r} className="font-mono">• {r}</li>
+                    ))}
+                  </ul>
+                  <a
+                    href="https://dashboard.stripe.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
+                  >
+                    Finish on Stripe →
+                  </a>
+                </div>
+              )}
+
+              {stripeStatus.requirements_eventually_due.length > 0 && (
+                <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
+                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                    Eventually due ({stripeStatus.requirements_eventually_due.length})
+                  </summary>
+                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                    {stripeStatus.requirements_eventually_due.map((r) => (
+                      <li key={r} className="font-mono">• {r}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
+              {stripeStatus.status !== "verified" && (
+                <div className="text-[11px] text-zinc-500">
+                  Checkout and Go Live remain disabled until charges and payouts are both enabled and Stripe shows no outstanding requirements.
+                </div>
+              )}
+            </div>
+          )}
         </div>
         )}
 
