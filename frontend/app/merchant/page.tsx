@@ -451,8 +451,16 @@ export default function MerchantPage() {
   // have NOT yet: connected Stripe (required to get paid), and made
   // their first sale. Surface those as a checklist at the very top of
   // the dashboard so "what's my next step?" is never ambiguous.
+  //
+  // stepStripe is true the moment OAuth completes — i.e. as soon as a
+  // stripe_connect_id is on the row. The cached stripe_connect_status
+  // string drifts through "connected" → "pending_verification" →
+  // "verified" as Stripe's verification progresses, but the checklist
+  // is asking "did you connect Stripe?", not "did Stripe verify you?".
+  // Verification state is surfaced separately by the Stripe
+  // Verification card below.
   const stepAccount = true;
-  const stepStripe = merchant.stripe_connect_status === "connected";
+  const stepStripe = !!merchant.stripe_connect_id;
   const stepFirstSale = (analytics?.total_orders ?? 0) > 0;
   const completedSteps = [stepAccount, stepStripe, stepFirstSale].filter(Boolean).length;
   const totalSteps = 3;
@@ -685,7 +693,7 @@ export default function MerchantPage() {
                   <div className="text-[11px] text-zinc-500">Receive payouts from live sales</div>
                 </div>
               </div>
-              {merchant.stripe_connect_status === "connected" ? (
+              {merchant.stripe_connect_id ? (
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Connected</span>
               ) : (
                 <button onClick={connectStripe} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20">
