@@ -121,23 +121,26 @@ export default function DashboardPage() {
 
   // Load business analytics
   useEffect(() => {
-    if (!bizProfile) return;
+    if (!bizProfile || !user) return;
     setAnalyticsLoading(true);
     (async () => {
       try {
-        const token = await (user as any)?.getToken?.();
-        const headers: Record<string, string> = {};
-        if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}/api/business/analytics`, { headers });
+        const token = await getToken();
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/business/analytics`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           setAnalytics(data);
         }
+        // Non-OK responses (401/etc.) silently no-op — analytics is a
+        // best-effort enrichment, not a hard requirement for /dashboard.
       } catch {} finally {
         setAnalyticsLoading(false);
       }
     })();
-  }, [bizProfile]);
+  }, [bizProfile, user]);
 
   async function createBusiness() {
     if (!bizName.trim() || bizSaving) return;
