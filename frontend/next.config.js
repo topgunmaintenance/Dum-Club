@@ -27,6 +27,15 @@ const nextConfig = {
       },
     ],
   },
+  // Permanent redirects for renamed routes. Old links and any external
+  // marketing copy still pointing at /explore or /ai-chat resolve to
+  // the canonical pages (/discover, /chat) without a 404.
+  async redirects() {
+    return [
+      { source: "/explore", destination: "/discover", permanent: true },
+      { source: "/ai-chat", destination: "/chat", permanent: true },
+    ];
+  },
 };
 
 module.exports = nextConfig;
