@@ -235,9 +235,14 @@ export function Navbar() {
         >
           {mounted && (
             <>
-              {user && latestProjectId && (
+              {user && (
                 <Link
-                  href={`/project/${latestProjectId}?golive=1`}
+                  // Route by merchant readiness: a user with a live-eligible
+                  // project drops straight into the broadcast UI for that
+                  // project; a signed-in user without one lands on /merchant
+                  // so they can finish onboarding before going live. No
+                  // hardcoded project UUIDs anywhere in the navbar.
+                  href={latestProjectId ? `/project/${latestProjectId}?golive=1` : "/merchant"}
                   style={{
                     fontFamily: "var(--font-geist-mono), monospace",
                     fontSize: "11px",
@@ -484,9 +489,11 @@ export function Navbar() {
 
         {/* DUM balance badge removed — CLAUDE.md v5.0 Phase 2 unlock. */}
 
-        {mounted && user && latestProjectId && (
+        {mounted && user && (
           <Link
-            href={`/project/${latestProjectId}?golive=1`}
+            // See desktop variant above: same routing rule, mobile drawer
+            // copy. No hardcoded project UUIDs.
+            href={latestProjectId ? `/project/${latestProjectId}?golive=1` : "/merchant"}
             onClick={() => setMenuOpen(false)}
             style={{
               display: "flex",
