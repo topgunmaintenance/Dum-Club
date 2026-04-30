@@ -965,13 +965,26 @@ async def stripe_webhook(request: Request):
 async def recent_sales(limit: int = 10):
     """Public endpoint: recent paid/fulfilled orders for social proof.
 
-    Filters out sales whose underlying project is soft-hidden via the
-    `visibility='hidden'` flag (migration 029_project_visibility). This
-    is what stops founder demo storefronts — e.g. Silver Market Hub,
-    Date Night Box Co., Sparkle Pro Mobile Wash, GrowthKit — from
-    showing up in the homepage LiveActivityTicker after they've been
-    hidden from /discover. Social proof must match public listing
-    semantics, or the ticker contradicts the directory.
+    REAL STRIPE SALES ONLY. Two filters:
+
+      1. The order must carry a real Stripe identifier — either
+         stripe_session_id or stripe_payment_intent_id. This excludes
+         every row inserted by backend/db/seeds/demo_businesses.sql
+         (Sparkle Pro Mobile Wash, GrowthKit, Date Night Box Co., etc.)
+         which were seeded directly into the orders table without
+         going through Stripe Checkout. The LiveActivityTicker on the
+         homepage was repeating those demo rows in a tight loop and
+         making the platform feel fake; this filter is the surgical
+         fix at the data-source layer.
+
+      2. The parent project must not be soft-hidden via
+         `visibility='hidden'` (migration 029_project_visibility).
+         Same intent: hidden founder demos shouldn't surface in the
+         ticker even if they somehow have Stripe IDs.
+
+    The frontend (LiveActivityTicker) keeps its REAL_SALES_FLOOR=5
+    gate, so the ticker stays hidden entirely until 5 real Stripe
+    sales accumulate on the platform — no fake-looking repeat loops.
 
     To keep the visible count close to the requested `limit` after
     filtering, we fetch a larger internal window (5x the requested
@@ -986,6 +999,7 @@ async def recent_sales(limit: int = 10):
             supabase.table("orders")
             .select(
                 "id, amount_paid_usd, status, created_at, "
+                "stripe_session_id, stripe_payment_intent_id, "
                 "offers(title, project_id, projects(title, visibility))"
             )
             .in_("status", ["paid", "fulfilled"])
@@ -995,6 +1009,9 @@ async def recent_sales(limit: int = 10):
         )
         sales = []
         for row in (res.data or []):
+            # Real-Stripe-only: skip seed rows that have no Stripe id.
+            if not (row.get("stripe_session_id") or row.get("stripe_payment_intent_id")):
+                continue
             offer = row.get("offers") or {}
             project = offer.get("projects") or {}
             # Hard-exclude sales whose project is hidden from the public
