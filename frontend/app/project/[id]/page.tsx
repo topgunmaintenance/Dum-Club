@@ -491,7 +491,7 @@ export default function ProjectPage() {
   }, []);
 
   const [project, setProject] = useState<Project | null>(null);
-  const [projectName, setProjectName] = useState("Untitled Project");
+  const [projectName, setProjectName] = useState("DUM Club Business");
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -808,7 +808,7 @@ export default function ProjectPage() {
 
       setProject(projectData);
 
-      const resolvedName = projectData?.title || projectData?.name || "Untitled Project";
+      const resolvedName = projectData?.title || projectData?.name || "DUM Club Business";
       setProjectName(resolvedName);
       setProjectStatus(projectData?.review_status || "draft");
 
@@ -847,7 +847,7 @@ export default function ProjectPage() {
     } catch (err) {
       console.error(err);
       setProject(null);
-      setProjectName("Untitled Project");
+      setProjectName("DUM Club Business");
       setProjectStatus("draft");
     } finally {
       setLoadingProject(false);
@@ -1999,7 +1999,7 @@ export default function ProjectPage() {
       if (res.ok) {
         const updated = await res.json();
         setProject(updated);
-        setProjectName(updated.name || updated.title || "Untitled Project");
+        setProjectName(updated.name || updated.title || "DUM Club Business");
         showBuilderToast("Updated — your project just got stronger");
       }
     } catch (err) {
@@ -4517,13 +4517,19 @@ return (
               </>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={scrollToAiWorkspace}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
-                >
-                  Ask AI →
-                </button>
+                {/* Storefront view already renders its own "Ask AI" inside
+                    the storefront card above, so we skip the duplicate
+                    sidebar button on storefront pages. Other views
+                    (analytics-disabled fallback, etc.) keep it. */}
+                {projectView !== "storefront" && (
+                  <button
+                    type="button"
+                    onClick={scrollToAiWorkspace}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                  >
+                    Ask AI →
+                  </button>
+                )}
                 {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
