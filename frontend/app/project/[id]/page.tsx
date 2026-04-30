@@ -857,12 +857,26 @@ export default function ProjectPage() {
   async function loadTokenMetadata() {
     if (!id) return;
 
+    // Best-effort enrichment: many projects (service merchants, drafts,
+    // pre-token state) legitimately return non-2xx here. Silently fall
+    // back to empty metadata rather than logging red errors on every
+    // page load.
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}/token-metadata`, {
         cache: "no-store",
       });
 
-      if (!res.ok) throw new Error("Failed to load token metadata");
+      if (!res.ok) {
+        setTokenMeta({
+          name: "",
+          symbol: "",
+          supply: "",
+          decimals: "",
+          status: "",
+          mint_address: "",
+        });
+        return;
+      }
 
       const data = await res.json();
 
@@ -874,8 +888,7 @@ export default function ProjectPage() {
         status: data.status || "",
         mint_address: data.mint_address || "",
       });
-    } catch (err) {
-      console.error(err);
+    } catch {
       setTokenMeta({
         name: "",
         symbol: "",
@@ -893,14 +906,18 @@ export default function ProjectPage() {
     // endpoint does not support.
     if (!project?.id) return;
 
+    // Best-effort: memories are a non-critical AI-context enrichment.
+    // Non-2xx means "no memories indexed yet" — not an error.
     try {
       const res = await fetch(`${API_BASE}/api/memories/?project_id=${project.id}`);
-      if (!res.ok) throw new Error("Failed to load memories");
+      if (!res.ok) {
+        setMemories([]);
+        return;
+      }
 
       const data = await res.json();
       setMemories(data.memories || data || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setMemories([]);
     }
   }
@@ -1331,6 +1348,11 @@ export default function ProjectPage() {
     } catch (err) { console.error(err); }
   }
 
+  // Token-only data fetchers below (market/trades/candles/redemptions).
+  // Service-mode projects (Topgun, etc.) have token_status='inactive' and
+  // these endpoints legitimately return non-2xx. Silently fall back to
+  // empty defaults instead of logging red errors on every page load.
+
   async function loadMarket() {
     if (!id) return;
 
@@ -1338,11 +1360,13 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/projects/${id}/market`, {
         cache: "no-store",
       });
-      if (!res.ok) throw new Error("Failed to load market");
+      if (!res.ok) {
+        setMarket(null);
+        return;
+      }
       const data = await res.json();
       setMarket(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setMarket(null);
     }
   }
@@ -1354,11 +1378,13 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/projects/${id}/trades`, {
         cache: "no-store",
       });
-      if (!res.ok) throw new Error("Failed to load trades");
+      if (!res.ok) {
+        setTrades([]);
+        return;
+      }
       const data = await res.json();
       setTrades(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setTrades([]);
     }
   }
@@ -1370,29 +1396,31 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/projects/${id}/candles`, {
         cache: "no-store",
       });
-      if (!res.ok) throw new Error("Failed to load candles");
+      if (!res.ok) {
+        setCandles([]);
+        return;
+      }
       const data = await res.json();
       setCandles(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setCandles([]);
     }
   }
-  
+
   async function loadRedemptions() {
     if (!id) return;
-  
+
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}/redemptions`, {
         cache: "no-store",
       });
-  
-      if (!res.ok) throw new Error("Failed to load redemptions");
-  
+      if (!res.ok) {
+        setRedemptions([]);
+        return;
+      }
       const data = await res.json();
       setRedemptions(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setRedemptions([]);
     }
   }
@@ -1410,17 +1438,22 @@ export default function ProjectPage() {
       return;
     }
 
+    // Token-only: only relevant when this project has an active token AND
+    // the user has a wallet attached. Non-2xx means "no balance to show",
+    // not an error. Silent fallback to 0.
     try {
       const res = await fetch(`${API_BASE}/api/projects/${id}/balance/${wallet}`, {
         cache: "no-store",
       });
 
-      if (!res.ok) throw new Error("Failed to load wallet balance");
+      if (!res.ok) {
+        setWalletBalance(0);
+        return;
+      }
 
       const data = await res.json();
       setWalletBalance(Number(data?.balance || 0));
-    } catch (err) {
-      console.error(err);
+    } catch {
       setWalletBalance(0);
     }
   }
