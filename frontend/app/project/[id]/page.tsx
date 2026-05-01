@@ -11,6 +11,14 @@ import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
 const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  SOL_CHECKOUT_ENABLED,
+  pickSolPayWallet,
+  payOfferWithSol,
+  SolCheckoutError,
+  type PayOfferStep,
+} from "../../../lib/solanaCheckout";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
@@ -483,6 +491,11 @@ export default function ProjectPage() {
   const id = params?.id as string;
   const { user: authUser, login, getToken } = useAuth();
   const { wallets } = useSolanaWallets();
+  // External Solana wallet adapter (Phantom / Solflare). Used as a
+  // fallback for the "Pay with SOL" CTA when the user prefers an
+  // external wallet over the Privy embedded wallet. Always called
+  // — rules of hooks — and consumed only when SOL checkout fires.
+  const adapterWallet = useWallet();
 
   // Diagnostic: log effective API base on mount
   useEffect(() => {
@@ -1316,6 +1329,122 @@ export default function ProjectPage() {
       console.error("[buyOffer] ERROR:", msg);
       setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
       setBuyError((p) => ({ ...p, [oid]: msg }));
+      setBuyingOfferId(null);
+    }
+  }
+
+  // Solana wallet checkout — secondary CTA, additive to Stripe.
+  // Same per-offer state (buyingOfferId, buyStep, buyError) so the
+  // Stripe button is disabled while a SOL payment is in flight.
+  async function payOfferWithSolHandler(
+    offer: Offer,
+    auctionId?: string,
+    overridePrice?: number,
+  ) {
+    const oid = offer.id;
+    setBuyError((p) => ({ ...p, [oid]: "" }));
+
+    if (!authUser) {
+      setBuyError((p) => ({ ...p, [oid]: "Sign in to pay with SOL." }));
+      return;
+    }
+    if (isOwner) {
+      setBuyError((p) => ({ ...p, [oid]: "You can't buy your own offer." }));
+      return;
+    }
+
+    const wallet = pickSolPayWallet(wallets, adapterWallet);
+    if (!wallet) {
+      setBuyError((p) => ({
+        ...p,
+        [oid]:
+          "No Solana wallet available. Connect Phantom or refresh to set up your wallet.",
+      }));
+      return;
+    }
+
+    setBuyingOfferId(oid);
+    setBuyStep((p) => ({ ...p, [oid]: "sol_quoting" }));
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
+        setBuyError((p) => ({
+          ...p,
+          [oid]: "Authentication failed — please sign in again",
+        }));
+        setBuyingOfferId(null);
+        return;
+      }
+
+      const solSource = auctionId
+        ? "live_auction_sol"
+        : project?.is_live
+          ? "live_sol"
+          : "sol";
+
+      const rpcUrl =
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+        process.env.NEXT_PUBLIC_SOLANA_RPC ||
+        "https://api.mainnet-beta.solana.com";
+
+      const result = await payOfferWithSol({
+        offerId: oid,
+        source: solSource,
+        auctionId,
+        overridePrice,
+        wallet,
+        authToken: token,
+        rpcUrl,
+        onStep: (s: PayOfferStep) => {
+          setBuyStep((p) => ({ ...p, [oid]: `sol_${s}` }));
+        },
+      });
+
+      const buyPrice = result.usd_amount;
+      capturePurchase(
+        id as string,
+        offer.title,
+        buyPrice,
+        result.order_id,
+        authUser?.privyId,
+      );
+
+      // Same post-payment surface as the Stripe redirect, but
+      // invoked inline because the SOL flow stays on the page —
+      // there's no /api/checkout/success URL to redirect through.
+      // Mirrors the effect at lines ~3080-3115 verbatim so the
+      // confirmation banner, DUM-points toast, and delayed
+      // refreshes all behave the same as a Stripe purchase.
+      setCheckoutResult("success");
+      if (buyPrice > 0) {
+        // Same formula as backend/api/routes/checkout.py
+        // process_order_paid: min(50, 10 + floor(amount/5)).
+        const points = Math.min(50, 10 + Math.floor(buyPrice / 5));
+        setDumPointsEarned(points);
+        setTimeout(() => setDumPointsEarned(null), 10000);
+      }
+      const refreshAfterSolCheckout = () => {
+        loadOffers();
+        loadSellerOrders();
+        window.dispatchEvent(new Event("dum-points-update"));
+      };
+      setTimeout(refreshAfterSolCheckout, 2000);
+      setTimeout(refreshAfterSolCheckout, 5000);
+
+      setBuyStep((p) => ({ ...p, [oid]: "sol_done" }));
+    } catch (err) {
+      const msg =
+        err instanceof SolCheckoutError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "SOL payment failed";
+      console.error("[sol-pay] ERROR:", msg);
+      setBuyStep((p) => ({ ...p, [oid]: "sol_error" }));
+      setBuyError((p) => ({ ...p, [oid]: msg }));
+    } finally {
       setBuyingOfferId(null);
     }
   }
@@ -5424,13 +5553,46 @@ return (
                             Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
-                          <button
-                            disabled={buyingOfferId === offer.id}
-                            onClick={() => buyOffer(offer)}
-                            className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
-                          >
-                            {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
-                          </button>
+                          <>
+                            <button
+                              disabled={buyingOfferId === offer.id}
+                              onClick={() => buyOffer(offer)}
+                              className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
+                            >
+                              {buyingOfferId === offer.id && !(buyStep[offer.id] || "").startsWith("sol_")
+                                ? "Processing..."
+                                : buyStep[offer.id] === "demo_success"
+                                ? "✓ Purchased!"
+                                : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
+                            </button>
+                            {/* Secondary CTA: pay with SOL. Feature-flagged
+                                off by default. Stripe stays the primary
+                                button above; this is intentionally smaller
+                                and lower-contrast. */}
+                            {SOL_CHECKOUT_ENABLED && (
+                              <button
+                                type="button"
+                                disabled={buyingOfferId === offer.id}
+                                onClick={() => payOfferWithSolHandler(offer)}
+                                className="mt-2 w-full rounded-lg border border-zinc-800 bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-50"
+                                aria-label="Pay with Solana wallet"
+                              >
+                                {(() => {
+                                  const step = buyStep[offer.id] || "";
+                                  if (buyingOfferId === offer.id && step.startsWith("sol_")) {
+                                    if (step === "sol_quoting") return "Quoting…";
+                                    if (step === "sol_building") return "Building tx…";
+                                    if (step === "sol_signing") return "Confirm in your wallet…";
+                                    if (step === "sol_confirming") return "Waiting for network…";
+                                    if (step === "sol_verifying") return "Verifying…";
+                                    if (step === "sol_done") return "✓ Paid with SOL";
+                                    return "Processing…";
+                                  }
+                                  return "or pay with SOL";
+                                })()}
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     );
