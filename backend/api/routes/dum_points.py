@@ -333,10 +333,17 @@ async def purchase_points(
 
 # ── SOL → DUM Swap ──────────────────────────────────────────
 
-import requests as http_requests
-SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+# Verifier moved to services/solana_verify so the live-offer SOL
+# checkout path can share exactly one implementation. Behaviour is
+# unchanged — same RPC method, same 5%-fee tolerance, same error
+# strings — so existing /api/dum/swap callers see no difference.
+from services.solana_verify import (
+    LAMPORTS_PER_SOL,
+    SOLANA_RPC_URL,
+    verify_sol_transfer,
+)
+
 DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
-LAMPORTS_PER_SOL = 1_000_000_000
 
 # Swap limits
 SWAP_MIN_SOL = 0.01
@@ -351,48 +358,10 @@ class SwapRequest(BaseModel):
     wallet_address: str  # Sender's wallet
 
 
-def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: str) -> bool | str:
-    """
-    Verify a SOL transfer landed in the treasury wallet via Solana RPC.
-    Returns True on success, or an error string on failure.
-    """
-    try:
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTransaction",
-            "params": [signature, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}],
-        }
-        resp = http_requests.post(SOLANA_RPC_URL, json=payload, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-        result = data.get("result")
-        if not result:
-            return "Transaction not found on Solana. It may still be processing — wait a moment and try again."
-
-        # Check transaction was successful
-        meta = result.get("meta", {})
-        if meta.get("err") is not None:
-            return "Transaction failed on-chain. The SOL transfer was not completed."
-
-        # Check post-balances for treasury receiving SOL
-        account_keys = result.get("transaction", {}).get("message", {}).get("accountKeys", [])
-        pre_balances = meta.get("preBalances", [])
-        post_balances = meta.get("postBalances", [])
-
-        for i, key in enumerate(account_keys):
-            pubkey = key if isinstance(key, str) else key.get("pubkey", "")
-            if pubkey == treasury:
-                received = (post_balances[i] if i < len(post_balances) else 0) - (pre_balances[i] if i < len(pre_balances) else 0)
-                if received >= expected_lamports * 0.95:  # 5% tolerance for fees
-                    return True
-
-        return "SOL was not received by the DUM Club treasury. Check the destination address."
-    except http_requests.Timeout:
-        return "Solana network is slow. Please wait a moment and try again."
-    except Exception as exc:
-        print(f"[swap] verification error: {exc!r}")
-        return f"Verification failed: {type(exc).__name__}"
+def _verify_sol_transaction(signature: str, expected_lamports: int, treasury: str) -> "bool | str":
+    """Thin wrapper that preserves the historical name for grep/log
+    continuity. New callers should use verify_sol_transfer directly."""
+    return verify_sol_transfer(signature, expected_lamports, treasury)
 
 
 @router.post("/swap")
