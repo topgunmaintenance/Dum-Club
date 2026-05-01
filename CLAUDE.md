@@ -420,8 +420,12 @@ AI retention agent replacing direct mail.
 Gate out: 10+ verified sellers live AND $1,000+ real GMV AND
 legal review of points purchase flow complete.
 
-### Phase 3 — Optional Solana layer
-Goal: Solana claim available as an opt-in toggle only.
+### Phase 3 — Optional Solana SPL layer
+Solana wallet checkout for live/offer purchases is allowed in
+Phase 0B/1 behind a feature flag and is NOT gated by Phase 3 —
+that work belongs with the active Stripe-checkout sprint.
+Solana SPL claim/swap/token mechanics remain Phase 3 gated.
+Goal: SPL claim/swap available as an opt-in toggle only.
 Gate out: Phase 2 proven with data AND legal sign-off on the
 Solana claim flow.
 
@@ -537,7 +541,10 @@ Shopify, Base44, Lovable, Venice.ai
 8. Never combine commits — one feature per commit
 9. Never skip phases — earn each unlock condition
 10. One real Stripe transaction before any Phase 1 work
-11. Stripe is the ONLY payment processor — no exceptions
+11. Stripe and Solana wallet checkout are the supported buyer
+    payment paths. Stripe remains the primary card checkout path.
+    Solana checkout is additive, opt-in per buyer, and never
+    replaces Stripe. No other payment processors are supported.
 12. FOUNDING_CAP = 100 everywhere — code, docs, copy
 
 ---
