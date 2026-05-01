@@ -743,6 +743,21 @@ export default function ProjectPage() {
   const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
+  // Live commerce: lighter purchase toasts that fire for EVERY paid
+  // item_updated event (not just sold-out). Visually distinct from
+  // saleToasts so a single sold-out doesn't show two banners.
+  const [purchaseToasts, setPurchaseToasts] = useState<
+    { id: string; title: string }[]
+  >([]);
+  // Live commerce: floating reaction emoji that rise over the video
+  // on every paid event. Each entry has its own random horizontal
+  // offset so successive purchases don't stack visually.
+  const [floatingReactions, setFloatingReactions] = useState<
+    { id: string; emoji: string; leftPct: number; delayMs: number }[]
+  >([]);
+  // Live commerce: emerald border-flash on the video frame when an
+  // item just sold out. Boolean toggle, cleared after ~700ms.
+  const [soldFlash, setSoldFlash] = useState(false);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
   const [autoGoLive, setAutoGoLive] = useState(false);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
@@ -3927,7 +3942,7 @@ return (
             {/* ── LEFT COLUMN: video + product + controls ── */}
             <div className="space-y-4">
               {/* Video player with sale toast overlay */}
-              <div className="relative">
+              <div className={`relative rounded-2xl ${soldFlash ? "live-sold-flash" : ""}`}>
                 {isIVSSession(project) && project.ivs_stage_arn && !isOwner ? (
                   <IVSStageViewer
                     projectId={id as string}
@@ -4001,6 +4016,46 @@ return (
                         <div className="text-[11px] text-amber-400/70">Rewards on every purchase</div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* ── Live purchase toast — top-left of video ── */}
+                {/* Fires on EVERY paid item_updated (not just sold-out). */}
+                {purchaseToasts.length > 0 && (
+                  <div className="pointer-events-none absolute top-3 left-3 z-10 flex flex-col gap-2 max-w-[60%]">
+                    {purchaseToasts.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-black/70 px-3 py-2 shadow-md backdrop-blur-sm"
+                        style={{ animation: "fade-up 0.35s ease-out" }}
+                      >
+                        <span className="text-base">💖</span>
+                        <span className="truncate text-xs font-semibold text-white">
+                          Someone just bought <span className="text-emerald-300">{t.title}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Floating reactions — rise from bottom, fade out ── */}
+                {/* Each emoji is a sibling positioned with a random
+                    leftPct so a burst doesn't visually stack. */}
+                {floatingReactions.length > 0 && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 top-0 z-10 overflow-hidden">
+                    {floatingReactions.map((r) => (
+                      <span
+                        key={r.id}
+                        className="live-float-up absolute bottom-2 select-none text-3xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                        style={{
+                          left: `${r.leftPct}%`,
+                          animationDelay: `${r.delayMs}ms`,
+                        }}
+                        aria-hidden="true"
+                      >
+                        {r.emoji}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -4178,16 +4233,40 @@ return (
                             const isSoldOut = !pinnedOffer.unlimited_inventory
                               && (pinnedOffer.quantity_available || 0) > 0
                               && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+                            const step = buyStep[pinnedOffer.id] || "";
                             return isSoldOut ? (
                               <span className="w-full rounded-xl border border-zinc-700 px-5 py-2.5 text-center text-sm font-bold text-zinc-500 sm:w-auto">Sold Out</span>
                             ) : (
-                              <button
-                                onClick={() => buyOffer(pinnedOffer)}
-                                disabled={!!buyingOfferId}
-                                className="w-full rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40 sm:w-auto sm:py-2.5"
-                              >
-                                {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
-                              </button>
+                              <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+                                <button
+                                  onClick={() => buyOffer(pinnedOffer)}
+                                  disabled={!!buyingOfferId}
+                                  className="w-full rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40 sm:w-auto sm:py-2.5"
+                                >
+                                  {buyingOfferId === pinnedOffer.id && !step.startsWith("sol_")
+                                    ? "Processing..."
+                                    : "Pay with Card"}
+                                </button>
+                                {SOL_CHECKOUT_ENABLED && (
+                                  <button
+                                    type="button"
+                                    onClick={() => payOfferWithSolHandler(pinnedOffer)}
+                                    disabled={!!buyingOfferId}
+                                    className="w-full rounded-lg border border-zinc-700 bg-transparent px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-50 sm:w-auto"
+                                    aria-label="Pay with Solana wallet"
+                                  >
+                                    {buyingOfferId === pinnedOffer.id && step.startsWith("sol_")
+                                      ? (step === "sol_quoting" ? "Quoting…"
+                                        : step === "sol_building" ? "Building tx…"
+                                        : step === "sol_signing" ? "Confirm in wallet…"
+                                        : step === "sol_confirming" ? "Waiting on chain…"
+                                        : step === "sol_verifying" ? "Verifying…"
+                                        : step === "sol_done" ? "✓ Paid with SOL"
+                                        : "Processing…")
+                                      : "Pay with SOL"}
+                                  </button>
+                                )}
+                              </div>
                             );
                           })()}
                         </div>
@@ -4245,9 +4324,52 @@ return (
                         : o
                     ));
                     console.log("[live] Item updated:", data.offer_id, "sold:", data.quantity_sold, "sold_out:", data.sold_out);
+
+                    // Live commerce reactions: every paid order
+                    // produces a purchase toast + a small flurry of
+                    // rising emoji over the video. Sold-out events
+                    // ALSO get the heavier saleToasts banner via
+                    // onItemSold below; suppress the lighter toast
+                    // there so we don't double-banner.
+                    const offerTitle =
+                      offers.find((o) => o.id === data.offer_id)?.title ||
+                      "an item";
+                    if (!data.sold_out) {
+                      const tid = `pt-${data.offer_id}-${Date.now()}`;
+                      setPurchaseToasts((prev) => [
+                        ...prev.slice(-2),
+                        { id: tid, title: offerTitle },
+                      ]);
+                      setTimeout(() => {
+                        setPurchaseToasts((prev) =>
+                          prev.filter((t) => t.id !== tid)
+                        );
+                      }, 3500);
+                    }
+
+                    // Floating reactions — 4 mixed emoji, each with
+                    // a random column position and small staggered
+                    // delay so they don't render as one column.
+                    const POOL = ["💖", "👍", "💵", "🔥", "💖", "💵"];
+                    const burst = Array.from({ length: 4 }, (_, i) => ({
+                      id: `fr-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+                      emoji: POOL[Math.floor(Math.random() * POOL.length)],
+                      // 8%-92% so the columns stay inside the frame
+                      leftPct: 8 + Math.floor(Math.random() * 84),
+                      delayMs: i * 90,
+                    }));
+                    setFloatingReactions((prev) => [...prev.slice(-12), ...burst]);
+                    setTimeout(() => {
+                      setFloatingReactions((prev) =>
+                        prev.filter((r) => !burst.some((b) => b.id === r.id))
+                      );
+                    }, 2200);
                   }}
                   onItemSold={(data) => {
                     loadOffers();
+                    // Sold-out flash on the video frame (~700ms one-shot).
+                    setSoldFlash(true);
+                    setTimeout(() => setSoldFlash(false), 700);
                     setLiveSalesCount((c) => {
                       const next = c + 1;
                       const toastId = `${data.offer_id}-${Date.now()}`;
@@ -4309,21 +4431,39 @@ return (
                       </span>
                     )}
                   </div>
-                  <div className="pl-3">
+                  <div className="flex flex-col items-end gap-1.5 pl-3">
                     {(() => {
                       const isSoldOut = !pinnedOffer.unlimited_inventory
                         && (pinnedOffer.quantity_available || 0) > 0
                         && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+                      const step = buyStep[pinnedOffer.id] || "";
                       return isSoldOut ? (
                         <span className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-500">Sold Out</span>
                       ) : (
-                        <button
-                          onClick={() => buyOffer(pinnedOffer)}
-                          disabled={!!buyingOfferId}
-                          className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
-                        >
-                          {buyingOfferId === pinnedOffer.id ? "..." : "Buy Now"}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => buyOffer(pinnedOffer)}
+                            disabled={!!buyingOfferId}
+                            className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                          >
+                            {buyingOfferId === pinnedOffer.id && !step.startsWith("sol_")
+                              ? "..."
+                              : "Pay with Card"}
+                          </button>
+                          {SOL_CHECKOUT_ENABLED && (
+                            <button
+                              type="button"
+                              onClick={() => payOfferWithSolHandler(pinnedOffer)}
+                              disabled={!!buyingOfferId}
+                              className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-400 underline-offset-2 transition hover:text-emerald-300 hover:underline disabled:opacity-50"
+                              aria-label="Pay with Solana wallet"
+                            >
+                              {buyingOfferId === pinnedOffer.id && step.startsWith("sol_")
+                                ? "Paying with SOL…"
+                                : "or pay with SOL"}
+                            </button>
+                          )}
+                        </>
                       );
                     })()}
                   </div>
