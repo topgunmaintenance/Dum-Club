@@ -290,7 +290,7 @@ def process_order_paid(
     if offer_id:
         try:
             offer_res = supabase.table("offers").select(
-                "id, project_id, quantity_sold, quantity_available, unlimited_inventory"
+                "id, project_id, quantity_sold, quantity_available, unlimited_inventory, title"
             ).eq("id", offer_id).limit(1).execute()
             if offer_res.data:
                 o = offer_res.data[0]
@@ -324,7 +324,10 @@ def process_order_paid(
                 if sold_out:
                     broadcast_sync(_proj_id_for_broadcast, {
                         "type": "item_sold",
-                        "data": {"offer_id": offer_id, "title": "Item"},
+                        "data": {
+                            "offer_id": offer_id,
+                            "title": o.get("title") or "Item",
+                        },
                         "timestamp": time.time(),
                     })
                 print(f"[paid] ✓ BROADCAST: item_updated for offer={offer_id}, sold_out={sold_out}")
