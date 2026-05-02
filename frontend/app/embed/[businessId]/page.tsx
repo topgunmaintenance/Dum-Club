@@ -3,10 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { API_BASE } from "../../../lib/apiBase";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { isIVSSession } from "../../../lib/liveProvider";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
+import {
+  SOL_CHECKOUT_ENABLED,
+  SolCheckoutError,
+  payOfferWithSol,
+  pickSolPayWallet,
+  type PayOfferStep,
+} from "../../../lib/solanaCheckout";
 
 // IVSStageViewer pulls in amazon-ivs-web-broadcast which is browser-only.
 // Mirror the dynamic-import pattern used by /project/[id] to keep SSR clean.
@@ -46,19 +55,21 @@ type DebugEvent = {
 
 /**
  * /embed/[businessId] — embed shell with live video, websocket wiring,
- * pinned offer card, Pay-with-Card checkout, and Stripe success /
- * cancel handling.
+ * pinned offer card, Pay-with-Card checkout, redirect-back handling,
+ * and (when feature-flagged on) a secondary Pay-with-SOL CTA.
  *
- * Step 6 of the DUM Live Embed build. handleBuy now redirects Stripe
- * Checkout back to /embed/[businessId]?checkout=success or
- * ?checkout=cancelled. On mount, the page detects either flag, shows
- * a clean message (success: prominent, cancelled: small + non-
- * blocking), refreshes project + offers on success so the pinned
- * card's inventory is correct, and strips the query string from the
- * URL so a refresh doesn't re-trigger the message.
+ * Step 7 of the DUM Live Embed build. Adds SOL as a non-dominant
+ * second rail under the primary Stripe button, gated by
+ * SOL_CHECKOUT_ENABLED (NEXT_PUBLIC_ENABLE_SOL_CHECKOUT). Reuses the
+ * existing payOfferWithSol orchestrator from frontend/lib/
+ * solanaCheckout.ts — quote → on-chain transfer → backend confirm —
+ * so this page contains zero Solana protocol logic of its own. No
+ * webhook redirect for SOL: payment completes inline, so success
+ * triggers the same banner and load() refresh that the Stripe
+ * redirect-back path uses.
  *
- * Still no Solana / SOL surface, and no reaction animations — those
- * land later. No DUM Club chrome (gated by SiteChrome from Step 1).
+ * Still no reaction animations — those land later. No DUM Club
+ * chrome (gated by SiteChrome from Step 1).
  */
 export default function EmbedShellPage() {
   const params = useParams<{ businessId: string }>();
@@ -67,6 +78,13 @@ export default function EmbedShellPage() {
   const { user: authUser, login, getToken } = useAuth();
   const viewerUserId = authUser?.privyId || "";
   const viewerName = authUser?.email || "Viewer";
+
+  // SOL wallet sources — Privy embedded wallet first, then any
+  // external wallet adapter (Phantom / Solflare). pickSolPayWallet
+  // collapses both into the same shape, so the rest of the SOL
+  // flow doesn't have to care which one signed.
+  const { wallets: solanaWallets } = useSolanaWallets();
+  const adapterWallet = useWallet();
 
   const [project, setProject] = useState<EmbedProject | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -77,6 +95,12 @@ export default function EmbedShellPage() {
   // so a single in-flight flag + a single error string is enough.
   const [buying, setBuying] = useState<boolean>(false);
   const [buyError, setBuyError] = useState<string | null>(null);
+
+  // SOL secondary-CTA state. Tracked separately from the Stripe
+  // path so each rail's error stays attached to its own button.
+  const [solBuying, setSolBuying] = useState<boolean>(false);
+  const [solStep, setSolStep] = useState<PayOfferStep | null>(null);
+  const [solError, setSolError] = useState<string | null>(null);
 
   // Stripe redirect-back result. Set once on mount when the URL
   // carries ?checkout=success or ?checkout=cancelled, then dismissable.
@@ -325,6 +349,85 @@ export default function EmbedShellPage() {
     }
   }
 
+  // Pay with SOL — secondary CTA. Stays off unless
+  // NEXT_PUBLIC_ENABLE_SOL_CHECKOUT=true. Unlike the Stripe path
+  // there is no redirect: the wallet signs in-page, the backend
+  // re-verifies on-chain, and a paid order is created inline.
+  // On success we surface the same checkoutResult banner Step 6
+  // built for Stripe, then refresh project + offers so the pinned
+  // card's inventory reflects the just-recorded sale.
+  async function handlePayWithSol() {
+    if (!pinnedOffer) return;
+    if (soldOut) return;
+
+    setSolError(null);
+
+    if (!authUser) {
+      try {
+        login();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Sign-in failed";
+        setSolError(msg);
+      }
+      return;
+    }
+
+    const wallet = pickSolPayWallet(solanaWallets, adapterWallet);
+    if (!wallet) {
+      setSolError(
+        "No Solana wallet available. Connect Phantom or refresh to set up your wallet."
+      );
+      return;
+    }
+
+    setSolBuying(true);
+    setSolStep("quoting");
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        setSolError("Authentication failed — please sign in again");
+        setSolBuying(false);
+        setSolStep(null);
+        return;
+      }
+
+      const rpcUrl =
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+        process.env.NEXT_PUBLIC_SOLANA_RPC ||
+        "https://api.mainnet-beta.solana.com";
+
+      const source = project?.is_live ? "live_sol" : "sol";
+
+      await payOfferWithSol({
+        offerId: pinnedOffer.id,
+        source,
+        wallet,
+        authToken: token,
+        rpcUrl,
+        onStep: (s) => setSolStep(s),
+      });
+
+      // Same post-payment surface Step 6 wired up for the Stripe
+      // redirect-back, invoked inline because SOL never leaves
+      // the page. Re-fetch so the pinned card's "X left" / sold-
+      // out state reflects the just-recorded sale.
+      setCheckoutResult("success");
+      load();
+    } catch (err) {
+      const msg =
+        err instanceof SolCheckoutError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "SOL payment failed";
+      setSolError(msg);
+    } finally {
+      setSolBuying(false);
+      setSolStep(null);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-base text-[var(--color-text-primary)] px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -468,7 +571,7 @@ export default function EmbedShellPage() {
                     <button
                       type="button"
                       onClick={handleBuy}
-                      disabled={buying}
+                      disabled={buying || solBuying}
                       className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
                     >
                       {buying
@@ -482,6 +585,37 @@ export default function EmbedShellPage() {
                   {buyError && (
                     <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
                       {buyError}
+                    </div>
+                  )}
+
+                  {/* Secondary CTA — Pay with SOL. Feature-flagged
+                      off by default. Hidden entirely when sold out
+                      so the conversion path stays clean. Disabled
+                      while either rail is in flight to prevent
+                      double-payment. */}
+                  {SOL_CHECKOUT_ENABLED && !soldOut && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handlePayWithSol}
+                        disabled={buying || solBuying}
+                        className="w-full rounded-xl border border-zinc-700 bg-transparent px-5 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
+                      >
+                        {solBuying
+                          ? solStep === "signing"
+                            ? "Approve in wallet..."
+                            : solStep === "confirming"
+                              ? "Confirming on Solana..."
+                              : solStep === "verifying"
+                                ? "Verifying..."
+                                : "Processing..."
+                          : "or pay with SOL"}
+                      </button>
+                      {solError && (
+                        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                          {solError}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
