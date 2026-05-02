@@ -56,20 +56,19 @@ type DebugEvent = {
 /**
  * /embed/[businessId] — embed shell with live video, websocket wiring,
  * pinned offer card, Pay-with-Card checkout, redirect-back handling,
- * and (when feature-flagged on) a secondary Pay-with-SOL CTA.
+ * Pay-with-SOL secondary CTA, and a live reaction layer.
  *
- * Step 7 of the DUM Live Embed build. Adds SOL as a non-dominant
- * second rail under the primary Stripe button, gated by
- * SOL_CHECKOUT_ENABLED (NEXT_PUBLIC_ENABLE_SOL_CHECKOUT). Reuses the
- * existing payOfferWithSol orchestrator from frontend/lib/
- * solanaCheckout.ts — quote → on-chain transfer → backend confirm —
- * so this page contains zero Solana protocol logic of its own. No
- * webhook redirect for SOL: payment completes inline, so success
- * triggers the same banner and load() refresh that the Stripe
- * redirect-back path uses.
+ * Step 8 of the DUM Live Embed build. Adds three viewer-facing
+ * reaction surfaces — purchase toast, floating emoji burst, sold-
+ * out flash — wired to the same item_updated / item_sold callbacks
+ * the LiveChatIVS websocket already exposes. All three sit in
+ * pointer-events-none overlays so they never block the checkout
+ * CTAs underneath. Stale-title risk is handled with an offersRef
+ * that mirrors the offers state synchronously, so when an event
+ * arrives the toast can resolve the offer's current title without
+ * being trapped in a render-stale closure.
  *
- * Still no reaction animations — those land later. No DUM Club
- * chrome (gated by SiteChrome from Step 1).
+ * No DUM Club chrome (gated by SiteChrome from Step 1).
  */
 export default function EmbedShellPage() {
   const params = useParams<{ businessId: string }>();
@@ -102,6 +101,27 @@ export default function EmbedShellPage() {
   const [solStep, setSolStep] = useState<PayOfferStep | null>(null);
   const [solError, setSolError] = useState<string | null>(null);
 
+  // Reaction layer (Step 8) — purchase toasts, floating emojis, and
+  // a one-shot sold-out flash. All driven by the existing item_sold /
+  // item_updated WS callbacks below.
+  const [saleToasts, setSaleToasts] = useState<
+    Array<{ id: string; title: string }>
+  >([]);
+  const [emojiBursts, setEmojiBursts] = useState<
+    Array<{ id: string; emoji: string; left: number; delay: number }>
+  >([]);
+  const [soldFlash, setSoldFlash] = useState<boolean>(false);
+
+  // Mirror `offers` into a ref so WS callbacks can resolve fresh
+  // titles without being trapped in a render-stale closure. The
+  // callbacks live inside JSX-rendered LiveChatIVS props, which
+  // capture state at render time; without this ref a toast for a
+  // just-pinned offer could miss the title on the first event.
+  const offersRef = useRef<Offer[]>([]);
+  useEffect(() => {
+    offersRef.current = offers;
+  }, [offers]);
+
   // Stripe redirect-back result. Set once on mount when the URL
   // carries ?checkout=success or ?checkout=cancelled, then dismissable.
   const [checkoutResult, setCheckoutResult] = useState<
@@ -121,6 +141,40 @@ export default function EmbedShellPage() {
       text,
     };
     setLastEvents((prev) => [...prev.slice(-4), ev]);
+  }
+
+  // ── Reaction-layer helpers (Step 8) ─────────────────────────────
+  // Each helper schedules its own teardown via setTimeout. There is
+  // no global cleanup on unmount because every overlay is purely
+  // visual — if the iframe is torn down mid-burst the timers fire
+  // into a dead component and React swallows the no-op.
+
+  function spawnSaleToast(title: string) {
+    const id = `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setSaleToasts((prev) => [...prev.slice(-2), { id, title }]);
+    setTimeout(() => {
+      setSaleToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4200);
+  }
+
+  function spawnEmojiBurst() {
+    const palette = ["🎉", "💸", "✨", "🔥", "💚", "🛒"];
+    const batch = Array.from({ length: 9 }, (_, i) => ({
+      id: `e-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+      emoji: palette[Math.floor(Math.random() * palette.length)],
+      left: 10 + Math.random() * 80,
+      delay: Math.random() * 300,
+    }));
+    setEmojiBursts((prev) => [...prev, ...batch]);
+    setTimeout(() => {
+      const ids = new Set(batch.map((b) => b.id));
+      setEmojiBursts((prev) => prev.filter((b) => !ids.has(b.id)));
+    }, 2400);
+  }
+
+  function flashSoldOut() {
+    setSoldFlash(true);
+    setTimeout(() => setSoldFlash(false), 1100);
   }
 
   // Mounted guard — load() is callable from both initial-mount and
@@ -430,6 +484,57 @@ export default function EmbedShellPage() {
 
   return (
     <main className="min-h-screen bg-base text-[var(--color-text-primary)] px-4 py-6 sm:px-6 sm:py-8">
+      {/* Reaction-layer keyframes (Step 8). Inlined here so we don't
+          have to touch globals.css from an embed-scoped feature. */}
+      <style>{`
+        @keyframes embed-emoji-float {
+          0%   { transform: translateY(0)   scale(0.8); opacity: 0; }
+          15%  { transform: translateY(-20px) scale(1);   opacity: 1; }
+          100% { transform: translateY(-220px) scale(1.1); opacity: 0; }
+        }
+        @keyframes embed-sold-flash {
+          0%, 100% { background-color: rgba(239, 68, 68, 0); }
+          30%      { background-color: rgba(239, 68, 68, 0.18); }
+        }
+        @keyframes embed-toast-in {
+          0%   { transform: translateY(-12px); opacity: 0; }
+          100% { transform: translateY(0);     opacity: 1; }
+        }
+        .embed-emoji-float {
+          animation: embed-emoji-float 2.2s ease-out forwards;
+        }
+        .embed-sold-flash {
+          animation: embed-sold-flash 1s ease-in-out;
+        }
+        .embed-toast-in {
+          animation: embed-toast-in 220ms ease-out;
+        }
+      `}</style>
+
+      {/* Sale-toast stack. Pointer-events-none so a toast hovering
+          over the CTA can't intercept a tap. Top-center on small
+          screens, top-right on desktop — far from the bottom sticky
+          buy bar Step 9 will add. */}
+      {saleToasts.length > 0 && (
+        <div
+          aria-live="polite"
+          className="pointer-events-none fixed left-1/2 top-3 z-50 flex w-[calc(100%-1.5rem)] -translate-x-1/2 flex-col items-center gap-2 sm:left-auto sm:right-4 sm:w-auto sm:translate-x-0 sm:items-end"
+        >
+          {saleToasts.map((t) => (
+            <div
+              key={t.id}
+              className="embed-toast-in flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-zinc-950/90 px-3 py-2 text-xs font-bold text-emerald-300 shadow-lg backdrop-blur-sm"
+            >
+              <span aria-hidden>🎉</span>
+              <span>
+                <span className="text-emerald-200">{t.title}</span>
+                <span className="text-emerald-300/70"> just sold!</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header — name + slug + live + offer count, kept tight so the
             video and product card dominate the conversion area below. */}
@@ -503,8 +608,11 @@ export default function EmbedShellPage() {
              above chat on the right.
              Mobile: video first, then product card, then chat. */}
         <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          {/* LEFT (desktop) / TOP (mobile) — Live video. */}
-          <section aria-label="Live video">
+          {/* LEFT (desktop) / TOP (mobile) — Live video. Wrapped in
+              a relative container so the floating emoji burst overlay
+              can absolute-position inside the video bounds without
+              escaping the conversion grid. */}
+          <section aria-label="Live video" className="relative">
             {project?.id && ivsActive ? (
               <IVSStageViewer projectId={project.id} userId={viewerUserId} />
             ) : (
@@ -515,14 +623,42 @@ export default function EmbedShellPage() {
                 {loading ? "Loading video…" : "Stream offline"}
               </div>
             )}
+
+            {/* Floating emoji burst. pointer-events-none so checkout
+                CTAs underneath stay tappable. */}
+            {emojiBursts.length > 0 && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 overflow-hidden"
+              >
+                {emojiBursts.map((b) => (
+                  <span
+                    key={b.id}
+                    className="embed-emoji-float absolute bottom-4 select-none text-3xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
+                    style={{
+                      left: `${b.left}%`,
+                      animationDelay: `${b.delay}ms`,
+                    }}
+                  >
+                    {b.emoji}
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* RIGHT (desktop) / BELOW VIDEO (mobile) — product card + chat. */}
           <div className="space-y-4">
-            {/* Pinned offer card — title / price / description / stock. */}
+            {/* Pinned offer card — title / price / description / stock.
+                Adds the embed-sold-flash class for a single ~1s flash
+                when an item_updated event arrives with sold_out=true. */}
             <section
               aria-label="Pinned offer"
-              className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4"
+              className={`rounded-2xl border bg-zinc-950/60 p-4 transition-colors ${
+                soldFlash
+                  ? "embed-sold-flash border-red-500/40"
+                  : "border-zinc-800"
+              }`}
             >
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
                 Now showing
@@ -650,12 +786,23 @@ export default function EmbedShellPage() {
                         data.sold_out ? " (sold out)" : ""
                       }`
                     );
+                    if (data.sold_out) flashSoldOut();
                   }}
                   onItemSold={(data) => {
                     setSoldEventCount((c) => c + 1);
-                    pushEvent(
-                      `Sold event received — ${data.title || "Item"} (offer ${data.offer_id})`
+                    // Resolve the freshest title via offersRef. The WS
+                    // payload carries a title field, but if a host pin
+                    // happened between renders the offers array can
+                    // be more current than the broadcast.
+                    const fresh = offersRef.current.find(
+                      (o) => o.id === data.offer_id
                     );
+                    const title = fresh?.title || data.title || "Item";
+                    pushEvent(
+                      `Sold event received — ${title} (offer ${data.offer_id})`
+                    );
+                    spawnSaleToast(title);
+                    spawnEmojiBurst();
                   }}
                 />
               </section>
