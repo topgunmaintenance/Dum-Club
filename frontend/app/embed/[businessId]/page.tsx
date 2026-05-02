@@ -56,17 +56,15 @@ type DebugEvent = {
 /**
  * /embed/[businessId] — embed shell with live video, websocket wiring,
  * pinned offer card, Pay-with-Card checkout, redirect-back handling,
- * Pay-with-SOL secondary CTA, and a live reaction layer.
+ * Pay-with-SOL secondary CTA, live reaction layer, and a mobile
+ * sticky buy bar.
  *
- * Step 8 of the DUM Live Embed build. Adds three viewer-facing
- * reaction surfaces — purchase toast, floating emoji burst, sold-
- * out flash — wired to the same item_updated / item_sold callbacks
- * the LiveChatIVS websocket already exposes. All three sit in
- * pointer-events-none overlays so they never block the checkout
- * CTAs underneath. Stale-title risk is handled with an offersRef
- * that mirrors the offers state synchronously, so when an event
- * arrives the toast can resolve the offer's current title without
- * being trapped in a render-stale closure.
+ * Step 9 of the DUM Live Embed build. On phones, swaps the inline
+ * pinned-offer card for a fixed bottom CTA bar so the buy action
+ * stays in thumb reach while the viewer scrolls through video and
+ * chat. Includes safe-area-inset-bottom padding for notched
+ * devices, and adds matching bottom padding to the chat column so
+ * the chat input never sits behind the bar.
  *
  * No DUM Club chrome (gated by SiteChrome from Step 1).
  */
@@ -647,18 +645,29 @@ export default function EmbedShellPage() {
             )}
           </section>
 
-          {/* RIGHT (desktop) / BELOW VIDEO (mobile) — product card + chat. */}
-          <div className="space-y-4">
+          {/* RIGHT (desktop) / BELOW VIDEO (mobile) — product card + chat.
+              On mobile, adds extra bottom padding so the chat input
+              (and any errors stacked below it) clears the sticky buy
+              bar Step 9 mounts at the bottom of the viewport. The
+              padding is removed at lg: where the bar is hidden. */}
+          <div
+            className={`space-y-4 ${pinnedOffer ? "pb-28 lg:pb-0" : ""}`}
+          >
             {/* Pinned offer card — title / price / description / stock.
                 Adds the embed-sold-flash class for a single ~1s flash
-                when an item_updated event arrives with sold_out=true. */}
+                when an item_updated event arrives with sold_out=true.
+                Hidden on mobile WHEN there is something pinned because
+                Step 9's sticky bottom buy bar takes over the buy
+                surface on small screens. When nothing is pinned, the
+                card stays visible on mobile so the viewer still sees
+                the empty state. */}
             <section
               aria-label="Pinned offer"
               className={`rounded-2xl border bg-zinc-950/60 p-4 transition-colors ${
                 soldFlash
                   ? "embed-sold-flash border-red-500/40"
                   : "border-zinc-800"
-              }`}
+              } ${pinnedOffer ? "hidden lg:block" : ""}`}
             >
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
                 Now showing
@@ -836,6 +845,91 @@ export default function EmbedShellPage() {
           Embed shell loaded
         </p>
       </div>
+
+      {/* ── Mobile sticky buy bar (Step 9) ─────────────────────────
+           Mobile-only (lg:hidden). Renders only when a pinnedOffer
+           exists — otherwise there is nothing to buy. Includes
+           safe-area-inset-bottom padding for notched devices. The
+           inline mobile pinned card above is hidden when this bar
+           is active so the buy CTA isn't duplicated.
+
+           Layout: title + price/inventory on the left, primary
+           Pay-with-Card on the right (or a Sold Out pill). When
+           SOL is enabled, a slim secondary "or pay with SOL" row
+           appears beneath the primary row. */}
+      {pinnedOffer && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm lg:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="mx-auto max-w-6xl px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold text-white">
+                  {pinnedOffer.title || "Untitled offer"}
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-sm font-bold text-emerald-400">
+                    ${Number(pinnedOffer.price_usd || 0).toFixed(2)}
+                  </span>
+                  {pinnedOffer.unlimited_inventory ? null : soldOut ? (
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      Sold out
+                    </span>
+                  ) : remaining !== null ? (
+                    <span className="text-[10px] text-zinc-500">
+                      {remaining} left
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="shrink-0">
+                {soldOut ? (
+                  <span className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-500">
+                    Sold Out
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleBuy}
+                    disabled={buying || solBuying}
+                    className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                  >
+                    {buying
+                      ? "..."
+                      : !authUser
+                        ? "Sign in"
+                        : "Pay with Card"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {SOL_CHECKOUT_ENABLED && !soldOut && (
+              <button
+                type="button"
+                onClick={handlePayWithSol}
+                disabled={buying || solBuying}
+                className="mt-2 w-full rounded-lg border border-zinc-700 bg-transparent px-3 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
+              >
+                {solBuying
+                  ? solStep === "signing"
+                    ? "Approve in wallet..."
+                    : solStep === "confirming"
+                      ? "Confirming on Solana..."
+                      : solStep === "verifying"
+                        ? "Verifying..."
+                        : "Processing..."
+                  : "or pay with SOL"}
+              </button>
+            )}
+            {(buyError || solError) && (
+              <p className="mt-1.5 truncate text-[11px] text-red-400">
+                {buyError || solError}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
