@@ -128,20 +128,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   console.log("[live-chat] RENDERING — host:", isHost, "connected:", connected, "messages:", messages.length);
 
   return (
-    <div
-      style={{
-        minHeight: 400,
-        border: "2px solid #ef4444",
-        borderRadius: 16,
-        background: "#0a0a0a",
-        position: "relative",
-        zIndex: 10,
-        opacity: 1,
-        overflow: "visible",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div className="relative z-10 flex min-h-[400px] flex-col overflow-visible rounded-2xl border border-zinc-800 bg-zinc-950">
       {/* Header */}
       <div style={{ padding: "12px 16px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
