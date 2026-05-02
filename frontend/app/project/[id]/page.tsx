@@ -4074,12 +4074,14 @@ return (
                 <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
               </div>
 
-              {/* Pinned product / auction — full card on every viewport.
-                  On mobile this sits above the chat (the chat is a separate
-                  grid item that falls below the left column when collapsed).
-                  The fixed sticky buy bar at the bottom of the screen is
-                  still rendered on mobile as an always-visible quick action. */}
-              <div>
+              {/* Pinned product / auction — desktop card only. Hidden
+                  on mobile because the fixed mobile sticky buy bar
+                  below already surfaces the same offer with the same
+                  Pay with Card / Pay with SOL CTAs. Showing both on
+                  small screens stacked two product surfaces and burnt
+                  scroll real estate; the sticky bar wins the mobile
+                  thumb-reach contest. */}
+              <div className="hidden lg:block">
                 {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
                   <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
                     <div className="mb-3 flex items-center justify-between">
@@ -7400,8 +7402,12 @@ return (
     />
   )}
 
-  {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop */}
-  {!isOwner && offers.length > 0 && (
+  {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop.
+      Suppressed during a live show because the live block already
+      renders its own mobile sticky buy bar (Pay with Card / SOL),
+      and stacking two fixed bottom bars at z-40 + z-50 produced a
+      visual collision on small screens. */}
+  {!isOwner && offers.length > 0 && !project?.is_live && (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md px-4 py-3 lg:hidden">
       <div className="flex items-center justify-between gap-3">
         <div>
