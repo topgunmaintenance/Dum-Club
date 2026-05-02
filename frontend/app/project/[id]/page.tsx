@@ -682,6 +682,14 @@ export default function ProjectPage() {
   }
   const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  // Mirror of `offers` for the LiveChatIVS WebSocket onItemUpdate
+  // callback to read from. The callback is captured once at WS
+  // connect time (LiveChatIVS effect deps = [projectId]), so a
+  // direct closure read of `offers` returns the array value at
+  // mount time and never updates. The ref is reassigned on every
+  // render, so the live callback always sees fresh offers.
+  const offersRef = useRef<Offer[]>([]);
+  offersRef.current = offers;
   const [offerFormOpen, setOfferFormOpen] = useState(false);
   const [offerEditing, setOfferEditing] = useState<Partial<Offer> | null>(null);
   const [offerSaving, setOfferSaving] = useState(false);
@@ -4331,9 +4339,16 @@ return (
                     // ALSO get the heavier saleToasts banner via
                     // onItemSold below; suppress the lighter toast
                     // there so we don't double-banner.
+                    // Read from the ref, not the closure-captured
+                    // offers — the WebSocket onmessage handler in
+                    // LiveChatIVS captures this callback ONCE at
+                    // WS-connect time (effect deps [projectId]),
+                    // so a direct `offers.find(...)` would return
+                    // the offers array as it was at mount. The ref
+                    // always points at the current state.
                     const offerTitle =
-                      offers.find((o) => o.id === data.offer_id)?.title ||
-                      "an item";
+                      offersRef.current.find((o) => o.id === data.offer_id)
+                        ?.title || "an item";
                     if (!data.sold_out) {
                       const tid = `pt-${data.offer_id}-${Date.now()}`;
                       setPurchaseToasts((prev) => [
