@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { API_BASE } from "../../../lib/apiBase";
@@ -46,14 +46,16 @@ type DebugEvent = {
 
 /**
  * /embed/[businessId] — embed shell with live video, websocket wiring,
- * pinned offer card, and Pay-with-Card checkout.
+ * pinned offer card, Pay-with-Card checkout, and Stripe success /
+ * cancel handling.
  *
- * Step 5 of the DUM Live Embed build. Adds the Stripe Checkout CTA
- * to the pinned card. Reuses the same /api/checkout/create-payment-
- * intent endpoint and request shape as /project/[id]'s buyOffer; in
- * an iframe context the returned checkout_url opens in a new tab so
- * the merchant's host page is never replaced; in a top-level context
- * we redirect normally.
+ * Step 6 of the DUM Live Embed build. handleBuy now redirects Stripe
+ * Checkout back to /embed/[businessId]?checkout=success or
+ * ?checkout=cancelled. On mount, the page detects either flag, shows
+ * a clean message (success: prominent, cancelled: small + non-
+ * blocking), refreshes project + offers on success so the pinned
+ * card's inventory is correct, and strips the query string from the
+ * URL so a refresh doesn't re-trigger the message.
  *
  * Still no Solana / SOL surface, and no reaction animations — those
  * land later. No DUM Club chrome (gated by SiteChrome from Step 1).
@@ -76,6 +78,12 @@ export default function EmbedShellPage() {
   const [buying, setBuying] = useState<boolean>(false);
   const [buyError, setBuyError] = useState<string | null>(null);
 
+  // Stripe redirect-back result. Set once on mount when the URL
+  // carries ?checkout=success or ?checkout=cancelled, then dismissable.
+  const [checkoutResult, setCheckoutResult] = useState<
+    "success" | "cancelled" | null
+  >(null);
+
   // Event-wire diagnostics. Surfaced as visible debug text so we can
   // confirm the websocket pipeline is alive end-to-end before any
   // real checkout UI is wired up in later steps.
@@ -91,55 +99,94 @@ export default function EmbedShellPage() {
     setLastEvents((prev) => [...prev.slice(-4), ev]);
   }
 
+  // Mounted guard — load() is callable from both initial-mount and
+  // post-checkout-success paths, so the inline `cancelled` flag from
+  // the previous step's useEffect-scoped load() is replaced with a
+  // ref that survives across calls.
+  const mountedRef = useRef(true);
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const load = useCallback(async () => {
     if (!businessId) return;
 
-    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-    async function load() {
-      setLoading(true);
-      setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${businessId}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Failed to load project (${res.status})`);
 
-      try {
-        const res = await fetch(`${API_BASE}/api/projects/${businessId}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(`Failed to load project (${res.status})`);
+      const data = await res.json();
+      const p: EmbedProject = data?.project || data;
+      if (!mountedRef.current) return;
+      setProject(p);
 
-        const data = await res.json();
-        const p: EmbedProject = data?.project || data;
-        if (cancelled) return;
-        setProject(p);
-
-        if (p?.id) {
-          try {
-            const offersRes = await fetch(`${API_BASE}/api/offers/${p.id}`, {
-              cache: "no-store",
-            });
-            if (offersRes.ok) {
-              const list: Offer[] = await offersRes.json();
-              if (!cancelled) {
-                setOffers(Array.isArray(list) ? list : []);
-              }
-            } else if (!cancelled) {
-              setOffers([]);
+      if (p?.id) {
+        try {
+          const offersRes = await fetch(`${API_BASE}/api/offers/${p.id}`, {
+            cache: "no-store",
+          });
+          if (offersRes.ok) {
+            const list: Offer[] = await offersRes.json();
+            if (mountedRef.current) {
+              setOffers(Array.isArray(list) ? list : []);
             }
-          } catch {
-            if (!cancelled) setOffers([]);
+          } else if (mountedRef.current) {
+            setOffers([]);
           }
+        } catch {
+          if (mountedRef.current) setOffers([]);
         }
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load");
-      } finally {
-        if (!cancelled) setLoading(false);
       }
+    } catch (err: any) {
+      if (mountedRef.current) setError(err?.message || "Failed to load");
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, [businessId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Stripe redirect-back detection. Runs once on mount: reads the
+  // query string, captures success/cancelled state, then strips the
+  // query string so a manual refresh doesn't re-show the message
+  // and so the URL is clean if/when the user copies it. On success
+  // we also re-fetch project + offers — the order webhook may have
+  // updated quantity_sold while the user was on Stripe, and we want
+  // the pinned card to reflect that immediately.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const flag = params.get("checkout");
+    if (flag !== "success" && flag !== "cancelled") return;
+
+    setCheckoutResult(flag);
+
+    // Strip ?checkout=... from the URL. history.replaceState mutates
+    // only this document's URL — safe inside an iframe (it does not
+    // touch the parent window).
+    try {
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch {
+      // History API blocked (rare; e.g. some sandboxed iframes) —
+      // leave the URL as-is. The visible message still shows.
     }
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [businessId]);
+    if (flag === "success") {
+      load();
+    }
+    // load is stable per businessId; intentionally run-once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const displayName = project?.name || project?.title || "—";
   const displaySlug = project?.slug || businessId || "—";
@@ -211,18 +258,20 @@ export default function EmbedShellPage() {
         return;
       }
 
-      // Strip any query params so Stripe's success/cancel redirect
-      // lands on a clean URL — same pattern /project/[id] uses to
-      // avoid malformed URLs on repeat purchases.
-      const cleanUrl =
+      // Strip any existing query params, then append the explicit
+      // ?checkout=success / ?checkout=cancelled flags so the embed
+      // can detect the Stripe redirect-back on mount and show the
+      // appropriate message. Same clean-URL base /project/[id] uses
+      // to avoid malformed URLs on repeat purchases.
+      const baseUrl =
         typeof window !== "undefined"
           ? window.location.origin + window.location.pathname
           : "";
 
       const payload = {
         offer_id: pinnedOffer.id,
-        success_url: cleanUrl,
-        cancel_url: cleanUrl,
+        success_url: `${baseUrl}?checkout=success`,
+        cancel_url: `${baseUrl}?checkout=cancelled`,
         use_dum_discount: false,
         source: project?.is_live ? "live" : "normal",
       };
@@ -298,6 +347,53 @@ export default function EmbedShellPage() {
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
         </header>
+
+        {/* ── Stripe redirect-back banner ───────────────────────────
+             Success: prominent emerald confirmation; refresh has
+             already been triggered above so the pinned card's
+             inventory is current.
+             Cancelled: small, muted, non-blocking — the viewer is
+             still on the page and can retry the CTA at any time. */}
+        {checkoutResult === "success" && (
+          <div
+            role="status"
+            className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3"
+          >
+            <div>
+              <p className="text-sm font-bold text-emerald-300">
+                Payment received
+              </p>
+              <p className="mt-0.5 text-xs text-emerald-200/80">
+                Thanks — your order is on its way. The seller has been
+                notified.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCheckoutResult(null)}
+              aria-label="Dismiss"
+              className="shrink-0 rounded-md px-2 py-1 text-xs text-emerald-300/70 hover:bg-emerald-500/10 hover:text-emerald-200"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+        {checkoutResult === "cancelled" && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-[var(--color-text-muted)]"
+          >
+            <span>Checkout cancelled</span>
+            <button
+              type="button"
+              onClick={() => setCheckoutResult(null)}
+              aria-label="Dismiss"
+              className="rounded-md px-1.5 py-0.5 text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* ── Conversion layout ──────────────────────────────────────
              Desktop (lg:): video on the left, product card stacked
