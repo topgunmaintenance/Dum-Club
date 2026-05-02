@@ -46,21 +46,23 @@ type DebugEvent = {
 
 /**
  * /embed/[businessId] — embed shell with live video, websocket wiring,
- * and the pinned offer card.
+ * pinned offer card, and Pay-with-Card checkout.
  *
- * Step 4 of the DUM Live Embed build. Adds the pinned product card
- * driven by project.pinned_offer_id + the offers list, and reshapes
- * the layout so it's conversion-focused: video left, product/chat
- * right on desktop; video → product card → chat stacked on mobile.
+ * Step 5 of the DUM Live Embed build. Adds the Stripe Checkout CTA
+ * to the pinned card. Reuses the same /api/checkout/create-payment-
+ * intent endpoint and request shape as /project/[id]'s buyOffer; in
+ * an iframe context the returned checkout_url opens in a new tab so
+ * the merchant's host page is never replaced; in a top-level context
+ * we redirect normally.
  *
- * Still no checkout, no SOL, no reaction animations — those land
- * later. No DUM Club chrome (gated by SiteChrome from Step 1).
+ * Still no Solana / SOL surface, and no reaction animations — those
+ * land later. No DUM Club chrome (gated by SiteChrome from Step 1).
  */
 export default function EmbedShellPage() {
   const params = useParams<{ businessId: string }>();
   const businessId = params?.businessId;
 
-  const { user: authUser } = useAuth();
+  const { user: authUser, login, getToken } = useAuth();
   const viewerUserId = authUser?.privyId || "";
   const viewerName = authUser?.email || "Viewer";
 
@@ -68,6 +70,11 @@ export default function EmbedShellPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Checkout state — only one pinned offer is buyable from this card,
+  // so a single in-flight flag + a single error string is enough.
+  const [buying, setBuying] = useState<boolean>(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   // Event-wire diagnostics. Surfaced as visible debug text so we can
   // confirm the websocket pipeline is alive end-to-end before any
@@ -162,6 +169,113 @@ export default function EmbedShellPage() {
     return Math.max(0, total - sold);
   }, [pinnedOffer]);
 
+  // Detect iframe context. Cross-origin parent access throws a
+  // SecurityError; treat that as iframed too — only a top-level
+  // window with same-origin self can read window.top safely.
+  function isInIframe(): boolean {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  }
+
+  async function handleBuy() {
+    if (!pinnedOffer) return;
+    if (soldOut) return;
+
+    setBuyError(null);
+
+    // Existing auth pattern: if no user yet, kick off Privy login. The
+    // button copy below switches to "Sign in to buy" so this click is
+    // the user's first auth gesture. Privy renders its own modal; we
+    // do not implement a separate sign-in UI here.
+    if (!authUser) {
+      try {
+        login();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Sign-in failed";
+        setBuyError(msg);
+      }
+      return;
+    }
+
+    setBuying(true);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        setBuyError("Authentication failed — please sign in again");
+        setBuying(false);
+        return;
+      }
+
+      // Strip any query params so Stripe's success/cancel redirect
+      // lands on a clean URL — same pattern /project/[id] uses to
+      // avoid malformed URLs on repeat purchases.
+      const cleanUrl =
+        typeof window !== "undefined"
+          ? window.location.origin + window.location.pathname
+          : "";
+
+      const payload = {
+        offer_id: pinnedOffer.id,
+        success_url: cleanUrl,
+        cancel_url: cleanUrl,
+        use_dum_discount: false,
+        source: project?.is_live ? "live" : "normal",
+      };
+
+      const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const msg =
+          typeof errData.detail === "string"
+            ? errData.detail
+            : `Checkout failed (HTTP ${res.status})`;
+        setBuyError(msg);
+        setBuying(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (!data?.checkout_url) {
+        setBuyError("No checkout_url in response");
+        setBuying(false);
+        return;
+      }
+
+      // In-iframe: open Stripe Checkout in a new tab so we don't
+      // leave the merchant's host page. Top-level: redirect in place
+      // (same as /project/[id]).
+      if (isInIframe()) {
+        const win = window.open(data.checkout_url, "_blank", "noopener,noreferrer");
+        if (!win) {
+          // Popup blocked — surface a message and leave the user on
+          // the embed so they can retry with a click that the
+          // browser will accept as an explicit gesture.
+          setBuyError("Pop-up blocked — allow pop-ups for this site and try again");
+        }
+        setBuying(false);
+      } else {
+        window.location.href = data.checkout_url;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setBuyError(msg);
+      setBuying(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-base text-[var(--color-text-primary)] px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -240,6 +354,40 @@ export default function EmbedShellPage() {
                       </span>
                     ) : null}
                   </div>
+
+                  {/* Primary CTA — Pay with Card. Auth gate: if no
+                      user, the button triggers Privy login via the
+                      existing useAuth flow; the click that follows
+                      sign-in actually starts checkout. Sold out is
+                      a hard disable. */}
+                  {soldOut ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full rounded-xl border border-zinc-700 px-5 py-3 text-sm font-bold text-zinc-500"
+                    >
+                      Sold Out
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleBuy}
+                      disabled={buying}
+                      className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                    >
+                      {buying
+                        ? "Processing..."
+                        : !authUser
+                          ? "Sign in to buy"
+                          : "Pay with Card"}
+                    </button>
+                  )}
+
+                  {buyError && (
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                      {buyError}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-zinc-500">No live offer pinned yet</p>
