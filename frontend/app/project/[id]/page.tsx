@@ -11,6 +11,14 @@ import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
 const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  SOL_CHECKOUT_ENABLED,
+  pickSolPayWallet,
+  payOfferWithSol,
+  SolCheckoutError,
+  type PayOfferStep,
+} from "../../../lib/solanaCheckout";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { Starfield } from "../../../components/Starfield";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
@@ -483,6 +491,11 @@ export default function ProjectPage() {
   const id = params?.id as string;
   const { user: authUser, login, getToken } = useAuth();
   const { wallets } = useSolanaWallets();
+  // External Solana wallet adapter (Phantom / Solflare). Used as a
+  // fallback for the "Pay with SOL" CTA when the user prefers an
+  // external wallet over the Privy embedded wallet. Always called
+  // — rules of hooks — and consumed only when SOL checkout fires.
+  const adapterWallet = useWallet();
 
   // Diagnostic: log effective API base on mount
   useEffect(() => {
@@ -492,6 +505,12 @@ export default function ProjectPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("DUM Club Business");
+  // Pin-offer feedback state. pinningOfferId tracks which chip is
+  // currently in flight (or "__unpin__" when clearing); pinError
+  // surfaces backend failures inline next to the new offline pin UI
+  // so the merchant doesn't have to crack open the console.
+  const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
+  const [pinError, setPinError] = useState<string | null>(null);
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -1316,6 +1335,122 @@ export default function ProjectPage() {
       console.error("[buyOffer] ERROR:", msg);
       setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
       setBuyError((p) => ({ ...p, [oid]: msg }));
+      setBuyingOfferId(null);
+    }
+  }
+
+  // Solana wallet checkout — secondary CTA, additive to Stripe.
+  // Same per-offer state (buyingOfferId, buyStep, buyError) so the
+  // Stripe button is disabled while a SOL payment is in flight.
+  async function payOfferWithSolHandler(
+    offer: Offer,
+    auctionId?: string,
+    overridePrice?: number,
+  ) {
+    const oid = offer.id;
+    setBuyError((p) => ({ ...p, [oid]: "" }));
+
+    if (!authUser) {
+      setBuyError((p) => ({ ...p, [oid]: "Sign in to pay with SOL." }));
+      return;
+    }
+    if (isOwner) {
+      setBuyError((p) => ({ ...p, [oid]: "You can't buy your own offer." }));
+      return;
+    }
+
+    const wallet = pickSolPayWallet(wallets, adapterWallet);
+    if (!wallet) {
+      setBuyError((p) => ({
+        ...p,
+        [oid]:
+          "No Solana wallet available. Connect Phantom or refresh to set up your wallet.",
+      }));
+      return;
+    }
+
+    setBuyingOfferId(oid);
+    setBuyStep((p) => ({ ...p, [oid]: "sol_quoting" }));
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
+        setBuyError((p) => ({
+          ...p,
+          [oid]: "Authentication failed — please sign in again",
+        }));
+        setBuyingOfferId(null);
+        return;
+      }
+
+      const solSource = auctionId
+        ? "live_auction_sol"
+        : project?.is_live
+          ? "live_sol"
+          : "sol";
+
+      const rpcUrl =
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+        process.env.NEXT_PUBLIC_SOLANA_RPC ||
+        "https://api.mainnet-beta.solana.com";
+
+      const result = await payOfferWithSol({
+        offerId: oid,
+        source: solSource,
+        auctionId,
+        overridePrice,
+        wallet,
+        authToken: token,
+        rpcUrl,
+        onStep: (s: PayOfferStep) => {
+          setBuyStep((p) => ({ ...p, [oid]: `sol_${s}` }));
+        },
+      });
+
+      const buyPrice = result.usd_amount;
+      capturePurchase(
+        id as string,
+        offer.title,
+        buyPrice,
+        result.order_id,
+        authUser?.privyId,
+      );
+
+      // Same post-payment surface as the Stripe redirect, but
+      // invoked inline because the SOL flow stays on the page —
+      // there's no /api/checkout/success URL to redirect through.
+      // Mirrors the effect at lines ~3080-3115 verbatim so the
+      // confirmation banner, DUM-points toast, and delayed
+      // refreshes all behave the same as a Stripe purchase.
+      setCheckoutResult("success");
+      if (buyPrice > 0) {
+        // Same formula as backend/api/routes/checkout.py
+        // process_order_paid: min(50, 10 + floor(amount/5)).
+        const points = Math.min(50, 10 + Math.floor(buyPrice / 5));
+        setDumPointsEarned(points);
+        setTimeout(() => setDumPointsEarned(null), 10000);
+      }
+      const refreshAfterSolCheckout = () => {
+        loadOffers();
+        loadSellerOrders();
+        window.dispatchEvent(new Event("dum-points-update"));
+      };
+      setTimeout(refreshAfterSolCheckout, 2000);
+      setTimeout(refreshAfterSolCheckout, 5000);
+
+      setBuyStep((p) => ({ ...p, [oid]: "sol_done" }));
+    } catch (err) {
+      const msg =
+        err instanceof SolCheckoutError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "SOL payment failed";
+      console.error("[sol-pay] ERROR:", msg);
+      setBuyStep((p) => ({ ...p, [oid]: "sol_error" }));
+      setBuyError((p) => ({ ...p, [oid]: msg }));
+    } finally {
       setBuyingOfferId(null);
     }
   }
@@ -2404,16 +2539,46 @@ export default function ProjectPage() {
   }
 
   async function handlePinOffer(offerId: string | null) {
-    if (!id) return;
+    // Backend matches projects by UUID, not slug. The URL param `id`
+    // can be either (e.g. /project/topgun-maintenance is a slug),
+    // so we must call with project.id — same canonical-UUID
+    // convention /api/offers/${project.id} uses (line ~944).
+    const projectUuid = project?.id;
+    if (!projectUuid) {
+      setPinError("Project not loaded yet — try again in a moment.");
+      return;
+    }
+    setPinError(null);
+    setPinningOfferId(offerId ?? "__unpin__");
     try {
-      await fetch(`${API_BASE}/api/projects/${id}/pin-offer`, {
+      const res = await fetch(`${API_BASE}/api/projects/${projectUuid}/pin-offer`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
         body: JSON.stringify({ offer_id: offerId }),
       });
-      setProject((prev) => prev ? { ...prev, pinned_offer_id: offerId } : prev);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg =
+          typeof errBody.detail === "string"
+            ? errBody.detail
+            : `Pin failed (HTTP ${res.status})`;
+        setPinError(msg);
+        return;
+      }
+      // Trust the backend response: it echoes pinned_offer_id so we
+      // can sync local state to canonical truth instead of guessing.
+      const data = await res.json().catch(() => ({}));
+      const persisted =
+        typeof data?.pinned_offer_id !== "undefined"
+          ? data.pinned_offer_id
+          : offerId;
+      setProject((prev) => prev ? { ...prev, pinned_offer_id: persisted } : prev);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Pin offer failed";
       console.error("Pin offer failed", err);
+      setPinError(msg);
+    } finally {
+      setPinningOfferId(null);
     }
   }
 
@@ -4879,6 +5044,71 @@ return (
           {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
         </p>
 
+        {/* Owner-only: pin the offer that appears as "Now showing" in the
+            embed and on the live storefront. Mirrors the existing in-stream
+            pin chip control (line ~4210) but is visible while offline so
+            the merchant can pin BEFORE going live. Visual is louder than
+            the in-stream chips (filled emerald + ✓ PINNED label) because
+            this surface is mobile-first and the in-stream version's
+            10%-opacity emerald was too subtle to read on a phone screen
+            in daylight. */}
+        {isOwner && offers.filter((o) => o.is_active).length > 0 && (
+          <div className="mt-4 space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product (Live)</div>
+              {project?.pinned_offer_id && (
+                <button
+                  onClick={() => handlePinOffer(null)}
+                  disabled={pinningOfferId !== null}
+                  className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
+                >
+                  Unpin
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {offers.filter((o) => o.is_active).map((offer) => {
+                const isPinned = offer.id === project?.pinned_offer_id;
+                const isThisInFlight = pinningOfferId === offer.id;
+                const anyInFlight = pinningOfferId !== null;
+                return (
+                  <button
+                    key={offer.id}
+                    onClick={() => handlePinOffer(isPinned ? null : offer.id)}
+                    disabled={anyInFlight}
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${
+                      isPinned
+                        ? "border-emerald-400 bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-400/60"
+                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
+                  >
+                    {isPinned && <span className="mr-1">✓</span>}
+                    {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                    {isPinned && (
+                      <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                        PINNED
+                      </span>
+                    )}
+                    {isThisInFlight && (
+                      <span className="ml-2 text-[10px] text-zinc-500">…</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {pinError && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {pinError}
+              </div>
+            )}
+            {project?.pinned_offer_id && !pinError && (
+              <p className="text-[11px] text-zinc-500">
+                Pinned. Refresh the embed to see it as &quot;Now showing&quot;.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Demo mode indicator (section-level) */}
 
         {/* Checkout result banner */}
@@ -5424,13 +5654,46 @@ return (
                             Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
-                          <button
-                            disabled={buyingOfferId === offer.id}
-                            onClick={() => buyOffer(offer)}
-                            className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
-                          >
-                            {buyingOfferId === offer.id ? "Processing..." : buyStep[offer.id] === "demo_success" ? "✓ Purchased!" : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
-                          </button>
+                          <>
+                            <button
+                              disabled={buyingOfferId === offer.id}
+                              onClick={() => buyOffer(offer)}
+                              className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
+                            >
+                              {buyingOfferId === offer.id && !(buyStep[offer.id] || "").startsWith("sol_")
+                                ? "Processing..."
+                                : buyStep[offer.id] === "demo_success"
+                                ? "✓ Purchased!"
+                                : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
+                            </button>
+                            {/* Secondary CTA: pay with SOL. Feature-flagged
+                                off by default. Stripe stays the primary
+                                button above; this is intentionally smaller
+                                and lower-contrast. */}
+                            {SOL_CHECKOUT_ENABLED && (
+                              <button
+                                type="button"
+                                disabled={buyingOfferId === offer.id}
+                                onClick={() => payOfferWithSolHandler(offer)}
+                                className="mt-2 w-full rounded-lg border border-zinc-800 bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-50"
+                                aria-label="Pay with Solana wallet"
+                              >
+                                {(() => {
+                                  const step = buyStep[offer.id] || "";
+                                  if (buyingOfferId === offer.id && step.startsWith("sol_")) {
+                                    if (step === "sol_quoting") return "Quoting…";
+                                    if (step === "sol_building") return "Building tx…";
+                                    if (step === "sol_signing") return "Confirm in your wallet…";
+                                    if (step === "sol_confirming") return "Waiting for network…";
+                                    if (step === "sol_verifying") return "Verifying…";
+                                    if (step === "sol_done") return "✓ Paid with SOL";
+                                    return "Processing…";
+                                  }
+                                  return "or pay with SOL";
+                                })()}
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     );

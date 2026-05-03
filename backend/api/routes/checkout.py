@@ -1,5 +1,6 @@
 """
-Checkout — Stripe payment intents, webhook, and order queries.
+Checkout — Stripe payment intents, webhook, Solana wallet checkout,
+and order queries.
 """
 import os
 import time
@@ -14,6 +15,14 @@ from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user, require_admin
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
+from services.solana_verify import (
+    LAMPORTS_PER_SOL,
+    QuoteVerifyError,
+    make_quote_token,
+    usd_to_lamports,
+    verify_quote_token,
+    verify_sol_transfer,
+)
 from api.routes.auction_ws import broadcast_sync
 
 router = APIRouter()
@@ -215,6 +224,226 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
                 "requirements_due": currently_due,
             },
         )
+
+
+# ── Shared paid-order side-effects ────────────────────────────
+#
+# Lifted out of the Stripe webhook handler so the Solana checkout
+# path can run the SAME post-payment side-effects (mark paid,
+# bump inventory, broadcast item_updated/item_sold, award DUM
+# Points, send buyer + seller emails) without code duplication.
+#
+# Behaviour is intentionally identical to the previous closure
+# implementation. Don't change the audit log keys, error swallow
+# pattern, or DUM reward formula here — Stripe-path tests and
+# downstream dashboards depend on them.
+
+
+def process_order_paid(
+    supabase,
+    order: dict,
+    *,
+    stripe_session_id: str = "",
+    stripe_payment_intent_id: str = "",
+    event_id: str = "",
+    source: str = "",
+) -> None:
+    """Update order to paid, update inventory, award DUM, send emails.
+
+    Args:
+        supabase:                  Supabase client (sync). Caller-supplied
+                                   so tests can inject a mock.
+        order:                     The current `orders` row dict — must
+                                   carry id, status, offer_id, etc.
+        stripe_session_id:         Stripe Checkout Session id, if any.
+                                   Set on the order if non-empty.
+        stripe_payment_intent_id:  Stripe PaymentIntent id, if any.
+                                   Set on the order if non-empty.
+        event_id:                  Originating event id (Stripe event
+                                   or SOL tx signature) — audit only.
+        source:                    Audit label, e.g.
+                                   "checkout.session.completed",
+                                   "payment_intent.succeeded",
+                                   "sol_confirm".
+    """
+    order_id = order["id"]
+    audit = {"order_id": order_id, "event_id": event_id, "source": source}
+
+    if order["status"] not in ("pending_payment", "pending"):
+        print(f"[paid] Order {order_id} already {order['status']}, skipping")
+        return
+
+    # ── 1. Mark order paid ──
+    update_fields: dict = {"status": "paid", "updated_at": _now_iso()}
+    if stripe_session_id:
+        update_fields["stripe_session_id"] = stripe_session_id
+    if stripe_payment_intent_id:
+        update_fields["stripe_payment_intent_id"] = stripe_payment_intent_id
+
+    supabase.table("orders").update(update_fields).eq("id", order_id).execute()
+    print(f"[paid] ✓ ORDER PAID: {order_id}")
+    audit["order_paid"] = True
+
+    # ── 2. Update inventory ──
+    offer_id = order.get("offer_id")
+    _proj_id_for_broadcast = ""
+    if offer_id:
+        try:
+            offer_res = supabase.table("offers").select(
+                "id, project_id, quantity_sold, quantity_available, unlimited_inventory"
+            ).eq("id", offer_id).limit(1).execute()
+            if offer_res.data:
+                o = offer_res.data[0]
+                new_sold = (o.get("quantity_sold") or 0) + 1
+                qty_available = o.get("quantity_available") or 0
+                is_unlimited = o.get("unlimited_inventory", True)
+                supabase.table("offers").update(
+                    {"quantity_sold": new_sold}
+                ).eq("id", offer_id).execute()
+                print(f"[paid] ✓ INVENTORY: offer={offer_id}, sold → {new_sold}")
+                audit["inventory_updated"] = True
+                _proj_id_for_broadcast = o.get("project_id") or ""
+
+                # Broadcast real-time inventory update to all connected clients
+                sold_out = (
+                    not is_unlimited
+                    and qty_available > 0
+                    and new_sold >= qty_available
+                )
+                broadcast_sync(_proj_id_for_broadcast, {
+                    "type": "item_updated",
+                    "data": {
+                        "offer_id": offer_id,
+                        "quantity_sold": new_sold,
+                        "quantity_available": qty_available,
+                        "unlimited_inventory": is_unlimited,
+                        "sold_out": sold_out,
+                    },
+                    "timestamp": time.time(),
+                })
+                if sold_out:
+                    broadcast_sync(_proj_id_for_broadcast, {
+                        "type": "item_sold",
+                        "data": {"offer_id": offer_id, "title": "Item"},
+                        "timestamp": time.time(),
+                    })
+                print(f"[paid] ✓ BROADCAST: item_updated for offer={offer_id}, sold_out={sold_out}")
+        except Exception as inv_err:
+            print(f"[paid] ✗ Inventory update failed (non-fatal): {inv_err}")
+
+    # ── 3. Resolve order details for reward + email ──
+    dum_reward = 0
+    new_dum = 0
+    buyer_email = ""
+    seller_email = ""
+    offer_title = "Order"
+    amount = 0.0
+    seller_receives_val = 0.0
+    proj_name = ""
+    proj_id = ""
+    buyer_uid = ""
+
+    try:
+        full_order = supabase.table("orders").select(
+            "*, offers(title, price_usd, project_id)"
+        ).eq("id", order_id).single().execute()
+        od = full_order.data or {}
+        offer_data = od.get("offers") or {}
+        offer_title = offer_data.get("title", "Order")
+        amount = float(od.get("amount_paid_usd", 0))
+        seller_receives_val = float(od.get("seller_receives_usd", 0))
+        proj_id = od.get("project_id", "")
+        buyer_uid = od.get("buyer_user_id", "")
+
+        if proj_id:
+            proj_res = supabase.table("projects").select(
+                "title, name"
+            ).eq("id", proj_id).limit(1).execute()
+            if proj_res.data:
+                proj_name = (
+                    proj_res.data[0].get("title")
+                    or proj_res.data[0].get("name")
+                    or ""
+                )
+
+        # Resolve buyer email
+        buyer_email = od.get("buyer_email") or ""
+        if not buyer_email and buyer_uid:
+            u_res = supabase.table("users").select(
+                "email"
+            ).eq("privy_id", buyer_uid).limit(1).execute()
+            if u_res.data:
+                buyer_email = u_res.data[0].get("email") or ""
+
+        # Resolve seller email
+        seller_uid = od.get("seller_user_id")
+        if seller_uid:
+            prof_res = supabase.table("profiles").select(
+                "wallet_address"
+            ).eq("id", seller_uid).limit(1).execute()
+            if prof_res.data:
+                wallet = prof_res.data[0].get("wallet_address")
+                if wallet:
+                    u_res = supabase.table("users").select(
+                        "email"
+                    ).eq("wallet_address", wallet).limit(1).execute()
+                    if u_res.data:
+                        seller_email = u_res.data[0].get("email") or ""
+    except Exception as detail_err:
+        print(f"[paid] Order detail resolve error (non-fatal): {detail_err}")
+
+    # ── 4. Award DUM (payment is already confirmed — this is safe) ──
+    if buyer_uid:
+        try:
+            dum_reward = min(50, 10 + int(amount / 5))
+            dum_res = supabase.table("users").select(
+                "dum_balance"
+            ).eq("privy_id", buyer_uid).limit(1).execute()
+            if dum_res.data:
+                cur_dum = dum_res.data[0].get("dum_balance", 0)
+                new_dum = cur_dum + dum_reward
+                supabase.table("users").update(
+                    {"dum_balance": new_dum}
+                ).eq("privy_id", buyer_uid).execute()
+                supabase.table("dum_transactions").insert({
+                    "privy_id": buyer_uid,
+                    "amount": dum_reward,
+                    "reason": "purchase_reward",
+                    "reference_id": order_id,
+                    "balance_after": new_dum,
+                }).execute()
+                print(
+                    f"[paid] ✓ DUM AWARDED: {dum_reward} to {buyer_uid} "
+                    f"(spent ${amount:.2f}) → balance {new_dum}"
+                )
+                audit["dum_awarded"] = dum_reward
+                audit["dum_balance"] = new_dum
+        except Exception as dum_err:
+            print(f"[paid] ✗ DUM award failed (non-fatal): {dum_err}")
+
+    # ── 5. Send emails (never blocks payment processing) ──
+    try:
+        if buyer_email:
+            send_buyer_payment_confirmed(buyer_email, offer_title, amount, proj_name)
+            print(f"[paid] ✓ BUYER EMAIL sent to {buyer_email}")
+            audit["buyer_email_sent"] = True
+        else:
+            print(f"[paid] ⊘ Buyer email skipped (no email)")
+    except Exception as buyer_email_err:
+        print(f"[paid] ✗ Buyer email failed (non-fatal): {buyer_email_err}")
+
+    try:
+        if seller_email:
+            send_seller_new_order(seller_email, offer_title, amount, seller_receives_val, proj_id)
+            print(f"[paid] ✓ SELLER EMAIL sent to {seller_email}")
+            audit["seller_email_sent"] = True
+        else:
+            print(f"[paid] ⊘ Seller email skipped (no email)")
+    except Exception as seller_email_err:
+        print(f"[paid] ✗ Seller email failed (non-fatal): {seller_email_err}")
+
+    # ── 6. Audit trail ──
+    print(f"[paid] ═══ AUDIT: {audit}")
 
 
 # ── Payment Intent ────────────────────────────────────────────
@@ -638,157 +867,18 @@ async def stripe_webhook(request: Request):
         return None
 
     def _process_paid(order: dict, session_id: str, pi_id: str, source: str):
-        """Update order to paid, update inventory, award DUM, send emails."""
-        order_id = order["id"]
-        audit = {"order_id": order_id, "stripe_event_id": event_id, "source": source}
-
-        if order["status"] not in ("pending_payment", "pending"):
-            print(f"[webhook] Order {order_id} already {order['status']}, skipping")
-            return
-
-        # ── 1. Mark order paid ──
-        update_fields: dict = {"status": "paid", "updated_at": _now_iso()}
-        if session_id:
-            update_fields["stripe_session_id"] = session_id
-        if pi_id:
-            update_fields["stripe_payment_intent_id"] = pi_id
-
-        supabase.table("orders").update(update_fields).eq("id", order_id).execute()
-        print(f"[webhook] ✓ ORDER PAID: {order_id}")
-        audit["order_paid"] = True
-
-        # ── 2. Update inventory ──
-        offer_id = order.get("offer_id")
-        # Resolve project_id early for broadcast
-        _proj_id_for_broadcast = ""
-        if offer_id:
-            try:
-                offer_res = supabase.table("offers").select("id, project_id, quantity_sold, quantity_available, unlimited_inventory").eq("id", offer_id).limit(1).execute()
-                if offer_res.data:
-                    o = offer_res.data[0]
-                    new_sold = (o.get("quantity_sold") or 0) + 1
-                    qty_available = o.get("quantity_available") or 0
-                    is_unlimited = o.get("unlimited_inventory", True)
-                    supabase.table("offers").update({"quantity_sold": new_sold}).eq("id", offer_id).execute()
-                    print(f"[webhook] ✓ INVENTORY: offer={offer_id}, sold → {new_sold}")
-                    audit["inventory_updated"] = True
-                    _proj_id_for_broadcast = o.get("project_id") or ""
-
-                    # Broadcast real-time inventory update to all connected clients
-                    sold_out = not is_unlimited and qty_available > 0 and new_sold >= qty_available
-                    broadcast_sync(_proj_id_for_broadcast, {
-                        "type": "item_updated",
-                        "data": {
-                            "offer_id": offer_id,
-                            "quantity_sold": new_sold,
-                            "quantity_available": qty_available,
-                            "unlimited_inventory": is_unlimited,
-                            "sold_out": sold_out,
-                        },
-                        "timestamp": time.time(),
-                    })
-                    if sold_out:
-                        broadcast_sync(_proj_id_for_broadcast, {
-                            "type": "item_sold",
-                            "data": {"offer_id": offer_id, "title": "Item"},
-                            "timestamp": time.time(),
-                        })
-                    print(f"[webhook] ✓ BROADCAST: item_updated for offer={offer_id}, sold_out={sold_out}")
-            except Exception as inv_err:
-                print(f"[webhook] ✗ Inventory update failed (non-fatal): {inv_err}")
-
-        # ── 3. Resolve order details for reward + email ──
-        dum_reward = 0
-        new_dum = 0
-        buyer_email = ""
-        seller_email = ""
-        offer_title = "Order"
-        amount = 0.0
-        seller_receives_val = 0.0
-        proj_name = ""
-        proj_id = ""
-        buyer_uid = ""
-
-        try:
-            full_order = supabase.table("orders").select("*, offers(title, price_usd, project_id)").eq("id", order_id).single().execute()
-            od = full_order.data or {}
-            offer_data = od.get("offers") or {}
-            offer_title = offer_data.get("title", "Order")
-            amount = float(od.get("amount_paid_usd", 0))
-            seller_receives_val = float(od.get("seller_receives_usd", 0))
-            proj_id = od.get("project_id", "")
-            buyer_uid = od.get("buyer_user_id", "")
-
-            if proj_id:
-                proj_res = supabase.table("projects").select("title, name").eq("id", proj_id).limit(1).execute()
-                if proj_res.data:
-                    proj_name = proj_res.data[0].get("title") or proj_res.data[0].get("name") or ""
-
-            # Resolve buyer email
-            buyer_email = od.get("buyer_email") or ""
-            if not buyer_email and buyer_uid:
-                u_res = supabase.table("users").select("email").eq("privy_id", buyer_uid).limit(1).execute()
-                if u_res.data:
-                    buyer_email = u_res.data[0].get("email") or ""
-
-            # Resolve seller email
-            seller_uid = od.get("seller_user_id")
-            if seller_uid:
-                prof_res = supabase.table("profiles").select("wallet_address").eq("id", seller_uid).limit(1).execute()
-                if prof_res.data:
-                    wallet = prof_res.data[0].get("wallet_address")
-                    if wallet:
-                        u_res = supabase.table("users").select("email").eq("wallet_address", wallet).limit(1).execute()
-                        if u_res.data:
-                            seller_email = u_res.data[0].get("email") or ""
-        except Exception as detail_err:
-            print(f"[webhook] Order detail resolve error (non-fatal): {detail_err}")
-
-        # ── 4. Award DUM (payment is already confirmed — this is safe) ──
-        if buyer_uid:
-            try:
-                dum_reward = min(50, 10 + int(amount / 5))
-                dum_res = supabase.table("users").select("dum_balance").eq("privy_id", buyer_uid).limit(1).execute()
-                if dum_res.data:
-                    cur_dum = dum_res.data[0].get("dum_balance", 0)
-                    new_dum = cur_dum + dum_reward
-                    supabase.table("users").update({"dum_balance": new_dum}).eq("privy_id", buyer_uid).execute()
-                    supabase.table("dum_transactions").insert({
-                        "privy_id": buyer_uid, "amount": dum_reward,
-                        "reason": "purchase_reward", "reference_id": order_id,
-                        "balance_after": new_dum,
-                    }).execute()
-                    print(f"[webhook] ✓ DUM AWARDED: {dum_reward} to {buyer_uid} (spent ${amount:.2f}) → balance {new_dum}")
-                    audit["dum_awarded"] = dum_reward
-                    audit["dum_balance"] = new_dum
-            except Exception as dum_err:
-                print(f"[webhook] ✗ DUM award failed (non-fatal): {dum_err}")
-
-        # ── 5. Send emails (never blocks payment processing) ──
-        # Single combined buyer email (confirmation + DUM reward)
-        try:
-            if buyer_email:
-                from services.email import send_buyer_payment_confirmed
-                send_buyer_payment_confirmed(buyer_email, offer_title, amount, proj_name)
-                print(f"[webhook] ✓ BUYER EMAIL sent to {buyer_email} (includes DUM reward messaging)")
-                audit["buyer_email_sent"] = True
-            else:
-                print(f"[webhook] ⊘ Buyer email skipped (no email)")
-        except Exception as buyer_email_err:
-            print(f"[webhook] ✗ Buyer email failed (non-fatal): {buyer_email_err}")
-
-        try:
-            if seller_email:
-                send_seller_new_order(seller_email, offer_title, amount, seller_receives_val, proj_id)
-                print(f"[webhook] ✓ SELLER EMAIL sent to {seller_email}")
-                audit["seller_email_sent"] = True
-            else:
-                print(f"[webhook] ⊘ Seller email skipped (no email)")
-        except Exception as seller_email_err:
-            print(f"[webhook] ✗ Seller email failed (non-fatal): {seller_email_err}")
-
-        # ── 6. Audit trail ──
-        print(f"[webhook] ═══ AUDIT: {audit}")
+        """Stripe-webhook closure that delegates to the shared
+        process_order_paid helper. Behaviour unchanged — kept as a
+        thin wrapper so the surrounding event-routing code (lines
+        below) continues to read naturally."""
+        process_order_paid(
+            supabase,
+            order,
+            stripe_session_id=session_id,
+            stripe_payment_intent_id=pi_id,
+            event_id=event_id,
+            source=source,
+        )
 
     # ── Event routing ────────────────────────────────────────
 
@@ -1239,4 +1329,292 @@ async def recover_pending_orders(_admin=Depends(require_admin)):
         "total_pending": len(stuck_orders),
         "recovered": recovered_count,
         "results": results,
+    }
+
+
+# ── Solana wallet checkout ──────────────────────────────────────
+#
+# Two endpoints, used together by the frontend "Pay with SOL" CTA:
+#
+#   POST /api/checkout/sol-quote
+#     - Buyer-authenticated. Frontend calls this BEFORE asking the
+#       wallet to sign. Server quotes lamports for the offer's USD
+#       price at the current oracle rate, signs the quote with
+#       SOL_CHECKOUT_QUOTE_HMAC_SECRET, and returns it with a 90s
+#       expiry. The buyer can't tamper with the quoted lamports.
+#
+#   POST /api/checkout/sol-confirm
+#     - Buyer-authenticated. Frontend calls this AFTER the wallet
+#       broadcasts the SystemProgram.transfer. Server verifies the
+#       quote (HMAC + expiry + offer + buyer match), dedupes the
+#       on-chain signature, verifies the transfer landed in the
+#       treasury via Solana RPC, then creates a paid order and
+#       runs process_order_paid for the same side-effects as the
+#       Stripe webhook (inventory, broadcast, DUM points, emails).
+#
+# Stripe behaviour is untouched. SOL is opt-in per buyer.
+
+DUM_TREASURY_WALLET = os.getenv("DUM_TREASURY_WALLET", "").strip()
+SOL_MIN_USD = 0.50  # match Stripe's $0.50 floor — keeps fee math sane
+ALLOWED_SOL_SOURCES = {
+    "normal", "live", "live_auction",
+    "sol", "live_sol", "live_auction_sol",
+}
+
+
+class SolQuoteRequest(BaseModel):
+    offer_id: str
+    auction_id: Optional[str] = None
+    override_price: Optional[float] = None
+
+
+class SolConfirmRequest(BaseModel):
+    offer_id: str
+    quote_id: str
+    tx_signature: str
+    wallet_address: str
+    source: str = "sol"
+    auction_id: Optional[str] = None
+    notes: Optional[str] = None
+
+
+def _resolve_seller_for_offer(supabase, offer: dict) -> tuple[str, str]:
+    """Return (project_id, seller_user_id) for the given offer.
+    Mirrors the resolution logic used by create-payment-intent."""
+    project_id = offer["project_id"]
+    project_res = (
+        supabase.table("projects")
+        .select("owner_id, privy_id")
+        .eq("id", project_id)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    seller_user_id = (
+        project_res.data[0].get("privy_id")
+        or project_res.data[0].get("owner_id")
+        or ""
+    )
+    return project_id, seller_user_id
+
+
+@router.post("/sol-quote")
+async def sol_quote(
+    body: SolQuoteRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Issue a 90s HMAC-signed SOL price quote for an offer."""
+    if not DUM_TREASURY_WALLET:
+        raise HTTPException(status_code=503, detail="Treasury wallet not configured")
+
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    supabase = get_client()
+
+    offer_res = (
+        supabase.table("offers")
+        .select("*")
+        .eq("id", body.offer_id)
+        .eq("is_active", True)
+        .limit(1)
+        .execute()
+    )
+    if not offer_res.data:
+        raise HTTPException(status_code=404, detail="Offer not found or inactive")
+    offer = offer_res.data[0]
+
+    # Same price-resolution rule as Stripe path: auction override wins.
+    if body.override_price is not None and body.auction_id:
+        usd_amount = float(body.override_price)
+    else:
+        usd_amount = float(offer["price_usd"])
+
+    if usd_amount < SOL_MIN_USD:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Price must be at least ${SOL_MIN_USD:.2f} for SOL checkout.",
+        )
+
+    lamports, sol_amount = usd_to_lamports(usd_amount)
+    if lamports <= 0:
+        raise HTTPException(
+            status_code=503,
+            detail="SOL price oracle unavailable. Try card checkout.",
+        )
+
+    try:
+        token, expires_at = make_quote_token(
+            offer_id=offer["id"],
+            buyer_privy_id=privy_id,
+            lamports=lamports,
+            sol_amount=sol_amount,
+            usd_amount=usd_amount,
+            treasury=DUM_TREASURY_WALLET,
+            auction_id=body.auction_id,
+            override_price=body.override_price,
+        )
+    except QuoteVerifyError as exc:
+        # Only fires when SOL_CHECKOUT_QUOTE_HMAC_SECRET is missing.
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    print(
+        f"[sol-quote] offer={offer['id']} buyer={privy_id} "
+        f"usd={usd_amount} lamports={lamports} expires_at={expires_at}"
+    )
+
+    return {
+        "quote_id": token,
+        "sol_amount": sol_amount,
+        "lamports": lamports,
+        "usd_amount": usd_amount,
+        "treasury": DUM_TREASURY_WALLET,
+        "expires_at": expires_at,
+    }
+
+
+@router.post("/sol-confirm")
+async def sol_confirm(
+    body: SolConfirmRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Verify a buyer-supplied SOL transfer and finalize the order."""
+    if not DUM_TREASURY_WALLET:
+        raise HTTPException(status_code=503, detail="Treasury wallet not configured")
+
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    if body.source not in ALLOWED_SOL_SOURCES:
+        raise HTTPException(status_code=400, detail=f"Invalid source: {body.source}")
+
+    if not body.tx_signature or len(body.tx_signature) < 20:
+        raise HTTPException(status_code=400, detail="Invalid transaction signature")
+    if not body.wallet_address or len(body.wallet_address) < 20:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    # 1. Verify the quote (HMAC + expiry + offer/buyer match).
+    try:
+        quote = verify_quote_token(
+            body.quote_id,
+            expected_offer_id=body.offer_id,
+            expected_buyer_privy_id=privy_id,
+        )
+    except QuoteVerifyError as exc:
+        msg = str(exc)
+        # Expired quotes get a distinct status so the FE can re-fetch.
+        status_code = 410 if "expired" in msg.lower() else 400
+        raise HTTPException(status_code=status_code, detail=msg)
+
+    lamports = int(quote["lamports"])
+    sol_amount = float(quote["sol_amount"])
+    usd_amount = float(quote["usd_amount"])
+
+    supabase = get_client()
+
+    # 2. Dedupe on the on-chain signature BEFORE the (paid) RPC call.
+    try:
+        dup = (
+            supabase.table("orders")
+            .select("id")
+            .eq("solana_tx_signature", body.tx_signature)
+            .limit(1)
+            .execute()
+        )
+        if dup.data:
+            raise HTTPException(
+                status_code=409,
+                detail="This transaction has already been processed",
+            )
+    except HTTPException:
+        raise
+    except Exception as dup_err:
+        # Don't fail the whole checkout if dedupe lookup glitches —
+        # the partial unique index on solana_tx_signature is the
+        # backstop. Log and continue.
+        print(f"[sol-confirm] dedupe lookup error (non-fatal): {dup_err!r}")
+
+    # 3. Look up the offer + resolve seller (same logic as Stripe path).
+    offer_res = (
+        supabase.table("offers")
+        .select("*")
+        .eq("id", body.offer_id)
+        .eq("is_active", True)
+        .limit(1)
+        .execute()
+    )
+    if not offer_res.data:
+        raise HTTPException(status_code=404, detail="Offer not found or inactive")
+    offer = offer_res.data[0]
+    project_id, seller_user_id = _resolve_seller_for_offer(supabase, offer)
+
+    # 4. Verify on-chain transfer.
+    verification = verify_sol_transfer(
+        signature=body.tx_signature,
+        expected_lamports=lamports,
+        treasury=DUM_TREASURY_WALLET,
+        expected_sender=body.wallet_address,
+    )
+    if verification is not True:
+        print(f"[sol-confirm] ✗ verify failed sig={body.tx_signature[:12]}…: {verification}")
+        raise HTTPException(status_code=400, detail=verification)
+
+    # 5. Insert the order in pending_payment, then process_order_paid
+    #    flips it to paid and fires the same side-effects as Stripe.
+    #    SOL goes to platform treasury; the merchant's USD-equivalent
+    #    payout is settled separately (out of scope for this commit).
+    order_insert = {
+        "offer_id": offer["id"],
+        "project_id": project_id,
+        "buyer_user_id": privy_id,
+        "seller_user_id": seller_user_id,
+        "amount_paid_usd": usd_amount,
+        "platform_fee_usd": 0,
+        "seller_receives_usd": usd_amount,
+        "status": "pending_payment",
+        "buyer_email": None,
+        "notes": body.notes,
+        "token_discount_applied": False,
+        "source": body.source,
+        "solana_tx_signature": body.tx_signature,
+        "solana_lamports": lamports,
+        "solana_buyer_wallet": body.wallet_address,
+    }
+    try:
+        order_res = supabase.table("orders").insert(order_insert).execute()
+    except Exception as ins_err:
+        # Most likely cause: the unique index on solana_tx_signature
+        # caught a race we missed at step 2. Treat as duplicate.
+        print(f"[sol-confirm] insert error sig={body.tx_signature[:12]}…: {ins_err!r}")
+        raise HTTPException(
+            status_code=409,
+            detail="This transaction has already been processed",
+        )
+
+    if not order_res.data:
+        raise HTTPException(status_code=500, detail="Failed to create order record")
+
+    order = order_res.data[0]
+    print(
+        f"[sol-confirm] ✓ order={order['id']} sig={body.tx_signature[:12]}… "
+        f"lamports={lamports} sol={sol_amount} usd={usd_amount}"
+    )
+
+    process_order_paid(
+        supabase,
+        order,
+        event_id=body.tx_signature,
+        source="sol_confirm",
+    )
+
+    return {
+        "order_id": order["id"],
+        "status": "paid",
+        "tx_signature": body.tx_signature,
+        "sol_amount": sol_amount,
+        "lamports": lamports,
+        "usd_amount": usd_amount,
     }
