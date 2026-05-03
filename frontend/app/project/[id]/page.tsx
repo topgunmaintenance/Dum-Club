@@ -5008,6 +5008,34 @@ return (
           {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
         </p>
 
+        {/* Owner-only: pin the offer that appears as "Now showing" in the
+            embed and on the live storefront. Mirrors the existing in-stream
+            pin chip control (line ~4210) but is visible while offline so
+            the merchant can pin BEFORE going live. Reuses handlePinOffer
+            verbatim — no new state, no backend call beyond the existing
+            pin endpoint. */}
+        {isOwner && offers.filter((o) => o.is_active).length > 0 && (
+          <div className="mt-4 space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product (Live)</div>
+            <div className="flex flex-wrap gap-2">
+              {offers.filter((o) => o.is_active).map((offer) => (
+                <button
+                  key={offer.id}
+                  onClick={() => handlePinOffer(offer.id === project?.pinned_offer_id ? null : offer.id)}
+                  className={`rounded-xl border px-3 py-2 text-sm transition ${
+                    offer.id === project?.pinned_offer_id
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
+                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                >
+                  {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                  {offer.id === project?.pinned_offer_id && " (pinned)"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Demo mode indicator (section-level) */}
 
         {/* Checkout result banner */}
