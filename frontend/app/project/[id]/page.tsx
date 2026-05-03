@@ -505,6 +505,12 @@ export default function ProjectPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [projectName, setProjectName] = useState("DUM Club Business");
+  // Pin-offer feedback state. pinningOfferId tracks which chip is
+  // currently in flight (or "__unpin__" when clearing); pinError
+  // surfaces backend failures inline next to the new offline pin UI
+  // so the merchant doesn't have to crack open the console.
+  const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
+  const [pinError, setPinError] = useState<string | null>(null);
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -2533,16 +2539,46 @@ export default function ProjectPage() {
   }
 
   async function handlePinOffer(offerId: string | null) {
-    if (!id) return;
+    // Backend matches projects by UUID, not slug. The URL param `id`
+    // can be either (e.g. /project/topgun-maintenance is a slug),
+    // so we must call with project.id — same canonical-UUID
+    // convention /api/offers/${project.id} uses (line ~944).
+    const projectUuid = project?.id;
+    if (!projectUuid) {
+      setPinError("Project not loaded yet — try again in a moment.");
+      return;
+    }
+    setPinError(null);
+    setPinningOfferId(offerId ?? "__unpin__");
     try {
-      await fetch(`${API_BASE}/api/projects/${id}/pin-offer`, {
+      const res = await fetch(`${API_BASE}/api/projects/${projectUuid}/pin-offer`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
         body: JSON.stringify({ offer_id: offerId }),
       });
-      setProject((prev) => prev ? { ...prev, pinned_offer_id: offerId } : prev);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg =
+          typeof errBody.detail === "string"
+            ? errBody.detail
+            : `Pin failed (HTTP ${res.status})`;
+        setPinError(msg);
+        return;
+      }
+      // Trust the backend response: it echoes pinned_offer_id so we
+      // can sync local state to canonical truth instead of guessing.
+      const data = await res.json().catch(() => ({}));
+      const persisted =
+        typeof data?.pinned_offer_id !== "undefined"
+          ? data.pinned_offer_id
+          : offerId;
+      setProject((prev) => prev ? { ...prev, pinned_offer_id: persisted } : prev);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Pin offer failed";
       console.error("Pin offer failed", err);
+      setPinError(msg);
+    } finally {
+      setPinningOfferId(null);
     }
   }
 
@@ -5011,28 +5047,65 @@ return (
         {/* Owner-only: pin the offer that appears as "Now showing" in the
             embed and on the live storefront. Mirrors the existing in-stream
             pin chip control (line ~4210) but is visible while offline so
-            the merchant can pin BEFORE going live. Reuses handlePinOffer
-            verbatim — no new state, no backend call beyond the existing
-            pin endpoint. */}
+            the merchant can pin BEFORE going live. Visual is louder than
+            the in-stream chips (filled emerald + ✓ PINNED label) because
+            this surface is mobile-first and the in-stream version's
+            10%-opacity emerald was too subtle to read on a phone screen
+            in daylight. */}
         {isOwner && offers.filter((o) => o.is_active).length > 0 && (
           <div className="mt-4 space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product (Live)</div>
-            <div className="flex flex-wrap gap-2">
-              {offers.filter((o) => o.is_active).map((offer) => (
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product (Live)</div>
+              {project?.pinned_offer_id && (
                 <button
-                  key={offer.id}
-                  onClick={() => handlePinOffer(offer.id === project?.pinned_offer_id ? null : offer.id)}
-                  className={`rounded-xl border px-3 py-2 text-sm transition ${
-                    offer.id === project?.pinned_offer_id
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
+                  onClick={() => handlePinOffer(null)}
+                  disabled={pinningOfferId !== null}
+                  className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
                 >
-                  {offer.title} · ${Number(offer.price_usd).toFixed(0)}
-                  {offer.id === project?.pinned_offer_id && " (pinned)"}
+                  Unpin
                 </button>
-              ))}
+              )}
             </div>
+            <div className="flex flex-wrap gap-2">
+              {offers.filter((o) => o.is_active).map((offer) => {
+                const isPinned = offer.id === project?.pinned_offer_id;
+                const isThisInFlight = pinningOfferId === offer.id;
+                const anyInFlight = pinningOfferId !== null;
+                return (
+                  <button
+                    key={offer.id}
+                    onClick={() => handlePinOffer(isPinned ? null : offer.id)}
+                    disabled={anyInFlight}
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${
+                      isPinned
+                        ? "border-emerald-400 bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-400/60"
+                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
+                  >
+                    {isPinned && <span className="mr-1">✓</span>}
+                    {offer.title} · ${Number(offer.price_usd).toFixed(0)}
+                    {isPinned && (
+                      <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                        PINNED
+                      </span>
+                    )}
+                    {isThisInFlight && (
+                      <span className="ml-2 text-[10px] text-zinc-500">…</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {pinError && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {pinError}
+              </div>
+            )}
+            {project?.pinned_offer_id && !pinError && (
+              <p className="text-[11px] text-zinc-500">
+                Pinned. Refresh the embed to see it as &quot;Now showing&quot;.
+              </p>
+            )}
           </div>
         )}
 
