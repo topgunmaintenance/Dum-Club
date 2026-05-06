@@ -10,6 +10,16 @@ from services.token_mode import is_simulated_token, token_mode
 
 router = APIRouter()
 
+
+def _resolve(project_id: str) -> str:
+    """Resolve a slug-or-UUID path param to canonical UUID, or return the
+    original value unchanged if no project matches. Returning the original
+    on miss preserves the existing behavior of these endpoints (which
+    silently return empty data for unknown projects rather than 404).
+    """
+    from api.routes.projects import resolve_project_uuid
+    return resolve_project_uuid(get_client(), project_id) or project_id
+
 PROJECT_FEE_BPS = 150  # 1.50%
 DUM_FEE_BPS = 50       # 0.50%
 TOTAL_FEE_BPS = PROJECT_FEE_BPS + DUM_FEE_BPS
@@ -97,6 +107,7 @@ def _get_market_row(supabase, project_id: str) -> dict:
 
 @router.get("/api/projects/{project_id}/market")
 async def get_project_market(project_id: str):
+    project_id = _resolve(project_id)
     supabase = get_client()
 
     project_res = (
@@ -135,6 +146,7 @@ async def get_project_market(project_id: str):
 
 @router.get("/api/projects/{project_id}/trades")
 async def get_project_trades(project_id: str):
+    project_id = _resolve(project_id)
     supabase = get_client()
 
     trades_res = (
@@ -151,6 +163,7 @@ async def get_project_trades(project_id: str):
 
 @router.get("/api/projects/{project_id}/balance/{wallet}")
 async def get_project_balance(project_id: str, wallet: str):
+    project_id = _resolve(project_id)
     supabase = get_client()
     balance = _get_wallet_balance(supabase, project_id, wallet)
 
@@ -422,6 +435,7 @@ async def create_project_trade(project_id: str, body: TradeRequest):
 
 @router.get("/api/projects/{project_id}/candles")
 async def get_project_candles(project_id: str):
+    project_id = _resolve(project_id)
     supabase = get_client()
 
     candles_res = (

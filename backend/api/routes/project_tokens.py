@@ -44,10 +44,16 @@ def get_sol_balance(address: str):
 def get_project_token_metadata(project_id: str):
     client = get_client()
 
+    # Accept slug or UUID — frontend forwards URL param verbatim.
+    from api.routes.projects import resolve_project_uuid
+    resolved_uuid = resolve_project_uuid(client, project_id)
+    if not resolved_uuid:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     project_res = (
         client.table("projects")
         .select("*")
-        .eq("id", project_id)
+        .eq("id", resolved_uuid)
         .single()
         .execute()
     )
