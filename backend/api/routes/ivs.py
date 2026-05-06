@@ -91,8 +91,17 @@ async def api_create_stage(
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
 
+    # Canonical UUID — every DB write and live-limit key from here on
+    # must use this, NOT body.project_id, which may be a slug. The
+    # previous version mixed both: _verify_owner resolved correctly,
+    # but the subsequent .eq("id", body.project_id) UPDATEs silently
+    # matched zero rows on slug input, so AWS would create a stage
+    # but the DB never recorded ivs_stage_arn / is_live=True. Viewers
+    # then 404'd at /viewer-token's "No active live session" gate.
+    project_uuid = project["id"]
+
     # Check daily stream limit
-    limit_err = register_stream_start(body.project_id, user_id)
+    limit_err = register_stream_start(project_uuid, user_id)
     if limit_err:
         raise HTTPException(status_code=429, detail=limit_err)
 
@@ -106,12 +115,13 @@ async def api_create_stage(
             "ivs_stage_arn": None,
             "ivs_stage_id": None,
             "is_live": False,
-        }).eq("id", body.project_id).execute()
+        }).eq("id", project_uuid).execute()
         await asyncio.sleep(1.0)  # Allow AWS to propagate deletion
         print(f"[ivs] Stale stage cleaned, creating fresh")
 
-    # Create fresh stage
-    stage_name = f"dum-club-{body.project_id[:8]}"
+    # Create fresh stage. Use the canonical UUID prefix in the name
+    # so two projects with similar slugs don't collide on stage name.
+    stage_name = f"dum-club-{project_uuid[:8]}"
     stage_data = create_stage(stage_name)
     if not stage_data:
         raise HTTPException(status_code=502, detail="Failed to create IVS stage")
@@ -121,15 +131,15 @@ async def api_create_stage(
     create_ts = _time.time()
     print(f"[ivs] Fresh stage created: arn={fresh_arn} id={fresh_id} at={create_ts:.3f}")
 
-    # Store stage ARN on project
+    # Store stage ARN on project — keyed by canonical UUID.
     supabase = get_client()
     supabase.table("projects").update({
         "ivs_stage_arn": fresh_arn,
         "ivs_stage_id": fresh_id,
         "live_provider": "ivs_realtime",
         "is_live": True,
-    }).eq("id", body.project_id).execute()
-    print(f"[ivs] DB updated with fresh ARN")
+    }).eq("id", project_uuid).execute()
+    print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
 
     # Wait for AWS to fully propagate the new stage before minting tokens
     await asyncio.sleep(1.0)
@@ -266,12 +276,17 @@ async def api_end_stage(
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
 
+    # Same canonical-UUID discipline as create-stage: every DB write
+    # and live-limit key uses project["id"], not body.project_id.
+    project_uuid = project["id"]
+
     stage_arn = project.get("ivs_stage_arn")
     if stage_arn:
         delete_stage(stage_arn)
 
-    # Clear limits tracking
-    clear_stream(body.project_id)
+    # Clear limits tracking — keyed on the same UUID register_stream_start
+    # used, so the daily-limit counter actually decrements.
+    clear_stream(project_uuid)
 
     # Clear live state
     supabase = get_client()
@@ -286,6 +301,6 @@ async def api_end_stage(
         "live_stream_id": None,
         "live_stream_key": None,
         "live_ingest_url": None,
-    }).eq("id", body.project_id).execute()
+    }).eq("id", project_uuid).execute()
 
     return {"status": "success", "is_live": False}
