@@ -24,13 +24,21 @@ router = APIRouter()
 # ── Helpers ──────────────────────────────────────────────────
 
 def _verify_owner(project_id: str, user_id: str) -> dict:
-    """Verify user is the project owner. Returns project data."""
-    from api.routes.projects import _resolve_owner_uuid
+    """Verify user is the project owner. Returns project data.
+
+    Accepts either a project UUID or a slug as `project_id` — frontend
+    routes like /project/[id] forward the URL param verbatim, which is
+    a slug on user-facing URLs (e.g. /project/topgun-maintenance).
+    """
+    from api.routes.projects import _resolve_owner_uuid, resolve_project_uuid
     supabase = get_client()
+    resolved_uuid = resolve_project_uuid(supabase, project_id)
+    if not resolved_uuid:
+        raise HTTPException(status_code=404, detail="Project not found")
     res = (
         supabase.table("projects")
         .select("id, owner_id, privy_id, is_live, ivs_stage_arn")
-        .eq("id", project_id)
+        .eq("id", resolved_uuid)
         .eq("is_deleted", False)
         .limit(1)
         .execute()
@@ -188,26 +196,37 @@ async def api_viewer_token(
     body: TokenRequest,
     user_id: str = Header(default="", convert_underscores=False),
 ):
-    """Viewer gets a SUBSCRIBE participant token for a project's stage."""
+    """Viewer gets a SUBSCRIBE participant token for a project's stage.
+
+    Accepts either a project UUID or slug as body.project_id — same reasoning
+    as _verify_owner. Once resolved, all downstream keying (viewer-count
+    bucket, anon viewer id, log lines) uses the canonical UUID so two
+    viewers on the slug URL and the UUID URL of the same project share one
+    bucket instead of being split.
+    """
     _require_ivs()
 
+    supabase = get_client()
+    from api.routes.projects import resolve_project_uuid
+    resolved_uuid = resolve_project_uuid(supabase, body.project_id)
+    if not resolved_uuid:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     # Rate limit joins
-    viewer_id = user_id or f"anon-{body.project_id[:8]}"
+    viewer_id = user_id or f"anon-{resolved_uuid[:8]}"
     join_err = check_join_rate(viewer_id)
     if join_err:
         raise HTTPException(status_code=429, detail=join_err)
 
-    # Check viewer capacity
-    viewer_err = add_viewer(body.project_id)
+    # Check viewer capacity (keyed on canonical UUID)
+    viewer_err = add_viewer(resolved_uuid)
     if viewer_err:
         raise HTTPException(status_code=503, detail=viewer_err)
-
-    supabase = get_client()
 
     res = (
         supabase.table("projects")
         .select("id, ivs_stage_arn, is_live")
-        .eq("id", body.project_id)
+        .eq("id", resolved_uuid)
         .eq("is_deleted", False)
         .limit(1)
         .execute()
@@ -219,7 +238,7 @@ async def api_viewer_token(
     if not project.get("is_live") or not project.get("ivs_stage_arn"):
         raise HTTPException(status_code=404, detail="No active live session")
 
-    viewer_id = user_id or f"anon-{body.project_id[:8]}"
+    viewer_id = user_id or f"anon-{resolved_uuid[:8]}"
     token_data = create_participant_token(
         stage_arn=project["ivs_stage_arn"],
         user_id=viewer_id,

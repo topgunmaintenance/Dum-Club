@@ -28,6 +28,64 @@ _UUID_RE = re.compile(
 )
 
 
+def resolve_project_uuid(supabase, project_id_or_slug: Optional[str]) -> Optional[str]:
+    """Accept a project UUID OR slug, return the canonical projects.id UUID.
+
+    Returns None if no matching project (or it's soft-deleted).
+
+    Why this exists:
+      Frontend pages like /project/[id] are addressable by both UUID and
+      slug, and the URL param is forwarded verbatim to backend endpoints
+      (e.g. POST /api/ivs/viewer-token, GET /api/projects/{id}/market).
+      Several endpoints historically did `.eq(\"id\", project_id)` — which
+      silently returns no rows when the param is a slug, producing 404s and
+      500s on user-facing pages.
+
+      The canonical /api/projects/{id} GET handler already implements
+      try-UUID-then-slug; this helper extracts that fallback so every
+      endpoint that takes a {project_id} path/body param can resolve to
+      the same UUID without re-implementing the dance.
+
+    Mirrors the .eq(\"is_deleted\", False) filter used by /api/projects/{id}
+    so soft-deleted projects are uniformly invisible.
+    """
+    if not project_id_or_slug:
+        return None
+
+    # 1) Try UUID match. Wrapped in try/except because PostgREST may error
+    #    on a UUID column when given a non-UUID-shaped string.
+    try:
+        res = (
+            supabase.table("projects")
+            .select("id")
+            .eq("id", project_id_or_slug)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            return res.data[0]["id"]
+    except Exception:
+        pass
+
+    # 2) Fall back to slug.
+    try:
+        res = (
+            supabase.table("projects")
+            .select("id")
+            .eq("slug", project_id_or_slug)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            return res.data[0]["id"]
+    except Exception:
+        pass
+
+    return None
+
+
 def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
     """Resolve any owner identity to a profiles.id UUID (FK target for projects.owner_id).
 
@@ -526,10 +584,13 @@ async def redeem_project_token(project_id: str, body: RedemptionRequest):
 async def list_redemptions(project_id: str):
     supabase = get_client()
 
+    # Accept slug or UUID — frontend forwards URL param verbatim.
+    resolved_uuid = resolve_project_uuid(supabase, project_id) or project_id
+
     res = (
         supabase.table("redemptions")
         .select("*")
-        .eq("project_id", project_id)
+        .eq("project_id", resolved_uuid)
         .order("created_at", desc=True)
         .execute()
     )

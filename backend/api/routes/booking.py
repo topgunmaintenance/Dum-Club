@@ -95,10 +95,13 @@ async def upsert_service_profile(
 @router.get("/api/projects/{project_id}/service-profile")
 async def get_service_profile(project_id: str):
     supabase = sb()
+    # Accept slug or UUID — frontend forwards URL param verbatim.
+    from api.routes.projects import resolve_project_uuid
+    resolved_uuid = resolve_project_uuid(supabase, project_id) or project_id
     res = (
         supabase.table("service_profiles")
         .select("*")
-        .eq("project_id", project_id)
+        .eq("project_id", resolved_uuid)
         .limit(1)
         .execute()
     )
