@@ -511,6 +511,12 @@ export default function ProjectPage() {
   // so the merchant doesn't have to crack open the console.
   const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
+  // Embed-installer UI state (owner-only). copiedSnippet flashes a
+  // "Copied!" label on whichever snippet button was just clicked;
+  // showInstallHelp toggles the expanded test-on-your-site
+  // instructions panel.
+  const [copiedSnippet, setCopiedSnippet] = useState<"script" | "iframe" | null>(null);
+  const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -5108,6 +5114,186 @@ return (
             )}
           </div>
         )}
+
+        {/* Owner-only: Embed DUM Live on Your Website ──────────────
+            Self-contained installer panel. Snippets are derived from
+            window.location.origin at render time so the URL adapts to
+            whatever domain serves this page (Vercel preview alias,
+            production custom domain, localhost). No new dependencies. */}
+        {isOwner && project?.slug && (() => {
+          const origin =
+            typeof window !== "undefined"
+              ? window.location.origin
+              : "https://dum.club";
+          const slug = project.slug as string;
+          const scriptSnippet =
+            `<script\n` +
+            `  src="${origin}/embed.js"\n` +
+            `  data-business-id="${slug}"\n` +
+            `  async\n` +
+            `></script>`;
+          const iframeSnippet =
+            `<iframe\n` +
+            `  src="${origin}/embed/${slug}"\n` +
+            `  width="100%"\n` +
+            `  height="640"\n` +
+            `  style="border:none;display:block;"\n` +
+            `  allow="payment *; fullscreen *; clipboard-write *; popups *"\n` +
+            `  sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"\n` +
+            `></iframe>`;
+          const previewUrl = `${origin}/embed/${slug}`;
+          const testHtml =
+            `<!doctype html>\n` +
+            `<html>\n` +
+            `<head><meta charset="utf-8"><title>Embed test</title></head>\n` +
+            `<body style="font-family:sans-serif;max-width:720px;margin:40px auto;padding:0 16px;">\n` +
+            `  <h1>Test page</h1>\n` +
+            `  <p>The DUM Live embed should appear below.</p>\n` +
+            `  <script src="${origin}/embed.js" data-business-id="${slug}" async></script>\n` +
+            `</body>\n` +
+            `</html>`;
+
+          async function copyText(text: string, kind: "script" | "iframe") {
+            try {
+              await navigator.clipboard.writeText(text);
+              setCopiedSnippet(kind);
+              setTimeout(() => setCopiedSnippet(null), 1800);
+            } catch {
+              // Fallback: select-all on the pre block. The user can hit
+              // Cmd/Ctrl-C. Don't block them on a clipboard permission.
+              setCopiedSnippet(null);
+            }
+          }
+
+          return (
+            <div className="mt-4 space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+              <div>
+                <h3 className="text-base font-bold text-white sm:text-lg">
+                  Embed DUM Live on Your Website
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500 sm:text-[13px]">
+                  Paste this snippet on your site to add live commerce.
+                  Your stream, your offers, your customers checking out via
+                  Stripe — without leaving your domain.
+                </p>
+              </div>
+
+              {/* Script tag (recommended) */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
+                    Script tag <span className="text-zinc-600">· recommended</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyText(scriptSnippet, "script")}
+                    className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70 hover:bg-emerald-400/20"
+                  >
+                    {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                  <code>{scriptSnippet}</code>
+                </pre>
+              </div>
+
+              {/* iframe (fallback) */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    iframe <span className="text-zinc-700">· fallback for platforms that block scripts</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyText(iframeSnippet, "iframe")}
+                    className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                  <code>{iframeSnippet}</code>
+                </pre>
+              </div>
+
+              {/* Quick install instructions */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
+                <div className="mb-1 font-bold text-zinc-200">Where to paste</div>
+                <ul className="space-y-0.5 text-[12px] leading-relaxed">
+                  <li>
+                    <span className="text-zinc-500">·</span>{" "}
+                    Hand-coded HTML →{" "}
+                    <span className="text-zinc-300">
+                      just before <code className="rounded bg-zinc-800 px-1 text-emerald-300">&lt;/body&gt;</code>
+                    </span>
+                  </li>
+                  <li>
+                    <span className="text-zinc-500">·</span>{" "}
+                    WordPress →{" "}
+                    <span className="text-zinc-300">
+                      Custom HTML block on the page (NOT a paragraph block)
+                    </span>
+                  </li>
+                  <li>
+                    <span className="text-zinc-500">·</span>{" "}
+                    Squarespace / Wix / Shopify →{" "}
+                    <span className="text-zinc-300">
+                      Code Block / Embed Code element
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
+                >
+                  Preview Embed →
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallHelp((v) => !v)}
+                  className="rounded-xl border border-zinc-700 bg-transparent px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  {showInstallHelp ? "Hide" : "Test on your website"}
+                </button>
+              </div>
+
+              {/* Test-locally instructions (collapsible) */}
+              {showInstallHelp && (
+                <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
+                  <div className="font-bold text-zinc-200">
+                    Test the embed without editing your real site
+                  </div>
+                  <ol className="list-inside list-decimal space-y-1 text-[12px] leading-relaxed">
+                    <li>
+                      Save the HTML below as{" "}
+                      <code className="rounded bg-zinc-800 px-1 text-emerald-300">test.html</code>{" "}
+                      on your computer
+                    </li>
+                    <li>Double-click to open it in a browser</li>
+                    <li>
+                      The embed should load. Try clicking{" "}
+                      <span className="text-zinc-200">Pay with Card</span> —
+                      Stripe should open in a new tab with your business name
+                    </li>
+                    <li>
+                      Once it works locally, paste the script tag onto your
+                      real site
+                    </li>
+                  </ol>
+                  <pre className="overflow-x-auto rounded-lg border border-zinc-800 bg-black p-2 text-[11px] leading-relaxed text-zinc-300">
+                    <code>{testHtml}</code>
+                  </pre>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Demo mode indicator (section-level) */}
 
