@@ -9,6 +9,8 @@ import { API_BASE } from "../../../lib/apiBase";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { isIVSSession } from "../../../lib/liveProvider";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
+import { JsonLd } from "../../../components/JsonLd";
+import { buildProductSchema } from "../../../lib/schemaOrg";
 import {
   SOL_CHECKOUT_ENABLED,
   SolCheckoutError,
@@ -482,6 +484,15 @@ export default function EmbedShellPage() {
 
   return (
     <main className="min-h-screen bg-base text-[var(--color-text-primary)] px-4 py-6 sm:px-6 sm:py-8">
+      {/* Schema.org JSON-LD for the pinned offer. The embed page often
+          loads inside a merchant's own iframe, where their site provides
+          the LocalBusiness markup; we contribute Product-level data so
+          AI crawlers can read what's currently for sale. Emits nothing
+          when no offer is pinned. */}
+      {project && pinnedOffer && (
+        <JsonLd data={buildProductSchema(project, pinnedOffer)} />
+      )}
+
       {/* Reaction-layer keyframes (Step 8). Inlined here so we don't
           have to touch globals.css from an embed-scoped feature. */}
       <style>{`
