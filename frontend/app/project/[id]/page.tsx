@@ -1412,7 +1412,7 @@ export default function ProjectPage() {
       const rpcUrl =
         process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
         process.env.NEXT_PUBLIC_SOLANA_RPC ||
-        "https://api.mainnet-beta.solana.com";
+        "https://api.devnet.solana.com";
 
       const result = await payOfferWithSol({
         offerId: oid,
