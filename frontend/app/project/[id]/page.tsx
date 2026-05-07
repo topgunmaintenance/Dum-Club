@@ -511,12 +511,20 @@ export default function ProjectPage() {
   // so the merchant doesn't have to crack open the console.
   const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
-  // Embed-installer UI state (owner-only). copiedSnippet flashes a
-  // "Copied!" label on whichever snippet button was just clicked;
-  // showInstallHelp toggles the expanded test-on-your-site
-  // instructions panel.
-  const [copiedSnippet, setCopiedSnippet] = useState<"script" | "iframe" | null>(null);
-  const [showInstallHelp, setShowInstallHelp] = useState<boolean>(false);
+  // Embed installer / activation state (owner-only).
+  //   copiedSnippet  — flashes "Copied ✓" on whichever copy button
+  //                    was just clicked. Shared across all tabs.
+  //   embedModalOpen — controls the Activate-DUM-Live wizard modal.
+  //   embedActivePath — which tab is currently selected.
+  //   embedPlatform   — selected platform inside the Guided tab.
+  const [copiedSnippet, setCopiedSnippet] = useState<
+    "script" | "iframe" | "instructions" | "developer-msg" | null
+  >(null);
+  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false);
+  const [embedActivePath, setEmbedActivePath] = useState<
+    "guided" | "self" | "advanced" | "developer"
+  >("guided");
+  const [embedPlatform, setEmbedPlatform] = useState<string | null>(null);
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -5115,11 +5123,18 @@ return (
           </div>
         )}
 
-        {/* Owner-only: Embed DUM Live on Your Website ──────────────
-            Self-contained installer panel. Snippets are derived from
-            window.location.origin at render time so the URL adapts to
-            whatever domain serves this page (Vercel preview alias,
-            production custom domain, localhost). No new dependencies. */}
+        {/* Owner-only: Add DUM Live to Your Website ─────────────────
+            Merchant-first activation experience. The compact card is
+            the only thing visible by default — clicking "Activate DUM
+            Live" opens a wizard modal with four guided paths. All
+            technical detail (script tag, iframe fallback, test.html)
+            lives inside the Advanced tab. Default flow uses
+            installation language, not developer language.
+
+            Snippets are derived from window.location.origin at render
+            time so the URL adapts to whatever domain serves this page
+            (Vercel preview alias, production custom domain, localhost).
+            No new dependencies. */}
         {isOwner && project?.slug && (() => {
           const origin =
             typeof window !== "undefined"
@@ -5153,145 +5168,569 @@ return (
             `</body>\n` +
             `</html>`;
 
-          async function copyText(text: string, kind: "script" | "iframe") {
+          // Plain-text install instructions for the Developer tab's
+          // "Send to my developer" message. Email-friendly, no markup.
+          const developerMessage =
+            `Hi — I'd like to add a DUM Live storefront widget to our website.\n\n` +
+            `It's a single line of code (a <script> tag) that I paste on a page. The widget shows our\n` +
+            `live stream, products, and checkout. Customers stay on our domain; payments go through\n` +
+            `our Stripe account directly.\n\n` +
+            `Embed code:\n${scriptSnippet}\n\n` +
+            `For React or Next.js sites, the iframe form below is easier to integrate:\n${iframeSnippet}\n\n` +
+            `Preview URL (works as a regular page, no install needed):\n${previewUrl}\n\n` +
+            `Steps:\n` +
+            `  1. Open the website repo or page where DUM Live should appear.\n` +
+            `  2. Paste the code above into the page.\n` +
+            `  3. Commit / save / publish.\n` +
+            `  4. Visit the page and confirm the widget loads.\n\n` +
+            `Thanks!`;
+
+          async function copyText(
+            text: string,
+            kind: "script" | "iframe" | "instructions" | "developer-msg"
+          ) {
             try {
               await navigator.clipboard.writeText(text);
               setCopiedSnippet(kind);
               setTimeout(() => setCopiedSnippet(null), 1800);
             } catch {
-              // Fallback: select-all on the pre block. The user can hit
-              // Cmd/Ctrl-C. Don't block them on a clipboard permission.
               setCopiedSnippet(null);
             }
           }
 
+          // Per-platform setup instructions for the Guided tab. Each
+          // entry maps a merchant's website type to a one-line
+          // instruction in their language — no iframe / script / JS
+          // jargon in the default flow.
+          const PLATFORMS: Array<{
+            id: string;
+            name: string;
+            instruction: string;
+          }> = [
+            {
+              id: "wordpress",
+              name: "WordPress",
+              instruction:
+                "On the page where you want it, add a Custom HTML block, then paste this in.",
+            },
+            {
+              id: "wix",
+              name: "Wix",
+              instruction:
+                "Drag in an Embed Code element where you want it, then paste this in.",
+            },
+            {
+              id: "shopify",
+              name: "Shopify",
+              instruction:
+                "Open the page template in your theme editor and paste this into a Custom Liquid section.",
+            },
+            {
+              id: "squarespace",
+              name: "Squarespace",
+              instruction:
+                "Add a Code Block on the page and paste this in.",
+            },
+            {
+              id: "webflow",
+              name: "Webflow",
+              instruction:
+                "Drag an Embed element onto the page and paste this in.",
+            },
+            {
+              id: "developer",
+              name: "GitHub / Vercel",
+              instruction:
+                "See the For Developers tab — full repo + deploy instructions.",
+            },
+            {
+              id: "custom",
+              name: "Custom HTML",
+              instruction:
+                "Paste this just before </body>, or inside the section where you want it to appear.",
+            },
+            {
+              id: "unsure",
+              name: "Not sure",
+              instruction:
+                "No worries — use the Custom HTML method. It works on most websites.",
+            },
+          ];
+
+          // Visual progress flow shown in Guided. Step state derives
+          // implicitly from what the merchant has done: pick a
+          // platform → copy code → paste → go live. Step 4 is always
+          // a future step; no completion gate.
+          const guidedStep =
+            embedPlatform === null
+              ? 1
+              : copiedSnippet === "script"
+              ? 3
+              : 2;
+
           return (
-            <div className="mt-4 space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-              <div>
-                <h3 className="text-base font-bold text-white sm:text-lg">
-                  Embed DUM Live on Your Website
-                </h3>
-                <p className="mt-1 text-xs text-zinc-500 sm:text-[13px]">
-                  Paste this snippet on your site to add live commerce.
-                  Your stream, your offers, your customers checking out via
-                  Stripe — without leaving your domain.
-                </p>
-              </div>
-
-              {/* Script tag (recommended) */}
-              <div>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
-                    Script tag <span className="text-zinc-600">· recommended</span>
+            <>
+              {/* Compact activation card — the only thing visible by
+                  default. Replaces the previous developer-first panel
+                  that exposed code immediately. */}
+              <div className="mt-4 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.06] to-zinc-950 p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-white sm:text-xl">
+                      Add DUM Live to Your Website
+                    </h3>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      Turn your website into a live selling storefront in minutes.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => copyText(scriptSnippet, "script")}
-                    className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70 hover:bg-emerald-400/20"
-                  >
-                    {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
-                  </button>
+                  <div className="flex flex-col items-start gap-1 sm:items-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmbedActivePath("guided");
+                        setEmbedPlatform(null);
+                        setEmbedModalOpen(true);
+                      }}
+                      className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400 sm:w-auto"
+                    >
+                      Activate DUM Live
+                    </button>
+                    <span className="text-[11px] text-zinc-500">
+                      Usually takes less than 5 minutes
+                    </span>
+                  </div>
                 </div>
-                <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
-                  <code>{scriptSnippet}</code>
-                </pre>
               </div>
 
-              {/* iframe (fallback) */}
-              <div>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                    iframe <span className="text-zinc-700">· fallback for platforms that block scripts</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyText(iframeSnippet, "iframe")}
-                    className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              {/* Activation wizard modal. Closes on backdrop click and
+                  on the X button. Body scroll is not locked because the
+                  surrounding page already has its own scroll context. */}
+              {embedModalOpen && (
+                <div
+                  className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+                  onClick={() => setEmbedModalOpen(false)}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Activate DUM Live"
+                >
+                  <div
+                    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-zinc-800 bg-zinc-950 sm:rounded-2xl"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
-                  </button>
-                </div>
-                <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
-                  <code>{iframeSnippet}</code>
-                </pre>
-              </div>
+                    {/* Header */}
+                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-800 px-5 py-4">
+                      <div>
+                        <h2 className="text-base font-bold text-white sm:text-lg">
+                          Activate DUM Live
+                        </h2>
+                        <p className="text-xs text-zinc-500">
+                          Add a live selling storefront to{" "}
+                          <span className="text-zinc-300">{slug}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEmbedModalOpen(false)}
+                        aria-label="Close"
+                        className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M5 5l10 10M15 5L5 15" />
+                        </svg>
+                      </button>
+                    </div>
 
-              {/* Quick install instructions */}
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
-                <div className="mb-1 font-bold text-zinc-200">Where to paste</div>
-                <ul className="space-y-0.5 text-[12px] leading-relaxed">
-                  <li>
-                    <span className="text-zinc-500">·</span>{" "}
-                    Hand-coded HTML →{" "}
-                    <span className="text-zinc-300">
-                      just before <code className="rounded bg-zinc-800 px-1 text-emerald-300">&lt;/body&gt;</code>
-                    </span>
-                  </li>
-                  <li>
-                    <span className="text-zinc-500">·</span>{" "}
-                    WordPress →{" "}
-                    <span className="text-zinc-300">
-                      Custom HTML block on the page (NOT a paragraph block)
-                    </span>
-                  </li>
-                  <li>
-                    <span className="text-zinc-500">·</span>{" "}
-                    Squarespace / Wix / Shopify →{" "}
-                    <span className="text-zinc-300">
-                      Code Block / Embed Code element
-                    </span>
-                  </li>
-                </ul>
-              </div>
+                    {/* Tab nav. Wraps to 2x2 on narrow viewports. */}
+                    <div className="flex shrink-0 flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2 sm:px-5">
+                      {[
+                        { id: "guided" as const, label: "Guided Setup" },
+                        { id: "self" as const, label: "Install It Myself" },
+                        { id: "advanced" as const, label: "Advanced" },
+                        { id: "developer" as const, label: "For Developers" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setEmbedActivePath(tab.id)}
+                          className={`rounded-t-md px-3 py-2 text-[12px] font-medium transition sm:text-sm ${
+                            embedActivePath === tab.id
+                              ? "border-b-2 border-emerald-400 text-emerald-300"
+                              : "border-b-2 border-transparent text-zinc-500 hover:text-zinc-200"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
-                >
-                  Preview Embed →
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setShowInstallHelp((v) => !v)}
-                  className="rounded-xl border border-zinc-700 bg-transparent px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                >
-                  {showInstallHelp ? "Hide" : "Test on your website"}
-                </button>
-              </div>
+                    {/* Tab content (scrollable region) */}
+                    <div className="flex-1 overflow-y-auto px-5 py-5 sm:py-6">
 
-              {/* Test-locally instructions (collapsible) */}
-              {showInstallHelp && (
-                <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
-                  <div className="font-bold text-zinc-200">
-                    Test the embed without editing your real site
+                      {/* ── GUIDED ─────────────────────────────────── */}
+                      {embedActivePath === "guided" && (
+                        <div className="space-y-5">
+                          {/* Progress flow */}
+                          <ol className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500 sm:gap-2 sm:text-xs">
+                            {[
+                              { n: 1, label: "Choose Website" },
+                              { n: 2, label: "Copy Install" },
+                              { n: 3, label: "Paste on Site" },
+                              { n: 4, label: "Go Live" },
+                            ].map((s, idx, arr) => {
+                              const active = guidedStep === s.n;
+                              const done = guidedStep > s.n;
+                              return (
+                                <li key={s.n} className="flex flex-1 items-center">
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                                        active
+                                          ? "bg-emerald-400 text-black"
+                                          : done
+                                          ? "bg-emerald-400/30 text-emerald-300"
+                                          : "bg-zinc-800 text-zinc-500"
+                                      }`}
+                                    >
+                                      {done ? "✓" : s.n}
+                                    </span>
+                                    <span
+                                      className={
+                                        active
+                                          ? "text-emerald-300"
+                                          : done
+                                          ? "text-zinc-400"
+                                          : ""
+                                      }
+                                    >
+                                      {s.label}
+                                    </span>
+                                  </div>
+                                  {idx < arr.length - 1 && (
+                                    <span className="mx-1 flex-1 border-t border-dashed border-zinc-800 sm:mx-2" />
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ol>
+
+                          {/* Platform picker — shown until a platform is chosen */}
+                          {embedPlatform === null && (
+                            <div className="space-y-3">
+                              <div>
+                                <h4 className="text-sm font-bold text-white">
+                                  What kind of website do you have?
+                                </h4>
+                                <p className="text-xs text-zinc-500">
+                                  We'll show you exactly where to paste.
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {PLATFORMS.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (p.id === "developer") {
+                                        setEmbedActivePath("developer");
+                                        return;
+                                      }
+                                      setEmbedPlatform(p.id);
+                                    }}
+                                    className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-left text-sm text-zinc-200 transition hover:border-emerald-400/50 hover:bg-emerald-400/[0.04]"
+                                  >
+                                    {p.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Platform-specific install card */}
+                          {embedPlatform !== null && (() => {
+                            const p =
+                              PLATFORMS.find((x) => x.id === embedPlatform) ||
+                              PLATFORMS.find((x) => x.id === "custom")!;
+                            return (
+                              <div className="space-y-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setEmbedPlatform(null)}
+                                  className="text-[11px] text-zinc-500 transition hover:text-zinc-300"
+                                >
+                                  ← Choose different website
+                                </button>
+                                <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
+                                    {p.name} install
+                                  </div>
+                                  <p className="text-sm text-zinc-200">{p.instruction}</p>
+                                </div>
+                                <div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyText(scriptSnippet, "script")}
+                                    className="w-full rounded-xl bg-emerald-500 px-5 py-4 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400"
+                                  >
+                                    {copiedSnippet === "script"
+                                      ? "Copied ✓ — now paste it on your site"
+                                      : "Copy Install Code"}
+                                  </button>
+                                  <p className="mt-1.5 text-center text-[11px] text-zinc-500">
+                                    Usually takes less than 5 minutes
+                                  </p>
+                                </div>
+                                <div className="rounded-lg border border-zinc-800 bg-black/40 p-3 text-[11px] text-emerald-200/80">
+                                  Once this is pasted, your live storefront will appear on your website.
+                                </div>
+                                <a
+                                  href={previewUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[12px] text-zinc-400 transition hover:text-emerald-300"
+                                >
+                                  Preview what your storefront will look like →
+                                </a>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* ── INSTALL IT MYSELF ──────────────────────── */}
+                      {embedActivePath === "self" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h4 className="text-sm font-bold text-white">
+                              Four steps. No coding required.
+                            </h4>
+                          </div>
+
+                          <ol className="space-y-3 text-sm text-zinc-300">
+                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-black">1</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white">Copy the install code</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyText(scriptSnippet, "script")}
+                                    className="mt-2 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 sm:w-auto"
+                                  >
+                                    {copiedSnippet === "script" ? "Copied ✓" : "Copy Install Code"}
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">2</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white">Paste it on your website</div>
+                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                    Open your site editor and paste it on the page where you want the live storefront to appear.
+                                  </p>
+                                </div>
+                              </div>
+                            </li>
+                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">3</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white">Publish your changes</div>
+                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                    Save and publish so your visitors can see it.
+                                  </p>
+                                </div>
+                              </div>
+                            </li>
+                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">4</span>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white">Test live selling</div>
+                                  <a
+                                    href={previewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2 inline-block rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200 transition hover:border-emerald-400/60 hover:text-emerald-300"
+                                  >
+                                    Preview Storefront →
+                                  </a>
+                                </div>
+                              </div>
+                            </li>
+                          </ol>
+                        </div>
+                      )}
+
+                      {/* ── ADVANCED ───────────────────────────────── */}
+                      {embedActivePath === "advanced" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h4 className="text-sm font-bold text-white">Advanced setup</h4>
+                            <p className="text-xs text-zinc-500">
+                              Raw embed code, iframe fallback, and a local test page.
+                              For technical users or when the platform restricts custom scripts.
+                            </p>
+                          </div>
+
+                          {/* Script tag */}
+                          <div>
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
+                                Script tag <span className="text-zinc-600">· recommended</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText(scriptSnippet, "script")}
+                                className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70 hover:bg-emerald-400/20"
+                              >
+                                {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
+                              </button>
+                            </div>
+                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{scriptSnippet}</code>
+                            </pre>
+                          </div>
+
+                          {/* iframe fallback */}
+                          <div>
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                                iframe <span className="text-zinc-700">· fallback for platforms that block scripts</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText(iframeSnippet, "iframe")}
+                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              >
+                                {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
+                              </button>
+                            </div>
+                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{iframeSnippet}</code>
+                            </pre>
+                          </div>
+
+                          {/* Sizing & responsive notes */}
+                          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
+                            <div className="mb-1 font-bold text-zinc-200">Sizing &amp; responsive notes</div>
+                            <ul className="space-y-0.5 text-[12px] leading-relaxed">
+                              <li><span className="text-zinc-500">·</span> The script-tag widget auto-sizes to its parent container.</li>
+                              <li><span className="text-zinc-500">·</span> The iframe fallback uses width:100% and a 640px min-height. Adjust as needed.</li>
+                              <li><span className="text-zinc-500">·</span> Sandbox attributes are required — Stripe Checkout opens in a new tab via popups-to-escape-sandbox.</li>
+                            </ul>
+                          </div>
+
+                          {/* test.html */}
+                          <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                            <div className="font-bold text-zinc-200 text-xs">
+                              Local test page
+                            </div>
+                            <p className="text-[12px] text-zinc-400">
+                              Save as <code className="rounded bg-zinc-800 px-1 text-emerald-300">test.html</code> and open in any browser to verify the install before touching your real site.
+                            </p>
+                            <pre className="overflow-x-auto rounded-lg border border-zinc-800 bg-black p-2 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{testHtml}</code>
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── FOR DEVELOPERS ─────────────────────────── */}
+                      {embedActivePath === "developer" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h4 className="text-sm font-bold text-white">For developers</h4>
+                            <p className="text-xs text-zinc-500">
+                              GitHub Pages, Vercel, Netlify, React, Next.js, or any custom developer-managed site.
+                            </p>
+                          </div>
+
+                          <ol className="space-y-2 text-sm text-zinc-300">
+                            {[
+                              "Open your website's repo in your editor.",
+                              "Find the page or component where the live storefront should appear.",
+                              "Paste the embed snippet (script tag for plain HTML pages, iframe for React / JSX).",
+                              "Commit your changes.",
+                              "Deploy.",
+                              "Visit the page and verify the widget loads. Try Pay with Card to confirm Stripe routing.",
+                            ].map((step, i) => (
+                              <li key={i} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-bold text-zinc-400">{i + 1}</span>
+                                <span className="text-[13px] leading-relaxed">{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+
+                          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3 text-xs text-emerald-100/80">
+                            <div className="mb-1 font-bold text-emerald-300">React / Next.js tip</div>
+                            JSX doesn't accept a raw <code className="rounded bg-zinc-900 px-1 text-emerald-300">&lt;script&gt;</code> tag inside components. Use the iframe form below — it drops in cleanly anywhere a JSX element is allowed.
+                          </div>
+
+                          {/* Snippet copies for devs */}
+                          <div>
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
+                                Embed snippet (script)
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText(scriptSnippet, "script")}
+                                className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70"
+                              >
+                                {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
+                              </button>
+                            </div>
+                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{scriptSnippet}</code>
+                            </pre>
+                          </div>
+
+                          <div>
+                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                                Embed snippet (iframe — JSX-safe)
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyText(iframeSnippet, "iframe")}
+                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              >
+                                {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
+                              </button>
+                            </div>
+                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{iframeSnippet}</code>
+                            </pre>
+                          </div>
+
+                          {/* Send to my developer */}
+                          <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-xs font-bold text-zinc-200">Send to my developer</div>
+                              <button
+                                type="button"
+                                onClick={() => copyText(developerMessage, "developer-msg")}
+                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                              >
+                                {copiedSnippet === "developer-msg" ? "Copied ✓" : "Copy message"}
+                              </button>
+                            </div>
+                            <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                              <code>{developerMessage}</code>
+                            </pre>
+                            <p className="text-[11px] text-zinc-500">
+                              Email-ready. Paste into a message to your dev or agency.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <ol className="list-inside list-decimal space-y-1 text-[12px] leading-relaxed">
-                    <li>
-                      Save the HTML below as{" "}
-                      <code className="rounded bg-zinc-800 px-1 text-emerald-300">test.html</code>{" "}
-                      on your computer
-                    </li>
-                    <li>Double-click to open it in a browser</li>
-                    <li>
-                      The embed should load. Try clicking{" "}
-                      <span className="text-zinc-200">Pay with Card</span> —
-                      Stripe should open in a new tab with your business name
-                    </li>
-                    <li>
-                      Once it works locally, paste the script tag onto your
-                      real site
-                    </li>
-                  </ol>
-                  <pre className="overflow-x-auto rounded-lg border border-zinc-800 bg-black p-2 text-[11px] leading-relaxed text-zinc-300">
-                    <code>{testHtml}</code>
-                  </pre>
                 </div>
               )}
-            </div>
+            </>
           );
         })()}
 
