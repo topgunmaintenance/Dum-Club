@@ -209,39 +209,52 @@ conflict, the doctrine wins.
 
 ## 1. WHO WE ARE
 
-DUM Club is a live selling marketplace and local business
-discovery platform built on a flat monthly fee model.
+DUM Club is the simplest way for a local business to sell
+direct and keep its own traffic. One flat monthly fee
+replaces the stack of commissions and subscriptions a
+local business already pays to sell online.
 
-We compete directly with Whatnot and Commonsold.
+What we replace, in one bill:
+- Delivery-app commissions (15-30% of every order)
+- Live-selling commissions (8% + processing on every sale)
+- Loyalty software ($50-$300/month)
+- SMS / email retention tools ($20-$200/month)
+- Local-deal and review platforms (pay-to-rank ad spend)
 
-Whatnot charges 8% per sale plus 2.9% processing.
-Commonsold charges per-sale fees plus monthly fees.
-DUM Club charges a flat $29-$99/month. That's it.
-No percentage cut. No per-sale fee. Ever.
+DUM Club charges a flat $29-$99/month for all of it. No
+percentage cut. No per-sale fee. Ever.
 
-We also replace Google Maps for local business discovery —
-showing real deals, live sellers, and Google reviews in one
-place without businesses paying for Google Ads to be seen.
+The product is live selling on the merchant's own page,
+loyalty (DUM Points) on every tier, AI retention on Growth+,
+and local flash sales — all stitched together so the
+merchant keeps their customers instead of renting them.
 
 We are entertainment first. Commerce second.
 We are the loyalty network that replaces direct mail.
 We are the AI social media service replacing agencies.
 
 We are NOT:
+- Another marketplace where merchants rent traffic
 - A delivery platform
 - A crypto app (Solana is future, optional, legal-pending)
 - An AI business launcher (deprecated — v1 positioning)
-- Competing with Angi or Thumbtack
 - Charging per-sale commissions ever
 
-We ARE competing with:
+We ARE positioned against (in expense-replacement context):
+- Delivery apps (15-30% per order vs our flat $29-$99/month)
 - Whatnot (8% + 2.9% per sale vs our flat $29-$99/month)
 - Commonsold (% fees + monthly vs our flat fee only)
-- Google Maps (pay-to-rank vs our free display + deals)
-- Yotpo/Smile.io ($199-$999/month loyalty only vs our
-  full platform with loyalty built into every tier)
+- Loyalty software like Yotpo/Smile.io ($50-$999/month
+  loyalty only vs our loyalty-included flat fee)
+- SMS / email retention tools ($20-$200/month vs our
+  AI retention agent included on Growth+)
+- Google Maps / local-deal platforms (pay-to-rank vs our
+  free display + deals)
 - Direct mail agencies ($500-$2,000/month vs our $49/month
   AI retention program)
+
+Comparisons are framed as "DUM Club replaces this expense
+line," never as "DUM Club is another marketplace."
 
 ---
 
@@ -509,18 +522,43 @@ Founding badge: permanent, never removed
 
 ## 11. COMPETITOR COMPARISON (use ONLY these)
 
-| | Whatnot | Commonsold | Google Maps | DUM Club |
-|---|---|---|---|---|
-| Fee model | 8% + 2.9% | % per sale | Pay for ads | Flat $29-$99/mo |
-| Loyalty | None | Basic | None | Every tier |
-| AI retention | None | None | None | Built in |
-| Local discovery | No | No | Pay to rank | Free + deals |
-| Live selling | Yes | Yes | No | Yes |
-| Social media mgmt | None | None | None | Pro tier |
-| White-label loyalty | None | None | None | $499/mo+ |
+The framing is **expense replacement**, not "another
+marketplace." DUM Club replaces a stack of separate
+monthly bills with one flat fee. Surface comparisons in
+that context, not as feature-by-feature competitor
+takedowns.
 
-Never compare to: Angi, Thumbtack, DoorDash, GrubHub,
-Shopify, Base44, Lovable, Venice.ai
+### Expense lines DUM Club replaces
+
+| Expense line | What businesses pay today | DUM Club |
+|---|---|---|
+| Delivery-app commissions | 15-30% of every order | Flat $29-$99/mo |
+| Live-selling commissions (Whatnot) | 8% + 2.9% per sale | Flat $29-$99/mo |
+| Live-selling commissions (Commonsold) | % per sale + monthly | Flat $29-$99/mo |
+| Loyalty software (Yotpo, Smile.io) | $50-$999/mo | Included every tier |
+| SMS / email retention | $20-$200/mo | Included Growth+ |
+| Local-deal / review platforms | $500-$2,000/mo ad spend | Free display + deals |
+| AI social media agency | $500-$2,000/mo | Included Pro |
+
+### Capability matrix (when a side-by-side is genuinely useful)
+
+| | Live-selling competitors | Loyalty / retention SaaS | Delivery apps | DUM Club |
+|---|---|---|---|---|
+| Fee model | % per sale | Monthly per tool | % per order | Flat $29-$99/mo |
+| Loyalty | None / basic | Their only product | None | Every tier |
+| AI retention | None | Add-on | None | Growth+ |
+| Local discovery | No | No | Listing only | Free + deals |
+| Live selling | Yes | No | No | Yes |
+| Social media mgmt | None | None | None | Pro tier |
+| White-label loyalty | None | Enterprise only | None | $499/mo+ |
+
+Comparisons against delivery apps (DoorDash / Uber Eats /
+GrubHub) are allowed **only** in expense-replacement
+context — citing 15-30% commission as a line a local
+business already pays. Never frame DUM Club as a delivery
+service or as competing with logistics. Never compare to
+Angi, Thumbtack, Shopify, Base44, Lovable, or Venice.ai —
+those are different categories that confuse the pitch.
 
 ---
 
@@ -532,7 +570,9 @@ Shopify, Base44, Lovable, Venice.ai
 3. Never show Solana/blockchain on consumer pages
 4. Never show DUM Points in navbar until Phase 2
 5. Never show DUM Points purchase flow until legal review
-6. Never compare to Angi, Thumbtack, DoorDash
+6. Never compare to Angi, Thumbtack, Shopify (delivery-app
+   commissions are allowed only in expense-replacement
+   framing — never as a logistics competitor)
 7. Never rebuild working infrastructure — surgical edits only
 8. Never combine commits — one feature per commit
 9. Never skip phases — earn each unlock condition
