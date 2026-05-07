@@ -193,8 +193,13 @@ export function LiveActivityTicker() {
       <div
         className="h-full overflow-hidden"
         style={{
-          maskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
+          // Pixel-based fade (24px) instead of percentage so the fade
+          // is wide enough to soften partial words at every viewport
+          // size. The 3% original looked clean on desktop (~36px on a
+          // 1200px screen) but degenerated to ~12px on a 393px phone,
+          // which read as a hard cut with partial letters bleeding.
+          maskImage: "linear-gradient(to right, transparent 0px, black 24px, black calc(100% - 24px), transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0px, black 24px, black calc(100% - 24px), transparent 100%)",
           paddingRight: 36, // room for dismiss button
         }}
         onMouseEnter={() => { pausedRef.current = true; }}

@@ -48,8 +48,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <LiveActivityTicker />
       {children}
       <DumPill />
-      {/* Deploy indicator — low-visibility, bottom-right */}
-      {commitSha && (
+      {/* Deploy indicator — low-visibility, bottom-right.
+          Hidden in production: the SHA is useful while debugging
+          previews / staging, but not something we want shipped on
+          dum.club. Same VERCEL_ENV gate the existing isPreview
+          variable above uses (line ~9), so resolution is consistent.
+          Vercel sets VERCEL_ENV="production" only on production
+          deploys; everywhere else (preview, dev, local) the badge
+          stays. */}
+      {commitSha && process.env.VERCEL_ENV !== "production" && (
         <div
           className="fixed bottom-2 right-2 z-[9999] flex items-center gap-1.5 rounded-md bg-zinc-950/80 px-2 py-1 font-mono text-[9px] text-zinc-700 backdrop-blur-sm"
           title={`Deploy: ${commitSha}${isPreview ? " (preview)" : ""}`}

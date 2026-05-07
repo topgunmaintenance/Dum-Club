@@ -15,7 +15,7 @@ export function DiscoverHero({ isAuthenticated }: { isAuthenticated?: boolean })
   if (isAuthenticated) return null;
 
   return (
-    <section className="mb-8 max-h-[200px] sm:max-h-[260px]">
+    <section className="mb-8">
       <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
         ◆ DUM Club · Local Businesses · Live Sellers
       </div>
