@@ -2752,7 +2752,13 @@ export default function Home() {
                 <span className="hero-text-glow">one simple system.</span>
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-relaxed text-white sm:text-lg">
-                Live selling, loyalty, AI retention, and local deals — all on one flat fee. <span className="text-emerald-400">$29–$99/month.</span> Zero commission. <span className="text-emerald-400">First 100 merchants free.</span>
+                Live selling, loyalty, AI retention, and local flash sales — all in one flat fee.
+              </p>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <span className="text-emerald-400">Flat $29–$99/month.</span> Zero commission. Keep everything you earn.
+              </p>
+              <p className="mx-auto mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
+                First 100 merchants free
               </p>
 
               {/* ── AUDIENCE MODE TOGGLE ─────────────────────────────
@@ -2945,6 +2951,56 @@ export default function Home() {
              moved to /business page (sub-tabs). Homepage stays buyer-
              focused: live grid + search + featured sellers. ── */}
 
+        {/* ── ONE-FEE-REPLACES-FIVE comparison ────────────────────────
+             Visual 5-second scan: the stack of monthly expenses a local
+             business already pays vs. one DUM Club flat fee. Numbers
+             are public-knowledge ranges, not deep claims about any
+             single competitor's pricing. */}
+        <div className="mx-auto mt-16 max-w-5xl px-4">
+          <div className="mb-8 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+              One flat fee instead of five
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Stop paying for five things that don&apos;t talk to each other.
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-400">
+              Live selling, loyalty, retention, deals, your storefront — one system, one bill.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              { name: "Delivery apps", fees: "15–30%", detail: "of every order", muted: true },
+              { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
+              { name: "Loyalty software", fees: "$50–$300", detail: "per month", muted: true },
+              { name: "SMS retention", fees: "$20–$200", detail: "per month", muted: true },
+              { name: "DUM Club", fees: "$29–$99", detail: "flat / month · 0% commission", muted: false },
+            ].map((p) => (
+              <div
+                key={p.name}
+                className={`rounded-2xl border p-5 text-center backdrop-blur-sm transition ${
+                  p.muted
+                    ? "border-red-500/15 bg-zinc-900/60"
+                    : "border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_32px_rgba(0,255,163,0.18)]"
+                }`}
+              >
+                <div className={`mb-2 text-[10px] font-bold uppercase tracking-[0.18em] ${p.muted ? "text-zinc-400" : "text-emerald-400"}`}>
+                  {p.name}
+                </div>
+                <div className={`font-mono text-2xl font-extrabold ${p.muted ? "text-red-400/80" : "text-emerald-400"}`}>
+                  {p.fees}
+                </div>
+                <div className="mt-2 text-[11px] text-zinc-400">{p.detail}</div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-center text-sm text-zinc-300">
+            One bill. <span className="font-bold text-emerald-400">Keep everything you earn.</span>
+          </p>
+        </div>
+
         {/* ── SELLER BANNER — compact CTA pointing to /business ── */}
         <div className="mx-auto mt-12 max-w-5xl">
           <Link
@@ -2955,9 +3011,9 @@ export default function Home() {
               <span className="text-2xl">🏪</span>
             </div>
             <div className="flex-1">
-              <div className="text-lg font-extrabold text-white">Selling on Whatnot? Keep everything you earn instead.</div>
+              <div className="text-lg font-extrabold text-white">Tired of juggling five tools just to sell online?</div>
               <p className="mt-1 text-sm text-zinc-400">
-                Flat $29–$99/mo. Zero commission. First 100 merchants free. See pricing, calculators, and comparisons.
+                Flat $29–$99/mo. Zero commission. First 100 merchants free. See pricing, calculators, and the full breakdown.
               </p>
             </div>
             <span className="shrink-0 rounded-xl bg-emerald-400 px-5 py-2.5 text-[12px] font-bold text-black transition group-hover:bg-emerald-300">

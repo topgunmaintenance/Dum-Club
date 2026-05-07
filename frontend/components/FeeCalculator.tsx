@@ -92,10 +92,10 @@ export function FeeCalculator() {
             Fee calculator
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-            See what you&apos;d save.
+            See what you&apos;d save on commission alone.
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            Drag the slider. We&apos;ll show you what Whatnot and Commonsold would take out of every sale — and what DUM Club charges instead.
+            Drag the slider. This is just the live-selling line on your bill — DUM Club replaces loyalty, retention, and deal-platform tools too, all in the same flat fee.
           </p>
         </div>
 

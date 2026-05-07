@@ -192,39 +192,40 @@ function OverviewTab({
 }) {
   return (
     <>
-      {/* Fee comparison cards */}
+      {/* Fee comparison cards — five expense lines collapsed into one */}
       <section className="mb-16">
         <div className="mb-10 text-center">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
-            What you really pay
+            One flat fee instead of five
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            On $10,000/month in sales
+            Replace five expense lines with one.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-500">
-            Other platforms take a cut of every transaction. DUM Club charges one flat fee — no matter how much you sell.
+            Local businesses already pay for delivery apps, live selling, loyalty, retention, and deal platforms. DUM Club replaces all five with one flat monthly fee.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            { name: "Whatnot", fees: "~$1,090", detail: "8% + 2.9% + $0.30 per sale", muted: true },
-            { name: "Commonsold", fees: "$500+", detail: "% per sale + monthly", muted: true },
-            { name: "Google Maps", fees: "$500–$2,000", detail: "monthly ads to rank", muted: true },
-            { name: "DUM Club", fees: "$29–$99", detail: "flat monthly, 0% per sale", muted: false },
+            { name: "Delivery apps", fees: "15–30%", detail: "of every order", muted: true },
+            { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
+            { name: "Loyalty software", fees: "$50–$300", detail: "per month", muted: true },
+            { name: "SMS retention", fees: "$20–$200", detail: "per month", muted: true },
+            { name: "DUM Club", fees: "$29–$99", detail: "flat / month · 0% commission", muted: false },
           ].map((p) => (
             <div
               key={p.name}
-              className={`rounded-2xl border p-6 text-center backdrop-blur-sm transition ${
+              className={`rounded-2xl border p-5 text-center backdrop-blur-sm transition ${
                 p.muted
-                  ? "border-red-500/20 bg-zinc-900/60"
+                  ? "border-red-500/15 bg-zinc-900/60"
                   : "border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_40px_rgba(0,255,163,0.2)]"
               }`}
             >
-              <div className={`mb-2 text-[10px] font-bold uppercase tracking-[0.2em] ${p.muted ? "text-zinc-400" : "text-emerald-400"}`}>
+              <div className={`mb-2 text-[10px] font-bold uppercase tracking-[0.18em] ${p.muted ? "text-zinc-400" : "text-emerald-400"}`}>
                 {p.name}
               </div>
-              <div className={`font-mono text-3xl font-extrabold ${p.muted ? "text-red-400/80" : "text-emerald-400"}`}>
+              <div className={`font-mono text-2xl font-extrabold ${p.muted ? "text-red-400/80" : "text-emerald-400"}`}>
                 {p.fees}
               </div>
               <div className="mt-2 text-[11px] text-zinc-400">{p.detail}</div>
@@ -232,8 +233,8 @@ function OverviewTab({
           ))}
         </div>
         <p className="mt-8 text-center text-sm text-zinc-300">
-          Sell $10,000 or $100,000 a month —{" "}
-          <span className="font-bold text-emerald-400">your fee never changes.</span>
+          One bill, no commissions —{" "}
+          <span className="font-bold text-emerald-400">keep everything you earn.</span>
         </p>
       </section>
 
@@ -242,16 +243,16 @@ function OverviewTab({
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 px-8 py-12 backdrop-blur-sm sm:px-12 sm:py-16">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">How it works</div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Why sellers leave Whatnot for DUM Club.
+            Why local businesses choose DUM Club.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-200 sm:text-lg">
             One flat fee. Zero commission. Customers who come back.
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "No 8% Tax on Every Sale", desc: "Whatnot charges 8% + 2.9%. We charge $29–$99/month. Flat. Forever. First 100 merchants free." },
-              { n: "02", title: "Stripe Pays You Direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
-              { n: "03", title: "Customers Come Back Automatically", desc: "DUM Points turn one-time buyers into regulars. No other live-selling platform has this." },
+              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8–30% of every order. We charge $29–$99/month. Flat. Forever. First 100 merchants free." },
+              { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
+              { n: "03", title: "Customers come back automatically", desc: "DUM Points and AI retention bring one-time buyers back. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
               <div
                 key={step.n}
