@@ -47,8 +47,11 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
 
       {/* Category chips (mobile) / dropdown (desktop) + filters */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Category — chips on mobile, dropdown on desktop */}
-        <div className="flex gap-1 overflow-x-auto sm:hidden [&::-webkit-scrollbar]:hidden">
+        {/* Category — chips on mobile, dropdown on desktop.
+            w-full + min-w-0 ensure overflow-x-auto actually engages on mobile.
+            Without these, the chip row sized to its content and clipped past
+            the viewport edge (HOME → "HO") instead of scrolling. */}
+        <div className="flex w-full min-w-0 gap-1 overflow-x-auto sm:hidden sm:w-auto [&::-webkit-scrollbar]:hidden">
           {DISCOVER_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
