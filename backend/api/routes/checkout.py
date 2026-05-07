@@ -290,13 +290,14 @@ def process_order_paid(
     if offer_id:
         try:
             offer_res = supabase.table("offers").select(
-                "id, project_id, quantity_sold, quantity_available, unlimited_inventory"
+                "id, title, project_id, quantity_sold, quantity_available, unlimited_inventory"
             ).eq("id", offer_id).limit(1).execute()
             if offer_res.data:
                 o = offer_res.data[0]
                 new_sold = (o.get("quantity_sold") or 0) + 1
                 qty_available = o.get("quantity_available") or 0
                 is_unlimited = o.get("unlimited_inventory", True)
+                offer_title = o.get("title") or "Item"
                 supabase.table("offers").update(
                     {"quantity_sold": new_sold}
                 ).eq("id", offer_id).execute()
@@ -321,13 +322,19 @@ def process_order_paid(
                     },
                     "timestamp": time.time(),
                 })
-                if sold_out:
-                    broadcast_sync(_proj_id_for_broadcast, {
-                        "type": "item_sold",
-                        "data": {"offer_id": offer_id, "title": "Item"},
-                        "timestamp": time.time(),
-                    })
-                print(f"[paid] ✓ BROADCAST: item_updated for offer={offer_id}, sold_out={sold_out}")
+                # Sale-celebration broadcast — fires on EVERY paid sale,
+                # not only sold-out, so the embed's toast + emoji burst
+                # (Step 8 of the embed build, wired to onItemSold) renders
+                # on every purchase. The sold_out boolean above stays
+                # carried inside item_updated for inventory sync; this
+                # event is purely for the celebration UI. Title comes
+                # from the offers row, not a hardcoded placeholder.
+                broadcast_sync(_proj_id_for_broadcast, {
+                    "type": "item_sold",
+                    "data": {"offer_id": offer_id, "title": offer_title},
+                    "timestamp": time.time(),
+                })
+                print(f"[paid] ✓ BROADCAST: item_updated + item_sold for offer={offer_id} ({offer_title}), sold_out={sold_out}")
         except Exception as inv_err:
             print(f"[paid] ✗ Inventory update failed (non-fatal): {inv_err}")
 
