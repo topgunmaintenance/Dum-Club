@@ -449,7 +449,7 @@ export default function EmbedShellPage() {
       const rpcUrl =
         process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
         process.env.NEXT_PUBLIC_SOLANA_RPC ||
-        "https://api.mainnet-beta.solana.com";
+        "https://api.devnet.solana.com";
 
       const source = project?.is_live ? "live_sol" : "sol";
 
