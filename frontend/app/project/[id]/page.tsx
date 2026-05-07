@@ -28,6 +28,11 @@ import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
+import { JsonLd } from "../../../components/JsonLd";
+import {
+  buildLocalBusinessSchema,
+  buildBroadcastEventSchema,
+} from "../../../lib/schemaOrg";
 import { captureInquiry, captureOfferClick, capturePurchase } from "../../../lib/automation";
 import {
   LineChart,
@@ -3532,6 +3537,19 @@ return (
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
+    {/* Schema.org JSON-LD — invisible to humans, primary signal for
+        Google rich results and AI crawlers (Claude, GPT, Perplexity,
+        Gemini). Emits LocalBusiness with embedded Offers, plus a
+        BroadcastEvent only while is_live=true (eligibility gate for
+        Google's "Live" badge). Pure additive; no consumer-visible UI. */}
+    {project && (
+      <JsonLd
+        data={[
+          buildLocalBusinessSchema(project, offers),
+          buildBroadcastEventSchema(project),
+        ]}
+      />
+    )}
     <Starfield count={50} />
     <SectionNav refreshKey={projectView} mode={projectView} />
     <div className="relative z-[1] mx-auto max-w-6xl">
