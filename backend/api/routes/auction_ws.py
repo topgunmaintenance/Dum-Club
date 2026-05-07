@@ -126,9 +126,32 @@ async def auction_events(websocket: WebSocket, project_id: str):
     """
     WebSocket for real-time auction events.
     Clients connect and receive push updates for bids, timers, and auction state.
+
+    Accepts either a project UUID or slug as the path param. Frontend
+    pages send whatever the URL has — /project/<slug> sends the slug,
+    /embed/<slug> resolves to UUID first. Without normalization here,
+    slug viewers and UUID viewers (and the broadcast_sync calls from
+    process_order_paid which use offers.project_id, a UUID FK) all
+    landed in DIFFERENT _connections buckets — so live inventory
+    updates from a paid order never reached /project/<slug> viewers
+    even though they were connected.
+
+    Resolve to canonical UUID once on connect and key _connections,
+    chat broadcasts, viewer counts, and the project lookup on it.
     """
     await websocket.accept()
-    print(f"[auction-ws] Client connected for project {project_id}")
+    print(f"[auction-ws] Client connecting for project param={project_id}")
+
+    # Normalize to canonical UUID. Falls back to the original input if
+    # no project matches — preserves prior behavior for unknown projects
+    # (clients still connect; backend never broadcasts to that key, so
+    # they get a quiet, eventless connection — same as before this fix).
+    from api.routes.projects import resolve_project_uuid
+    resolved = resolve_project_uuid(get_client(), project_id)
+    if resolved:
+        if resolved != project_id:
+            print(f"[auction-ws] Resolved {project_id} → {resolved}")
+        project_id = resolved
 
     # Register connection
     if project_id not in _connections:
