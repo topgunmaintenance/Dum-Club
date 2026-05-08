@@ -1084,7 +1084,7 @@ export default function MerchantPage() {
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Revenue</div>
-              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue ?? 0).toFixed(2)}</div>
+              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
               <div className="text-xs text-zinc-500">you keep 100% · 0% commission</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
