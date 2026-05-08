@@ -27,7 +27,26 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Outer gate: waits until Privy's `ready` flag flips before rendering the
+// inner provider that calls useSolanaWallets(). Privy's embedded-wallet
+// connector logs a noisy "Wallet proxy not initialized" error if it's
+// invoked before the SDK's internal proxy iframe finishes mounting; we
+// avoid that by simply not calling the hook until then. While we're
+// pre-ready we expose the no-op auth context so consumers can render
+// safely.
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { ready } = usePrivy();
+  if (!ready) {
+    return (
+      <AuthContext.Provider value={_AUTH_NOOP}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
+  return <AuthProviderInner>{children}</AuthProviderInner>;
+}
+
+function AuthProviderInner({ children }: { children: React.ReactNode }) {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
   const { wallets } = useSolanaWallets();
   const [dumUser, setDumUser] = useState<DumUser | null>(null);
@@ -165,7 +184,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 const _AUTH_NOOP: AuthContextType = {
   user: null,
-  loading: false,
+  // While Privy is still initialising we report `loading: true` so consumers
+  // (e.g. Navbar's "Loading…" affordance) can show a neutral state instead
+  // of flashing the signed-out CTA.
+  loading: true,
   isAdmin: false,
   login: () => {},
   logout: async () => {},

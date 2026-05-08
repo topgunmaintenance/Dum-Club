@@ -13,7 +13,7 @@ export function MerchantStrip() {
       <p className="text-base font-semibold text-white sm:text-lg">
         Own a local business?
       </p>
-      <p className="mt-2 text-sm text-zinc-300 sm:text-base">
+      <p className="mt-2 text-sm text-zinc-100 sm:text-base">
         Flat $29/mo. 0% commission, always. Founding merchants get preferred pricing after launch.
       </p>
       <Link

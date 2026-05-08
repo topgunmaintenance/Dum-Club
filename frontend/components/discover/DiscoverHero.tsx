@@ -24,7 +24,7 @@ export function DiscoverHero({ isAuthenticated }: { isAuthenticated?: boolean })
         Active local businesses and live deals nearby.
       </h1>
 
-      <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+      <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-200 sm:text-base">
         Live storefronts, flash deals, and loyalty rewards on one platform.
       </p>
 

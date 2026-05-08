@@ -523,7 +523,15 @@ export default function MerchantPage() {
   // ── Merchant dashboard ──
   if (!merchant) return null;
 
-  const qrUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/business/${merchant.id}`;
+  // Build the QR target URL. During SSR `window` is undefined; fall back to
+  // the public site host so the URL is always absolute (Google's old chart
+  // API is dead, the new generator we use below requires a real URL or it
+  // 404s the image).
+  const qrOrigin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_SITE_URL || "https://dum.club";
+  const qrUrl = `${qrOrigin}/business/${merchant.id}`;
 
   // ── Onboarding progress ──
   // A merchant who just signed up has an account + a founding spot. They
@@ -912,18 +920,33 @@ export default function MerchantPage() {
               </div>
 
               {hasRetrieveError ? (
-                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-                  <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
+                // Soft amber, not red. The "Payment Connections" panel
+                // above already shows Stripe as CONNECTED from the cached
+                // merchant row, so a retrieve failure here is a transient
+                // network blip — not a "your account is broken" event.
+                // The amber colour reflects "we'll re-check"; the inline
+                // Retry button gives the merchant agency without forcing
+                // a full page refresh.
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                  <div className="text-xs font-bold text-amber-300">Couldn&apos;t reach Stripe just now</div>
                   <div className="mt-1 text-[11px] text-zinc-400">
-                    We couldn&apos;t reach Stripe just now. This is usually temporary — refresh in a moment, or contact support if it keeps happening.
+                    Your Stripe connection is fine. We just couldn&apos;t pull the live verification status this time. Try again in a moment.
                   </div>
-                  {/* Raw retrieve error stays available for support
-                      diagnosis but doesn't lead the surface. */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const t = await getToken();
+                      if (t) loadStripeStatus(t);
+                    }}
+                    className="mt-3 inline-flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-300 transition hover:border-amber-400/50 hover:text-amber-200"
+                  >
+                    Retry verification
+                  </button>
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-amber-300/50 hover:text-amber-300/80">
                       Show technical details
                     </summary>
-                    <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                    <div className="mt-1.5 font-mono text-[10px] text-amber-300/60 break-all">
                       {stripeStatusError}
                     </div>
                   </details>
@@ -1124,9 +1147,13 @@ export default function MerchantPage() {
           <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Your QR Code</h3>
           <div className="flex items-center gap-4">
             <div className="flex h-32 w-32 items-center justify-center rounded-xl border border-zinc-700 bg-white p-2">
-              {/* QR code via Google Charts API */}
+              {/* QR code generator — Google's chart.googleapis.com endpoint
+                  was retired in 2024 and now 404s, which is why this image
+                  was rendering as a broken placeholder. Switched to the
+                  free api.qrserver.com generator (same query shape, returns
+                  a PNG of the encoded URL). */}
               <img
-                src={`https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(qrUrl)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
                 alt="QR Code"
                 className="h-full w-full"
               />
@@ -1135,7 +1162,7 @@ export default function MerchantPage() {
               <p className="text-sm text-zinc-400">Print this and display at your register.</p>
               <p className="text-xs text-zinc-500 mt-1">Customers scan to earn DUM Points on every visit.</p>
               <a
-                href={`https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=${encodeURIComponent(qrUrl)}`}
+                href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrUrl)}`}
                 download="dum-club-qr.png"
                 className="mt-3 inline-block rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold text-white transition hover:border-zinc-600"
               >
