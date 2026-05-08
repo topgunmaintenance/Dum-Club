@@ -2748,144 +2748,40 @@ export default function Home() {
                 </div>
               )}
               <h1 className="text-[clamp(36px,7vw,64px)] font-extrabold leading-[1.03] tracking-[-0.02em] text-white">
-                Replace all those dumb expenses with{" "}
-                <span className="hero-text-glow">one simple system.</span>
+                Turn Your Website Into a{" "}
+                <span className="hero-text-glow">Live Selling Machine.</span>
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-relaxed text-white sm:text-lg">
-                Live selling, loyalty, AI retention, and local flash sales — all in one flat fee.
+                Add live selling, flash deals, loyalty rewards, and customer retention to your business — for one flat monthly fee.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-                <span className="text-emerald-400">Flat $29–$99/month.</span> Zero commission. Keep everything you earn.
+                <span className="text-emerald-400">Flat $29–$99/month.</span> 0% commission. Keep every sale.
               </p>
               <p className="mx-auto mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
                 First 100 merchants free
               </p>
 
-              {/* ── AUDIENCE MODE TOGGLE ─────────────────────────────
-                   Two-sided-marketplace disambiguator. Merchant mode
-                   shows the signup CTAs; customer mode shows the local
-                   search bar + category chips. Each visitor sees only
-                   what they came for. Default = merchant per Phase-1
-                   goal of 100 founding sellers. */}
-              <div className="mx-auto mt-8 inline-flex items-center rounded-full border border-zinc-700/60 bg-zinc-950/60 p-1 text-[12px] font-bold uppercase tracking-[0.12em]">
-                <button
-                  type="button"
-                  onClick={() => setHeroMode("merchant")}
-                  className={`rounded-full px-4 py-2 transition ${
-                    heroMode === "merchant"
-                      ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                  aria-pressed={heroMode === "merchant"}
+              {/* ── MERCHANT-FIRST CTAs ───────────────────────────────
+                   Hero is permanently merchant-mode. The old audience
+                   toggle ("I'm selling / I'm shopping") added friction
+                   and confused the 5-second read for a non-technical
+                   business owner. Buyer-side discovery still has a small
+                   entry point further down (Discover link below the
+                   trust strip) and a full-fat home at /discover. */}
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
+                <Link
+                  href="/merchant"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
                 >
-                  I&apos;m selling
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeroMode("customer")}
-                  className={`rounded-full px-4 py-2 transition ${
-                    heroMode === "customer"
-                      ? "bg-emerald-400 text-black shadow-[0_0_16px_rgba(0,255,163,0.25)]"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                  aria-pressed={heroMode === "customer"}
+                  Activate DUM Live →
+                </Link>
+                <a
+                  href="#how-it-works"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
                 >
-                  I&apos;m shopping
-                </button>
+                  See How It Works
+                </a>
               </div>
-
-              {heroMode === "merchant" ? (
-                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
-                  <Link
-                    href="/merchant"
-                    className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
-                  >
-                    Claim Your Free Spot →
-                  </Link>
-                  <Link
-                    href="/business"
-                    className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
-                  >
-                    See Pricing →
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  {/* ── SERVICE FINDER SEARCH BAR ────────────────────
-                       Google/Yelp-style universal search. Each submit
-                       runs the same homepage search the chip clicks use
-                       — showing DUM Club matches when they exist, else
-                       top-rated nearby businesses from Google Places
-                       (with free Maps-URL directions). */}
-
-                  {/* Location badge — static "Morris County, NJ" for Phase 0B. */}
-                  <div className="mx-auto mt-8 mb-3 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/60 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    Near: Morris County, NJ
-                  </div>
-
-                  <form
-                    className="mx-auto w-full max-w-2xl"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      runHomepageSearch(heroSearch);
-                    }}
-                  >
-                    <div className="relative">
-                      {/* Magnifier icon */}
-                      <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="7" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                      </span>
-                      <input
-                        type="search"
-                        value={heroSearch}
-                        onChange={(e) => setHeroSearch(e.target.value)}
-                        placeholder={heroPlaceholders[heroPlaceholderIdx]}
-                        aria-label="Search local services"
-                        className="w-full rounded-2xl border border-zinc-600/50 bg-zinc-800/60 py-4 pl-14 pr-28 text-base text-white placeholder-zinc-500 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/30 sm:text-lg"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!heroSearch.trim()}
-                        className="absolute right-2 top-1/2 flex h-10 -translate-y-1/2 items-center justify-center rounded-xl bg-emerald-400 px-5 text-[12px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.25)] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Search →
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* ── QUICK-SEARCH PILLS ─────────────────────────── */}
-                  <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-                    {[
-                      { icon: "🍕", label: "Pizza & Food", query: "pizza" },
-                      { icon: "🚗", label: "Auto Services", query: "auto detailing" },
-                      { icon: "🏠", label: "Home Services", query: "home services" },
-                      { icon: "💇", label: "Beauty & Wellness", query: "beauty salon" },
-                      { icon: "🐕", label: "Pet Services", query: "pet services" },
-                      { icon: "📸", label: "Photography", query: "photographer" },
-                      { icon: "🛍️", label: "Live Sales", query: "live selling" },
-                      { icon: "✈️", label: "Flights", query: "flight school" },
-                      { icon: "🔧", label: "A&P Mechanic", query: "aircraft maintenance" },
-                    ].map((pill) => (
-                      <button
-                        key={pill.label}
-                        type="button"
-                        onClick={() => runHomepageSearch(pill.query)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/40 bg-zinc-800/80 px-3.5 py-1.5 text-[12px] text-zinc-300 transition hover:border-emerald-400/40 hover:bg-zinc-800 hover:text-white"
-                      >
-                        <span aria-hidden="true">{pill.icon}</span>
-                        <span>{pill.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
 
             <div className="mx-auto max-w-3xl text-center">
@@ -2902,6 +2798,18 @@ export default function Home() {
               <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
                 <p className="text-[13px] text-zinc-400">
                   Stripe checkout · Verified merchants · Live in 60 seconds
+                </p>
+                {/* Buyer entry point — small link only. The homepage is
+                    merchant-first; full buyer-side discovery lives at
+                    /discover. */}
+                <p className="text-[12px] text-zinc-500">
+                  Looking for local deals?{" "}
+                  <Link
+                    href="/discover"
+                    className="text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                  >
+                    Search Discover →
+                  </Link>
                 </p>
                 {/* Payment icons — consumer-facing payment methods only.
                     Solana removed per Phase 0A and consolidated on /technology. */}
@@ -2944,6 +2852,135 @@ export default function Home() {
         {/* ── Platform Activity ── */}
         <div className="mx-auto mt-6 max-w-4xl">
           <PlatformActivity projectCount={allPublicProjects.length} />
+        </div>
+
+        {/* ── VISUAL PRODUCT MOMENT ─────────────────────────────────
+             Static styled mockup of the embed UI as it appears on a
+             merchant's own website. NO real data, NO API calls, NO
+             IVS. The "Preview" badge is permanent so this can never
+             be confused with a real sale. Sample copy is illustrative
+             only — these are not live offers. */}
+        <div className="mx-auto mt-16 max-w-5xl px-4">
+          <div className="mb-6 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+              What it looks like on your site
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              A live storefront, embedded right where your customers already are.
+            </h2>
+          </div>
+
+          <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4 shadow-[0_0_60px_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-6">
+            {/* Preview badge */}
+            <div className="absolute right-4 top-4 z-10 rounded-full border border-zinc-700 bg-zinc-900/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              Preview
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
+              {/* Left: live video panel placeholder */}
+              <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
+                {/* LIVE badge */}
+                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-red-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                  </span>
+                  Live
+                </div>
+                {/* Viewer count */}
+                <div className="absolute right-4 top-4 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-mono text-zinc-300 backdrop-blur-sm">
+                  47 watching
+                </div>
+                {/* Center play icon — purely decorative */}
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                </div>
+                {/* +20 DUM Points toast */}
+                <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-zinc-950/90 px-3 py-2 text-[11px] font-bold text-emerald-300 shadow-lg backdrop-blur-sm">
+                  <span aria-hidden="true">✨</span>
+                  <span>
+                    <span className="text-emerald-200">Customer earned 20 DUM Points</span>
+                    <span className="ml-1 text-emerald-300/60 font-normal">· loyalty rewards</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Right: pinned offer card */}
+              <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
+                  Now showing
+                </div>
+                <h3 className="text-lg font-semibold leading-tight text-white">
+                  Slow Hour Flash Deal
+                </h3>
+                <p className="mt-1 text-sm text-zinc-400">
+                  Limited-time pricing while we&apos;re live.
+                </p>
+                <div className="mt-4 flex items-baseline justify-between gap-2">
+                  <span className="font-mono text-2xl font-bold text-emerald-400">$24.00</span>
+                  <span className="text-xs text-zinc-500">Only 5 left</span>
+                </div>
+                {/* Countdown */}
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-400">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  Ends in 14:32
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="mt-4 w-full cursor-default rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black opacity-90"
+                  aria-label="Buy Now button — preview only"
+                >
+                  Buy Now
+                </button>
+                <p className="mt-2 text-center text-[10px] uppercase tracking-[0.15em] text-zinc-600">
+                  Stripe checkout · No commission
+                </p>
+              </div>
+            </div>
+
+            {/* Chat strip */}
+            <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                Live chat
+              </div>
+              <div className="space-y-1.5 text-[12px]">
+                <div>
+                  <span className="font-semibold text-emerald-300">Mike:</span>{" "}
+                  <span className="text-zinc-300">do you ship to NJ?</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-emerald-300">Sara:</span>{" "}
+                  <span className="text-zinc-300">just bought one — thanks!</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-emerald-300">Daniel:</span>{" "}
+                  <span className="text-zinc-300">is the deal still live?</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-4 text-center text-[12px] text-zinc-500">
+            Sample preview. Embed on any business website with a single script tag.
+          </p>
+        </div>
+
+        {/* ── PAIN SECTION ──────────────────────────────────────────
+             One short paragraph. The point is to land the merchant
+             insight in five seconds: their website already exists,
+             it just doesn't sell. */}
+        <div className="mx-auto mt-20 max-w-3xl px-4 text-center">
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            You already paid for your website.{" "}
+            <span className="text-emerald-400">Now let it sell live.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+            Most business websites sit there like digital brochures. DUM Live adds live offers, Stripe checkout, loyalty rewards, and customer reactivation — without sending your traffic somewhere else.
+          </p>
         </div>
 
         {/* ── FeeCalculator, PricingTiers, RetentionSection, WhatnotPitch,
@@ -2996,61 +3033,155 @@ export default function Home() {
             ))}
           </div>
 
-          <p className="mt-8 text-center text-sm text-zinc-300">
-            One bill. <span className="font-bold text-emerald-400">Keep everything you earn.</span>
+          <p className="mt-8 text-center text-base font-semibold text-zinc-200">
+            One system. One bill.{" "}
+            <span className="text-emerald-400">Keep your revenue.</span>
           </p>
         </div>
 
-        {/* ── SELLER BANNER — compact CTA pointing to /business ── */}
-        <div className="mx-auto mt-12 max-w-5xl">
-          <Link
-            href="/business"
-            className="group flex flex-col items-center gap-4 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.06] to-zinc-950 p-8 text-center transition hover:border-emerald-400/40 hover:shadow-[0_0_40px_rgba(0,255,163,0.08)] sm:flex-row sm:text-left"
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10">
-              <span className="text-2xl">🏪</span>
+        {/* ── USE-CASE CARDS ──────────────────────────────────────
+             Five concrete local-business angles. Each card answers
+             the question "what would I actually use DUM Live for?"
+             in one sentence. Industries are deliberately broad — a
+             non-technical owner should see themselves in one of
+             these in under five seconds. */}
+        <div className="mx-auto mt-20 max-w-6xl px-4">
+          <div className="mb-10 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+              Built for local business
             </div>
-            <div className="flex-1">
-              <div className="text-lg font-extrabold text-white">Tired of juggling five tools just to sell online?</div>
-              <p className="mt-1 text-sm text-zinc-400">
-                Flat $29–$99/mo. Zero commission. First 100 merchants free. See pricing, calculators, and the full breakdown.
-              </p>
-            </div>
-            <span className="shrink-0 rounded-xl bg-emerald-400 px-5 py-2.5 text-[12px] font-bold text-black transition group-hover:bg-emerald-300">
-              For Business →
-            </span>
-          </Link>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              What you can sell live.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                emoji: "🍕",
+                title: "Restaurants",
+                copy: "Go live during slow hours and sell limited-time specials.",
+              },
+              {
+                emoji: "🔧",
+                title: "Auto shops & mechanics",
+                copy: "Offer same-day service deals, inspections, seasonal promos, or maintenance specials.",
+              },
+              {
+                emoji: "🏠",
+                title: "HVAC & contractors",
+                copy: "Run flash booking offers when the schedule has gaps.",
+              },
+              {
+                emoji: "💪",
+                title: "Gyms & wellness",
+                copy: "Sell memberships, classes, recovery sessions, or event promos live.",
+              },
+              {
+                emoji: "🛍️",
+                title: "Retail & local shops",
+                copy: "Move inventory with live product drops and loyalty rewards.",
+              },
+            ].map((u) => (
+              <div
+                key={u.title}
+                className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
+              >
+                <div className="mb-3 text-3xl" aria-hidden="true">
+                  {u.emoji}
+                </div>
+                <div className="mb-2 text-base font-bold text-white">{u.title}</div>
+                <p className="text-sm leading-relaxed text-zinc-400">{u.copy}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Bottom CTA */}
+        {/* ── HOW IT WORKS ─────────────────────────────────────────
+             Anchor target for the hero's "See How It Works" CTA.
+             Four short steps, no jargon. Step 4 mentions DUM Points
+             as a loyalty rewards primitive only — no token framing. */}
+        <div id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24">
+          <div className="mb-10 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+              How it works
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Four steps. No developer required.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                n: "01",
+                title: "Connect Stripe",
+                copy: "One click. Money goes straight to your bank — never to us.",
+              },
+              {
+                n: "02",
+                title: "Create a live offer",
+                copy: "Pin a flash deal, set inventory, and you’re ready to go live.",
+              },
+              {
+                n: "03",
+                title: "Add DUM Live to your site",
+                copy: "Paste one script tag. Or list on DUM Club — your choice.",
+              },
+              {
+                n: "04",
+                title: "Customers buy and come back",
+                copy: "Every purchase earns DUM Points — loyalty rewards that bring them back.",
+              },
+            ].map((step) => (
+              <div
+                key={step.n}
+                className="relative overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/15 font-mono text-sm font-extrabold text-emerald-400">
+                  {step.n}
+                </div>
+                <div className="mt-3 text-base font-bold text-white">{step.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{step.copy}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FINAL CTA ────────────────────────────────────────────
+             Single closing block. The previous page had a separate
+             "seller banner" + "bottom CTA" — collapsed into one to
+             match the user-direction "less clutter, clear CTA
+             hierarchy." Pricing CTA points at /business; Activate
+             CTA points at /merchant. */}
         <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Smart sellers don&apos;t pay per sale
+              Ready to sell on your own site
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Sell live.{" "}
-              <span className="text-emerald-400">Keep everything.</span>
+              Ready to turn your website into a{" "}
+              <span className="text-emerald-400">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
-              Flat $29–$99/mo. Zero commission. AI-powered customer retention. The first 100 merchants join free.
+              Flat $29–$99/month. 0% commission. The first 100 merchants join free.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/merchant"
-                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
+                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
               >
-                Claim Your Free Spot →
+                Activate DUM Live →
               </Link>
               <Link
-                href="/discover"
-                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                href="/business"
+                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-400"
               >
-                Browse Deals
+                See Pricing
               </Link>
             </div>
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
-              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — redeemable at <strong className="text-zinc-300">any</strong> business on the platform. Customers come back automatically.
+              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-zinc-300">any</strong> business on the network.
             </div>
           </div>
         </div>
