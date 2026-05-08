@@ -1749,7 +1749,7 @@ function PricingTiers() {
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Pricing</div>
       <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-        Flat fee. <span className="text-emerald-400">Zero commission. Ever.</span>
+        Flat fee. <span className="text-emerald-400">0% commission. Ever.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-zinc-400">
         The first 100 merchants join free and lock in $29/mo forever. No percentage cut on any sale.
@@ -2703,8 +2703,13 @@ export default function Home() {
       <Starfield count={60} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
-        {/* ── LIVE NOW ── hidden when no real live projects */}
-        <LiveNowSection projects={liveNowProjects} />
+        {/* ── LIVE NOW ── hidden when no real live projects.
+             Wrapping in an explicit length check stops the component
+             tree from emitting *anything* (margins, wrappers, layout
+             reservations) when the projects list is empty. */}
+        {liveNowProjects.length > 0 && (
+          <LiveNowSection projects={liveNowProjects} />
+        )}
 
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
@@ -2757,18 +2762,16 @@ export default function Home() {
               <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
                 <span className="text-emerald-400">Flat $29–$99/month.</span> 0% commission. Keep every sale.
               </p>
-              <p className="mx-auto mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
-                First 100 merchants free
-              </p>
 
               {/* ── MERCHANT-FIRST CTAs ───────────────────────────────
-                   Hero is permanently merchant-mode. The old audience
-                   toggle ("I'm selling / I'm shopping") added friction
-                   and confused the 5-second read for a non-technical
-                   business owner. Buyer-side discovery still has a small
-                   entry point further down (Discover link below the
-                   trust strip) and a full-fat home at /discover. */}
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
+                   One primary green button. Secondary action demoted to
+                   a small text link beneath so the green CTA owns the
+                   eye on first scan. The old audience toggle ("I'm
+                   selling / I'm shopping") and the redundant founding
+                   caption ("First 100 merchants free" — already in the
+                   pill above) were removed in the homepage audit pass
+                   to lower the 5-second-read bar. */}
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <Link
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
@@ -2777,9 +2780,9 @@ export default function Home() {
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-500 transition hover:text-emerald-400"
                 >
-                  See How It Works
+                  See how it works →
                 </a>
               </div>
             </div>
@@ -2794,40 +2797,16 @@ export default function Home() {
               <ProofOfMotion fallback={<FounderNote />} />
 
 
-              {/* ── Trust line ── */}
+              {/* ── Trust line ──
+                   Discover link and payment-icons strip were removed in
+                   the homepage audit pass. The hero is permanently
+                   merchant-mode; buyer-side discovery still has a full
+                   home at /discover via the navbar. Payment-method
+                   trust signal moved to the final CTA section. */}
               <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
                 <p className="text-[13px] text-zinc-400">
                   Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
-                {/* Buyer entry point — small link only. The homepage is
-                    merchant-first; full buyer-side discovery lives at
-                    /discover. */}
-                <p className="text-[12px] text-zinc-500">
-                  Looking for local deals?{" "}
-                  <Link
-                    href="/discover"
-                    className="text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
-                  >
-                    Search Discover →
-                  </Link>
-                </p>
-                {/* Payment icons — consumer-facing payment methods only.
-                    Solana removed per Phase 0A and consolidated on /technology. */}
-                <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="13" viewBox="0 0 24 16" fill="none" className="text-zinc-600"><rect x="0.5" y="0.5" width="23" height="15" rx="2" stroke="currentColor"/><rect x="0" y="4" width="24" height="4" fill="currentColor" opacity="0.3"/></svg>
-                    Visa
-                  </span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-zinc-600"><circle cx="9" cy="12" r="7" stroke="currentColor" opacity="0.5"/><circle cx="15" cy="12" r="7" stroke="currentColor" opacity="0.5"/></svg>
-                    Mastercard
-                  </span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="text-zinc-600">Apple Pay</span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="text-zinc-600">Stripe Checkout</span>
-                </div>
               </div>
 
             </div>
