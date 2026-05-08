@@ -64,6 +64,14 @@ export default function MerchantPage() {
   // Analytics from existing business profile
   const [analytics, setAnalytics] = useState<any>(null);
 
+  // First project (for the "Add DUM Live to your website" deep-link).
+  // The merchant audit Phase 3 added a 4th checklist step that deep-
+  // links into the Activate-DUM-Live wizard on the merchant's
+  // project page. If no project exists yet, the link falls back to
+  // /dashboard so the merchant creates one first. We only need id
+  // + slug; ignore the rest of the project payload.
+  const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null } | null>(null);
+
   // Live Stripe Connect verification — fetched from
   // /api/merchant/stripe-connect/status which does a fresh
   // Stripe.Account.retrieve and writes the resolved status back to
@@ -140,6 +148,7 @@ export default function MerchantPage() {
         if (data.merchant) {
           setMerchant(data.merchant);
           loadAnalytics(token!);
+          loadFirstProject();
           if (data.merchant.stripe_connect_id) {
             loadStripeStatus(token!);
           }
@@ -149,6 +158,32 @@ export default function MerchantPage() {
       }
     } catch {}
     setLoading(false);
+  }
+
+  async function loadFirstProject() {
+    // No auth header needed — /api/projects/ accepts owner_id as a
+    // public filter. We only care about (id, slug) so a thrown
+    // request or a missing field is non-fatal: firstProject stays
+    // null and the checklist falls back to a "create your storefront
+    // first" path via /dashboard.
+    if (!user?.privyId) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/?owner_id=${encodeURIComponent(user.privyId)}`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = (data?.projects ?? data ?? []) as Array<{
+        id?: string;
+        slug?: string | null;
+      }>;
+      const first = list.find((p) => !!p?.id);
+      if (first?.id) {
+        setFirstProject({ id: first.id, slug: first.slug ?? null });
+      }
+    } catch {
+      // non-fatal — checklist still renders, just lands on /dashboard
+    }
   }
 
   async function loadStripeStatus(token: string) {
@@ -269,7 +304,7 @@ export default function MerchantPage() {
             <span className="text-emerald-400">Forever.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-zinc-200">
-            Sign in to claim your founding merchant spot. No credit card. No commission. $0 now · $29/mo locked in forever.
+            Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card.
           </p>
 
           <button
@@ -279,8 +314,11 @@ export default function MerchantPage() {
             Sign In to Continue →
           </button>
 
-          <p className="mt-4 text-[11px] text-zinc-500">
-            Secured by Privy · Takes 30 seconds
+          <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-zinc-400">
+            After sign-in: enter your business name (one field). Done in 60 seconds. No card, no commission.
+          </p>
+          <p className="mt-2 text-[11px] text-zinc-500">
+            Sign in with email or Google · Takes 30 seconds
           </p>
         </div>
       </div>
@@ -316,7 +354,7 @@ export default function MerchantPage() {
             </div>
           )}
 
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl">
               Keep{" "}
               <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
@@ -326,79 +364,24 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-zinc-200">
               {programOpen
-                ? "Founding 100 pay $0 today and lock in $29/month forever. No credit card. No commission. Ever."
-                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. Zero commission, loyalty built in. No card today.`}
+                ? "Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card."
+                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
             </p>
-          </div>
-
-          {/* ── Whatnot contrast callout — direct fee comparison ── */}
-          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
-              The math
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4">
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500">Whatnot</div>
-                <div className="mt-1 text-lg font-bold text-red-400">8% + 2.9%</div>
-                <div className="text-xs text-zinc-500">per sale, forever</div>
-              </div>
-              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">DUM Club</div>
-                <div className="mt-1 text-lg font-bold text-emerald-400">$0 per sale</div>
-                <div className="text-xs text-emerald-400/80">flat $29–$99/mo · founding 100 free</div>
-              </div>
-            </div>
-            <div className="mt-3 text-center text-xs text-zinc-400">
-              On $10k/mo in sales, you keep <span className="font-bold text-emerald-400">~$1,090 more</span> per month with DUM Club.
-            </div>
-          </div>
-
-          {/* ── 3-point sell ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
-            <ul className="space-y-3">
-              {[
-                "Keep 100% of every sale — zero platform commission, forever",
-                "Customers earn DUM Points automatically — they come back without you paying for ads",
-                "Founding 100 pay $0 today — $29/month locked in forever after the cap closes",
-              ].map((line) => (
-                <li
-                  key={line}
-                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
-                >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
-                    ✓
-                  </span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* ── Founder testimonial — social proof, real face ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
-            <div className="flex items-start gap-4">
-              <img
-                src="/Julian.jpeg"
-                alt="Julian Mero — founder, Topgun Maintenance LLC"
-                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm leading-relaxed text-zinc-200">
-                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, zero commission — it just works.&rdquo;
-                </p>
-                <div className="mt-3 text-[11px] text-zinc-500">
-                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* ── The form — one field only ──
                Dropped from 4 fields to 1. Rule of thumb: each extra
                field on a cold signup CTA costs ~10% completion. Biz
                type + city + state move to progressive profile after
-               signup. */}
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
+               signup. Phase 4 of the merchant audit moved the form
+               above the 5-expense-line comparison, the 3-point sell,
+               and the founder testimonial — on a 393px-wide phone
+               the input was previously ~2.5 screens of scroll below
+               the H1, costing visible mobile abandonment. The proof
+               / sell content sits below the form for hesitant
+               readers; merchants who already know they want in see
+               the form immediately. */}
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
             <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
               {programOpen ? "Claim your founding spot" : "Start a merchant account"}
             </div>
@@ -436,6 +419,102 @@ export default function MerchantPage() {
               </p>
             </div>
           </div>
+
+          {/* ── One-fee-replaces-five comparison ──
+               Phase 4 of the merchant audit replaced the prior
+               Whatnot-only contrast box with the same 5-expense-line
+               framing used on the homepage. A barber, restaurant
+               owner, mechanic, gym, contractor, or local shop has
+               typically NEVER used Whatnot — leading the signup
+               with "you'd save vs Whatnot" alienates the very
+               audience this page is meant to convert. The five
+               expense lines below are the bills a normal local
+               business already pays today. */}
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
+            <div className="mb-4 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
+                One flat fee instead of five
+              </div>
+              <div className="mt-2 text-base font-bold text-white">
+                DUM Club replaces five expense lines you already pay.
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                { name: "Delivery apps", fees: "15–30%", detail: "of every order" },
+                { name: "Live selling", fees: "8% + fees", detail: "per sale" },
+                { name: "Loyalty software", fees: "$50–$300", detail: "per month" },
+                { name: "SMS retention", fees: "$20–$200", detail: "per month" },
+              ].map((p) => (
+                <div
+                  key={p.name}
+                  className="rounded-xl border border-red-500/15 bg-zinc-950/60 p-3 text-center"
+                >
+                  <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    {p.name}
+                  </div>
+                  <div className="mt-1 font-mono text-base font-extrabold text-red-400/80">
+                    {p.fees}
+                  </div>
+                  <div className="text-[10px] text-zinc-500">{p.detail}</div>
+                </div>
+              ))}
+              <div className="col-span-2 rounded-xl border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.10] to-zinc-900/60 p-3 text-center shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400">
+                  DUM Club
+                </div>
+                <div className="mt-1 font-mono text-base font-extrabold text-emerald-400">
+                  $29–$99
+                </div>
+                <div className="text-[10px] text-emerald-400/80">
+                  flat / month · 0% commission
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-center text-xs text-zinc-300">
+              One bill. <span className="font-bold text-emerald-400">Keep your revenue.</span>
+            </div>
+          </div>
+
+          {/* ── 3-point sell ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
+            <ul className="space-y-3">
+              {[
+                "Keep 100% of every sale — 0% commission, always",
+                "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
+                "Founding 100 merchants pay $0 today and lock in $29/month forever",
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
+                    ✓
+                  </span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── Founder testimonial — social proof, real face ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <img
+                src="/Julian.jpeg"
+                alt="Julian Mero — founder, Topgun Maintenance LLC"
+                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-relaxed text-zinc-200">
+                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission — it just works.&rdquo;
+                </p>
+                <div className="mt-3 text-[11px] text-zinc-500">
+                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -461,10 +540,27 @@ export default function MerchantPage() {
   // Verification card below.
   const stepAccount = true;
   const stepStripe = !!merchant.stripe_connect_id;
+  // Step 3 — "Add DUM Live to your website" — has no direct
+  // signal we can read (we don't have a server-side "embed
+  // installed" flag, and even if we did, "merchant pasted the
+  // snippet on a page we never see" can't be verified
+  // remotely). A confirmed first sale proves the install
+  // works end-to-end, so we use that as the completion proxy.
+  // Until then, the step shows as the active next-action with
+  // a deep-link CTA.
   const stepFirstSale = (analytics?.total_orders ?? 0) > 0;
-  const completedSteps = [stepAccount, stepStripe, stepFirstSale].filter(Boolean).length;
-  const totalSteps = 3;
+  const stepInstall = stepFirstSale;
+  const completedSteps = [stepAccount, stepStripe, stepInstall, stepFirstSale].filter(Boolean).length;
+  const totalSteps = 4;
   const onboardingComplete = completedSteps === totalSteps;
+  // Where the "Add DUM Live to your website" CTA sends the
+  // merchant. If they have at least one project, deep-link
+  // straight to that project's page (the Activate-DUM-Live
+  // card lives there). Otherwise route to /dashboard so they
+  // create a project first.
+  const installLink = firstProject
+    ? `/project/${firstProject.slug || firstProject.id}`
+    : "/dashboard";
 
   // Human-readable copy for each Stripe-callback failure reason.
   // Keep error codes stable; map to friendly text only at render time.
@@ -533,15 +629,25 @@ export default function MerchantPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-sm font-bold text-red-400">
-                  Stripe connection didn't go through
+                  Stripe connection didn&apos;t go through
                 </div>
                 <div className="mt-1 break-words text-xs text-red-400/80">
                   {stripeErrorCopy(stripeBanner.reason, stripeBanner.detail)}
                 </div>
-                <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
-                  reason: {stripeBanner.reason}
-                  {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
-                </div>
+                {/* Diagnostic identifier hidden behind a disclosure so
+                    the merchant sees calm copy by default; support
+                    can still ask "click Show technical details and
+                    paste it back" without confusing the merchant
+                    with raw reason / detail strings up front. */}
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                    Show technical details
+                  </summary>
+                  <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
+                    reason: {stripeBanner.reason}
+                    {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
+                  </div>
+                </details>
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
@@ -560,8 +666,8 @@ export default function MerchantPage() {
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
-                <div className="text-sm font-bold text-emerald-400">Founding Member</div>
-                <div className="text-xs text-emerald-400/60">$0 during founding · $29/mo locked in forever · 0% commission always</div>
+                <div className="text-sm font-bold text-emerald-400">Founding Merchant</div>
+                <div className="text-xs text-emerald-400/60">$0 today · $29/month forever · 0% commission</div>
               </div>
             </div>
           </div>
@@ -580,7 +686,11 @@ export default function MerchantPage() {
                 <div className="mt-1 text-sm font-semibold text-white">
                   {completedSteps} of {totalSteps} complete —{" "}
                   <span className="text-emerald-400">
-                    {!stepStripe ? "Connect Stripe to start getting paid" : "Waiting on your first sale"}
+                    {!stepStripe
+                      ? "Connect Stripe to start getting paid"
+                      : !stepInstall
+                        ? "Add DUM Live to your website"
+                        : "Waiting on your first sale"}
                   </span>
                 </div>
               </div>
@@ -624,17 +734,63 @@ export default function MerchantPage() {
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
-                    <button
-                      onClick={connectStripe}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
-                    >
-                      Connect Stripe →
-                    </button>
+                    <>
+                      <p className="mt-2 text-[11px] text-zinc-500">
+                        Your bank info goes to Stripe, never to DUM Club.
+                      </p>
+                      <button
+                        onClick={connectStripe}
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                      >
+                        Connect Stripe →
+                      </button>
+                    </>
                   )}
                 </div>
               </li>
 
-              {/* Step 3: First sale */}
+              {/* Step 3: Add DUM Live to your website
+                  Phase 3 of the merchant audit. Closes the "what's
+                  next after Stripe?" gap by surfacing the Activate-
+                  DUM-Live moment from the merchant home, instead of
+                  forcing the merchant to navigate /dashboard ->
+                  project page -> activation card on their own.
+                  Deep-links to the merchant's first project when
+                  one exists, else to /dashboard so they create the
+                  storefront first. Marked complete by stepInstall
+                  (which today proxies first-sale; see comment by
+                  the const). */}
+              <li className="flex items-start gap-3">
+                {stepInstall ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : stepStripe ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400/50" />
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-zinc-700" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${stepInstall ? "text-white line-through decoration-emerald-400/40" : stepStripe ? "text-white" : "text-zinc-300"}`}>
+                    Add DUM Live to your website
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {stepInstall
+                      ? "Your storefront is live and selling."
+                      : firstProject
+                        ? "Paste one script tag on your site — turns any page into a live storefront."
+                        : "Set up your storefront first, then paste one script tag on your site."}
+                  </div>
+                  {!stepInstall && stepStripe && (
+                    <Link
+                      href={installLink}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                    >
+                      {firstProject ? "Add DUM Live to my site →" : "Set up my storefront →"}
+                    </Link>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 4: First sale */}
               <li className="flex items-start gap-3">
                 {stepFirstSale ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
@@ -647,17 +803,9 @@ export default function MerchantPage() {
                   </div>
                   <div className="text-xs text-zinc-500">
                     {stepFirstSale
-                      ? "You're live. DUM Points are being issued automatically."
+                      ? "You&apos;re live. DUM Points are being issued automatically as loyalty rewards."
                       : "Share your storefront link or print the QR below."}
                   </div>
-                  {!stepFirstSale && stepStripe && (
-                    <Link
-                      href="/dashboard"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/[0.06] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-emerald-400 transition hover:bg-emerald-400/10"
-                    >
-                      Manage My Business →
-                    </Link>
-                  )}
                 </div>
               </li>
             </ul>
@@ -705,107 +853,222 @@ export default function MerchantPage() {
         </div>
         )}
 
-        {/* Stripe Connect verification — live from Stripe.Account.retrieve.
-            Renders whenever a stripe_connect_id is set on the merchant row,
-            independent of the cached status string. Backend gate at
-            checkout.py:_assert_merchant_can_receive blocks payments unless
-            BOTH charges_enabled AND payouts_enabled are true; this card is
-            the diagnostic surface so the merchant can see why. */}
-        {merchant.stripe_connect_id && (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe Verification</h3>
-            {stripeStatus && (
-              <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
-                stripeStatus.status === "verified"
-                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-                  : stripeStatus.status === "restricted"
-                    ? "border-red-400/30 bg-red-400/10 text-red-400"
-                    : "border-amber-400/30 bg-amber-400/10 text-amber-400"
-              }`}>
-                {stripeStatus.status.replace("_", " ")}
-              </span>
-            )}
-          </div>
+        {/* ── Stripe Verification card ──
+            Re-skinned in Phase 2 of the merchant audit. The previous
+            version always rendered with three "No"s right after
+            Stripe connect, which read as "I'm broken" to a non-
+            technical merchant — even though that's the normal
+            "Stripe is reviewing your account" state.
+            Render rules now (Q12):
+              - status = verified    → not rendered (the checklist
+                                       already says "Connect Stripe ✓")
+              - has currently_due / disabled_reason → full diagnostic
+              - status = pending and no issues → calm reassurance only
+              - retrieve error          → support-friendly red panel
+            Labels swapped from raw Stripe terms to merchant English
+            (Q7); the raw API booleans now live behind a "What does
+            this mean?" disclosure. */}
+        {merchant.stripe_connect_id && (() => {
+          // Compute render mode up-front so the JSX below stays
+          // readable. Verified + no issues = nothing to show.
+          const hasRetrieveError = !!stripeStatusError;
+          const hasOpenRequirements =
+            !!stripeStatus &&
+            (stripeStatus.requirements_currently_due.length > 0 ||
+              !!stripeStatus.disabled_reason);
+          const isVerified =
+            !!stripeStatus && stripeStatus.status === "verified";
+          const isPendingClean =
+            !!stripeStatus &&
+            !isVerified &&
+            !hasOpenRequirements;
 
-          {stripeStatusError ? (
-            <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-              <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
-              <div className="mt-1 text-[11px] text-zinc-400">
-                {stripeStatusError === "stripe_account_retrieve_failed"
-                  ? "The platform's secret key cannot retrieve this Connect account. This typically means the live STRIPE_SECRET_KEY hasn't been swapped in yet, or the Connect account was created in test mode and needs to be re-onboarded with live OAuth."
-                  : stripeStatusError}
+          // Skip rendering entirely when fully verified — the
+          // checklist already conveys the success state and a
+          // "Verified" pill on its own is noise.
+          if (isVerified && !hasRetrieveError) return null;
+
+          return (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe</h3>
+                {stripeStatus && (
+                  <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                    stripeStatus.status === "verified"
+                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                      : stripeStatus.status === "restricted"
+                        ? "border-red-400/30 bg-red-400/10 text-red-400"
+                        : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                  }`}>
+                    {stripeStatus.status === "pending_verification"
+                      ? "Stripe is reviewing"
+                      : stripeStatus.status === "verified"
+                        ? "Verified"
+                        : stripeStatus.status === "restricted"
+                          ? "Action needed"
+                          : "Not connected"}
+                  </span>
+                )}
               </div>
-            </div>
-          ) : !stripeStatus ? (
-            <div className="text-[11px] text-zinc-500">Loading…</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {([
-                  ["Charges enabled", stripeStatus.charges_enabled],
-                  ["Payouts enabled", stripeStatus.payouts_enabled],
-                  ["Details submitted", stripeStatus.details_submitted],
-                ] as const).map(([label, ok]) => (
-                  <div key={label} className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2.5">
-                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
-                    <div className={`mt-0.5 text-sm font-bold ${ok ? "text-emerald-400" : "text-zinc-600"}`}>
-                      {ok ? "✓ Yes" : "— No"}
+
+              {hasRetrieveError ? (
+                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
+                  <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
+                  <div className="mt-1 text-[11px] text-zinc-400">
+                    We couldn&apos;t reach Stripe just now. This is usually temporary — refresh in a moment, or contact support if it keeps happening.
+                  </div>
+                  {/* Raw retrieve error stays available for support
+                      diagnosis but doesn't lead the surface. */}
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                      Show technical details
+                    </summary>
+                    <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                      {stripeStatusError}
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {stripeStatus.disabled_reason && (
-                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Restricted</div>
-                  <div className="mt-1 text-[11px] text-zinc-400">{stripeStatus.disabled_reason}</div>
+                  </details>
                 </div>
-              )}
-
-              {stripeStatus.requirements_currently_due.length > 0 && (
-                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
-                    Action required ({stripeStatus.requirements_currently_due.length})
+              ) : !stripeStatus ? (
+                <div className="text-[11px] text-zinc-500">Loading…</div>
+              ) : isPendingClean ? (
+                /* Q8: calm reassurance for the common post-connect
+                   case — Stripe is reviewing, nothing for the
+                   merchant to do, no scary "all No" grid. */
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                  <div className="text-sm font-bold text-amber-400">
+                    Stripe is reviewing your account
                   </div>
-                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-400">
-                    {stripeStatus.requirements_currently_due.map((r) => (
-                      <li key={r} className="font-mono">• {r}</li>
-                    ))}
-                  </ul>
-                  <a
-                    href="https://dashboard.stripe.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
-                  >
-                    Finish on Stripe →
-                  </a>
+                  <div className="mt-1 text-[12px] leading-relaxed text-zinc-300">
+                    This usually takes a few minutes. We&apos;ll show
+                    &ldquo;Verified&rdquo; here as soon as Stripe finishes — you don&apos;t need to do anything else right now.
+                  </div>
+                  {/* Raw booleans behind a disclosure for the
+                      curious / for support sessions. Default-collapsed
+                      so a normal merchant never sees them. */}
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                      What does this mean?
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {([
+                        ["Can accept payments", stripeStatus.charges_enabled],
+                        ["Can receive payouts", stripeStatus.payouts_enabled],
+                        ["Identity submitted", stripeStatus.details_submitted],
+                      ] as const).map(([label, ok]) => (
+                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                            {ok ? "✓ Ready" : "— Pending"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
-              )}
+              ) : (
+                /* Action-needed case: full diagnostic with merchant-
+                   language labels and a Finish-on-Stripe CTA. */
+                <div className="space-y-4">
+                  {stripeStatus.disabled_reason && (
+                    <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Action needed</div>
+                      <div className="mt-1 text-[11px] text-zinc-400">
+                        Stripe has paused this account. Open the Stripe dashboard to see what&apos;s needed and resolve it.
+                      </div>
+                      {/* Raw Stripe disabled_reason hidden behind
+                          disclosure — it's typically a code string
+                          like "rejected.platform_fraud" that
+                          confuses merchants. */}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/60 hover:text-red-400/80">
+                          Show technical details
+                        </summary>
+                        <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                          {stripeStatus.disabled_reason}
+                        </div>
+                      </details>
+                    </div>
+                  )}
 
-              {stripeStatus.requirements_eventually_due.length > 0 && (
-                <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
-                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                    Eventually due ({stripeStatus.requirements_eventually_due.length})
-                  </summary>
-                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
-                    {stripeStatus.requirements_eventually_due.map((r) => (
-                      <li key={r} className="font-mono">• {r}</li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+                  {stripeStatus.requirements_currently_due.length > 0 && (
+                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
+                        Stripe needs a bit more info ({stripeStatus.requirements_currently_due.length} item{stripeStatus.requirements_currently_due.length === 1 ? "" : "s"})
+                      </div>
+                      <div className="mt-1 text-[11px] text-zinc-400">
+                        Open the Stripe dashboard to finish — you&apos;ll come right back here when it&apos;s done.
+                      </div>
+                      {/* Raw requirement codes behind a disclosure.
+                          They look like "external_account",
+                          "tos_acceptance.date", "person.dob.day" —
+                          jargon to a non-technical merchant. */}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                          Show technical details
+                        </summary>
+                        <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                          {stripeStatus.requirements_currently_due.map((r) => (
+                            <li key={r} className="font-mono">• {r}</li>
+                          ))}
+                        </ul>
+                      </details>
+                      <a
+                        href="https://dashboard.stripe.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 rounded-lg bg-amber-400/15 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-400 transition hover:bg-amber-400/25"
+                      >
+                        Finish on Stripe →
+                      </a>
+                    </div>
+                  )}
 
-              {stripeStatus.status !== "verified" && (
-                <div className="text-[11px] text-zinc-500">
-                  Checkout and Go Live remain disabled until charges and payouts are both enabled and Stripe shows no outstanding requirements.
+                  {/* Eventually-due requirements stay behind a
+                      disclosure — same as before; not surfaced to
+                      casual readers. */}
+                  {stripeStatus.requirements_eventually_due.length > 0 && (
+                    <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
+                      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                        Coming up later ({stripeStatus.requirements_eventually_due.length})
+                      </summary>
+                      <div className="mt-1.5 text-[11px] text-zinc-500">
+                        Stripe will ask for these eventually — no rush.
+                      </div>
+                      <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                        {stripeStatus.requirements_eventually_due.map((r) => (
+                          <li key={r} className="font-mono">• {r}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  {/* Raw boolean grid hidden behind a "What does this
+                      mean?" disclosure — Phase 2 surfaces only
+                      merchant-language labels by default. */}
+                  <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                      What does this mean?
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {([
+                        ["Can accept payments", stripeStatus.charges_enabled],
+                        ["Can receive payouts", stripeStatus.payouts_enabled],
+                        ["Identity submitted", stripeStatus.details_submitted],
+                      ] as const).map(([label, ok]) => (
+                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                            {ok ? "✓ Ready" : "— Pending"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               )}
             </div>
-          )}
-        </div>
-        )}
+          );
+        })()}
 
         {/* Stats
             Empty-state: until the first sale lands, showing four zeros
@@ -882,25 +1145,27 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Quick links — two things a logged-in merchant actually needs
-            fast access to: the projects/business-profile dashboard
-            (where they configure their storefront), and the public
-            marketplace (to see how listings look to customers). The
-            old "For Business" link was a dead end — it pointed to
-            the seller-recruitment landing page the merchant had
-            already converted on. */}
+        {/* Quick links — the two next-actions a converted merchant
+            actually needs. The previous bottom-row had "Manage My
+            Business" + "Browse Marketplace"; the second one routed
+            converted merchants to the buyer-side /discover page,
+            which is the wrong audience after they've already signed
+            up. Phase 3 of the merchant audit replaced it with the
+            "Add DUM Live to your website" deep-link so the merchant
+            home consistently surfaces the activation moment instead
+            of letting it hide on the project page. */}
         <div className="flex gap-3">
           <Link
-            href="/dashboard"
+            href={installLink}
             className="flex-1 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.04] px-4 py-3 text-center text-sm font-semibold text-emerald-400 transition hover:bg-emerald-400/[0.08]"
           >
-            Manage My Business
+            Add DUM Live to your website →
           </Link>
           <Link
-            href="/discover"
+            href="/dashboard"
             className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
           >
-            Browse Marketplace
+            Manage My Business
           </Link>
         </div>
       </div>

@@ -530,6 +530,55 @@ export default function ProjectPage() {
     "guided" | "self" | "advanced" | "developer"
   >("guided");
   const [embedPlatform, setEmbedPlatform] = useState<string | null>(null);
+
+  // Phase 4 of the embed installer audit — manual "I pasted it"
+  // confirmation toggle. localStorage-backed per slug so the
+  // merchant doesn't lose the success state on reload. We
+  // explicitly do NOT verify the install (no real embed
+  // detection, no merchant-URL ping) per the merchant audit's
+  // MVP scope — this is a trust-based toggle that flips the
+  // modal to a celebration view and queues the next action.
+  const [installConfirmed, setInstallConfirmed] = useState<boolean>(false);
+
+  // Sync installConfirmed with localStorage on mount and whenever
+  // the project's slug changes. Storage key is per-slug so a
+  // merchant with multiple projects can confirm install on each
+  // independently. Read is guarded on typeof window so it's
+  // SSR-safe; the initial `false` value renders identically on
+  // server and client until this effect runs post-hydration.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const slugKey = project?.slug;
+    if (!slugKey) return;
+    try {
+      setInstallConfirmed(
+        window.localStorage.getItem(`dum-live-installed-${slugKey}`) === "true",
+      );
+    } catch {
+      // localStorage can throw in private browsing on some
+      // browsers — non-fatal, the merchant can re-confirm.
+    }
+  }, [project?.slug]);
+
+  function confirmInstall() {
+    if (typeof window === "undefined" || !project?.slug) return;
+    try {
+      window.localStorage.setItem(`dum-live-installed-${project.slug}`, "true");
+    } catch {
+      // ignore — see useEffect above
+    }
+    setInstallConfirmed(true);
+  }
+
+  function resetInstall() {
+    if (typeof window === "undefined" || !project?.slug) return;
+    try {
+      window.localStorage.removeItem(`dum-live-installed-${project.slug}`);
+    } catch {
+      // ignore — see useEffect above
+    }
+    setInstallConfirmed(false);
+  }
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -5220,40 +5269,57 @@ return (
           // entry maps a merchant's website type to a one-line
           // instruction in their language — no iframe / script / JS
           // jargon in the default flow.
+          // Q10 — added a `mobileNote` per platform so a merchant
+          // editing their site from a phone gets editor-specific
+          // guidance. Mobile editors of these platforms diverge
+          // meaningfully from desktop; without this hint the
+          // desktop instruction sends a phone user looking for
+          // controls that don't exist in the mobile app.
           const PLATFORMS: Array<{
             id: string;
             name: string;
             instruction: string;
+            mobileNote?: string;
           }> = [
             {
               id: "wordpress",
               name: "WordPress",
               instruction:
                 "On the page where you want it, add a Custom HTML block, then paste this in.",
+              mobileNote:
+                "On the WordPress mobile app: edit the page, tap +, choose Custom HTML.",
             },
             {
               id: "wix",
               name: "Wix",
               instruction:
                 "Drag in an Embed Code element where you want it, then paste this in.",
+              mobileNote:
+                "On the Wix mobile app: tap Add → Embed Code → HTML iframe.",
             },
             {
               id: "shopify",
               name: "Shopify",
               instruction:
                 "Open the page template in your theme editor and paste this into a Custom Liquid section.",
+              mobileNote:
+                "Shopify's theme editor is best on desktop — open this on a laptop if you can.",
             },
             {
               id: "squarespace",
               name: "Squarespace",
               instruction:
                 "Add a Code Block on the page and paste this in.",
+              mobileNote:
+                "On the Squarespace mobile app: edit the page, tap +, choose Code.",
             },
             {
               id: "webflow",
               name: "Webflow",
               instruction:
                 "Drag an Embed element onto the page and paste this in.",
+              mobileNote:
+                "Webflow's editor is desktop-only — open this on a laptop.",
             },
             {
               id: "developer",
@@ -5266,12 +5332,16 @@ return (
               name: "Custom HTML",
               instruction:
                 "Paste this just before </body>, or inside the section where you want it to appear.",
+              mobileNote:
+                "Same instructions work on most mobile editors — paste into any HTML / Code block.",
             },
             {
               id: "unsure",
               name: "Not sure",
               instruction:
                 "No worries — use the Custom HTML method. It works on most websites.",
+              mobileNote:
+                "If you only have your phone, the Custom HTML method works in most mobile editors too.",
             },
           ];
 
@@ -5298,7 +5368,7 @@ return (
                       Add DUM Live to Your Website
                     </h3>
                     <p className="mt-1 text-sm text-zinc-400">
-                      Turn your website into a live selling storefront in minutes.
+                      Live video, pinned flash offers, Stripe checkout, and loyalty rewards — all on your own site.
                     </p>
                   </div>
                   <div className="flex flex-col items-start gap-1 sm:items-end">
@@ -5306,7 +5376,19 @@ return (
                       type="button"
                       onClick={() => {
                         setEmbedActivePath("guided");
-                        setEmbedPlatform(null);
+                        // Q9 — on a phone, skip the 8-platform picker
+                        // and pre-select Custom HTML. Mobile editors
+                        // for WordPress / Wix / Shopify / Squarespace
+                        // typically only expose a generic HTML / Code
+                        // block anyway, so the platform-specific
+                        // instructions buy little on a phone — they
+                        // mostly add a step. The merchant can still
+                        // tap "← Choose different website" to reveal
+                        // the full picker.
+                        const isMobile =
+                          typeof window !== "undefined" &&
+                          window.matchMedia("(max-width: 768px)").matches;
+                        setEmbedPlatform(isMobile ? "custom" : null);
                         setEmbedModalOpen(true);
                       }}
                       className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400 sm:w-auto"
@@ -5342,8 +5424,8 @@ return (
                           Activate DUM Live
                         </h2>
                         <p className="text-xs text-zinc-500">
-                          Add a live selling storefront to{" "}
-                          <span className="text-zinc-300">{slug}</span>
+                          Add your live storefront to{" "}
+                          <span className="text-zinc-300">{project?.title || project?.name || slug}</span>
                         </p>
                       </div>
                       <button
@@ -5357,6 +5439,74 @@ return (
                         </svg>
                       </button>
                     </div>
+
+                    {/* Phase 4 of the installer audit — when the
+                        merchant has confirmed the paste, the modal
+                        flips to a celebration / next-action view
+                        instead of re-rendering the install tabs.
+                        The "Reinstall on a different page" link
+                        clears the confirmation and reveals the
+                        full wizard again. */}
+                    {installConfirmed ? (
+                      <div className="flex-1 overflow-y-auto px-5 py-8 sm:py-10">
+                        <div className="mx-auto max-w-md text-center">
+                          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-emerald-400/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
+                            ✨ Installed
+                          </div>
+                          <h3 className="text-2xl font-extrabold tracking-tight text-white">
+                            DUM Live is installed on your site.
+                          </h3>
+                          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-zinc-300">
+                            Customers can now see your live storefront whenever they visit the page where you pasted the code.
+                          </p>
+
+                          {/* Next-step nudges. Linking to surfaces
+                              that already exist on this page so the
+                              merchant doesn't have to navigate
+                              elsewhere — clicking either button
+                              closes the modal and lets the merchant
+                              act inline. */}
+                          <div className="mt-6 space-y-2">
+                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                              What&apos;s next
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEmbedModalOpen(false)}
+                              className="block w-full rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
+                            >
+                              Pin a flash deal →
+                            </button>
+                            <a
+                              href={previewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-full rounded-xl border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                            >
+                              Preview my live storefront
+                            </a>
+                          </div>
+
+                          {/* Brand-stance closer — the activation
+                              moment is the right place to lightly
+                              echo "Drive your market — not platform
+                              fees." Per direction this stays
+                              supporting, not a headline. */}
+                          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300/70">
+                            Drive your market — not platform fees.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={resetInstall}
+                            className="mt-6 text-[11px] text-zinc-500 underline-offset-2 transition hover:text-zinc-300 hover:underline"
+                          >
+                            I want to reinstall on a different page
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
 
                     {/* Tab nav. Wraps to 2x2 on narrow viewports. */}
                     <div className="flex shrink-0 flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2 sm:px-5">
@@ -5482,6 +5632,12 @@ return (
                                     {p.name} install
                                   </div>
                                   <p className="text-sm text-zinc-200">{p.instruction}</p>
+                                  {p.mobileNote && (
+                                    <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-zinc-400">
+                                      <span aria-hidden="true">📱</span>
+                                      <span>{p.mobileNote}</span>
+                                    </p>
+                                  )}
                                 </div>
                                 <div>
                                   <button
@@ -5497,9 +5653,39 @@ return (
                                     Usually takes less than 5 minutes
                                   </p>
                                 </div>
-                                <div className="rounded-lg border border-zinc-800 bg-black/40 p-3 text-[11px] text-emerald-200/80">
-                                  Once this is pasted, your live storefront will appear on your website.
-                                </div>
+
+                                {/* Q3: 3-step "what happens next" reminder
+                                    so the merchant knows to publish before
+                                    visiting their site. The "publish before
+                                    you test" trap (paste → check → blank
+                                    → panic) is one of the most common
+                                    install snags on WordPress / Squarespace. */}
+                                <ol className="space-y-1.5 rounded-xl border border-zinc-800 bg-black/40 p-3 text-[12px] text-zinc-300">
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">1</span>
+                                    <span>Paste it on your page</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">2</span>
+                                    <span>Save / Publish</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">3</span>
+                                    <span>Visit your page to see it live</span>
+                                  </li>
+                                </ol>
+
+                                {/* Q6: trust copy at the activation moment.
+                                    Carries the merchant onboarding trust
+                                    line into the install surface so the
+                                    nervous merchant pasting payment-related
+                                    code on their own site has the same
+                                    reassurance they had when connecting
+                                    Stripe. */}
+                                <p className="text-center text-[11px] leading-relaxed text-zinc-500">
+                                  0% commission · No per-sale fee · Your bank info goes to Stripe, never to DUM Club.
+                                </p>
+
                                 <a
                                   href={previewUrl}
                                   target="_blank"
@@ -5508,6 +5694,27 @@ return (
                                 >
                                   Preview what your storefront will look like →
                                 </a>
+
+                                {/* Q8 — manual "I pasted it" affordance.
+                                    Trust-based confirmation: clicking
+                                    flips the modal to the celebration
+                                    view via confirmInstall(). No
+                                    automatic verification — the merchant
+                                    audit's MVP scope explicitly held the
+                                    real embed-detection backend work. */}
+                                <div className="mt-2 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.05] p-4">
+                                  <p className="text-[12px] leading-relaxed text-zinc-300">
+                                    <span className="font-bold text-white">Done pasting?</span>{" "}
+                                    Click below to confirm — we&apos;ll mark your live storefront as installed.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={confirmInstall}
+                                    className="mt-3 w-full rounded-xl border border-emerald-400/50 bg-emerald-400/10 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-400/20"
+                                  >
+                                    I pasted it on my site →
+                                  </button>
+                                </div>
                               </div>
                             );
                           })()}
@@ -5565,7 +5772,10 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">4</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Test live selling</div>
+                                  <div className="font-semibold text-white">Preview my storefront</div>
+                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                    Open your live storefront in a new tab to see exactly what your customers will see.
+                                  </p>
                                   <a
                                     href={previewUrl}
                                     target="_blank"
@@ -5744,6 +5954,25 @@ return (
                           </div>
                         </div>
                       )}
+                    </div>
+
+                      </>
+                    )}
+
+                    {/* Q7: minimum-viable escalation path. A merchant who
+                        hits a snag during install (CMS strips scripts,
+                        wrong page, CSP blocks iframe, etc.) should never
+                        feel stuck without an exit. Single mailto link in
+                        the footer covers that until a real support
+                        infrastructure ships. */}
+                    <div className="flex shrink-0 items-center justify-center border-t border-zinc-800 px-5 py-3 text-[11px] text-zinc-500">
+                      Stuck?{" "}
+                      <a
+                        href="mailto:julian@dum.club?subject=DUM%20Live%20install%20help"
+                        className="ml-1 text-emerald-400 underline-offset-2 transition hover:text-emerald-300 hover:underline"
+                      >
+                        Email julian@dum.club →
+                      </a>
                     </div>
                   </div>
                 </div>

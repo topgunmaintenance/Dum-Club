@@ -1749,7 +1749,7 @@ function PricingTiers() {
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Pricing</div>
       <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-        Flat fee. <span className="text-emerald-400">Zero commission. Ever.</span>
+        Flat fee. <span className="text-emerald-400">0% commission. Ever.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-zinc-400">
         The first 100 merchants join free and lock in $29/mo forever. No percentage cut on any sale.
@@ -1923,29 +1923,10 @@ export default function Home() {
   const { wallets, createWallet } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
-  // Hero service-finder search bar (v5.0). Simple redirect to
-  // /discover?q=<term> — not the old AI-builder textarea. Kept as a
-  // small local state so the form controls cleanly.
-  const [heroSearch, setHeroSearch] = useState("");
-
-  // Rotating search placeholder — teaches users by example that DUM Club
-  // handles services + products + food + live sales in one search. Rotates
-  // every 3 seconds. Pauses when the user has focused the input.
-  const heroPlaceholders = [
-    "Find the best pizza near Morris County...",
-    "Search live sales... sneakers, vintage, collectibles",
-    "Book a service... detailing, lawn care, inspections",
-    "Discover local deals... restaurants, shops, salons",
-    "What are you looking for today?",
-  ];
-  const [heroPlaceholderIdx, setHeroPlaceholderIdx] = useState(0);
-  useEffect(() => {
-    if (heroSearch.trim()) return; // stop rotating once user starts typing
-    const timer = setInterval(() => {
-      setHeroPlaceholderIdx((i) => (i + 1) % heroPlaceholders.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [heroSearch]);
+  // Hero service-finder search bar and rotating placeholders were
+  // removed in the homepage audit pass. The audience-toggle's
+  // "I'm shopping" branch is gone; buyer-side discovery now lives
+  // entirely at /discover via the navbar.
 
   // Homepage used to render a category grid with live counts from
   // /api/projects/public. That grid was replaced by a simple quick-
@@ -1994,19 +1975,10 @@ export default function Home() {
   const voiceInitiatedRef = useRef(false);
   const [voiceMuted, setVoiceMuted] = useState(false);
 
-  // Wraps the SearchResults component so category-chip clicks can scroll the
-  // newly-populated results panel into view.
-  const searchResultsRef = useRef<HTMLDivElement>(null);
-
-  // ── Hero audience mode ──────────────────────────────────────
-  // Two-sided-marketplace sin: pre-fix, the hero was talking to
-  // sellers AND buyers in the same 600px of scroll — CTAs pointed
-  // at merchant signup, search bar pointed at discovery. This mode
-  // toggle lets each visitor see only what they came for.
-  //
-  // Default to "merchant" because merchant recruitment is the
-  // Phase-1 gate per CLAUDE.md Section 6 (100 founding sellers).
-  const [heroMode, setHeroMode] = useState<"merchant" | "customer">("merchant");
+  // searchResultsRef + heroMode removed in the homepage audit pass —
+  // the audience toggle and customer-search panel are gone, so
+  // there is no longer a buyer-side search surface on the homepage
+  // to scroll into view or mode-switch between.
 
   // ── Founding-100 scarcity counter (public endpoint, no auth) ──
   // Drives the "X of 100 founding spots claimed" pill above the hero H1.
@@ -2030,73 +2002,12 @@ export default function Home() {
     };
   }, []);
 
-  // Single source of truth for hero / category-chip search. Mirrors `term`
-  // into the hero input so the user sees what they searched, clears prior
-  // results, fires the same POST /api/search/homepage the hero form uses,
-  // and scrolls the results panel into view when data lands.
-  //
-  // City MUST be non-empty or the backend's local_intent gate stays off and
-  // no Google fallback appears — see backend/services/agents/_search_helpers.has_local_intent.
-  const runHomepageSearch = (rawTerm: string) => {
-    const term = rawTerm.trim();
-    if (!term) return;
-
-    setHeroSearch(term);
-    setFindResults(null);
-    setFindExternalResults([]);
-
-    fetch(`${API_BASE}/api/search/homepage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: term, city: "Morris County, NJ" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) {
-          router.push(`/discover?q=${encodeURIComponent(term)}`);
-          return;
-        }
-
-        const projects: Project[] = [];
-        if (data.best_match?.project) {
-          projects.push({
-            id: data.best_match.project.id,
-            title: data.best_match.project.title,
-            description: data.best_match.project.description,
-            template_type: data.best_match.project.category,
-          } as Project);
-        }
-        for (const opt of (data.other_options || []) as Array<{
-          project?: { id?: string; title?: string; description?: string; category?: string };
-        }>) {
-          if (opt?.project?.id) {
-            projects.push({
-              id: opt.project.id,
-              title: opt.project.title,
-              description: opt.project.description,
-              template_type: opt.project.category,
-            } as Project);
-          }
-        }
-
-        setFindResults(projects);
-        setFindExternalResults(
-          Array.isArray(data.nearby_external) ? data.nearby_external : []
-        );
-
-        // Let React commit before scrolling so the populated panel has a
-        // non-zero height for scrollIntoView to land on.
-        requestAnimationFrame(() => {
-          searchResultsRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        });
-      })
-      .catch(() => {
-        router.push(`/discover?q=${encodeURIComponent(term)}`);
-      });
-  };
+  // runHomepageSearch was removed in the homepage audit pass. It
+  // had no callers after the audience-toggle "I'm shopping" branch
+  // was deleted in the prior repositioning commit. findResults /
+  // findExternalResults state is still used by handleHeroLaunch
+  // (the legacy AI-launcher path) and stays in place for now —
+  // out of scope to delete that whole code path here.
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -2703,8 +2614,13 @@ export default function Home() {
       <Starfield count={60} />
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
-        {/* ── LIVE NOW ── hidden when no real live projects */}
-        <LiveNowSection projects={liveNowProjects} />
+        {/* ── LIVE NOW ── hidden when no real live projects.
+             Wrapping in an explicit length check stops the component
+             tree from emitting *anything* (margins, wrappers, layout
+             reservations) when the projects list is empty. */}
+        {liveNowProjects.length > 0 && (
+          <LiveNowSection projects={liveNowProjects} />
+        )}
 
         {/* ── HERO — Input-First ── */}
         <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
@@ -2757,18 +2673,16 @@ export default function Home() {
               <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
                 <span className="text-emerald-400">Flat $29–$99/month.</span> 0% commission. Keep every sale.
               </p>
-              <p className="mx-auto mt-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
-                First 100 merchants free
-              </p>
 
               {/* ── MERCHANT-FIRST CTAs ───────────────────────────────
-                   Hero is permanently merchant-mode. The old audience
-                   toggle ("I'm selling / I'm shopping") added friction
-                   and confused the 5-second read for a non-technical
-                   business owner. Buyer-side discovery still has a small
-                   entry point further down (Discover link below the
-                   trust strip) and a full-fat home at /discover. */}
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
+                   One primary green button. Secondary action demoted to
+                   a small text link beneath so the green CTA owns the
+                   eye on first scan. The old audience toggle ("I'm
+                   selling / I'm shopping") and the redundant founding
+                   caption ("First 100 merchants free" — already in the
+                   pill above) were removed in the homepage audit pass
+                   to lower the 5-second-read bar. */}
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <Link
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
@@ -2777,82 +2691,54 @@ export default function Home() {
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-950/60 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                  className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-500 transition hover:text-emerald-400"
                 >
-                  See How It Works
+                  See how it works →
                 </a>
               </div>
             </div>
 
             <div className="mx-auto max-w-3xl text-center">
 
-              {/* ── PROOF OF MOTION (or FounderNote fallback) ─────
-                   Strict 4-cell honest-data rule (Phase 0A). Renders the
-                   stats grid only when ALL 4 cells are >0 with real
-                   30-day-window data. Otherwise renders FounderNote in
-                   the same vertical slot — never empty space. */}
-              <ProofOfMotion fallback={<FounderNote />} />
-
-
-              {/* ── Trust line ── */}
-              <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
+              {/* ── Trust line ──
+                   Hero now ends here. ProofOfMotion / FounderNote
+                   relocated to a slim section just before the final
+                   CTA so the hero stays a single tight value-prop
+                   block. Discover link and payment-icons strip were
+                   removed in Batch 1; payment-method trust signal
+                   moved to the final CTA section. */}
+              <div className="hero-entrance-delay-2 mx-auto mt-8 space-y-3">
                 <p className="text-[13px] text-zinc-400">
                   Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
-                {/* Buyer entry point — small link only. The homepage is
-                    merchant-first; full buyer-side discovery lives at
-                    /discover. */}
-                <p className="text-[12px] text-zinc-500">
-                  Looking for local deals?{" "}
-                  <Link
-                    href="/discover"
-                    className="text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
-                  >
-                    Search Discover →
-                  </Link>
-                </p>
-                {/* Payment icons — consumer-facing payment methods only.
-                    Solana removed per Phase 0A and consolidated on /technology. */}
-                <div className="flex items-center justify-center gap-4 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-                  <span className="flex items-center gap-1.5">
-                    <svg width="20" height="13" viewBox="0 0 24 16" fill="none" className="text-zinc-600"><rect x="0.5" y="0.5" width="23" height="15" rx="2" stroke="currentColor"/><rect x="0" y="4" width="24" height="4" fill="currentColor" opacity="0.3"/></svg>
-                    Visa
-                  </span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="flex items-center gap-1.5">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-zinc-600"><circle cx="9" cy="12" r="7" stroke="currentColor" opacity="0.5"/><circle cx="15" cy="12" r="7" stroke="currentColor" opacity="0.5"/></svg>
-                    Mastercard
-                  </span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="text-zinc-600">Apple Pay</span>
-                  <span className="text-zinc-800">·</span>
-                  <span className="text-zinc-600">Stripe Checkout</span>
-                </div>
               </div>
 
             </div>
           </div>
         </div>
 
-        {/* ── SEARCH RESULTS ── rendered only after the user runs a search.
-             The outer div ALWAYS mounts so category-chip clicks have a
-             scrollIntoView target even before data arrives. */}
-        <div ref={searchResultsRef}>
-          <SearchResults
-            results={findResults}
-            externalResults={findExternalResults}
-          />
-        </div>
+        {/* ── SEARCH RESULTS removed — the homepage no longer has a
+             customer search surface, so there's nothing to render
+             results into. Buyer-side search lives at /discover. ── */}
 
         {/* ── DEALS + RECENT SALES removed — too noisy on homepage
              per product review. Deals are visible on /discover and
              individual storefronts. Sales proof can return when GMV
              volume is high enough to be impressive, not distracting. ── */}
 
-        {/* ── Platform Activity ── */}
-        <div className="mx-auto mt-6 max-w-4xl">
-          <PlatformActivity projectCount={allPublicProjects.length} />
-        </div>
+        {/* ── Platform Activity ──
+             Gated behind a trust-safe project-count threshold so
+             tiny early-stage numbers ("· 1 live") don't undermine
+             credibility. Same spirit as ProofOfMotion's 4-cell
+             rule: only render when there's enough volume for the
+             component to make the platform look active rather than
+             empty. Tune PLATFORM_ACTIVITY_MIN_PROJECTS as the
+             merchant base grows. */}
+        {allPublicProjects.length >= 5 && (
+          <div className="mx-auto mt-6 max-w-4xl">
+            <PlatformActivity projectCount={allPublicProjects.length} />
+          </div>
+        )}
 
         {/* ── VISUAL PRODUCT MOMENT ─────────────────────────────────
              Static styled mockup of the embed UI as it appears on a
@@ -2969,19 +2855,12 @@ export default function Home() {
           </p>
         </div>
 
-        {/* ── PAIN SECTION ──────────────────────────────────────────
-             One short paragraph. The point is to land the merchant
-             insight in five seconds: their website already exists,
-             it just doesn't sell. */}
-        <div className="mx-auto mt-20 max-w-3xl px-4 text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            You already paid for your website.{" "}
-            <span className="text-emerald-400">Now let it sell live.</span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            Most business websites sit there like digital brochures. DUM Live adds live offers, Stripe checkout, loyalty rewards, and customer reactivation — without sending your traffic somewhere else.
-          </p>
-        </div>
+        {/* Pain section removed in the homepage audit pass. Its
+             strongest line ("You already paid for your website")
+             was folded into the Final CTA eyebrow so the page goes
+             straight from product surface (visual product moment)
+             into proof (5-card comparison) without a small
+             text-only interruption between the two visual blocks. */}
 
         {/* ── FeeCalculator, PricingTiers, RetentionSection, WhatnotPitch,
              ComparisonTable, Features grid, and AI assistant demo all
@@ -3070,7 +2949,7 @@ export default function Home() {
               {
                 emoji: "🏠",
                 title: "HVAC & contractors",
-                copy: "Run flash booking offers when the schedule has gaps.",
+                copy: "Run flash promotions to fill empty schedule slots — same-day deals, seasonal tune-ups, off-peak pricing.",
               },
               {
                 emoji: "💪",
@@ -3148,16 +3027,26 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ── PROOF / FOUNDER NOTE ─────────────────────────────────
+             Relocated from inside the hero so the hero stays one
+             tight value-prop block. ProofOfMotion's 4-cell honest-
+             data rule still gates the stats grid; FounderNote is the
+             fallback so the slot is never empty. Sits right before
+             the final CTA — humanises the close. */}
+        <div className="mx-auto mt-20 max-w-3xl px-4">
+          <ProofOfMotion fallback={<FounderNote />} />
+        </div>
+
         {/* ── FINAL CTA ────────────────────────────────────────────
              Single closing block. The previous page had a separate
              "seller banner" + "bottom CTA" — collapsed into one to
              match the user-direction "less clutter, clear CTA
              hierarchy." Pricing CTA points at /business; Activate
              CTA points at /merchant. */}
-        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
+        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 mt-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Ready to sell on your own site
+              You already paid for your website
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
               Ready to turn your website into a{" "}
@@ -3180,6 +3069,17 @@ export default function Home() {
                 See Pricing
               </Link>
             </div>
+            {/* Brand-stance closer — paired form only. The standalone
+                phrase ("Drive your market") is too vague to lead the
+                page; the contrast pairing ("not platform fees") ties
+                the philosophy to the actual product advantage and
+                reinforces the merchant-first positioning without
+                competing with the H1. Subtle, secondary, single
+                surface — explicitly NOT a homepage tagline or H1
+                replacement. */}
+            <p className="mt-6 text-[12px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">
+              Drive your market — not platform fees.
+            </p>
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
               <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-zinc-300">any</strong> business on the network.
             </div>
