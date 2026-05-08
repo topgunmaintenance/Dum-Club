@@ -1307,6 +1307,20 @@ export default function ProjectPage() {
 
     if (!authUser) {
       setBuyStep((p) => ({ ...p, [oid]: "blocked_no_auth" }));
+      // Buyer hit Buy Now while signed out — kick the Privy login
+      // modal instead of silently no-op'ing. The pinned-offer card
+      // and mobile sticky bar both call buyOffer() unconditionally
+      // (they don't gate on auth like the per-offer grid does), so
+      // without this branch the click does nothing on dum.club —
+      // /embed already does the right thing in handleBuy().
+      try {
+        login();
+      } catch (err) {
+        setBuyError((p) => ({
+          ...p,
+          [oid]: err instanceof Error ? err.message : "Sign-in failed",
+        }));
+      }
       return;
     }
     if (isOwner) {
