@@ -4075,6 +4075,11 @@ return (
             projectId={id as string}
             userId={authUser?.privyId || ""}
             autoStart={autoGoLive}
+            // Phase 3 (Q6) — pre-stream guard. The component shows a
+            // confirm dialog before requesting camera if no offer is
+            // pinned, so the merchant doesn't go live to viewers who
+            // can't buy.
+            pinnedOfferId={project?.pinned_offer_id ?? null}
             onLive={() => {
               setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
               setLiveSalesCount(0);
@@ -4234,7 +4239,10 @@ return (
                   still rendered on mobile as an always-visible quick action. */}
               <div>
                 {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
-                  <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
+                  <div
+                    data-auction-card
+                    className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}
+                  >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
                       {isAuctionActive && (
@@ -4524,11 +4532,27 @@ return (
                         <span className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-400">Top Bid</span>
                       ) : (
                         <button
-                          onClick={handlePlaceBid}
+                          // Q9 — if there's no bid amount entered yet,
+                          // tapping the sticky-bar Bid button on mobile
+                          // would submit an empty/NaN amount through
+                          // handlePlaceBid. Scroll to the auction card's
+                          // visible input instead so the buyer can type
+                          // an amount in the existing UI.
+                          onClick={() => {
+                            if (!auctionBidAmount.trim()) {
+                              if (typeof document !== "undefined") {
+                                document
+                                  .querySelector("[data-auction-card]")
+                                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              }
+                              return;
+                            }
+                            handlePlaceBid();
+                          }}
                           disabled={auctionBidding}
                           className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
                         >
-                          {auctionBidding ? "..." : "Bid"}
+                          {auctionBidding ? "..." : auctionBidAmount.trim() ? "Bid" : "Place Bid"}
                         </button>
                       )
                     ) : (

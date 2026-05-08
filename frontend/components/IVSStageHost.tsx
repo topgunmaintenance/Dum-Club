@@ -12,6 +12,12 @@ interface IVSStageHostProps {
   onLive: () => void;
   onEnd: () => void;
   onError: (msg: string) => void;
+  // Audit #4 Phase 3 (Q6) — pre-stream guard. When the merchant
+  // clicks Go Live without a pinned offer, surface a confirm
+  // dialog before requesting camera. Null / undefined means
+  // "no pinned offer yet" → confirm fires; a non-empty string
+  // (offer UUID) means everything's wired up → confirm skipped.
+  pinnedOfferId?: string | null;
 }
 
 // Stable refs outside component to survive re-renders and strict mode
@@ -20,7 +26,7 @@ let _localStreams: any[] = [];
 let _videoTrackId: string | null = null;
 let _audioTrackId: string | null = null;
 
-export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError }: IVSStageHostProps) {
+export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId }: IVSStageHostProps) {
   const [status, setStatus] = useState<HostStatus>(() => {
     // If stage exists from a previous render, stay in live state
     return _stageInstance ? "live" : "idle";
@@ -30,6 +36,23 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const startPreview = useCallback(async () => {
+    // Audit #4 Phase 3 (Q6) — pre-stream guard. If the merchant
+    // is about to go live without a pinned offer, the buyers
+    // who land during the show will see a stream with nothing
+    // to buy. Surface a confirm dialog before we even request
+    // camera access; OK = "go live anyway", Cancel = "let me
+    // pin first." Cancel is the safer default — the merchant
+    // has to actively press OK to override.
+    if (
+      typeof window !== "undefined" &&
+      (!pinnedOfferId || pinnedOfferId.trim() === "")
+    ) {
+      const ok = window.confirm(
+        "You haven't pinned a product yet. Viewers won't see anything to buy.\n\nGo live anyway? Click Cancel to pin first.",
+      );
+      if (!ok) return;
+    }
+
     setStatus("requesting_camera");
     setErrorMsg(null);
     console.log("[ivs-host] Requesting camera/mic");
@@ -57,7 +80,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       console.error("[ivs-host] getUserMedia failed:", msg);
       setErrorMsg(msg); setStatus("error"); onError(msg);
     }
-  }, [onError]);
+  }, [onError, pinnedOfferId]);
 
   useEffect(() => {
     if (autoStart && status === "idle") startPreview();
