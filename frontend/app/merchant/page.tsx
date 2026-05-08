@@ -354,7 +354,7 @@ export default function MerchantPage() {
             </div>
           )}
 
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl">
               Keep{" "}
               <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
@@ -369,74 +369,19 @@ export default function MerchantPage() {
             </p>
           </div>
 
-          {/* ── Whatnot contrast callout — direct fee comparison ── */}
-          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
-              The math
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-4">
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500">Whatnot</div>
-                <div className="mt-1 text-lg font-bold text-red-400">8% + 2.9%</div>
-                <div className="text-xs text-zinc-500">per sale, forever</div>
-              </div>
-              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
-                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">DUM Club</div>
-                <div className="mt-1 text-lg font-bold text-emerald-400">$0 per sale</div>
-                <div className="text-xs text-emerald-400/80">flat $29–$99/mo · founding 100 free</div>
-              </div>
-            </div>
-            <div className="mt-3 text-center text-xs text-zinc-400">
-              On $10k/mo in sales, you keep <span className="font-bold text-emerald-400">~$1,090 more</span> per month with DUM Club.
-            </div>
-          </div>
-
-          {/* ── 3-point sell ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
-            <ul className="space-y-3">
-              {[
-                "Keep 100% of every sale — 0% commission, always",
-                "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
-                "Founding 100 merchants pay $0 today and lock in $29/month forever",
-              ].map((line) => (
-                <li
-                  key={line}
-                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
-                >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
-                    ✓
-                  </span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* ── Founder testimonial — social proof, real face ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
-            <div className="flex items-start gap-4">
-              <img
-                src="/Julian.jpeg"
-                alt="Julian Mero — founder, Topgun Maintenance LLC"
-                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm leading-relaxed text-zinc-200">
-                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, zero commission — it just works.&rdquo;
-                </p>
-                <div className="mt-3 text-[11px] text-zinc-500">
-                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* ── The form — one field only ──
                Dropped from 4 fields to 1. Rule of thumb: each extra
                field on a cold signup CTA costs ~10% completion. Biz
                type + city + state move to progressive profile after
-               signup. */}
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
+               signup. Phase 4 of the merchant audit moved the form
+               above the 5-expense-line comparison, the 3-point sell,
+               and the founder testimonial — on a 393px-wide phone
+               the input was previously ~2.5 screens of scroll below
+               the H1, costing visible mobile abandonment. The proof
+               / sell content sits below the form for hesitant
+               readers; merchants who already know they want in see
+               the form immediately. */}
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
             <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
               {programOpen ? "Claim your founding spot" : "Start a merchant account"}
             </div>
@@ -472,6 +417,102 @@ export default function MerchantPage() {
               <p className="text-center text-[11px] text-zinc-500">
                 You can add business type, location, and offers on the next step.
               </p>
+            </div>
+          </div>
+
+          {/* ── One-fee-replaces-five comparison ──
+               Phase 4 of the merchant audit replaced the prior
+               Whatnot-only contrast box with the same 5-expense-line
+               framing used on the homepage. A barber, restaurant
+               owner, mechanic, gym, contractor, or local shop has
+               typically NEVER used Whatnot — leading the signup
+               with "you'd save vs Whatnot" alienates the very
+               audience this page is meant to convert. The five
+               expense lines below are the bills a normal local
+               business already pays today. */}
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
+            <div className="mb-4 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
+                One flat fee instead of five
+              </div>
+              <div className="mt-2 text-base font-bold text-white">
+                DUM Club replaces five expense lines you already pay.
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                { name: "Delivery apps", fees: "15–30%", detail: "of every order" },
+                { name: "Live selling", fees: "8% + fees", detail: "per sale" },
+                { name: "Loyalty software", fees: "$50–$300", detail: "per month" },
+                { name: "SMS retention", fees: "$20–$200", detail: "per month" },
+              ].map((p) => (
+                <div
+                  key={p.name}
+                  className="rounded-xl border border-red-500/15 bg-zinc-950/60 p-3 text-center"
+                >
+                  <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    {p.name}
+                  </div>
+                  <div className="mt-1 font-mono text-base font-extrabold text-red-400/80">
+                    {p.fees}
+                  </div>
+                  <div className="text-[10px] text-zinc-500">{p.detail}</div>
+                </div>
+              ))}
+              <div className="col-span-2 rounded-xl border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.10] to-zinc-900/60 p-3 text-center shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400">
+                  DUM Club
+                </div>
+                <div className="mt-1 font-mono text-base font-extrabold text-emerald-400">
+                  $29–$99
+                </div>
+                <div className="text-[10px] text-emerald-400/80">
+                  flat / month · 0% commission
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 text-center text-xs text-zinc-300">
+              One bill. <span className="font-bold text-emerald-400">Keep your revenue.</span>
+            </div>
+          </div>
+
+          {/* ── 3-point sell ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
+            <ul className="space-y-3">
+              {[
+                "Keep 100% of every sale — 0% commission, always",
+                "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
+                "Founding 100 merchants pay $0 today and lock in $29/month forever",
+              ].map((line) => (
+                <li
+                  key={line}
+                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
+                >
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
+                    ✓
+                  </span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── Founder testimonial — social proof, real face ── */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              <img
+                src="/Julian.jpeg"
+                alt="Julian Mero — founder, Topgun Maintenance LLC"
+                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-relaxed text-zinc-200">
+                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission — it just works.&rdquo;
+                </p>
+                <div className="mt-3 text-[11px] text-zinc-500">
+                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
+                </div>
+              </div>
             </div>
           </div>
         </div>
