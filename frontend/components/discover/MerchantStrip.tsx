@@ -14,7 +14,7 @@ export function MerchantStrip() {
         Own a local business?
       </p>
       <p className="mt-2 text-sm text-zinc-300 sm:text-base">
-        Flat $29/mo, 0% commission. First 100 merchants lock in forever.
+        Flat $29/mo. 0% commission, always. Founding merchants get preferred pricing after launch.
       </p>
       <Link
         href="/merchant"

@@ -79,7 +79,7 @@ function BusinessPageInner() {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
               {claimed != null ? `${claimed} of ${totalCap} founding spots claimed` : "Founding 100 · spots limited"}
-              <span className="ml-2 text-emerald-400/70">· $0 now · $29/mo locked in forever</span>
+              <span className="ml-2 text-emerald-400/70">· $0 today · Preferred founding pricing</span>
             </span>
           </div>
 
@@ -91,7 +91,7 @@ function BusinessPageInner() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Flat monthly fee. Zero commission. Zero per-sale fees. The first 100 merchants join free and lock in $29/month forever after the founding period.
+            Flat monthly fee. 0% commission, always. Founding merchants pay $0 today and receive preferred founding pricing after launch.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -250,7 +250,7 @@ function OverviewTab({
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8–30% of every order. We charge $29–$99/month. Flat. Forever. First 100 merchants free." },
+              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8–30% of every order. We charge $29–$99/month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
               { n: "03", title: "Customers come back automatically", desc: "DUM Points and AI retention bring one-time buyers back. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
@@ -300,7 +300,7 @@ function OverviewTab({
             The first 100 merchants get in free.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
-            $0 during the founding period. Locked at $29/month forever after. Founding merchant badge permanent on your profile.
+            $0 during the founding period. Preferred founding pricing after launch. Founding merchant badge permanent on your profile.
           </p>
           <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/60 px-6 py-4 backdrop-blur-sm">
             <span className="font-mono text-4xl font-extrabold text-emerald-400">
@@ -366,7 +366,7 @@ function PricingTab() {
             Flat fee. <span className="text-emerald-400">Zero commission. Ever.</span>
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-zinc-400">
-            The first 100 merchants join free and lock in $29/mo forever. No percentage cut on any sale.
+            Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission on any sale, always.
           </p>
         </div>
 

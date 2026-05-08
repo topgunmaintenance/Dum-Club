@@ -8,7 +8,7 @@ import { SiteChrome } from "../components/SiteChrome";
 export const metadata: Metadata = {
   title: "DUM Club — Live Selling Marketplace. Flat Fee. Zero Commission.",
   description:
-    "Live selling, local deals, and rewards that bring customers back. Sellers pay one flat fee — $29 to $99/mo — and keep 100% of every sale. No commission, ever. First 100 merchants join free.",
+    "Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee — $29 to $99/mo — and keep 100% of every sale. 0% commission, always. Founding merchants get preferred pricing after launch.",
   openGraph: {
     title: "DUM Club — Live Selling Marketplace. Zero Commission.",
     description:
