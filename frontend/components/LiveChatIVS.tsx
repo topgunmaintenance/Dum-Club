@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
 
+// Dev-only debug log — silenced in production so the demo recording
+// console stays clean. NODE_ENV is inlined by Next.js's DefinePlugin
+// at build time.
+const __debug = process.env.NODE_ENV === "development";
+
 interface ChatMessage {
   id: string;
   sender_id: string;
@@ -44,19 +49,19 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    console.log("[live-chat] MOUNTED — host:", isHost, "project:", projectId, "user:", userId);
+    __debug && console.log("[live-chat] MOUNTED — host:", isHost, "project:", projectId, "user:", userId);
 
     function connect() {
       const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
       const wsHost = API_BASE.replace(/^https?:\/\//, "");
       const url = `${wsProtocol}://${wsHost}/api/auction-ws/events/${projectId}`;
-      console.log("[live-chat] Connecting:", url);
+      __debug && console.log("[live-chat] Connecting:", url);
 
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("[live-chat] Connected");
+        __debug && console.log("[live-chat] Connected");
         setConnected(true);
       };
 
@@ -69,10 +74,10 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             setViewerCount(msg.data.count);
             onViewerCountChange?.(msg.data.count);
           } else if (msg.type === "item_updated" && onItemUpdate) {
-            console.log("[live-chat] Item updated:", msg.data);
+            __debug && console.log("[live-chat] Item updated:", msg.data);
             onItemUpdate(msg.data as ItemUpdateEvent);
           } else if (msg.type === "item_sold" && onItemSold) {
-            console.log("[live-chat] Item sold:", msg.data);
+            __debug && console.log("[live-chat] Item sold:", msg.data);
             onItemSold(msg.data);
             // Show sold announcement in chat
             setMessages((prev) => [...prev.slice(-199), {
@@ -88,7 +93,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       };
 
       ws.onclose = () => {
-        console.log("[live-chat] Disconnected");
+        __debug && console.log("[live-chat] Disconnected");
         setConnected(false);
         wsRef.current = null;
         // Auto-reconnect after 2s
@@ -131,7 +136,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
     setInput("");
   }
 
-  console.log("[live-chat] RENDERING — host:", isHost, "connected:", connected, "messages:", messages.length);
+  __debug && console.log("[live-chat] RENDERING — host:", isHost, "connected:", connected, "messages:", messages.length);
 
   return (
     <div
@@ -186,10 +191,11 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             maxLength={300}
             style={{
               flex: 1,
+              minHeight: 44,
               borderRadius: 8,
               border: "1px solid #27272a",
               background: "#18181b",
-              padding: "8px 12px",
+              padding: "10px 12px",
               fontSize: 14,
               color: "#fff",
               outline: "none",
@@ -200,10 +206,11 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             type="submit"
             disabled={!userId || !connected || !input.trim()}
             style={{
+              minHeight: 44,
               borderRadius: 8,
               background: "#10b981",
-              padding: "8px 16px",
-              fontSize: 12,
+              padding: "10px 18px",
+              fontSize: 13,
               fontWeight: 700,
               color: "#000",
               border: "none",

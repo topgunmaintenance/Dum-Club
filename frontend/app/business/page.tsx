@@ -282,7 +282,7 @@ function OverviewTab({
             { title: "Storefront on the marketplace", desc: "A real buyable page with your offers, photos, and Stripe checkout. Shareable anywhere." },
             { title: "AI sales assistant", desc: "A customer-facing chatbot that answers questions using your real offer data. Helps close sales 24/7." },
             { title: "Listed on /discover", desc: "The marketplace browse page with search, live streaming, and local discovery. Free organic traffic." },
-            { title: "Founding merchant badge", desc: "Permanent badge on your profile if you join the founding 100. You locked in early — we don't forget it." },
+            { title: "Founding merchant badge", desc: "Permanent badge on your profile if you join the founding 100. Recognised as one of the first sellers on the network." },
           ].map((item) => (
             <div key={item.title} className="rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-5 backdrop-blur-sm transition hover:border-emerald-400/30">
               <div className="mb-2 text-sm font-bold text-white">{item.title}</div>

@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { API_BASE } from "../lib/apiBase";
 
+// Dev-only debug log. NODE_ENV is inlined by Next.js's DefinePlugin
+// at build time (this file has no @solana/web3.js import, so the
+// inliner fires correctly here). In production, the && short-circuits
+// so the strings + JSON serialisations are never evaluated and the
+// browser console stays clean during the demo recording.
+const __debug = process.env.NODE_ENV === "development";
+
 type HostStatus = "idle" | "requesting_camera" | "previewing" | "connecting" | "live" | "error" | "ended";
 
 interface IVSStageHostProps {
@@ -55,7 +62,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
     setStatus("requesting_camera");
     setErrorMsg(null);
-    console.log("[ivs-host] Requesting camera/mic");
+    __debug && console.log("[ivs-host] Requesting camera/mic");
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMsg("Camera not supported"); setStatus("error"); onError("Camera not supported");
@@ -67,7 +74,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
-      console.log("[ivs-host] Camera acquired:", stream.getTracks().map(t => `${t.kind}:${t.id}:${t.readyState}`));
+      __debug && console.log("[ivs-host] Camera acquired:", stream.getTracks().map(t => `${t.kind}:${t.id}:${t.readyState}`));
       cameraStreamRef.current = stream;
 
       if (previewRef.current) {
@@ -89,13 +96,13 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   const goLive = useCallback(async () => {
     // Guard: don't rejoin if already connected
     if (_stageInstance) {
-      console.log("[ivs-host] Stage already exists, skipping");
+      __debug && console.log("[ivs-host] Stage already exists, skipping");
       setStatus("live");
       return;
     }
 
     setStatus("connecting");
-    console.log("[ivs-host] Creating IVS stage...");
+    __debug && console.log("[ivs-host] Creating IVS stage...");
 
     try {
       const res = await fetch(`${API_BASE}/api/ivs/create-stage`, {
@@ -108,7 +115,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         throw new Error(err.detail || `Stage creation failed (${res.status})`);
       }
       const data = await res.json();
-      console.log("[ivs-host] Stage:", data.stage_id, "token:", !!data.host_token);
+      __debug && console.log("[ivs-host] Stage:", data.stage_id, "token:", !!data.host_token);
       if (!data.host_token) throw new Error("No host token");
 
       // Load SDK
@@ -123,7 +130,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       if (!vt || vt.readyState !== "live") throw new Error(`Video track not live: ${vt?.readyState}`);
       if (!at || at.readyState !== "live") throw new Error(`Audio track not live: ${at?.readyState}`);
 
-      console.log("[ivs-host] Tracks verified:", {
+      __debug && console.log("[ivs-host] Tracks verified:", {
         video: `id=${vt.id} state=${vt.readyState} enabled=${vt.enabled}`,
         audio: `id=${at.id} state=${at.readyState} enabled=${at.enabled}`,
       });
@@ -133,16 +140,16 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         _localStreams = [new LocalStageStream(vt), new LocalStageStream(at)];
         _videoTrackId = vt.id;
         _audioTrackId = at.id;
-        console.log("[ivs-host] LocalStageStreams created (new). Count:", _localStreams.length);
+        __debug && console.log("[ivs-host] LocalStageStreams created (new). Count:", _localStreams.length);
       } else {
-        console.log("[ivs-host] LocalStageStreams reused (same track IDs). Count:", _localStreams.length);
+        __debug && console.log("[ivs-host] LocalStageStreams reused (same track IDs). Count:", _localStreams.length);
       }
 
       // Frozen strategy — all references are stable
       const frozenStreams = _localStreams;
       const strategy = {
         stageStreamsToPublish: () => {
-          console.log("[ivs-host] stageStreamsToPublish → returning", frozenStreams.length, "frozen streams");
+          __debug && console.log("[ivs-host] stageStreamsToPublish → returning", frozenStreams.length, "frozen streams");
           return frozenStreams;
         },
         shouldPublishParticipant: () => true,
@@ -160,22 +167,22 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
             if (a && typeof a === "object") return JSON.stringify({ userId: a.userId, isLocal: a.isLocal, isPublishing: a.isPublishing, message: a.message, code: a.code });
             return String(a);
           }).join(", ");
-          console.log(`[IVS-HOST] ${evt} → ${s}`);
+          __debug && console.log(`[IVS-HOST] ${evt} → ${s}`);
         });
       }
 
       stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
-        console.log("[ivs-host] Connection:", state);
+        __debug && console.log("[ivs-host] Connection:", state);
         if (state === ConnectionState.CONNECTED) {
-          console.log("[ivs-host] ✓ CONNECTED — calling onLive");
+          __debug && console.log("[ivs-host] ✓ CONNECTED — calling onLive");
           setStatus("live");
           onLive();
         }
       });
 
-      console.log("[ivs-host] Joining stage...");
+      __debug && console.log("[ivs-host] Joining stage...");
       await stage.join();
-      console.log("[ivs-host] ✓ stage.join() resolved");
+      __debug && console.log("[ivs-host] ✓ stage.join() resolved");
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed";
@@ -187,7 +194,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   }, [projectId, userId, onLive, onError]);
 
   const endStream = useCallback(async () => {
-    console.log("[ivs-host] Ending stream (user action)...");
+    __debug && console.log("[ivs-host] Ending stream (user action)...");
 
     if (_stageInstance) {
       try { _stageInstance.leave(); } catch {}
@@ -221,7 +228,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       // Only clean up if the component is being removed from the page entirely
       // (not just a re-render). Check if we should keep the stage alive.
       // The module-level _stageInstance will persist across re-mounts.
-      console.log("[ivs-host] useEffect cleanup — stage preserved in module scope");
+      __debug && console.log("[ivs-host] useEffect cleanup — stage preserved in module scope");
     };
   }, []);
 
