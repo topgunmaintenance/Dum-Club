@@ -5220,40 +5220,57 @@ return (
           // entry maps a merchant's website type to a one-line
           // instruction in their language — no iframe / script / JS
           // jargon in the default flow.
+          // Q10 — added a `mobileNote` per platform so a merchant
+          // editing their site from a phone gets editor-specific
+          // guidance. Mobile editors of these platforms diverge
+          // meaningfully from desktop; without this hint the
+          // desktop instruction sends a phone user looking for
+          // controls that don't exist in the mobile app.
           const PLATFORMS: Array<{
             id: string;
             name: string;
             instruction: string;
+            mobileNote?: string;
           }> = [
             {
               id: "wordpress",
               name: "WordPress",
               instruction:
                 "On the page where you want it, add a Custom HTML block, then paste this in.",
+              mobileNote:
+                "On the WordPress mobile app: edit the page, tap +, choose Custom HTML.",
             },
             {
               id: "wix",
               name: "Wix",
               instruction:
                 "Drag in an Embed Code element where you want it, then paste this in.",
+              mobileNote:
+                "On the Wix mobile app: tap Add → Embed Code → HTML iframe.",
             },
             {
               id: "shopify",
               name: "Shopify",
               instruction:
                 "Open the page template in your theme editor and paste this into a Custom Liquid section.",
+              mobileNote:
+                "Shopify's theme editor is best on desktop — open this on a laptop if you can.",
             },
             {
               id: "squarespace",
               name: "Squarespace",
               instruction:
                 "Add a Code Block on the page and paste this in.",
+              mobileNote:
+                "On the Squarespace mobile app: edit the page, tap +, choose Code.",
             },
             {
               id: "webflow",
               name: "Webflow",
               instruction:
                 "Drag an Embed element onto the page and paste this in.",
+              mobileNote:
+                "Webflow's editor is desktop-only — open this on a laptop.",
             },
             {
               id: "developer",
@@ -5266,12 +5283,16 @@ return (
               name: "Custom HTML",
               instruction:
                 "Paste this just before </body>, or inside the section where you want it to appear.",
+              mobileNote:
+                "Same instructions work on most mobile editors — paste into any HTML / Code block.",
             },
             {
               id: "unsure",
               name: "Not sure",
               instruction:
                 "No worries — use the Custom HTML method. It works on most websites.",
+              mobileNote:
+                "If you only have your phone, the Custom HTML method works in most mobile editors too.",
             },
           ];
 
@@ -5298,7 +5319,7 @@ return (
                       Add DUM Live to Your Website
                     </h3>
                     <p className="mt-1 text-sm text-zinc-400">
-                      Turn your website into a live selling storefront in minutes.
+                      Live video, pinned flash offers, Stripe checkout, and loyalty rewards — all on your own site.
                     </p>
                   </div>
                   <div className="flex flex-col items-start gap-1 sm:items-end">
@@ -5342,8 +5363,8 @@ return (
                           Activate DUM Live
                         </h2>
                         <p className="text-xs text-zinc-500">
-                          Add a live selling storefront to{" "}
-                          <span className="text-zinc-300">{slug}</span>
+                          Add your live storefront to{" "}
+                          <span className="text-zinc-300">{project?.title || project?.name || slug}</span>
                         </p>
                       </div>
                       <button
@@ -5482,6 +5503,12 @@ return (
                                     {p.name} install
                                   </div>
                                   <p className="text-sm text-zinc-200">{p.instruction}</p>
+                                  {p.mobileNote && (
+                                    <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-zinc-400">
+                                      <span aria-hidden="true">📱</span>
+                                      <span>{p.mobileNote}</span>
+                                    </p>
+                                  )}
                                 </div>
                                 <div>
                                   <button
@@ -5497,9 +5524,39 @@ return (
                                     Usually takes less than 5 minutes
                                   </p>
                                 </div>
-                                <div className="rounded-lg border border-zinc-800 bg-black/40 p-3 text-[11px] text-emerald-200/80">
-                                  Once this is pasted, your live storefront will appear on your website.
-                                </div>
+
+                                {/* Q3: 3-step "what happens next" reminder
+                                    so the merchant knows to publish before
+                                    visiting their site. The "publish before
+                                    you test" trap (paste → check → blank
+                                    → panic) is one of the most common
+                                    install snags on WordPress / Squarespace. */}
+                                <ol className="space-y-1.5 rounded-xl border border-zinc-800 bg-black/40 p-3 text-[12px] text-zinc-300">
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">1</span>
+                                    <span>Paste it on your page</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">2</span>
+                                    <span>Save / Publish</span>
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">3</span>
+                                    <span>Visit your page to see it live</span>
+                                  </li>
+                                </ol>
+
+                                {/* Q6: trust copy at the activation moment.
+                                    Carries the merchant onboarding trust
+                                    line into the install surface so the
+                                    nervous merchant pasting payment-related
+                                    code on their own site has the same
+                                    reassurance they had when connecting
+                                    Stripe. */}
+                                <p className="text-center text-[11px] leading-relaxed text-zinc-500">
+                                  0% commission · No per-sale fee · Your bank info goes to Stripe, never to DUM Club.
+                                </p>
+
                                 <a
                                   href={previewUrl}
                                   target="_blank"
@@ -5565,7 +5622,10 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">4</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Test live selling</div>
+                                  <div className="font-semibold text-white">Preview my storefront</div>
+                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                    Open your live storefront in a new tab to see exactly what your customers will see.
+                                  </p>
                                   <a
                                     href={previewUrl}
                                     target="_blank"
@@ -5744,6 +5804,22 @@ return (
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* Q7: minimum-viable escalation path. A merchant who
+                        hits a snag during install (CMS strips scripts,
+                        wrong page, CSP blocks iframe, etc.) should never
+                        feel stuck without an exit. Single mailto link in
+                        the footer covers that until a real support
+                        infrastructure ships. */}
+                    <div className="flex shrink-0 items-center justify-center border-t border-zinc-800 px-5 py-3 text-[11px] text-zinc-500">
+                      Stuck?{" "}
+                      <a
+                        href="mailto:julian@dum.club?subject=DUM%20Live%20install%20help"
+                        className="ml-1 text-emerald-400 underline-offset-2 transition hover:text-emerald-300 hover:underline"
+                      >
+                        Email julian@dum.club →
+                      </a>
                     </div>
                   </div>
                 </div>
