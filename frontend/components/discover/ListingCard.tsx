@@ -190,17 +190,33 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           )}
         </div>
 
-        {/* Footer: CTA + price + timestamp */}
+        {/* Footer: price (primary) + CTA / timestamp (secondary).
+            Audit #5 Phase 2 (Q3) — promoted price to the primary
+            (left) slot with larger weight (text-lg, font-extrabold)
+            so a buyer scanning the grid sees the offer floor at a
+            glance. The CTA + timestamp move to the right column,
+            stacked, so the right side stays compact. */}
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-800/50 pt-4 mt-4">
-          <span className="text-[11px] font-medium text-zinc-400 transition group-hover:text-emerald-400">
-            {isLive ? "Watch live →" : "Shop now →"}
-          </span>
-          <div className="flex items-center gap-2">
-            {price != null && (
-              <span className="text-sm font-bold text-emerald-400">
-                From ${price < 1 ? price.toFixed(2) : Math.round(price)}
+          <div className="flex flex-col">
+            {price != null ? (
+              <>
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                  From
+                </span>
+                <span className="font-mono text-lg font-extrabold text-emerald-400">
+                  ${price < 1 ? price.toFixed(2) : Math.round(price)}
+                </span>
+              </>
+            ) : (
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                Contact for quote
               </span>
             )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[11px] font-medium text-zinc-400 transition group-hover:text-emerald-400">
+              {isLive ? "Watch live →" : "Shop now →"}
+            </span>
             <RelativeTime dateStr={project.created_at} />
           </div>
         </div>
