@@ -818,6 +818,19 @@ export default function ProjectPage() {
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
+  // Audit #4 Phase 1 (Q2) — viewer count lifted from LiveChatIVS so
+  // the public live banner can show "X watching" without opening a
+  // second WebSocket connection. Stays 0 until the first
+  // `viewer_count` event arrives over the existing chat socket.
+  const [liveViewerCount, setLiveViewerCount] = useState(0);
+  // Audit #4 Phase 1 (Q11) — when the host ends a stream during
+  // the same page session, hold a "Show ended" banner for ~30s so
+  // the buyer who was watching gets acknowledgement instead of a
+  // silent revert to storefront mode. We only flip this on a real
+  // true → false transition; pages that load after the stream
+  // ended (is_live already false) do nothing.
+  const [streamJustEnded, setStreamJustEnded] = useState(false);
+  const [streamEndedSummary, setStreamEndedSummary] = useState<{ sales: number } | null>(null);
   const [autoGoLive, setAutoGoLive] = useState(false);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
   const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
@@ -3137,6 +3150,25 @@ export default function ProjectPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, project?.is_live, isOwner]);
 
+  // Audit #4 Phase 1 (Q11) — detect a true → false transition on
+  // is_live during this page session and surface a temporary
+  // "Show ended" banner with the live-show recap (sale count
+  // captured from liveSalesCount before it resets). Auto-dismisses
+  // after 30s. Only fires on real transitions; first-load with
+  // is_live=false does nothing.
+  const lastIsLiveRef = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    const next = project?.is_live;
+    const prev = lastIsLiveRef.current;
+    lastIsLiveRef.current = next;
+    if (prev === true && next === false) {
+      setStreamEndedSummary({ sales: liveSalesCount });
+      setStreamJustEnded(true);
+      const t = setTimeout(() => setStreamJustEnded(false), 30000);
+      return () => clearTimeout(t);
+    }
+  }, [project?.is_live, liveSalesCount]);
+
   // Scroll to recommended offer when arriving from homepage
   useEffect(() => {
     if (!recommendedOffer || !offers.length || recommendedScrolled.current) return;
@@ -4001,6 +4033,37 @@ return (
         )}
       </div>
 
+      {/* Audit #4 Phase 1 (Q11) — temporary "Show ended" banner.
+           Renders for ~30s after a real is_live true→false
+           transition during the same page session. Recap copy
+           uses the cumulative sale count captured at end-of-show.
+           The banner does not block the storefront-mode UI below
+           it — the page just gets a brief acknowledgement chip
+           between live mode and silent revert. */}
+      {streamJustEnded && (
+        <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-900/60 px-5 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/20 text-xs font-bold text-emerald-300">✓</span>
+              <span className="text-sm font-bold text-white">Show ended</span>
+              {streamEndedSummary && streamEndedSummary.sales > 0 && (
+                <span className="text-[12px] text-emerald-300/80">
+                  · {streamEndedSummary.sales} sold this show
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStreamJustEnded(false)}
+              className="text-[11px] text-zinc-500 transition hover:text-zinc-300"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── IVS Host (must stay mounted across live session — rendered at top) ── */}
       {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
         <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6"}>
@@ -4023,19 +4086,47 @@ return (
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
         <div className="mb-6">
-          {/* ── LIVE banner — always full width above the grid ── */}
-          <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
-            <div className="flex items-center gap-2 sm:gap-3">
+          {/* ── LIVE banner — always full width above the grid ──
+               Audit #4 Phase 1 surfaces three real-data signals that
+               were previously hidden: the cumulative sales count
+               (Q1, was buried inside the bouncing toast), the viewer
+               count (Q2, was scoped to LiveChatIVS), and the rewards
+               pill (Q8, was zinc-on-zinc and easy to miss). All real
+               data; nothing fabricated. The Q3 "Live for HH:MM"
+               since-timer is intentionally absent — it requires a
+               backend `live_started_at` field; client-side approx.
+               would mislead late-joiners. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
               </span>
               <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-red-400">Live</span>
               <span className="text-xs sm:text-sm text-zinc-400 truncate">{projectName}</span>
+              {/* Q2 — viewer count (real, from existing WebSocket) */}
+              {liveViewerCount > 0 && (
+                <span className="rounded-full border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+                  {liveViewerCount} watching
+                </span>
+              )}
+              {/* Q1 — persistent sold-this-show counter (real,
+                  from `liveSalesCount` already incremented on
+                  every `item_sold` WebSocket event). Hidden until
+                  the first sale to avoid a sad "0 sold" pill. */}
+              {liveSalesCount > 0 && (
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+                  {liveSalesCount} sold this show
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-              <span className="rounded-full border border-zinc-800 px-2 py-0.5">Earn DUM</span>
-            </div>
+            {/* Q8 — promote the rewards pill from zinc-on-zinc to
+                 emerald so the buyer's biggest reward signal isn't
+                 whispered. Same visual weight as the founding-100
+                 pill on /merchant. */}
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-300">
+              Earn DUM Points
+            </span>
           </div>
 
           {/* ── Two-column grid: video (left) + chat (right) on lg:, stacked on mobile ── */}
@@ -4355,6 +4446,7 @@ return (
                   userId={authUser?.privyId || ""}
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
+                  onViewerCountChange={setLiveViewerCount}
                   onItemUpdate={(data) => {
                     setOffers((prev) => prev.map((o) =>
                       o.id === data.offer_id

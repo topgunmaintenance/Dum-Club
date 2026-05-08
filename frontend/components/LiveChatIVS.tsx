@@ -27,9 +27,14 @@ interface LiveChatIVSProps {
   isHost: boolean;
   onItemUpdate?: (data: ItemUpdateEvent) => void;
   onItemSold?: (data: { offer_id: string; title: string }) => void;
+  // Audit #4 Phase 1 (Q2) — surface the existing viewer count
+  // up to the parent live banner without opening a second
+  // WebSocket connection. Optional callback; existing call
+  // sites work unchanged.
+  onViewerCountChange?: (count: number) => void;
 }
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [viewerCount, setViewerCount] = useState(0);
@@ -62,6 +67,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             setMessages((prev) => [...prev.slice(-199), msg.data as ChatMessage]);
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
+            onViewerCountChange?.(msg.data.count);
           } else if (msg.type === "item_updated" && onItemUpdate) {
             console.log("[live-chat] Item updated:", msg.data);
             onItemUpdate(msg.data as ItemUpdateEvent);
