@@ -269,7 +269,7 @@ export default function MerchantPage() {
             <span className="text-emerald-400">Forever.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-zinc-200">
-            Sign in to claim your founding merchant spot. No credit card. No commission. $0 now · $29/mo locked in forever.
+            Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card.
           </p>
 
           <button
@@ -279,8 +279,11 @@ export default function MerchantPage() {
             Sign In to Continue →
           </button>
 
-          <p className="mt-4 text-[11px] text-zinc-500">
-            Secured by Privy · Takes 30 seconds
+          <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-zinc-400">
+            After sign-in: enter your business name (one field). Done in 60 seconds. No card, no commission.
+          </p>
+          <p className="mt-2 text-[11px] text-zinc-500">
+            Sign in with email or Google · Takes 30 seconds
           </p>
         </div>
       </div>
@@ -326,8 +329,8 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-zinc-200">
               {programOpen
-                ? "Founding 100 pay $0 today and lock in $29/month forever. No credit card. No commission. Ever."
-                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. Zero commission, loyalty built in. No card today.`}
+                ? "Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card."
+                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
             </p>
           </div>
 
@@ -357,9 +360,9 @@ export default function MerchantPage() {
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
             <ul className="space-y-3">
               {[
-                "Keep 100% of every sale — zero platform commission, forever",
-                "Customers earn DUM Points automatically — they come back without you paying for ads",
-                "Founding 100 pay $0 today — $29/month locked in forever after the cap closes",
+                "Keep 100% of every sale — 0% commission, always",
+                "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
+                "Founding 100 merchants pay $0 today and lock in $29/month forever",
               ].map((line) => (
                 <li
                   key={line}
@@ -560,8 +563,8 @@ export default function MerchantPage() {
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
-                <div className="text-sm font-bold text-emerald-400">Founding Member</div>
-                <div className="text-xs text-emerald-400/60">$0 during founding · $29/mo locked in forever · 0% commission always</div>
+                <div className="text-sm font-bold text-emerald-400">Founding Merchant</div>
+                <div className="text-xs text-emerald-400/60">$0 today · $29/month forever · 0% commission</div>
               </div>
             </div>
           </div>
@@ -624,12 +627,17 @@ export default function MerchantPage() {
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
-                    <button
-                      onClick={connectStripe}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
-                    >
-                      Connect Stripe →
-                    </button>
+                    <>
+                      <p className="mt-2 text-[11px] text-zinc-500">
+                        Your bank info goes to Stripe, never to DUM Club.
+                      </p>
+                      <button
+                        onClick={connectStripe}
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                      >
+                        Connect Stripe →
+                      </button>
+                    </>
                   )}
                 </div>
               </li>
