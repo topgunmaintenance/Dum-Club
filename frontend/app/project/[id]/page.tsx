@@ -1307,6 +1307,20 @@ export default function ProjectPage() {
 
     if (!authUser) {
       setBuyStep((p) => ({ ...p, [oid]: "blocked_no_auth" }));
+      // Buyer hit Buy Now while signed out — kick the Privy login
+      // modal instead of silently no-op'ing. The pinned-offer card
+      // and mobile sticky bar both call buyOffer() unconditionally
+      // (they don't gate on auth like the per-offer grid does), so
+      // without this branch the click does nothing on dum.club —
+      // /embed already does the right thing in handleBuy().
+      try {
+        login();
+      } catch (err) {
+        setBuyError((p) => ({
+          ...p,
+          [oid]: err instanceof Error ? err.message : "Sign-in failed",
+        }));
+      }
       return;
     }
     if (isOwner) {
@@ -4422,7 +4436,7 @@ return (
                                 disabled={!!buyingOfferId}
                                 className="w-full rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40 sm:w-auto sm:py-2.5"
                               >
-                                {buyingOfferId === pinnedOffer.id ? "Processing..." : "Buy Now"}
+                                {buyingOfferId === pinnedOffer.id ? "Opening secure checkout…" : "Buy Now"}
                               </button>
                             );
                           })()}
@@ -4439,7 +4453,7 @@ return (
                             buyer sees the same payment trust signal. */}
                         {!isOwner && (
                           <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-                            <span className="text-zinc-400">Stripe checkout</span> · 0% commission · Your card never touches DUM Club.
+                            <span className="text-zinc-400">Stripe checkout</span> · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
                           </p>
                         )}
                       </div>
@@ -4605,7 +4619,7 @@ return (
                   </div>
                 </div>
                 <p className="mt-1.5 text-[10px] leading-snug text-zinc-500">
-                  Stripe checkout · 0% commission · Your card never touches DUM Club.
+                  Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
                 </p>
                 </div>
               ) : null}
@@ -6696,7 +6710,7 @@ return (
                               className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
                             >
                               {buyingOfferId === offer.id && !(buyStep[offer.id] || "").startsWith("sol_")
-                                ? "Processing..."
+                                ? "Opening secure checkout…"
                                 : buyStep[offer.id] === "demo_success"
                                 ? "✓ Purchased!"
                                 : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}

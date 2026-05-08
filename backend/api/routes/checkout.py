@@ -86,7 +86,7 @@ def _get_stripe():
         _stripe = stripe
     return _stripe
 
-PLATFORM_FEE_RATE = 0.07  # 7%
+PLATFORM_FEE_RATE = 0.0  # 0% — doctrine: flat monthly fee, no per-sale cut
 
 
 # ── Models ────────────────────────────────────────────────────
