@@ -803,7 +803,11 @@ export default function EmbedShellPage() {
                       user, the button triggers Privy login via the
                       existing useAuth flow; the click that follows
                       sign-in actually starts checkout. Sold out is
-                      a hard disable. */}
+                      a hard disable.
+                      Audit #6 Phase 1 (Q7): "Processing..." replaced
+                      by "Opening secure checkout..." so the buyer
+                      knows what's about to happen during the 1-3s
+                      between click and Stripe redirect. */}
                   {soldOut ? (
                     <button
                       type="button"
@@ -820,11 +824,26 @@ export default function EmbedShellPage() {
                       className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
                     >
                       {buying
-                        ? "Processing..."
+                        ? "Opening secure checkout…"
                         : !authUser
                           ? "Sign in to buy"
                           : "Pay with Card"}
                     </button>
+                  )}
+
+                  {/* Audit #6 Phase 1 (Q4 + Q5) — Stripe trust caption
+                      and USD currency note. The trust line mirrors the
+                      one shipped on /project/[id] in Audit #4 Phase 2.
+                      The USD note pre-warns buyers that Stripe will
+                      auto-localise the displayed price (the DOP
+                      example a merchant flagged on the
+                      topgunmaintenance.com embed install). Buyer-only
+                      — sold-out, signed-in-but-pre-click, and pre-
+                      sign-in all share the same trust copy. */}
+                  {!soldOut && (
+                    <p className="text-center text-[11px] leading-relaxed text-zinc-500">
+                      Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
+                    </p>
                   )}
 
                   {buyError && (
@@ -996,7 +1015,7 @@ export default function EmbedShellPage() {
                     className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
                   >
                     {buying
-                      ? "..."
+                      ? "Opening…"
                       : !authUser
                         ? "Sign in"
                         : "Pay with Card"}
