@@ -34,10 +34,25 @@ import { API_BASE } from "./apiBase";
 
 // ── Feature flag ────────────────────────────────────────────────
 //
-// Off by default. Backend doesn't gate on it — quote/confirm
-// endpoints are always live; the UI is what's flagged off.
-export const SOL_CHECKOUT_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_SOL_CHECKOUT === "true";
+// Hackathon-temporary override: hardcoded `true` so the SOL CTA
+// renders on production for the demo. The previous env-var gate
+// (`process.env.NEXT_PUBLIC_ENABLE_SOL_CHECKOUT === "true"`) was
+// not being inlined by Next.js's NEXT_PUBLIC transform — module
+// 78813's compiled output read the env var via the webpack
+// `process` polyfill (`n(25566).env.X`), which always returns
+// undefined. So the check resolved to `"true" === undefined`
+// (false) regardless of the Vercel env-var value.
+//
+// Likely cause: this module imports @solana/web3.js, which pulls
+// in node polyfills; webpack chunked the file into a shared
+// non-client-bundle context where Next.js's env-var DefinePlugin
+// doesn't fire. The proper fix is to extract the flag into a
+// pure-client file (no @solana/web3.js imports), but that's a
+// post-hackathon refactor.
+//
+// Until then, this is hardcoded `true` for the demo. To hide
+// the SOL CTA again, flip to `false` here.
+export const SOL_CHECKOUT_ENABLED = true;
 
 // ── Wire shapes ─────────────────────────────────────────────────
 
