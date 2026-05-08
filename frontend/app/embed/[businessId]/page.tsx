@@ -1012,7 +1012,7 @@ export default function EmbedShellPage() {
                     type="button"
                     onClick={handleBuy}
                     disabled={buying || solBuying}
-                    className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                    className="min-h-[44px] rounded-lg bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
                   >
                     {buying
                       ? "Opening…"
@@ -1028,7 +1028,7 @@ export default function EmbedShellPage() {
                 type="button"
                 onClick={handlePayWithSol}
                 disabled={buying || solBuying}
-                className="mt-2 w-full rounded-lg border border-zinc-700 bg-transparent px-3 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
+                className="mt-2 min-h-[44px] w-full rounded-lg border border-zinc-700 bg-transparent px-3 py-2.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
               >
                 {solBuying
                   ? solStep === "signing"
