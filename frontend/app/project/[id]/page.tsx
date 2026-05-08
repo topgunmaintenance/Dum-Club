@@ -530,6 +530,55 @@ export default function ProjectPage() {
     "guided" | "self" | "advanced" | "developer"
   >("guided");
   const [embedPlatform, setEmbedPlatform] = useState<string | null>(null);
+
+  // Phase 4 of the embed installer audit — manual "I pasted it"
+  // confirmation toggle. localStorage-backed per slug so the
+  // merchant doesn't lose the success state on reload. We
+  // explicitly do NOT verify the install (no real embed
+  // detection, no merchant-URL ping) per the merchant audit's
+  // MVP scope — this is a trust-based toggle that flips the
+  // modal to a celebration view and queues the next action.
+  const [installConfirmed, setInstallConfirmed] = useState<boolean>(false);
+
+  // Sync installConfirmed with localStorage on mount and whenever
+  // the project's slug changes. Storage key is per-slug so a
+  // merchant with multiple projects can confirm install on each
+  // independently. Read is guarded on typeof window so it's
+  // SSR-safe; the initial `false` value renders identically on
+  // server and client until this effect runs post-hydration.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const slugKey = project?.slug;
+    if (!slugKey) return;
+    try {
+      setInstallConfirmed(
+        window.localStorage.getItem(`dum-live-installed-${slugKey}`) === "true",
+      );
+    } catch {
+      // localStorage can throw in private browsing on some
+      // browsers — non-fatal, the merchant can re-confirm.
+    }
+  }, [project?.slug]);
+
+  function confirmInstall() {
+    if (typeof window === "undefined" || !project?.slug) return;
+    try {
+      window.localStorage.setItem(`dum-live-installed-${project.slug}`, "true");
+    } catch {
+      // ignore — see useEffect above
+    }
+    setInstallConfirmed(true);
+  }
+
+  function resetInstall() {
+    if (typeof window === "undefined" || !project?.slug) return;
+    try {
+      window.localStorage.removeItem(`dum-live-installed-${project.slug}`);
+    } catch {
+      // ignore — see useEffect above
+    }
+    setInstallConfirmed(false);
+  }
   const [projectStatus, setProjectStatus] = useState("draft");
 
   const [memoryText, setMemoryText] = useState("");
@@ -5391,6 +5440,74 @@ return (
                       </button>
                     </div>
 
+                    {/* Phase 4 of the installer audit — when the
+                        merchant has confirmed the paste, the modal
+                        flips to a celebration / next-action view
+                        instead of re-rendering the install tabs.
+                        The "Reinstall on a different page" link
+                        clears the confirmation and reveals the
+                        full wizard again. */}
+                    {installConfirmed ? (
+                      <div className="flex-1 overflow-y-auto px-5 py-8 sm:py-10">
+                        <div className="mx-auto max-w-md text-center">
+                          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-emerald-400/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
+                            ✨ Installed
+                          </div>
+                          <h3 className="text-2xl font-extrabold tracking-tight text-white">
+                            DUM Live is installed on your site.
+                          </h3>
+                          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-zinc-300">
+                            Customers can now see your live storefront whenever they visit the page where you pasted the code.
+                          </p>
+
+                          {/* Next-step nudges. Linking to surfaces
+                              that already exist on this page so the
+                              merchant doesn't have to navigate
+                              elsewhere — clicking either button
+                              closes the modal and lets the merchant
+                              act inline. */}
+                          <div className="mt-6 space-y-2">
+                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                              What&apos;s next
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEmbedModalOpen(false)}
+                              className="block w-full rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
+                            >
+                              Pin a flash deal →
+                            </button>
+                            <a
+                              href={previewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-full rounded-xl border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                            >
+                              Preview my live storefront
+                            </a>
+                          </div>
+
+                          {/* Brand-stance closer — the activation
+                              moment is the right place to lightly
+                              echo "Drive your market — not platform
+                              fees." Per direction this stays
+                              supporting, not a headline. */}
+                          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300/70">
+                            Drive your market — not platform fees.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={resetInstall}
+                            className="mt-6 text-[11px] text-zinc-500 underline-offset-2 transition hover:text-zinc-300 hover:underline"
+                          >
+                            I want to reinstall on a different page
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+
                     {/* Tab nav. Wraps to 2x2 on narrow viewports. */}
                     <div className="flex shrink-0 flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2 sm:px-5">
                       {[
@@ -5577,6 +5694,27 @@ return (
                                 >
                                   Preview what your storefront will look like →
                                 </a>
+
+                                {/* Q8 — manual "I pasted it" affordance.
+                                    Trust-based confirmation: clicking
+                                    flips the modal to the celebration
+                                    view via confirmInstall(). No
+                                    automatic verification — the merchant
+                                    audit's MVP scope explicitly held the
+                                    real embed-detection backend work. */}
+                                <div className="mt-2 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.05] p-4">
+                                  <p className="text-[12px] leading-relaxed text-zinc-300">
+                                    <span className="font-bold text-white">Done pasting?</span>{" "}
+                                    Click below to confirm — we&apos;ll mark your live storefront as installed.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={confirmInstall}
+                                    className="mt-3 w-full rounded-xl border border-emerald-400/50 bg-emerald-400/10 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-400/20"
+                                  >
+                                    I pasted it on my site →
+                                  </button>
+                                </div>
                               </div>
                             );
                           })()}
@@ -5817,6 +5955,9 @@ return (
                         </div>
                       )}
                     </div>
+
+                      </>
+                    )}
 
                     {/* Q7: minimum-viable escalation path. A merchant who
                         hits a snag during install (CMS strips scripts,
