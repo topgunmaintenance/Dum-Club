@@ -304,7 +304,7 @@ export default function MerchantPage() {
             <span className="text-emerald-400">Forever.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-zinc-200">
-            Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card.
+            Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card.
           </p>
 
           <button
@@ -364,7 +364,7 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-zinc-200">
               {programOpen
-                ? "Founding 100 merchants pay $0 today and lock in $29/month forever. Always 0% commission. No credit card."
+                ? "Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card."
                 : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
             </p>
           </div>
@@ -482,7 +482,7 @@ export default function MerchantPage() {
               {[
                 "Keep 100% of every sale — 0% commission, always",
                 "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
-                "Founding 100 merchants pay $0 today and lock in $29/month forever",
+                "Founding merchants pay $0 today and receive preferred founding pricing after launch",
               ].map((line) => (
                 <li
                   key={line}
@@ -667,7 +667,7 @@ export default function MerchantPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
                 <div className="text-sm font-bold text-emerald-400">Founding Merchant</div>
-                <div className="text-xs text-emerald-400/60">$0 today · $29/month forever · 0% commission</div>
+                <div className="text-xs text-emerald-400/60">$0 today · Preferred founding pricing · 0% commission</div>
               </div>
             </div>
           </div>
@@ -713,7 +713,7 @@ export default function MerchantPage() {
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 <div className="flex-1">
                   <div className="text-sm font-semibold text-white line-through decoration-emerald-400/40">Founding spot claimed</div>
-                  <div className="text-xs text-zinc-500">You're locked into the founding rate forever.</div>
+                  <div className="text-xs text-zinc-500">You&apos;re on founding merchant pricing.</div>
                 </div>
               </li>
 
@@ -1084,7 +1084,7 @@ export default function MerchantPage() {
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Revenue</div>
-              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue ?? 0).toFixed(2)}</div>
+              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
               <div className="text-xs text-zinc-500">you keep 100% · 0% commission</div>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">

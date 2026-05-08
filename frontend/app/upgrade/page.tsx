@@ -8,7 +8,7 @@ const TIERS = [
     name: "Founding 100",
     price: "$0",
     period: "during founding",
-    afterNote: "Then $29/mo locked in forever",
+    afterNote: "Then preferred founding pricing after launch",
     color: "text-emerald-400",
     borderColor: "border-emerald-400/40",
     highlight: true,

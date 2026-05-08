@@ -198,7 +198,7 @@ export function FeeCalculator() {
             Start selling — founding merchants join free →
           </Link>
           <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-            First 100 merchants · $0 during founding period · locked at $29/mo after
+            Founding merchants · $0 during founding · Preferred founding pricing after launch
           </p>
         </div>
       </div>

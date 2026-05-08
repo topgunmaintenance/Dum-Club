@@ -120,7 +120,11 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           <span className="text-3xl">{emoji}</span>
         </div>
 
-        {/* Header: category + live badge */}
+        {/* Header: category + live badge.
+            Audit #5 Phase 1 (Q4) — promoted LIVE pill from h-1.5 / text-[9px]
+            with no fill to a fuller red pill so the live signal stops
+            getting scanned past at a glance. Same restraint, stronger
+            visibility. */}
         <div className="mb-2 flex items-center justify-between gap-2">
           {categoryLabel && (
             <span
@@ -131,20 +135,36 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             </span>
           )}
           {isLive && (
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5">
+              <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-red-400">LIVE</span>
-            </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">LIVE</span>
+            </span>
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="truncate text-base font-bold text-white sm:text-lg">
-          {project.title || project.name || "Untitled"}
-        </h3>
+        {/* Title — verified merchants get a small emerald check next
+            to the name (Q2). Source: project.verified — same field
+            used by the storefront page header. */}
+        <div className="flex items-center gap-1.5">
+          <h3 className="truncate text-base font-bold text-white sm:text-lg">
+            {project.title || project.name || "Untitled"}
+          </h3>
+          {project.verified && (
+            <span
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-400"
+              title="Verified merchant"
+              aria-label="Verified merchant"
+            >
+              <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 16 16" aria-hidden="true">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" />
+              </svg>
+              Verified
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-zinc-500">
@@ -170,17 +190,33 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           )}
         </div>
 
-        {/* Footer: CTA + price + timestamp */}
+        {/* Footer: price (primary) + CTA / timestamp (secondary).
+            Audit #5 Phase 2 (Q3) — promoted price to the primary
+            (left) slot with larger weight (text-lg, font-extrabold)
+            so a buyer scanning the grid sees the offer floor at a
+            glance. The CTA + timestamp move to the right column,
+            stacked, so the right side stays compact. */}
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-800/50 pt-4 mt-4">
-          <span className="text-[11px] font-medium text-zinc-400 transition group-hover:text-emerald-400">
-            {isLive ? "Watch live →" : "Shop now →"}
-          </span>
-          <div className="flex items-center gap-2">
-            {price != null && (
-              <span className="text-sm font-bold text-emerald-400">
-                From ${price < 1 ? price.toFixed(2) : Math.round(price)}
+          <div className="flex flex-col">
+            {price != null ? (
+              <>
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                  From
+                </span>
+                <span className="font-mono text-lg font-extrabold text-emerald-400">
+                  ${price < 1 ? price.toFixed(2) : Math.round(price)}
+                </span>
+              </>
+            ) : (
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                Contact for quote
               </span>
             )}
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[11px] font-medium text-zinc-400 transition group-hover:text-emerald-400">
+              {isLive ? "Watch live →" : "Shop now →"}
+            </span>
             <RelativeTime dateStr={project.created_at} />
           </div>
         </div>

@@ -273,10 +273,42 @@ Browse live sellers + best local deals this week
 
 ### Founding 100 Sellers
 - $0 during founding period
-- Locked into $29/month after founding period ends
+- Preferred founding pricing after launch (currently
+  ~$29/month equivalent — number is held under
+  evaluation; do NOT advertise a specific post-launch
+  number publicly until the usage-tier model is decided)
 - Founding seller badge permanent on their profile
 - FOUNDING_CAP = 100 (constant in backend/api/routes/merchant.py)
 - After slot 100: standard tiers apply to everyone new
+
+### Canonical wording for founding-pricing copy
+This wording is mandatory across all merchant-facing
+surfaces. Doctrine drift toward "locked in forever" /
+"lock in $29 forever" / "after the cap closes" is
+deprecated; sweep on sight.
+
+**Long form** (signup body, pricing pages, onboarding subhead):
+> "Founding merchants pay $0 today and receive preferred
+> founding pricing after launch. 0% commission, always."
+
+**Short form** (founding pill, badges, captions):
+> "$0 today · Preferred founding pricing · 0% commission"
+
+**Single-line variant** (meta descriptions, OG):
+> "Founding merchants get preferred pricing after launch.
+> 0% commission, always."
+
+Forbidden phrasing:
+- "locked in forever" / "lock in forever"
+- "$29/mo locked in forever" / "$29/month forever"
+- "locked at $29/month forever after"
+- "after the cap closes" / "after the founding period"
+  (replace with "after launch" — clearer, less rigid)
+- Hard "First 100 merchants free" energy in marketing
+  copy (the founding-spots scarcity pill is real-data
+  driven and stays; the loose "free" hook does not).
+  The platform is maturing — copy should feel more
+  credible and business-oriented.
 
 ### Standard Tiers (seller 101+)
 

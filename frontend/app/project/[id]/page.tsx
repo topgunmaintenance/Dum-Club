@@ -818,6 +818,19 @@ export default function ProjectPage() {
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
+  // Audit #4 Phase 1 (Q2) — viewer count lifted from LiveChatIVS so
+  // the public live banner can show "X watching" without opening a
+  // second WebSocket connection. Stays 0 until the first
+  // `viewer_count` event arrives over the existing chat socket.
+  const [liveViewerCount, setLiveViewerCount] = useState(0);
+  // Audit #4 Phase 1 (Q11) — when the host ends a stream during
+  // the same page session, hold a "Show ended" banner for ~30s so
+  // the buyer who was watching gets acknowledgement instead of a
+  // silent revert to storefront mode. We only flip this on a real
+  // true → false transition; pages that load after the stream
+  // ended (is_live already false) do nothing.
+  const [streamJustEnded, setStreamJustEnded] = useState(false);
+  const [streamEndedSummary, setStreamEndedSummary] = useState<{ sales: number } | null>(null);
   const [autoGoLive, setAutoGoLive] = useState(false);
   const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
   const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
@@ -3137,6 +3150,25 @@ export default function ProjectPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, project?.is_live, isOwner]);
 
+  // Audit #4 Phase 1 (Q11) — detect a true → false transition on
+  // is_live during this page session and surface a temporary
+  // "Show ended" banner with the live-show recap (sale count
+  // captured from liveSalesCount before it resets). Auto-dismisses
+  // after 30s. Only fires on real transitions; first-load with
+  // is_live=false does nothing.
+  const lastIsLiveRef = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    const next = project?.is_live;
+    const prev = lastIsLiveRef.current;
+    lastIsLiveRef.current = next;
+    if (prev === true && next === false) {
+      setStreamEndedSummary({ sales: liveSalesCount });
+      setStreamJustEnded(true);
+      const t = setTimeout(() => setStreamJustEnded(false), 30000);
+      return () => clearTimeout(t);
+    }
+  }, [project?.is_live, liveSalesCount]);
+
   // Scroll to recommended offer when arriving from homepage
   useEffect(() => {
     if (!recommendedOffer || !offers.length || recommendedScrolled.current) return;
@@ -3648,9 +3680,13 @@ return (
                 {parsedAiOutput?.description || project?.description || ""}
               </p>
 
-              {/* DUM Points badge */}
+              {/* DUM Points badge — Audit #4 Phase 2 (Q7).
+                  Was "DUM Points accepted" which implied redemption
+                  (held until Phase 2 doctrine unlock). Buyers earn
+                  points on every purchase; the framing now matches
+                  the actual product surface. */}
               <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
-                <span className="text-sm font-bold text-emerald-400">◆ DUM Points accepted</span>
+                <span className="text-sm font-bold text-emerald-400">◆ Earn DUM Points on every purchase</span>
               </div>
             </div>
           </div>
@@ -4001,6 +4037,37 @@ return (
         )}
       </div>
 
+      {/* Audit #4 Phase 1 (Q11) — temporary "Show ended" banner.
+           Renders for ~30s after a real is_live true→false
+           transition during the same page session. Recap copy
+           uses the cumulative sale count captured at end-of-show.
+           The banner does not block the storefront-mode UI below
+           it — the page just gets a brief acknowledgement chip
+           between live mode and silent revert. */}
+      {streamJustEnded && (
+        <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-900/60 px-5 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/20 text-xs font-bold text-emerald-300">✓</span>
+              <span className="text-sm font-bold text-white">Show ended</span>
+              {streamEndedSummary && streamEndedSummary.sales > 0 && (
+                <span className="text-[12px] text-emerald-300/80">
+                  · {streamEndedSummary.sales} sold this show
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStreamJustEnded(false)}
+              className="text-[11px] text-zinc-500 transition hover:text-zinc-300"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── IVS Host (must stay mounted across live session — rendered at top) ── */}
       {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
         <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6"}>
@@ -4008,6 +4075,11 @@ return (
             projectId={id as string}
             userId={authUser?.privyId || ""}
             autoStart={autoGoLive}
+            // Phase 3 (Q6) — pre-stream guard. The component shows a
+            // confirm dialog before requesting camera if no offer is
+            // pinned, so the merchant doesn't go live to viewers who
+            // can't buy.
+            pinnedOfferId={project?.pinned_offer_id ?? null}
             onLive={() => {
               setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
               setLiveSalesCount(0);
@@ -4023,19 +4095,47 @@ return (
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
         <div className="mb-6">
-          {/* ── LIVE banner — always full width above the grid ── */}
-          <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
-            <div className="flex items-center gap-2 sm:gap-3">
+          {/* ── LIVE banner — always full width above the grid ──
+               Audit #4 Phase 1 surfaces three real-data signals that
+               were previously hidden: the cumulative sales count
+               (Q1, was buried inside the bouncing toast), the viewer
+               count (Q2, was scoped to LiveChatIVS), and the rewards
+               pill (Q8, was zinc-on-zinc and easy to miss). All real
+               data; nothing fabricated. The Q3 "Live for HH:MM"
+               since-timer is intentionally absent — it requires a
+               backend `live_started_at` field; client-side approx.
+               would mislead late-joiners. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
               </span>
               <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-red-400">Live</span>
               <span className="text-xs sm:text-sm text-zinc-400 truncate">{projectName}</span>
+              {/* Q2 — viewer count (real, from existing WebSocket) */}
+              {liveViewerCount > 0 && (
+                <span className="rounded-full border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+                  {liveViewerCount} watching
+                </span>
+              )}
+              {/* Q1 — persistent sold-this-show counter (real,
+                  from `liveSalesCount` already incremented on
+                  every `item_sold` WebSocket event). Hidden until
+                  the first sale to avoid a sad "0 sold" pill. */}
+              {liveSalesCount > 0 && (
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+                  {liveSalesCount} sold this show
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-              <span className="rounded-full border border-zinc-800 px-2 py-0.5">Earn DUM</span>
-            </div>
+            {/* Q8 — promote the rewards pill from zinc-on-zinc to
+                 emerald so the buyer's biggest reward signal isn't
+                 whispered. Same visual weight as the founding-100
+                 pill on /merchant. */}
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-300">
+              Earn DUM Points
+            </span>
           </div>
 
           {/* ── Two-column grid: video (left) + chat (right) on lg:, stacked on mobile ── */}
@@ -4091,7 +4191,11 @@ return (
 
                 {/* ── Sale toast overlay — bottom-left of video ── */}
                 {saleToasts.length > 0 && (
-                  <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-2">
+                  <div
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-2"
+                  >
                     {saleToasts.map((toast) => (
                       <div
                         key={toast.id}
@@ -4135,7 +4239,10 @@ return (
                   still rendered on mobile as an always-visible quick action. */}
               <div>
                 {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
-                  <div className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}>
+                  <div
+                    data-auction-card
+                    className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}
+                  >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
                       {isAuctionActive && (
@@ -4285,11 +4392,23 @@ return (
                             <span className="font-mono text-xl font-bold text-emerald-400">
                               ${Number(pinnedOffer.price_usd).toFixed(2)}
                             </span>
-                            {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
-                              <span className="ml-2 text-xs text-zinc-500">
-                                {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
-                              </span>
-                            )}
+                            {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
+                              // Audit #4 Phase 2 (Q4) — promote inventory
+                              // urgency below 5 left. Real data only;
+                              // amber/red surfacing only fires when the
+                              // numbers actually warrant it.
+                              const remaining = Math.max(
+                                0,
+                                (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0),
+                              );
+                              const lowStock = remaining > 0 && remaining <= 5;
+                              return (
+                                <span className={`ml-2 text-xs font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                                  {lowStock && <span aria-hidden="true">🔥 </span>}
+                                  {remaining} left{lowStock ? " — almost gone" : ""}
+                                </span>
+                              );
+                            })()}
                           </div>
                           {!isOwner && (() => {
                             const isSoldOut = !pinnedOffer.unlimited_inventory
@@ -4312,6 +4431,16 @@ return (
                           <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
                             {buyError[pinnedOffer.id]}
                           </div>
+                        )}
+                        {/* Audit #4 Phase 2 (Q5) — Stripe trust copy at
+                            the buyer's highest-friction moment. Mirrors
+                            the merchant onboarding line ("your bank info
+                            goes to Stripe, never to DUM Club") so the
+                            buyer sees the same payment trust signal. */}
+                        {!isOwner && (
+                          <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
+                            <span className="text-zinc-400">Stripe checkout</span> · 0% commission · Your card never touches DUM Club.
+                          </p>
                         )}
                       </div>
                     ) : (
@@ -4355,6 +4484,7 @@ return (
                   userId={authUser?.privyId || ""}
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
+                  onViewerCountChange={setLiveViewerCount}
                   onItemUpdate={(data) => {
                     setOffers((prev) => prev.map((o) =>
                       o.id === data.offer_id
@@ -4402,11 +4532,27 @@ return (
                         <span className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-400">Top Bid</span>
                       ) : (
                         <button
-                          onClick={handlePlaceBid}
+                          // Q9 — if there's no bid amount entered yet,
+                          // tapping the sticky-bar Bid button on mobile
+                          // would submit an empty/NaN amount through
+                          // handlePlaceBid. Scroll to the auction card's
+                          // visible input instead so the buyer can type
+                          // an amount in the existing UI.
+                          onClick={() => {
+                            if (!auctionBidAmount.trim()) {
+                              if (typeof document !== "undefined") {
+                                document
+                                  .querySelector("[data-auction-card]")
+                                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              }
+                              return;
+                            }
+                            handlePlaceBid();
+                          }}
                           disabled={auctionBidding}
                           className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-amber-400 disabled:opacity-40"
                         >
-                          {auctionBidding ? "..." : "Bid"}
+                          {auctionBidding ? "..." : auctionBidAmount.trim() ? "Bid" : "Place Bid"}
                         </button>
                       )
                     ) : (
@@ -4415,16 +4561,29 @@ return (
                   </div>
                 </div>
               ) : pinnedOffer ? (
-                /* Pinned offer sticky bar */
-                <div className="flex items-center justify-between px-4 py-3">
+                /* Pinned offer sticky bar
+                   Q5 — Stripe trust caption added below the row so the
+                   highest-conversion-density surface on mobile carries
+                   the same payment trust signal as the desktop card. */
+                <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
                     <span className="font-mono text-sm font-bold text-emerald-400">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
-                    {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
-                      <span className="ml-2 text-[10px] text-zinc-500">
-                        {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
-                      </span>
-                    )}
+                    {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
+                      // Q4 — same low-stock urgency in the mobile sticky bar.
+                      const remaining = Math.max(
+                        0,
+                        (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0),
+                      );
+                      const lowStock = remaining > 0 && remaining <= 5;
+                      return (
+                        <span className={`ml-2 text-[10px] font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                          {lowStock && <span aria-hidden="true">🔥 </span>}
+                          {remaining} left
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="pl-3">
                     {(() => {
@@ -4444,6 +4603,10 @@ return (
                       );
                     })()}
                   </div>
+                </div>
+                <p className="mt-1.5 text-[10px] leading-snug text-zinc-500">
+                  Stripe checkout · 0% commission · Your card never touches DUM Club.
+                </p>
                 </div>
               ) : null}
             </div>

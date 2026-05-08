@@ -617,7 +617,7 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
                 <div className="mb-1 text-base font-bold text-white">Start selling on DUM Club</div>
-                <p className="mb-4 text-sm text-zinc-400">Join as a founding merchant — $0 during the founding period, locked at $29/month forever after. No commission, ever.</p>
+                <p className="mb-4 text-sm text-zinc-400">Join as a founding merchant — $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
                 <Link
                   href="/merchant"
                   className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
