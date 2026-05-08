@@ -3069,6 +3069,17 @@ export default function Home() {
                 See Pricing
               </Link>
             </div>
+            {/* Brand-stance closer — paired form only. The standalone
+                phrase ("Drive your market") is too vague to lead the
+                page; the contrast pairing ("not platform fees") ties
+                the philosophy to the actual product advantage and
+                reinforces the merchant-first positioning without
+                competing with the H1. Subtle, secondary, single
+                surface — explicitly NOT a homepage tagline or H1
+                replacement. */}
+            <p className="mt-6 text-[12px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">
+              Drive your market — not platform fees.
+            </p>
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
               <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-zinc-300">any</strong> business on the network.
             </div>
