@@ -536,15 +536,25 @@ export default function MerchantPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-sm font-bold text-red-400">
-                  Stripe connection didn't go through
+                  Stripe connection didn&apos;t go through
                 </div>
                 <div className="mt-1 break-words text-xs text-red-400/80">
                   {stripeErrorCopy(stripeBanner.reason, stripeBanner.detail)}
                 </div>
-                <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
-                  reason: {stripeBanner.reason}
-                  {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
-                </div>
+                {/* Diagnostic identifier hidden behind a disclosure so
+                    the merchant sees calm copy by default; support
+                    can still ask "click Show technical details and
+                    paste it back" without confusing the merchant
+                    with raw reason / detail strings up front. */}
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                    Show technical details
+                  </summary>
+                  <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
+                    reason: {stripeBanner.reason}
+                    {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
+                  </div>
+                </details>
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
@@ -713,107 +723,222 @@ export default function MerchantPage() {
         </div>
         )}
 
-        {/* Stripe Connect verification — live from Stripe.Account.retrieve.
-            Renders whenever a stripe_connect_id is set on the merchant row,
-            independent of the cached status string. Backend gate at
-            checkout.py:_assert_merchant_can_receive blocks payments unless
-            BOTH charges_enabled AND payouts_enabled are true; this card is
-            the diagnostic surface so the merchant can see why. */}
-        {merchant.stripe_connect_id && (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe Verification</h3>
-            {stripeStatus && (
-              <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
-                stripeStatus.status === "verified"
-                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
-                  : stripeStatus.status === "restricted"
-                    ? "border-red-400/30 bg-red-400/10 text-red-400"
-                    : "border-amber-400/30 bg-amber-400/10 text-amber-400"
-              }`}>
-                {stripeStatus.status.replace("_", " ")}
-              </span>
-            )}
-          </div>
+        {/* ── Stripe Verification card ──
+            Re-skinned in Phase 2 of the merchant audit. The previous
+            version always rendered with three "No"s right after
+            Stripe connect, which read as "I'm broken" to a non-
+            technical merchant — even though that's the normal
+            "Stripe is reviewing your account" state.
+            Render rules now (Q12):
+              - status = verified    → not rendered (the checklist
+                                       already says "Connect Stripe ✓")
+              - has currently_due / disabled_reason → full diagnostic
+              - status = pending and no issues → calm reassurance only
+              - retrieve error          → support-friendly red panel
+            Labels swapped from raw Stripe terms to merchant English
+            (Q7); the raw API booleans now live behind a "What does
+            this mean?" disclosure. */}
+        {merchant.stripe_connect_id && (() => {
+          // Compute render mode up-front so the JSX below stays
+          // readable. Verified + no issues = nothing to show.
+          const hasRetrieveError = !!stripeStatusError;
+          const hasOpenRequirements =
+            !!stripeStatus &&
+            (stripeStatus.requirements_currently_due.length > 0 ||
+              !!stripeStatus.disabled_reason);
+          const isVerified =
+            !!stripeStatus && stripeStatus.status === "verified";
+          const isPendingClean =
+            !!stripeStatus &&
+            !isVerified &&
+            !hasOpenRequirements;
 
-          {stripeStatusError ? (
-            <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-              <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
-              <div className="mt-1 text-[11px] text-zinc-400">
-                {stripeStatusError === "stripe_account_retrieve_failed"
-                  ? "The platform's secret key cannot retrieve this Connect account. This typically means the live STRIPE_SECRET_KEY hasn't been swapped in yet, or the Connect account was created in test mode and needs to be re-onboarded with live OAuth."
-                  : stripeStatusError}
+          // Skip rendering entirely when fully verified — the
+          // checklist already conveys the success state and a
+          // "Verified" pill on its own is noise.
+          if (isVerified && !hasRetrieveError) return null;
+
+          return (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe</h3>
+                {stripeStatus && (
+                  <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                    stripeStatus.status === "verified"
+                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                      : stripeStatus.status === "restricted"
+                        ? "border-red-400/30 bg-red-400/10 text-red-400"
+                        : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                  }`}>
+                    {stripeStatus.status === "pending_verification"
+                      ? "Stripe is reviewing"
+                      : stripeStatus.status === "verified"
+                        ? "Verified"
+                        : stripeStatus.status === "restricted"
+                          ? "Action needed"
+                          : "Not connected"}
+                  </span>
+                )}
               </div>
-            </div>
-          ) : !stripeStatus ? (
-            <div className="text-[11px] text-zinc-500">Loading…</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {([
-                  ["Charges enabled", stripeStatus.charges_enabled],
-                  ["Payouts enabled", stripeStatus.payouts_enabled],
-                  ["Details submitted", stripeStatus.details_submitted],
-                ] as const).map(([label, ok]) => (
-                  <div key={label} className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2.5">
-                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
-                    <div className={`mt-0.5 text-sm font-bold ${ok ? "text-emerald-400" : "text-zinc-600"}`}>
-                      {ok ? "✓ Yes" : "— No"}
+
+              {hasRetrieveError ? (
+                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
+                  <div className="text-xs font-bold text-red-400">Could not verify with Stripe</div>
+                  <div className="mt-1 text-[11px] text-zinc-400">
+                    We couldn&apos;t reach Stripe just now. This is usually temporary — refresh in a moment, or contact support if it keeps happening.
+                  </div>
+                  {/* Raw retrieve error stays available for support
+                      diagnosis but doesn't lead the surface. */}
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                      Show technical details
+                    </summary>
+                    <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                      {stripeStatusError}
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {stripeStatus.disabled_reason && (
-                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Restricted</div>
-                  <div className="mt-1 text-[11px] text-zinc-400">{stripeStatus.disabled_reason}</div>
+                  </details>
                 </div>
-              )}
-
-              {stripeStatus.requirements_currently_due.length > 0 && (
-                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
-                    Action required ({stripeStatus.requirements_currently_due.length})
+              ) : !stripeStatus ? (
+                <div className="text-[11px] text-zinc-500">Loading…</div>
+              ) : isPendingClean ? (
+                /* Q8: calm reassurance for the common post-connect
+                   case — Stripe is reviewing, nothing for the
+                   merchant to do, no scary "all No" grid. */
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                  <div className="text-sm font-bold text-amber-400">
+                    Stripe is reviewing your account
                   </div>
-                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-400">
-                    {stripeStatus.requirements_currently_due.map((r) => (
-                      <li key={r} className="font-mono">• {r}</li>
-                    ))}
-                  </ul>
-                  <a
-                    href="https://dashboard.stripe.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300"
-                  >
-                    Finish on Stripe →
-                  </a>
+                  <div className="mt-1 text-[12px] leading-relaxed text-zinc-300">
+                    This usually takes a few minutes. We&apos;ll show
+                    &ldquo;Verified&rdquo; here as soon as Stripe finishes — you don&apos;t need to do anything else right now.
+                  </div>
+                  {/* Raw booleans behind a disclosure for the
+                      curious / for support sessions. Default-collapsed
+                      so a normal merchant never sees them. */}
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                      What does this mean?
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {([
+                        ["Can accept payments", stripeStatus.charges_enabled],
+                        ["Can receive payouts", stripeStatus.payouts_enabled],
+                        ["Identity submitted", stripeStatus.details_submitted],
+                      ] as const).map(([label, ok]) => (
+                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                            {ok ? "✓ Ready" : "— Pending"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
-              )}
+              ) : (
+                /* Action-needed case: full diagnostic with merchant-
+                   language labels and a Finish-on-Stripe CTA. */
+                <div className="space-y-4">
+                  {stripeStatus.disabled_reason && (
+                    <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Action needed</div>
+                      <div className="mt-1 text-[11px] text-zinc-400">
+                        Stripe has paused this account. Open the Stripe dashboard to see what&apos;s needed and resolve it.
+                      </div>
+                      {/* Raw Stripe disabled_reason hidden behind
+                          disclosure — it's typically a code string
+                          like "rejected.platform_fraud" that
+                          confuses merchants. */}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/60 hover:text-red-400/80">
+                          Show technical details
+                        </summary>
+                        <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                          {stripeStatus.disabled_reason}
+                        </div>
+                      </details>
+                    </div>
+                  )}
 
-              {stripeStatus.requirements_eventually_due.length > 0 && (
-                <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
-                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                    Eventually due ({stripeStatus.requirements_eventually_due.length})
-                  </summary>
-                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
-                    {stripeStatus.requirements_eventually_due.map((r) => (
-                      <li key={r} className="font-mono">• {r}</li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+                  {stripeStatus.requirements_currently_due.length > 0 && (
+                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
+                        Stripe needs a bit more info ({stripeStatus.requirements_currently_due.length} item{stripeStatus.requirements_currently_due.length === 1 ? "" : "s"})
+                      </div>
+                      <div className="mt-1 text-[11px] text-zinc-400">
+                        Open the Stripe dashboard to finish — you&apos;ll come right back here when it&apos;s done.
+                      </div>
+                      {/* Raw requirement codes behind a disclosure.
+                          They look like "external_account",
+                          "tos_acceptance.date", "person.dob.day" —
+                          jargon to a non-technical merchant. */}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                          Show technical details
+                        </summary>
+                        <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                          {stripeStatus.requirements_currently_due.map((r) => (
+                            <li key={r} className="font-mono">• {r}</li>
+                          ))}
+                        </ul>
+                      </details>
+                      <a
+                        href="https://dashboard.stripe.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 rounded-lg bg-amber-400/15 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-amber-400 transition hover:bg-amber-400/25"
+                      >
+                        Finish on Stripe →
+                      </a>
+                    </div>
+                  )}
 
-              {stripeStatus.status !== "verified" && (
-                <div className="text-[11px] text-zinc-500">
-                  Checkout and Go Live remain disabled until charges and payouts are both enabled and Stripe shows no outstanding requirements.
+                  {/* Eventually-due requirements stay behind a
+                      disclosure — same as before; not surfaced to
+                      casual readers. */}
+                  {stripeStatus.requirements_eventually_due.length > 0 && (
+                    <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
+                      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                        Coming up later ({stripeStatus.requirements_eventually_due.length})
+                      </summary>
+                      <div className="mt-1.5 text-[11px] text-zinc-500">
+                        Stripe will ask for these eventually — no rush.
+                      </div>
+                      <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                        {stripeStatus.requirements_eventually_due.map((r) => (
+                          <li key={r} className="font-mono">• {r}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  {/* Raw boolean grid hidden behind a "What does this
+                      mean?" disclosure — Phase 2 surfaces only
+                      merchant-language labels by default. */}
+                  <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                      What does this mean?
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {([
+                        ["Can accept payments", stripeStatus.charges_enabled],
+                        ["Can receive payouts", stripeStatus.payouts_enabled],
+                        ["Identity submitted", stripeStatus.details_submitted],
+                      ] as const).map(([label, ok]) => (
+                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                            {ok ? "✓ Ready" : "— Pending"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               )}
             </div>
-          )}
-        </div>
-        )}
+          );
+        })()}
 
         {/* Stats
             Empty-state: until the first sale lands, showing four zeros
