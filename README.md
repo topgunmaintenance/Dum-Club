@@ -1,88 +1,99 @@
 # DUM Club
 
-Live selling marketplace. Flat monthly fee.
-No percentage cut on sales. Ever.
+Turn your existing website into a live-selling storefront.
+
+DUM Club helps local businesses run live sales, flash deals, loyalty rewards, and customer-retention campaigns under one flat monthly fee — with direct Stripe payouts and zero commission on sales.
+
+> «Sell $10,000 or $100,000 a month — your fee never changes.»
 
 ---
 
-## The Pitch
+## What DUM Club Does
 
-Whatnot charges 8% of every sale plus 2.9% processing.
-Commonsold charges per-sale fees plus monthly costs.
-DUM Club charges $29-$99/month flat. That's it.
-
-Sell $10,000 or $100,000 a month — your fee never changes.
-
-We also show local businesses better than Google Maps:
-real deals, live sellers, and Google reviews in one place —
-without paying for Google Ads to be seen.
+- Live selling with real-time video streams (AWS IVS)
+- Flash deals and pinned live offers
+- Loyalty rewards built into every tier with DUM Points
+- AI-powered customer follow-up and repeat-business tools
+- AI-assisted social media management (Pro tier)
+- Direct Stripe payouts — no waiting and no platform percentage cuts
+- Local business discovery with live offers, reviews, and active sellers
+- 100 founding seller spots at $0 during the founding period
+- White-label loyalty infrastructure for enterprise businesses (Phase 4)
 
 ---
 
-## What It Does
+## Why Businesses Use It
 
-- Live selling with real-time streams (AWS IVS)
-- Local business discovery — better than Google Maps
-- Best deals this week in your area
-- DUM Points loyalty built into every tier
-- AI retention program replaces direct mail
-- AI social media management (Pro tier)
-- Stripe direct payouts — no waiting, no % cut
-- 100 founding seller spots at $0 during founding period
-- White-label loyalty for enterprises (Phase 4)
+Most local businesses already pay for:
+
+- websites
+- ads
+- SEO
+- social media traffic
+
+DUM Club helps turn that traffic into more sales through:
+
+- live selling
+- limited-time flash offers
+- loyalty rewards
+- repeat-customer engagement
+- direct checkout on their own storefront
+
+without giving away a percentage of every sale.
 
 ---
 
 ## Pricing
 
 | Tier | Price | Key Features |
-|------|-------|-------------|
-| Founding 100 | $0 → $29/mo | All features, 0% fees forever |
-| Starter | $29/mo | Storefront, DUM Points, Stripe |
-| Growth | $49/mo | + AI retention, featured placement |
-| Pro | $99/mo | + AI social media, homepage slot |
-| Business | $499/mo | White-label loyalty |
-| Enterprise | $2,000+/mo | Full custom infrastructure |
+|------|-------|--------------|
+| Founding 100 | $0 → $29/mo | Founding access, all core features, 0% commission |
+| Starter | $29/mo | Live storefront, DUM Points, Stripe payouts |
+| Growth | $49/mo | Customer-retention tools, featured placement |
+| Pro | $99/mo | AI social tools, homepage placement |
+| Business | $499/mo | White-label loyalty infrastructure |
+| Enterprise | $2,000+/mo | Custom infrastructure and integrations |
 
-Commission on sales: 0% — always — for everyone.
+Commission on sales: 0% — always.
 
 ---
 
-## Stack
+## Platform Stack
 
 - Frontend: Next.js on Vercel
 - Backend: FastAPI on Railway
 - Database: Supabase (PostgreSQL)
 - Payments: Stripe Connect
-- Auth: Privy
-- Live streaming: AWS IVS
+- Authentication: Privy
+- Live Streaming: AWS IVS
 - Font: Geist
-- Colors: #060606 dark + #00FFA3 emerald
+- Design: #060606 dark + #00FFA3 emerald
 
 ---
 
-## Competitors
+## Comparison
 
-| | Whatnot | Commonsold | DUM Club |
-|---|---|---|---|
-| Fee model | 8% + 2.9% | % + monthly | Flat $29-$99/mo |
-| Per-sale cut | Yes | Yes | Never |
-| Loyalty | None | Basic | Every tier |
-| AI retention | None | None | Built in |
-| Live selling | Yes | Yes | Yes |
+| Feature | Whatnot | Commonsold | DUM Club |
+|---------|---------|------------|----------|
+| Fee Model | 8% + 2.9% | % + monthly | Flat monthly fee |
+| Per-Sale Commission | Yes | Yes | Never |
+| Loyalty Rewards | None | Basic | Included |
+| Customer Retention Tools | None | Limited | Built in |
+| Live Selling | Yes | Yes | Yes |
+| Direct Stripe Payouts | Limited | Varies | Yes |
 
 ---
 
 ## Current Phase
 
-Phase 0B — building Topgun Maintenance founding
-merchant storefront and closing first real Stripe transaction.
-See CLAUDE.md v5.0 for full roadmap.
+Phase 0B — building the Topgun Maintenance founding merchant storefront and completing the first live Stripe transaction.
+
+See `CLAUDE.md v5.0` for the full roadmap and development doctrine.
 
 ---
 
 ## Links
 
-- Live: https://dum.club
-- Merchant signup: https://dum.club/merchant
-- Technology details: https://dum.club/technology
+- Live Platform: https://dum.club
+- Merchant Signup: https://dum.club/merchant
+- Technology Overview: https://dum.club/technology
