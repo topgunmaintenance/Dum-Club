@@ -266,6 +266,59 @@ export default function EmbedShellPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Iframe auto-resize protocol ───────────────────────────────
+  // When the embed page is rendered inside the merchant's iframe
+  // (i.e. window !== window.parent), post our actual content height
+  // up to embed.js so the iframe wrapper can grow with the content
+  // instead of being clamped to a fixed minHeight. Receiver-side
+  // verifies origin before applying. Targeted via "*" because we
+  // don't know the merchant's hosting origin in advance — that's
+  // the entire point of an embed. If we're not iframed (someone
+  // navigated to /embed/<slug> directly), this is a no-op.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.parent === window) return;
+
+    const post = () => {
+      const h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+      );
+      try {
+        window.parent.postMessage({ type: "embed-resize", height: h }, "*");
+      } catch {
+        // Cross-origin postMessage with "*" should never throw, but
+        // wrap defensively — a broken parent shouldn't break the
+        // embed.
+      }
+    };
+
+    post();
+
+    let raf: number | null = null;
+    const schedule = () => {
+      if (raf != null) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        post();
+      });
+    };
+
+    const ro =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
+    if (ro) {
+      ro.observe(document.documentElement);
+      ro.observe(document.body);
+    }
+    window.addEventListener("resize", schedule);
+
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", schedule);
+      if (raf != null) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const displayName = project?.name || project?.title || "—";
   const displaySlug = project?.slug || businessId || "—";
   const liveLabel = project?.is_live ? "live" : "offline";
