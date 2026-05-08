@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | DUM Club",
+  description:
+    "DUM Club's terms of service: payments, accounts, DUM Points, and platform usage.",
+};
 
 export default function TermsPage() {
   return (
