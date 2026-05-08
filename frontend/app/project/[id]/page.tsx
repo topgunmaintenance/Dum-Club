@@ -5327,7 +5327,19 @@ return (
                       type="button"
                       onClick={() => {
                         setEmbedActivePath("guided");
-                        setEmbedPlatform(null);
+                        // Q9 — on a phone, skip the 8-platform picker
+                        // and pre-select Custom HTML. Mobile editors
+                        // for WordPress / Wix / Shopify / Squarespace
+                        // typically only expose a generic HTML / Code
+                        // block anyway, so the platform-specific
+                        // instructions buy little on a phone — they
+                        // mostly add a step. The merchant can still
+                        // tap "← Choose different website" to reveal
+                        // the full picker.
+                        const isMobile =
+                          typeof window !== "undefined" &&
+                          window.matchMedia("(max-width: 768px)").matches;
+                        setEmbedPlatform(isMobile ? "custom" : null);
                         setEmbedModalOpen(true);
                       }}
                       className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400 sm:w-auto"
