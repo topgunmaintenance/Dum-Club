@@ -2726,10 +2726,19 @@ export default function Home() {
              individual storefronts. Sales proof can return when GMV
              volume is high enough to be impressive, not distracting. ── */}
 
-        {/* ── Platform Activity ── */}
-        <div className="mx-auto mt-6 max-w-4xl">
-          <PlatformActivity projectCount={allPublicProjects.length} />
-        </div>
+        {/* ── Platform Activity ──
+             Gated behind a trust-safe project-count threshold so
+             tiny early-stage numbers ("· 1 live") don't undermine
+             credibility. Same spirit as ProofOfMotion's 4-cell
+             rule: only render when there's enough volume for the
+             component to make the platform look active rather than
+             empty. Tune PLATFORM_ACTIVITY_MIN_PROJECTS as the
+             merchant base grows. */}
+        {allPublicProjects.length >= 5 && (
+          <div className="mx-auto mt-6 max-w-4xl">
+            <PlatformActivity projectCount={allPublicProjects.length} />
+          </div>
+        )}
 
         {/* ── VISUAL PRODUCT MOMENT ─────────────────────────────────
              Static styled mockup of the embed UI as it appears on a
@@ -2846,19 +2855,12 @@ export default function Home() {
           </p>
         </div>
 
-        {/* ── PAIN SECTION ──────────────────────────────────────────
-             One short paragraph. The point is to land the merchant
-             insight in five seconds: their website already exists,
-             it just doesn't sell. */}
-        <div className="mx-auto mt-20 max-w-3xl px-4 text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            You already paid for your website.{" "}
-            <span className="text-emerald-400">Now let it sell live.</span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            Most business websites sit there like digital brochures. DUM Live adds live offers, Stripe checkout, loyalty rewards, and customer reactivation — without sending your traffic somewhere else.
-          </p>
-        </div>
+        {/* Pain section removed in the homepage audit pass. Its
+             strongest line ("You already paid for your website")
+             was folded into the Final CTA eyebrow so the page goes
+             straight from product surface (visual product moment)
+             into proof (5-card comparison) without a small
+             text-only interruption between the two visual blocks. */}
 
         {/* ── FeeCalculator, PricingTiers, RetentionSection, WhatnotPitch,
              ComparisonTable, Features grid, and AI assistant demo all
@@ -2947,7 +2949,7 @@ export default function Home() {
               {
                 emoji: "🏠",
                 title: "HVAC & contractors",
-                copy: "Run flash booking offers when the schedule has gaps.",
+                copy: "Run flash promotions to fill empty schedule slots — same-day deals, seasonal tune-ups, off-peak pricing.",
               },
               {
                 emoji: "💪",
@@ -3044,7 +3046,7 @@ export default function Home() {
         <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 mt-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
-              Ready to sell on your own site
+              You already paid for your website
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
               Ready to turn your website into a{" "}
