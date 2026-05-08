@@ -3680,9 +3680,13 @@ return (
                 {parsedAiOutput?.description || project?.description || ""}
               </p>
 
-              {/* DUM Points badge */}
+              {/* DUM Points badge — Audit #4 Phase 2 (Q7).
+                  Was "DUM Points accepted" which implied redemption
+                  (held until Phase 2 doctrine unlock). Buyers earn
+                  points on every purchase; the framing now matches
+                  the actual product surface. */}
               <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
-                <span className="text-sm font-bold text-emerald-400">◆ DUM Points accepted</span>
+                <span className="text-sm font-bold text-emerald-400">◆ Earn DUM Points on every purchase</span>
               </div>
             </div>
           </div>
@@ -4182,7 +4186,11 @@ return (
 
                 {/* ── Sale toast overlay — bottom-left of video ── */}
                 {saleToasts.length > 0 && (
-                  <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-2">
+                  <div
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-2"
+                  >
                     {saleToasts.map((toast) => (
                       <div
                         key={toast.id}
@@ -4376,11 +4384,23 @@ return (
                             <span className="font-mono text-xl font-bold text-emerald-400">
                               ${Number(pinnedOffer.price_usd).toFixed(2)}
                             </span>
-                            {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
-                              <span className="ml-2 text-xs text-zinc-500">
-                                {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
-                              </span>
-                            )}
+                            {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
+                              // Audit #4 Phase 2 (Q4) — promote inventory
+                              // urgency below 5 left. Real data only;
+                              // amber/red surfacing only fires when the
+                              // numbers actually warrant it.
+                              const remaining = Math.max(
+                                0,
+                                (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0),
+                              );
+                              const lowStock = remaining > 0 && remaining <= 5;
+                              return (
+                                <span className={`ml-2 text-xs font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                                  {lowStock && <span aria-hidden="true">🔥 </span>}
+                                  {remaining} left{lowStock ? " — almost gone" : ""}
+                                </span>
+                              );
+                            })()}
                           </div>
                           {!isOwner && (() => {
                             const isSoldOut = !pinnedOffer.unlimited_inventory
@@ -4403,6 +4423,16 @@ return (
                           <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
                             {buyError[pinnedOffer.id]}
                           </div>
+                        )}
+                        {/* Audit #4 Phase 2 (Q5) — Stripe trust copy at
+                            the buyer's highest-friction moment. Mirrors
+                            the merchant onboarding line ("your bank info
+                            goes to Stripe, never to DUM Club") so the
+                            buyer sees the same payment trust signal. */}
+                        {!isOwner && (
+                          <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
+                            <span className="text-zinc-400">Stripe checkout</span> · 0% commission · Your card never touches DUM Club.
+                          </p>
                         )}
                       </div>
                     ) : (
@@ -4507,16 +4537,29 @@ return (
                   </div>
                 </div>
               ) : pinnedOffer ? (
-                /* Pinned offer sticky bar */
-                <div className="flex items-center justify-between px-4 py-3">
+                /* Pinned offer sticky bar
+                   Q5 — Stripe trust caption added below the row so the
+                   highest-conversion-density surface on mobile carries
+                   the same payment trust signal as the desktop card. */
+                <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
                     <span className="font-mono text-sm font-bold text-emerald-400">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
-                    {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (
-                      <span className="ml-2 text-[10px] text-zinc-500">
-                        {Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))} left
-                      </span>
-                    )}
+                    {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
+                      // Q4 — same low-stock urgency in the mobile sticky bar.
+                      const remaining = Math.max(
+                        0,
+                        (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0),
+                      );
+                      const lowStock = remaining > 0 && remaining <= 5;
+                      return (
+                        <span className={`ml-2 text-[10px] font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                          {lowStock && <span aria-hidden="true">🔥 </span>}
+                          {remaining} left
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="pl-3">
                     {(() => {
@@ -4536,6 +4579,10 @@ return (
                       );
                     })()}
                   </div>
+                </div>
+                <p className="mt-1.5 text-[10px] leading-snug text-zinc-500">
+                  Stripe checkout · 0% commission · Your card never touches DUM Club.
+                </p>
                 </div>
               ) : null}
             </div>
