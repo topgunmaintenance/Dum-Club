@@ -39,7 +39,7 @@ export function FounderNote() {
         <div className="flex-1">
           <p className="text-[13px] leading-relaxed text-zinc-300 sm:text-[14px]">
             <span className="font-semibold text-white">I&apos;m Julian.</span>{" "}
-            I built DUM Club because I run an aircraft maintenance shop at Morristown Municipal and I was tired of platforms taking 8-30% of every sale. Flat fee, zero commission, keep everything you earn. If you&apos;re a local business, I want to help you sell direct.
+            I built DUM Club because I run a real business too. I was tired of platforms taking a cut every time a business made a sale. DUM Club is built to help local businesses sell direct, keep more revenue, and turn their own websites into live storefronts.
           </p>
           <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.15em] text-zinc-600">
             — Julian · Topgun Maintenance LLC · Morristown, NJ
