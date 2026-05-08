@@ -120,7 +120,11 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           <span className="text-3xl">{emoji}</span>
         </div>
 
-        {/* Header: category + live badge */}
+        {/* Header: category + live badge.
+            Audit #5 Phase 1 (Q4) — promoted LIVE pill from h-1.5 / text-[9px]
+            with no fill to a fuller red pill so the live signal stops
+            getting scanned past at a glance. Same restraint, stronger
+            visibility. */}
         <div className="mb-2 flex items-center justify-between gap-2">
           {categoryLabel && (
             <span
@@ -131,20 +135,36 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             </span>
           )}
           {isLive && (
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5">
+              <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-red-400">LIVE</span>
-            </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">LIVE</span>
+            </span>
           )}
         </div>
 
-        {/* Title */}
-        <h3 className="truncate text-base font-bold text-white sm:text-lg">
-          {project.title || project.name || "Untitled"}
-        </h3>
+        {/* Title — verified merchants get a small emerald check next
+            to the name (Q2). Source: project.verified — same field
+            used by the storefront page header. */}
+        <div className="flex items-center gap-1.5">
+          <h3 className="truncate text-base font-bold text-white sm:text-lg">
+            {project.title || project.name || "Untitled"}
+          </h3>
+          {project.verified && (
+            <span
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-400"
+              title="Verified merchant"
+              aria-label="Verified merchant"
+            >
+              <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 16 16" aria-hidden="true">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" />
+              </svg>
+              Verified
+            </span>
+          )}
+        </div>
 
         {/* Description */}
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-zinc-500">

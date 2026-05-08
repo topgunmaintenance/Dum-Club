@@ -311,7 +311,7 @@ export default function DiscoverPage() {
                             </span>
                           )}
                           <span className="rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-400 transition group-hover:bg-emerald-400 group-hover:text-black">
-                            Book Now →
+                            Buy Now →
                           </span>
                         </div>
                       </Link>
@@ -323,9 +323,12 @@ export default function DiscoverPage() {
           )}
         </div>
 
-        {/* Points beta note (muted, educational only) */}
+        {/* DUM Points caption — earn-only framing per CLAUDE.md §5.
+            Redemption surfaces are held until Phase 2; the previous
+            "more ways to earn and redeem are coming" line was
+            advertising a held-pending feature. */}
         <p className="mt-10 text-center text-[11px] text-zinc-600">
-          DUM Points are in beta — more ways to earn and redeem are coming.
+          Earn DUM Points on every purchase — loyalty rewards across the network.
         </p>
 
         {/* Merchant recruitment strip */}
