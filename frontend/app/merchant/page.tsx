@@ -64,6 +64,14 @@ export default function MerchantPage() {
   // Analytics from existing business profile
   const [analytics, setAnalytics] = useState<any>(null);
 
+  // First project (for the "Add DUM Live to your website" deep-link).
+  // The merchant audit Phase 3 added a 4th checklist step that deep-
+  // links into the Activate-DUM-Live wizard on the merchant's
+  // project page. If no project exists yet, the link falls back to
+  // /dashboard so the merchant creates one first. We only need id
+  // + slug; ignore the rest of the project payload.
+  const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null } | null>(null);
+
   // Live Stripe Connect verification — fetched from
   // /api/merchant/stripe-connect/status which does a fresh
   // Stripe.Account.retrieve and writes the resolved status back to
@@ -140,6 +148,7 @@ export default function MerchantPage() {
         if (data.merchant) {
           setMerchant(data.merchant);
           loadAnalytics(token!);
+          loadFirstProject();
           if (data.merchant.stripe_connect_id) {
             loadStripeStatus(token!);
           }
@@ -149,6 +158,32 @@ export default function MerchantPage() {
       }
     } catch {}
     setLoading(false);
+  }
+
+  async function loadFirstProject() {
+    // No auth header needed — /api/projects/ accepts owner_id as a
+    // public filter. We only care about (id, slug) so a thrown
+    // request or a missing field is non-fatal: firstProject stays
+    // null and the checklist falls back to a "create your storefront
+    // first" path via /dashboard.
+    if (!user?.privyId) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/?owner_id=${encodeURIComponent(user.privyId)}`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = (data?.projects ?? data ?? []) as Array<{
+        id?: string;
+        slug?: string | null;
+      }>;
+      const first = list.find((p) => !!p?.id);
+      if (first?.id) {
+        setFirstProject({ id: first.id, slug: first.slug ?? null });
+      }
+    } catch {
+      // non-fatal — checklist still renders, just lands on /dashboard
+    }
   }
 
   async function loadStripeStatus(token: string) {
@@ -464,10 +499,27 @@ export default function MerchantPage() {
   // Verification card below.
   const stepAccount = true;
   const stepStripe = !!merchant.stripe_connect_id;
+  // Step 3 — "Add DUM Live to your website" — has no direct
+  // signal we can read (we don't have a server-side "embed
+  // installed" flag, and even if we did, "merchant pasted the
+  // snippet on a page we never see" can't be verified
+  // remotely). A confirmed first sale proves the install
+  // works end-to-end, so we use that as the completion proxy.
+  // Until then, the step shows as the active next-action with
+  // a deep-link CTA.
   const stepFirstSale = (analytics?.total_orders ?? 0) > 0;
-  const completedSteps = [stepAccount, stepStripe, stepFirstSale].filter(Boolean).length;
-  const totalSteps = 3;
+  const stepInstall = stepFirstSale;
+  const completedSteps = [stepAccount, stepStripe, stepInstall, stepFirstSale].filter(Boolean).length;
+  const totalSteps = 4;
   const onboardingComplete = completedSteps === totalSteps;
+  // Where the "Add DUM Live to your website" CTA sends the
+  // merchant. If they have at least one project, deep-link
+  // straight to that project's page (the Activate-DUM-Live
+  // card lives there). Otherwise route to /dashboard so they
+  // create a project first.
+  const installLink = firstProject
+    ? `/project/${firstProject.slug || firstProject.id}`
+    : "/dashboard";
 
   // Human-readable copy for each Stripe-callback failure reason.
   // Keep error codes stable; map to friendly text only at render time.
@@ -593,7 +645,11 @@ export default function MerchantPage() {
                 <div className="mt-1 text-sm font-semibold text-white">
                   {completedSteps} of {totalSteps} complete —{" "}
                   <span className="text-emerald-400">
-                    {!stepStripe ? "Connect Stripe to start getting paid" : "Waiting on your first sale"}
+                    {!stepStripe
+                      ? "Connect Stripe to start getting paid"
+                      : !stepInstall
+                        ? "Add DUM Live to your website"
+                        : "Waiting on your first sale"}
                   </span>
                 </div>
               </div>
@@ -652,7 +708,48 @@ export default function MerchantPage() {
                 </div>
               </li>
 
-              {/* Step 3: First sale */}
+              {/* Step 3: Add DUM Live to your website
+                  Phase 3 of the merchant audit. Closes the "what's
+                  next after Stripe?" gap by surfacing the Activate-
+                  DUM-Live moment from the merchant home, instead of
+                  forcing the merchant to navigate /dashboard ->
+                  project page -> activation card on their own.
+                  Deep-links to the merchant's first project when
+                  one exists, else to /dashboard so they create the
+                  storefront first. Marked complete by stepInstall
+                  (which today proxies first-sale; see comment by
+                  the const). */}
+              <li className="flex items-start gap-3">
+                {stepInstall ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : stepStripe ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400/50" />
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-zinc-700" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${stepInstall ? "text-white line-through decoration-emerald-400/40" : stepStripe ? "text-white" : "text-zinc-300"}`}>
+                    Add DUM Live to your website
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {stepInstall
+                      ? "Your storefront is live and selling."
+                      : firstProject
+                        ? "Paste one script tag on your site — turns any page into a live storefront."
+                        : "Set up your storefront first, then paste one script tag on your site."}
+                  </div>
+                  {!stepInstall && stepStripe && (
+                    <Link
+                      href={installLink}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                    >
+                      {firstProject ? "Add DUM Live to my site →" : "Set up my storefront →"}
+                    </Link>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 4: First sale */}
               <li className="flex items-start gap-3">
                 {stepFirstSale ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
@@ -665,17 +762,9 @@ export default function MerchantPage() {
                   </div>
                   <div className="text-xs text-zinc-500">
                     {stepFirstSale
-                      ? "You're live. DUM Points are being issued automatically."
+                      ? "You&apos;re live. DUM Points are being issued automatically as loyalty rewards."
                       : "Share your storefront link or print the QR below."}
                   </div>
-                  {!stepFirstSale && stepStripe && (
-                    <Link
-                      href="/dashboard"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/[0.06] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-emerald-400 transition hover:bg-emerald-400/10"
-                    >
-                      Manage My Business →
-                    </Link>
-                  )}
                 </div>
               </li>
             </ul>
@@ -1015,25 +1104,27 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Quick links — two things a logged-in merchant actually needs
-            fast access to: the projects/business-profile dashboard
-            (where they configure their storefront), and the public
-            marketplace (to see how listings look to customers). The
-            old "For Business" link was a dead end — it pointed to
-            the seller-recruitment landing page the merchant had
-            already converted on. */}
+        {/* Quick links — the two next-actions a converted merchant
+            actually needs. The previous bottom-row had "Manage My
+            Business" + "Browse Marketplace"; the second one routed
+            converted merchants to the buyer-side /discover page,
+            which is the wrong audience after they've already signed
+            up. Phase 3 of the merchant audit replaced it with the
+            "Add DUM Live to your website" deep-link so the merchant
+            home consistently surfaces the activation moment instead
+            of letting it hide on the project page. */}
         <div className="flex gap-3">
           <Link
-            href="/dashboard"
+            href={installLink}
             className="flex-1 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.04] px-4 py-3 text-center text-sm font-semibold text-emerald-400 transition hover:bg-emerald-400/[0.08]"
           >
-            Manage My Business
+            Add DUM Live to your website →
           </Link>
           <Link
-            href="/discover"
+            href="/dashboard"
             className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
           >
-            Browse Marketplace
+            Manage My Business
           </Link>
         </div>
       </div>
