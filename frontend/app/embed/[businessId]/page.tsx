@@ -38,6 +38,11 @@ type EmbedProject = {
   live_provider?: string | null;
   ivs_stage_arn?: string | null;
   pinned_offer_id?: string | null;
+  // Owner identity — used by the embed to render an
+  // owner-only "Manage offers" deep-link (Option A).
+  // Returned by /api/projects/<id> already; just surfacing
+  // it through the type so TS lets us read it.
+  privy_id?: string | null;
 };
 
 type Offer = {
@@ -321,6 +326,21 @@ export default function EmbedShellPage() {
 
   const displayName = project?.name || project?.title || "—";
   const displaySlug = project?.slug || businessId || "—";
+
+  // Option A — owner identity check so the embed can render a
+  // discreet "Manage offers" deep-link only to the merchant viewing
+  // their own embed. Backend's /api/projects/<id> already returns
+  // privy_id (see projects.py:241-242). The check matches the
+  // canonical projects.py:322 ownership rule on the privy_id branch
+  // — we don't have owner_id resolution in the iframe context, but
+  // every founding-merchant project has privy_id populated, so the
+  // privy-only check covers the demo and onboarding flows. Owner
+  // controls inside the embed (Option B) come later.
+  const isOwner =
+    !!authUser?.privyId &&
+    !!project?.privy_id &&
+    project.privy_id === authUser.privyId;
+  const manageHref = `/project/${project?.slug || businessId}/manage`;
   const liveLabel = project?.is_live ? "live" : "offline";
   const ivsActive = !!project && isIVSSession(project) && !!project.ivs_stage_arn;
 
@@ -599,7 +619,12 @@ export default function EmbedShellPage() {
 
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header — name + slug + live + offer count, kept tight so the
-            video and product card dominate the conversion area below. */}
+            video and product card dominate the conversion area below.
+            Option A — when the merchant viewing their own embed is
+            signed in, append a small owner-only "Manage offers ↗"
+            chip that opens /project/<slug>/manage in a new tab.
+            Discreet emerald pill; doesn't compete with the buyer
+            CTAs below. Buyers never see it. */}
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             {loading ? "Loading…" : displayName}
@@ -614,6 +639,17 @@ export default function EmbedShellPage() {
               {liveLabel}
             </span>
             <span>{offers.length} offers</span>
+            {isOwner && (
+              <a
+                href={manageHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300 transition hover:border-emerald-400/60 hover:text-emerald-200"
+                title="Owner only — opens your DUM Club admin in a new tab"
+              >
+                Owner · Manage offers ↗
+              </a>
+            )}
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
         </header>
