@@ -1923,29 +1923,10 @@ export default function Home() {
   const { wallets, createWallet } = useSolanaWallets();
   const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
 
-  // Hero service-finder search bar (v5.0). Simple redirect to
-  // /discover?q=<term> — not the old AI-builder textarea. Kept as a
-  // small local state so the form controls cleanly.
-  const [heroSearch, setHeroSearch] = useState("");
-
-  // Rotating search placeholder — teaches users by example that DUM Club
-  // handles services + products + food + live sales in one search. Rotates
-  // every 3 seconds. Pauses when the user has focused the input.
-  const heroPlaceholders = [
-    "Find the best pizza near Morris County...",
-    "Search live sales... sneakers, vintage, collectibles",
-    "Book a service... detailing, lawn care, inspections",
-    "Discover local deals... restaurants, shops, salons",
-    "What are you looking for today?",
-  ];
-  const [heroPlaceholderIdx, setHeroPlaceholderIdx] = useState(0);
-  useEffect(() => {
-    if (heroSearch.trim()) return; // stop rotating once user starts typing
-    const timer = setInterval(() => {
-      setHeroPlaceholderIdx((i) => (i + 1) % heroPlaceholders.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [heroSearch]);
+  // Hero service-finder search bar and rotating placeholders were
+  // removed in the homepage audit pass. The audience-toggle's
+  // "I'm shopping" branch is gone; buyer-side discovery now lives
+  // entirely at /discover via the navbar.
 
   // Homepage used to render a category grid with live counts from
   // /api/projects/public. That grid was replaced by a simple quick-
@@ -1994,19 +1975,10 @@ export default function Home() {
   const voiceInitiatedRef = useRef(false);
   const [voiceMuted, setVoiceMuted] = useState(false);
 
-  // Wraps the SearchResults component so category-chip clicks can scroll the
-  // newly-populated results panel into view.
-  const searchResultsRef = useRef<HTMLDivElement>(null);
-
-  // ── Hero audience mode ──────────────────────────────────────
-  // Two-sided-marketplace sin: pre-fix, the hero was talking to
-  // sellers AND buyers in the same 600px of scroll — CTAs pointed
-  // at merchant signup, search bar pointed at discovery. This mode
-  // toggle lets each visitor see only what they came for.
-  //
-  // Default to "merchant" because merchant recruitment is the
-  // Phase-1 gate per CLAUDE.md Section 6 (100 founding sellers).
-  const [heroMode, setHeroMode] = useState<"merchant" | "customer">("merchant");
+  // searchResultsRef + heroMode removed in the homepage audit pass —
+  // the audience toggle and customer-search panel are gone, so
+  // there is no longer a buyer-side search surface on the homepage
+  // to scroll into view or mode-switch between.
 
   // ── Founding-100 scarcity counter (public endpoint, no auth) ──
   // Drives the "X of 100 founding spots claimed" pill above the hero H1.
@@ -2030,73 +2002,12 @@ export default function Home() {
     };
   }, []);
 
-  // Single source of truth for hero / category-chip search. Mirrors `term`
-  // into the hero input so the user sees what they searched, clears prior
-  // results, fires the same POST /api/search/homepage the hero form uses,
-  // and scrolls the results panel into view when data lands.
-  //
-  // City MUST be non-empty or the backend's local_intent gate stays off and
-  // no Google fallback appears — see backend/services/agents/_search_helpers.has_local_intent.
-  const runHomepageSearch = (rawTerm: string) => {
-    const term = rawTerm.trim();
-    if (!term) return;
-
-    setHeroSearch(term);
-    setFindResults(null);
-    setFindExternalResults([]);
-
-    fetch(`${API_BASE}/api/search/homepage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: term, city: "Morris County, NJ" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) {
-          router.push(`/discover?q=${encodeURIComponent(term)}`);
-          return;
-        }
-
-        const projects: Project[] = [];
-        if (data.best_match?.project) {
-          projects.push({
-            id: data.best_match.project.id,
-            title: data.best_match.project.title,
-            description: data.best_match.project.description,
-            template_type: data.best_match.project.category,
-          } as Project);
-        }
-        for (const opt of (data.other_options || []) as Array<{
-          project?: { id?: string; title?: string; description?: string; category?: string };
-        }>) {
-          if (opt?.project?.id) {
-            projects.push({
-              id: opt.project.id,
-              title: opt.project.title,
-              description: opt.project.description,
-              template_type: opt.project.category,
-            } as Project);
-          }
-        }
-
-        setFindResults(projects);
-        setFindExternalResults(
-          Array.isArray(data.nearby_external) ? data.nearby_external : []
-        );
-
-        // Let React commit before scrolling so the populated panel has a
-        // non-zero height for scrollIntoView to land on.
-        requestAnimationFrame(() => {
-          searchResultsRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        });
-      })
-      .catch(() => {
-        router.push(`/discover?q=${encodeURIComponent(term)}`);
-      });
-  };
+  // runHomepageSearch was removed in the homepage audit pass. It
+  // had no callers after the audience-toggle "I'm shopping" branch
+  // was deleted in the prior repositioning commit. findResults /
+  // findExternalResults state is still used by handleHeroLaunch
+  // (the legacy AI-launcher path) and stays in place for now —
+  // out of scope to delete that whole code path here.
 
   // Rotate CTA when idle (no text typed, not launching, not hovered)
   useEffect(() => {
@@ -2789,21 +2700,14 @@ export default function Home() {
 
             <div className="mx-auto max-w-3xl text-center">
 
-              {/* ── PROOF OF MOTION (or FounderNote fallback) ─────
-                   Strict 4-cell honest-data rule (Phase 0A). Renders the
-                   stats grid only when ALL 4 cells are >0 with real
-                   30-day-window data. Otherwise renders FounderNote in
-                   the same vertical slot — never empty space. */}
-              <ProofOfMotion fallback={<FounderNote />} />
-
-
               {/* ── Trust line ──
-                   Discover link and payment-icons strip were removed in
-                   the homepage audit pass. The hero is permanently
-                   merchant-mode; buyer-side discovery still has a full
-                   home at /discover via the navbar. Payment-method
-                   trust signal moved to the final CTA section. */}
-              <div className="hero-entrance-delay-2 mx-auto mt-6 space-y-3">
+                   Hero now ends here. ProofOfMotion / FounderNote
+                   relocated to a slim section just before the final
+                   CTA so the hero stays a single tight value-prop
+                   block. Discover link and payment-icons strip were
+                   removed in Batch 1; payment-method trust signal
+                   moved to the final CTA section. */}
+              <div className="hero-entrance-delay-2 mx-auto mt-8 space-y-3">
                 <p className="text-[13px] text-zinc-400">
                   Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
@@ -2813,15 +2717,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── SEARCH RESULTS ── rendered only after the user runs a search.
-             The outer div ALWAYS mounts so category-chip clicks have a
-             scrollIntoView target even before data arrives. */}
-        <div ref={searchResultsRef}>
-          <SearchResults
-            results={findResults}
-            externalResults={findExternalResults}
-          />
-        </div>
+        {/* ── SEARCH RESULTS removed — the homepage no longer has a
+             customer search surface, so there's nothing to render
+             results into. Buyer-side search lives at /discover. ── */}
 
         {/* ── DEALS + RECENT SALES removed — too noisy on homepage
              per product review. Deals are visible on /discover and
@@ -3127,13 +3025,23 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ── PROOF / FOUNDER NOTE ─────────────────────────────────
+             Relocated from inside the hero so the hero stays one
+             tight value-prop block. ProofOfMotion's 4-cell honest-
+             data rule still gates the stats grid; FounderNote is the
+             fallback so the slot is never empty. Sits right before
+             the final CTA — humanises the close. */}
+        <div className="mx-auto mt-20 max-w-3xl px-4">
+          <ProofOfMotion fallback={<FounderNote />} />
+        </div>
+
         {/* ── FINAL CTA ────────────────────────────────────────────
              Single closing block. The previous page had a separate
              "seller banner" + "bottom CTA" — collapsed into one to
              match the user-direction "less clutter, clear CTA
              hierarchy." Pricing CTA points at /business; Activate
              CTA points at /merchant. */}
-        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 text-center sm:py-28">
+        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 mt-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
               Ready to sell on your own site
