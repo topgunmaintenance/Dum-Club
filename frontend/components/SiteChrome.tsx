@@ -1,12 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
 
 const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
-const isPreview = process.env.VERCEL_ENV === "preview";
+// VERCEL_ENV / NEXT_PUBLIC_VERCEL_ENV: only the NEXT_PUBLIC_-prefixed form
+// is reliably inlined into the client bundle by Next.js's DefinePlugin.
+// The bare VERCEL_ENV reads as undefined on the client (it's a server-only
+// var by default), which previously caused the deploy badge to render
+// inconsistently between SSR and hydration → React hydration error #418
+// firing on every page. Read the public-prefixed var, fall back to the
+// bare one for server contexts.
+const vercelEnv =
+  process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || "";
+const isPreview = vercelEnv === "preview";
 
 /**
  * Wraps page content with the global DUM Club chrome (navbar, ticker,
@@ -34,6 +44,17 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const isEmbed =
     pathname === "/embed" || (pathname?.startsWith("/embed/") ?? false);
 
+  // Defer the deploy-badge render to post-mount. The badge depends on
+  // VERCEL_ENV which is only reliably available on the server, so SSR
+  // and client render disagreed about whether to show it — that produced
+  // a React hydration error on every page. Gating with `mounted` makes
+  // the SSR HTML match the initial client render (both render no badge),
+  // and then the badge appears after hydration on non-prod envs.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (isEmbed) {
     // Bare-bones: page content only, no chrome and no spacer.
     return <>{children}</>;
@@ -51,12 +72,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       {/* Deploy indicator — low-visibility, bottom-right.
           Hidden in production: the SHA is useful while debugging
           previews / staging, but not something we want shipped on
-          dum.club. Same VERCEL_ENV gate the existing isPreview
-          variable above uses (line ~9), so resolution is consistent.
-          Vercel sets VERCEL_ENV="production" only on production
-          deploys; everywhere else (preview, dev, local) the badge
-          stays. */}
-      {commitSha && process.env.VERCEL_ENV !== "production" && (
+          dum.club. Gated on `mounted` so the badge never renders during
+          SSR or the first client paint — that keeps the hydration
+          output identical regardless of how Next.js inlines the
+          VERCEL_ENV value. */}
+      {mounted && commitSha && vercelEnv !== "production" && (
         <div
           className="fixed bottom-2 right-2 z-[9999] flex items-center gap-1.5 rounded-md bg-zinc-950/80 px-2 py-1 font-mono text-[9px] text-zinc-700 backdrop-blur-sm"
           title={`Deploy: ${commitSha}${isPreview ? " (preview)" : ""}`}

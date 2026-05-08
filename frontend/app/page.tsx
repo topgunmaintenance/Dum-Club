@@ -2670,7 +2670,7 @@ export default function Home() {
               <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-relaxed text-white sm:text-lg">
                 Add live selling, flash deals, loyalty rewards, and customer retention to your business — for one flat monthly fee.
               </p>
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-100 sm:text-base">
                 <span className="text-emerald-400">Flat $29–$99/month.</span> 0% commission. Keep every sale.
               </p>
 
@@ -3227,7 +3227,7 @@ export default function Home() {
                 <span className="text-[12px] font-bold tracking-tight">
                   <span className="text-zinc-300">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
                 </span>
-                <span className="text-[10px] text-zinc-700">© {new Date().getFullYear()} · All rights reserved</span>
+                <span className="text-[10px] text-zinc-700">© 2026 · All rights reserved</span>
               </div>
               <div className="flex gap-6">
                 <div className="flex gap-6">

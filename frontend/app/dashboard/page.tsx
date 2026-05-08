@@ -240,8 +240,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Account */}
-          <div className="rounded-2xl border border-zinc-800 bg-card p-6 lg:col-span-2">
+          {/* Account — spans the remaining row width on both breakpoints
+              (sm: 2 cols, lg: 4 cols) so the dashboard never shows an empty
+              cell beside it. */}
+          <div className="rounded-2xl border border-zinc-800 bg-card p-6 sm:col-span-2 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
               Account
             </div>
