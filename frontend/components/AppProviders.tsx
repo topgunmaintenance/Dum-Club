@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { WalletProviders } from "./WalletProviders";
@@ -9,30 +8,25 @@ import { AuthProvider } from "../lib/auth/AuthContext";
 // Pre-built once at module scope so the array reference is stable across
 // renders. Without this, Privy's "Solana wallet login enabled, but no
 // Solana wallet connectors have been passed to Privy" warning fires on
-// every page — even though we use Solana via the wallet-adapter
-// elsewhere. Privy's docs for v2+ require explicit external connectors
-// when embeddedWallets.solana is configured.
+// every page. Privy v2+ requires explicit external connectors when
+// embeddedWallets.solana is configured.
 const solanaConnectors = toSolanaWalletConnectors();
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
-  // Defer the entire Privy + Solana adapter tree to post-mount. Privy's
-  // SDK reads from cookies / localStorage on its very first render to
-  // hydrate session state, and that read produces different output on
-  // the server (no cookies, returns "logged out") vs. the client
-  // (sometimes "logged in"), which is the origin of the React #418 /
-  // #423 hydration errors firing on every route. Rendering only the
-  // bare children pre-mount makes the SSR HTML and the first client
-  // paint byte-identical; the providers mount on the second render
-  // and downstream consumers fall back to the no-op auth context until
-  // then. See lib/auth/AuthContext.tsx for the fallback shape.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  if (!mounted) return <>{children}</>;
-
+  // PrivyProvider must be mounted on the very first render. Page-level
+  // components (app/page.tsx, app/embed/*, app/project/*, lib/auth/*)
+  // call useSolanaWallets() / usePrivy() unconditionally at the top of
+  // their tree, and any render where those hooks run without a
+  // PrivyProvider ancestor throws "useWallets was called outside the
+  // PrivyProvider component". An earlier change here deferred the
+  // provider tree behind a useState/useEffect mount gate to chase a
+  // hydration mismatch, which fixed that symptom but broke every
+  // wallet hook on first paint. The legitimate hydration sources have
+  // been addressed elsewhere (the deploy badge env-var read, and the
+  // homepage `new Date().getFullYear()`); Privy itself is SSR-safe
+  // per its documented usage, so it stays mounted from render zero.
   if (!appId) {
     return <WalletProviders>{children}</WalletProviders>;
   }
@@ -47,10 +41,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
-        // Pass real Solana connectors so Privy's wallet-proxy iframe
-        // initialises with something to attach to. Missing this triggers
-        // both the "Wallet proxy not initialized" and the "no Solana
-        // wallet connectors" warnings on every page load.
+        // Real Solana connectors so Privy's wallet-proxy iframe has
+        // something to attach to on init. Missing this triggers both
+        // the "Wallet proxy not initialized" and "no Solana wallet
+        // connectors" warnings on every page load.
         externalWallets: {
           solana: { connectors: solanaConnectors },
         },
