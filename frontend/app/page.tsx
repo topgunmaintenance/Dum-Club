@@ -1489,7 +1489,7 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
   return (
     <div className="mt-12 sm:mt-16">
       <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+        <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
           Live Now
         </h2>
         <span className="relative flex h-2 w-2">
@@ -1597,7 +1597,7 @@ function DealsSection({ projects }: { projects: Project[] }) {
   return (
     <div className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20">
       <div className="mb-6 flex items-center gap-3">
-        <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+        <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
           Deals
         </h2>
         <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-secondary">
@@ -1641,7 +1641,7 @@ function RetentionSection() {
     <div className="mx-auto mt-20 max-w-6xl px-4">
       <div className="rounded-2xl border border-default bg-surface-card p-6 sm:p-10">
         <div className="mb-2 text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Customer Retention</div>
-        <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+        <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
           Stop losing customers.{" "}
           <span className="text-brand-teal">Automate repeat business.</span>
         </h2>
@@ -1759,7 +1759,7 @@ function PricingTiers() {
   return (
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Pricing</div>
-      <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+      <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
         Flat fee. <span className="text-brand-teal">0% commission. Ever.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
@@ -1823,7 +1823,7 @@ function WhatnotPitch() {
           {/* Left: The problem */}
           <div className="border-b border-default/40 p-8 sm:border-b-0 sm:border-r">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-state-live">The Whatnot tax</div>
-            <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
+            <h3 className="mb-4 text-xl font-extrabold text-brand-navy sm:text-2xl">
               You sell $10,000/mo on Whatnot.
               <br />
               <span className="text-state-live">They keep $1,150.</span>
@@ -1847,7 +1847,7 @@ function WhatnotPitch() {
           {/* Right: The solution */}
           <div className="p-8">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">The DUM Club way</div>
-            <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
+            <h3 className="mb-4 text-xl font-extrabold text-brand-navy sm:text-2xl">
               Same $10,000/mo.
               <br />
               <span className="text-brand-teal">You keep $9,951.</span>
@@ -2589,7 +2589,7 @@ export default function Home() {
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 text-3xl">🚀</div>
-            <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free businesses</h2>
+            <h2 className="text-xl font-extrabold text-brand-navy">You&apos;ve used your free businesses</h2>
             <p className="mt-3 text-sm leading-relaxed text-secondary">
               You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points for unlimited businesses, priority placement, and more.
             </p>
@@ -2755,7 +2755,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               What it looks like on your site
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
               A live storefront, embedded right where your customers already are.
             </h2>
           </div>
@@ -2800,7 +2800,7 @@ export default function Home() {
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                   Now showing
                 </div>
-                <h3 className="text-lg font-semibold leading-tight text-white">
+                <h3 className="text-lg font-semibold leading-tight text-brand-navy">
                   Slow Hour Flash Deal
                 </h3>
                 <p className="mt-1 text-sm text-secondary">
@@ -2881,7 +2881,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               One flat fee instead of five
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
               Stop paying for five things that don&apos;t talk to each other.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-secondary">
@@ -2933,7 +2933,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               Built for local business
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
               What you can sell live.
             </h2>
           </div>
@@ -2973,7 +2973,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               How it works
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
               Four steps. No developer required.
             </h2>
           </div>
