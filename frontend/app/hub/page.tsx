@@ -90,7 +90,7 @@ function NetworkImpact({ privyId }: { privyId?: string }) {
       <div className={`grid gap-3 ${stats.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-default bg-surface-muted p-3 text-center">
-            <div className="text-xl font-black text-white">{s.value}</div>
+            <div className="text-xl font-black text-brand-navy">{s.value}</div>
             <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-secondary">{s.label}</div>
           </div>
         ))}
@@ -158,7 +158,7 @@ function PointsTab({
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">Your DUM Balance</div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-5xl font-black text-white">{displayBalance.toLocaleString()}</span>
+              <span className="text-5xl font-black text-brand-navy">{displayBalance.toLocaleString()}</span>
               <span className="text-lg text-secondary">points</span>
               {deltaAccent !== null && deltaAccent > 0 && (
                 <span className="animate-pulse font-mono text-sm font-bold text-sky-400">+{deltaAccent.toLocaleString()}</span>
@@ -507,11 +507,11 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
       {referral && (
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-default bg-surface-card p-4 text-center">
-            <div className="text-2xl font-black text-white">{referral.clicks}</div>
+            <div className="text-2xl font-black text-brand-navy">{referral.clicks}</div>
             <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-secondary">Clicks</div>
           </div>
           <div className="rounded-xl border border-default bg-surface-card p-4 text-center">
-            <div className="text-2xl font-black text-white">{referral.signups}</div>
+            <div className="text-2xl font-black text-brand-navy">{referral.signups}</div>
             <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-secondary">Signups</div>
           </div>
           <div className="rounded-xl border border-default bg-brand-teal/5 p-4 text-center">
@@ -609,7 +609,7 @@ export default function HubPage() {
 
   if (!user) {
     return (
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 text-white">
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 text-primary">
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-4 text-4xl">◆</div>
           <h1 className="text-2xl font-black tracking-tight">DUM Hub</h1>
@@ -641,7 +641,7 @@ export default function HubPage() {
           ].map((s) => (
             <div key={s.step} className="rounded-xl border border-default bg-surface-card px-2 py-3">
               <div className="text-[9px] font-bold text-brand-teal/50">{s.step}</div>
-              <div className="text-xs font-bold text-white">{s.label}</div>
+              <div className="text-xs font-bold text-primary">{s.label}</div>
               <div className="mt-1 text-[9px] leading-tight text-muted">{s.desc}</div>
             </div>
           ))}
