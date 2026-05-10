@@ -27,6 +27,42 @@ module.exports = {
           500: "#a855f7",
           600: "#9333ea",
         },
+
+        // ── Phase 0 light-theme tokens ─────────────────────────────
+        // Added for the upcoming light-theme migration. NOT yet
+        // referenced anywhere in the codebase — this PR is foundation
+        // only. Existing dark-theme classes (bg-base, text-zinc-*,
+        // text-white, etc.) stay unchanged. Values resolve through
+        // CSS custom properties added under :root in globals.css so
+        // both stay in sync for future runtime theme switching.
+        brand: {
+          teal: "var(--brand-teal)",
+          "teal-hover": "var(--brand-teal-hover)",
+          "teal-soft": "var(--brand-teal-soft)",
+          navy: "var(--brand-navy)",
+        },
+        surface: {
+          page: "var(--surface-page)",
+          card: "var(--surface-card)",
+          muted: "var(--surface-muted)",
+        },
+        state: {
+          live: "var(--state-live)",
+        },
+      },
+      // Split text + border tokens into their dedicated Tailwind
+      // sections so semantic class names stay clean (`text-primary`,
+      // `border-default`) instead of doubling the namespace
+      // (`text-text-primary`, `border-border-default`). Each section
+      // generates only the relevant utility for that concern.
+      textColor: {
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        muted: "var(--text-muted)",
+      },
+      borderColor: {
+        default: "var(--border-default)",
+        strong: "var(--border-strong)",
       },
       keyframes: {
         fadeSlideDown: {
