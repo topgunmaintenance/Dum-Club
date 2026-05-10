@@ -397,7 +397,7 @@ function CreatorProofModal({
             No developer needed
           </span>
           <Link
-            href="/build"
+            href="/merchant"
             className="rounded-lg bg-brand-teal px-4 py-2 text-[12px] font-bold text-black transition hover:bg-brand-teal-hover"
           >
             Start Selling →
@@ -3134,7 +3134,6 @@ export default function Home() {
                   { label: "Discover", href: "/discover" },
                   { label: "Become a merchant", href: "/merchant" },
                   { label: "Dashboard", href: "/dashboard" },
-                  { label: "AI Chat", href: "/chat" },
                 ].map((link) => (
                   <li key={link.label}>
                     <Link

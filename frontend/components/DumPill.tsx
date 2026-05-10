@@ -7,7 +7,7 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { API_BASE } from "../lib/apiBase";
 
 // Pages where the pill is hidden (already show points prominently)
-const HIDDEN_PATHS = ["/build", "/dashboard", "/hub", "/project"];
+const HIDDEN_PATHS = ["/dashboard", "/hub", "/project"];
 
 export function DumPill() {
   const { user } = useAuth();
