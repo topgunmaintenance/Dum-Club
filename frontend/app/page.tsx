@@ -3103,11 +3103,11 @@ export default function Home() {
                   DUM<span className="text-brand-teal">CLUB</span>
                 </span>
               </div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-secondary">
-                Local Commerce, Real Rewards
+              <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-brand-teal">
+                Drive Ur Market
               </p>
               <p className="max-w-xs text-sm leading-relaxed text-secondary">
-                Sell live. Keep everything. Flat-fee marketplace with zero commission, AI-powered retention, and rewards that work at every shop on the network.
+                The loyalty network for local business. Sell live, keep every dollar, and bring customers back with rewards that work at every shop on the network.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
