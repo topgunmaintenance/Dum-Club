@@ -44,7 +44,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${caveat.variable}`}>
-      <body className={`${GeistSans.className} bg-base text-[var(--color-text-primary)] min-h-screen`}>
+      <body className={`${GeistSans.className} bg-surface-page text-primary min-h-screen`}>
         <AppProviders>
           {/* SiteChrome decides whether to render the global navbar /
               ticker / DUM Points pill / deploy badge based on the

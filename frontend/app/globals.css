@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 :root {
-  /* ── v5.1 brightness pass ──
-     Darker-but-lifted palette. The old values (#07071A / #0D0D25 /
-     #12122E) felt lifeless against zinc-800/zinc-900 cards because
-     the background and the cards were too close in luminance. We
-     lightened the base a touch, reduced the blue tint, and dropped
-     the card tier one step further below the panel so glassmorphism
-     wrappers (bg-zinc-900/60 + backdrop-blur-sm) have a noticeable
-     layer break. Foreground and secondary text bumped one notch
-     brighter so body copy is readable without squinting. */
-  --background: #0A0A0F;
-  --foreground: #F0EFF8;
+  /* ── Light-theme migration ──
+     The body uses these two tokens directly via the CSS rule at the
+     bottom of this file (`body { background-color: var(--background)
+     ... }`). Repointing them at the surface-page / text-primary
+     values means the body itself paints light, so the fixed navbar
+     (bg-surface-card/95) doesn't bleed dark through its 5%
+     transparency band. Legacy dark variants live below as
+     --color-bg-base / --color-text-primary for any embed surface
+     that still wants the old dark chrome (e.g. /embed/[businessId]
+     iframes that render against arbitrary merchant pages). */
+  --background: #F7F8FA;
+  --foreground: #0B1220;
 
   /* DUM Club color system */
   --color-bg-base: #0A0A0F;
