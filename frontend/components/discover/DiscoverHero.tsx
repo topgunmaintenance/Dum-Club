@@ -16,11 +16,11 @@ export function DiscoverHero({ isAuthenticated }: { isAuthenticated?: boolean })
 
   return (
     <section className="mb-8">
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-500">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.35em] text-muted">
         ◆ DUM Club · Local Businesses · Live Storefronts
       </div>
 
-      <h1 className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl md:text-5xl">
+      <h1 className="text-3xl font-bold tracking-[-0.02em] text-brand-navy sm:text-4xl md:text-5xl">
         Active local businesses and live deals nearby.
       </h1>
 
@@ -34,13 +34,13 @@ export function DiscoverHero({ isAuthenticated }: { isAuthenticated?: boolean })
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <a
           href="#grid"
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold uppercase tracking-[0.08em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.3)]"
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold uppercase tracking-[0.08em] text-black transition hover:bg-brand-teal-hover"
         >
           Browse local ↓
         </a>
         <Link
           href="/merchant"
-          className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          className="inline-flex items-center gap-2 rounded-xl border border-default px-5 py-2.5 text-sm font-medium text-primary transition hover:border-strong hover:text-primary"
         >
           Become a merchant
         </Link>
