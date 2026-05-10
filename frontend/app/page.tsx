@@ -1870,7 +1870,7 @@ function WhatnotPitch() {
               <span className="font-mono text-2xl font-black text-brand-teal">+$1,101</span>
               <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
             </div>
-            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:">
+            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:text-white">
               Switch from Whatnot — Free →
             </Link>
           </div>
@@ -3041,7 +3041,7 @@ export default function Home() {
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-brand-teal">
               You already paid for your website
             </div>
-            <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+            <h2 className="text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
               Ready to turn your website into a{" "}
               <span className="text-brand-teal">live storefront?</span>
             </h2>
@@ -3051,7 +3051,7 @@ export default function Home() {
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/merchant"
-                className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:"
+                className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:text-white"
               >
                 Activate DUM Live →
               </Link>
@@ -3184,7 +3184,7 @@ export default function Home() {
               <ul className="space-y-3">
                 {[
                   { label: "For Business", href: "/business" },
-                  { label: "Discover", href: "/discover" },
+                  { label: "Pricing", href: "/pricing" },
                   { label: "Technology", href: "/technology" },
                 ].map((link) => (
                   <li key={link.label}>
