@@ -26,6 +26,7 @@ System in CLAUDE.md.
 9. [x] color-token-pass            — `feature/homepage-below-fold-migration` · 2026-05-10
 10. [x] business-and-pricing-rebuild — `feature/pricing-real-page-and-business-light` · 2026-05-10
 11. [x] merchant-light-and-square-cleanup — `feature/merchant-light-and-square-cleanup` · 2026-05-10
+12. [x] dashboard-and-hub-light          — `feature/dashboard-and-hub-light` · 2026-05-10
 
 ## Notes
 
