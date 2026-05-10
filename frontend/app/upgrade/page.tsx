@@ -8,8 +8,8 @@ const TIERS = [
     price: "$0",
     period: "during founding",
     afterNote: "Then preferred founding pricing after launch",
-    color: "text-emerald-400",
-    borderColor: "border-emerald-400/40",
+    color: "text-brand-teal",
+    borderColor: "border-brand-teal",
     highlight: true,
     features: [
       "Storefront on DUM Club marketplace",
@@ -27,8 +27,8 @@ const TIERS = [
     price: "$29",
     period: "/month",
     afterNote: null,
-    color: "text-zinc-300",
-    borderColor: "border-zinc-700",
+    color: "text-primary",
+    borderColor: "border-default",
     highlight: false,
     features: [
       "Storefront on DUM Club marketplace",
@@ -45,8 +45,8 @@ const TIERS = [
     price: "$49",
     period: "/month",
     afterNote: null,
-    color: "text-emerald-400",
-    borderColor: "border-emerald-400/30",
+    color: "text-brand-teal",
+    borderColor: "border-default",
     highlight: false,
     features: [
       "Everything in Starter",
@@ -81,7 +81,7 @@ const TIERS = [
 
 function Check() {
   return (
-    <svg className="h-4 w-4 shrink-0 text-emerald-400" fill="none" viewBox="0 0 16 16">
+    <svg className="h-4 w-4 shrink-0 text-brand-teal" fill="none" viewBox="0 0 16 16">
       <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" />
     </svg>
   );
@@ -89,29 +89,29 @@ function Check() {
 
 export default function PricingPage() {
   return (
-    <div className="relative min-h-screen bg-base px-4 py-20 text-white sm:px-6">
+    <div className="relative min-h-screen bg-surface-page px-4 py-20 text-primary sm:px-6">
       <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Hero */}
         <div className="text-center">
-          <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
+          <div className="inline-flex items-center rounded-full border border-default bg-brand-teal-soft px-4 py-2 font-mono text-[10px] uppercase tracking-[0.35em] text-brand-teal">
             ◆ Pricing
           </div>
-          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
             Flat fee.
             <br />
-            <span className="text-emerald-400">Zero commission.</span>
+            <span className="text-brand-teal">Zero commission.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
             One monthly price. Keep 100% of every sale. No per-transaction fees, no listing fees, no surprise charges. Ever.
           </p>
         </div>
 
         {/* Competitor context */}
-        <div className="mx-auto mt-8 max-w-xl rounded-xl border border-red-500/20 bg-red-500/[0.04] px-5 py-3 text-center text-sm text-zinc-400">
+        <div className="mx-auto mt-8 max-w-xl rounded-xl border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-5 py-3 text-center text-sm text-secondary">
           <span className="text-red-400 font-semibold">Whatnot charges 8% + 2.9% per sale.</span>{" "}
           Sell $10k/month and you lose $1,090.
-          <span className="text-emerald-400 font-semibold"> On DUM Club, you&apos;d pay $29–$99 flat.</span>
+          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $29–$99 flat.</span>
         </div>
 
         {/* Tier cards */}
@@ -119,13 +119,13 @@ export default function PricingPage() {
           {TIERS.map((tier) => (
             <div
               key={tier.name}
-              className={`relative flex flex-col rounded-2xl border bg-zinc-950 p-6 ${tier.borderColor} ${
-                tier.highlight ? "shadow-[0_0_40px_-12px] shadow-emerald-500/20" : ""
+              className={`relative flex flex-col rounded-2xl border bg-surface-card p-6 ${tier.borderColor} ${
+                tier.highlight ? "" : ""
               }`}
             >
               {tier.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-emerald-400 px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
+                  <span className="rounded-full bg-brand-teal px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
                     Limited · 100 spots
                   </span>
                 </div>
@@ -134,15 +134,15 @@ export default function PricingPage() {
                 {tier.name}
               </div>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-3xl font-extrabold text-white">{tier.price}</span>
-                <span className="text-sm text-zinc-500">{tier.period}</span>
+                <span className="text-3xl font-extrabold text-brand-navy">{tier.price}</span>
+                <span className="text-sm text-muted">{tier.period}</span>
               </div>
               {tier.afterNote && (
-                <div className="mt-1 text-[11px] text-zinc-500">{tier.afterNote}</div>
+                <div className="mt-1 text-[11px] text-muted">{tier.afterNote}</div>
               )}
               <ul className="mt-6 flex-1 space-y-2.5">
                 {tier.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-400">
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-secondary">
                     <Check />
                     {f}
                   </li>
@@ -152,8 +152,8 @@ export default function PricingPage() {
                 href={tier.href}
                 className={`mt-6 block w-full rounded-xl px-5 py-3 text-center text-sm font-bold transition ${
                   tier.highlight
-                    ? "bg-emerald-400 text-black hover:bg-emerald-300"
-                    : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                    ? "bg-brand-teal text-black hover:bg-brand-teal-hover"
+                    : "border border-default text-primary hover:border-strong hover:text-primary"
                 }`}
               >
                 {tier.cta} →
@@ -163,12 +163,12 @@ export default function PricingPage() {
         </div>
 
         {/* What every tier includes */}
-        <div className="mt-16 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.03] to-zinc-950 px-8 py-10 sm:px-12">
+        <div className="mt-16 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card px-8 py-10 sm:px-12">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+            <h2 className="text-2xl font-extrabold text-brand-navy sm:text-3xl">
               Every tier includes DUM Points
             </h2>
-            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-4 text-sm leading-relaxed text-secondary">
               Your customers automatically earn DUM Points on every purchase. Points are redeemable at any business on the network — bringing buyers back without you lifting a finger.
             </p>
           </div>
@@ -182,26 +182,26 @@ export default function PricingPage() {
             { icon: "📍", title: "Google Maps", desc: "Pay to rank in ads", bad: true },
             { icon: "◆", title: "DUM Club", desc: "$29–$99/mo flat", bad: false },
           ].map((comp) => (
-            <div key={comp.title} className={`rounded-xl border p-4 text-center ${comp.bad ? "border-zinc-800/40 bg-zinc-900/20" : "border-emerald-400/30 bg-emerald-400/[0.04]"}`}>
+            <div key={comp.title} className={`rounded-xl border p-4 text-center ${comp.bad ? "border-default bg-surface-muted" : "border-default bg-brand-teal-soft"}`}>
               <div className="text-xl">{comp.icon}</div>
-              <div className={`mt-2 text-sm font-bold ${comp.bad ? "text-zinc-400" : "text-emerald-400"}`}>{comp.title}</div>
-              <div className={`mt-1 text-[11px] ${comp.bad ? "text-red-400/80" : "text-emerald-400/80"}`}>{comp.desc}</div>
+              <div className={`mt-2 text-sm font-bold ${comp.bad ? "text-secondary" : "text-brand-teal"}`}>{comp.title}</div>
+              <div className={`mt-1 text-[11px] ${comp.bad ? "text-state-live" : "text-brand-teal"}`}>{comp.desc}</div>
             </div>
           ))}
         </div>
 
         {/* Enterprise */}
-        <div className="mt-16 rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 sm:px-12">
+        <div className="mt-16 rounded-2xl border border-default bg-surface-card px-8 py-10 sm:px-12">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+            <h2 className="text-2xl font-extrabold text-brand-navy sm:text-3xl">
               Need more?
             </h2>
-            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-4 text-sm leading-relaxed text-secondary">
               Business ($499/mo) and Enterprise ($2,000+/mo) tiers available for white-label loyalty programs, multi-location support, custom integrations, and dedicated account management.
             </p>
             <a
               href="mailto:julian@dum.club"
-              className="mt-6 inline-flex items-center rounded-xl border border-zinc-700 px-6 py-3 text-sm font-bold text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-400"
+              className="mt-6 inline-flex items-center rounded-xl border border-default px-6 py-3 text-sm font-bold text-primary transition hover:border-brand-teal hover:text-brand-teal"
             >
               Contact Us →
             </a>
@@ -211,7 +211,7 @@ export default function PricingPage() {
         <div className="mt-12 text-center">
           <Link
             href="/"
-            className="text-sm text-zinc-500 transition hover:text-zinc-300"
+            className="text-sm text-muted transition hover:text-primary"
           >
             ← Back to home
           </Link>
