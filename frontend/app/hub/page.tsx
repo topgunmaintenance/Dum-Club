@@ -4,10 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { TIERS, getTier, getNextTier } from "../../lib/dumTiers";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import { useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL, Connection } from "@solana/web3.js";
-import { Starfield } from "../../components/Starfield";
+
+import dynamic from "next/dynamic";
+
+// Solana code-split (Phase 14, CLAUDE.md §12 Rule 3): the on-chain
+// claim UI lives in ./SolanaAdvanced and only ships to the browser
+// when the user actually opens the claim tab. Keeps @privy-io/
+// react-auth/solana + @solana/web3.js out of the default /hub
+// bundle. ssr: false because the SDK initialises against window.
+const SolanaAdvanced = dynamic(
+  () => import("./SolanaAdvanced").then((m) => m.SolanaAdvanced),
+  { ssr: false, loading: () => null },
+);
 
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
@@ -77,22 +85,22 @@ function NetworkImpact({ privyId }: { privyId?: string }) {
   ].filter((s) => s.show);
 
   return (
-    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Your Impact</div>
+    <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6">
+      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Your Impact</div>
       <div className={`grid gap-3 ${stats.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : stats.length === 3 ? "grid-cols-3" : stats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-3 text-center">
+          <div key={s.label} className="rounded-xl border border-default bg-surface-muted p-3 text-center">
             <div className="text-xl font-black text-white">{s.value}</div>
-            <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-zinc-500">{s.label}</div>
+            <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-secondary">{s.label}</div>
           </div>
         ))}
       </div>
       {data.activity_this_week > 0 && (
-        <div className="mt-3 text-center text-[10px] text-zinc-600">
+        <div className="mt-3 text-center text-[10px] text-muted">
           {data.activity_this_week} transaction{data.activity_this_week === 1 ? "" : "s"} this week
         </div>
       )}
-      <p className="mt-2 text-center text-[11px] text-zinc-600">Your purchases bring businesses into the DUM Club network.</p>
+      <p className="mt-2 text-center text-[11px] text-muted">Your purchases bring businesses into the DUM Club network.</p>
     </div>
   );
 }
@@ -145,23 +153,23 @@ function PointsTab({
   return (
     <>
       {/* Balance */}
-      <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
+      <div className="mb-6 rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Your DUM Balance</div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">Your DUM Balance</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-5xl font-black text-white">{displayBalance.toLocaleString()}</span>
-              <span className="text-lg text-zinc-500">points</span>
+              <span className="text-lg text-secondary">points</span>
               {deltaAccent !== null && deltaAccent > 0 && (
                 <span className="animate-pulse font-mono text-sm font-bold text-sky-400">+{deltaAccent.toLocaleString()}</span>
               )}
             </div>
-            <div className="mt-1 text-[10px] text-zinc-600">
+            <div className="mt-1 text-[10px] text-muted">
               Worth ${(displayBalance * 0.1).toFixed(2)} in discounts at participating merchants · 1 DUM = $0.10
             </div>
             {hubClaimable > 0 && (
-              <button onClick={onNavigateClaim} className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 transition hover:text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,255,163,0.5)]" />
+              <button onClick={onNavigateClaim} className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-brand-teal transition hover:text-brand-teal">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-teal" />
                 {hubClaimable.toLocaleString()} DUM ready to claim →
               </button>
             )}
@@ -173,10 +181,10 @@ function PointsTab({
         {next && (
           <div className="mt-5">
             <div className="mb-1.5 flex items-center justify-between text-[10px]">
-              <span className="text-zinc-500">Progress to {next.name}</span>
-              <span className="font-mono text-zinc-400">{balance} / {next.min}</span>
+              <span className="text-secondary">Progress to {next.name}</span>
+              <span className="font-mono text-secondary">{balance} / {next.min}</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
               <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: next.color }} />
             </div>
           </div>
@@ -187,8 +195,8 @@ function PointsTab({
       <NetworkImpact privyId={user?.privyId} />
 
       {/* How to Earn */}
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How to Earn</div>
+      <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6">
+        <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">How to Earn</div>
         <div className="space-y-3">
           {[
             { icon: "🛒", points: "+2", label: "Every purchase you make" },
@@ -198,8 +206,8 @@ function PointsTab({
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-4">
               <span className="text-lg">{item.icon}</span>
-              <span className="w-10 text-right font-mono text-sm font-bold text-emerald-400">{item.points}</span>
-              <span className="text-sm text-zinc-400">{item.label}</span>
+              <span className="w-10 text-right font-mono text-sm font-bold text-brand-teal">{item.points}</span>
+              <span className="text-sm text-secondary">{item.label}</span>
             </div>
           ))}
         </div>
@@ -214,11 +222,11 @@ function PointsTab({
           notice; the underlying /api/dum/purchase endpoint and the
           purchaseSuccess / purchaseError / purchasing state are still
           mounted so a future re-enable is one PR, not a rebuild. */}
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
-        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Points</div>
-        <p className="text-[13px] leading-relaxed text-zinc-400">
+      <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6">
+        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">DUM Points</div>
+        <p className="text-[13px] leading-relaxed text-secondary">
           Points are earned through purchases.{" "}
-          <span className="text-zinc-500">Purchased top-ups coming soon.</span>
+          <span className="text-secondary">Purchased top-ups coming soon.</span>
         </p>
       </div>
 
@@ -253,16 +261,16 @@ function PurchaseHistory({ purchaseSuccess }: { purchaseSuccess: any }) {
   if (purchases.length === 0) return null;
 
   return (
-    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Purchase History</div>
+    <div className="mb-6 rounded-2xl border border-default bg-surface-card p-5">
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Purchase History</div>
       <div className="space-y-2">
         {purchases.map((p, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
+          <div key={i} className="flex items-center justify-between rounded-xl bg-surface-muted px-4 py-3">
             <div className="flex items-center gap-3">
               <span className="font-mono text-sm font-bold text-sky-400">+{p.amount}</span>
-              <span className="text-[11px] text-zinc-400">Purchased via Stripe</span>
+              <span className="text-[11px] text-secondary">Purchased via Stripe</span>
             </div>
-            <span className="text-[10px] text-zinc-600">{p.created_at ? formatTimeAgo(p.created_at) : ""}</span>
+            <span className="text-[10px] text-muted">{p.created_at ? formatTimeAgo(p.created_at) : ""}</span>
           </div>
         ))}
       </div>
@@ -309,9 +317,9 @@ function RecentActivity() {
   const hiddenAdvancedCount = byRowFilter.length - visible.length;
 
   return (
-    <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+    <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Activity</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Activity</div>
         <div className="flex gap-1">
           {([
             { id: "all" as const, label: "All" },
@@ -324,8 +332,8 @@ function RecentActivity() {
               onClick={() => setFilter(f.id)}
               className={`rounded-md px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition ${
                 filter === f.id
-                  ? "bg-emerald-400/10 text-emerald-400"
-                  : "text-zinc-600 hover:text-zinc-400"
+                  ? "bg-brand-teal-soft text-brand-teal"
+                  : "text-muted hover:text-secondary"
               }`}
             >
               {f.label}
@@ -334,26 +342,26 @@ function RecentActivity() {
         </div>
       </div>
       {loading ? (
-        <div className="py-4 text-center text-xs text-zinc-600">Loading...</div>
+        <div className="py-4 text-center text-xs text-muted">Loading...</div>
       ) : visible.length === 0 && hiddenAdvancedCount === 0 ? (
-        <div className="py-4 text-center text-xs text-zinc-600">
+        <div className="py-4 text-center text-xs text-muted">
           {filter === "all" ? "No activity yet. Earn DUM Points by creating businesses and making purchases." : `No ${filter} activity yet.`}
         </div>
       ) : (
         <div className="space-y-2">
           {visible.slice(0, 15).map((tx) => (
-            <div key={tx.id} className="rounded-xl bg-zinc-900/50 px-4 py-3">
+            <div key={tx.id} className="rounded-xl bg-surface-muted px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className={`font-mono text-sm font-bold ${tx.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  <span className={`font-mono text-sm font-bold ${tx.amount > 0 ? "text-brand-teal" : "text-state-live"}`}>
                     {tx.amount > 0 ? "+" : ""}{tx.amount}
                   </span>
                   <div>
-                    <span className="text-[12px] text-zinc-300">{REASON_LABELS[tx.reason] || tx.reason}</span>
-                    <span className="ml-2 rounded-full bg-emerald-400/5 px-1.5 py-0.5 text-[8px] font-bold uppercase text-emerald-400/50">confirmed</span>
+                    <span className="text-[12px] text-primary">{REASON_LABELS[tx.reason] || tx.reason}</span>
+                    <span className="ml-2 rounded-full bg-brand-teal/5 px-1.5 py-0.5 text-[8px] font-bold uppercase text-brand-teal/50">confirmed</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-zinc-600">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
+                <span className="text-[10px] text-muted">{tx.created_at ? formatTimeAgo(tx.created_at) : ""}</span>
               </div>
               {/* Explorer link only renders when Advanced is expanded.
                   Since the row itself is advanced-gated, this is belt-and-
@@ -364,9 +372,9 @@ function RecentActivity() {
                   href={`https://explorer.solana.com/tx/${tx.reference_id}?cluster=devnet`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1.5 inline-flex items-center gap-1 text-[9px] text-emerald-400/50 transition hover:text-emerald-400"
+                  className="mt-1.5 inline-flex items-center gap-1 text-[9px] text-brand-teal/50 transition hover:text-brand-teal"
                 >
-                  View on Explorer → <span className="font-mono text-zinc-700">{tx.reference_id.slice(0, 8)}...{tx.reference_id.slice(-4)}</span>
+                  View on Explorer → <span className="font-mono text-muted">{tx.reference_id.slice(0, 8)}...{tx.reference_id.slice(-4)}</span>
                 </a>
               )}
               {tx.reason === "stripe_purchase" && (
@@ -384,18 +392,18 @@ function RecentActivity() {
         <button
           type="button"
           onClick={() => setShowAdvanced(true)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 transition hover:border-zinc-700 hover:text-zinc-400"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-default bg-surface-muted px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted transition hover:border-default hover:text-secondary"
         >
           <span>Advanced</span>
           <span>▸</span>
-          <span className="font-mono text-zinc-700">{hiddenAdvancedCount}</span>
+          <span className="font-mono text-muted">{hiddenAdvancedCount}</span>
         </button>
       )}
       {showAdvanced && (
         <button
           type="button"
           onClick={() => setShowAdvanced(false)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600 transition hover:border-zinc-700 hover:text-zinc-400"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-default bg-surface-muted px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted transition hover:border-default hover:text-secondary"
         >
           <span>Hide advanced</span>
           <span>▾</span>
@@ -405,346 +413,6 @@ function RecentActivity() {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   CLAIM TAB — Real on-chain DUM token minting
-   ════════════════════════════════════════════════════════════════ */
-type ClaimState = "idle" | "preparing" | "submitting" | "confirming" | "success" | "error";
-
-function ClaimTab({ balance, onBalanceUpdate }: { balance: number; onBalanceUpdate: (b: number) => void }) {
-  const { wallets: privyWallets, createWallet } = useSolanaWallets();
-  const privyWallet = privyWallets[0] || null;
-  const walletAddress = privyWallet?.address || null;
-  const { getToken, user } = useAuth();
-  const [claimState, setClaimState] = useState<ClaimState>("idle");
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimResult, setClaimResult] = useState<{ dum: number; sig: string; mint: string; mode: string } | null>(null);
-  const [onChainBalance, setOnChainBalance] = useState<number | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [claimHistory, setClaimHistory] = useState<{ amount: number; reference_id: string; created_at: string }[]>([]);
-  const [claimable, setClaimable] = useState<{ claimable: number; total_earned: number; total_claimed: number } | null>(null);
-
-  function copyToClipboard(value: string, label: string) {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(label);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  }
-
-  // Friendly error messages
-  function friendlyError(msg: string): string {
-    if (msg.includes("wait") && msg.includes("seconds")) return msg;
-    if (msg.includes("wallet")) return "Wallet not connected. Please wait for your wallet to set up or refresh the page.";
-    if (msg.includes("401") || msg.includes("auth") || msg.includes("Auth")) return "Please sign in to claim DUM tokens.";
-    if (msg.includes("429") || msg.includes("limit")) return msg;
-    if (msg.includes("insufficient") || msg.includes("gas") || msg.includes("lamport")) return "You need devnet SOL for gas fees. Visit a Solana faucet to get free devnet SOL.";
-    if (msg.includes("network") || msg.includes("Network")) return "Network error. Check your connection and try again.";
-    return msg || "Something went wrong. Please try again.";
-  }
-
-  // Auto-create wallet if user is logged in but has no wallet
-  useEffect(() => {
-    if (user && !privyWallet) {
-      createWallet().catch(() => {});
-    }
-  }, [user, privyWallet]);
-
-  // Load claim history + claimable amount
-  useEffect(() => {
-    if (!user?.privyId) return;
-    fetch(`${API_BASE}/api/dum/transactions/${user.privyId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        const claims = (d.transactions || []).filter((t: any) => t.reason === "claim").slice(0, 5);
-        setClaimHistory(claims);
-      })
-      .catch(() => {});
-    fetch(`${API_BASE}/api/dum/claimable/${user.privyId}`)
-      .then((r) => r.json())
-      .then((d) => setClaimable(d))
-      .catch(() => {});
-  }, [user?.privyId, claimState]);
-
-  // Fetch on-chain DUM balance
-  useEffect(() => {
-    if (!walletAddress) { setOnChainBalance(null); return; }
-    fetch(`${API_BASE}/api/dum/balance-onchain/${walletAddress}`)
-      .then((r) => r.json())
-      .then((d) => setOnChainBalance(d.balance ?? null))
-      .catch(() => setOnChainBalance(null));
-  }, [walletAddress, claimState]);
-
-  const claimableNow = claimable?.claimable ?? null;
-  const claimAmount = claimableNow !== null ? claimableNow : 0;
-  const canClaim = claimAmount > 0 && !!walletAddress && claimState === "idle";
-
-  async function handleClaim() {
-    if (!walletAddress || !canClaim) return;
-
-    setClaimState("preparing");
-    setClaimError(null);
-    setClaimResult(null);
-
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Please sign in to claim DUM tokens.");
-
-      setClaimState("submitting");
-      const res = await fetch(`${API_BASE}/api/dum/claim`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          wallet_address: walletAddress,
-          amount: claimAmount,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Claim failed (${res.status})`);
-      }
-
-      setClaimState("confirming");
-      const data = await res.json();
-
-      // Update DB balance everywhere
-      const newBal = data.new_balance || balance + (data.dum_received || 0);
-      localStorage.setItem("dum_points", String(newBal));
-      window.dispatchEvent(new Event("dum-points-update"));
-      onBalanceUpdate(newBal);
-
-      // Refresh on-chain balance
-      fetch(`${API_BASE}/api/dum/balance-onchain/${walletAddress}`)
-        .then((r) => r.json())
-        .then((d) => setOnChainBalance(d.balance ?? null))
-        .catch(() => {});
-
-      setClaimResult({
-        dum: data.dum_received,
-        sig: data.tx_signature || "",
-        mint: data.mint || "",
-        mode: data.mode || "db-only",
-      });
-      setClaimState("success");
-    } catch (err: any) {
-      setClaimError(friendlyError(err?.message || "Claim failed"));
-      setClaimState("error");
-    }
-  }
-
-  const dumMint = process.env.NEXT_PUBLIC_DUM_MINT || process.env.NEXT_PUBLIC_DUM_MINT_ADDRESS || "J5hiqRLs9Cnj2Yr5q98XN9e2ZeEcmyXabC5dXfQGzq3U";
-  const shortWallet = walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : "";
-  const hasTxSig = claimResult?.sig && claimResult.sig.length > 20;
-
-  // Claim button label based on state
-  const claimButtonLabel = {
-    idle: `Claim All ${claimAmount.toLocaleString()} DUM`,
-    preparing: "Preparing...",
-    submitting: "Submitting to Solana...",
-    confirming: "Confirming...",
-    success: "Claimed!",
-    error: "Try Again",
-  }[claimState] || "Claim";
-
-  return (
-    <div className="mx-auto max-w-md">
-      {/* ── Success panel ── */}
-      {claimState === "success" && claimResult ? (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-950 p-6 text-center">
-            <div className="mb-3 text-3xl">✓</div>
-            <div className="text-xl font-black text-white">DUM Claimed to Wallet</div>
-            <div className="mt-2 flex items-baseline justify-center gap-2">
-              <span className="text-3xl font-black text-emerald-400">+{claimResult.dum.toLocaleString()}</span>
-              <span className="text-sm text-zinc-400">DUM</span>
-            </div>
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
-              {hasTxSig ? "Minted on Solana Devnet" : "Earned DUM released to balance"}
-            </div>
-            {onChainBalance !== null && (
-              <div className="mt-2 text-[11px] text-zinc-500">On-chain wallet balance: {onChainBalance.toLocaleString()} DUM</div>
-            )}
-          </div>
-
-          {/* On-chain proof — only show if we have real data */}
-          {(hasTxSig || walletAddress) && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-2">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3">
-                {hasTxSig ? "On-chain Proof" : "Wallet Info"}
-              </div>
-              {hasTxSig && (
-                <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                  <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                    <div className="text-[12px] font-semibold text-white">Transaction</div>
-                    <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{claimResult.sig.slice(0, 16)}...{claimResult.sig.slice(-8)}</div>
-                  </a>
-                  <button onClick={() => copyToClipboard(claimResult.sig, "tx")} className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-zinc-400 hover:text-emerald-400">{copied === "tx" ? "✓" : "Copy"}</button>
-                  <a href={`https://explorer.solana.com/tx/${claimResult.sig}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
-                </div>
-              )}
-              {walletAddress && (
-                <div className="flex items-center gap-2 rounded-xl bg-zinc-900/50 px-4 py-3">
-                  <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                    <div className="text-[12px] font-semibold text-white">Your Wallet</div>
-                    <div className="mt-0.5 font-mono text-[9px] text-zinc-600">{shortWallet}</div>
-                  </a>
-                  <a href={`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-[9px] text-emerald-400/70 hover:text-emerald-400">View →</a>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            onClick={() => { setClaimState("idle"); setClaimResult(null); setCopied(null); }}
-            className="w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-white"
-          >
-            Claim more
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* ── Wallet + Network status ── */}
-          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Wallet</div>
-              <div className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-2.5 py-1 text-[9px] font-bold text-zinc-500">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                Solana Devnet
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between">
-              <div>
-                {walletAddress ? (
-                  <div className="font-mono text-sm text-white">{shortWallet}</div>
-                ) : (
-                  <div className="text-sm text-zinc-500">Connecting wallet...</div>
-                )}
-              </div>
-              {walletAddress && (
-                <button onClick={() => copyToClipboard(walletAddress, "wallet")} className="text-[9px] text-zinc-600 hover:text-emerald-400">
-                  {copied === "wallet" ? "✓ Copied" : "Copy address"}
-                </button>
-              )}
-            </div>
-            {/* Balance row */}
-            <div className="mt-3 grid grid-cols-3 gap-3 border-t border-zinc-800 pt-3">
-              <div>
-                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">Total Balance</div>
-                <div className="mt-0.5 font-mono text-sm font-bold text-white">{balance.toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="text-[9px] uppercase tracking-[0.15em] text-emerald-400/60">Claimable</div>
-                <div className="mt-0.5 font-mono text-sm font-bold text-emerald-400">
-                  {claimableNow !== null ? claimableNow.toLocaleString() : "—"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[9px] uppercase tracking-[0.15em] text-zinc-600">On-chain</div>
-                <div className="mt-0.5 font-mono text-sm font-bold text-zinc-400">
-                  {onChainBalance !== null ? onChainBalance.toLocaleString() : "—"}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Claim form ── */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim Earned DUM</div>
-            <p className="mb-4 text-[12px] text-zinc-500">
-              Release earned DUM to your Solana wallet. Minted as real SPL tokens on devnet.
-            </p>
-
-            {/* Claimable zero state */}
-            {claimableNow !== null && claimableNow === 0 ? (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5 text-center">
-                <div className="text-sm font-bold text-zinc-400">Nothing to claim yet</div>
-                <p className="mt-2 text-[12px] text-zinc-600">
-                  Earn DUM by creating businesses, adding offers, making purchases, or referring friends.
-                </p>
-                <div className="mt-3 text-[10px] text-zinc-700">
-                  Earned: {claimable?.total_earned?.toLocaleString() || 0} · Claimed: {claimable?.total_claimed?.toLocaleString() || 0}
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Claimable amount display */}
-                {claimableNow !== null && (
-                  <div className="mb-4 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4 text-center">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400/60">Available to claim</div>
-                    <div className="mt-1 font-mono text-3xl font-black text-emerald-400">{claimableNow.toLocaleString()}</div>
-                    <div className="mt-0.5 text-[10px] text-zinc-600">DUM earned from activity</div>
-                  </div>
-                )}
-
-                {/* Claim All button */}
-                <button
-                  onClick={claimState === "error" ? () => setClaimState("idle") : handleClaim}
-                  disabled={!canClaim}
-                  className={`w-full rounded-xl px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                    claimState === "error"
-                      ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                      : "bg-emerald-400 text-black hover:bg-emerald-300"
-                  }`}
-                >
-                  {!walletAddress ? "Setting up wallet..." : claimButtonLabel}
-                </button>
-              </>
-            )}
-
-            {claimState === "error" && claimError && (
-              <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400">
-                {claimError}
-              </div>
-            )}
-
-            {claimState !== "idle" && claimState !== "error" && claimState !== "success" && (
-              <div className="mt-3 text-center text-[10px] text-zinc-600">
-                {claimState === "preparing" && "Preparing your claim..."}
-                {claimState === "submitting" && "Submitting transaction to Solana devnet..."}
-                {claimState === "confirming" && "Confirming on-chain..."}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* ── Claim History ── */}
-      {claimHistory.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Claim History</div>
-          <div className="space-y-2">
-            {claimHistory.map((c, i) => {
-              const hasSig = c.reference_id && c.reference_id.length > 30;
-              return (
-                <div key={i} className="flex items-center justify-between rounded-xl bg-zinc-900/50 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-bold text-emerald-400">+{c.amount}</span>
-                    <span className="text-[11px] text-zinc-400">Claimed to wallet</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-zinc-600">{c.created_at ? formatTimeAgo(c.created_at) : ""}</span>
-                    {hasSig && (
-                      <a
-                        href={`https://explorer.solana.com/tx/${c.reference_id}?cluster=devnet`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-[8px] font-bold text-emerald-400/70 transition hover:text-emerald-400"
-                      >
-                        Tx →
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════
    REFER TAB
@@ -770,7 +438,7 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
   }, []);
 
   if (loadingRef) {
-    return <div className="text-center text-sm text-zinc-500 py-12">Loading referral info...</div>;
+    return <div className="text-center text-sm text-secondary py-12">Loading referral info...</div>;
   }
 
   const referralUrl = referral
@@ -780,14 +448,14 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
   return (
     <div className="space-y-6">
       {/* Referral link */}
-      <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-6">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">Your Referral Link</div>
-        <p className="mt-2 text-sm text-zinc-400">Share your link. When someone signs up, you both earn DUM Points.</p>
+      <div className="rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-6">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">Your Referral Link</div>
+        <p className="mt-2 text-sm text-secondary">Share your link. When someone signs up, you both earn DUM Points.</p>
 
         {referral && (
           <>
             <div className="mt-4 flex items-center gap-2">
-              <div className="flex-1 truncate rounded-xl border border-zinc-700 bg-base px-3 py-2.5 font-mono text-sm text-zinc-300">
+              <div className="flex-1 truncate rounded-xl border border-default bg-surface-page px-3 py-2.5 font-mono text-sm text-primary">
                 {referralUrl}
               </div>
               <button
@@ -799,8 +467,8 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
                 }}
                 className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
                   copied
-                    ? "bg-emerald-400/20 text-emerald-400 border border-emerald-400/30"
-                    : "bg-emerald-400 text-black hover:bg-emerald-300"
+                    ? "bg-brand-teal-soft text-brand-teal border border-default"
+                    : "bg-brand-teal text-black hover:bg-brand-teal-hover"
                 }`}
               >
                 {copied ? "Copied!" : "Copy"}
@@ -812,7 +480,7 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Join me on DUM Club — build a business, earn rewards.\n\n")}&url=${encodeURIComponent(referralUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-700 py-2.5 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-default py-2.5 text-xs font-semibold text-primary transition hover:border-strong hover:text-primary"
               >
                 Share on X
               </a>
@@ -826,7 +494,7 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
                     }).catch(() => {});
                   }
                 }}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-700 py-2.5 text-xs font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-default py-2.5 text-xs font-semibold text-primary transition hover:border-strong hover:text-primary"
               >
                 More options
               </button>
@@ -838,24 +506,24 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
       {/* Stats */}
       {referral && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 text-center">
+          <div className="rounded-xl border border-default bg-surface-card p-4 text-center">
             <div className="text-2xl font-black text-white">{referral.clicks}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">Clicks</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-secondary">Clicks</div>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 text-center">
+          <div className="rounded-xl border border-default bg-surface-card p-4 text-center">
             <div className="text-2xl font-black text-white">{referral.signups}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-zinc-500">Signups</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-secondary">Signups</div>
           </div>
-          <div className="rounded-xl border border-emerald-400/15 bg-emerald-400/5 p-4 text-center">
-            <div className="text-2xl font-black text-emerald-400">{referral.points_earned}</div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">DUM Earned</div>
+          <div className="rounded-xl border border-default bg-brand-teal/5 p-4 text-center">
+            <div className="text-2xl font-black text-brand-teal">{referral.points_earned}</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-brand-teal/60">DUM Earned</div>
           </div>
         </div>
       )}
 
       {/* How it works */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-5">
-        <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">How It Works</div>
+      <div className="rounded-2xl border border-default bg-surface-card p-5">
+        <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">How It Works</div>
         <div className="space-y-3">
           {[
             { step: "1", text: "Share your link with friends or on social media" },
@@ -863,10 +531,10 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
             { step: "3", text: "You earn 25 DUM Points, they get 10 welcome points" },
           ].map((s) => (
             <div key={s.step} className="flex items-start gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400/10 text-[11px] font-bold text-emerald-400">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-teal-soft text-[11px] font-bold text-brand-teal">
                 {s.step}
               </span>
-              <span className="text-sm text-zinc-300">{s.text}</span>
+              <span className="text-sm text-primary">{s.text}</span>
             </div>
           ))}
         </div>
@@ -941,13 +609,12 @@ export default function HubPage() {
 
   if (!user) {
     return (
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-base px-4 text-white">
-        <Starfield count={60} />
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 text-white">
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-4 text-4xl">◆</div>
           <h1 className="text-2xl font-black tracking-tight">DUM Hub</h1>
-          <p className="mt-3 text-sm text-zinc-400">Sign in to view your points, claim rewards, and save at checkout.</p>
-          <button onClick={() => login()} className="mt-6 w-full rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300">
+          <p className="mt-3 text-sm text-secondary">Sign in to view your points, claim rewards, and save at checkout.</p>
+          <button onClick={() => login()} className="mt-6 w-full rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
             Sign In to Continue →
           </button>
         </div>
@@ -956,14 +623,13 @@ export default function HubPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-base text-white">
-      <Starfield count={60} />
+    <div className="relative min-h-screen bg-surface-page text-primary">
       <div className="relative z-10 mx-auto max-w-2xl px-4 py-16">
         {/* Header */}
         <div className="mb-6 text-center">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/60">DUM Hub · Your Local Rewards Balance</div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal/60">DUM Hub · Your Local Rewards Balance</div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">DUM Hub</h1>
-          <p className="mt-2 text-sm text-zinc-500">Earn at one merchant, spend at another</p>
+          <p className="mt-2 text-sm text-secondary">Earn at one merchant, spend at another</p>
         </div>
 
         {/* How DUM works — explainer strip */}
@@ -973,16 +639,16 @@ export default function HubPage() {
             { step: "2", label: "Spend", desc: "Use your balance for discounts at participating merchants" },
             { step: "3", label: "Return", desc: "Every shop on the network accepts your points" },
           ].map((s) => (
-            <div key={s.step} className="rounded-xl border border-zinc-800/50 bg-zinc-950/60 px-2 py-3">
-              <div className="text-[9px] font-bold text-emerald-400/50">{s.step}</div>
+            <div key={s.step} className="rounded-xl border border-default bg-surface-card px-2 py-3">
+              <div className="text-[9px] font-bold text-brand-teal/50">{s.step}</div>
               <div className="text-xs font-bold text-white">{s.label}</div>
-              <div className="mt-1 text-[9px] leading-tight text-zinc-600">{s.desc}</div>
+              <div className="mt-1 text-[9px] leading-tight text-muted">{s.desc}</div>
             </div>
           ))}
         </div>
 
         {/* Tab bar */}
-        <div className="mb-8 flex items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800/60 bg-zinc-950/80 p-1 max-w-lg mx-auto">
+        <div className="mb-8 flex items-center gap-1 overflow-x-auto rounded-xl border border-default bg-surface-card p-1 max-w-lg mx-auto">
           {[
             { id: "balance" as const, label: "Balance", icon: "◆" },
             { id: "claim" as const, label: "Claim", icon: "⬇" },
@@ -993,14 +659,14 @@ export default function HubPage() {
               onClick={() => setTab(t.id)}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-200 ${
                 tab === t.id
-                  ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 shadow-[0_0_12px_rgba(0,255,163,0.08)]"
-                  : "text-zinc-500 border border-transparent hover:text-zinc-300"
+                  ? "bg-brand-teal-soft text-brand-teal border border-default"
+                  : "text-secondary border border-transparent hover:text-primary"
               }`}
             >
               <span>{t.icon}</span>
               {t.label}
               {t.id === "claim" && hubClaimable > 0 && (
-                <span className="ml-0.5 min-w-[16px] rounded-full bg-emerald-400/15 px-1 py-0.5 text-center text-[8px] font-bold leading-none text-emerald-400">
+                <span className="ml-0.5 min-w-[16px] rounded-full bg-brand-teal-soft px-1 py-0.5 text-center text-[8px] font-bold leading-none text-brand-teal">
                   {hubClaimable > 99 ? "99+" : hubClaimable}
                 </span>
               )}
@@ -1019,16 +685,16 @@ export default function HubPage() {
             hubClaimable={hubClaimable} onNavigateClaim={() => setTab("claim")}
           />
         )}
-        {tab === "claim" && <ClaimTab balance={balance} onBalanceUpdate={setBalance} />}
+        {tab === "claim" && <SolanaAdvanced balance={balance} onBalanceUpdate={setBalance} />}
         {tab === "refer" && <ReferTab getToken={getToken} />}
 
         {/* Bottom CTAs */}
-        <p className="mt-8 text-center text-[11px] text-zinc-600">Earn when you sell. Earn when you buy.</p>
+        <p className="mt-8 text-center text-[11px] text-muted">Earn when you sell. Earn when you buy.</p>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300">
+          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-brand-teal px-6 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
             Start Selling →
           </Link>
-          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-zinc-700 px-6 py-3.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+          <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-default px-6 py-3.5 text-sm text-primary transition hover:border-strong hover:text-primary">
             Browse the Marketplace
           </Link>
         </div>

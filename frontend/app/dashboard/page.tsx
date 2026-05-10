@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { getTier } from "../../lib/dumTiers";
-import { Starfield } from "../../components/Starfield";
 
 type Project = {
   id: number | string;
@@ -21,10 +20,10 @@ import { API_BASE } from "../../lib/apiBase";
 
 function statusLabel(project: Project): { text: string; color: string } {
   const s = project.status || "draft";
-  if (s === "live") return { text: "Live", color: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" };
+  if (s === "live") return { text: "Live", color: "text-brand-teal border-default bg-brand-teal-soft" };
   if (project.review_status === "submitted") return { text: "In Review", color: "text-amber-400 border-amber-400/30 bg-amber-400/10" };
   if (project.review_status === "approved") return { text: "Approved", color: "text-sky-400 border-sky-400/30 bg-sky-400/10" };
-  return { text: "Draft", color: "text-zinc-500 border-zinc-700 bg-zinc-900" };
+  return { text: "Draft", color: "text-secondary border-default bg-surface-muted" };
 }
 
 export default function DashboardPage() {
@@ -203,26 +202,25 @@ export default function DashboardPage() {
   const liveCount = projects.filter((p) => p.status === "live").length;
 
   return (
-    <div className="relative min-h-screen bg-base px-4 py-12 text-white sm:px-6">
-      <Starfield count={50} />
+    <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
       <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Header */}
         <div className="mb-10">
-          <div className="text-[10px] uppercase tracking-[0.35em] text-zinc-600">
+          <div className="text-[10px] uppercase tracking-[0.35em] text-muted">
             Command Center
           </div>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Dashboard
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">Your DUM Club activity</p>
+          <p className="mt-2 text-sm text-secondary">Your DUM Club activity</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Projects */}
-          <div className="rounded-2xl border border-zinc-800 bg-card p-6">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          <div className="rounded-2xl border border-default bg-card p-6">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Total Projects
             </div>
             <div className="mt-2 font-mono text-3xl font-bold text-white">
@@ -231,11 +229,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Live Projects */}
-          <div className="rounded-2xl border border-zinc-800 bg-card p-6">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          <div className="rounded-2xl border border-default bg-card p-6">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Live
             </div>
-            <div className="mt-2 font-mono text-3xl font-bold text-emerald-400">
+            <div className="mt-2 font-mono text-3xl font-bold text-brand-teal">
               {liveCount}
             </div>
           </div>
@@ -243,22 +241,22 @@ export default function DashboardPage() {
           {/* Account — spans the remaining row width on both breakpoints
               (sm: 2 cols, lg: 4 cols) so the dashboard never shows an empty
               cell beside it. */}
-          <div className="rounded-2xl border border-zinc-800 bg-card p-6 sm:col-span-2 lg:col-span-2">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+          <div className="rounded-2xl border border-default bg-card p-6 sm:col-span-2 lg:col-span-2">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Account
             </div>
             {user ? (
               <div className="mt-2 space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                  <span className="text-sm font-medium text-emerald-400">Signed in</span>
+                  <span className="inline-flex h-2 w-2 rounded-full bg-brand-teal" />
+                  <span className="text-sm font-medium text-brand-teal">Signed in</span>
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-600">
+                <div className="mt-1 text-[11px] text-muted">
                   {user.email || "Account active"}
                 </div>
               </div>
             ) : (
-              <div className="mt-2 text-sm text-zinc-600">Not signed in</div>
+              <div className="mt-2 text-sm text-muted">Not signed in</div>
             )}
           </div>
         </div>
@@ -267,19 +265,19 @@ export default function DashboardPage() {
         {(() => {
           const tier = getTier(dumBalance);
           return (
-            <Link href="/hub" className="mb-6 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5 transition hover:border-emerald-400/30">
+            <Link href="/hub" className="mb-6 flex items-center justify-between rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5 transition hover:border-default">
               <div className="flex items-center gap-4">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">DUM Points</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-brand-teal/60">DUM Points</div>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-2xl font-extrabold text-emerald-400">{dumBalance}</span>
+                    <span className="text-2xl font-extrabold text-brand-teal">{dumBalance}</span>
                     <span className="rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest" style={{ borderColor: tier.color, color: tier.color }}>
                       {tier.name}
                     </span>
                   </div>
                 </div>
               </div>
-              <span className="shrink-0 text-xs font-bold text-emerald-400/70">Manage →</span>
+              <span className="shrink-0 text-xs font-bold text-brand-teal">Manage →</span>
             </Link>
           );
         })()}
@@ -288,17 +286,17 @@ export default function DashboardPage() {
         {projects.length > 0 && !analytics && (() => {
           const received = projects.reduce((sum, p) => sum + Number(localStorage.getItem(`dum_received_${p.id}`) || "0"), 0);
           return (
-            <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-zinc-950 p-5">
+            <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-surface-card p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60">DUM from Customers</div>
                   {received > 0 ? (
                     <div className="mt-1 flex items-center gap-2">
                       <span className="text-xl font-extrabold text-violet-400">{received}</span>
-                      <span className="text-sm text-zinc-500">earned from purchases</span>
+                      <span className="text-sm text-secondary">earned from purchases</span>
                     </div>
                   ) : (
-                    <p className="mt-1 text-sm text-zinc-500">Earn DUM when customers purchase your offers</p>
+                    <p className="mt-1 text-sm text-secondary">Earn DUM when customers purchase your offers</p>
                   )}
                 </div>
               </div>
@@ -310,26 +308,26 @@ export default function DashboardPage() {
         {user && (
           <div className="mb-6">
             {bizProfile ? (
-              <div className="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
+              <div className="rounded-2xl border border-default bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-lg">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-surface-muted text-lg">
                       🏢
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-white">{bizProfile.business_name}</span>
                         {bizProfile.verification_status === "verified" && (
-                          <span className="rounded-full bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-emerald-400">✓ Verified</span>
+                          <span className="rounded-full bg-brand-teal-soft border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-brand-teal">✓ Verified</span>
                         )}
                         {bizProfile.verification_status === "pending" && (
                           <span className="rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400">Pending</span>
                         )}
                         {bizProfile.verification_status === "unverified" && (
-                          <span className="rounded-full bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-zinc-500">Unverified</span>
+                          <span className="rounded-full bg-surface-muted border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-secondary">Unverified</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-zinc-500">{bizProfile.category} · Accepts DUM Points</div>
+                      <div className="text-[11px] text-secondary">{bizProfile.category} · Accepts DUM Points</div>
                     </div>
                   </div>
                   {bizProfile.verification_status === "unverified" && (
@@ -352,18 +350,18 @@ export default function DashboardPage() {
                           }
                         } catch {}
                       }}
-                      className="shrink-0 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-4 py-2 text-xs font-bold text-emerald-400 transition hover:border-emerald-400/50 hover:bg-emerald-400/10"
+                      className="shrink-0 rounded-lg border border-default bg-brand-teal/5 px-4 py-2 text-xs font-bold text-brand-teal transition hover:border-brand-teal hover:bg-brand-teal-soft"
                     >
                       Request Verification
                     </button>
                   )}
                 </div>
                 {bizProfile.short_description && (
-                  <p className="mt-3 text-xs text-zinc-400">{bizProfile.short_description}</p>
+                  <p className="mt-3 text-xs text-secondary">{bizProfile.short_description}</p>
                 )}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-5">
+              <div className="rounded-2xl border border-dashed border-default bg-surface-card p-5">
                 {showBizForm ? (
                   <div className="space-y-3">
                     <div className="text-sm font-bold text-white">Create your business profile</div>
@@ -371,13 +369,13 @@ export default function DashboardPage() {
                       value={bizName}
                       onChange={(e) => setBizName(e.target.value)}
                       placeholder="Business name"
-                      className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                      className="w-full rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                     />
                     <div className="grid gap-3 sm:grid-cols-2">
                       <select
                         value={bizCategory}
                         onChange={(e) => setBizCategory(e.target.value)}
-                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white outline-none"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white outline-none"
                       >
                         {["General", "Food & Beverage", "Health & Fitness", "Technology", "Creative", "Services", "Retail", "Gaming", "Education"].map((c) => (
                           <option key={c} value={c}>{c}</option>
@@ -387,7 +385,7 @@ export default function DashboardPage() {
                         value={bizEmail}
                         onChange={(e) => setBizEmail(e.target.value)}
                         placeholder="Contact email (optional)"
-                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                       />
                     </div>
                     <textarea
@@ -395,19 +393,19 @@ export default function DashboardPage() {
                       onChange={(e) => setBizDesc(e.target.value)}
                       placeholder="Short description of your business"
                       rows={2}
-                      className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                      className="w-full resize-none rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={createBusiness}
                         disabled={!bizName.trim() || bizSaving}
-                        className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300 disabled:opacity-50"
+                        className="rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
                       >
                         {bizSaving ? "Creating..." : "Create Business"}
                       </button>
                       <button
                         onClick={() => setShowBizForm(false)}
-                        className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-400 transition hover:text-white"
+                        className="rounded-xl border border-default px-5 py-2.5 text-sm text-secondary transition hover:text-white"
                       >
                         Cancel
                       </button>
@@ -417,11 +415,11 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-bold text-white">Set up your business profile</div>
-                      <p className="mt-1 text-xs text-zinc-500">Add your business identity, get verified, and accept DUM Points</p>
+                      <p className="mt-1 text-xs text-secondary">Add your business identity, get verified, and accept DUM Points</p>
                     </div>
                     <button
                       onClick={() => setShowBizForm(true)}
-                      className="shrink-0 rounded-lg bg-emerald-400 px-4 py-2 text-xs font-bold text-black transition hover:bg-emerald-300"
+                      className="shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover"
                     >
                       Create Business Profile
                     </button>
@@ -435,31 +433,31 @@ export default function DashboardPage() {
         {/* Business Analytics */}
         {bizProfile && analytics && (
           <div className="mb-6">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Business Performance</div>
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">Business Performance</div>
 
             {/* Headline metrics */}
             <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Page Views</div>
+              <div className="rounded-2xl border border-default bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Page Views</div>
                 <div className="mt-1 font-mono text-2xl font-bold text-white">{(analytics.total_views || 0).toLocaleString()}</div>
-                <div className="mt-1 text-[11px] text-zinc-600">across all projects</div>
+                <div className="mt-1 text-[11px] text-muted">across all projects</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Sales</div>
-                <div className="mt-1 font-mono text-2xl font-bold text-emerald-400">{analytics.total_orders || 0}</div>
-                <div className="mt-1 text-[11px] text-zinc-600">completed purchases</div>
+              <div className="rounded-2xl border border-default bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Sales</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-brand-teal">{analytics.total_orders || 0}</div>
+                <div className="mt-1 text-[11px] text-muted">completed purchases</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Revenue</div>
+              <div className="rounded-2xl border border-default bg-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Revenue</div>
                 <div className="mt-1 font-mono text-2xl font-bold text-white">
                   ${(analytics.total_revenue_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-600">total earned</div>
+                <div className="mt-1 text-[11px] text-muted">total earned</div>
               </div>
-              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.03] to-zinc-950 p-5">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-400/60">DUM Received</div>
-                <div className="mt-1 font-mono text-2xl font-bold text-emerald-400">{analytics.total_dum_received || 0}</div>
-                <div className="mt-1 text-[11px] text-zinc-600">
+              <div className="rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-brand-teal/60">DUM Received</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-brand-teal">{analytics.total_dum_received || 0}</div>
+                <div className="mt-1 text-[11px] text-muted">
                   {analytics.dum_discount_orders > 0
                     ? `${analytics.dum_discount_orders} order${analytics.dum_discount_orders !== 1 ? "s" : ""} used DUM discount`
                     : "from customer DUM spending"}
@@ -469,25 +467,25 @@ export default function DashboardPage() {
 
             {/* Per-project breakdown */}
             {analytics.projects && analytics.projects.length > 0 && (
-              <div className="mb-4 rounded-2xl border border-zinc-800 bg-card p-5">
+              <div className="mb-4 rounded-2xl border border-default bg-card p-5">
                 <div className="mb-3 text-xs font-bold text-white">Project Performance</div>
                 <div className="space-y-2">
                   {analytics.projects.map((p: any) => (
                     <Link
                       key={p.id}
                       href={`/project/${p.id}`}
-                      className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3 transition hover:border-zinc-700"
+                      className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-3 transition hover:border-default"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${p.status === "live" ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${p.status === "live" ? "bg-brand-teal" : "bg-zinc-600"}`} />
                         <span className="truncate text-sm font-medium text-white">{p.title}</span>
                       </div>
-                      <div className="flex shrink-0 items-center gap-4 text-[11px] text-zinc-500">
+                      <div className="flex shrink-0 items-center gap-4 text-[11px] text-secondary">
                         <span title="Views">{(p.views || 0).toLocaleString()} views</span>
                         <span title="Sales">{p.orders || 0} sales</span>
-                        <span title="Revenue" className="font-medium text-zinc-300">${(p.revenue_usd || 0).toFixed(2)}</span>
+                        <span title="Revenue" className="font-medium text-primary">${(p.revenue_usd || 0).toFixed(2)}</span>
                         {(p.dum_received || 0) > 0 && (
-                          <span title="DUM received" className="text-emerald-400/70">+{p.dum_received} DUM</span>
+                          <span title="DUM received" className="text-brand-teal">+{p.dum_received} DUM</span>
                         )}
                       </div>
                     </Link>
@@ -498,15 +496,15 @@ export default function DashboardPage() {
 
             {/* Top offers */}
             {analytics.top_offers && analytics.top_offers.length > 0 && analytics.top_offers.some((o: any) => (o.quantity_sold || 0) > 0) && (
-              <div className="mb-4 rounded-2xl border border-zinc-800 bg-card p-5">
+              <div className="mb-4 rounded-2xl border border-default bg-card p-5">
                 <div className="mb-3 text-xs font-bold text-white">Top Offers</div>
                 <div className="space-y-2">
                   {analytics.top_offers.filter((o: any) => (o.quantity_sold || 0) > 0).map((offer: any) => (
-                    <div key={offer.id} className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3">
-                      <span className="truncate text-sm text-zinc-300">{offer.title}</span>
+                    <div key={offer.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-3">
+                      <span className="truncate text-sm text-primary">{offer.title}</span>
                       <div className="flex shrink-0 items-center gap-3 text-[11px]">
-                        <span className="text-zinc-500">${Number(offer.price_usd || 0).toFixed(2)}</span>
-                        <span className="font-medium text-emerald-400">{offer.quantity_sold} sold</span>
+                        <span className="text-secondary">${Number(offer.price_usd || 0).toFixed(2)}</span>
+                        <span className="font-medium text-brand-teal">{offer.quantity_sold} sold</span>
                       </div>
                     </div>
                   ))}
@@ -516,20 +514,20 @@ export default function DashboardPage() {
 
             {/* Recent orders */}
             {analytics.recent_orders && analytics.recent_orders.length > 0 && (
-              <div className="rounded-2xl border border-zinc-800 bg-card p-5">
+              <div className="rounded-2xl border border-default bg-card p-5">
                 <div className="mb-3 text-xs font-bold text-white">Recent Sales</div>
                 <div className="space-y-2">
                   {analytics.recent_orders.slice(0, 5).map((order: any) => (
-                    <div key={order.id} className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-2.5">
+                    <div key={order.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-2.5">
                       <div className="min-w-0">
-                        <span className="truncate text-sm text-zinc-300">{order.offer_title}</span>
+                        <span className="truncate text-sm text-primary">{order.offer_title}</span>
                         {order.dum_discount && (
-                          <span className="ml-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">DUM</span>
+                          <span className="ml-2 rounded-full border border-default bg-brand-teal/5 px-1.5 py-0.5 text-[8px] font-bold text-brand-teal">DUM</span>
                         )}
                       </div>
                       <div className="flex shrink-0 items-center gap-3 text-[11px]">
                         <span className="font-medium text-white">${order.amount.toFixed(2)}</span>
-                        <span className="text-zinc-600">{order.date ? new Date(order.date).toLocaleDateString() : ""}</span>
+                        <span className="text-muted">{order.date ? new Date(order.date).toLocaleDateString() : ""}</span>
                       </div>
                     </div>
                   ))}
@@ -539,56 +537,56 @@ export default function DashboardPage() {
 
             {/* Empty state */}
             {analytics.total_orders === 0 && analytics.total_views === 0 && (
-              <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-6 text-center">
-                <div className="text-sm font-medium text-zinc-400">No activity yet</div>
-                <p className="mt-1 text-xs text-zinc-600">Share your storefront links to start getting views and sales</p>
+              <div className="rounded-2xl border border-dashed border-default bg-surface-card p-6 text-center">
+                <div className="text-sm font-medium text-secondary">No activity yet</div>
+                <p className="mt-1 text-xs text-muted">Share your storefront links to start getting views and sales</p>
               </div>
             )}
           </div>
         )}
 
         {bizProfile && analyticsLoading && !analytics && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-card p-6 text-center">
-            <div className="text-sm text-zinc-500">Loading analytics...</div>
+          <div className="mb-6 rounded-2xl border border-default bg-card p-6 text-center">
+            <div className="text-sm text-secondary">Loading analytics...</div>
           </div>
         )}
 
         {/* Next best action */}
-        <div className="mb-6 rounded-2xl border border-zinc-800/40 bg-zinc-900/20 p-5">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">What to do next</div>
+        <div className="mb-6 rounded-2xl border border-default bg-surface-muted/20 p-5">
+          <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">What to do next</div>
           <div className="space-y-2">
             {projects.length === 0 && (
-              <Link href="/merchant" className="flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.03] px-4 py-3 transition hover:border-emerald-400/30">
+              <Link href="/merchant" className="flex items-center gap-3 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 transition hover:border-default">
                 <span className="text-base">🏪</span>
                 <div>
                   <div className="text-sm font-bold text-white">Become a founding merchant</div>
-                  <div className="text-[11px] text-zinc-500">$0 now · spots limited to 100</div>
+                  <div className="text-[11px] text-secondary">$0 now · spots limited to 100</div>
                 </div>
               </Link>
             )}
             {projects.length > 0 && projects.some(p => p.status === "live") && (
-              <Link href={`/project/${projects.find(p => p.status === "live")?.id}#offers-section`} className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+              <Link href={`/project/${projects.find(p => p.status === "live")?.id}#offers-section`} className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">🏷️</span>
                 <div>
                   <div className="text-sm font-bold text-white">Add or improve offers</div>
-                  <div className="text-[11px] text-zinc-500">Earn +5 DUM Points per offer</div>
+                  <div className="text-[11px] text-secondary">Earn +5 DUM Points per offer</div>
                 </div>
               </Link>
             )}
             {dumBalance < 50 && (
-              <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+              <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">💡</span>
                 <div>
                   <div className="text-sm font-bold text-white">Discover local businesses</div>
-                  <div className="text-[11px] text-zinc-500">Earn DUM Points with every purchase</div>
+                  <div className="text-[11px] text-secondary">Earn DUM Points with every purchase</div>
                 </div>
               </Link>
             )}
-            <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-zinc-800/30 bg-zinc-950/50 px-4 py-3 transition hover:border-emerald-400/15">
+            <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
               <span className="text-base">🔍</span>
               <div>
                 <div className="text-sm font-bold text-white">Explore & support other businesses</div>
-                <div className="text-[11px] text-zinc-500">Earn +2 DUM Points per purchase</div>
+                <div className="text-[11px] text-secondary">Earn +2 DUM Points per purchase</div>
               </div>
             </Link>
           </div>
@@ -598,17 +596,17 @@ export default function DashboardPage() {
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
           <Link
             href="/merchant"
-            className="group flex items-center justify-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 px-6 py-6 transition hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
+            className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-brand-teal/5 px-6 py-6 transition hover:border-default hover:bg-brand-teal-soft hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
           >
             <span className="text-2xl">🏪</span>
-            <span className="text-lg font-bold text-emerald-400">Become a Merchant</span>
+            <span className="text-lg font-bold text-brand-teal">Become a Merchant</span>
           </Link>
           <Link
             href="/orders"
-            className="group flex items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-card px-6 py-6 transition hover:border-zinc-700 hover:-translate-y-0.5"
+            className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-card px-6 py-6 transition hover:border-default hover:-translate-y-0.5"
           >
             <span className="text-2xl">📦</span>
-            <span className="text-lg font-bold text-zinc-300">My Orders</span>
+            <span className="text-lg font-bold text-primary">My Orders</span>
           </Link>
         </div>
 
@@ -616,13 +614,13 @@ export default function DashboardPage() {
         {user && (
           <div className="mb-10">
             {projects.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-emerald-400/20 bg-emerald-400/[0.03] p-6 text-center">
+              <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
                 <div className="mb-1 text-base font-bold text-white">Start selling on DUM Club</div>
-                <p className="mb-4 text-sm text-zinc-400">Join as a founding merchant — $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
+                <p className="mb-4 text-sm text-secondary">Join as a founding merchant — $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
                 <Link
                   href="/merchant"
-                  className="inline-flex items-center rounded-xl bg-emerald-400 px-6 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                  className="inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
                 >
                   Claim Your Spot →
                 </Link>
@@ -640,35 +638,35 @@ export default function DashboardPage() {
                         alert("Link copied! Share it with your audience.");
                       }
                     }}
-                    className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                    className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                   >
                     <span className="text-xl">🔗</span>
                     <div>
                       <div className="text-sm font-bold text-white">Share your page</div>
-                      <div className="text-xs text-zinc-500">Copy your storefront link</div>
+                      <div className="text-xs text-secondary">Copy your storefront link</div>
                     </div>
                   </button>
                 )}
                 {projects.some((p) => p.status === "live") && (
                   <Link
                     href={`/project/${projects.find((p) => p.status === "live")?.id}#offers-section`}
-                    className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                    className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                   >
                     <span className="text-xl">🏷️</span>
                     <div>
                       <div className="text-sm font-bold text-white">Manage your offers</div>
-                      <div className="text-xs text-zinc-500">Add or edit what you sell</div>
+                      <div className="text-xs text-secondary">Add or edit what you sell</div>
                     </div>
                   </Link>
                 )}
                 <Link
                   href="/orders"
-                  className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-card p-4 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+                  className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                 >
                   <span className="text-xl">📊</span>
                   <div>
                     <div className="text-sm font-bold text-white">View your orders</div>
-                    <div className="text-xs text-zinc-500">Track sales and fulfillment</div>
+                    <div className="text-xs text-secondary">Track sales and fulfillment</div>
                   </div>
                 </Link>
               </div>
@@ -679,22 +677,22 @@ export default function DashboardPage() {
         {/* Projects list */}
         <div>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+            <h2 className="text-xs uppercase tracking-[0.3em] text-muted">
               Your Businesses
             </h2>
-            <span className="text-xs text-zinc-700">
+            <span className="text-xs text-muted">
               {projects.length} project{projects.length !== 1 ? "s" : ""}
             </span>
           </div>
 
           {!user ? (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
-              <p className="text-sm text-zinc-500">Sign in to view your businesses.</p>
+            <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
+              <p className="text-sm text-secondary">Sign in to view your businesses.</p>
             </div>
           ) : projects.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center">
-              <p className="text-base font-semibold text-zinc-300">No businesses yet — create your first one below</p>
-              <p className="mt-2 text-sm text-zinc-600">
+            <div className="rounded-2xl border border-dashed border-default bg-surface-card p-10 text-center">
+              <p className="text-base font-semibold text-primary">No businesses yet — create your first one below</p>
+              <p className="mt-2 text-sm text-muted">
                 Generate your first project to get started.
               </p>
             </div>
@@ -705,7 +703,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative rounded-2xl border border-zinc-800 bg-card transition hover:border-zinc-700 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                    className="group relative rounded-2xl border border-default bg-card transition hover:border-default hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
                   >
                     <Link href={`/project/${project.id}`} className="block p-6">
                       <div className="flex items-start justify-between gap-3">
@@ -719,14 +717,14 @@ export default function DashboardPage() {
 
 
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs text-zinc-600"> </span>
-                        <span className="text-xs text-zinc-600 opacity-0 transition group-hover:opacity-100">View →</span>
+                        <span className="text-xs text-muted"> </span>
+                        <span className="text-xs text-muted opacity-0 transition group-hover:opacity-100">View →</span>
                       </div>
                     </Link>
 
                     <Link
                       href={`/project/${project.id}?golive=1`}
-                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-400"
+                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-400"
                     >
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
@@ -739,7 +737,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => deleteProject(project)}
                       disabled={deletingId === project.id}
-                      className="absolute right-3 top-3 rounded-lg px-2 py-1 text-xs text-zinc-700 opacity-0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-50"
+                      className="absolute right-3 top-3 rounded-lg px-2 py-1 text-xs text-muted opacity-0 transition hover:bg-[var(--state-live)]/10 hover:text-state-live group-hover:opacity-100 disabled:opacity-50"
                       title="Remove project"
                     >
                       {deletingId === project.id ? "…" : "✕"}
