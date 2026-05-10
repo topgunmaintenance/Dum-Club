@@ -267,8 +267,8 @@ export default function MerchantPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <span className="text-sm text-zinc-500">Loading...</span>
+      <div className="flex min-h-screen items-center justify-center bg-surface-card">
+        <span className="text-sm text-secondary">Loading...</span>
       </div>
     );
   }
@@ -285,39 +285,39 @@ export default function MerchantPage() {
     const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 pt-24">
+      <div className="flex min-h-screen items-center justify-center bg-surface-card px-4 pt-24">
         <div className="w-full max-w-md text-center">
           {programOpen && claimed !== null && (
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
                 {claimed} of {totalCap} founding spots claimed
               </span>
             </div>
           )}
 
-          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
             Keep 100% of every sale.{" "}
-            <span className="text-emerald-400">Forever.</span>
+            <span className="text-brand-teal">Forever.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-sm text-base font-medium text-zinc-200">
+          <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
             Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card.
           </p>
 
           <button
             onClick={() => login()}
-            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.4)]"
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:"
           >
             Sign In to Continue →
           </button>
 
-          <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-zinc-400">
+          <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-secondary">
             After sign-in: enter your business name (one field). Done in 60 seconds. No card, no commission.
           </p>
-          <p className="mt-2 text-[11px] text-zinc-500">
+          <p className="mt-2 text-[11px] text-secondary">
             Sign in with email or Google · Takes 30 seconds
           </p>
         </div>
@@ -333,7 +333,7 @@ export default function MerchantPage() {
     const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
-      <div className="min-h-screen bg-zinc-950 pt-24 px-4 pb-16">
+      <div className="min-h-screen bg-surface-card pt-24 px-4 pb-16">
         <div className="mx-auto max-w-2xl">
 
           {/* ── HERO ──
@@ -342,12 +342,12 @@ export default function MerchantPage() {
                ("claimed" not "remaining" — progress/social-proof). */}
           {programOpen && claimed !== null && (
             <div className="mb-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                 </span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
                   {claimed} of {totalCap} founding spots claimed
                 </span>
               </div>
@@ -355,14 +355,14 @@ export default function MerchantPage() {
           )}
 
           <div className="mb-8 text-center">
-            <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-5xl">
+            <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-primary sm:text-5xl">
               Keep{" "}
-              <span className="text-emerald-400" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
+              <span className="text-brand-teal" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
                 100% of every sale.
               </span>{" "}
               Forever.
             </h1>
-            <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-zinc-200">
+            <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
                 ? "Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card."
                 : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
@@ -381,32 +381,32 @@ export default function MerchantPage() {
                / sell content sits below the form for hesitant
                readers; merchants who already know they want in see
                the form immediately. */}
-          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.03] p-6 shadow-[0_0_32px_rgba(0,255,163,0.08)] sm:p-8">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+          <div className="mb-6 rounded-2xl border border-default bg-brand-teal-soft p-6 sm:p-8">
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
               {programOpen ? "Claim your founding spot" : "Start a merchant account"}
             </div>
-            <h2 className="mb-5 text-2xl font-extrabold text-white">
+            <h2 className="mb-5 text-2xl font-extrabold text-primary">
               {programOpen ? "60 seconds. No card." : `$${STANDARD_PLAN_PRICE_USD}/mo. Cancel anytime.`}
             </h2>
 
-            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-4 text-sm text-state-live">{error}</p>}
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Business Name</label>
+                <label className="mb-1.5 block text-xs font-medium text-secondary">Business Name</label>
                 <input
                   value={bizName}
                   onChange={(e) => setBizName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSignup(); }}
                   placeholder="e.g. Topgun Maintenance LLC"
                   autoFocus
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-base text-white placeholder-zinc-600 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/20"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
                 />
               </div>
               <button
                 onClick={handleSignup}
                 disabled={saving || !bizName.trim()}
-                className="w-full rounded-xl bg-emerald-400 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-brand-teal py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover: disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
                   ? "Claiming your spot..."
@@ -414,7 +414,7 @@ export default function MerchantPage() {
                   ? "Claim My Founding Spot — $0 Today →"
                   : "Create Merchant Account →"}
               </button>
-              <p className="text-center text-[11px] text-zinc-500">
+              <p className="text-center text-[11px] text-secondary">
                 You can add business type, location, and offers on the next step.
               </p>
             </div>
@@ -430,12 +430,12 @@ export default function MerchantPage() {
                audience this page is meant to convert. The five
                expense lines below are the bills a normal local
                business already pays today. */}
-          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900/60 p-5 sm:p-6">
+          <div className="mb-6 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5 sm:p-6">
             <div className="mb-4 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
                 One flat fee instead of five
               </div>
-              <div className="mt-2 text-base font-bold text-white">
+              <div className="mt-2 text-base font-bold text-primary">
                 DUM Club replaces five expense lines you already pay.
               </div>
             </div>
@@ -448,36 +448,36 @@ export default function MerchantPage() {
               ].map((p) => (
                 <div
                   key={p.name}
-                  className="rounded-xl border border-red-500/15 bg-zinc-950/60 p-3 text-center"
+                  className="rounded-xl border border-red-500/15 bg-surface-card p-3 text-center"
                 >
-                  <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-secondary">
                     {p.name}
                   </div>
-                  <div className="mt-1 font-mono text-base font-extrabold text-red-400/80">
+                  <div className="mt-1 font-mono text-base font-extrabold text-state-live/80">
                     {p.fees}
                   </div>
-                  <div className="text-[10px] text-zinc-500">{p.detail}</div>
+                  <div className="text-[10px] text-secondary">{p.detail}</div>
                 </div>
               ))}
-              <div className="col-span-2 rounded-xl border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.10] to-zinc-900/60 p-3 text-center shadow-[0_0_24px_rgba(0,255,163,0.15)]">
-                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400">
+              <div className="col-span-2 rounded-xl border-2 border-brand-teal bg-gradient-to-b from-brand-teal-soft to-surface-muted p-3 text-center">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-brand-teal">
                   DUM Club
                 </div>
-                <div className="mt-1 font-mono text-base font-extrabold text-emerald-400">
+                <div className="mt-1 font-mono text-base font-extrabold text-brand-teal">
                   $29–$99
                 </div>
-                <div className="text-[10px] text-emerald-400/80">
+                <div className="text-[10px] text-brand-teal">
                   flat / month · 0% commission
                 </div>
               </div>
             </div>
-            <div className="mt-4 text-center text-xs text-zinc-300">
-              One bill. <span className="font-bold text-emerald-400">Keep your revenue.</span>
+            <div className="mt-4 text-center text-xs text-primary">
+              One bill. <span className="font-bold text-brand-teal">Keep your revenue.</span>
             </div>
           </div>
 
           {/* ── 3-point sell ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
+          <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <ul className="space-y-3">
               {[
                 "Keep 100% of every sale — 0% commission, always",
@@ -486,9 +486,9 @@ export default function MerchantPage() {
               ].map((line) => (
                 <li
                   key={line}
-                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-zinc-100"
+                  className="flex items-start gap-3 text-sm font-medium leading-relaxed text-primary"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-brand-teal">
                     ✓
                   </span>
                   <span>{line}</span>
@@ -498,19 +498,19 @@ export default function MerchantPage() {
           </div>
 
           {/* ── Founder testimonial — social proof, real face ── */}
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
+          <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <div className="flex items-start gap-4">
               <img
                 src="/Julian.jpeg"
                 alt="Julian Mero — founder, Topgun Maintenance LLC"
-                className="h-12 w-12 shrink-0 rounded-full border border-emerald-400/25 object-cover"
+                className="h-12 w-12 shrink-0 rounded-full border border-default object-cover"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-sm leading-relaxed text-zinc-200">
+                <p className="text-sm leading-relaxed text-primary">
                   &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission — it just works.&rdquo;
                 </p>
-                <div className="mt-3 text-[11px] text-zinc-500">
-                  <span className="font-bold text-white">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
+                <div className="mt-3 text-[11px] text-secondary">
+                  <span className="font-bold text-primary">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
                 </div>
               </div>
             </div>
@@ -604,27 +604,27 @@ export default function MerchantPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 px-4 pb-12">
+    <div className="min-h-screen bg-surface-card pt-28 px-4 pb-12">
       <div className="mx-auto max-w-2xl space-y-6">
 
         {/* Stripe Connect return banner. Populated by the useEffect
             that reads ?stripe=connected|error from the callback-page
             redirect, then auto-dismissible. */}
         {stripeBanner?.kind === "success" && (
-          <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.06] px-5 py-4">
+          <div className="rounded-2xl border border-default bg-brand-teal-soft px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-bold text-emerald-400">
+                <div className="text-sm font-bold text-brand-teal">
                   Stripe connected
                 </div>
-                <div className="mt-1 text-xs text-emerald-400/80">
+                <div className="mt-1 text-xs text-brand-teal">
                   We'll show &ldquo;verified&rdquo; below as soon as Stripe
                   finishes reviewing your account.
                 </div>
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
-                className="text-xs text-emerald-400/60 hover:text-emerald-400"
+                className="text-xs text-brand-teal/60 hover:text-brand-teal"
                 aria-label="Dismiss"
               >
                 ✕
@@ -636,10 +636,10 @@ export default function MerchantPage() {
           <div className="rounded-2xl border border-red-400/30 bg-red-400/[0.06] px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-sm font-bold text-red-400">
+                <div className="text-sm font-bold text-state-live">
                   Stripe connection didn&apos;t go through
                 </div>
-                <div className="mt-1 break-words text-xs text-red-400/80">
+                <div className="mt-1 break-words text-xs text-state-live/80">
                   {stripeErrorCopy(stripeBanner.reason, stripeBanner.detail)}
                 </div>
                 {/* Diagnostic identifier hidden behind a disclosure so
@@ -648,10 +648,10 @@ export default function MerchantPage() {
                     paste it back" without confusing the merchant
                     with raw reason / detail strings up front. */}
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/50 hover:text-red-400/80">
+                  <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-state-live/50 hover:text-state-live/80">
                     Show technical details
                   </summary>
-                  <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-red-400/50">
+                  <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-state-live/50">
                     reason: {stripeBanner.reason}
                     {stripeBanner.detail ? ` · detail: ${stripeBanner.detail}` : ""}
                   </div>
@@ -659,7 +659,7 @@ export default function MerchantPage() {
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
-                className="text-xs text-red-400/60 hover:text-red-400"
+                className="text-xs text-state-live/60 hover:text-state-live"
                 aria-label="Dismiss"
               >
                 ✕
@@ -670,12 +670,12 @@ export default function MerchantPage() {
 
         {/* Founding badge */}
         {merchant.founding_merchant && (
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] px-5 py-4">
+          <div className="rounded-2xl border border-default bg-brand-teal-soft px-5 py-4">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
-                <div className="text-sm font-bold text-emerald-400">Founding Merchant</div>
-                <div className="text-xs text-emerald-400/60">$0 today · Preferred founding pricing · 0% commission</div>
+                <div className="text-sm font-bold text-brand-teal">Founding Merchant</div>
+                <div className="text-xs text-brand-teal/60">$0 today · Preferred founding pricing · 0% commission</div>
               </div>
             </div>
           </div>
@@ -687,13 +687,13 @@ export default function MerchantPage() {
             dashboard takes over. Stripe Connect is the primary CTA
             when it's the blocking step. */}
         {!onboardingComplete && (
-          <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-900/60 p-5 shadow-[0_0_32px_rgba(0,255,163,0.08)]">
+          <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Get Set Up</div>
-                <div className="mt-1 text-sm font-semibold text-white">
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Get Set Up</div>
+                <div className="mt-1 text-sm font-semibold text-primary">
                   {completedSteps} of {totalSteps} complete —{" "}
-                  <span className="text-emerald-400">
+                  <span className="text-brand-teal">
                     {!stepStripe
                       ? "Connect Stripe to start getting paid"
                       : !stepInstall
@@ -702,15 +702,15 @@ export default function MerchantPage() {
                   </span>
                 </div>
               </div>
-              <div className="text-xs font-mono text-emerald-400/70">
+              <div className="text-xs font-mono text-brand-teal">
                 {Math.round((completedSteps / totalSteps) * 100)}%
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="mb-5 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+            <div className="mb-5 h-1.5 overflow-hidden rounded-full bg-surface-muted">
               <div
-                className="h-full rounded-full bg-emerald-400 transition-all"
+                className="h-full rounded-full bg-brand-teal transition-all"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               />
             </div>
@@ -720,8 +720,8 @@ export default function MerchantPage() {
               <li className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 <div className="flex-1">
-                  <div className="text-sm font-semibold text-white line-through decoration-emerald-400/40">Founding spot claimed</div>
-                  <div className="text-xs text-zinc-500">You&apos;re on founding merchant pricing.</div>
+                  <div className="text-sm font-semibold text-primary line-through decoration-brand-teal">Founding spot claimed</div>
+                  <div className="text-xs text-secondary">You&apos;re on founding merchant pricing.</div>
                 </div>
               </li>
 
@@ -730,25 +730,25 @@ export default function MerchantPage() {
                 {stepStripe ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400/50" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepStripe ? "text-white line-through decoration-emerald-400/40" : "text-white"}`}>
+                  <div className={`text-sm font-semibold ${stepStripe ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
                     Connect Stripe to receive payouts
                   </div>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-secondary">
                     {stepStripe
                       ? "You'll get paid directly on every sale — 0% commission."
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
                     <>
-                      <p className="mt-2 text-[11px] text-zinc-500">
+                      <p className="mt-2 text-[11px] text-secondary">
                         Your bank info goes to Stripe, never to DUM Club.
                       </p>
                       <button
                         onClick={connectStripe}
-                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                       >
                         Connect Stripe →
                       </button>
@@ -772,15 +772,15 @@ export default function MerchantPage() {
                 {stepInstall ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : stepStripe ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400/50" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-zinc-700" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepInstall ? "text-white line-through decoration-emerald-400/40" : stepStripe ? "text-white" : "text-zinc-300"}`}>
+                  <div className={`text-sm font-semibold ${stepInstall ? "text-primary line-through decoration-brand-teal" : stepStripe ? "text-primary" : "text-primary"}`}>
                     Add DUM Live to your website
                   </div>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-secondary">
                     {stepInstall
                       ? "Your storefront is live and selling."
                       : firstProject
@@ -790,7 +790,7 @@ export default function MerchantPage() {
                   {!stepInstall && stepStripe && (
                     <Link
                       href={installLink}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.25)] transition hover:bg-emerald-300"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                     >
                       {firstProject ? "Add DUM Live to my site →" : "Set up my storefront →"}
                     </Link>
@@ -803,13 +803,13 @@ export default function MerchantPage() {
                 {stepFirstSale ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-zinc-700" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepFirstSale ? "text-white line-through decoration-emerald-400/40" : "text-zinc-300"}`}>
+                  <div className={`text-sm font-semibold ${stepFirstSale ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
                     Make your first sale
                   </div>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-secondary">
                     {stepFirstSale
                       ? "You&apos;re live. DUM Points are being issued automatically as loyalty rewards."
                       : "Share your storefront link or print the QR below."}
@@ -821,9 +821,9 @@ export default function MerchantPage() {
         )}
 
         {/* Business info */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h2 className="text-lg font-bold text-white">{merchant.business_name}</h2>
-          <div className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
+        <div className="rounded-2xl border border-default bg-surface-muted p-5">
+          <h2 className="text-lg font-bold text-primary">{merchant.business_name}</h2>
+          <div className="mt-1 flex items-center gap-2 text-sm text-secondary">
             {merchant.business_type && <span>{merchant.business_type}</span>}
             {merchant.location_city && (
               <span>{merchant.location_city}{merchant.location_state ? `, ${merchant.location_state}` : ""}</span>
@@ -837,20 +837,20 @@ export default function MerchantPage() {
             only render this card when Stripe is already connected (to
             avoid duplicate "Connect" buttons). */}
         {stepStripe && (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Payment Connections</h3>
+        <div className="rounded-2xl border border-default bg-surface-muted p-5">
+          <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Payment Connections</h3>
           <div className="space-y-3">
             {/* Stripe Connect */}
-            <div className="flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-4 py-3">
+            <div className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-sm font-bold text-violet-400">S</span>
                 <div>
-                  <div className="text-sm font-semibold text-white">Stripe</div>
-                  <div className="text-[11px] text-zinc-500">Receive payouts from live sales</div>
+                  <div className="text-sm font-semibold text-primary">Stripe</div>
+                  <div className="text-[11px] text-secondary">Receive payouts from live sales</div>
                 </div>
               </div>
               {merchant.stripe_connect_id ? (
-                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">Connected</span>
+                <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-teal">Connected</span>
               ) : (
                 <button onClick={connectStripe} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20">
                   Connect
@@ -897,15 +897,15 @@ export default function MerchantPage() {
           if (isVerified && !hasRetrieveError) return null;
 
           return (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <div className="rounded-2xl border border-default bg-surface-muted p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Stripe</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Stripe</h3>
                 {stripeStatus && (
                   <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
                     stripeStatus.status === "verified"
-                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                      ? "border-default bg-brand-teal-soft text-brand-teal"
                       : stripeStatus.status === "restricted"
-                        ? "border-red-400/30 bg-red-400/10 text-red-400"
+                        ? "border-red-400/30 bg-red-400/10 text-state-live"
                         : "border-amber-400/30 bg-amber-400/10 text-amber-400"
                   }`}>
                     {stripeStatus.status === "pending_verification"
@@ -929,7 +929,7 @@ export default function MerchantPage() {
                 // a full page refresh.
                 <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
                   <div className="text-xs font-bold text-amber-300">Couldn&apos;t reach Stripe just now</div>
-                  <div className="mt-1 text-[11px] text-zinc-400">
+                  <div className="mt-1 text-[11px] text-secondary">
                     Your Stripe connection is fine. We just couldn&apos;t pull the live verification status this time. Try again in a moment.
                   </div>
                   <button
@@ -952,7 +952,7 @@ export default function MerchantPage() {
                   </details>
                 </div>
               ) : !stripeStatus ? (
-                <div className="text-[11px] text-zinc-500">Loading…</div>
+                <div className="text-[11px] text-secondary">Loading…</div>
               ) : isPendingClean ? (
                 /* Q8: calm reassurance for the common post-connect
                    case — Stripe is reviewing, nothing for the
@@ -961,7 +961,7 @@ export default function MerchantPage() {
                   <div className="text-sm font-bold text-amber-400">
                     Stripe is reviewing your account
                   </div>
-                  <div className="mt-1 text-[12px] leading-relaxed text-zinc-300">
+                  <div className="mt-1 text-[12px] leading-relaxed text-primary">
                     This usually takes a few minutes. We&apos;ll show
                     &ldquo;Verified&rdquo; here as soon as Stripe finishes — you don&apos;t need to do anything else right now.
                   </div>
@@ -969,7 +969,7 @@ export default function MerchantPage() {
                       curious / for support sessions. Default-collapsed
                       so a normal merchant never sees them. */}
                   <details className="mt-3">
-                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-secondary hover:text-primary">
                       What does this mean?
                     </summary>
                     <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -978,9 +978,9 @@ export default function MerchantPage() {
                         ["Can receive payouts", stripeStatus.payouts_enabled],
                         ["Identity submitted", stripeStatus.details_submitted],
                       ] as const).map(([label, ok]) => (
-                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
-                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
-                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                        <div key={label} className="rounded-lg border border-default bg-surface-card px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-secondary">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-brand-teal" : "text-secondary"}`}>
                             {ok ? "✓ Ready" : "— Pending"}
                           </div>
                         </div>
@@ -994,8 +994,8 @@ export default function MerchantPage() {
                 <div className="space-y-4">
                   {stripeStatus.disabled_reason && (
                     <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Action needed</div>
-                      <div className="mt-1 text-[11px] text-zinc-400">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-state-live">Action needed</div>
+                      <div className="mt-1 text-[11px] text-secondary">
                         Stripe has paused this account. Open the Stripe dashboard to see what&apos;s needed and resolve it.
                       </div>
                       {/* Raw Stripe disabled_reason hidden behind
@@ -1003,10 +1003,10 @@ export default function MerchantPage() {
                           like "rejected.platform_fraud" that
                           confuses merchants. */}
                       <details className="mt-2">
-                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-red-400/60 hover:text-red-400/80">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-state-live/60 hover:text-state-live/80">
                           Show technical details
                         </summary>
-                        <div className="mt-1.5 font-mono text-[10px] text-red-400/60 break-all">
+                        <div className="mt-1.5 font-mono text-[10px] text-state-live/60 break-all">
                           {stripeStatus.disabled_reason}
                         </div>
                       </details>
@@ -1018,7 +1018,7 @@ export default function MerchantPage() {
                       <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-400">
                         Stripe needs a bit more info ({stripeStatus.requirements_currently_due.length} item{stripeStatus.requirements_currently_due.length === 1 ? "" : "s"})
                       </div>
-                      <div className="mt-1 text-[11px] text-zinc-400">
+                      <div className="mt-1 text-[11px] text-secondary">
                         Open the Stripe dashboard to finish — you&apos;ll come right back here when it&apos;s done.
                       </div>
                       {/* Raw requirement codes behind a disclosure.
@@ -1026,10 +1026,10 @@ export default function MerchantPage() {
                           "tos_acceptance.date", "person.dob.day" —
                           jargon to a non-technical merchant. */}
                       <details className="mt-2">
-                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-secondary hover:text-primary">
                           Show technical details
                         </summary>
-                        <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                        <ul className="mt-1.5 space-y-0.5 text-[11px] text-secondary">
                           {stripeStatus.requirements_currently_due.map((r) => (
                             <li key={r} className="font-mono">• {r}</li>
                           ))}
@@ -1050,14 +1050,14 @@ export default function MerchantPage() {
                       disclosure — same as before; not surfaced to
                       casual readers. */}
                   {stripeStatus.requirements_eventually_due.length > 0 && (
-                    <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
-                      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                    <details className="rounded-xl border border-default bg-surface-card p-3">
+                      <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
                         Coming up later ({stripeStatus.requirements_eventually_due.length})
                       </summary>
-                      <div className="mt-1.5 text-[11px] text-zinc-500">
+                      <div className="mt-1.5 text-[11px] text-secondary">
                         Stripe will ask for these eventually — no rush.
                       </div>
-                      <ul className="mt-1.5 space-y-0.5 text-[11px] text-zinc-500">
+                      <ul className="mt-1.5 space-y-0.5 text-[11px] text-secondary">
                         {stripeStatus.requirements_eventually_due.map((r) => (
                           <li key={r} className="font-mono">• {r}</li>
                         ))}
@@ -1068,8 +1068,8 @@ export default function MerchantPage() {
                   {/* Raw boolean grid hidden behind a "What does this
                       mean?" disclosure — Phase 2 surfaces only
                       merchant-language labels by default. */}
-                  <details className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 p-3">
-                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 hover:text-zinc-300">
+                  <details className="rounded-xl border border-default bg-surface-card p-3">
+                    <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-secondary hover:text-primary">
                       What does this mean?
                     </summary>
                     <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -1078,9 +1078,9 @@ export default function MerchantPage() {
                         ["Can receive payouts", stripeStatus.payouts_enabled],
                         ["Identity submitted", stripeStatus.details_submitted],
                       ] as const).map(([label, ok]) => (
-                        <div key={label} className="rounded-lg border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
-                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">{label}</div>
-                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+                        <div key={label} className="rounded-lg border border-default bg-surface-card px-3 py-2">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-secondary">{label}</div>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-brand-teal" : "text-secondary"}`}>
                             {ok ? "✓ Ready" : "— Pending"}
                           </div>
                         </div>
@@ -1100,42 +1100,42 @@ export default function MerchantPage() {
             only kicks in once there's something to measure. */}
         {stepFirstSale ? (
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Transactions</div>
-              <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_orders ?? 0}</div>
-              <div className="text-xs text-zinc-500">total</div>
+            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Transactions</div>
+              <div className="mt-2 text-2xl font-bold text-primary">{analytics?.total_orders ?? 0}</div>
+              <div className="text-xs text-secondary">total</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Revenue</div>
-              <div className="mt-2 text-2xl font-bold text-emerald-400">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
-              <div className="text-xs text-zinc-500">you keep 100% · 0% commission</div>
+            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Revenue</div>
+              <div className="mt-2 text-2xl font-bold text-brand-teal">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
+              <div className="text-xs text-secondary">you keep 100% · 0% commission</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">DUM Issued</div>
+            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">DUM Issued</div>
               <div className="mt-2 text-2xl font-bold text-amber-400">{analytics?.total_dum_received ?? 0}</div>
-              <div className="text-xs text-zinc-500">to customers</div>
+              <div className="text-xs text-secondary">to customers</div>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Page Views</div>
-              <div className="mt-2 text-2xl font-bold text-white">{analytics?.total_views ?? 0}</div>
-              <div className="text-xs text-zinc-500">total</div>
+            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Page Views</div>
+              <div className="mt-2 text-2xl font-bold text-primary">{analytics?.total_views ?? 0}</div>
+              <div className="text-xs text-secondary">total</div>
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="rounded-2xl border border-default bg-surface-muted p-6 text-center">
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
               Your numbers show up here
             </div>
-            <div className="text-base font-semibold text-white">
+            <div className="text-base font-semibold text-primary">
               Transactions · Revenue · DUM Issued · Page Views
             </div>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-400">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-secondary">
               Once your first sale lands, this panel lights up with live stats.
               No data yet — let's get you your first sale.
             </p>
             <Link
               href="/dashboard"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_20px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
             >
               Set Up My Listing →
             </Link>
@@ -1143,10 +1143,10 @@ export default function MerchantPage() {
         )}
 
         {/* QR Code */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-          <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">Your QR Code</h3>
+        <div className="rounded-2xl border border-default bg-surface-muted p-5">
+          <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Your QR Code</h3>
           <div className="flex items-center gap-4">
-            <div className="flex h-32 w-32 items-center justify-center rounded-xl border border-zinc-700 bg-white p-2">
+            <div className="flex h-32 w-32 items-center justify-center rounded-xl border border-default bg-white p-2">
               {/* QR code generator — Google's chart.googleapis.com endpoint
                   was retired in 2024 and now 404s, which is why this image
                   was rendering as a broken placeholder. Switched to the
@@ -1159,12 +1159,12 @@ export default function MerchantPage() {
               />
             </div>
             <div>
-              <p className="text-sm text-zinc-400">Print this and display at your register.</p>
-              <p className="text-xs text-zinc-500 mt-1">Customers scan to earn DUM Points on every visit.</p>
+              <p className="text-sm text-secondary">Print this and display at your register.</p>
+              <p className="text-xs text-secondary mt-1">Customers scan to earn DUM Points on every visit.</p>
               <a
                 href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrUrl)}`}
                 download="dum-club-qr.png"
-                className="mt-3 inline-block rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold text-white transition hover:border-zinc-600"
+                className="mt-3 inline-block rounded-lg border border-default px-4 py-2 text-xs font-semibold text-primary transition hover:border-strong"
               >
                 Download QR
               </a>
@@ -1184,13 +1184,13 @@ export default function MerchantPage() {
         <div className="flex gap-3">
           <Link
             href={installLink}
-            className="flex-1 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.04] px-4 py-3 text-center text-sm font-semibold text-emerald-400 transition hover:bg-emerald-400/[0.08]"
+            className="flex-1 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 text-center text-sm font-semibold text-brand-teal transition hover:bg-brand-teal-soft"
           >
             Add DUM Live to your website →
           </Link>
           <Link
             href="/dashboard"
-            className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+            className="flex-1 rounded-xl border border-default bg-surface-muted px-4 py-3 text-center text-sm text-secondary transition hover:border-default hover:text-primary"
           >
             Manage My Business
           </Link>
