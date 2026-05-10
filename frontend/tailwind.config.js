@@ -13,6 +13,13 @@ module.exports = {
         // where they're hardcoded, and will be migrated in a follow-up.
         sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+        // Caveat — handwriting font, loaded for the founder-note
+        // signature line only. Wired through next/font/google in
+        // app/layout.tsx; the Tailwind alias gives us
+        // `font-caveat` for any element that wants the script
+        // styling. Falls back to cursive system fonts during the
+        // brief swap window.
+        caveat: ["var(--font-caveat)", "Caveat", "cursive"],
       },
       colors: {
         base: "var(--color-bg-base)",
@@ -45,6 +52,11 @@ module.exports = {
           page: "var(--surface-page)",
           card: "var(--surface-card)",
           muted: "var(--surface-muted)",
+          // bg-surface-inverse is the dark surface used for product-
+          // preview / inverse-contrast sections per the master plan
+          // (Phase 4). Pairs with text-white for readable inverted
+          // typography.
+          inverse: "var(--surface-inverse)",
         },
         state: {
           live: "var(--state-live)",
