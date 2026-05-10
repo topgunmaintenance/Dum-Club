@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Caveat } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "../components/AppProviders";
 import { SiteChrome } from "../components/SiteChrome";
+
+// Caveat is loaded for the founder-note signature line only. Subset
+// kept to "latin", weights 400 + 600, swap display so the page never
+// blocks on the font. Exposed as a CSS variable + Tailwind utility
+// (font-caveat) — every other text on the site continues to render
+// in Geist Sans / Mono.
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-caveat",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DUM Club — Live Selling Marketplace. Flat Fee. Zero Commission.",
@@ -30,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${caveat.variable}`}>
       <body className={`${GeistSans.className} bg-base text-[var(--color-text-primary)] min-h-screen`}>
         <AppProviders>
           {/* SiteChrome decides whether to render the global navbar /

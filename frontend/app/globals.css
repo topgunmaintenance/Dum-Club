@@ -31,26 +31,32 @@
 
   --color-border: rgba(255,255,255,0.08);
 
-  /* ── Phase 0 light-theme tokens ─────────────────────────────────
-     Foundation only. These variables are NOT yet referenced anywhere
-     in the codebase — they exist so the upcoming light-theme
-     migration can land in small steps without redefining tokens
-     twice. The existing dark-theme variables above are untouched, so
-     the live site renders identically until a component is
-     intentionally migrated to consume the new tokens. The matching
-     Tailwind utilities are exposed via tailwind.config.js
-     (brand-*, surface-*, text-{primary,secondary,muted},
-     border-{default,strong}, state-live). */
+  /* ── Light-theme tokens (Phase 4 design system) ────────────────
+     Phase 0 introduced the token group; Phase 4 finalised the values
+     against the master execution plan. The homepage hero (PR #106)
+     consumes surface-page / surface-card / text-primary / brand-teal
+     / brand-navy already, so adjusting their values here propagates
+     to the live hero on the next deploy. Values updated to the
+     Phase 4 spec; bg-inverse added for upcoming dark-product-preview
+     sections.
+
+     Tailwind utility map (see tailwind.config.js):
+       brand-{teal,teal-hover,teal-soft,navy}
+       surface-{page,card,muted,inverse}
+       text-{primary,secondary,muted}
+       border-{default,strong}
+       state-live */
   --brand-teal: #14B89A;
   --brand-teal-hover: #0E9F84;
   --brand-teal-soft: #E6F8F3;
   --brand-navy: #0B2545;
 
-  --surface-page: #FAFAF7;
+  --surface-page: #F7F8FA;
   --surface-card: #FFFFFF;
-  --surface-muted: #F4F5F7;
+  --surface-muted: #EEF1F5;
+  --surface-inverse: #0B1220;
 
-  --text-primary: #0F1115;
+  --text-primary: #0B1220;
   --text-secondary: #475467;
   --text-muted: #6B7280;
 
@@ -58,6 +64,24 @@
   --border-strong: #D1D5DB;
 
   --state-live: #E63946;
+}
+
+/* ── Soft gradient mesh ───────────────────────────────────────────
+   Pure-CSS warm/teal mesh for hero sections that want a hint of
+   ambience without paid assets or images. Three radial gradients
+   stacked on a base surface-page tint. Use as a background helper
+   on a section/div: <div class="bg-gradient-mesh ..."> .
+
+   Designed so contrast for surface-card panels placed on top stays
+   strong — the gradients top out around 6% alpha. Safe against
+   prefers-reduced-motion (no animation), and falls back to a flat
+   surface-page when CSS variables aren't available. */
+.bg-gradient-mesh {
+  background-color: var(--surface-page);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(20, 184, 154, 0.10), transparent 55%),
+    radial-gradient(circle at 88% 10%, rgba(11, 37, 69, 0.08), transparent 50%),
+    radial-gradient(circle at 60% 95%, rgba(20, 184, 154, 0.06), transparent 60%);
 }
 
 html {
