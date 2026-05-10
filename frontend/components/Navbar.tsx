@@ -39,6 +39,7 @@ const PRIMARY_LINKS = [
   { href: "/discover", label: "Explore" },
   { href: "/business", label: "For Business" },
   { href: "/merchant", label: "Merchant" },
+  { href: "/about", label: "About" },
 ];
 
 // Items in the authenticated-user dropdown (and mirrored into the

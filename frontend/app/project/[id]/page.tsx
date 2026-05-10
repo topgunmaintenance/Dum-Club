@@ -20,6 +20,7 @@ import {
   type PayOfferStep,
 } from "../../../lib/solanaCheckout";
 import { useAuth } from "../../../lib/auth/AuthContext";
+import { useStatusToast } from "../../../lib/useStatusToast";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
@@ -494,6 +495,7 @@ export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
   const { user: authUser, login, getToken } = useAuth();
+  const { notify, toast: statusToast } = useStatusToast();
   const { wallets } = useSolanaWallets();
   // External Solana wallet adapter (Phantom / Solflare). Used as a
   // fallback for the "Pay with SOL" CTA when the user prefers an
@@ -503,8 +505,6 @@ export default function ProjectPage() {
 
   // Diagnostic: log effective API base on mount
   useEffect(() => {
-    console.log("[project-page] API_BASE:", API_BASE);
-    console.log("[project-page] window.location.protocol:", typeof window !== "undefined" ? window.location.protocol : "SSR");
   }, []);
 
   const [project, setProject] = useState<Project | null>(null);
@@ -1030,7 +1030,6 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/offers/${project.id}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load offers");
       const data = await res.json();
-      console.log("OFFERS DATA:", data);
       setOffers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -1111,7 +1110,6 @@ export default function ProjectPage() {
   }
 
   async function uploadOfferImage(file: File): Promise<string | null> {
-    console.log("[image] Uploading:", file.name, file.size, "bytes");
     try {
       const supabase = createClient();
       const ext = file.name.split(".").pop() || "jpg";
@@ -1122,7 +1120,6 @@ export default function ProjectPage() {
       });
       if (error) { console.error("[image] Upload error:", error); throw error; }
       const { data } = supabase.storage.from("offers").getPublicUrl(path);
-      console.log("[image] Upload success:", data.publicUrl);
       return data.publicUrl;
     } catch (err) {
       console.error("[image] Upload failed:", err);
@@ -1165,7 +1162,6 @@ export default function ProjectPage() {
   }
 
   async function saveOffer() {
-    console.log("[saveOffer] clicked, offerEditing:", offerEditing?.title, "id:", id);
     if (!offerEditing) return;
     if (!offerEditing.title?.trim()) {
       setOfferSaveError("Title is required");
@@ -1185,7 +1181,6 @@ export default function ProjectPage() {
     setOfferSaveSuccess(false);
     try {
       const token = await getToken();
-      console.log("[saveOffer] token obtained:", !!token);
       if (!token) throw new Error("Not authenticated — please sign in again");
 
       // Upload image if file selected
@@ -1219,7 +1214,6 @@ export default function ProjectPage() {
       };
       if (!isEdit) body.project_id = id;
 
-      console.log("[saveOffer] sending", method, url, JSON.stringify(body));
       const res = await fetch(url, {
         method,
         headers: {
@@ -1228,7 +1222,6 @@ export default function ProjectPage() {
         },
         body: JSON.stringify(body),
       });
-      console.log("[saveOffer] response status:", res.status);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         // Pydantic 422 errors return detail as an array of objects
@@ -1241,7 +1234,6 @@ export default function ProjectPage() {
         throw new Error(msg);
       }
       const created = await res.json();
-      console.log("[saveOffer] success, offer id:", created?.id);
       // Award DUM Points for creating an offer
       try {
         const privyId = authUser?.privyId;
@@ -1298,7 +1290,6 @@ export default function ProjectPage() {
 
   async function buyOffer(offer: Offer, auctionId?: string, overridePrice?: number) {
     const oid = offer.id;
-    console.log("[buyOffer] clicked, offer:", oid, offer.title);
     // Automation: capture offer click
     captureOfferClick(id as string, offer.title, Number(offer.price_usd || 0), authUser?.privyId);
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
@@ -1365,7 +1356,6 @@ export default function ProjectPage() {
 
     try {
       const token = await getToken();
-      console.log("[buyOffer] token obtained:", !!token);
       if (!token) {
         setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
         setBuyError((p) => ({ ...p, [oid]: "Authentication failed — please sign in again" }));
@@ -1377,7 +1367,6 @@ export default function ProjectPage() {
 
       // Strip existing query params to avoid malformed URLs on repeat purchases
       const cleanUrl = window.location.origin + window.location.pathname;
-      console.log("[buyOffer] clean URL for redirect:", cleanUrl);
 
       const checkoutPayload = {
         offer_id: oid,
@@ -1388,7 +1377,6 @@ export default function ProjectPage() {
         ...(auctionId && { auction_id: auctionId }),
         ...(overridePrice != null && { override_price: overridePrice }),
       };
-      console.log("[buyOffer] Sending checkout payload:", checkoutPayload);
 
       const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
         method: "POST",
@@ -1399,7 +1387,6 @@ export default function ProjectPage() {
         body: JSON.stringify(checkoutPayload),
       });
 
-      console.log("[buyOffer] checkout response status:", res.status);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         console.error("[buyOffer] Checkout error detail:", errData);
@@ -1411,7 +1398,6 @@ export default function ProjectPage() {
       }
 
       const data = await res.json();
-      console.log("[buyOffer] checkout response:", { checkout_url: !!data.checkout_url, order_id: data.order_id });
       if (data.checkout_url) {
         setBuyStep((p) => ({ ...p, [oid]: "redirecting" }));
         const buyPrice = overridePrice ?? Number(offer.price_usd || 0);
@@ -1688,7 +1674,6 @@ export default function ProjectPage() {
   }
 
   async function executeTrade(side: "buy" | "sell") {
-    console.log("[executeTrade] clicked:", side, "amount:", tradeAmount, "project:", id);
     if (!id) return;
 
     if (!tradeAmount.trim() || Number(tradeAmount) <= 0) {
@@ -1727,7 +1712,6 @@ export default function ProjectPage() {
       setTradeIsError(false);
       setTradeMessage("");
 
-      console.log("[executeTrade] sending POST /trade:", { side, amount: numericAmount, wallet: wallet.slice(0, 12) + "..." });
       const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
         method: "POST",
         headers: {
@@ -1740,7 +1724,6 @@ export default function ProjectPage() {
         }),
       });
 
-      console.log("[executeTrade] response status:", res.status);
       const data = await res.json();
 
       if (!res.ok) {
@@ -1754,7 +1737,6 @@ export default function ProjectPage() {
         throw new Error(detail || `Failed to ${side}`);
       }
 
-      console.log("[executeTrade] success:", { newPrice: data.market?.price, newBalance: data.balance?.balance });
       const sym = project?.token_symbol || tokenMeta.symbol || "TOKENS";
       const supply = Number(
         market?.max_supply ?? project?.token_supply ?? 21_000_000
@@ -1918,7 +1900,7 @@ export default function ProjectPage() {
       await loadMemories();
     } catch (err) {
       console.error(err);
-      alert("Failed to save memory");
+      notify("Failed to save memory", "error");
     } finally {
       setLoadingMemory(false);
     }
@@ -2302,7 +2284,6 @@ export default function ProjectPage() {
 
   /* ── Camera Preview ────────────────────────────────── */
   async function startCameraPreview() {
-    console.log("[camera] Go Live clicked — requesting camera/mic");
     setGoLiveError(null);
 
     // Check if getUserMedia is available
@@ -2317,11 +2298,9 @@ export default function ProjectPage() {
       video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: true,
     };
-    console.log("[camera] Requesting getUserMedia with constraints:", JSON.stringify(constraints));
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("[camera] getUserMedia success. Tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}:${t.readyState}`));
 
       setCameraStream(stream);
       setCameraPreview(true);
@@ -2331,11 +2310,9 @@ export default function ProjectPage() {
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = stream;
           previewVideoRef.current.play().catch(() => {});
-          console.log("[camera] Preview attached to video element (attempt", attempt, ")");
         } else if (attempt < 5) {
           setTimeout(() => attachToVideo(attempt + 1), 100);
         } else {
-          console.warn("[camera] Could not attach preview — video element not found after 5 attempts");
         }
       };
       setTimeout(() => attachToVideo(), 50);
@@ -2421,7 +2398,6 @@ export default function ProjectPage() {
       const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
       const wsHost = API_BASE.replace(/^https?:\/\//, "");
       const wsUrl = `${wsProtocol}://${wsHost}/api/live/stream/${id}`;
-      console.log("[go-live] Connecting WebSocket:", wsUrl);
 
       const ws = new WebSocket(wsUrl);
       relayWsRef.current = ws;
@@ -2429,7 +2405,6 @@ export default function ProjectPage() {
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        console.log("[go-live] WebSocket connected, starting MediaRecorder");
 
         // 3. Detect best supported mimeType
         // Order: webm VP8 (Chrome/Firefox) → webm VP9 → webm (generic) → mp4 (Safari)
@@ -2443,16 +2418,12 @@ export default function ProjectPage() {
         const supported = candidates.filter((m) => {
           try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
         });
-        console.log("[go-live] Supported mimeTypes:", supported);
 
         const mimeType = supported[0] || "";
-        console.log("[go-live] Selected mimeType:", mimeType || "(default — no explicit type)");
-        console.log("[go-live] Stream tracks:", stream.getTracks().map((t) => `${t.kind}:${t.label}:${t.readyState}`));
 
         // Determine input format for backend ffmpeg
         const isMP4 = mimeType.includes("mp4");
         if (isMP4) {
-          console.log("[go-live] Browser uses MP4 container (Safari) — backend ffmpeg needs -f mp4 input");
         }
 
         let recorder: MediaRecorder;
@@ -2464,10 +2435,8 @@ export default function ProjectPage() {
           console.error("[go-live] MediaRecorder creation failed:", recErr);
           // Last resort: try with no options
           recorder = new MediaRecorder(stream);
-          console.log("[go-live] Fallback: MediaRecorder created with default options, mimeType:", recorder.mimeType);
         }
         mediaRecorderRef.current = recorder;
-        console.log("[go-live] MediaRecorder created, actual mimeType:", recorder.mimeType);
 
         let chunksSent = 0;
         let totalBytesSent = 0;
@@ -2477,7 +2446,6 @@ export default function ProjectPage() {
             totalBytesSent += e.data.size;
             ws.send(e.data);
             if (chunksSent <= 5 || chunksSent % 50 === 0) {
-              console.log(`[go-live] Chunk #${chunksSent}: ${e.data.size} bytes (total: ${(totalBytesSent / 1024).toFixed(0)} KB)`);
             }
           }
         };
@@ -2488,12 +2456,10 @@ export default function ProjectPage() {
         };
 
         recorder.onstop = () => {
-          console.log(`[go-live] MediaRecorder stopped after ${chunksSent} chunks (${(totalBytesSent / 1024).toFixed(0)} KB total)`);
         };
 
         // Send chunks every 1000ms — gives ffmpeg substantial data per chunk
         recorder.start(1000);
-        console.log("[go-live] MediaRecorder started, state:", recorder.state, "timeslice: 1000ms");
       };
 
       ws.onmessage = (e) => {
@@ -2501,7 +2467,6 @@ export default function ProjectPage() {
         try {
           const msg = typeof e.data === "string" ? JSON.parse(e.data) : null;
           if (msg) {
-            console.log("[go-live] Server message:", msg);
             if (msg.error) {
               setGoLiveError(msg.error);
             }
@@ -2510,7 +2475,6 @@ export default function ProjectPage() {
       };
 
       ws.onclose = (e) => {
-        console.log("[go-live] WebSocket closed, code:", e.code, "reason:", e.reason);
       };
 
       ws.onerror = (err) => {
@@ -2936,7 +2900,7 @@ export default function ProjectPage() {
     e?.preventDefault();
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !tokenSupply.trim()) {
-      alert("Please complete your business setup before submitting.");
+      notify("Please complete your business setup before submitting.", "error");
       return;
     }
 
@@ -2946,7 +2910,7 @@ export default function ProjectPage() {
       project.description.startsWith("Project workspace for ");
 
     if (isPlaceholder) {
-      alert("Please add a real description before submitting for review.");
+      notify("Please add a real description before submitting for review.", "error");
       return;
     }
 
@@ -2958,7 +2922,7 @@ export default function ProjectPage() {
       } = await supabase.auth.getUser();
       const userId = user?.id;
       if (!userId || !UUID_RE.test(userId)) {
-        alert("Please sign in with a valid account to submit for review.");
+        notify("Please sign in with a valid account to submit for review.", "error");
         return;
       }
 
@@ -2983,10 +2947,10 @@ export default function ProjectPage() {
 
       await loadProject();
       await loadTokenMetadata();
-      alert("Project submitted for review.");
+      notify("Project submitted for review.", "success");
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to submit review");
+      notify(err.message || "Failed to submit review", "error");
     } finally {
       setLoadingAction(false);
     }
@@ -3015,10 +2979,10 @@ export default function ProjectPage() {
   
       await loadProject();
       await loadTokenMetadata();
-      alert("Project approved.");
+      notify("Project approved.", "success");
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to approve project");
+      notify(err.message || "Failed to approve project", "error");
     } finally {
       setLoadingAction(false);
     }
@@ -3046,10 +3010,10 @@ export default function ProjectPage() {
 
       await loadProject();
       await loadTokenMetadata();
-      alert("Project rejected.");
+      notify("Project rejected.", "success");
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to reject project");
+      notify(err.message || "Failed to reject project", "error");
     } finally {
       setLoadingAction(false);
     }
@@ -3238,7 +3202,6 @@ export default function ProjectPage() {
       window.history.replaceState({}, "", cleanUrl.toString());
     }
     if (params.get("checkout") === "success") {
-      console.log("[checkout] Success redirect detected — scheduling data refreshes");
       setCheckoutResult("success");
 
       // Compute and show DUM Points earned in live flow
@@ -3260,7 +3223,6 @@ export default function ProjectPage() {
       // Refresh offers after webhook processes (may take a few seconds)
       // Note: loadSellerOrders is also triggered by the isOwner effect, so always safe to call loadOffers here
       const refreshAfterCheckout = () => {
-        console.log("[checkout] Refreshing offers, orders, and DUM balance...");
         loadOffers();
         loadSellerOrders();
         // Trigger DUM balance refresh across the app
@@ -3645,6 +3607,7 @@ return (
       />
     )}
     <SectionNav refreshKey={projectView} mode={projectView} />
+    {statusToast}
     <div className="relative z-[1] mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
@@ -4503,7 +4466,6 @@ return (
                         ? { ...o, quantity_sold: data.quantity_sold }
                         : o
                     ));
-                    console.log("[live] Item updated:", data.offer_id, "sold:", data.quantity_sold, "sold_out:", data.sold_out);
                   }}
                   onItemSold={(data) => {
                     loadOffers();
@@ -4519,7 +4481,6 @@ return (
                       }, 4000);
                       return next;
                     });
-                    console.log("[live] Item sold:", data.offer_id, data.title);
                   }}
                 />
               </div>
@@ -6309,7 +6270,6 @@ return (
                   className="sr-only"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    console.log("[image] File selected:", file?.name, file?.size);
                     if (file) {
                       setOfferImageFile(file);
                       setOfferImagePreview(URL.createObjectURL(file));

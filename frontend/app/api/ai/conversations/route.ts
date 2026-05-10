@@ -1,4 +1,3 @@
-// TODO: Phase 1 — owner-only. Staff access requires a business_members table (Phase 2).
 import { NextRequest, NextResponse } from "next/server";
 import { extractBearerToken, verifyPrivyToken } from "../../../../lib/ai/auth";
 import { getMerchantByOwner, getMerchantById, verifyOwnership } from "../../../../lib/ai/guards";

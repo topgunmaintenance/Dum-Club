@@ -1,4 +1,3 @@
-// TODO: Phase 1 — owner-only staff access not needed here (public endpoint).
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getMerchantBySlug, requireAgentActive, ServiceInactiveError } from "../../../../lib/ai/guards";

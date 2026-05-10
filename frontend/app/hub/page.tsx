@@ -225,8 +225,8 @@ function PointsTab({
       <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6">
         <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">DUM Points</div>
         <p className="text-[13px] leading-relaxed text-secondary">
-          Points are earned through purchases.{" "}
-          <span className="text-secondary">Purchased top-ups coming soon.</span>
+          Earn DUM Points on every purchase at participating merchants.
+          1 DUM = $0.10 in discounts across the network.
         </p>
       </div>
 

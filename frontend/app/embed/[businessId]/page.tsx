@@ -556,7 +556,7 @@ export default function EmbedShellPage() {
   }
 
   return (
-    <main className="min-h-screen bg-base text-[var(--color-text-primary)] px-4 py-6 sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-surface-page text-primary px-4 py-6 sm:px-6 sm:py-8">
       {/* Schema.org JSON-LD for the pinned offer. The embed page often
           loads inside a merchant's own iframe, where their site provides
           the LocalBusiness markup; we contribute Product-level data so
@@ -605,12 +605,12 @@ export default function EmbedShellPage() {
           {saleToasts.map((t) => (
             <div
               key={t.id}
-              className="embed-toast-in flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-zinc-950/90 px-3 py-2 text-xs font-bold text-emerald-300 shadow-lg backdrop-blur-sm"
+              className="embed-toast-in flex items-center gap-2 rounded-xl border border-brand-teal bg-surface-card px-3 py-2 text-xs font-bold text-brand-teal shadow-lg backdrop-blur-sm"
             >
               <span aria-hidden>🎉</span>
               <span>
-                <span className="text-emerald-200">{t.title}</span>
-                <span className="text-emerald-300/70"> just sold!</span>
+                <span className="text-brand-teal">{t.title}</span>
+                <span className="text-brand-teal/70"> just sold!</span>
               </span>
             </div>
           ))}
@@ -633,7 +633,7 @@ export default function EmbedShellPage() {
             <span className="font-mono">{displaySlug}</span>
             <span
               className={
-                project?.is_live ? "text-emerald-400" : "text-[var(--color-text-muted)]"
+                project?.is_live ? "text-brand-teal" : "text-[var(--color-text-muted)]"
               }
             >
               {liveLabel}
@@ -644,14 +644,14 @@ export default function EmbedShellPage() {
                 href={manageHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300 transition hover:border-emerald-400/60 hover:text-emerald-200"
+                className="ml-auto inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal transition hover:border-brand-teal hover:text-brand-teal"
                 title="Owner only — opens your DUM Club admin in a new tab"
               >
                 Owner · Manage offers ↗
               </a>
             )}
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-state-live">{error}</p>}
         </header>
 
         {/* ── Stripe redirect-back banner ───────────────────────────
@@ -663,13 +663,13 @@ export default function EmbedShellPage() {
         {checkoutResult === "success" && (
           <div
             role="status"
-            className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3"
+            className="flex items-start justify-between gap-3 rounded-2xl border border-brand-teal bg-brand-teal-soft px-4 py-3"
           >
             <div>
-              <p className="text-sm font-bold text-emerald-300">
+              <p className="text-sm font-bold text-brand-teal">
                 Payment received
               </p>
-              <p className="mt-0.5 text-xs text-emerald-200/80">
+              <p className="mt-0.5 text-xs text-brand-teal/80">
                 Thanks — your order is on its way. The seller has been
                 notified.
               </p>
@@ -678,7 +678,7 @@ export default function EmbedShellPage() {
               type="button"
               onClick={() => setCheckoutResult(null)}
               aria-label="Dismiss"
-              className="shrink-0 rounded-md px-2 py-1 text-xs text-emerald-300/70 hover:bg-emerald-500/10 hover:text-emerald-200"
+              className="shrink-0 rounded-md px-2 py-1 text-xs text-brand-teal/70 hover:bg-brand-teal-soft hover:text-brand-teal"
             >
               Dismiss
             </button>
@@ -687,14 +687,14 @@ export default function EmbedShellPage() {
         {checkoutResult === "cancelled" && (
           <div
             role="status"
-            className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-xs text-[var(--color-text-muted)]"
+            className="flex items-center justify-between gap-3 rounded-xl border border-default bg-surface-card px-3 py-2 text-xs text-[var(--color-text-muted)]"
           >
             <span>Checkout cancelled</span>
             <button
               type="button"
               onClick={() => setCheckoutResult(null)}
               aria-label="Dismiss"
-              className="rounded-md px-1.5 py-0.5 text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300"
+              className="rounded-md px-1.5 py-0.5 text-secondary hover:bg-surface-muted/60 hover:text-primary"
             >
               ×
             </button>
@@ -715,7 +715,7 @@ export default function EmbedShellPage() {
               <IVSStageViewer projectId={project.id} userId={viewerUserId} />
             ) : (
               <div
-                className="flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-black text-sm text-zinc-500"
+                className="flex items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary"
                 style={{ minHeight: 300, aspectRatio: "16/9" }}
               >
                 {loading ? "Loading video…" : "Stream offline"}
@@ -763,13 +763,13 @@ export default function EmbedShellPage() {
                 the empty state. */}
             <section
               aria-label="Pinned offer"
-              className={`rounded-2xl border bg-zinc-950/60 p-4 transition-colors ${
+              className={`rounded-2xl border bg-surface-card p-4 transition-colors ${
                 soldFlash
-                  ? "embed-sold-flash border-red-500/40"
-                  : "border-zinc-800"
+                  ? "embed-sold-flash border-[var(--state-live)]/30"
+                  : "border-default"
               } ${pinnedOffer ? "hidden lg:block" : ""}`}
             >
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                 Now showing
               </div>
               {pinnedOffer ? (
@@ -778,22 +778,22 @@ export default function EmbedShellPage() {
                     {pinnedOffer.title || "Untitled offer"}
                   </h2>
                   {pinnedOffer.description && (
-                    <p className="text-sm text-zinc-400 line-clamp-3">
+                    <p className="text-sm text-secondary line-clamp-3">
                       {pinnedOffer.description}
                     </p>
                   )}
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-mono text-2xl font-bold text-emerald-400">
+                    <span className="font-mono text-2xl font-bold text-brand-teal">
                       ${Number(pinnedOffer.price_usd || 0).toFixed(2)}
                     </span>
                     {pinnedOffer.unlimited_inventory ? (
-                      <span className="text-xs text-zinc-500">Unlimited stock</span>
+                      <span className="text-xs text-secondary">Unlimited stock</span>
                     ) : soldOut ? (
-                      <span className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                      <span className="rounded-md border border-default px-2 py-1 text-xs font-bold uppercase tracking-wider text-secondary">
                         Sold out
                       </span>
                     ) : remaining !== null ? (
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-secondary">
                         {remaining} left
                       </span>
                     ) : null}
@@ -812,7 +812,7 @@ export default function EmbedShellPage() {
                     <button
                       type="button"
                       disabled
-                      className="w-full rounded-xl border border-zinc-700 px-5 py-3 text-sm font-bold text-zinc-500"
+                      className="w-full rounded-xl border border-default px-5 py-3 text-sm font-bold text-secondary"
                     >
                       Sold Out
                     </button>
@@ -821,7 +821,7 @@ export default function EmbedShellPage() {
                       type="button"
                       onClick={handleBuy}
                       disabled={buying || solBuying}
-                      className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                      className="w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-40"
                     >
                       {buying
                         ? "Opening secure checkout…"
@@ -841,13 +841,13 @@ export default function EmbedShellPage() {
                       — sold-out, signed-in-but-pre-click, and pre-
                       sign-in all share the same trust copy. */}
                   {!soldOut && (
-                    <p className="text-center text-[11px] leading-relaxed text-zinc-500">
-                      Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
+                    <p className="text-center text-[11px] leading-relaxed text-secondary">
+                      Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                     </p>
                   )}
 
                   {buyError && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                    <div className="rounded-lg border border-red-500/20 bg-state-live/5 px-3 py-2 text-xs text-state-live">
                       {buyError}
                     </div>
                   )}
@@ -863,7 +863,7 @@ export default function EmbedShellPage() {
                         type="button"
                         onClick={handlePayWithSol}
                         disabled={buying || solBuying}
-                        className="w-full rounded-xl border border-zinc-700 bg-transparent px-5 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
+                        className="w-full rounded-xl border border-default bg-transparent px-5 py-2 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
                       >
                         {solBuying
                           ? solStep === "signing"
@@ -876,7 +876,7 @@ export default function EmbedShellPage() {
                           : "or pay with SOL"}
                       </button>
                       {solError && (
-                        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                        <div className="rounded-lg border border-red-500/20 bg-state-live/5 px-3 py-2 text-xs text-state-live">
                           {solError}
                         </div>
                       )}
@@ -884,7 +884,7 @@ export default function EmbedShellPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500">No live offer pinned yet</p>
+                <p className="text-sm text-secondary">No live offer pinned yet</p>
               )}
             </section>
 
@@ -943,7 +943,7 @@ export default function EmbedShellPage() {
             replaces it in later steps. */}
         <section
           aria-label="Event debug"
-          className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4 text-xs"
+          className="rounded-2xl border border-default bg-surface-card p-4 text-xs"
         >
           <div className="mb-2 flex gap-4 text-[var(--color-text-muted)]">
             <span>Inventory events: {inventoryEventCount}</span>
@@ -978,25 +978,25 @@ export default function EmbedShellPage() {
            appears beneath the primary row. */}
       {pinnedOffer && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-surface-card backdrop-blur-sm lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <div className="mx-auto max-w-6xl px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-bold text-white">
+                <div className="truncate text-sm font-bold text-primary">
                   {pinnedOffer.title || "Untitled offer"}
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-sm font-bold text-emerald-400">
+                  <span className="font-mono text-sm font-bold text-brand-teal">
                     ${Number(pinnedOffer.price_usd || 0).toFixed(2)}
                   </span>
                   {pinnedOffer.unlimited_inventory ? null : soldOut ? (
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    <span className="text-[10px] uppercase tracking-wider text-secondary">
                       Sold out
                     </span>
                   ) : remaining !== null ? (
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-[10px] text-secondary">
                       {remaining} left
                     </span>
                   ) : null}
@@ -1004,7 +1004,7 @@ export default function EmbedShellPage() {
               </div>
               <div className="shrink-0">
                 {soldOut ? (
-                  <span className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-500">
+                  <span className="rounded-lg border border-default px-4 py-2 text-xs font-bold text-secondary">
                     Sold Out
                   </span>
                 ) : (
@@ -1012,7 +1012,7 @@ export default function EmbedShellPage() {
                     type="button"
                     onClick={handleBuy}
                     disabled={buying || solBuying}
-                    className="min-h-[44px] rounded-lg bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                    className="min-h-[44px] rounded-lg bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-40"
                   >
                     {buying
                       ? "Opening…"
@@ -1028,7 +1028,7 @@ export default function EmbedShellPage() {
                 type="button"
                 onClick={handlePayWithSol}
                 disabled={buying || solBuying}
-                className="mt-2 min-h-[44px] w-full rounded-lg border border-zinc-700 bg-transparent px-3 py-2.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-40"
+                className="mt-2 min-h-[44px] w-full rounded-lg border border-default bg-transparent px-3 py-2.5 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
               >
                 {solBuying
                   ? solStep === "signing"
@@ -1042,7 +1042,7 @@ export default function EmbedShellPage() {
               </button>
             )}
             {(buyError || solError) && (
-              <p className="mt-1.5 truncate text-[11px] text-red-400">
+              <p className="mt-1.5 truncate text-[11px] text-state-live">
                 {buyError || solError}
               </p>
             )}
