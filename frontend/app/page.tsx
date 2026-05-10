@@ -329,21 +329,21 @@ function CreatorProofModal({
       className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative w-full max-w-md animate-fade-in rounded-2xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/60">
+      <div className="relative w-full max-w-md animate-fade-in rounded-2xl border border-default bg-surface-card p-8 shadow-2xl shadow-black/60">
         {/* Top accent line */}
-        <div className="absolute left-[20%] right-[20%] top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+        <div className="absolute left-[20%] right-[20%] top-0 h-px bg-gradient-to-r from-transparent via-brand-teal to-transparent" />
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-xs text-zinc-500 transition hover:bg-zinc-800 hover:text-white"
+          className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-default bg-surface-card text-xs text-secondary transition hover:bg-surface-muted hover:text-primary"
         >
           ✕
         </button>
 
         {/* Label */}
-        <div className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-          <span className="inline-block h-px w-4 bg-emerald-400" />
+        <div className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+          <span className="inline-block h-px w-4 bg-brand-teal" />
           Example Scenario
         </div>
 
@@ -354,51 +354,51 @@ function CreatorProofModal({
           </div>
           <div>
             <div className="text-[15px] font-bold text-white">{story.name}</div>
-            <div className="text-[12px] text-zinc-500">{story.project}</div>
+            <div className="text-[12px] text-secondary">{story.project}</div>
           </div>
         </div>
 
         {/* Quote */}
-        <div className="mb-3 border-l-2 border-emerald-400/30 pl-3 text-[14px] italic leading-relaxed text-zinc-400">
+        <div className="mb-3 border-l-2 border-default pl-3 text-[14px] italic leading-relaxed text-secondary">
           &ldquo;{story.detail}&rdquo;
         </div>
 
         {/* Result stat */}
         <div className="mb-5 grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
-            <div className="text-xl font-extrabold text-emerald-400">
+          <div className="rounded-xl border border-default bg-surface-card p-3 text-center">
+            <div className="text-xl font-extrabold text-brand-teal">
               {story.stat.value}
             </div>
-            <div className="mt-1 text-[10px] text-zinc-600">
+            <div className="mt-1 text-[10px] text-secondary">
               {story.stat.label}
             </div>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
+          <div className="rounded-xl border border-default bg-surface-card p-3 text-center">
             <div className="text-xl font-extrabold text-white">AI</div>
-            <div className="mt-1 text-[10px] text-zinc-600">Built by</div>
+            <div className="mt-1 text-[10px] text-secondary">Built by</div>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 text-center">
+          <div className="rounded-xl border border-default bg-surface-card p-3 text-center">
             <div className="text-xl font-extrabold text-white">$0</div>
-            <div className="mt-1 text-[10px] text-zinc-600">Setup cost</div>
+            <div className="mt-1 text-[10px] text-secondary">Setup cost</div>
           </div>
         </div>
 
         {/* What they sold */}
-        <div className="mb-5 rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+        <div className="mb-5 rounded-lg border border-default bg-surface-muted px-4 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">
             What they sell
           </div>
-          <div className="mt-1 text-[14px] text-zinc-300">{story.sold}</div>
+          <div className="mt-1 text-[14px] text-primary">{story.sold}</div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
-          <span className="text-[11px] text-zinc-600">
+        <div className="flex items-center justify-between border-t border-default pt-4">
+          <span className="text-[11px] text-secondary">
             No developer needed
           </span>
           <Link
             href="/build"
-            className="rounded-lg bg-emerald-400 px-4 py-2 text-[12px] font-bold text-black transition hover:bg-emerald-300"
+            className="rounded-lg bg-brand-teal px-4 py-2 text-[12px] font-bold text-black transition hover:bg-brand-teal-hover"
           >
             Start Selling →
           </Link>
@@ -464,12 +464,12 @@ function CreatorTicker({
     <button
       key={key}
       onClick={() => onPick(story)}
-      className="flex shrink-0 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-[13px] text-zinc-400 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-zinc-200 hover:shadow-[0_0_20px_rgba(0,255,163,0.08)]"
+      className="flex shrink-0 items-center gap-2.5 rounded-full border border-default bg-surface-card px-4 py-2 text-[13px] text-secondary transition hover:border-default hover:bg-brand-teal-soft hover:text-primary hover:"
     >
       <span className="text-base">{story.emoji}</span>
       <span className="font-medium">{story.name}</span>
-      <span className="text-zinc-600">·</span>
-      <span className="text-emerald-400/80">{story.tag}</span>
+      <span className="text-secondary">·</span>
+      <span className="text-brand-teal">{story.tag}</span>
     </button>
   );
 
@@ -531,20 +531,20 @@ function DumActivityStrip({ projectCount, tradeCount }: { projectCount: number; 
   }, [projectCount, tradeCount]);
 
   const item = (key: string) => (
-    <span key={key} className="flex shrink-0 items-center gap-3 font-mono text-xs text-zinc-500">
-      <span className="text-emerald-400">↑</span>
-      <span className="font-bold text-emerald-400/80">DUM</span>
-      <span className="text-zinc-700">·</span>
+    <span key={key} className="flex shrink-0 items-center gap-3 font-mono text-xs text-secondary">
+      <span className="text-brand-teal">↑</span>
+      <span className="font-bold text-brand-teal">DUM</span>
+      <span className="text-muted">·</span>
       <span>Activity rising</span>
-      <span className="text-zinc-700">·</span>
+      <span className="text-muted">·</span>
       {projectCount > 0 ? (
-        <span><span className="text-zinc-400">{projectCount}</span> businesses live</span>
+        <span><span className="text-secondary">{projectCount}</span> businesses live</span>
       ) : (
         <span>Businesses launching now</span>
       )}
-      <span className="text-zinc-700">·</span>
+      <span className="text-muted">·</span>
       {tradeCount > 0 ? (
-        <span><span className="text-zinc-400">{tradeCount}</span> sales on DUM Club</span>
+        <span><span className="text-secondary">{tradeCount}</span> sales on DUM Club</span>
       ) : (
         <span>Sales happening on DUM Club</span>
       )}
@@ -583,7 +583,7 @@ function RecentSalesFeed() {
 
   return (
     <div className="mx-auto mt-10 max-w-4xl">
-      <div className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+      <div className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-secondary">
         Recent sales on DUM Club
       </div>
       <div className="space-y-2">
@@ -595,26 +595,26 @@ function RecentSalesFeed() {
               key={sale.id}
               className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-500 ${
                 isActive
-                  ? "border-emerald-400/20 bg-emerald-400/[0.04] shadow-[0_0_12px_rgba(0,255,163,0.04)]"
-                  : "border-zinc-800/40 bg-zinc-950/40"
+                  ? "border-default bg-brand-teal-soft"
+                  : "border-default/40 bg-surface-card"
               }`}
             >
               <div className="flex items-center gap-3">
                 {isActive && (
                   <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                   </span>
                 )}
                 <div>
                   <span className="text-[13px] font-semibold text-white">{sale.business_name || "Business"}</span>
-                  <span className="mx-2 text-zinc-700">·</span>
-                  <span className="text-[12px] text-zinc-400">{sale.offer_title}</span>
+                  <span className="mx-2 text-muted">·</span>
+                  <span className="text-[12px] text-secondary">{sale.offer_title}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-[13px] font-bold text-emerald-400">+${sale.amount?.toFixed(2)}</span>
-                <span className="text-[10px] text-zinc-600">{ago}</span>
+                <span className="font-mono text-[13px] font-bold text-brand-teal">+${sale.amount?.toFixed(2)}</span>
+                <span className="text-[10px] text-secondary">{ago}</span>
               </div>
             </div>
           );
@@ -657,17 +657,17 @@ function PlatformActivity({ projectCount }: { projectCount: number }) {
   const msg = ACTIVITY_MESSAGES[idx];
 
   return (
-    <div className="flex items-center justify-center gap-3 rounded-full border border-zinc-800/40 bg-zinc-950/60 px-5 py-2.5 backdrop-blur-sm">
+    <div className="flex items-center justify-center gap-3 rounded-full border border-default/40 bg-surface-card px-5 py-2.5 backdrop-blur-sm">
       <span className="relative flex h-2 w-2 shrink-0">
-        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+        <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
       </span>
-      <span key={idx} className="animate-fade-in text-[12px] text-zinc-400">
+      <span key={idx} className="animate-fade-in text-[12px] text-secondary">
         <span className="mr-1.5">{msg.icon}</span>
         {msg.text}
       </span>
       {projectCount > 0 && (
-        <span className="ml-2 text-[10px] text-zinc-600">
+        <span className="ml-2 text-[10px] text-secondary">
           · {projectCount} live
         </span>
       )}
@@ -840,7 +840,7 @@ function ProductDemo() {
 
   return (
     <div className="mt-16">
-      <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-600">
+      <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-secondary">
         Watch it happen — idea to revenue
       </div>
 
@@ -849,33 +849,33 @@ function ProductDemo() {
         {["Describe", "Build", "Live", "Revenue"].map((label, i) => (
           <div key={label} className="flex items-center gap-2">
             <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold transition-all duration-500 ${
-              phase >= i ? "bg-emerald-400 text-black shadow-[0_0_10px_rgba(0,255,163,0.3)]" : "border border-zinc-800 text-zinc-700"
+              phase >= i ? "bg-brand-teal text-black" : "border border-default text-muted"
             }`}>
               {phase > i ? "✓" : i + 1}
             </div>
             <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${
-              phase >= i ? "text-emerald-400" : "text-zinc-700"
+              phase >= i ? "text-brand-teal" : "text-muted"
             }`}>{label}</span>
-            {i < 3 && <span className={`text-sm transition-colors duration-300 ${phase > i ? "text-emerald-400/40" : "text-zinc-800"}`}>→</span>}
+            {i < 3 && <span className={`text-sm transition-colors duration-300 ${phase > i ? "text-brand-teal/40" : "text-zinc-800"}`}>→</span>}
           </div>
         ))}
       </div>
 
       {/* DUM CLUB AI Window — same chrome as the product */}
-      <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-800/60 bg-zinc-950/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-default bg-surface-card/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
         {/* Title bar */}
-        <div className="flex items-center gap-2 border-b border-zinc-800/80 bg-zinc-950 px-4 py-2.5">
+        <div className="flex items-center gap-2 border-b border-default/80 bg-surface-card px-4 py-2.5">
           <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+            <div className="h-2.5 w-2.5 rounded-full bg-state-live/70" />
             <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
             <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
           </div>
-          <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="flex-1 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
             DUM CLUB AI
           </div>
           <div className="relative flex h-2 w-2">
-            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
           </div>
         </div>
 
@@ -887,24 +887,24 @@ function ProductDemo() {
             <div className="hero-chat-msg space-y-3">
               {/* AI greeting */}
               <div className="flex gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] leading-relaxed text-zinc-300">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
+                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] leading-relaxed text-primary">
                   What do you want to build?
                 </div>
               </div>
               {/* User typing */}
               <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tl-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2">
+                <div className="max-w-[85%] rounded-bl-xl rounded-br-xl rounded-tl-xl border border-default bg-brand-teal-soft px-3 py-2">
                   <div className="text-[13px] leading-relaxed text-emerald-100">
                     {DEMO_IDEA.slice(0, typedLen)}
-                    <span className="inline-block w-[2px] h-[16px] bg-emerald-400 ml-0.5 animate-pulse align-middle" />
+                    <span className="inline-block w-[2px] h-[16px] bg-brand-teal ml-0.5 animate-pulse align-middle" />
                   </div>
                 </div>
               </div>
               {/* Launch button */}
               {typedLen >= DEMO_IDEA.length && (
                 <div className="hero-chat-msg flex justify-end">
-                  <div className="rounded-xl bg-emerald-400 px-5 py-2 text-[12px] font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.3)]">
+                  <div className="rounded-xl bg-brand-teal px-5 py-2 text-[12px] font-bold text-black">
                     Start Selling →
                   </div>
                 </div>
@@ -917,20 +917,20 @@ function ProductDemo() {
             <div className="space-y-3">
               {/* AI response */}
               <div className="flex gap-2">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-                <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] text-zinc-300">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
+                <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.07] px-3 py-2 text-[13px] text-primary">
                   Building your business now...
                 </div>
               </div>
 
               {/* Project name */}
               {buildStep >= 1 && (
-                <div className="hero-chat-msg rounded-xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-transparent p-4">
+                <div className="hero-chat-msg rounded-xl border border-default bg-gradient-to-r from-brand-teal-soft to-transparent p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-xl shadow-inner">🚗</div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-surface-card text-xl shadow-inner">🚗</div>
                     <div>
                       <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
-                      <div className="text-[10px] text-zinc-500">AI-generated project</div>
+                      <div className="text-[10px] text-secondary">AI-generated project</div>
                     </div>
                   </div>
                 </div>
@@ -944,9 +944,9 @@ function ProductDemo() {
                     { name: "Full Detail Package", price: "$89", show: buildStep >= 3 },
                     { name: "Monthly Membership", price: "$49/mo", show: buildStep >= 4 },
                   ].filter(o => o.show).map((offer) => (
-                    <div key={offer.name} className="card-premium flex items-center justify-between rounded-lg border border-zinc-800/40 bg-gradient-to-r from-zinc-900/40 to-zinc-950 px-4 py-2.5">
-                      <span className="text-[13px] text-zinc-300">{offer.name}</span>
-                      <span className="text-[13px] font-bold text-emerald-400">{offer.price}</span>
+                    <div key={offer.name} className="card-premium flex items-center justify-between rounded-lg border border-default/40 bg-gradient-to-r from-zinc-900/40 to-surface-card px-4 py-2.5">
+                      <span className="text-[13px] text-primary">{offer.name}</span>
+                      <span className="text-[13px] font-bold text-brand-teal">{offer.price}</span>
                     </div>
                   ))}
                 </div>
@@ -955,11 +955,11 @@ function ProductDemo() {
               {/* Status checks */}
               {buildStep >= 5 && (
                 <div className="hero-chat-msg flex gap-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
-                  <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2 font-mono text-[10px] leading-[1.8] text-zinc-500">
-                    <div className="text-zinc-600">✓ Storefront created</div>
-                    {buildStep >= 6 && <div className="text-zinc-600">✓ Offers generated</div>}
-                    {buildStep >= 6 && <div className="text-emerald-400">✓ Payments ready</div>}
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
+                  <div className="rounded-bl-xl rounded-br-xl rounded-tr-xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2 font-mono text-[10px] leading-[1.8] text-secondary">
+                    <div className="text-secondary">✓ Storefront created</div>
+                    {buildStep >= 6 && <div className="text-secondary">✓ Offers generated</div>}
+                    {buildStep >= 6 && <div className="text-brand-teal">✓ Payments ready</div>}
                   </div>
                 </div>
               )}
@@ -969,24 +969,24 @@ function ProductDemo() {
           {/* ── PHASE 2: Live Business (mini storefront) ── */}
           {phase === 2 && (
             <div className="hero-chat-msg">
-              <div className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.05] to-violet-500/[0.03] overflow-hidden">
+              <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted overflow-hidden">
                 {/* Storefront header — looks like a real project page */}
                 {liveStep >= 1 && (
-                  <div className="hero-chat-msg border-b border-zinc-800/30 px-5 py-4">
+                  <div className="hero-chat-msg border-b border-default/30 px-5 py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-800/50 bg-gradient-to-br from-zinc-900 to-zinc-950 text-xl shadow-inner">🚗</div>
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-default bg-gradient-to-br from-zinc-900 to-surface-card text-xl shadow-inner">🚗</div>
                         <div>
                           <div className="text-[16px] font-bold text-white">Sparkle Mobile Wash</div>
-                          <div className="text-[11px] text-zinc-500">dum.club/sparkle-wash</div>
+                          <div className="text-[11px] text-secondary">dum.club/sparkle-wash</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1">
+                      <div className="flex items-center gap-1.5 rounded-full border border-default bg-brand-teal-soft px-2.5 py-1">
                         <span className="relative flex h-1.5 w-1.5">
-                          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-teal" />
                         </span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-400">Live</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-brand-teal">Live</span>
                       </div>
                     </div>
                   </div>
@@ -997,17 +997,17 @@ function ProductDemo() {
                   {/* Description */}
                   {liveStep >= 2 && (
                     <div className="hero-chat-msg mb-4">
-                      <div className="text-[12px] text-zinc-400 mb-3">Premium mobile car detailing at your doorstep</div>
+                      <div className="text-[12px] text-secondary mb-3">Premium mobile car detailing at your doorstep</div>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {[
                           { name: "Basic Wash", price: "$29", tag: null },
                           { name: "Full Detail", price: "$89", tag: "Most popular" },
                           { name: "Monthly Plan", price: "$49/mo", tag: "Subscription" },
                         ].map((o) => (
-                          <div key={o.name} className={`card-premium rounded-xl border bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center ${o.tag === "Most popular" ? "border-emerald-400/30" : "border-zinc-800/40"}`}>
-                            <div className="text-[11px] text-zinc-400">{o.name}</div>
-                            <div className="mt-1 text-[16px] font-extrabold text-emerald-400">{o.price}</div>
-                            {o.tag && <div className={`mt-1 text-[8px] font-bold uppercase tracking-widest ${o.tag === "Most popular" ? "text-emerald-400" : "text-emerald-400/50"}`}>{o.tag}</div>}
+                          <div key={o.name} className={`card-premium rounded-xl border bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center ${o.tag === "Most popular" ? "border-default" : "border-default/40"}`}>
+                            <div className="text-[11px] text-secondary">{o.name}</div>
+                            <div className="mt-1 text-[16px] font-extrabold text-brand-teal">{o.price}</div>
+                            {o.tag && <div className={`mt-1 text-[8px] font-bold uppercase tracking-widest ${o.tag === "Most popular" ? "text-brand-teal" : "text-brand-teal/50"}`}>{o.tag}</div>}
                           </div>
                         ))}
                       </div>
@@ -1016,12 +1016,12 @@ function ProductDemo() {
 
                   {/* AI assistant helping sell */}
                   {liveStep >= 3 && (
-                    <div className="hero-chat-msg mb-3 rounded-xl border border-zinc-800/40 bg-zinc-900/30 p-3">
+                    <div className="hero-chat-msg mb-3 rounded-xl border border-default/40 bg-surface-muted p-3">
                       <div className="flex items-start gap-2">
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[8px] font-bold text-orange-400 border border-orange-400/20">SM</div>
                         <div className="flex-1">
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 mb-1">AI Sales Assistant</div>
-                          <div className="text-[11px] leading-relaxed text-zinc-400">
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-secondary mb-1">AI Sales Assistant</div>
+                          <div className="text-[11px] leading-relaxed text-secondary">
                             Most customers go with the Full Detail at $89 — it covers interior, exterior, and wax. Great value for the price.
                           </div>
                         </div>
@@ -1031,22 +1031,22 @@ function ProductDemo() {
 
                   {/* Actions */}
                   {liveStep >= 4 && (
-                    <div className="hero-chat-msg flex items-center justify-between border-t border-zinc-800/30 pt-3 mb-3">
+                    <div className="hero-chat-msg flex items-center justify-between border-t border-default/30 pt-3 mb-3">
                       <div className="flex gap-2">
-                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">🔗 Share</span>
-                        <span className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-[10px] text-zinc-400">💬 Ask AI</span>
+                        <span className="rounded-lg border border-default bg-surface-card px-3 py-1.5 text-[10px] text-secondary">🔗 Share</span>
+                        <span className="rounded-lg border border-default bg-surface-card px-3 py-1.5 text-[10px] text-secondary">💬 Ask AI</span>
                       </div>
-                      <span className="rounded-xl bg-emerald-400 px-4 py-1.5 text-[11px] font-bold text-black shadow-[0_0_12px_rgba(0,255,163,0.2)]">Buy Now →</span>
+                      <span className="rounded-xl bg-brand-teal px-4 py-1.5 text-[11px] font-bold text-black">Buy Now →</span>
                     </div>
                   )}
 
                   {/* Ready signal */}
                   {liveStep >= 5 && (
-                    <div className="hero-chat-msg flex items-center gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3">
+                    <div className="hero-chat-msg flex items-center gap-2.5 rounded-xl border border-default bg-brand-teal-soft px-4 py-3">
                       <span className="text-base">🎉</span>
                       <div>
-                        <div className="text-[12px] font-semibold text-emerald-300">Ready for customers</div>
-                        <div className="text-[9px] text-emerald-400/50">Shareable page · Stripe payments · AI support</div>
+                        <div className="text-[12px] font-semibold text-brand-teal">Ready for customers</div>
+                        <div className="text-[9px] text-brand-teal/50">Shareable page · Stripe payments · AI support</div>
                       </div>
                     </div>
                   )}
@@ -1058,36 +1058,36 @@ function ProductDemo() {
           {/* ── PHASE 3: Purchase happens ── */}
           {phase === 3 && (
             <div className="hero-chat-msg space-y-3">
-              <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.08] to-zinc-950 p-5">
+              <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">New Sale</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">New Sale</span>
                 </div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-[14px] font-bold text-white">Full Detail Package</div>
-                    <div className="text-[11px] text-zinc-500">Sarah M. just purchased</div>
+                    <div className="text-[11px] text-secondary">Sarah M. just purchased</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-[22px] font-black text-emerald-400">+$89</div>
-                    <div className="text-[9px] text-emerald-400/50">Your revenue</div>
+                    <div className="font-mono text-[22px] font-black text-brand-teal">+$89</div>
+                    <div className="text-[9px] text-brand-teal/50">Your revenue</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
+                  <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
                     <div className="font-mono text-[14px] font-bold text-white">$89</div>
-                    <div className="text-[8px] text-zinc-600">This sale</div>
+                    <div className="text-[8px] text-secondary">This sale</div>
                   </div>
-                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
-                    <div className="font-mono text-[14px] font-bold text-emerald-400">+2</div>
-                    <div className="text-[8px] text-zinc-600">DUM Points</div>
+                  <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
+                    <div className="font-mono text-[14px] font-bold text-brand-teal">+2</div>
+                    <div className="text-[8px] text-secondary">DUM Points</div>
                   </div>
-                  <div className="rounded-lg border border-zinc-800/40 bg-zinc-900/30 p-2 text-center">
+                  <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
                     <div className="font-mono text-[14px] font-bold text-white">✓</div>
-                    <div className="text-[8px] text-zinc-600">Paid via Stripe</div>
+                    <div className="text-[8px] text-secondary">Paid via Stripe</div>
                   </div>
                 </div>
               </div>
@@ -1096,8 +1096,8 @@ function ProductDemo() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-zinc-950 px-4 py-2">
-          <span className="font-mono text-[9px] text-zinc-700">
+        <div className="flex items-center justify-between border-t border-default/80 bg-surface-card px-4 py-2">
+          <span className="font-mono text-[9px] text-muted">
             {phase === 0 ? "Describing..." : phase === 1 ? "Building..." : phase === 2 ? "Live ✓" : "Revenue ✓"}
           </span>
           <div className="flex gap-1">
@@ -1105,7 +1105,7 @@ function ProductDemo() {
               <div
                 key={i}
                 className={`h-1 rounded-full transition-all duration-500 ${
-                  i <= phase ? "w-3 bg-emerald-400" : "w-1.5 bg-zinc-800"
+                  i <= phase ? "w-3 bg-brand-teal" : "w-1.5 bg-surface-muted"
                 }`}
               />
             ))}
@@ -1178,16 +1178,16 @@ function LiveSaleToast() {
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
     >
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-zinc-950/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_12px_rgba(0,255,163,0.06)] backdrop-blur-sm">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-sm">
+      <div className="flex items-center gap-3 rounded-xl border border-default bg-surface-card/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_12px_rgba(0,255,163,0.06)] backdrop-blur-sm">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-teal-soft text-sm">
           💳
         </div>
         <div>
           <div className="text-[12px] font-semibold text-white">{sale.item}</div>
           <div className="flex items-center gap-2 text-[10px]">
-            <span className="font-bold text-emerald-400">{sale.price}</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-zinc-500">{sale.time}</span>
+            <span className="font-bold text-brand-teal">{sale.price}</span>
+            <span className="text-secondary">·</span>
+            <span className="text-secondary">{sale.time}</span>
           </div>
         </div>
       </div>
@@ -1202,12 +1202,12 @@ function ComparisonTable() {
       <div className="overflow-x-auto">
         <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "600px" }}>
           <thead>
-            <tr className="border-b border-zinc-800">
-              <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-zinc-600"> </th>
-              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Whatnot</th>
-              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Commonsold</th>
-              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-zinc-600">Google Maps</th>
-              <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-emerald-400" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
+            <tr className="border-b border-default">
+              <th className="py-3 pr-4 text-left text-[9px] uppercase tracking-[0.12em] text-secondary"> </th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-secondary">Whatnot</th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-secondary">Commonsold</th>
+              <th className="px-3 py-3 text-center text-[9px] uppercase tracking-[0.12em] text-secondary">Google Maps</th>
+              <th className="px-4 py-3 text-center text-[9px] uppercase tracking-[0.14em] text-brand-teal" style={{ background: "rgba(0,255,135,0.04)", borderRadius: "8px 8px 0 0", border: "1px solid rgba(0,255,135,0.12)", borderBottom: "none" }}>DUM Club ★</th>
             </tr>
           </thead>
           <tbody>
@@ -1221,12 +1221,12 @@ function ComparisonTable() {
               { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
               { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
             ].map((row, i) => (
-              <tr key={i} className="border-b border-zinc-800/40">
-                <td className="py-3 pr-4 text-[12px] font-medium text-zinc-500" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
-                <td className="px-3 py-3 text-center text-zinc-600">{row.w}</td>
-                <td className="px-3 py-3 text-center text-zinc-600">{row.c}</td>
-                <td className="px-3 py-3 text-center text-zinc-600">{row.g}</td>
-                <td className="px-4 py-3 text-center font-semibold text-emerald-400" style={{
+              <tr key={i} className="border-b border-default/40">
+                <td className="py-3 pr-4 text-[12px] font-medium text-secondary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
+                <td className="px-3 py-3 text-center text-secondary">{row.w}</td>
+                <td className="px-3 py-3 text-center text-secondary">{row.c}</td>
+                <td className="px-3 py-3 text-center text-secondary">{row.g}</td>
+                <td className="px-4 py-3 text-center font-semibold text-brand-teal" style={{
                   background: "rgba(0,255,135,0.04)",
                   borderLeft: "1px solid rgba(0,255,135,0.12)",
                   borderRight: "1px solid rgba(0,255,135,0.12)",
@@ -1334,7 +1334,7 @@ function SearchResults({
   return (
     <div className="mx-auto mt-10 max-w-3xl sm:mt-12">
       <div className="mb-4 flex items-center gap-3">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-secondary">
           Results
         </h3>
       </div>
@@ -1344,17 +1344,17 @@ function SearchResults({
             <Link
               key={c.id}
               href={`/project/${c.id}`}
-              className="group flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+              className="group flex items-center justify-between gap-4 rounded-2xl border border-default/60 bg-surface-card p-5 transition hover:border-default hover:bg-surface-card/80"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
                   {c.name}
                 </div>
                 <div className="mt-1 truncate text-[15px] font-bold text-white">
                   {c.product}
                 </div>
               </div>
-              <div className="shrink-0 font-mono text-xl font-extrabold text-emerald-400">
+              <div className="shrink-0 font-mono text-xl font-extrabold text-brand-teal">
                 ${c.price.toLocaleString()}
               </div>
             </Link>
@@ -1362,7 +1362,7 @@ function SearchResults({
         </div>
       ) : showExternalFallback ? (
         <div>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
             Top-rated nearby on Google Maps
           </div>
           <div className="space-y-3">
@@ -1370,11 +1370,11 @@ function SearchResults({
               <ExternalTopCard key={r.external_place_id || r.id} data={r} />
             ))}
           </div>
-          <p className="mt-3 text-[11px] text-zinc-500">Not on DUM Club yet.</p>
+          <p className="mt-3 text-[11px] text-secondary">Not on DUM Club yet.</p>
         </div>
       ) : loaded ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-          <p className="text-sm text-zinc-400">No results yet</p>
+        <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
+          <p className="text-sm text-secondary">No results yet</p>
         </div>
       ) : null}
     </div>
@@ -1400,28 +1400,28 @@ function ExternalTopCard({ data }: { data: ExternalTopResult }) {
   })();
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5">
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-default/60 bg-surface-card p-5">
       <div className="min-w-0 flex-1">
         <div className="text-[15px] font-bold text-white">{data.name}</div>
         {data.address ? (
-          <div className="mt-1 truncate text-[12px] text-zinc-400">{data.address}</div>
+          <div className="mt-1 truncate text-[12px] text-secondary">{data.address}</div>
         ) : null}
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-secondary">
           {rating ? (
             <span className="inline-flex items-center gap-1 text-amber-300">
               <span aria-hidden>★</span>
               <span className="font-mono">{rating}</span>
             </span>
           ) : null}
-          {reviews ? <span className="text-zinc-500">{reviews} reviews</span> : null}
-          {data.category ? <span className="text-zinc-500">· {data.category}</span> : null}
+          {reviews ? <span className="text-secondary">{reviews} reviews</span> : null}
+          {data.category ? <span className="text-secondary">· {data.category}</span> : null}
         </div>
       </div>
       <a
         href={directionsHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300 transition hover:border-emerald-300 hover:bg-emerald-400/20"
+        className="shrink-0 rounded-full border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-teal transition hover:border-brand-teal-hover hover:bg-brand-teal-soft"
       >
         Directions
       </a>
@@ -1493,8 +1493,8 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
           Live Now
         </h2>
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
         </span>
       </div>
       <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
@@ -1502,24 +1502,24 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
           <Link
             key={c.id}
             href={`/project/${c.id}`}
-            className="group min-w-[260px] max-w-[280px] shrink-0 snap-start rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+            className="group min-w-[260px] max-w-[280px] shrink-0 snap-start rounded-2xl border border-default/60 bg-surface-card p-5 transition hover:border-default hover:bg-surface-card/80"
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-teal" />
                 </span>
                 Live
               </span>
             </div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
               {c.name}
             </div>
             <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
               {c.product}
             </div>
-            <div className="mt-3 font-mono text-xl font-extrabold text-emerald-400">
+            <div className="mt-3 font-mono text-xl font-extrabold text-brand-teal">
               ${c.price.toLocaleString()}
             </div>
           </Link>
@@ -1600,7 +1600,7 @@ function DealsSection({ projects }: { projects: Project[] }) {
         <h2 className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
           Deals
         </h2>
-        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-secondary">
           {cards.length} active
         </span>
       </div>
@@ -1609,15 +1609,15 @@ function DealsSection({ projects }: { projects: Project[] }) {
           <Link
             key={c.id}
             href={`/project/${c.project_id}`}
-            className="group rounded-2xl border border-zinc-700/60 bg-zinc-900/60 p-5 transition hover:border-emerald-400/40 hover:bg-zinc-900/80"
+            className="group rounded-2xl border border-default/60 bg-surface-card p-5 transition hover:border-default hover:bg-surface-card/80"
           >
-            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
               {c.business_name}
             </div>
             <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
               {c.offer_title}
             </div>
-            <div className="mt-3 font-mono text-xl font-extrabold text-emerald-400">
+            <div className="mt-3 font-mono text-xl font-extrabold text-brand-teal">
               ${c.price.toLocaleString()}
             </div>
           </Link>
@@ -1639,13 +1639,13 @@ function RetentionSection() {
 
   return (
     <div className="mx-auto mt-20 max-w-6xl px-4">
-      <div className="rounded-2xl border border-zinc-800/60 bg-zinc-950/80 p-6 sm:p-10">
-        <div className="mb-2 text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Customer Retention</div>
+      <div className="rounded-2xl border border-default bg-surface-card p-6 sm:p-10">
+        <div className="mb-2 text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Customer Retention</div>
         <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
           Stop losing customers.{" "}
-          <span className="text-emerald-400">Automate repeat business.</span>
+          <span className="text-brand-teal">Automate repeat business.</span>
         </h2>
-        <p className="mb-8 max-w-xl text-sm text-zinc-400">
+        <p className="mb-8 max-w-xl text-sm text-secondary">
           DUM Points bring customers back automatically. Our AI retention agent sends reminders, deal pushes, and expiry alerts — so you never lose a customer to a competitor again.
         </p>
 
@@ -1658,11 +1658,11 @@ function RetentionSection() {
               { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Cross-merchant discovery grows your network.", icon: "🔄" },
               { step: "4", title: "You keep them forever", desc: "The switching cost is high. Points + deals + AI = a loyalty moat no competitor can touch.", icon: "🏆" },
             ].map((s) => (
-              <div key={s.step} className="flex gap-4 rounded-xl border border-zinc-800/40 bg-zinc-900/30 p-4 transition hover:border-emerald-400/15">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-lg">{s.icon}</div>
+              <div key={s.step} className="flex gap-4 rounded-xl border border-default/40 bg-surface-muted p-4 transition hover:border-default">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal-soft text-lg">{s.icon}</div>
                 <div>
                   <div className="text-[13px] font-bold text-white">{s.title}</div>
-                  <div className="mt-0.5 text-[12px] text-zinc-400">{s.desc}</div>
+                  <div className="mt-0.5 text-[12px] text-secondary">{s.desc}</div>
                 </div>
               </div>
             ))}
@@ -1670,19 +1670,19 @@ function RetentionSection() {
           </div>
 
           {/* Right: ROI calculator */}
-          <div className="rounded-xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-950 p-6">
-            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Retention ROI Calculator</div>
+          <div className="rounded-xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-6">
+            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">Retention ROI Calculator</div>
             <div className="mb-4">
-              <label className="mb-2 block text-[11px] font-bold text-zinc-500">Time period: {month} month{month > 1 ? "s" : ""}</label>
+              <label className="mb-2 block text-[11px] font-bold text-secondary">Time period: {month} month{month > 1 ? "s" : ""}</label>
               <input
                 type="range"
                 min={1}
                 max={12}
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
-                className="w-full accent-emerald-400"
+                className="w-full accent-brand-teal"
               />
-              <div className="mt-1 flex justify-between text-[9px] text-zinc-700">
+              <div className="mt-1 flex justify-between text-[9px] text-muted">
                 <span>1 mo</span>
                 <span>6 mo</span>
                 <span>12 mo</span>
@@ -1690,31 +1690,31 @@ function RetentionSection() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+              <div className="flex items-center justify-between rounded-lg border border-default bg-surface-card p-3">
                 <div>
-                  <div className="text-[10px] text-zinc-500">Direct mail cost</div>
-                  <div className="text-[10px] text-zinc-600">$750/mo avg</div>
+                  <div className="text-[10px] text-secondary">Direct mail cost</div>
+                  <div className="text-[10px] text-secondary">$750/mo avg</div>
                 </div>
-                <div className="font-mono text-lg font-bold text-red-400">${mailCost.toLocaleString()}</div>
+                <div className="font-mono text-lg font-bold text-state-live">${mailCost.toLocaleString()}</div>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-emerald-400/20 bg-emerald-400/[0.06] p-3">
+              <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft p-3">
                 <div>
-                  <div className="text-[10px] text-emerald-400">DUM Club Growth tier</div>
-                  <div className="text-[10px] text-emerald-400/50">$49/mo flat</div>
+                  <div className="text-[10px] text-brand-teal">DUM Club Growth tier</div>
+                  <div className="text-[10px] text-brand-teal/50">$49/mo flat</div>
                 </div>
-                <div className="font-mono text-lg font-bold text-emerald-400">${dumCost.toLocaleString()}</div>
+                <div className="font-mono text-lg font-bold text-brand-teal">${dumCost.toLocaleString()}</div>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/70">You save</div>
-              <div className="font-mono text-3xl font-black text-emerald-400">${saved.toLocaleString()}</div>
-              <div className="mt-1 text-[11px] text-zinc-400">
+            <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft p-4 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">You save</div>
+              <div className="font-mono text-3xl font-black text-brand-teal">${saved.toLocaleString()}</div>
+              <div className="mt-1 text-[11px] text-secondary">
                 ~{retainedCustomers} customers retained · ~${repeatRevenue.toLocaleString()} repeat revenue
               </div>
             </div>
 
-            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-emerald-400 py-3 text-center text-[13px] font-bold text-black transition hover:bg-emerald-300">
+            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover">
               Start Retaining Customers →
             </Link>
           </div>
@@ -1758,11 +1758,11 @@ function PricingTiers() {
 
   return (
     <div className="mx-auto mt-20 max-w-5xl px-4">
-      <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-emerald-400">Pricing</div>
+      <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Pricing</div>
       <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-        Flat fee. <span className="text-emerald-400">0% commission. Ever.</span>
+        Flat fee. <span className="text-brand-teal">0% commission. Ever.</span>
       </h2>
-      <p className="mx-auto mb-10 max-w-md text-center text-sm text-zinc-400">
+      <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
         Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission on any sale, always.
       </p>
 
@@ -1772,23 +1772,23 @@ function PricingTiers() {
             key={tier.name}
             className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${
               tier.highlight
-                ? "border-emerald-400/40 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-950 shadow-[0_0_40px_rgba(0,255,163,0.08)]"
-                : "border-zinc-800/60 bg-zinc-950/80 hover:border-zinc-700"
+                ? "border-default bg-gradient-to-b from-brand-teal-soft to-surface-card"
+                : "border-default bg-surface-card hover:border-default"
             }`}
           >
             {tier.highlight && (
-              <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+              <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-teal to-transparent" />
             )}
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-zinc-500">{tier.name}</div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-secondary">{tier.name}</div>
             <div className="mb-1 flex items-baseline gap-1">
               <span className="text-3xl font-black text-white">{tier.price}</span>
-              <span className="text-sm text-zinc-500">{tier.period}</span>
+              <span className="text-sm text-secondary">{tier.period}</span>
             </div>
-            <div className="mb-5 text-[12px] text-zinc-400">{tier.desc}</div>
+            <div className="mb-5 text-[12px] text-secondary">{tier.desc}</div>
             <div className="mb-5 space-y-2">
               {tier.features.map((f) => (
-                <div key={f} className="flex items-center gap-2 text-[12px] text-zinc-300">
-                  <span className="text-emerald-400">✓</span>
+                <div key={f} className="flex items-center gap-2 text-[12px] text-primary">
+                  <span className="text-brand-teal">✓</span>
                   {f}
                 </div>
               ))}
@@ -1797,8 +1797,8 @@ function PricingTiers() {
               href="/merchant"
               className={`block w-full rounded-xl py-2.5 text-center text-[12px] font-bold transition ${
                 tier.highlight
-                  ? "bg-emerald-400 text-black hover:bg-emerald-300"
-                  : "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                  ? "bg-brand-teal text-black hover:bg-brand-teal-hover"
+                  : "border border-default text-primary hover:border-strong hover:text-primary"
               }`}
             >
               {tier.cta} →
@@ -1807,8 +1807,8 @@ function PricingTiers() {
         ))}
       </div>
 
-      <div className="mt-6 text-center text-[11px] text-zinc-500">
-        Need white-label loyalty? <Link href="/business" className="font-bold text-emerald-400 hover:text-emerald-300">Business tier from $499/mo →</Link>
+      <div className="mt-6 text-center text-[11px] text-secondary">
+        Need white-label loyalty? <Link href="/business" className="font-bold text-brand-teal hover:text-brand-teal">Business tier from $499/mo →</Link>
       </div>
     </div>
   );
@@ -1818,59 +1818,59 @@ function PricingTiers() {
 function WhatnotPitch() {
   return (
     <div className="mx-auto mt-20 max-w-5xl px-4">
-      <div className="overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/[0.04] to-zinc-950">
+      <div className="overflow-hidden rounded-2xl border border-[var(--state-live)]/30 bg-gradient-to-br from-red-500/[0.04] to-surface-card">
         <div className="grid gap-0 sm:grid-cols-2">
           {/* Left: The problem */}
-          <div className="border-b border-zinc-800/40 p-8 sm:border-b-0 sm:border-r">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-red-400">The Whatnot tax</div>
+          <div className="border-b border-default/40 p-8 sm:border-b-0 sm:border-r">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-state-live">The Whatnot tax</div>
             <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
               You sell $10,000/mo on Whatnot.
               <br />
-              <span className="text-red-400">They keep $1,150.</span>
+              <span className="text-state-live">They keep $1,150.</span>
             </h3>
             <div className="space-y-2">
-              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-red-500/[0.04] px-4 py-2">
-                <span className="text-[12px] text-zinc-400">Platform fee (8%)</span>
-                <span className="font-mono text-[13px] font-bold text-red-400">−$800</span>
+              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-state-live/[0.04] px-4 py-2">
+                <span className="text-[12px] text-secondary">Platform fee (8%)</span>
+                <span className="font-mono text-[13px] font-bold text-state-live">−$800</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-red-500/[0.04] px-4 py-2">
-                <span className="text-[12px] text-zinc-400">Processing (2.9% + $0.30)</span>
-                <span className="font-mono text-[13px] font-bold text-red-400">−$350</span>
+              <div className="flex items-center justify-between rounded-lg border border-red-500/10 bg-state-live/[0.04] px-4 py-2">
+                <span className="text-[12px] text-secondary">Processing (2.9% + $0.30)</span>
+                <span className="font-mono text-[13px] font-bold text-state-live">−$350</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2">
-                <span className="text-[12px] font-bold text-zinc-300">You keep</span>
-                <span className="font-mono text-[14px] font-bold text-zinc-300">$8,850</span>
+              <div className="flex items-center justify-between rounded-lg border border-default/40 bg-surface-muted px-4 py-2">
+                <span className="text-[12px] font-bold text-primary">You keep</span>
+                <span className="font-mono text-[14px] font-bold text-primary">$8,850</span>
               </div>
             </div>
           </div>
 
           {/* Right: The solution */}
           <div className="p-8">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">The DUM Club way</div>
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">The DUM Club way</div>
             <h3 className="mb-4 text-xl font-extrabold text-white sm:text-2xl">
               Same $10,000/mo.
               <br />
-              <span className="text-emerald-400">You keep $9,951.</span>
+              <span className="text-brand-teal">You keep $9,951.</span>
             </h3>
             <div className="space-y-2">
-              <div className="flex items-center justify-between rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-4 py-2">
-                <span className="text-[12px] text-zinc-400">Flat monthly fee</span>
-                <span className="font-mono text-[13px] font-bold text-emerald-400">−$49</span>
+              <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
+                <span className="text-[12px] text-secondary">Flat monthly fee</span>
+                <span className="font-mono text-[13px] font-bold text-brand-teal">−$49</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/40 bg-zinc-900/30 px-4 py-2">
-                <span className="text-[12px] text-zinc-400">Commission on sales</span>
-                <span className="font-mono text-[13px] font-bold text-emerald-400">$0</span>
+              <div className="flex items-center justify-between rounded-lg border border-default/40 bg-surface-muted px-4 py-2">
+                <span className="text-[12px] text-secondary">Commission on sales</span>
+                <span className="font-mono text-[13px] font-bold text-brand-teal">$0</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-2">
-                <span className="text-[12px] font-bold text-emerald-300">You keep</span>
-                <span className="font-mono text-[14px] font-bold text-emerald-400">$9,951</span>
+              <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
+                <span className="text-[12px] font-bold text-brand-teal">You keep</span>
+                <span className="font-mono text-[14px] font-bold text-brand-teal">$9,951</span>
               </div>
             </div>
-            <div className="mt-5 rounded-xl bg-emerald-400/10 border border-emerald-400/20 p-3 text-center">
-              <span className="font-mono text-2xl font-black text-emerald-400">+$1,101</span>
-              <span className="ml-2 text-[12px] text-emerald-400/70">more in your pocket every month</span>
+            <div className="mt-5 rounded-xl bg-brand-teal-soft border border-default p-3 text-center">
+              <span className="font-mono text-2xl font-black text-brand-teal">+$1,101</span>
+              <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
             </div>
-            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-emerald-400 py-3 text-center text-[13px] font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]">
+            <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:">
               Switch from Whatnot — Free →
             </Link>
           </div>
@@ -1911,15 +1911,15 @@ function HomeSectionNav() {
 
   return (
     <nav className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
-      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-zinc-800/40 bg-zinc-950/80 px-2.5 py-3 backdrop-blur-sm">
+      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-default/40 bg-surface-card px-2.5 py-3 backdrop-blur-sm">
         {HOME_SECTIONS.map((s) => {
           const isActive = active === s.id;
           return (
             <button key={s.id} onClick={() => scrollTo(s.id)} className="flex items-center gap-2 transition-all duration-200">
-              <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${isActive ? "text-emerald-400" : "text-zinc-600 hover:text-zinc-400"}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${isActive ? "text-brand-teal" : "text-secondary hover:text-secondary"}`}>
                 {s.label}
               </span>
-              <span className={`block shrink-0 rounded-full transition-all duration-300 ${isActive ? "h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]" : "h-1.5 w-1.5 bg-zinc-700"}`} />
+              <span className={`block shrink-0 rounded-full transition-all duration-300 ${isActive ? "h-2.5 w-2.5 bg-brand-teal" : "h-1.5 w-1.5 bg-zinc-700"}`} />
             </button>
           );
         })}
@@ -2587,10 +2587,10 @@ export default function Home() {
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
-          <div className="w-full max-w-sm rounded-2xl border border-emerald-400/20 bg-zinc-950 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 text-3xl">🚀</div>
             <h2 className="text-xl font-extrabold text-white">You&apos;ve used your free businesses</h2>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-3 text-sm leading-relaxed text-secondary">
               You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points for unlimited businesses, priority placement, and more.
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2">
@@ -2599,22 +2599,22 @@ export default function Home() {
                 { icon: "⭐", label: "Featured placement" },
                 { icon: "🤖", label: "Unlimited AI" },
               ].map((p) => (
-                <div key={p.label} className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-2 text-center">
+                <div key={p.label} className="rounded-lg border border-default bg-surface-muted p-2 text-center">
                   <div className="text-base">{p.icon}</div>
-                  <div className="mt-1 text-[9px] text-zinc-500">{p.label}</div>
+                  <div className="mt-1 text-[9px] text-secondary">{p.label}</div>
                 </div>
               ))}
             </div>
             <Link
               href="/upgrade"
-              className="mt-5 block w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300"
+              className="mt-5 block w-full rounded-xl bg-brand-teal px-6 py-3.5 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
             >
               View DUM Tiers →
             </Link>
             <button
               type="button"
               onClick={() => setShowUpgradeModal(false)}
-              className="mt-3 w-full rounded-xl px-6 py-2 text-sm text-zinc-600 transition hover:text-zinc-400"
+              className="mt-3 w-full rounded-xl px-6 py-2 text-sm text-secondary transition hover:text-secondary"
             >
               Maybe later
             </button>
@@ -2757,7 +2757,7 @@ export default function Home() {
              only — these are not live offers. */}
         <div className="mx-auto mt-16 max-w-5xl px-4">
           <div className="mb-6 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               What it looks like on your site
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -2765,17 +2765,17 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/80 p-4 shadow-[0_0_60px_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-6">
+          <div className="relative overflow-hidden rounded-3xl border border-default bg-surface-card p-4 shadow-[0_0_60px_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-6">
             {/* Preview badge */}
-            <div className="absolute right-4 top-4 z-10 rounded-full border border-zinc-700 bg-zinc-900/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            <div className="absolute right-4 top-4 z-10 rounded-full border border-default bg-surface-card/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-secondary">
               Preview
             </div>
 
             <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
               {/* Left: live video panel placeholder */}
-              <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
+              <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-default bg-gradient-to-br from-zinc-900 via-black to-zinc-900">
                 {/* LIVE badge */}
-                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-red-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
@@ -2783,40 +2783,40 @@ export default function Home() {
                   Live
                 </div>
                 {/* Viewer count */}
-                <div className="absolute right-4 top-4 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-mono text-zinc-300 backdrop-blur-sm">
+                <div className="absolute right-4 top-4 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-mono text-primary backdrop-blur-sm">
                   47 watching
                 </div>
                 {/* Center play icon — purely decorative */}
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-default bg-brand-teal-soft text-brand-teal">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </div>
                 {/* +20 DUM Points toast */}
-                <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-zinc-950/90 px-3 py-2 text-[11px] font-bold text-emerald-300 shadow-lg backdrop-blur-sm">
+                <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-xl border border-default bg-surface-card/90 px-3 py-2 text-[11px] font-bold text-brand-teal shadow-lg backdrop-blur-sm">
                   <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                   <span>
-                    <span className="text-emerald-200">Customer earned 20 DUM Points</span>
-                    <span className="ml-1 text-emerald-300/60 font-normal">· loyalty rewards</span>
+                    <span className="text-brand-teal">Customer earned 20 DUM Points</span>
+                    <span className="ml-1 text-brand-teal/60 font-normal">· loyalty rewards</span>
                   </span>
                 </div>
               </div>
 
               {/* Right: pinned offer card */}
-              <div className="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
+              <div className="flex flex-col rounded-2xl border border-default bg-surface-card p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                   Now showing
                 </div>
                 <h3 className="text-lg font-semibold leading-tight text-white">
                   Slow Hour Flash Deal
                 </h3>
-                <p className="mt-1 text-sm text-zinc-400">
+                <p className="mt-1 text-sm text-secondary">
                   Limited-time pricing while we&apos;re live.
                 </p>
                 <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <span className="font-mono text-2xl font-bold text-emerald-400">$24.00</span>
-                  <span className="text-xs text-zinc-500">Only 5 left</span>
+                  <span className="font-mono text-2xl font-bold text-brand-teal">$24.00</span>
+                  <span className="text-xs text-secondary">Only 5 left</span>
                 </div>
                 {/* Countdown */}
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-400">
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-default bg-surface-card px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] text-secondary">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
@@ -2826,40 +2826,40 @@ export default function Home() {
                 <button
                   type="button"
                   disabled
-                  className="mt-4 w-full cursor-default rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black opacity-90"
+                  className="mt-4 w-full cursor-default rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black opacity-90"
                   aria-label="Buy Now button — preview only"
                 >
                   Buy Now
                 </button>
-                <p className="mt-2 text-center text-[10px] uppercase tracking-[0.15em] text-zinc-600">
+                <p className="mt-2 text-center text-[10px] uppercase tracking-[0.15em] text-secondary">
                   Stripe checkout · No commission
                 </p>
               </div>
             </div>
 
             {/* Chat strip */}
-            <div className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3">
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+            <div className="mt-3 rounded-2xl border border-default bg-surface-card p-3">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">
                 Live chat
               </div>
               <div className="space-y-1.5 text-[12px]">
                 <div>
-                  <span className="font-semibold text-emerald-300">Mike:</span>{" "}
-                  <span className="text-zinc-300">do you ship to NJ?</span>
+                  <span className="font-semibold text-brand-teal">Mike:</span>{" "}
+                  <span className="text-primary">do you ship to NJ?</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-emerald-300">Sara:</span>{" "}
-                  <span className="text-zinc-300">just bought one — thanks!</span>
+                  <span className="font-semibold text-brand-teal">Sara:</span>{" "}
+                  <span className="text-primary">just bought one — thanks!</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-emerald-300">Daniel:</span>{" "}
-                  <span className="text-zinc-300">is the deal still live?</span>
+                  <span className="font-semibold text-brand-teal">Daniel:</span>{" "}
+                  <span className="text-primary">is the deal still live?</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <p className="mt-4 text-center text-[12px] text-zinc-500">
+          <p className="mt-4 text-center text-[12px] text-secondary">
             Sample preview. Embed on any business website with a single script tag.
           </p>
         </div>
@@ -2883,13 +2883,13 @@ export default function Home() {
              single competitor's pricing. */}
         <div className="mx-auto mt-16 max-w-5xl px-4">
           <div className="mb-8 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               One flat fee instead of five
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Stop paying for five things that don&apos;t talk to each other.
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-400">
+            <p className="mx-auto mt-3 max-w-xl text-sm text-secondary">
               Live selling, loyalty, retention, deals, your storefront — one system, one bill.
             </p>
           </div>
@@ -2906,24 +2906,24 @@ export default function Home() {
                 key={p.name}
                 className={`rounded-2xl border p-5 text-center backdrop-blur-sm transition ${
                   p.muted
-                    ? "border-red-500/15 bg-zinc-900/60"
-                    : "border-2 border-emerald-400/50 bg-gradient-to-b from-emerald-400/[0.08] to-zinc-900/60 shadow-[0_0_32px_rgba(0,255,163,0.18)]"
+                    ? "border-red-500/15 bg-surface-card"
+                    : "border-2 border-brand-teal bg-gradient-to-b from-brand-teal-soft to-zinc-900/60"
                 }`}
               >
-                <div className={`mb-2 text-[10px] font-bold uppercase tracking-[0.18em] ${p.muted ? "text-zinc-400" : "text-emerald-400"}`}>
+                <div className={`mb-2 text-[10px] font-bold uppercase tracking-[0.18em] ${p.muted ? "text-secondary" : "text-brand-teal"}`}>
                   {p.name}
                 </div>
-                <div className={`font-mono text-2xl font-extrabold ${p.muted ? "text-red-400/80" : "text-emerald-400"}`}>
+                <div className={`font-mono text-2xl font-extrabold ${p.muted ? "text-state-live/80" : "text-brand-teal"}`}>
                   {p.fees}
                 </div>
-                <div className="mt-2 text-[11px] text-zinc-400">{p.detail}</div>
+                <div className="mt-2 text-[11px] text-secondary">{p.detail}</div>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-center text-base font-semibold text-zinc-200">
+          <p className="mt-8 text-center text-base font-semibold text-primary">
             One system. One bill.{" "}
-            <span className="text-emerald-400">Keep your revenue.</span>
+            <span className="text-brand-teal">Keep your revenue.</span>
           </p>
         </div>
 
@@ -2935,7 +2935,7 @@ export default function Home() {
              these in under five seconds. */}
         <ScrollReveal className="mx-auto mt-20 max-w-6xl px-4">
           <div className="mb-10 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               Built for local business
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -2953,17 +2953,17 @@ export default function Home() {
             ] as Array<{ Icon: LucideIcon; title: string; copy: string }>).map((u) => (
               <div
                 key={u.title}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
+                className="rounded-2xl border border-default bg-surface-card p-6 backdrop-blur-sm transition hover:border-default"
               >
                 {/* Lucide icon — Phase 5 emoji-to-icon swap.
                     Inverse-tinted background so the icon reads against
                     the dark feature card; switches to brand-teal when
                     these cards are migrated to light theme later. */}
-                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-teal-soft text-brand-teal">
                   <u.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <div className="mb-2 text-base font-bold text-white">{u.title}</div>
-                <p className="text-sm leading-relaxed text-zinc-400">{u.copy}</p>
+                <p className="text-sm leading-relaxed text-secondary">{u.copy}</p>
               </div>
             ))}
           </div>
@@ -2975,7 +2975,7 @@ export default function Home() {
              as a loyalty rewards primitive only — no token framing. */}
         <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
           <div className="mb-10 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               How it works
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -3008,13 +3008,13 @@ export default function Home() {
             ].map((step) => (
               <div
                 key={step.n}
-                className="relative overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
+                className="relative overflow-hidden rounded-2xl border border-default bg-surface-card p-6 backdrop-blur-sm transition hover:border-default"
               >
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/15 font-mono text-sm font-extrabold text-emerald-400">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
                   {step.n}
                 </div>
                 <div className="mt-3 text-base font-bold text-white">{step.title}</div>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{step.copy}</p>
+                <p className="mt-2 text-sm leading-relaxed text-primary">{step.copy}</p>
               </div>
             ))}
           </div>
@@ -3036,28 +3036,28 @@ export default function Home() {
              match the user-direction "less clutter, clear CTA
              hierarchy." Pricing CTA points at /business; Activate
              CTA points at /merchant. */}
-        <div id="section-cta" className="border-t border-zinc-900 px-4 py-20 mt-20 text-center sm:py-28">
+        <div id="section-cta" className="border-t border-default px-4 py-20 mt-20 text-center sm:py-28">
           <div className="mx-auto max-w-2xl">
-            <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-emerald-400">
+            <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-brand-teal">
               You already paid for your website
             </div>
             <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
               Ready to turn your website into a{" "}
-              <span className="text-emerald-400">live storefront?</span>
+              <span className="text-brand-teal">live storefront?</span>
             </h2>
-            <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-zinc-300">
+            <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
               Flat $29–$99/month. 0% commission, always. Founding merchants get preferred pricing after launch.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/merchant"
-                className="rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-emerald-300 hover:shadow-[0_0_24px_rgba(0,255,163,0.25)]"
+                className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:"
               >
                 Activate DUM Live →
               </Link>
               <Link
                 href="/business"
-                className="rounded-xl border border-zinc-700 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-400"
+                className="rounded-xl border border-default px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-primary transition hover:border-default hover:text-brand-teal"
               >
                 See Pricing
               </Link>
@@ -3067,8 +3067,8 @@ export default function Home() {
                 Market" was promoted to the hero slogan in the
                 light-theme migration; the contrast-pair phrasing
                 duplicated the new H1 and competed with it. */}
-            <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
-              <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-zinc-300">any</strong> business on the network.
+            <div className="mx-auto mt-6 max-w-md rounded-xl border border-default bg-brand-teal-soft px-5 py-3 text-center text-[12px] text-secondary">
+              <span className="text-brand-teal">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-primary">any</strong> business on the network.
             </div>
           </div>
         </div>
@@ -3081,16 +3081,16 @@ export default function Home() {
           reads as security guarantee rather than tech-stack
           name-drop. The stack credits stay below as the second row
           for builders who want to know what's underneath. */}
-      <div className="border-t border-zinc-900 py-10">
+      <div className="border-t border-default py-10">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="mb-5 text-center text-[12px] font-semibold tracking-[0.18em] text-zinc-300 sm:text-[13px]">
+          <div className="mb-5 text-center text-[12px] font-semibold tracking-[0.18em] text-primary sm:text-[13px]">
             Powered by Stripe · SSL secured · Trusted infrastructure
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
             {["Stripe", "Supabase", "Next.js", "Vercel"].map((name) => (
               <span
                 key={name}
-                className="text-sm font-bold tracking-wide text-zinc-400"
+                className="text-sm font-bold tracking-wide text-secondary"
               >
                 {name}
               </span>
@@ -3099,34 +3099,34 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="border-t border-zinc-900 bg-base px-4 py-16">
+      <footer className="border-t border-default bg-base px-4 py-16">
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-white">
-                  DUM<span className="text-emerald-400">CLUB</span>
+                  DUM<span className="text-brand-teal">CLUB</span>
                 </span>
               </div>
-              <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+              <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-secondary">
                 Local Commerce, Real Rewards
               </p>
-              <p className="max-w-xs text-sm leading-relaxed text-zinc-400">
+              <p className="max-w-xs text-sm leading-relaxed text-secondary">
                 Sell live. Keep everything. Flat-fee marketplace with zero commission, AI-powered retention, and rewards that work at every shop on the network.
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="relative flex h-2 w-2">
-                  <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                 </span>
-                <span className="font-mono text-[10px] text-emerald-500">
+                <span className="font-mono text-[10px] text-brand-teal">
                   EARLY ACCESS · MORRISTOWN, NJ
                 </span>
               </div>
             </div>
 
             <div>
-              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-secondary">
                 Platform
               </div>
               <ul className="space-y-3">
@@ -3139,7 +3139,7 @@ export default function Home() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-zinc-500 transition hover:text-white"
+                      className="text-sm text-secondary transition hover:text-primary"
                     >
                       {link.label}
                     </Link>
@@ -3149,7 +3149,7 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-secondary">
                 Community
               </div>
               <ul className="space-y-3">
@@ -3168,7 +3168,7 @@ export default function Home() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-zinc-500 transition hover:text-white"
+                      className="text-sm text-secondary transition hover:text-primary"
                     >
                       {link.label}
                     </a>
@@ -3178,7 +3178,7 @@ export default function Home() {
             </div>
 
             <div>
-              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-zinc-600">
+              <div className="mb-4 text-[9px] uppercase tracking-[0.25em] text-secondary">
                 Resources
               </div>
               <ul className="space-y-3">
@@ -3190,7 +3190,7 @@ export default function Home() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-zinc-500 transition hover:text-white"
+                      className="text-sm text-secondary transition hover:text-primary"
                     >
                       {link.label}
                     </a>
@@ -3200,15 +3200,15 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-16 border-t border-zinc-900 pt-8">
-            <p className="mb-4 text-[11px] leading-relaxed text-zinc-700">
+          <div className="mt-16 border-t border-default pt-8">
+            <p className="mb-4 text-[11px] leading-relaxed text-muted">
               DUM Club operates in early access. Content on this platform is for
               informational purposes only and does not constitute financial, legal, or
               investment advice. DUM Points are a loyalty unit redeemable for discounts at
               participating merchants — not an investment, with no secondary market and no
               expectation of price appreciation. For technical details on how the platform
               is built, see the{" "}
-              <Link href="/technology" className="text-zinc-500 underline-offset-4 hover:text-zinc-300 hover:underline">
+              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-primary hover:underline">
                 Technology page
               </Link>
               .
@@ -3217,16 +3217,16 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-80" />
                 <span className="text-[12px] font-bold tracking-tight">
-                  <span className="text-zinc-300">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
+                  <span className="text-primary">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
                 </span>
-                <span className="text-[10px] text-zinc-700">© 2026 · All rights reserved</span>
+                <span className="text-[10px] text-muted">© 2026 · All rights reserved</span>
               </div>
               <div className="flex gap-6">
                 <div className="flex gap-6">
-                  <Link href="/terms" className="text-[10px] text-zinc-700 transition hover:text-zinc-400">
+                  <Link href="/terms" className="text-[10px] text-muted transition hover:text-secondary">
                     Terms of Use
                   </Link>
-                  <Link href="/privacy" className="text-[10px] text-zinc-700 transition hover:text-zinc-400">
+                  <Link href="/privacy" className="text-[10px] text-muted transition hover:text-secondary">
                     Privacy Policy
                   </Link>
                 </div>
