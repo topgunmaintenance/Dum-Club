@@ -94,7 +94,8 @@ export default function DashboardPage() {
     )
       .then((r) => r.json())
       .then((data) => {
-        if (data.updated > 0) console.log(`[backfill] claimed ${data.updated} project(s)`);
+        // backfill result intentionally not logged; surfaced via UI if needed
+        void data;
       })
       .catch(() => {})
       .finally(() => loadProjects());

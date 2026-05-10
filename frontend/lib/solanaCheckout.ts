@@ -50,9 +50,13 @@ import { API_BASE } from "./apiBase";
 // pure-client file (no @solana/web3.js imports), but that's a
 // post-hackathon refactor.
 //
-// Until then, this is hardcoded `true` for the demo. To hide
-// the SOL CTA again, flip to `false` here.
-export const SOL_CHECKOUT_ENABLED = true;
+// Per CLAUDE.md §12 Rule 3 Solana must not appear on consumer
+// pages. Gated behind an opt-in env var — default off so the
+// consumer surfaces ship without it. Flip
+// NEXT_PUBLIC_ENABLE_SOL_CHECKOUT=true in a non-production env
+// (or locally) to bring the secondary CTA back for testing.
+export const SOL_CHECKOUT_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_SOL_CHECKOUT === "true";
 
 // ── Wire shapes ─────────────────────────────────────────────────
 

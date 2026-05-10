@@ -2687,6 +2687,13 @@ export default function Home() {
                   brand still owns the page through the navbar
                   wordmark, the founder note directly below, and the
                   product-preview section. */}
+              {/* Brand decoder eyebrow — "Drive Ur Market" is the
+                   expansion of DUM. Sits above the outcome headline so
+                   first-time visitors see the brand line without it
+                   competing with the value prop on a single line. */}
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-brand-teal">
+                Drive Ur Market
+              </p>
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
                 Sell Live. <span className="text-brand-navy">Keep Every Dollar.</span>
               </h1>
@@ -2706,7 +2713,7 @@ export default function Home() {
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
                 >
-                  Activate DUM Live →
+                  Get Your Storefront →
                 </Link>
                 <a
                   href="#how-it-works"
@@ -3063,7 +3070,7 @@ export default function Home() {
                 href="/merchant"
                 className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:text-white"
               >
-                Activate DUM Live →
+                Get Your Storefront →
               </Link>
               <Link
                 href="/business"
@@ -3194,6 +3201,7 @@ export default function Home() {
                 {[
                   { label: "For Business", href: "/business" },
                   { label: "Pricing", href: "/pricing" },
+                  { label: "About", href: "/about" },
                   { label: "Technology", href: "/technology" },
                 ].map((link) => (
                   <li key={link.label}>
