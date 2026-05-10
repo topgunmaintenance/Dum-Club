@@ -20,7 +20,6 @@ import {
   type PayOfferStep,
 } from "../../../lib/solanaCheckout";
 import { useAuth } from "../../../lib/auth/AuthContext";
-import { Starfield } from "../../../components/Starfield";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
@@ -3645,7 +3644,6 @@ return (
         ]}
       />
     )}
-    <Starfield count={50} />
     <SectionNav refreshKey={projectView} mode={projectView} />
     <div className="relative z-[1] mx-auto max-w-6xl">
 
