@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Starfield } from "../../components/Starfield";
 
 const TIERS = [
   {
@@ -91,7 +90,6 @@ function Check() {
 export default function PricingPage() {
   return (
     <div className="relative min-h-screen bg-base px-4 py-20 text-white sm:px-6">
-      <Starfield count={50} />
       <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Hero */}

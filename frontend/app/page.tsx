@@ -2622,11 +2622,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Starfield removed for the light-theme migration. The canvas
-          drew faint white-blue stars sized for a dark page; on the new
-          surface-page background they read as visual noise rather than
-          ambience. The component remains in the codebase for any
-          future dark-mode surface that wants it. */}
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
         {/* ── LIVE NOW ── hidden when no real live projects.
