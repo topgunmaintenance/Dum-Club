@@ -19,10 +19,10 @@ export function FounderNote() {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-zinc-700/50 border-l-2 border-l-emerald-400/30 bg-zinc-900/60 p-6 backdrop-blur-sm sm:p-7">
+    <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-default border-l-4 border-l-brand-teal bg-surface-card p-6 shadow-sm sm:p-7">
       <div className="flex items-start gap-4">
         {/* Avatar — real photo if /julian.jpg exists, otherwise initials. */}
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-emerald-400/25 shadow-[0_0_12px_rgba(0,255,163,0.1)] bg-gradient-to-br from-emerald-400/15 to-violet-500/15">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
           {!imgError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -32,17 +32,20 @@ export function FounderNote() {
               onError={() => setImgError(true)}
             />
           ) : (
-            <span className="text-base font-bold text-white">JM</span>
+            <span className="text-base font-bold text-brand-navy">JM</span>
           )}
         </div>
 
         <div className="flex-1">
-          <p className="text-[13px] leading-relaxed text-zinc-300 sm:text-[14px]">
-            <span className="font-semibold text-white">I&apos;m Julian.</span>{" "}
+          <p className="text-[14px] leading-relaxed text-primary sm:text-[15px]">
+            <span className="font-semibold text-brand-navy">I&apos;m Julian.</span>{" "}
             I built DUM Club because I run a real business too. I was tired of platforms taking a cut every time a business made a sale. DUM Club is built to help local businesses sell direct, keep more revenue, and turn their own websites into live storefronts.
           </p>
-          <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.15em] text-zinc-600">
-            — Julian · Topgun Maintenance LLC · Morristown, NJ
+          <div className="mt-4 font-caveat text-[18px] leading-none text-brand-navy">
+            Julian
+          </div>
+          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.15em] text-secondary">
+            Topgun Maintenance LLC · Morristown, NJ
           </div>
         </div>
       </div>
