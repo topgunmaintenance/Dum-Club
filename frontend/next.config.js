@@ -34,6 +34,13 @@ const nextConfig = {
     return [
       { source: "/explore", destination: "/discover", permanent: true },
       { source: "/ai-chat", destination: "/chat", permanent: true },
+      // Merchant short-URL alias. /m/<slug> is a public-facing
+      // shorthand for the storefront page at /project/<slug>. The
+      // canonical URL stays /project/<slug>, but any printed
+      // material, business cards, QR codes, or external posts
+      // typed as dum.club/m/<slug> resolve correctly. 308 permanent
+      // so search engines consolidate signal on the canonical URL.
+      { source: "/m/:slug", destination: "/project/:slug", permanent: true },
     ];
   },
 };
