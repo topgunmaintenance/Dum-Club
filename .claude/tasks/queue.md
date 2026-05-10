@@ -23,6 +23,7 @@ System in CLAUDE.md.
 6. [x] discover-rebuild  — `feature/discover-rebuild` · 2026-04-19
 7. [x] design-system-primitives    — `feature/design-system-primitives` · 2026-05-10
 8. [x] header-redesign             — `feature/header-redesign` · 2026-05-10
+9. [x] color-token-pass            — `feature/homepage-below-fold-migration` · 2026-05-10
 
 ## Notes
 
