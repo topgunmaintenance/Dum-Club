@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Starfield } from "../components/Starfield";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
@@ -2571,7 +2570,7 @@ export default function Home() {
   }, [allPublicProjects]);
 
   return (
-    <div className="relative min-h-screen bg-base text-white" style={{ overflowX: "clip" }}>
+    <div className="relative min-h-screen bg-surface-page text-primary" style={{ overflowX: "clip" }}>
       <LiveSaleToast />
       {/* ── Upgrade Modal ── */}
       {showUpgradeModal && (
@@ -2611,7 +2610,11 @@ export default function Home() {
         </div>
       )}
 
-      <Starfield count={60} />
+      {/* Starfield removed for the light-theme migration. The canvas
+          drew faint white-blue stars sized for a dark page; on the new
+          surface-page background they read as visual noise rather than
+          ambience. The component remains in the codebase for any
+          future dark-mode surface that wants it. */}
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
         {/* ── LIVE NOW ── hidden when no real live projects.
@@ -2622,79 +2625,70 @@ export default function Home() {
           <LiveNowSection projects={liveNowProjects} />
         )}
 
-        {/* ── HERO — Input-First ── */}
-        <div id="section-hero" className="relative rounded-2xl border border-zinc-700/50 border-t-2 border-t-emerald-400/30 bg-zinc-900/40 backdrop-blur-sm">
-          {/* Ambient background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_center,rgba(0,255,163,0.12),transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(123,97,255,0.08),transparent_50%)]" />
-            <div
-              className="absolute pointer-events-none"
-              style={{ left: "-8%", top: "5%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,255,163,0.07), transparent 65%)", filter: "blur(80px)", animation: "orb-drift 22s ease-in-out infinite" }}
-            />
-            <div
-              className="absolute pointer-events-none"
-              style={{ right: "-5%", bottom: "0%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(123,97,255,0.09), transparent 65%)", filter: "blur(80px)", animation: "orb-drift-reverse 28s ease-in-out infinite" }}
-            />
-          </div>
-
+        {/* ── HERO — light-theme migration (Phase 1) ──
+             Switched from the dark glassmorphism panel to a clean
+             surface-card on surface-page. Ambient radial-gradient
+             orbs (emerald + violet) removed: they were dark-page
+             ambience that read as crypto neon on a light surface.
+             Copy rewritten to brand-led headline ("DUM Club") +
+             slogan ("Drive Your Market") per the migration spec.
+             Layout, container widths, and entrance animations
+             preserved. */}
+        <div
+          id="section-hero"
+          className="relative rounded-2xl border border-default bg-surface-card shadow-sm"
+        >
           <div className="relative px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14">
-
-            {/* ── HERO — seller recruitment focus (v5.0) ──────────
-                 Replaces the old v1 AI-business-builder textarea hero
-                 with a simple seller-recruitment headline + CTA pair.
-                 Keeps ProofOfMotion/FounderNote below it unchanged.
-                 CLAUDE.md v5.0 Section 12 Rule 7: "We are NOT an AI
-                 business launcher (deprecated — v1 positioning)". */}
             <div className="mx-auto mb-10 max-w-4xl text-center">
               {/* ── Founding-100 scarcity pill ──
-                   Only renders when we have live data AND the program is
-                   still open. Creates the scarcity + loss-aversion trigger
-                   above the H1 per the homepage psych audit. */}
+                   Recoloured to brand-teal palette with a navy text
+                   anchor for AA contrast. The animate-ping dot stays —
+                   it signals live program activity, not crypto. */}
               {foundingStatus && foundingStatus.founding_program_open && (
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-1.5 shadow-[0_0_24px_rgba(0,255,163,0.15)]">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                   </span>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-navy">
                     {foundingStatus.total_cap - foundingStatus.founding_slots_remaining} of {foundingStatus.total_cap} founding spots claimed
-                    <span className="ml-2 text-emerald-400/80">· $0 today · Preferred founding pricing</span>
+                    <span className="ml-2 text-brand-teal">· $0 today · Preferred founding pricing</span>
                   </span>
                 </div>
               )}
-              <h1 className="text-[clamp(36px,7vw,64px)] font-extrabold leading-[1.03] tracking-[-0.02em] text-white">
-                Turn Your Website Into a{" "}
-                <span className="hero-text-glow">Live Selling Machine.</span>
+              {/* Headline + slogan: "DUM Club" is the dominant H1,
+                  "Drive Your Market" sits directly beneath in
+                  brand-navy as the supporting slogan. The old
+                  hero-text-glow gradient is gone — that effect was a
+                  dark-mode-only emerald shimmer that killed contrast
+                  on a light surface. */}
+              <h1 className="text-[clamp(48px,9vw,80px)] font-extrabold leading-[1] tracking-[-0.03em] text-primary">
+                DUM Club
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-base font-semibold leading-relaxed text-white sm:text-lg">
-                Add live selling, flash deals, loyalty rewards, and customer retention to your business — for one flat monthly fee.
+              <p className="mx-auto mt-3 text-[clamp(20px,3vw,28px)] font-extrabold leading-tight tracking-tight text-brand-navy">
+                Drive Your Market
               </p>
-              <p
-                className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed sm:text-base"
-                style={{ color: "#ffffff" }}
-              >
-                <span className="text-emerald-400">Flat $29–$99/month.</span> 0% commission. Keep every sale.
+              <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
+                Live selling, loyalty, AI retention, and local flash sales. All in one flat fee.
+              </p>
+              <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
+                <span className="font-bold text-brand-navy">Flat $29–$99/month.</span> 0% commission. Keep every sale.
               </p>
 
-              {/* ── MERCHANT-FIRST CTAs ───────────────────────────────
-                   One primary green button. Secondary action demoted to
-                   a small text link beneath so the green CTA owns the
-                   eye on first scan. The old audience toggle ("I'm
-                   selling / I'm shopping") and the redundant founding
-                   caption ("First 100 merchants free" — already in the
-                   pill above) were removed in the homepage audit pass
-                   to lower the 5-second-read bar. */}
+              {/* Primary CTA: brand-teal fill with brand-navy text for
+                  WCAG AA contrast (~6.2:1). Hover transitions to
+                  brand-teal-hover. The old emerald glow shadow is
+                  removed for a flatter SaaS feel. */}
               <div className="mt-8 flex flex-col items-center gap-3">
                 <Link
                   href="/merchant"
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
                 >
                   Activate DUM Live →
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-500 transition hover:text-emerald-400"
+                  className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
                 >
                   See how it works →
                 </a>
@@ -2702,20 +2696,11 @@ export default function Home() {
             </div>
 
             <div className="mx-auto max-w-3xl text-center">
-
-              {/* ── Trust line ──
-                   Hero now ends here. ProofOfMotion / FounderNote
-                   relocated to a slim section just before the final
-                   CTA so the hero stays a single tight value-prop
-                   block. Discover link and payment-icons strip were
-                   removed in Batch 1; payment-method trust signal
-                   moved to the final CTA section. */}
               <div className="hero-entrance-delay-2 mx-auto mt-8 space-y-3">
-                <p className="text-[13px] text-zinc-400">
+                <p className="text-[13px] text-secondary">
                   Stripe checkout · Verified merchants · Live in 60 seconds
                 </p>
               </div>
-
             </div>
           </div>
         </div>
@@ -3072,17 +3057,11 @@ export default function Home() {
                 See Pricing
               </Link>
             </div>
-            {/* Brand-stance closer — paired form only. The standalone
-                phrase ("Drive your market") is too vague to lead the
-                page; the contrast pairing ("not platform fees") ties
-                the philosophy to the actual product advantage and
-                reinforces the merchant-first positioning without
-                competing with the H1. Subtle, secondary, single
-                surface — explicitly NOT a homepage tagline or H1
-                replacement. */}
-            <p className="mt-6 text-[12px] font-bold uppercase tracking-[0.2em] text-emerald-300/80">
-              Drive your market — not platform fees.
-            </p>
+            {/* Final-CTA closer. The earlier "Drive your market — not
+                platform fees." line was removed when "Drive Your
+                Market" was promoted to the hero slogan in the
+                light-theme migration; the contrast-pair phrasing
+                duplicated the new H1 and competed with it. */}
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-emerald-400/10 bg-emerald-400/[0.03] px-5 py-3 text-center text-[12px] text-zinc-400">
               <span className="text-emerald-400">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-zinc-300">any</strong> business on the network.
             </div>
