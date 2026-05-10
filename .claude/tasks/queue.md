@@ -21,6 +21,7 @@ System in CLAUDE.md.
 4. [x] deals-section     — `feature/deals-section` · 2026-04-15
 5. [x] automation-layer  — `feature/automation-layer` · 2026-04-17
 6. [x] discover-rebuild  — `feature/discover-rebuild` · 2026-04-19
+7. [x] design-system-primitives    — `feature/design-system-primitives` · 2026-05-10
 
 ## Notes
 
