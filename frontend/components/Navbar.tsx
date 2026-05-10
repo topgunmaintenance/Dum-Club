@@ -46,7 +46,6 @@ const PRIMARY_LINKS = [
 const USER_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/orders", label: "Orders" },
-  { href: "/chat", label: "AI Chat" },
 ];
 
 export function Navbar() {

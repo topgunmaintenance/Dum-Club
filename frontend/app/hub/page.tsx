@@ -691,7 +691,7 @@ export default function HubPage() {
         {/* Bottom CTAs */}
         <p className="mt-8 text-center text-[11px] text-muted">Earn when you sell. Earn when you buy.</p>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <Link href="/build" className="flex flex-1 items-center justify-center rounded-xl bg-brand-teal px-6 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
+          <Link href="/merchant" className="flex flex-1 items-center justify-center rounded-xl bg-brand-teal px-6 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
             Start Selling →
           </Link>
           <Link href="/discover" className="flex flex-1 items-center justify-center rounded-xl border border-default px-6 py-3.5 text-sm text-primary transition hover:border-strong hover:text-primary">
