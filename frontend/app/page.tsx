@@ -17,6 +17,7 @@ import {
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
+import { ScrollReveal } from "../components/motion/ScrollReveal";
 // FeeCalculator moved to /business page — seller content lives there now.
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
@@ -2932,7 +2933,7 @@ export default function Home() {
              in one sentence. Industries are deliberately broad — a
              non-technical owner should see themselves in one of
              these in under five seconds. */}
-        <div className="mx-auto mt-20 max-w-6xl px-4">
+        <ScrollReveal className="mx-auto mt-20 max-w-6xl px-4">
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
               Built for local business
@@ -2966,13 +2967,13 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* ── HOW IT WORKS ─────────────────────────────────────────
              Anchor target for the hero's "See How It Works" CTA.
              Four short steps, no jargon. Step 4 mentions DUM Points
              as a loyalty rewards primitive only — no token framing. */}
-        <div id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24">
+        <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-400">
               How it works
@@ -3017,7 +3018,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* ── ProofOfMotion — pre-final-CTA stats ──
              FounderNote was moved up directly under the hero in
