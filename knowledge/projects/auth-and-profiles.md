@@ -17,10 +17,19 @@
 
 ## Privy integration
 
-- PRIVY_APP_ID required on both frontend and backend
+- Production Privy app: **DUM.CLUB** (`cmozwqkt600ho0dldrbcr6rwq`)
+- Two env vars MUST share the same value across services:
+  - Frontend (Vercel): `NEXT_PUBLIC_PRIVY_APP_ID`
+  - Backend (Railway): `PRIVY_APP_ID`
+  Drift causes every authenticated API call to fail with HTTP 401
+  "Token audience mismatch" because the frontend mints tokens for
+  app A while the backend verifies against app B's JWKS.
 - Frontend: @privy-io/react-auth + @privy-io/react-auth/solana
-- Backend: JWT verification via Privy JWKS endpoint
+- Backend: JWT verification via Privy JWKS endpoint, fetched per-app
+  from `https://auth.privy.io/api/v1/apps/{APP_ID}/jwks.json`
 - Token passed as Bearer in Authorization header
+- Login methods enabled: email (OTP), Google OAuth
+- Embedded wallets: Solana, auto-created for users without a wallet
 
 ## Business profiles
 
