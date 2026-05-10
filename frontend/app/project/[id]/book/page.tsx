@@ -97,24 +97,24 @@ export default function BookPage() {
 
   if (booking) {
     return (
-      <div className="min-h-screen bg-base text-white">
+      <div className="min-h-screen bg-surface-page text-white">
         <div className="mx-auto max-w-lg px-6 py-16 text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-400/10 text-4xl">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-brand-teal bg-brand-teal-soft text-4xl">
             ✓
           </div>
           <h1 className="mb-2 font-mono text-3xl font-black text-white">
             Booking confirmed
           </h1>
-          <p className="mb-8 text-zinc-400">
+          <p className="mb-8 text-secondary">
             Show this code to {projectName} to redeem your service.
           </p>
 
-          <div className="mb-6 flex justify-center rounded-2xl border border-zinc-800 bg-white p-6">
+          <div className="mb-6 flex justify-center rounded-2xl border border-default bg-white p-6">
             <QRCode value={booking.qr_data} size={180} />
           </div>
 
-          <div className="mb-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-5">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-emerald-400">
+          <div className="mb-4 rounded-2xl border border-default bg-brand-teal-soft p-5">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-brand-teal">
               Redemption code
             </div>
             <div className="mb-3 font-mono text-2xl font-black tracking-[0.15em] text-white">
@@ -131,30 +131,30 @@ export default function BookPage() {
               }}
               className={`rounded-lg px-4 py-2 font-mono text-xs font-bold transition ${
                 copyFlash
-                  ? "bg-emerald-400 text-black"
-                  : "border border-emerald-400/40 text-emerald-400 hover:bg-emerald-400/10"
+                  ? "bg-brand-teal text-black"
+                  : "border border-default text-brand-teal hover:bg-brand-teal-soft"
               }`}
             >
               {copyFlash ? "Copied ✓" : "Share ↗"}
             </button>
           </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-left">
+          <div className="rounded-xl border border-default bg-surface-card p-4 text-left">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div className="font-mono text-[10px] text-zinc-600">Date</div>
+                <div className="font-mono text-[10px] text-muted">Date</div>
                 <div className="text-white">{selectedSlot?.slot_date}</div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-zinc-600">Time</div>
+                <div className="font-mono text-[10px] text-muted">Time</div>
                 <div className="text-white">{selectedSlot?.slot_time}</div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-zinc-600">Service</div>
+                <div className="font-mono text-[10px] text-muted">Service</div>
                 <div className="text-white">{projectName}</div>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-zinc-600">Duration</div>
+                <div className="font-mono text-[10px] text-muted">Duration</div>
                 <div className="text-white">
                   {(serviceProfile?.duration_minutes as number) || 60} min
                 </div>
@@ -164,7 +164,7 @@ export default function BookPage() {
 
           <Link
             href={`/project/${id}`}
-            className="mt-6 inline-block rounded-xl border border-zinc-800 px-6 py-3 font-mono text-sm text-zinc-400 hover:text-white"
+            className="mt-6 inline-block rounded-xl border border-default px-6 py-3 font-mono text-sm text-secondary hover:text-white"
           >
             ← Back to project
           </Link>
@@ -174,38 +174,38 @@ export default function BookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base text-white">
+    <div className="min-h-screen bg-surface-page text-white">
       <div className="mx-auto max-w-2xl px-6 py-12">
         <Link
           href={`/project/${id}`}
-          className="mb-8 inline-flex items-center gap-2 font-mono text-xs text-zinc-500 hover:text-zinc-300"
+          className="mb-8 inline-flex items-center gap-2 font-mono text-xs text-secondary hover:text-primary"
         >
           ← Back to {projectName}
         </Link>
 
         <div className="mb-8">
-          <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+          <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
             Book service
           </div>
           <h1 className="font-mono text-3xl font-black text-white">{projectName}</h1>
           {serviceProfile?.service_description && (
-            <p className="mt-2 text-zinc-400">
+            <p className="mt-2 text-secondary">
               {String(serviceProfile.service_description)}
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-3">
             {Boolean(serviceProfile?.duration_minutes) && (
-              <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500">
+              <span className="rounded-full border border-default px-3 py-1 font-mono text-[10px] text-secondary">
                 {String(serviceProfile?.duration_minutes)} min
               </span>
             )}
             {serviceProfile?.service_type && (
-              <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500 capitalize">
+              <span className="rounded-full border border-default px-3 py-1 font-mono text-[10px] text-secondary capitalize">
                 {String(serviceProfile.service_type)}
               </span>
             )}
             {serviceProfile?.location && (
-              <span className="rounded-full border border-zinc-800 px-3 py-1 font-mono text-[10px] text-zinc-500">
+              <span className="rounded-full border border-default px-3 py-1 font-mono text-[10px] text-secondary">
                 📍 {String(serviceProfile.location)}
               </span>
             )}
@@ -213,22 +213,22 @@ export default function BookPage() {
         </div>
 
         {!publicKey ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+          <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
             <div className="mb-3 text-3xl">🔒</div>
-            <p className="text-zinc-400">Connect your wallet to book this service</p>
+            <p className="text-secondary">Connect your wallet to book this service</p>
           </div>
         ) : slots.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
+          <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
             <div className="mb-3 text-3xl">📅</div>
-            <p className="text-zinc-400">No available slots right now.</p>
-            <p className="mt-2 text-sm text-zinc-600">
+            <p className="text-secondary">No available slots right now.</p>
+            <p className="mt-2 text-sm text-muted">
               Check back soon or contact the business directly.
             </p>
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-              <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+            <div className="rounded-2xl border border-default bg-surface-card p-6">
+              <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
                 Step 1 — Select date
               </div>
               <div className="flex flex-wrap gap-2">
@@ -242,8 +242,8 @@ export default function BookPage() {
                     }}
                     className={`rounded-xl border px-4 py-2 font-mono text-sm transition ${
                       selectedDate === d
-                        ? "border-emerald-400 bg-emerald-400/10 text-emerald-300"
-                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                        ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+                        : "border-default text-secondary hover:border-strong"
                     }`}
                   >
                     {new Date(d + "T00:00:00").toLocaleDateString("en-US", {
@@ -257,8 +257,8 @@ export default function BookPage() {
             </div>
 
             {selectedDate && (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-                <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+              <div className="rounded-2xl border border-default bg-surface-card p-6">
+                <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
                   Step 2 — Select time
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -269,8 +269,8 @@ export default function BookPage() {
                       onClick={() => setSelectedSlot(slot)}
                       className={`rounded-xl border px-4 py-2 font-mono text-sm transition ${
                         selectedSlot?.id === slot.id
-                          ? "border-emerald-400 bg-emerald-400/10 text-emerald-300"
-                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                          ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+                          : "border-default text-secondary hover:border-strong"
                       }`}
                     >
                       {String(slot.slot_time).slice(0, 5)}
@@ -281,8 +281,8 @@ export default function BookPage() {
             )}
 
             {selectedSlot && (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-                <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+              <div className="rounded-2xl border border-default bg-surface-card p-6">
+                <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
                   Step 3 — Your details
                 </div>
                 <div className="space-y-3">
@@ -290,38 +290,38 @@ export default function BookPage() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
                   />
                   <input
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="Email (optional — for confirmation)"
                     type="email"
-                    className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
                   />
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any notes for the service provider..."
                     rows={3}
-                    className="w-full resize-none rounded-xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none focus:border-emerald-400"
+                    className="w-full resize-none rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
                   />
                 </div>
 
-                <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-4 text-sm">
+                <div className="mt-4 rounded-xl border border-default bg-surface-page p-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Date</span>
+                    <span className="text-secondary">Date</span>
                     <span className="text-white">{selectedDate}</span>
                   </div>
                   <div className="mt-2 flex justify-between">
-                    <span className="text-zinc-500">Time</span>
+                    <span className="text-secondary">Time</span>
                     <span className="text-white">
                       {String(selectedSlot.slot_time).slice(0, 5)}
                     </span>
                   </div>
                   <div className="mt-2 flex justify-between">
-                    <span className="text-zinc-500">Cost</span>
-                    <span className="font-mono text-emerald-400">
+                    <span className="text-secondary">Cost</span>
+                    <span className="font-mono text-brand-teal">
                       1 ${tokenSymbol}
                     </span>
                   </div>
@@ -331,7 +331,7 @@ export default function BookPage() {
                   type="button"
                   onClick={handleBook}
                   disabled={loading || !customerName.trim()}
-                  className="mt-4 w-full rounded-xl bg-emerald-500 py-4 font-mono text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="mt-4 w-full rounded-xl bg-brand-teal py-4 font-mono text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-50"
                 >
                   {loading
                     ? "Confirming..."
