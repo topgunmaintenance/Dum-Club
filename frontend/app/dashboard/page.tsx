@@ -219,17 +219,17 @@ export default function DashboardPage() {
         {/* Stats + Wallet + CTA row */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Projects */}
-          <div className="rounded-2xl border border-default bg-card p-6">
+          <div className="rounded-2xl border border-default bg-surface-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Total Projects
             </div>
-            <div className="mt-2 font-mono text-3xl font-bold text-white">
+            <div className="mt-2 font-mono text-3xl font-bold text-brand-navy">
               {projects.length}
             </div>
           </div>
 
           {/* Live Projects */}
-          <div className="rounded-2xl border border-default bg-card p-6">
+          <div className="rounded-2xl border border-default bg-surface-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Live
             </div>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
           {/* Account — spans the remaining row width on both breakpoints
               (sm: 2 cols, lg: 4 cols) so the dashboard never shows an empty
               cell beside it. */}
-          <div className="rounded-2xl border border-default bg-card p-6 sm:col-span-2 lg:col-span-2">
+          <div className="rounded-2xl border border-default bg-surface-card p-6 sm:col-span-2 lg:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Account
             </div>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">{bizProfile.business_name}</span>
+                        <span className="text-sm font-bold text-primary">{bizProfile.business_name}</span>
                         {bizProfile.verification_status === "verified" && (
                           <span className="rounded-full bg-brand-teal-soft border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-brand-teal">✓ Verified</span>
                         )}
@@ -364,18 +364,18 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-dashed border-default bg-surface-card p-5">
                 {showBizForm ? (
                   <div className="space-y-3">
-                    <div className="text-sm font-bold text-white">Create your business profile</div>
+                    <div className="text-sm font-bold text-primary">Create your business profile</div>
                     <input
                       value={bizName}
                       onChange={(e) => setBizName(e.target.value)}
                       placeholder="Business name"
-                      className="w-full rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                      className="w-full rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-default"
                     />
                     <div className="grid gap-3 sm:grid-cols-2">
                       <select
                         value={bizCategory}
                         onChange={(e) => setBizCategory(e.target.value)}
-                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white outline-none"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary outline-none"
                       >
                         {["General", "Food & Beverage", "Health & Fitness", "Technology", "Creative", "Services", "Retail", "Gaming", "Education"].map((c) => (
                           <option key={c} value={c}>{c}</option>
@@ -385,7 +385,7 @@ export default function DashboardPage() {
                         value={bizEmail}
                         onChange={(e) => setBizEmail(e.target.value)}
                         placeholder="Contact email (optional)"
-                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-default"
                       />
                     </div>
                     <textarea
@@ -393,7 +393,7 @@ export default function DashboardPage() {
                       onChange={(e) => setBizDesc(e.target.value)}
                       placeholder="Short description of your business"
                       rows={2}
-                      className="w-full resize-none rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                      className="w-full resize-none rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-default"
                     />
                     <div className="flex gap-2">
                       <button
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                       </button>
                       <button
                         onClick={() => setShowBizForm(false)}
-                        className="rounded-xl border border-default px-5 py-2.5 text-sm text-secondary transition hover:text-white"
+                        className="rounded-xl border border-default px-5 py-2.5 text-sm text-secondary transition hover:text-primary"
                       >
                         Cancel
                       </button>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-bold text-white">Set up your business profile</div>
+                      <div className="text-sm font-bold text-primary">Set up your business profile</div>
                       <p className="mt-1 text-xs text-secondary">Add your business identity, get verified, and accept DUM Points</p>
                     </div>
                     <button
@@ -437,19 +437,19 @@ export default function DashboardPage() {
 
             {/* Headline metrics */}
             <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-default bg-card p-5">
+              <div className="rounded-2xl border border-default bg-surface-card p-5">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Page Views</div>
-                <div className="mt-1 font-mono text-2xl font-bold text-white">{(analytics.total_views || 0).toLocaleString()}</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-brand-navy">{(analytics.total_views || 0).toLocaleString()}</div>
                 <div className="mt-1 text-[11px] text-muted">across all projects</div>
               </div>
-              <div className="rounded-2xl border border-default bg-card p-5">
+              <div className="rounded-2xl border border-default bg-surface-card p-5">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Sales</div>
                 <div className="mt-1 font-mono text-2xl font-bold text-brand-teal">{analytics.total_orders || 0}</div>
                 <div className="mt-1 text-[11px] text-muted">completed purchases</div>
               </div>
-              <div className="rounded-2xl border border-default bg-card p-5">
+              <div className="rounded-2xl border border-default bg-surface-card p-5">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Revenue</div>
-                <div className="mt-1 font-mono text-2xl font-bold text-white">
+                <div className="mt-1 font-mono text-2xl font-bold text-brand-navy">
                   ${(analytics.total_revenue_usd || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className="mt-1 text-[11px] text-muted">total earned</div>
@@ -467,8 +467,8 @@ export default function DashboardPage() {
 
             {/* Per-project breakdown */}
             {analytics.projects && analytics.projects.length > 0 && (
-              <div className="mb-4 rounded-2xl border border-default bg-card p-5">
-                <div className="mb-3 text-xs font-bold text-white">Project Performance</div>
+              <div className="mb-4 rounded-2xl border border-default bg-surface-card p-5">
+                <div className="mb-3 text-xs font-bold text-primary">Project Performance</div>
                 <div className="space-y-2">
                   {analytics.projects.map((p: any) => (
                     <Link
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${p.status === "live" ? "bg-brand-teal" : "bg-zinc-600"}`} />
-                        <span className="truncate text-sm font-medium text-white">{p.title}</span>
+                        <span className="truncate text-sm font-medium text-primary">{p.title}</span>
                       </div>
                       <div className="flex shrink-0 items-center gap-4 text-[11px] text-secondary">
                         <span title="Views">{(p.views || 0).toLocaleString()} views</span>
@@ -496,8 +496,8 @@ export default function DashboardPage() {
 
             {/* Top offers */}
             {analytics.top_offers && analytics.top_offers.length > 0 && analytics.top_offers.some((o: any) => (o.quantity_sold || 0) > 0) && (
-              <div className="mb-4 rounded-2xl border border-default bg-card p-5">
-                <div className="mb-3 text-xs font-bold text-white">Top Offers</div>
+              <div className="mb-4 rounded-2xl border border-default bg-surface-card p-5">
+                <div className="mb-3 text-xs font-bold text-primary">Top Offers</div>
                 <div className="space-y-2">
                   {analytics.top_offers.filter((o: any) => (o.quantity_sold || 0) > 0).map((offer: any) => (
                     <div key={offer.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-3">
@@ -514,8 +514,8 @@ export default function DashboardPage() {
 
             {/* Recent orders */}
             {analytics.recent_orders && analytics.recent_orders.length > 0 && (
-              <div className="rounded-2xl border border-default bg-card p-5">
-                <div className="mb-3 text-xs font-bold text-white">Recent Sales</div>
+              <div className="rounded-2xl border border-default bg-surface-card p-5">
+                <div className="mb-3 text-xs font-bold text-primary">Recent Sales</div>
                 <div className="space-y-2">
                   {analytics.recent_orders.slice(0, 5).map((order: any) => (
                     <div key={order.id} className="flex items-center justify-between rounded-xl border border-default bg-surface-card px-4 py-2.5">
@@ -526,7 +526,7 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="flex shrink-0 items-center gap-3 text-[11px]">
-                        <span className="font-medium text-white">${order.amount.toFixed(2)}</span>
+                        <span className="font-medium text-primary">${order.amount.toFixed(2)}</span>
                         <span className="text-muted">{order.date ? new Date(order.date).toLocaleDateString() : ""}</span>
                       </div>
                     </div>
@@ -546,7 +546,7 @@ export default function DashboardPage() {
         )}
 
         {bizProfile && analyticsLoading && !analytics && (
-          <div className="mb-6 rounded-2xl border border-default bg-card p-6 text-center">
+          <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6 text-center">
             <div className="text-sm text-secondary">Loading analytics...</div>
           </div>
         )}
@@ -559,7 +559,7 @@ export default function DashboardPage() {
               <Link href="/merchant" className="flex items-center gap-3 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 transition hover:border-default">
                 <span className="text-base">🏪</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Become a founding merchant</div>
+                  <div className="text-sm font-bold text-primary">Become a founding merchant</div>
                   <div className="text-[11px] text-secondary">$0 now · spots limited to 100</div>
                 </div>
               </Link>
@@ -568,7 +568,7 @@ export default function DashboardPage() {
               <Link href={`/project/${projects.find(p => p.status === "live")?.id}#offers-section`} className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">🏷️</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Add or improve offers</div>
+                  <div className="text-sm font-bold text-primary">Add or improve offers</div>
                   <div className="text-[11px] text-secondary">Earn +5 DUM Points per offer</div>
                 </div>
               </Link>
@@ -577,7 +577,7 @@ export default function DashboardPage() {
               <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">💡</span>
                 <div>
-                  <div className="text-sm font-bold text-white">Discover local businesses</div>
+                  <div className="text-sm font-bold text-primary">Discover local businesses</div>
                   <div className="text-[11px] text-secondary">Earn DUM Points with every purchase</div>
                 </div>
               </Link>
@@ -585,7 +585,7 @@ export default function DashboardPage() {
             <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
               <span className="text-base">🔍</span>
               <div>
-                <div className="text-sm font-bold text-white">Explore & support other businesses</div>
+                <div className="text-sm font-bold text-primary">Explore & support other businesses</div>
                 <div className="text-[11px] text-secondary">Earn +2 DUM Points per purchase</div>
               </div>
             </Link>
@@ -603,7 +603,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/orders"
-            className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-card px-6 py-6 transition hover:border-default hover:-translate-y-0.5"
+            className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-surface-card px-6 py-6 transition hover:border-default hover:-translate-y-0.5"
           >
             <span className="text-2xl">📦</span>
             <span className="text-lg font-bold text-primary">My Orders</span>
@@ -616,7 +616,7 @@ export default function DashboardPage() {
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
-                <div className="mb-1 text-base font-bold text-white">Start selling on DUM Club</div>
+                <div className="mb-1 text-base font-bold text-primary">Start selling on DUM Club</div>
                 <p className="mb-4 text-sm text-secondary">Join as a founding merchant — $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
                 <Link
                   href="/merchant"
@@ -638,11 +638,11 @@ export default function DashboardPage() {
                         alert("Link copied! Share it with your audience.");
                       }
                     }}
-                    className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
+                    className="flex items-center gap-3 rounded-2xl border border-default bg-surface-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                   >
                     <span className="text-xl">🔗</span>
                     <div>
-                      <div className="text-sm font-bold text-white">Share your page</div>
+                      <div className="text-sm font-bold text-primary">Share your page</div>
                       <div className="text-xs text-secondary">Copy your storefront link</div>
                     </div>
                   </button>
@@ -650,22 +650,22 @@ export default function DashboardPage() {
                 {projects.some((p) => p.status === "live") && (
                   <Link
                     href={`/project/${projects.find((p) => p.status === "live")?.id}#offers-section`}
-                    className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
+                    className="flex items-center gap-3 rounded-2xl border border-default bg-surface-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                   >
                     <span className="text-xl">🏷️</span>
                     <div>
-                      <div className="text-sm font-bold text-white">Manage your offers</div>
+                      <div className="text-sm font-bold text-primary">Manage your offers</div>
                       <div className="text-xs text-secondary">Add or edit what you sell</div>
                     </div>
                   </Link>
                 )}
                 <Link
                   href="/orders"
-                  className="flex items-center gap-3 rounded-2xl border border-default bg-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
+                  className="flex items-center gap-3 rounded-2xl border border-default bg-surface-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
                 >
                   <span className="text-xl">📊</span>
                   <div>
-                    <div className="text-sm font-bold text-white">View your orders</div>
+                    <div className="text-sm font-bold text-primary">View your orders</div>
                     <div className="text-xs text-secondary">Track sales and fulfillment</div>
                   </div>
                 </Link>
@@ -703,11 +703,11 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative rounded-2xl border border-default bg-card transition hover:border-default hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                    className="group relative rounded-2xl border border-default bg-surface-card transition hover:border-default hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
                   >
                     <Link href={`/project/${project.id}`} className="block p-6">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold text-white group-hover:text-emerald-50">
+                        <h3 className="text-base font-semibold text-primary group-hover:text-brand-teal">
                           {project.title || project.name || "Untitled Project"}
                         </h3>
                         <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${st.color}`}>
@@ -724,7 +724,7 @@ export default function DashboardPage() {
 
                     <Link
                       href={`/project/${project.id}?golive=1`}
-                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-400"
+                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-red-400"
                     >
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
