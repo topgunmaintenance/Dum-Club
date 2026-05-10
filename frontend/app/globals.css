@@ -30,6 +30,34 @@
   --color-text-dim: #6C6C82;
 
   --color-border: rgba(255,255,255,0.08);
+
+  /* ── Phase 0 light-theme tokens ─────────────────────────────────
+     Foundation only. These variables are NOT yet referenced anywhere
+     in the codebase — they exist so the upcoming light-theme
+     migration can land in small steps without redefining tokens
+     twice. The existing dark-theme variables above are untouched, so
+     the live site renders identically until a component is
+     intentionally migrated to consume the new tokens. The matching
+     Tailwind utilities are exposed via tailwind.config.js
+     (brand-*, surface-*, text-{primary,secondary,muted},
+     border-{default,strong}, state-live). */
+  --brand-teal: #14B89A;
+  --brand-teal-hover: #0E9F84;
+  --brand-teal-soft: #E6F8F3;
+  --brand-navy: #0B2545;
+
+  --surface-page: #FAFAF7;
+  --surface-card: #FFFFFF;
+  --surface-muted: #F4F5F7;
+
+  --text-primary: #0F1115;
+  --text-secondary: #475467;
+  --text-muted: #6B7280;
+
+  --border-default: #E5E7EB;
+  --border-strong: #D1D5DB;
+
+  --state-live: #E63946;
 }
 
 html {
