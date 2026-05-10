@@ -2643,9 +2643,24 @@ export default function Home() {
              preserved. */}
         <div
           id="section-hero"
-          className="relative rounded-2xl border border-default bg-surface-card shadow-sm"
+          className="relative overflow-hidden rounded-2xl border border-default bg-surface-card shadow-sm"
         >
-          <div className="relative px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14">
+          {/* Ambient hero glow — single soft brand-teal radial behind the
+               headline. Low opacity (~8%) + heavy blur means it reads as
+               warmth around the wordmark rather than as a distinct shape
+               (the failure mode of the v1 emerald+violet "neon orbs"
+               that were removed during the light-theme migration).
+               aria-hidden + pointer-events-none + bounded to the card
+               via overflow-hidden on the parent. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-40 left-1/2 -z-0 h-[480px] w-[880px] -translate-x-1/2 rounded-full opacity-[0.09] blur-3xl"
+            style={{
+              background:
+                "radial-gradient(circle, var(--brand-teal) 0%, transparent 70%)",
+            }}
+          />
+          <div className="relative z-[1] px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14">
             <div className="mx-auto mb-10 max-w-4xl text-center">
               {/* ── Founding-100 scarcity pill ──
                    Recoloured to brand-teal palette with a navy text
