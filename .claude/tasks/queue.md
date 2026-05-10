@@ -24,6 +24,7 @@ System in CLAUDE.md.
 7. [x] design-system-primitives    — `feature/design-system-primitives` · 2026-05-10
 8. [x] header-redesign             — `feature/header-redesign` · 2026-05-10
 9. [x] color-token-pass            — `feature/homepage-below-fold-migration` · 2026-05-10
+10. [x] business-and-pricing-rebuild — `feature/pricing-real-page-and-business-light` · 2026-05-10
 
 ## Notes
 
