@@ -59,7 +59,7 @@ function RelativeTime({ dateStr }: { dateStr?: string | null }) {
     return () => clearInterval(id);
   }, [dateStr]);
 
-  return <span className="font-mono text-[9px] text-zinc-600">{label}</span>;
+  return <span className="font-mono text-[9px] text-secondary">{label}</span>;
 }
 
 /**
@@ -101,16 +101,37 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
 
+  // Context-aware CTA per Phase 1 DC-2 of the Discover plan. Live
+  // always wins; service categories prompt for a quote; restaurants
+  // get an order CTA; entertainment maps to tickets; everything
+  // else lands on the generic shop-now.
+  const ctaLabel = isLive
+    ? "Watch live →"
+    : category === "restaurants"
+      ? "Order now →"
+      : category === "entertainment"
+        ? "Buy tickets →"
+        : (
+            category === "auto" ||
+            category === "home" ||
+            category === "beauty" ||
+            category === "aviation" ||
+            category === "pets" ||
+            category === "health"
+          )
+          ? "Request a quote →"
+          : "Shop now →";
+
   return (
     <Link href={href} className="group block">
       <div
-        className={`flex h-full flex-col rounded-xl border p-5 transition-all duration-200 sm:p-6 ${
+        className={`flex h-full flex-col rounded-xl border bg-surface-card p-5 shadow-sm transition-all duration-200 sm:p-6 ${
           isPulsing
-            ? "border-emerald-400/50 shadow-[0_0_12px_rgba(52,211,153,0.12)]"
+            ? "border-brand-teal shadow-[0_0_16px_rgba(20,184,154,0.18)]"
             : isLive
-              ? "border-red-500/20 hover:border-red-500/40"
-              : "border-zinc-800/70 hover:border-zinc-700 hover:-translate-y-0.5"
-        } bg-zinc-950/60`}
+              ? "border-state-live/30 hover:border-state-live/50"
+              : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
+        }`}
       >
         {/* Thumbnail area */}
         <div
@@ -120,11 +141,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           <span className="text-3xl">{emoji}</span>
         </div>
 
-        {/* Header: category + live badge.
-            Audit #5 Phase 1 (Q4) — promoted LIVE pill from h-1.5 / text-[9px]
-            with no fill to a fuller red pill so the live signal stops
-            getting scanned past at a glance. Same restraint, stronger
-            visibility. */}
+        {/* Header: category + live badge. */}
         <div className="mb-2 flex items-center justify-between gap-2">
           {categoryLabel && (
             <span
@@ -135,26 +152,24 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             </span>
           )}
           {isLive && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2 py-0.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-state-live/40 bg-state-live/10 px-2 py-0.5">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-state-live" />
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">LIVE</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-state-live">LIVE</span>
             </span>
           )}
         </div>
 
-        {/* Title — verified merchants get a small emerald check next
-            to the name (Q2). Source: project.verified — same field
-            used by the storefront page header. */}
+        {/* Title — verified merchants get the brand-teal check pill. */}
         <div className="flex items-center gap-1.5">
-          <h3 className="truncate text-base font-bold text-white sm:text-lg">
+          <h3 className="truncate text-base font-bold text-primary sm:text-lg">
             {project.title || project.name || "Untitled"}
           </h3>
           {project.verified && (
             <span
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-400"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-default bg-brand-teal-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-brand-navy"
               title="Verified merchant"
               aria-label="Verified merchant"
             >
@@ -167,55 +182,50 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
         </div>
 
         {/* Description */}
-        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-zinc-500">
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-secondary">
           {project.description || "No description yet."}
         </p>
 
         {/* Badges */}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {offers > 0 && (
-            <span className="rounded-full border border-sky-400/20 bg-sky-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-sky-400">
+            <span className="rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
               {offers} offer{offers > 1 ? "s" : ""}
             </span>
           )}
           {hasSubscription(project) && (
-            <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-400">
+            <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
               Subscription
             </span>
           )}
           {project.promo_copy && (
-            <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-amber-400">
+            <span className="rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
               Promo
             </span>
           )}
         </div>
 
-        {/* Footer: price (primary) + CTA / timestamp (secondary).
-            Audit #5 Phase 2 (Q3) — promoted price to the primary
-            (left) slot with larger weight (text-lg, font-extrabold)
-            so a buyer scanning the grid sees the offer floor at a
-            glance. The CTA + timestamp move to the right column,
-            stacked, so the right side stays compact. */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-zinc-800/50 pt-4 mt-4">
+        {/* Footer: price (primary) + CTA / timestamp (secondary). */}
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-default pt-4 mt-4">
           <div className="flex flex-col">
             {price != null ? (
               <>
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-500">
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary">
                   From
                 </span>
-                <span className="font-mono text-lg font-extrabold text-emerald-400">
+                <span className="font-mono text-lg font-extrabold text-brand-navy">
                   ${price < 1 ? price.toFixed(2) : Math.round(price)}
                 </span>
               </>
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-secondary">
                 Contact for quote
               </span>
             )}
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="text-[11px] font-medium text-zinc-400 transition group-hover:text-emerald-400">
-              {isLive ? "Watch live →" : "Shop now →"}
+            <span className="text-[11px] font-medium text-secondary transition group-hover:text-brand-teal">
+              {ctaLabel}
             </span>
             <RelativeTime dateStr={project.created_at} />
           </div>

@@ -191,7 +191,7 @@ export default function DiscoverPage() {
 
   /* ─── Render ─── */
   return (
-    <main className="relative min-h-screen bg-[#060606] text-white">
+    <main className="relative min-h-screen bg-surface-page text-primary">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {/* Hero — hidden for authenticated users (placeholder: always show in Pass 1) */}
         <DiscoverHero />
@@ -248,7 +248,7 @@ export default function DiscoverPage() {
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
                     </span>
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
                       Live Now · {liveResults.length}
                     </h2>
                   </div>
@@ -264,7 +264,7 @@ export default function DiscoverPage() {
               {businessResults.length > 0 && (
                 <section>
                   <div className="mb-3">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
                       Services & Businesses · {businessResults.length}
                     </h2>
                   </div>
@@ -280,7 +280,7 @@ export default function DiscoverPage() {
               {filteredItems.length > 0 && (
                 <section className="mt-10">
                   <div className="mb-3">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
                       Items for Sale · {filteredItems.length}
                     </h2>
                   </div>
@@ -289,28 +289,28 @@ export default function DiscoverPage() {
                       <Link
                         key={item.id || `${item.projectId}-${idx}`}
                         href={`/project/${item.projectSlug || item.projectId}#offers-section`}
-                        className="group flex flex-col rounded-xl border border-zinc-800/70 bg-zinc-950/60 p-5 transition hover:border-sky-400/30"
+                        className="group flex flex-col rounded-xl border border-default bg-surface-card p-5 shadow-sm transition hover:border-strong hover:shadow-md"
                       >
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-600">
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
                           {item.projectName}
                         </div>
-                        <div className="text-sm font-bold text-white transition group-hover:text-sky-400">
+                        <div className="text-sm font-bold text-primary transition group-hover:text-brand-teal">
                           {item.title}
                         </div>
                         {item.description && (
-                          <p className="mt-1 line-clamp-2 text-[11px] text-zinc-500">{item.description}</p>
+                          <p className="mt-1 line-clamp-2 text-[11px] text-secondary">{item.description}</p>
                         )}
                         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
                           {item.price != null ? (
-                            <span className="font-mono text-lg font-extrabold text-emerald-400">
+                            <span className="font-mono text-lg font-extrabold text-brand-navy">
                               ${item.price < 1 ? item.price.toFixed(2) : Math.round(item.price)}
                             </span>
                           ) : (
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                            <span className="text-[10px] uppercase tracking-[0.12em] text-secondary">
                               Contact for quote
                             </span>
                           )}
-                          <span className="rounded-lg bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-400 transition group-hover:bg-emerald-400 group-hover:text-black">
+                          <span className="rounded-lg bg-brand-teal-soft px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-brand-navy transition group-hover:bg-brand-teal group-hover:text-white">
                             Buy Now →
                           </span>
                         </div>
@@ -327,7 +327,7 @@ export default function DiscoverPage() {
             Redemption surfaces are held until Phase 2; the previous
             "more ways to earn and redeem are coming" line was
             advertising a held-pending feature. */}
-        <p className="mt-10 text-center text-[11px] text-zinc-600">
+        <p className="mt-10 text-center text-[11px] text-secondary">
           Earn DUM Points on every purchase — loyalty rewards across the network.
         </p>
 
