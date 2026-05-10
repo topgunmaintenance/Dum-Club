@@ -63,27 +63,28 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar />
-      {/* Spacer to offset fixed navbar: 72px mobile, 92px desktop */}
-      <div className="h-[72px] lg:h-[92px]" />
+      {/* Spacer offsets the fixed navbar — must match the Phase 10
+          Navbar's height exactly (h-16 mobile / h-20 desktop). The
+          old 72/92 spacer left an 8/12px gap below the header that
+          read as a layout bug after the Navbar height shrank. */}
+      <div className="h-16 lg:h-20" />
       {/* Global live activity ticker — sits directly below the navbar. */}
       <LiveActivityTicker />
       {children}
       <DumPill />
-      {/* Deploy indicator — low-visibility, bottom-right.
-          Hidden in production: the SHA is useful while debugging
-          previews / staging, but not something we want shipped on
-          dum.club. Gated on `mounted` so the badge never renders during
-          SSR or the first client paint — that keeps the hydration
-          output identical regardless of how Next.js inlines the
-          VERCEL_ENV value. */}
+      {/* Deploy indicator — low-visibility, bottom-right. Hidden in
+          production. Gated on `mounted` so SSR + first client paint
+          stay identical and React hydration doesn't disagree about
+          whether to render it. Tokenised to brand-teal (default,
+          dev/unset env) or amber-500 (preview) per Phase 10. */}
       {mounted && commitSha && vercelEnv !== "production" && (
         <div
-          className="fixed bottom-2 right-2 z-[9999] flex items-center gap-1.5 rounded-md bg-zinc-950/80 px-2 py-1 font-mono text-[9px] text-zinc-700 backdrop-blur-sm"
+          className="fixed bottom-2 right-2 z-[60] flex items-center gap-1.5 rounded-md border border-default bg-surface-card/90 px-2 py-1 font-mono text-[9px] text-secondary backdrop-blur-sm"
           title={`Deploy: ${commitSha}${isPreview ? " (preview)" : ""}`}
         >
           <span
             className={`inline-block h-1.5 w-1.5 rounded-full ${
-              isPreview ? "bg-amber-500" : "bg-emerald-500/60"
+              isPreview ? "bg-amber-500" : "bg-brand-teal"
             }`}
           />
           {commitSha.slice(0, 7)}

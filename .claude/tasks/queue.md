@@ -22,6 +22,7 @@ System in CLAUDE.md.
 5. [x] automation-layer  — `feature/automation-layer` · 2026-04-17
 6. [x] discover-rebuild  — `feature/discover-rebuild` · 2026-04-19
 7. [x] design-system-primitives    — `feature/design-system-primitives` · 2026-05-10
+8. [x] header-redesign             — `feature/header-redesign` · 2026-05-10
 
 ## Notes
 
