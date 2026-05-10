@@ -24,7 +24,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
         </span>
-        <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-white">
+        <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-primary">
           Live Now
         </h2>
         <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400">
@@ -46,7 +46,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
             <Link
               key={project.id}
               href={`/project/${project.slug || project.id}?live=1`}
-              className="flex w-[280px] flex-shrink-0 flex-col rounded-xl border border-red-500/20 bg-zinc-900/60 p-4 transition hover:border-red-500/40 hover:shadow-[0_0_16px_rgba(239,68,68,0.1)]"
+              className="flex w-[280px] flex-shrink-0 flex-col rounded-xl border border-[var(--state-live)]/30 bg-surface-card p-4 transition hover:border-[var(--state-live)]/30"
               style={{ scrollSnapAlign: "start" }}
             >
               <div className="mb-3 flex items-center justify-between">
@@ -62,16 +62,16 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                 </div>
               </div>
 
-              <h3 className="text-sm font-bold text-white">
+              <h3 className="text-sm font-bold text-primary">
                 {project.title || project.name || "Untitled"}
               </h3>
-              <p className="mt-1 line-clamp-2 text-[11px] text-zinc-500">
+              <p className="mt-1 line-clamp-2 text-[11px] text-muted">
                 {project.description || ""}
               </p>
 
               <div className="mt-auto flex items-center justify-between pt-3">
                 {price != null && (
-                  <span className="text-xs font-bold text-emerald-400">
+                  <span className="text-xs font-bold text-brand-teal">
                     From ${price < 1 ? price.toFixed(2) : Math.round(price)}
                   </span>
                 )}

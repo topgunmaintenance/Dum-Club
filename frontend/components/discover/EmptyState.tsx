@@ -15,7 +15,7 @@ type EmptyStateProps = {
 export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive, onRetry }: EmptyStateProps) {
   if (variant === "error") {
     return (
-      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-8 text-center">
+      <div className="rounded-xl border border-[var(--state-live)]/30 bg-red-500/5 p-8 text-center">
         <p className="text-sm text-red-300">
           {errorMessage || "We couldn't load listings. Refresh to try again."}
         </p>
@@ -33,12 +33,12 @@ export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive,
 
   if (variant === "no-live") {
     return (
-      <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-8 text-center">
-        <p className="text-sm text-zinc-400">No live shows right now.</p>
+      <div className="rounded-xl border border-default bg-surface-muted p-8 text-center">
+        <p className="text-sm text-secondary">No live shows right now.</p>
         {onClearLive && (
           <button
             onClick={onClearLive}
-            className="mt-3 text-xs font-medium text-emerald-400 transition hover:text-emerald-300"
+            className="mt-3 text-xs font-medium text-brand-teal transition hover:text-brand-teal"
           >
             View all sellers →
           </button>
@@ -48,14 +48,14 @@ export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive,
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-8 text-center">
-      <p className="text-sm text-zinc-400">
+    <div className="rounded-xl border border-default bg-surface-muted p-8 text-center">
+      <p className="text-sm text-secondary">
         No matches. Try clearing filters or widening your search.
       </p>
       {onClearFilters && (
         <button
           onClick={onClearFilters}
-          className="mt-3 rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          className="mt-3 rounded-lg border border-default px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-primary transition hover:border-strong hover:text-primary"
         >
           Clear filters
         </button>
