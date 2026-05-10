@@ -3,6 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  UtensilsCrossed,
+  Wrench,
+  HardHat,
+  Dumbbell,
+  ShoppingBag,
+  PartyPopper,
+  Sparkles,
+  Diamond,
+  type LucideIcon,
+} from "lucide-react";
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
@@ -2656,20 +2667,20 @@ export default function Home() {
                   </span>
                 </div>
               )}
-              {/* Headline + slogan: "DUM Club" is the dominant H1,
-                  "Drive Your Market" sits directly beneath in
-                  brand-navy as the supporting slogan. The old
-                  hero-text-glow gradient is gone — that effect was a
-                  dark-mode-only emerald shimmer that killed contrast
-                  on a light surface. */}
-              <h1 className="text-[clamp(48px,9vw,80px)] font-extrabold leading-[1] tracking-[-0.03em] text-primary">
-                DUM Club
+              {/* Phase 5 hero — outcome-led headline ("Sell Live. Keep
+                  Every Dollar.") with the merchant-first value-prop
+                  subhead. Replaces the brand-led "DUM Club / Drive
+                  Your Market" pairing because conversion testing on
+                  Stripe / Square / Shopify shows outcome headlines
+                  beat brand-led ones for first-time visitors. The
+                  brand still owns the page through the navbar
+                  wordmark, the founder note directly below, and the
+                  product-preview section. */}
+              <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
+                Sell Live. <span className="text-brand-navy">Keep Every Dollar.</span>
               </h1>
-              <p className="mx-auto mt-3 text-[clamp(20px,3vw,28px)] font-extrabold leading-tight tracking-tight text-brand-navy">
-                Drive Your Market
-              </p>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                Live selling, loyalty, AI retention, and local flash sales. All in one flat fee.
+                Add live selling, loyalty, AI retention, and local flash sales to your business for one flat monthly fee. Built for local businesses, by a local business.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
                 <span className="font-bold text-brand-navy">Flat $29–$99/month.</span> 0% commission. Keep every sale.
@@ -2713,6 +2724,15 @@ export default function Home() {
              per product review. Deals are visible on /discover and
              individual storefronts. Sales proof can return when GMV
              volume is high enough to be impressive, not distracting. ── */}
+
+        {/* ── Founder note — Phase 5 promotion ──
+             Moved from its old position inside the
+             ProofOfMotion fallback (just before the final CTA) up
+             to directly below the hero. The "real local-business
+             owner built this" signal is the strongest trust anchor
+             we have at MVP scale; burying it 80% down the page
+             wasted it. Same component, light-themed in this PR. */}
+        <FounderNote />
 
         {/* ── Platform Activity ──
              Gated behind a trust-safe project-count threshold so
@@ -2771,7 +2791,7 @@ export default function Home() {
                 </div>
                 {/* +20 DUM Points toast */}
                 <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-zinc-950/90 px-3 py-2 text-[11px] font-bold text-emerald-300 shadow-lg backdrop-blur-sm">
-                  <span aria-hidden="true">✨</span>
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                   <span>
                     <span className="text-emerald-200">Customer earned 20 DUM Points</span>
                     <span className="ml-1 text-emerald-300/60 font-normal">· loyalty rewards</span>
@@ -2923,39 +2943,23 @@ export default function Home() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                emoji: "🍕",
-                title: "Restaurants",
-                copy: "Go live during slow hours and sell limited-time specials.",
-              },
-              {
-                emoji: "🔧",
-                title: "Auto shops & mechanics",
-                copy: "Offer same-day service deals, inspections, seasonal promos, or maintenance specials.",
-              },
-              {
-                emoji: "🏠",
-                title: "HVAC & contractors",
-                copy: "Run flash promotions to fill empty schedule slots — same-day deals, seasonal tune-ups, off-peak pricing.",
-              },
-              {
-                emoji: "💪",
-                title: "Gyms & wellness",
-                copy: "Sell memberships, classes, recovery sessions, or event promos live.",
-              },
-              {
-                emoji: "🛍️",
-                title: "Retail & local shops",
-                copy: "Move inventory with live product drops and loyalty rewards.",
-              },
-            ].map((u) => (
+            {([
+              { Icon: UtensilsCrossed, title: "Restaurants", copy: "Go live during slow hours and sell limited-time specials." },
+              { Icon: Wrench, title: "Auto shops & mechanics", copy: "Offer same-day service deals, inspections, seasonal promos, or maintenance specials." },
+              { Icon: HardHat, title: "HVAC & contractors", copy: "Run flash promotions to fill empty schedule slots — same-day deals, seasonal tune-ups, off-peak pricing." },
+              { Icon: Dumbbell, title: "Gyms & wellness", copy: "Sell memberships, classes, recovery sessions, or event promos live." },
+              { Icon: ShoppingBag, title: "Retail & local shops", copy: "Move inventory with live product drops and loyalty rewards." },
+            ] as Array<{ Icon: LucideIcon; title: string; copy: string }>).map((u) => (
               <div
                 key={u.title}
                 className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 backdrop-blur-sm transition hover:border-emerald-400/30"
               >
-                <div className="mb-3 text-3xl" aria-hidden="true">
-                  {u.emoji}
+                {/* Lucide icon — Phase 5 emoji-to-icon swap.
+                    Inverse-tinted background so the icon reads against
+                    the dark feature card; switches to brand-teal when
+                    these cards are migrated to light theme later. */}
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+                  <u.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <div className="mb-2 text-base font-bold text-white">{u.title}</div>
                 <p className="text-sm leading-relaxed text-zinc-400">{u.copy}</p>
@@ -3015,14 +3019,14 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── PROOF / FOUNDER NOTE ─────────────────────────────────
-             Relocated from inside the hero so the hero stays one
-             tight value-prop block. ProofOfMotion's 4-cell honest-
-             data rule still gates the stats grid; FounderNote is the
-             fallback so the slot is never empty. Sits right before
-             the final CTA — humanises the close. */}
+        {/* ── ProofOfMotion — pre-final-CTA stats ──
+             FounderNote was moved up directly under the hero in
+             Phase 5; ProofOfMotion still renders here when its
+             4-cell honest-data rule has enough real numbers, but
+             the fallback is now null so we don't double-render
+             the founder block. */}
         <div className="mx-auto mt-20 max-w-3xl px-4">
-          <ProofOfMotion fallback={<FounderNote />} />
+          <ProofOfMotion fallback={null} />
         </div>
 
         {/* ── FINAL CTA ────────────────────────────────────────────
@@ -3069,12 +3073,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Honest stack strip — payment + infra brands only.
-          Solana removed per Phase 0A and consolidated on /technology. */}
+      {/* Trust strip — Phase 5 reframe. Was a "Built with" stack
+          credit for Stripe / Supabase / Next.js / Vercel; reframed
+          to merchant-facing trust language ("Powered by Stripe ·
+          SSL secured · Trusted infrastructure") so the message
+          reads as security guarantee rather than tech-stack
+          name-drop. The stack credits stay below as the second row
+          for builders who want to know what's underneath. */}
       <div className="border-t border-zinc-900 py-10">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="mb-5 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600">
-            Built with
+          <div className="mb-5 text-center text-[12px] font-semibold tracking-[0.18em] text-zinc-300 sm:text-[13px]">
+            Powered by Stripe · SSL secured · Trusted infrastructure
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-3">
             {["Stripe", "Supabase", "Next.js", "Vercel"].map((name) => (
