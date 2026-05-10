@@ -160,21 +160,21 @@ export default function ManagePage() {
     (project?.name as string) || (project?.title as string) || "Project";
 
   return (
-    <div className="min-h-screen bg-base text-white">
+    <div className="min-h-screen bg-surface-page text-white">
       <div className="mx-auto max-w-4xl px-6 py-12">
         <Link
           href={`/project/${id}`}
-          className="mb-6 inline-flex items-center gap-2 font-mono text-xs text-zinc-500 hover:text-zinc-300"
+          className="mb-6 inline-flex items-center gap-2 font-mono text-xs text-secondary hover:text-primary"
         >
           ← {projectName}
         </Link>
 
         <h1 className="mb-2 font-mono text-3xl font-black">Manage bookings</h1>
-        <p className="mb-8 text-zinc-500">
+        <p className="mb-8 text-secondary">
           Set your availability, service details, and view incoming bookings.
         </p>
 
-        <div className="mb-8 flex gap-1 rounded-xl border border-zinc-800 bg-zinc-950 p-1">
+        <div className="mb-8 flex gap-1 rounded-xl border border-default bg-surface-card p-1">
           {(["bookings", "availability", "settings"] as const).map((t) => (
             <button
               key={t}
@@ -182,8 +182,8 @@ export default function ManagePage() {
               onClick={() => setTab(t)}
               className={`flex-1 rounded-lg py-2.5 font-mono text-xs uppercase tracking-widest transition ${
                 tab === t
-                  ? "bg-emerald-400 font-bold text-black"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "bg-brand-teal font-bold text-black"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               {t}
@@ -194,10 +194,10 @@ export default function ManagePage() {
         {tab === "bookings" && (
           <div className="space-y-3">
             {bookings.length === 0 ? (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-10 text-center">
+              <div className="rounded-2xl border border-default bg-surface-card p-10 text-center">
                 <div className="mb-3 text-4xl">📅</div>
-                <p className="text-zinc-400">No bookings yet.</p>
-                <p className="mt-2 text-sm text-zinc-600">
+                <p className="text-secondary">No bookings yet.</p>
+                <p className="mt-2 text-sm text-muted">
                   Set your availability so customers can book.
                 </p>
               </div>
@@ -209,24 +209,24 @@ export default function ManagePage() {
                 return (
                   <div
                     key={String(b.id)}
-                    className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
+                    className="rounded-2xl border border-default bg-surface-card p-5"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="font-semibold text-white">
                           {(b.customer_name as string) || "Anonymous"}
                         </div>
-                        <div className="mt-1 font-mono text-sm text-zinc-400">
+                        <div className="mt-1 font-mono text-sm text-secondary">
                           {slot?.slot_date} at{" "}
                           {String(slot?.slot_time ?? "").slice(0, 5)}
                         </div>
                         {b.customer_email && (
-                          <div className="mt-1 text-xs text-zinc-600">
+                          <div className="mt-1 text-xs text-muted">
                             {String(b.customer_email)}
                           </div>
                         )}
                         {b.notes && (
-                          <div className="mt-2 rounded-lg border border-zinc-800 bg-base px-3 py-2 text-xs text-zinc-400">
+                          <div className="mt-2 rounded-lg border border-default bg-surface-page px-3 py-2 text-xs text-secondary">
                             {String(b.notes)}
                           </div>
                         )}
@@ -235,13 +235,13 @@ export default function ManagePage() {
                         <span
                           className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${
                             b.status === "completed"
-                              ? "bg-zinc-800 text-zinc-500"
-                              : "bg-emerald-400/10 text-emerald-400"
+                              ? "bg-surface-muted text-secondary"
+                              : "bg-brand-teal-soft text-brand-teal"
                           }`}
                         >
                           {String(b.status)}
                         </span>
-                        <div className="mt-2 font-mono text-xs text-zinc-600">
+                        <div className="mt-2 font-mono text-xs text-muted">
                           {String(b.redemption_code)}
                         </div>
                       </div>
@@ -255,7 +255,7 @@ export default function ManagePage() {
 
         {tab === "availability" && (
           <div>
-            <p className="mb-4 text-sm text-zinc-500">
+            <p className="mb-4 text-sm text-secondary">
               Click time slots to mark yourself as available. Customers can then book these times.
               Booked slots stay locked until the appointment completes.
             </p>
@@ -263,9 +263,9 @@ export default function ManagePage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="w-16 py-2 font-mono text-[10px] text-zinc-600" />
+                    <th className="w-16 py-2 font-mono text-[10px] text-muted" />
                     {next14Days.slice(0, 7).map((d) => (
-                      <th key={d} className="px-1 py-2 font-mono text-[10px] text-zinc-500">
+                      <th key={d} className="px-1 py-2 font-mono text-[10px] text-secondary">
                         {new Date(d + "T00:00:00").toLocaleDateString("en-US", {
                           weekday: "short",
                           month: "numeric",
@@ -278,7 +278,7 @@ export default function ManagePage() {
                 <tbody>
                   {TIMES.map((time) => (
                     <tr key={time}>
-                      <td className="py-1 pr-2 font-mono text-[10px] text-zinc-600">{time}</td>
+                      <td className="py-1 pr-2 font-mono text-[10px] text-muted">{time}</td>
                       {next14Days.slice(0, 7).map((date) => {
                         const key = `${date}-${time}`;
                         const booked = bookedKeys.has(key);
@@ -291,10 +291,10 @@ export default function ManagePage() {
                               title={booked ? "Booked" : undefined}
                               className={`h-8 w-full rounded transition ${
                                 booked
-                                  ? "cursor-not-allowed border border-zinc-700 bg-zinc-800"
+                                  ? "cursor-not-allowed border border-default bg-surface-muted"
                                   : isSelected(date, time)
-                                    ? "border border-emerald-400/60 bg-emerald-400/30"
-                                    : "border border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                                    ? "border border-brand-teal bg-brand-teal-soft"
+                                    : "border border-default bg-surface-card hover:border-default"
                               }`}
                             />
                           </td>
@@ -309,7 +309,7 @@ export default function ManagePage() {
               type="button"
               onClick={saveAvailability}
               disabled={saving || selectedSlots.length === 0}
-              className="mt-6 rounded-xl bg-emerald-500 px-6 py-3 font-mono text-sm font-bold text-black disabled:opacity-50"
+              className="mt-6 rounded-xl bg-brand-teal px-6 py-3 font-mono text-sm font-bold text-black disabled:opacity-50"
             >
               {saving ? "Saving..." : `Save ${selectedSlots.length} slots`}
             </button>
@@ -320,7 +320,7 @@ export default function ManagePage() {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted">
                   Service type
                 </label>
                 <select
@@ -328,7 +328,7 @@ export default function ManagePage() {
                   onChange={(e) =>
                     setServiceProfile((p) => ({ ...p, service_type: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
                 >
                   <option value="remote">Remote / Online</option>
                   <option value="local">Local / In-person</option>
@@ -336,7 +336,7 @@ export default function ManagePage() {
                 </select>
               </div>
               <div>
-                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted">
                   Duration (minutes)
                 </label>
                 <input
@@ -348,11 +348,11 @@ export default function ManagePage() {
                       duration_minutes: Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted">
                   Location (if local)
                 </label>
                 <input
@@ -361,11 +361,11 @@ export default function ManagePage() {
                     setServiceProfile((p) => ({ ...p, location: e.target.value }))
                   }
                   placeholder="City, State"
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
                 />
               </div>
               <div>
-                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted">
                   Timezone
                 </label>
                 <select
@@ -373,7 +373,7 @@ export default function ManagePage() {
                   onChange={(e) =>
                     setServiceProfile((p) => ({ ...p, timezone: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
                 >
                   <option value="America/New_York">Eastern (ET)</option>
                   <option value="America/Chicago">Central (CT)</option>
@@ -384,7 +384,7 @@ export default function ManagePage() {
               </div>
             </div>
             <div>
-              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted">
                 Service description
               </label>
               <textarea
@@ -397,14 +397,14 @@ export default function ManagePage() {
                 }
                 placeholder="What exactly do customers get when they book?"
                 rows={4}
-                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none"
+                className="w-full resize-none rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
               />
             </div>
             <button
               type="button"
               onClick={saveServiceProfile}
               disabled={saving}
-              className="rounded-xl bg-emerald-500 px-6 py-3 font-mono text-sm font-bold text-black disabled:opacity-50"
+              className="rounded-xl bg-brand-teal px-6 py-3 font-mono text-sm font-bold text-black disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save settings"}
             </button>

@@ -317,7 +317,7 @@ function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: str
 
   return (
     <nav className="fixed right-3 top-1/2 z-40 hidden -translate-y-1/2 lg:flex">
-      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-zinc-800/40 bg-zinc-950/80 px-2.5 py-3 backdrop-blur-sm">
+      <div className="flex flex-col items-end gap-2.5 rounded-2xl border border-default bg-surface-card px-2.5 py-3 backdrop-blur-sm">
         {visible.map((id) => {
           const section = NAV_SECTIONS.find((s) => s.id === id);
           if (!section) return null;
@@ -331,8 +331,8 @@ function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: str
               <span
                 className={`text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 ${
                   isActive
-                    ? "text-emerald-400"
-                    : "text-zinc-600 hover:text-zinc-400"
+                    ? "text-brand-teal"
+                    : "text-muted hover:text-secondary"
                 }`}
               >
                 {section.label}
@@ -340,7 +340,7 @@ function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: str
               <span
                 className={`block shrink-0 rounded-full transition-all duration-300 ${
                   isActive
-                    ? "h-2.5 w-2.5 bg-emerald-400 shadow-[0_0_8px_rgba(0,255,163,0.5)]"
+                    ? "h-2.5 w-2.5 bg-brand-teal"
                     : "h-1.5 w-1.5 bg-zinc-700"
                 }`}
               />
@@ -2877,13 +2877,13 @@ export default function ProjectPage() {
   }
 
   function scoreColor(score: number): string {
-    if (score >= 75) return "text-emerald-400";
+    if (score >= 75) return "text-brand-teal";
     if (score >= 50) return "text-amber-400";
-    return "text-red-400";
+    return "text-state-live";
   }
 
   function barColor(score: number): string {
-    if (score >= 75) return "bg-emerald-400";
+    if (score >= 75) return "bg-brand-teal";
     if (score >= 50) return "bg-amber-400";
     return "bg-red-400";
   }
@@ -2930,7 +2930,7 @@ export default function ProjectPage() {
     physical: { label: "Physical", color: "border-amber-400/30 text-amber-400" },
     digital: { label: "Digital", color: "border-sky-400/30 text-sky-400" },
     service: { label: "Service", color: "border-purple-400/30 text-purple-400" },
-    subscription: { label: "Subscription", color: "border-emerald-400/30 text-emerald-400" },
+    subscription: { label: "Subscription", color: "border-default text-brand-teal" },
   };
 
   async function submitReview(e?: React.FormEvent) {
@@ -3507,10 +3507,10 @@ export default function ProjectPage() {
 
   const impactTone =
     estimatedPriceImpactPct >= 5
-      ? "text-red-300 border-red-400/30 bg-red-950/20"
+      ? "text-state-live border-red-400/30 bg-red-950/20"
       : estimatedPriceImpactPct >= 2
       ? "text-yellow-300 border-yellow-400/30 bg-yellow-950/20"
-      : "text-emerald-300 border-emerald-400/30 bg-emerald-950/20";
+      : "text-brand-teal border-default bg-brand-teal-soft";
 
 const heroUtility =
   parsedAiOutput?.token_utility ||
@@ -3628,7 +3628,7 @@ const heroUtility =
 
 return (
   <div
-    className={`relative min-h-screen bg-base px-4 py-8 text-white sm:px-6 lg:px-8 ${
+    className={`relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8 ${
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
@@ -3656,14 +3656,14 @@ return (
           <div className="mb-8 flex items-center justify-between">
             <Link
               href="/discover"
-              className="inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
+              className="inline-flex rounded-full border border-default bg-surface-card px-4 py-2 text-xs uppercase tracking-[0.25em] text-secondary transition hover:bg-surface-muted hover:text-primary"
             >
               ← Back to Feed
             </Link>
             {isOwner && (
               <button
                 onClick={togglePitchMode}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-medium uppercase tracking-[0.15em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                className="rounded-full border border-default px-4 py-2 text-xs font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-default hover:text-brand-teal"
               >
                 Exit Pitch View
               </button>
@@ -3672,16 +3672,16 @@ return (
 
           {/* Pitch hero */}
           <div
-            className="mb-10 rounded-3xl border border-zinc-800 bg-base p-8 sm:p-12 text-center"
+            className="mb-10 rounded-3xl border border-default bg-surface-page p-8 sm:p-12 text-center"
             style={{
               borderTop: `3px solid ${accent}`,
               boxShadow: `0 0 80px rgba(0,255,178,0.06)`,
             }}
           >
             <div className="mx-auto max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-1.5">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-default bg-surface-card px-4 py-1.5">
                 <span className="text-2xl">{emoji}</span>
-                <span className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                <span className="text-xs font-medium uppercase tracking-[0.2em] text-secondary">
                   {category} · DUM Club
                 </span>
               </div>
@@ -3690,7 +3690,7 @@ return (
                 {projectName}
               </h1>
 
-              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+              <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
                 {parsedAiOutput?.description || project?.description || ""}
               </p>
 
@@ -3699,8 +3699,8 @@ return (
                   (held until Phase 2 doctrine unlock). Buyers earn
                   points on every purchase; the framing now matches
                   the actual product surface. */}
-              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-5 py-2">
-                <span className="text-sm font-bold text-emerald-400">◆ Earn DUM Points on every purchase</span>
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-5 py-2">
+                <span className="text-sm font-bold text-brand-teal">◆ Earn DUM Points on every purchase</span>
               </div>
             </div>
           </div>
@@ -3708,18 +3708,18 @@ return (
           {/* Pitch content grid */}
           <div className="mb-10 grid gap-6 md:grid-cols-2">
             {/* Rewards & Perks */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+            <div className="rounded-2xl border border-default bg-surface-card p-6">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                 Rewards &amp; Perks
               </div>
-              <p className="text-sm leading-relaxed text-zinc-300">
+              <p className="text-sm leading-relaxed text-primary">
                 {heroUtility}
               </p>
               {utilityBullets.length > 0 && (
                 <ul className="mt-4 space-y-2">
                   {utilityBullets.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                      <span className="mt-0.5 text-emerald-400">✦</span>
+                    <li key={i} className="flex items-start gap-2 text-sm text-secondary">
+                      <span className="mt-0.5 text-brand-teal">✦</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -3728,8 +3728,8 @@ return (
             </div>
 
             {/* Key Metrics */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-              <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+            <div className="rounded-2xl border border-default bg-surface-card p-6">
+              <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                 <span>Key Metrics</span>
                 {isSimulated && hasMarketSnapshot && (
                   <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold tracking-[0.15em] text-amber-300">
@@ -3741,17 +3741,17 @@ return (
                 {hasMarketSnapshot && (
                   <>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">{isSimulated ? "Price (demo)" : "Price"}</span>
+                      <span className="text-secondary">{isSimulated ? "Price (demo)" : "Price"}</span>
                       <span className="font-mono font-semibold text-white">${heroPrice.toFixed(6)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">{isSimulated ? "Market Cap (demo)" : "Market Cap"}</span>
+                      <span className="text-secondary">{isSimulated ? "Market Cap (demo)" : "Market Cap"}</span>
                       <span className="font-mono font-semibold text-white">
                         ${formatNumber(Number(market?.market_cap || 0), 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500">{isSimulated ? "24h Volume (demo)" : "24h Volume"}</span>
+                      <span className="text-secondary">{isSimulated ? "24h Volume (demo)" : "24h Volume"}</span>
                       <span className="font-mono font-semibold text-white">
                         ${formatNumber(Number(market?.volume_24h || 0), 2)}
                       </span>
@@ -3759,18 +3759,18 @@ return (
                   </>
                 )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">Supply</span>
+                  <span className="text-secondary">Supply</span>
                   <span className="font-mono font-semibold text-white">{supplyDisplay}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">Status</span>
-                  <span className="font-mono text-xs font-semibold uppercase text-emerald-400">
+                  <span className="text-secondary">Status</span>
+                  <span className="font-mono text-xs font-semibold uppercase text-brand-teal">
                     {displayStatusLabel}
                   </span>
                 </div>
                 {feedbackEntries.length > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-500">Rating</span>
+                    <span className="text-secondary">Rating</span>
                     <span className="font-mono font-semibold text-white">
                       {averageRating.toFixed(1)} / 5
                     </span>
@@ -3782,9 +3782,9 @@ return (
 
           {/* Project Score in pitch view */}
           {projectScore && (
-            <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-10 rounded-2xl border border-default bg-surface-card p-6">
               <div className="mb-4 text-center">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                   Project Score
                 </span>
               </div>
@@ -3797,7 +3797,7 @@ return (
                       <div className={`font-mono text-2xl font-bold ${scoreColor(entry.score)}`}>
                         {entry.score}
                       </div>
-                      <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-500">
+                      <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.15em] text-secondary">
                         {label}
                       </div>
                     </div>
@@ -3809,11 +3809,11 @@ return (
 
           {/* Promo copy section */}
           {promoCopy && (
-            <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
-              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+            <div className="mb-10 rounded-2xl border border-default bg-surface-card p-6 text-center">
+              <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                 About This Project
               </div>
-              <p className="mx-auto max-w-xl text-base leading-relaxed text-zinc-300 whitespace-pre-wrap">
+              <p className="mx-auto max-w-xl text-base leading-relaxed text-primary whitespace-pre-wrap">
                 {promoCopy}
               </p>
             </div>
@@ -3823,7 +3823,7 @@ return (
           {storeItems.length > 0 && (
             <div className="mb-10">
               <div className="mb-5 text-center">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400/60">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                   Offers
                 </span>
               </div>
@@ -3843,13 +3843,13 @@ return (
                   const pitchFree = perkState === "unlocked" && (item.token_holder_price?.toLowerCase() === "free" || item.token_holder_price === "0");
 
                   return (
-                    <div key={item.id} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 flex flex-col">
+                    <div key={item.id} className="rounded-2xl border border-default bg-surface-card p-5 flex flex-col">
                       <div className="mb-3 flex items-center gap-2">
                         <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.15em] ${badge.color}`}>
                           {badge.label}
                         </span>
                         {showGating && perkState === "unlocked" && (
-                          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400">
+                          <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase text-brand-teal">
                             ✓ Unlocked
                           </span>
                         )}
@@ -3859,42 +3859,42 @@ return (
                           </span>
                         )}
                         {showGating && perkState === "no_wallet" && (
-                          <span className="rounded-full border border-zinc-700 px-2 py-0.5 text-[9px] font-semibold uppercase text-zinc-500">
+                          <span className="rounded-full border border-default px-2 py-0.5 text-[9px] font-semibold uppercase text-secondary">
                             🔒 Gated
                           </span>
                         )}
                       </div>
                       <h3 className="text-base font-semibold text-white">{item.name}</h3>
                       {item.description && (
-                        <p className="mt-1 text-sm text-zinc-400 leading-relaxed">{item.description}</p>
+                        <p className="mt-1 text-sm text-secondary leading-relaxed">{item.description}</p>
                       )}
                       {item.type === "subscription" && item.benefits && item.benefits.length > 0 && (
                         <ul className="mt-3 space-y-1.5">
                           {item.benefits.map((b, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                              <span className="mt-0.5 text-emerald-400">✦</span>
+                            <li key={i} className="flex items-start gap-2 text-sm text-secondary">
+                              <span className="mt-0.5 text-brand-teal">✦</span>
                               <span>{b}</span>
                             </li>
                           ))}
                         </ul>
                       )}
                       {showGating && item.perk_description && (
-                        <div className="mt-3 rounded-lg border border-emerald-400/10 bg-emerald-400/[0.03] px-3 py-2">
-                          <span className="text-xs text-emerald-400/80">{item.perk_description}</span>
+                        <div className="mt-3 rounded-lg border border-default bg-brand-teal-soft px-3 py-2">
+                          <span className="text-xs text-brand-teal">{item.perk_description}</span>
                         </div>
                       )}
                       <div className="mt-auto pt-4 flex items-center justify-between">
                         <div>
                           {pitchFree ? (
-                            <span className="text-lg font-bold text-emerald-400">Free for members</span>
+                            <span className="text-lg font-bold text-brand-teal">Free for members</span>
                           ) : (
                             <span className="font-mono text-lg font-bold text-white">{pitchPrice}</span>
                           )}
                           {perkState === "unlocked" && item.token_holder_price != null && item.price && !pitchFree && (
-                            <span className="ml-2 text-xs text-zinc-600 line-through">{item.price}</span>
+                            <span className="ml-2 text-xs text-muted line-through">{item.price}</span>
                           )}
                         </div>
-                        <button className="rounded-xl border border-zinc-700 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-emerald-400/30 hover:text-emerald-300">
+                        <button className="rounded-xl border border-default px-4 py-2 text-xs font-medium text-secondary transition hover:border-default hover:text-brand-teal">
                           {item.type === "subscription" ? "Subscribe" : "Buy"}
                         </button>
                       </div>
@@ -3911,21 +3911,21 @@ return (
               {canShowMarketUi && (
                 <button
                   onClick={() => { setPitchMode(false); setTimeout(scrollToBuyPanel, 100); }}
-                  className="rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                  className="rounded-xl bg-brand-teal px-8 py-3 text-sm font-bold text-black transition hover:bg-brand-teal"
                 >
                   Back this project
                 </button>
               )}
               <button
                 onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
-                className="rounded-xl border border-zinc-700 px-8 py-3 text-sm font-medium text-zinc-300 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                className="rounded-xl border border-default px-8 py-3 text-sm font-medium text-primary transition hover:border-default hover:text-brand-teal"
               >
                 Ask AI
               </button>
               {isOwner && (
                 <button
                   onClick={() => copyToClipboard(`${window.location.origin}/project/${id}?view=pitch`, "pitch link")}
-                  className="rounded-xl border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                  className="rounded-xl border border-default px-6 py-3 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
                 >
                   Copy Pitch Link
                 </button>
@@ -3935,8 +3935,8 @@ return (
 
           {/* Toast (shared with builder) */}
           {builderToast && (
-            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-zinc-950 px-5 py-2.5 shadow-lg">
-              <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
+            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-fade-slide-down rounded-xl border border-default bg-surface-card px-5 py-2.5 shadow-lg">
+              <span className="text-sm font-medium text-brand-teal">{builderToast}</span>
             </div>
           )}
         </div>
@@ -3945,13 +3945,13 @@ return (
       {/* ── Normal project view ────────────────────── */}
       {!pitchMode && (<>
       {isOwner && showLiveBanner && (
-        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4 animate-fade-slide-down">
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-default bg-brand-teal-soft px-5 py-4 animate-fade-slide-down">
           <div className="flex items-center gap-3">
-            <span className="text-emerald-400">✦</span>
-            <span className="text-sm font-semibold text-emerald-200">
+            <span className="text-brand-teal">✦</span>
+            <span className="text-sm font-semibold text-brand-teal">
               <span className="uppercase tracking-[0.15em]">{heroTitle}</span>
               {" is live — "}
-              <span className="font-normal text-emerald-300/80">share it with your community</span>
+              <span className="font-normal text-brand-teal">share it with your community</span>
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -3964,7 +3964,7 @@ return (
                   window.setTimeout(() => setBannerCopied(false), 1500);
                 } catch {}
               }}
-              className="rounded-lg border border-emerald-400/40 px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+              className="rounded-lg border border-default px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-brand-teal transition hover:border-brand-teal hover:text-brand-teal"
             >
               {bannerCopied ? "Copied ✓" : "Copy link"}
             </button>
@@ -3972,7 +3972,7 @@ return (
               type="button"
               onClick={() => setShowLiveBanner(false)}
               aria-label="Dismiss"
-              className="text-emerald-600 transition hover:text-emerald-400"
+              className="text-brand-teal transition hover:text-brand-teal"
             >
               ✕
             </button>
@@ -3982,17 +3982,17 @@ return (
 
       {/* ── DUM Points earned banner (post-launch) ── */}
       {isOwner && showLiveBanner && (
-        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] py-2.5 animate-fade-slide-down">
-          <span className="text-emerald-400 font-bold text-sm">◆ +25 DUM Points earned</span>
-          <span className="text-[11px] text-emerald-400/50">for launching this project</span>
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-teal-soft py-2.5 animate-fade-slide-down">
+          <span className="text-brand-teal font-bold text-sm">◆ +25 DUM Points earned</span>
+          <span className="text-[11px] text-brand-teal/50">for launching this project</span>
         </div>
       )}
 
       {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ── */}
       {isOwner && projectView === "storefront" && (
-        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-5">
+        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-emerald-400 text-[9px] font-extrabold text-black">D</div>
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
             <span className="text-sm font-bold text-white">Grow your business with AI</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -4020,19 +4020,19 @@ return (
       <div className="mb-8 flex items-center justify-between gap-3">
         <Link
           href="/discover"
-          className="inline-flex rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs uppercase tracking-[0.25em] text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-300"
+          className="inline-flex rounded-full border border-default bg-surface-card px-4 py-2 text-xs uppercase tracking-[0.25em] text-secondary transition hover:bg-surface-muted hover:text-primary"
         >
           ← Back to Feed
         </Link>
 
         {isOwner && (
-          <div className="flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-950 p-1">
+          <div className="flex items-center gap-1 rounded-full border border-default bg-surface-card p-1">
             <button
               onClick={() => setProjectView("storefront")}
               className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
                 projectView === "storefront"
-                  ? "bg-emerald-400 text-black"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "bg-brand-teal text-black"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               Storefront
@@ -4041,8 +4041,8 @@ return (
               onClick={() => setProjectView("analytics")}
               className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
                 projectView === "analytics"
-                  ? "bg-emerald-400 text-black"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "bg-brand-teal text-black"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               DUM Hub
@@ -4059,13 +4059,13 @@ return (
            it — the page just gets a brief acknowledgement chip
            between live mode and silent revert. */}
       {streamJustEnded && (
-        <div className="mb-6 rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.05] to-zinc-900/60 px-5 py-3">
+        <div className="mb-6 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/20 text-xs font-bold text-emerald-300">✓</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal-soft text-xs font-bold text-brand-teal">✓</span>
               <span className="text-sm font-bold text-white">Show ended</span>
               {streamEndedSummary && streamEndedSummary.sales > 0 && (
-                <span className="text-[12px] text-emerald-300/80">
+                <span className="text-[12px] text-brand-teal">
                   · {streamEndedSummary.sales} sold this show
                 </span>
               )}
@@ -4073,7 +4073,7 @@ return (
             <button
               type="button"
               onClick={() => setStreamJustEnded(false)}
-              className="text-[11px] text-zinc-500 transition hover:text-zinc-300"
+              className="text-[11px] text-secondary transition hover:text-primary"
               aria-label="Dismiss"
             >
               ✕
@@ -4084,7 +4084,7 @@ return (
 
       {/* ── IVS Host (must stay mounted across live session — rendered at top) ── */}
       {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
-        <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6"}>
+        <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-default bg-surface-card p-6"}>
           <IVSStageHost
             projectId={id as string}
             userId={authUser?.privyId || ""}
@@ -4119,17 +4119,17 @@ return (
                since-timer is intentionally absent — it requires a
                backend `live_started_at` field; client-side approx.
                would mislead late-joiners. */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-[var(--state-live)]/30 bg-state-live/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
               </span>
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-red-400">Live</span>
-              <span className="text-xs sm:text-sm text-zinc-400 truncate">{projectName}</span>
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-state-live">Live</span>
+              <span className="text-xs sm:text-sm text-secondary truncate">{projectName}</span>
               {/* Q2 — viewer count (real, from existing WebSocket) */}
               {liveViewerCount > 0 && (
-                <span className="rounded-full border border-zinc-800 bg-zinc-950/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+                <span className="rounded-full border border-default bg-surface-card px-2 py-0.5 text-[10px] font-mono text-secondary">
                   {liveViewerCount} watching
                 </span>
               )}
@@ -4138,7 +4138,7 @@ return (
                   every `item_sold` WebSocket event). Hidden until
                   the first sale to avoid a sad "0 sold" pill. */}
               {liveSalesCount > 0 && (
-                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+                <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[10px] font-mono font-bold text-brand-teal">
                   {liveSalesCount} sold this show
                 </span>
               )}
@@ -4147,7 +4147,7 @@ return (
                  emerald so the buyer's biggest reward signal isn't
                  whispered. Same visual weight as the founding-100
                  pill on /merchant. */}
-            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-300">
+            <span className="rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-brand-teal">
               Earn DUM Points
             </span>
           </div>
@@ -4165,7 +4165,7 @@ return (
                     userId={authUser?.privyId || ""}
                   />
                 ) : (
-                <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                <div className="overflow-hidden rounded-2xl border border-default bg-black">
                   {project.live_provider === "native_mux" && project.live_playback_id ? (
                     <MuxPlayer
                       playbackId={project.live_playback_id}
@@ -4178,16 +4178,16 @@ return (
                       accentColor="#10b981"
                     />
                   ) : project.stream_url === "camera://local" ? (
-                    <div className="flex items-center justify-center bg-zinc-900" style={{ aspectRatio: "16/9" }}>
+                    <div className="flex items-center justify-center bg-surface-muted" style={{ aspectRatio: "16/9" }}>
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-2">
                           <span className="relative flex h-3 w-3">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
                           </span>
-                          <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live Now</span>
+                          <span className="text-sm font-bold uppercase tracking-widest text-state-live">Live Now</span>
                         </div>
-                        <p className="text-xs text-zinc-500">Browse products and chat below</p>
+                        <p className="text-xs text-secondary">Browse products and chat below</p>
                       </div>
                     </div>
                   ) : project.stream_url ? (
@@ -4213,13 +4213,13 @@ return (
                     {saleToasts.map((toast) => (
                       <div
                         key={toast.id}
-                        className="pointer-events-none flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-black/80 px-4 py-2.5 shadow-lg shadow-emerald-500/10 backdrop-blur-sm animate-bounce"
+                        className="pointer-events-none flex items-center gap-2 rounded-xl border border-default bg-black/80 px-4 py-2.5 shadow-lg shadow-md backdrop-blur-sm animate-bounce"
                         style={{ animationDuration: "0.6s", animationIterationCount: "1" }}
                       >
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-black">$</span>
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal text-xs font-bold text-black">$</span>
                         <div>
                           <div className="text-sm font-bold text-white">{toast.title} just sold!</div>
-                          <div className="text-[11px] text-emerald-400">{toast.count} sold this show</div>
+                          <div className="text-[11px] text-brand-teal">{toast.count} sold this show</div>
                         </div>
                       </div>
                     ))}
@@ -4241,9 +4241,9 @@ return (
               </div>
 
               {/* Reward visibility — hidden on mobile, visible on lg: (stays in DOM) */}
-              <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] py-2.5">
-                <span className="text-emerald-400 text-sm font-semibold">Earn DUM when you buy</span>
-                <span className="text-[11px] text-emerald-400/50">Rewards on every purchase</span>
+              <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-teal-soft py-2.5">
+                <span className="text-brand-teal text-sm font-semibold">Earn DUM when you buy</span>
+                <span className="text-[11px] text-brand-teal/50">Rewards on every purchase</span>
               </div>
 
               {/* Pinned product / auction — full card on every viewport.
@@ -4255,7 +4255,7 @@ return (
                 {auction && auctionOffer && (auction.status === "active" || auction.status === "ended" || auction.status === "awaiting_payment" || auction.status === "paid") ? (
                   <div
                     data-auction-card
-                    className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-zinc-800 bg-zinc-950"}`}
+                    className={`rounded-2xl border p-5 ${isAuctionActive ? "border-amber-400/30 bg-amber-400/[0.03]" : "border-default bg-surface-card"}`}
                   >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
@@ -4266,14 +4266,14 @@ return (
 
                     <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
                     {auctionOffer.description && (
-                      <p className="mt-1 text-sm text-zinc-400 line-clamp-1">{auctionOffer.description}</p>
+                      <p className="mt-1 text-sm text-secondary line-clamp-1">{auctionOffer.description}</p>
                     )}
 
                     {/* Bid display */}
-                    <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3">
+                    <div className="mt-3 rounded-xl border border-default bg-surface-page p-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+                          <div className="text-[10px] uppercase tracking-[0.2em] text-muted">
                             {auction.current_bid ? "Current Bid" : "Starting Price"}
                           </div>
                           <div className="font-mono text-2xl font-bold text-white">
@@ -4282,9 +4282,9 @@ return (
                         </div>
                         <div className="text-right">
                           {auction.current_bidder_display && (
-                            <div className="text-sm text-zinc-400">by {auction.current_bidder_display}</div>
+                            <div className="text-sm text-secondary">by {auction.current_bidder_display}</div>
                           )}
-                          <div className="text-[10px] text-zinc-600">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
+                          <div className="text-[10px] text-muted">{auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""}</div>
                         </div>
                       </div>
                     </div>
@@ -4293,23 +4293,23 @@ return (
                     {isAuctionActive && !isOwner && authUser && (
                       <>
                         {auction.current_bidder === authUser.privyId ? (
-                          <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-semibold text-emerald-400">
+                          <div className="mt-3 rounded-xl border border-default bg-brand-teal-soft px-4 py-2 text-center text-sm font-semibold text-brand-teal">
                             You are the highest bidder
                           </div>
                         ) : auction.current_bidder && (
                           <div className="mt-3 space-y-2">
                             {auctionBidError && (
-                              <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-400">{auctionBidError}</div>
+                              <div className="rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-state-live">{auctionBidError}</div>
                             )}
                             <div className="flex gap-2">
                               <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">$</span>
                                 <input
                                   type="number"
                                   value={auctionBidAmount}
                                   onChange={(e) => setAuctionBidAmount(e.target.value)}
                                   placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
-                                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                                  className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
                                 />
                               </div>
                               <button
@@ -4327,13 +4327,13 @@ return (
                         {!auction.current_bidder && (
                           <div className="mt-3 flex gap-2">
                             <div className="relative flex-1">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">$</span>
                               <input
                                 type="number"
                                 value={auctionBidAmount}
                                 onChange={(e) => setAuctionBidAmount(e.target.value)}
                                 placeholder={String(auction.starting_price)}
-                                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                                className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
                               />
                             </div>
                             <button
@@ -4351,12 +4351,12 @@ return (
                     {/* Winner Pay Now */}
                     {auction.status === "ended" && isAuctionWinner && (
                       <div className="mt-3 space-y-2">
-                        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2 text-center text-sm font-bold text-emerald-400">
+                        <div className="rounded-xl border border-default bg-brand-teal-soft px-4 py-2 text-center text-sm font-bold text-brand-teal">
                           You Won!
                         </div>
                         <button
                           onClick={handleAuctionPayNow}
-                          className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                          className="w-full rounded-xl bg-brand-teal py-3 text-sm font-bold text-black transition hover:bg-brand-teal"
                         >
                           Pay Now — ${Number(auction.current_bid).toFixed(2)}
                         </button>
@@ -4365,27 +4365,27 @@ return (
 
                     {/* Ended states for non-winners */}
                     {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
-                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                      <div className="mt-3 rounded-xl border border-default bg-surface-page px-4 py-2 text-center text-sm text-secondary">
                         Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
                       </div>
                     )}
                     {(auction.status === "awaiting_payment" || auction.status === "paid") && (
-                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                      <div className="mt-3 rounded-xl border border-default bg-surface-page px-4 py-2 text-center text-sm text-secondary">
                         {auction.status === "paid" ? `Sold for $${Number(auction.current_bid).toFixed(2)}` : "Completing payment..."}
                       </div>
                     )}
 
                     {/* Not signed in */}
                     {isAuctionActive && !authUser && (
-                      <div className="mt-3 rounded-xl border border-zinc-800 bg-base px-4 py-2 text-center text-sm text-zinc-500">
+                      <div className="mt-3 rounded-xl border border-default bg-surface-page px-4 py-2 text-center text-sm text-secondary">
                         Sign in to place a bid
                       </div>
                     )}
                   </div>
                 ) : (
                   /* ── Standard Pinned Offer (Buy Now) — desktop card ── */
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-                    <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  <div className="rounded-2xl border border-default bg-surface-card p-5">
+                    <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
                       {pinnedOffer ? "Featured Product" : "No product pinned"}
                     </div>
                     {pinnedOffer ? (
@@ -4399,11 +4399,11 @@ return (
                         )}
                         <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
                         {pinnedOffer.description && (
-                          <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{pinnedOffer.description}</p>
+                          <p className="mt-1 text-sm text-secondary line-clamp-2">{pinnedOffer.description}</p>
                         )}
                         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <span className="font-mono text-xl font-bold text-emerald-400">
+                            <span className="font-mono text-xl font-bold text-brand-teal">
                               ${Number(pinnedOffer.price_usd).toFixed(2)}
                             </span>
                             {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
@@ -4417,7 +4417,7 @@ return (
                               );
                               const lowStock = remaining > 0 && remaining <= 5;
                               return (
-                                <span className={`ml-2 text-xs font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                                <span className={`ml-2 text-xs font-medium ${lowStock ? "text-amber-400" : "text-secondary"}`}>
                                   {lowStock && <span aria-hidden="true">🔥 </span>}
                                   {remaining} left{lowStock ? " — almost gone" : ""}
                                 </span>
@@ -4429,12 +4429,12 @@ return (
                               && (pinnedOffer.quantity_available || 0) > 0
                               && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
                             return isSoldOut ? (
-                              <span className="w-full rounded-xl border border-zinc-700 px-5 py-2.5 text-center text-sm font-bold text-zinc-500 sm:w-auto">Sold Out</span>
+                              <span className="w-full rounded-xl border border-default px-5 py-2.5 text-center text-sm font-bold text-secondary sm:w-auto">Sold Out</span>
                             ) : (
                               <button
                                 onClick={() => buyOffer(pinnedOffer)}
                                 disabled={!!buyingOfferId}
-                                className="w-full rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40 sm:w-auto sm:py-2.5"
+                                className="w-full rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-40 sm:w-auto sm:py-2.5"
                               >
                                 {buyingOfferId === pinnedOffer.id ? "Opening secure checkout…" : "Buy Now"}
                               </button>
@@ -4442,7 +4442,7 @@ return (
                           })()}
                         </div>
                         {buyError[pinnedOffer.id] && (
-                          <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                          <div className="mt-2 rounded-lg border border-[var(--state-live)]/30 bg-state-live/5 px-3 py-2 text-xs text-state-live">
                             {buyError[pinnedOffer.id]}
                           </div>
                         )}
@@ -4452,13 +4452,13 @@ return (
                             goes to Stripe, never to DUM Club") so the
                             buyer sees the same payment trust signal. */}
                         {!isOwner && (
-                          <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-                            <span className="text-zinc-400">Stripe checkout</span> · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
+                          <p className="mt-3 text-[11px] leading-relaxed text-secondary">
+                            <span className="text-secondary">Stripe checkout</span> · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                           </p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-zinc-600">
+                      <p className="text-sm text-muted">
                         {isOwner ? "Pin a product from the control panel below." : "The seller hasn't pinned a product yet."}
                       </p>
                     )}
@@ -4468,8 +4468,8 @@ return (
 
               {/* Host controls — below product on desktop */}
               {isOwner && isIVSSession(project) && (
-                <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
+                <div className="space-y-3 rounded-2xl border border-default bg-surface-card p-4">
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
                   <div className="flex flex-wrap gap-2">
                     {offers.filter((o) => o.is_active).map((offer) => (
                       <button
@@ -4477,8 +4477,8 @@ return (
                         onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
                         className={`rounded-xl border px-3 py-2 text-sm transition ${
                           offer.id === project.pinned_offer_id
-                            ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                            : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                            ? "border-default bg-brand-teal-soft text-brand-teal"
+                            : "border-default text-secondary hover:border-strong hover:text-white"
                         }`}
                       >
                         {offer.title} · ${Number(offer.price_usd).toFixed(0)}
@@ -4531,7 +4531,7 @@ return (
 
           {/* ── MOBILE STICKY BUY BAR — pinned product/auction as bottom bar on mobile ── */}
           {!isOwner && (
-            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-default bg-surface-card backdrop-blur-sm lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
               {auction && auctionOffer && isAuctionActive ? (
                 /* Auction sticky bar */
                 <div className="flex items-center justify-between px-4 py-3">
@@ -4543,7 +4543,7 @@ return (
                     <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(2)}</span>
                     {authUser ? (
                       auction.current_bidder === authUser.privyId ? (
-                        <span className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-400">Top Bid</span>
+                        <span className="rounded-lg bg-brand-teal-soft px-3 py-2 text-xs font-bold text-brand-teal">Top Bid</span>
                       ) : (
                         <button
                           // Q9 — if there's no bid amount entered yet,
@@ -4570,7 +4570,7 @@ return (
                         </button>
                       )
                     ) : (
-                      <span className="text-xs text-zinc-500">Sign in</span>
+                      <span className="text-xs text-secondary">Sign in</span>
                     )}
                   </div>
                 </div>
@@ -4583,7 +4583,7 @@ return (
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
-                    <span className="font-mono text-sm font-bold text-emerald-400">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
+                    <span className="font-mono text-sm font-bold text-brand-teal">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
                     {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
                       // Q4 — same low-stock urgency in the mobile sticky bar.
                       const remaining = Math.max(
@@ -4592,7 +4592,7 @@ return (
                       );
                       const lowStock = remaining > 0 && remaining <= 5;
                       return (
-                        <span className={`ml-2 text-[10px] font-medium ${lowStock ? "text-amber-400" : "text-zinc-500"}`}>
+                        <span className={`ml-2 text-[10px] font-medium ${lowStock ? "text-amber-400" : "text-secondary"}`}>
                           {lowStock && <span aria-hidden="true">🔥 </span>}
                           {remaining} left
                         </span>
@@ -4605,12 +4605,12 @@ return (
                         && (pinnedOffer.quantity_available || 0) > 0
                         && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
                       return isSoldOut ? (
-                        <span className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-500">Sold Out</span>
+                        <span className="rounded-lg border border-default px-4 py-2 text-xs font-bold text-secondary">Sold Out</span>
                       ) : (
                         <button
                           onClick={() => buyOffer(pinnedOffer)}
                           disabled={!!buyingOfferId}
-                          className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-emerald-400 disabled:opacity-40"
+                          className="rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-40"
                         >
                           {buyingOfferId === pinnedOffer.id ? "..." : "Buy Now"}
                         </button>
@@ -4618,8 +4618,8 @@ return (
                     })()}
                   </div>
                 </div>
-                <p className="mt-1.5 text-[10px] leading-snug text-zinc-500">
-                  Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-zinc-600">Prices in USD; Stripe converts at checkout.</span>
+                <p className="mt-1.5 text-[10px] leading-snug text-secondary">
+                  Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                 </p>
                 </div>
               ) : null}
@@ -4631,7 +4631,7 @@ return (
 
       <div
         id="section-top"
-        className={`mb-8 rounded-3xl border border-zinc-900 bg-base p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
+        className={`mb-8 rounded-3xl border border-default bg-surface-page p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
@@ -4639,24 +4639,24 @@ return (
       >
         <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-default bg-surface-card text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
               {emoji}
             </div>
 
             <div className="max-w-4xl">
-              <div className="mb-3 text-xs uppercase tracking-[0.35em] text-zinc-600">
+              <div className="mb-3 text-xs uppercase tracking-[0.35em] text-muted">
                 {category} · DUM Club
               </div>
 
               {loadingProject ? (
-                <div className="h-10 w-72 animate-pulse rounded-lg bg-zinc-800 sm:h-14" />
+                <div className="h-10 w-72 animate-pulse rounded-lg bg-surface-muted sm:h-14" />
               ) : (
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl">
                     {projectName}
                   </h1>
                   {ownerBizProfile?.verification_status === "verified" && (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400" title={`Verified business: ${ownerBizProfile.business_name}`}>
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-teal" title={`Verified business: ${ownerBizProfile.business_name}`}>
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
                       Verified
                     </span>
@@ -4664,7 +4664,7 @@ return (
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-secondary">
                 <span
                   className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
                   style={{ borderColor: accent, color: accent }}
@@ -4672,7 +4672,7 @@ return (
                   {category}
                 </span>
                 {backendReviewCount > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <span className="flex items-center gap-1 text-xs text-secondary">
                     <span className="text-amber-400">{"★".repeat(Math.round(backendAvgRating))}</span>
                     {backendAvgRating.toFixed(1)} ({backendReviewCount})
                   </span>
@@ -4684,7 +4684,7 @@ return (
                   className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${
                     isFavorited
                       ? "border-rose-400/30 bg-rose-400/10 text-rose-400"
-                      : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
+                      : "border-default text-secondary hover:border-strong hover:text-primary"
                   }`}
                 >
                   {isFavorited ? "♥" : "♡"} {favoriteCount > 0 ? favoriteCount : "Save"}
@@ -4692,21 +4692,21 @@ return (
               </div>
 
               {projectView === "analytics" && (
-              <div className="mt-5 rounded-2xl border border-zinc-800 bg-base/40 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+              <div className="mt-5 rounded-2xl border border-default bg-surface-page/40 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-secondary">
                   DUM Hub benefits
                 </p>
                 <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-zinc-300">
-                    <span className="mt-0.5 text-emerald-400">✦</span>
+                  <li className="flex items-start gap-2 text-sm text-primary">
+                    <span className="mt-0.5 text-brand-teal">✦</span>
                     <span>Earn DUM Points with every purchase</span>
                   </li>
-                  <li className="flex items-start gap-2 text-sm text-zinc-300">
-                    <span className="mt-0.5 text-emerald-400">✦</span>
+                  <li className="flex items-start gap-2 text-sm text-primary">
+                    <span className="mt-0.5 text-brand-teal">✦</span>
                     <span>Use points for discounts at any business</span>
                   </li>
-                  <li className="flex items-start gap-2 text-sm text-zinc-300">
-                    <span className="mt-0.5 text-emerald-400">✦</span>
+                  <li className="flex items-start gap-2 text-sm text-primary">
+                    <span className="mt-0.5 text-brand-teal">✦</span>
                     <span>Supporters get unlimited AI access</span>
                   </li>
                 </ul>
@@ -4719,50 +4719,50 @@ return (
             {projectView === "analytics" && canShowMarketUi && (
               <div className="flex items-center justify-end gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                 </span>
-                <span className="text-xs font-medium text-emerald-400">LIVE MARKET</span>
+                <span className="text-xs font-medium text-brand-teal">LIVE MARKET</span>
               </div>
             )}
 
             {projectView === "storefront" && (
-              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.06] to-zinc-900 p-5">
+              <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
                 <div className="mb-3 flex items-center gap-2 flex-wrap">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+                  <span className="text-xs font-bold uppercase tracking-widest text-brand-teal">
                     {isOwner ? "Your Business · Live" : "Live Business"}
                   </span>
-                  <span className="rounded-full border border-zinc-700 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-zinc-400">
+                  <span className="rounded-full border border-default px-2.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-secondary">
                     {category}
                   </span>
                   {ownerBizProfile?.verification_status === "verified" && (
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-0.5 text-[9px] font-semibold text-emerald-400">
+                    <span className="rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[9px] font-semibold text-brand-teal">
                       ✓ Verified
                     </span>
                   )}
                 </div>
                 {/* Quick stats */}
                 {offers.length > 0 && (
-                  <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-secondary">
                     <span className="flex items-center gap-1.5">
-                      <span className="text-emerald-400">◆</span>
+                      <span className="text-brand-teal">◆</span>
                       {offers.length} offer{offers.length > 1 ? "s" : ""} available
                     </span>
                     {(() => {
                       const totalSold = offers.reduce((sum, o) => sum + (o.quantity_sold || 0), 0);
                       return totalSold > 0 ? (
                         <span className="flex items-center gap-1.5">
-                          <span className="text-emerald-400">●</span>
+                          <span className="text-brand-teal">●</span>
                           {totalSold} purchased
                         </span>
                       ) : null;
                     })()}
                     <span className="flex items-center gap-1.5">
-                      <span className="text-emerald-400">%</span>
+                      <span className="text-brand-teal">%</span>
                       DUM Points accepted
                     </span>
                   </div>
@@ -4774,28 +4774,28 @@ return (
                     <span className="text-2xl font-black text-white">
                       From ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
                     </span>
-                    <span className="text-sm text-zinc-500">USD</span>
+                    <span className="text-sm text-secondary">USD</span>
                   </div>
                 )}
 
                 <div className="flex flex-col gap-2">
-                  <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300 hover:shadow-[0_0_20px_rgba(0,255,163,0.2)]">
+                  <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:">
                     {offers.length > 0 ? `Browse ${offers.length} Offer${offers.length > 1 ? "s" : ""} ↓` : "View Offers ↓"}
                   </button>
                   <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                    <button type="button" onClick={() => scrollToSection("ai-workspace")} className="flex items-center justify-center rounded-xl border border-default px-4 py-3 text-sm text-primary transition hover:border-strong hover:text-primary">
                       Ask AI
                     </button>
                     <div className="relative" ref={shareMenuRef}>
                       <button
                         type="button"
                         onClick={() => setShareMenuOpen((o) => !o)}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-emerald-400/30 hover:text-emerald-400"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-default px-4 py-3 text-sm text-primary transition hover:border-default hover:text-brand-teal"
                       >
                         {shareCopied ? "✓ Copied!" : "Share"}
                       </button>
                       {shareMenuOpen && (
-                        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-zinc-700 bg-zinc-950 p-1.5 shadow-xl">
+                        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-default bg-surface-card p-1.5 shadow-xl">
                           <button
                             type="button"
                             onClick={() => {
@@ -4806,7 +4806,7 @@ return (
                                 setTimeout(() => setShareCopied(false), 2000);
                               });
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary transition hover:bg-surface-muted hover:text-white"
                           >
                             Copy link
                           </button>
@@ -4815,7 +4815,7 @@ return (
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => setShareMenuOpen(false)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary transition hover:bg-surface-muted hover:text-white"
                           >
                             Share on X
                           </a>
@@ -4834,7 +4834,7 @@ return (
                               }
                               setShareMenuOpen(false);
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary transition hover:bg-surface-muted hover:text-white"
                           >
                             More options
                           </button>
@@ -4847,9 +4847,9 @@ return (
             )}
 
             {projectView === "analytics" && hasMarketSnapshot ? (
-              <div className="rounded-2xl border border-emerald-500/10 bg-zinc-900 p-5 shadow-[0_0_30px_rgba(0,255,163,0.04)]">
+              <div className="rounded-2xl border border-default bg-surface-muted p-5">
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-secondary">
                     {isSimulated ? "Demo price (simulated)" : "Current Price"}
                   </span>
                   {isSimulated ? (
@@ -4858,8 +4858,8 @@ return (
                     </span>
                   ) : (
                     <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-teal" />
                     </span>
                   )}
                 </div>
@@ -4869,16 +4869,16 @@ return (
                   </span>
                   <span
                     className={`mb-1 font-mono text-sm font-semibold ${
-                      heroPriceUp ? "text-emerald-400" : "text-red-400"
+                      heroPriceUp ? "text-brand-teal" : "text-state-live"
                     }`}
                   >
                     {heroPriceUp ? "+" : ""}
                     {heroPriceChangePct.toFixed(2)}%
                   </span>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3">
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-default pt-3">
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    <div className="text-[10px] uppercase tracking-wider text-secondary">
                       {isSimulated ? "Market Cap (demo)" : "Market Cap"}
                     </div>
                     <div className="mt-0.5 font-mono text-sm font-semibold text-white">
@@ -4886,7 +4886,7 @@ return (
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    <div className="text-[10px] uppercase tracking-wider text-secondary">
                       {isSimulated ? "Volume 24h (demo)" : "Volume 24h"}
                     </div>
                     <div className="mt-0.5 font-mono text-sm font-semibold text-white">
@@ -4894,9 +4894,9 @@ return (
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-xl border border-emerald-400/10 bg-emerald-400/5 p-3">
-                  <p className="text-xs font-medium text-emerald-400">Supporter perks</p>
-                  <p className="mt-1 text-sm text-zinc-300">
+                <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft p-3">
+                  <p className="text-xs font-medium text-brand-teal">Supporter perks</p>
+                  <p className="mt-1 text-sm text-primary">
                     {chatMeta.holder_unlimited
                       ? "Supporters get unlimited AI access and exclusive project perks."
                       : "Purchase an offer to unlock perks and exclusive access."}
@@ -4904,21 +4904,21 @@ return (
                 </div>
               </div>
             ) : projectView === "analytics" ? (
-              <div className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.04] to-zinc-900 p-5">
-                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/60">DUM Hub</div>
+              <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">DUM Hub</div>
                 <div className="text-lg font-black text-white">Rewards &amp; Perks</div>
-                <div className="mt-3 space-y-2.5 border-t border-zinc-800 pt-3">
-                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
-                    <span className="text-emerald-400">💳</span> Stripe checkout active
+                <div className="mt-3 space-y-2.5 border-t border-default pt-3">
+                  <div className="flex items-center gap-2.5 text-sm text-secondary">
+                    <span className="text-brand-teal">💳</span> Stripe checkout active
                   </div>
-                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
-                    <span className="text-emerald-400">◆</span> DUM Points accepted
+                  <div className="flex items-center gap-2.5 text-sm text-secondary">
+                    <span className="text-brand-teal">◆</span> DUM Points accepted
                   </div>
-                  <div className="flex items-center gap-2.5 text-sm text-zinc-400">
-                    <span className="text-emerald-400">%</span> 10% off with points
+                  <div className="flex items-center gap-2.5 text-sm text-secondary">
+                    <span className="text-brand-teal">%</span> 10% off with points
                   </div>
                 </div>
-                <div className="mt-3 rounded-lg bg-zinc-800/50 px-3 py-2 text-xs text-zinc-500">
+                <div className="mt-3 rounded-lg bg-surface-muted/50 px-3 py-2 text-xs text-secondary">
                   Powered by Stripe payments
                 </div>
               </div>
@@ -4929,21 +4929,21 @@ return (
                 <button
                   type="button"
                   onClick={scrollToBuyPanel}
-                  className="w-full rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+                  className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal active:scale-[0.98]"
                 >
                   {isSimulated ? `Record demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
                 </button>
                 <button
                   type="button"
                   onClick={scrollToAiWorkspace}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                  className="w-full rounded-xl border border-default bg-surface-muted px-5 py-3 text-sm font-semibold text-primary transition hover:border-strong hover:bg-surface-muted"
                 >
                   Ask AI →
                 </button>
                 {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
+                    className="block w-full px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
                   >
                     Book service →
                   </Link>
@@ -4952,19 +4952,19 @@ return (
                   Boolean(serviceProfile?.is_active) ? (
                     <Link
                       href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
+                      className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
                     >
                       Manage bookings →
                     </Link>
                   ) : serviceProfile ? (
-                    <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
+                    <div className="rounded-xl border border-dashed border-default px-5 py-3 text-center">
                       <Link
                         href={`/project/${id}/manage`}
-                        className="block text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                        className="block text-xs text-brand-teal transition hover:text-brand-teal"
                       >
                         Set up your service →
                       </Link>
-                      <p className="mt-1 text-[10px] text-zinc-600">
+                      <p className="mt-1 text-[10px] text-muted">
                         Turn this project into a bookable offer
                       </p>
                     </div>
@@ -4981,7 +4981,7 @@ return (
                   <button
                     type="button"
                     onClick={scrollToAiWorkspace}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:border-zinc-500 hover:bg-zinc-800"
+                    className="w-full rounded-xl border border-default bg-surface-muted px-5 py-3 text-sm font-semibold text-primary transition hover:border-strong hover:bg-surface-muted"
                   >
                     Ask AI →
                   </button>
@@ -4989,7 +4989,7 @@ return (
                 {Boolean(serviceProfile?.is_active) && (
                   <Link
                     href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
+                    className="block w-full px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
                   >
                     Book service →
                   </Link>
@@ -4998,19 +4998,19 @@ return (
                   Boolean(serviceProfile?.is_active) ? (
                     <Link
                       href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-zinc-800 px-5 py-2 text-center text-xs text-zinc-600 transition hover:text-zinc-300"
+                      className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
                     >
                       Manage bookings →
                     </Link>
                   ) : serviceProfile ? (
-                    <div className="rounded-xl border border-dashed border-zinc-700 px-5 py-3 text-center">
+                    <div className="rounded-xl border border-dashed border-default px-5 py-3 text-center">
                       <Link
                         href={`/project/${id}/manage`}
-                        className="block text-xs text-emerald-400/70 transition hover:text-emerald-400"
+                        className="block text-xs text-brand-teal transition hover:text-brand-teal"
                       >
                         Set up your service →
                       </Link>
-                      <p className="mt-1 text-[10px] text-zinc-600">
+                      <p className="mt-1 text-[10px] text-muted">
                         Turn this project into a bookable offer
                       </p>
                     </div>
@@ -5022,21 +5022,21 @@ return (
         </div>
       </div>
 
-      <div id="section-about" className="mb-8 rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm">
-        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-400">About</div>
+      <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
         {loadingProject ? (
           <div className="space-y-2">
-            <div className="h-4 w-full animate-pulse rounded bg-zinc-800" />
-            <div className="h-4 w-5/6 animate-pulse rounded bg-zinc-800" />
-            <div className="h-4 w-4/6 animate-pulse rounded bg-zinc-800" />
+            <div className="h-4 w-full animate-pulse rounded bg-surface-muted" />
+            <div className="h-4 w-5/6 animate-pulse rounded bg-surface-muted" />
+            <div className="h-4 w-4/6 animate-pulse rounded bg-surface-muted" />
           </div>
         ) : (
-          <p className="max-w-3xl text-base leading-relaxed text-zinc-300">
+          <p className="max-w-3xl text-base leading-relaxed text-primary">
             {project?.description || parsedAiOutput?.description || "No description available yet."}
           </p>
         )}
         {project?.prompt && (
-          <p className="mt-4 text-sm text-zinc-500">
+          <p className="mt-4 text-sm text-secondary">
             Launched from the idea: &ldquo;{project.prompt}&rdquo;
           </p>
         )}
@@ -5044,24 +5044,24 @@ return (
 
       {/* ── FOUNDER CARD — Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (
-        <div className="mb-8 rounded-3xl border border-zinc-700/50 border-l-2 border-l-emerald-400/40 bg-zinc-900/60 p-6 backdrop-blur-sm">
-          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-zinc-400">Founding Merchant</div>
+        <div className="mb-8 rounded-3xl border border-default border-l-2 border-l-brand-teal bg-surface-card p-6 backdrop-blur-sm">
+          <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">Founding Merchant</div>
           <div className="flex items-start gap-5">
             <img
               src="/Julian.jpeg"
               alt="Julian Mero — founder, Topgun Maintenance LLC"
-              className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-emerald-400/40 shadow-[0_0_24px_rgba(0,255,163,0.15)]"
+              className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-default"
             />
             <div className="flex-1 min-w-0">
               <div className="text-lg font-bold text-white">Julian Mero</div>
-              <div className="mt-0.5 text-sm text-zinc-300">Founder · A&amp;P Certified Mechanic</div>
-              <div className="mt-1 text-xs text-zinc-400">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-4 py-2 shadow-[0_0_20px_rgba(0,255,163,0.2)]">
+              <div className="mt-0.5 text-sm text-primary">Founder · A&amp;P Certified Mechanic</div>
+              <div className="mt-1 text-xs text-secondary">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                 </span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">Verified Founding Merchant</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-brand-teal">Verified Founding Merchant</span>
               </div>
             </div>
           </div>
@@ -5069,7 +5069,7 @@ return (
       )}
 
       {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
-        <div className="mb-8 border-b border-t border-zinc-800 bg-base">
+        <div className="mb-8 border-b border-t border-default bg-surface-page">
           {isSimulated && (
             <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
               Preview only — trading is a future-phase feature
@@ -5111,13 +5111,13 @@ return (
                   : []),
               ].map((stat: { label: string; value: string; positive?: boolean }) => (
                 <div key={stat.label} className="min-w-0 flex-shrink-0 px-4 py-3 sm:px-5">
-                  <div className="text-xs text-zinc-500">{stat.label}</div>
+                  <div className="text-xs text-secondary">{stat.label}</div>
                   <div
                     className={`text-sm font-semibold ${
                       stat.positive === true
-                        ? "text-emerald-400"
+                        ? "text-brand-teal"
                         : stat.positive === false
-                        ? "text-red-400"
+                        ? "text-state-live"
                         : "text-white"
                     }`}
                   >
@@ -5147,23 +5147,23 @@ return (
         );
         if (!tmpl && !isComplexGame) return null;
         if (isComplexGame) return (
-          <div className="mb-8 rounded-3xl border border-zinc-800/40 bg-gradient-to-r from-violet-500/[0.04] to-zinc-950 p-6">
+          <div className="mb-8 rounded-3xl border border-default bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-6">
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xl">🎮</span>
               <span className="text-sm font-bold text-white">Entertainment Business</span>
             </div>
-            <p className="text-sm leading-relaxed text-zinc-400">
+            <p className="text-sm leading-relaxed text-secondary">
               This is a premium experience business. Sell access passes, memberships, and exclusive content to your audience. Your storefront and offers are ready below.
             </p>
           </div>
         );
         return (
-          <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 overflow-hidden">
+          <div className="mb-8 rounded-3xl border border-default bg-surface-card overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950 px-5 py-3">
+            <div className="flex items-center justify-between border-b border-default bg-surface-card px-5 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{tmpl.emoji}</span>
-                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Interactive Experience + Storefront</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-brand-teal">Interactive Experience + Storefront</span>
               </div>
               <div className="flex items-center gap-3">
                 {!gameUnlocked && gamePlaysLeft > 0 && gamePlaysLeft < 4 && (
@@ -5172,13 +5172,13 @@ return (
                   </span>
                 )}
                 {gameUnlocked && (
-                  <span className="text-[10px] font-bold text-emerald-400">◆ Unlimited</span>
+                  <span className="text-[10px] font-bold text-brand-teal">◆ Unlimited</span>
                 )}
-                <span className="hidden text-[9px] text-zinc-600 sm:inline">Arrow keys or touch</span>
+                <span className="hidden text-[9px] text-muted sm:inline">Arrow keys or touch</span>
                 <button
                   type="button"
                   onClick={() => setEmbedExpanded((v) => !v)}
-                  className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200"
+                  className="rounded-lg border border-default bg-surface-muted px-3 py-1 text-[10px] text-secondary transition hover:border-strong hover:text-primary"
                 >
                   {embedExpanded ? "Collapse" : "Expand"}
                 </button>
@@ -5201,11 +5201,11 @@ return (
 
               {/* Lock overlay */}
               {gameLocked && !gameUnlocked && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm">
-                  <div className="mx-4 w-full max-w-sm rounded-2xl border border-emerald-400/20 bg-zinc-950 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-card backdrop-blur-sm">
+                  <div className="mx-4 w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
                     <div className="mb-3 text-3xl">🔒</div>
                     <h3 className="text-lg font-extrabold text-white">Unlock to keep playing</h3>
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-secondary">
                       You&apos;ve used your 3 free plays. Use DUM Points to unlock unlimited access.
                     </p>
                     <button
@@ -5217,7 +5217,7 @@ return (
                           unlockGameWithDum();
                         }
                       }}
-                      className="mt-5 w-full rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-300"
+                      className="mt-5 w-full rounded-xl bg-brand-teal px-6 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
                     >
                       ◆ Use 10 DUM Points
                     </button>
@@ -5228,7 +5228,7 @@ return (
                     )}
                     <Link
                       href="/upgrade"
-                      className="mt-3 block w-full rounded-xl border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      className="mt-3 block w-full rounded-xl border border-default px-6 py-3 text-sm text-primary transition hover:border-strong hover:text-primary"
                     >
                       Upgrade Membership
                     </Link>
@@ -5238,36 +5238,36 @@ return (
             </div>
 
             {/* Footer */}
-            <div className="border-t border-zinc-800/60 px-5 py-2 text-center">
-              <span className="text-[9px] text-zinc-700">Powered by DUM Club</span>
+            <div className="border-t border-default px-5 py-2 text-center">
+              <span className="text-[9px] text-muted">Powered by DUM Club</span>
             </div>
           </div>
         );
       })()}
 
       {/* ── DUM Hub Card ── */}
-      <div className="mb-6 rounded-2xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.04] to-zinc-950 p-5">
-        <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-400">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/70">DUM Hub</span>
+      <div className="mb-6 rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-secondary">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">DUM Hub</span>
           <span className="flex items-center gap-1.5">💳 Stripe checkout</span>
-          <span className="text-zinc-700">·</span>
+          <span className="text-muted">·</span>
           <span className="flex items-center gap-1.5">◆ Earn DUM Points</span>
-          <span className="text-zinc-700">·</span>
+          <span className="text-muted">·</span>
           <span className="flex items-center gap-1.5">% 10% off with points</span>
-          <span className="text-zinc-700">·</span>
-          <span className="text-zinc-600">Works at every business</span>
+          <span className="text-muted">·</span>
+          <span className="text-muted">Works at every business</span>
         </div>
       </div>
 
       {/* ── Offers (Public Storefront + Owner Tools) — hidden for viewers during live ── */}
-      <div id="offers-section" className={`mb-8 rounded-3xl border border-zinc-700/50 bg-zinc-900/60 p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.3em] text-emerald-400/50">
+            <span className="text-xs uppercase tracking-[0.3em] text-brand-teal/50">
               Offers
             </span>
             {isDemo && (
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase text-emerald-400/60">
+              <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase text-brand-teal/60">
                 Live Preview
               </span>
             )}
@@ -5275,7 +5275,7 @@ return (
           {isOwner && !offerFormOpen && (
             <button
               onClick={() => openOfferForm()}
-              className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300"
+              className="rounded-full border border-default bg-brand-teal-soft px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-brand-teal transition hover:border-default hover:text-brand-teal"
             >
               + Add Offer
             </button>
@@ -5287,18 +5287,18 @@ return (
             {(() => {
               const totalSold = offers.reduce((sum, o) => sum + (o.quantity_sold || 0), 0);
               return totalSold > 0 ? (
-                <p className="mt-1 text-[12px] text-zinc-500">{totalSold} purchases · Stripe checkout · DUM Points accepted</p>
+                <p className="mt-1 text-[12px] text-secondary">{totalSold} purchases · Stripe checkout · DUM Points accepted</p>
               ) : (
-                <p className="mt-1 text-[12px] text-zinc-500">Stripe checkout · DUM Points accepted</p>
+                <p className="mt-1 text-[12px] text-secondary">Stripe checkout · DUM Points accepted</p>
               );
             })()}
           </div>
-          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-zinc-500">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400/60"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-secondary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/60"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Secure
           </span>
         </div>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-secondary">
           {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
         </p>
 
@@ -5311,14 +5311,14 @@ return (
             10%-opacity emerald was too subtle to read on a phone screen
             in daylight. */}
         {isOwner && offers.filter((o) => o.is_active).length > 0 && (
-          <div className="mt-4 space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="mt-4 space-y-3 rounded-2xl border border-default bg-surface-card p-4">
             <div className="flex items-center justify-between">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product (Live)</div>
+              <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product (Live)</div>
               {project?.pinned_offer_id && (
                 <button
                   onClick={() => handlePinOffer(null)}
                   disabled={pinningOfferId !== null}
-                  className="text-[10px] uppercase tracking-wider text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
+                  className="text-[10px] uppercase tracking-wider text-secondary hover:text-primary disabled:opacity-40"
                 >
                   Unpin
                 </button>
@@ -5336,31 +5336,31 @@ return (
                     disabled={anyInFlight}
                     className={`rounded-xl border px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${
                       isPinned
-                        ? "border-emerald-400 bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-400/60"
-                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                        ? "border-brand-teal bg-brand-teal-soft text-brand-teal ring-1 ring-brand-teal/30"
+                        : "border-default text-secondary hover:border-strong hover:text-white"
                     }`}
                   >
                     {isPinned && <span className="mr-1">✓</span>}
                     {offer.title} · ${Number(offer.price_usd).toFixed(0)}
                     {isPinned && (
-                      <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                      <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-brand-teal">
                         PINNED
                       </span>
                     )}
                     {isThisInFlight && (
-                      <span className="ml-2 text-[10px] text-zinc-500">…</span>
+                      <span className="ml-2 text-[10px] text-secondary">…</span>
                     )}
                   </button>
                 );
               })}
             </div>
             {pinError && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              <div className="rounded-lg border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-3 py-2 text-xs text-state-live">
                 {pinError}
               </div>
             )}
             {project?.pinned_offer_id && !pinError && (
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-[11px] text-secondary">
                 Pinned. Refresh the embed to see it as &quot;Now showing&quot;.
               </p>
             )}
@@ -5538,13 +5538,13 @@ return (
               {/* Compact activation card — the only thing visible by
                   default. Replaces the previous developer-first panel
                   that exposed code immediately. */}
-              <div className="mt-4 rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.06] to-zinc-950 p-5 sm:p-6">
+              <div className="mt-4 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-white sm:text-xl">
                       Add DUM Live to Your Website
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-secondary">
                       Live video, pinned flash offers, Stripe checkout, and loyalty rewards — all on your own site.
                     </p>
                   </div>
@@ -5568,11 +5568,11 @@ return (
                         setEmbedPlatform(isMobile ? "custom" : null);
                         setEmbedModalOpen(true);
                       }}
-                      className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400 sm:w-auto"
+                      className="w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal sm:w-auto"
                     >
                       Activate DUM Live
                     </button>
-                    <span className="text-[11px] text-zinc-500">
+                    <span className="text-[11px] text-secondary">
                       Usually takes less than 5 minutes
                     </span>
                   </div>
@@ -5591,25 +5591,25 @@ return (
                   aria-label="Activate DUM Live"
                 >
                   <div
-                    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-zinc-800 bg-zinc-950 sm:rounded-2xl"
+                    className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-default bg-surface-card sm:rounded-2xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Header */}
-                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-800 px-5 py-4">
+                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-default px-5 py-4">
                       <div>
                         <h2 className="text-base font-bold text-white sm:text-lg">
                           Activate DUM Live
                         </h2>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-secondary">
                           Add your live storefront to{" "}
-                          <span className="text-zinc-300">{project?.title || project?.name || slug}</span>
+                          <span className="text-primary">{project?.title || project?.name || slug}</span>
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setEmbedModalOpen(false)}
                         aria-label="Close"
-                        className="rounded-lg p-2 text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
+                        className="rounded-lg p-2 text-secondary transition hover:bg-surface-muted hover:text-primary"
                       >
                         <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                           <path d="M5 5l10 10M15 5L5 15" />
@@ -5627,13 +5627,13 @@ return (
                     {installConfirmed ? (
                       <div className="flex-1 overflow-y-auto px-5 py-8 sm:py-10">
                         <div className="mx-auto max-w-md text-center">
-                          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-emerald-400/15 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300">
+                          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-brand-teal-soft px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                             ✨ Installed
                           </div>
                           <h3 className="text-2xl font-extrabold tracking-tight text-white">
                             DUM Live is installed on your site.
                           </h3>
-                          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-zinc-300">
+                          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary">
                             Customers can now see your live storefront whenever they visit the page where you pasted the code.
                           </p>
 
@@ -5644,13 +5644,13 @@ return (
                               closes the modal and lets the merchant
                               act inline. */}
                           <div className="mt-6 space-y-2">
-                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
                               What&apos;s next
                             </div>
                             <button
                               type="button"
                               onClick={() => setEmbedModalOpen(false)}
-                              className="block w-full rounded-xl bg-emerald-400 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300"
+                              className="block w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                             >
                               Pin a flash deal →
                             </button>
@@ -5658,7 +5658,7 @@ return (
                               href={previewUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="block w-full rounded-xl border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                              className="block w-full rounded-xl border border-default bg-surface-card px-5 py-3 text-sm font-medium text-primary transition hover:border-default hover:text-brand-teal"
                             >
                               Preview my live storefront
                             </a>
@@ -5669,14 +5669,14 @@ return (
                               echo "Drive your market — not platform
                               fees." Per direction this stays
                               supporting, not a headline. */}
-                          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300/70">
+                          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal/70">
                             Drive your market — not platform fees.
                           </p>
 
                           <button
                             type="button"
                             onClick={resetInstall}
-                            className="mt-6 text-[11px] text-zinc-500 underline-offset-2 transition hover:text-zinc-300 hover:underline"
+                            className="mt-6 text-[11px] text-secondary underline-offset-2 transition hover:text-primary hover:underline"
                           >
                             I want to reinstall on a different page
                           </button>
@@ -5686,7 +5686,7 @@ return (
                       <>
 
                     {/* Tab nav. Wraps to 2x2 on narrow viewports. */}
-                    <div className="flex shrink-0 flex-wrap gap-1 border-b border-zinc-800 px-3 pt-2 sm:px-5">
+                    <div className="flex shrink-0 flex-wrap gap-1 border-b border-default px-3 pt-2 sm:px-5">
                       {[
                         { id: "guided" as const, label: "Guided Setup" },
                         { id: "self" as const, label: "Install It Myself" },
@@ -5699,8 +5699,8 @@ return (
                           onClick={() => setEmbedActivePath(tab.id)}
                           className={`rounded-t-md px-3 py-2 text-[12px] font-medium transition sm:text-sm ${
                             embedActivePath === tab.id
-                              ? "border-b-2 border-emerald-400 text-emerald-300"
-                              : "border-b-2 border-transparent text-zinc-500 hover:text-zinc-200"
+                              ? "border-b-2 border-brand-teal text-brand-teal"
+                              : "border-b-2 border-transparent text-secondary hover:text-primary"
                           }`}
                         >
                           {tab.label}
@@ -5715,7 +5715,7 @@ return (
                       {embedActivePath === "guided" && (
                         <div className="space-y-5">
                           {/* Progress flow */}
-                          <ol className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500 sm:gap-2 sm:text-xs">
+                          <ol className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-secondary sm:gap-2 sm:text-xs">
                             {[
                               { n: 1, label: "Choose Website" },
                               { n: 2, label: "Copy Install" },
@@ -5730,10 +5730,10 @@ return (
                                     <span
                                       className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
                                         active
-                                          ? "bg-emerald-400 text-black"
+                                          ? "bg-brand-teal text-black"
                                           : done
-                                          ? "bg-emerald-400/30 text-emerald-300"
-                                          : "bg-zinc-800 text-zinc-500"
+                                          ? "bg-brand-teal-soft text-brand-teal"
+                                          : "bg-surface-muted text-secondary"
                                       }`}
                                     >
                                       {done ? "✓" : s.n}
@@ -5741,9 +5741,9 @@ return (
                                     <span
                                       className={
                                         active
-                                          ? "text-emerald-300"
+                                          ? "text-brand-teal"
                                           : done
-                                          ? "text-zinc-400"
+                                          ? "text-secondary"
                                           : ""
                                       }
                                     >
@@ -5751,7 +5751,7 @@ return (
                                     </span>
                                   </div>
                                   {idx < arr.length - 1 && (
-                                    <span className="mx-1 flex-1 border-t border-dashed border-zinc-800 sm:mx-2" />
+                                    <span className="mx-1 flex-1 border-t border-dashed border-default sm:mx-2" />
                                   )}
                                 </li>
                               );
@@ -5765,7 +5765,7 @@ return (
                                 <h4 className="text-sm font-bold text-white">
                                   What kind of website do you have?
                                 </h4>
-                                <p className="text-xs text-zinc-500">
+                                <p className="text-xs text-secondary">
                                   We'll show you exactly where to paste.
                                 </p>
                               </div>
@@ -5781,7 +5781,7 @@ return (
                                       }
                                       setEmbedPlatform(p.id);
                                     }}
-                                    className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-left text-sm text-zinc-200 transition hover:border-emerald-400/50 hover:bg-emerald-400/[0.04]"
+                                    className="rounded-xl border border-default bg-surface-muted px-3 py-3 text-left text-sm text-primary transition hover:border-brand-teal hover:bg-brand-teal-soft"
                                   >
                                     {p.name}
                                   </button>
@@ -5800,17 +5800,17 @@ return (
                                 <button
                                   type="button"
                                   onClick={() => setEmbedPlatform(null)}
-                                  className="text-[11px] text-zinc-500 transition hover:text-zinc-300"
+                                  className="text-[11px] text-secondary transition hover:text-primary"
                                 >
                                   ← Choose different website
                                 </button>
-                                <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-                                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
+                                <div className="rounded-xl border border-default bg-surface-muted p-4">
+                                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-brand-teal">
                                     {p.name} install
                                   </div>
-                                  <p className="text-sm text-zinc-200">{p.instruction}</p>
+                                  <p className="text-sm text-primary">{p.instruction}</p>
                                   {p.mobileNote && (
-                                    <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-zinc-400">
+                                    <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-secondary">
                                       <span aria-hidden="true">📱</span>
                                       <span>{p.mobileNote}</span>
                                     </p>
@@ -5820,13 +5820,13 @@ return (
                                   <button
                                     type="button"
                                     onClick={() => copyText(scriptSnippet, "script")}
-                                    className="w-full rounded-xl bg-emerald-500 px-5 py-4 text-sm font-bold text-black shadow-[0_0_20px_rgba(0,255,163,0.15)] transition hover:bg-emerald-400"
+                                    className="w-full rounded-xl bg-brand-teal px-5 py-4 text-sm font-bold text-black transition hover:bg-brand-teal"
                                   >
                                     {copiedSnippet === "script"
                                       ? "Copied ✓ — now paste it on your site"
                                       : "Copy Install Code"}
                                   </button>
-                                  <p className="mt-1.5 text-center text-[11px] text-zinc-500">
+                                  <p className="mt-1.5 text-center text-[11px] text-secondary">
                                     Usually takes less than 5 minutes
                                   </p>
                                 </div>
@@ -5837,17 +5837,17 @@ return (
                                     you test" trap (paste → check → blank
                                     → panic) is one of the most common
                                     install snags on WordPress / Squarespace. */}
-                                <ol className="space-y-1.5 rounded-xl border border-zinc-800 bg-black/40 p-3 text-[12px] text-zinc-300">
+                                <ol className="space-y-1.5 rounded-xl border border-default bg-black/40 p-3 text-[12px] text-primary">
                                   <li className="flex items-start gap-2">
-                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">1</span>
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-teal-soft text-[10px] font-bold text-brand-teal">1</span>
                                     <span>Paste it on your page</span>
                                   </li>
                                   <li className="flex items-start gap-2">
-                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">2</span>
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-teal-soft text-[10px] font-bold text-brand-teal">2</span>
                                     <span>Save / Publish</span>
                                   </li>
                                   <li className="flex items-start gap-2">
-                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-400">3</span>
+                                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-teal-soft text-[10px] font-bold text-brand-teal">3</span>
                                     <span>Visit your page to see it live</span>
                                   </li>
                                 </ol>
@@ -5859,7 +5859,7 @@ return (
                                     code on their own site has the same
                                     reassurance they had when connecting
                                     Stripe. */}
-                                <p className="text-center text-[11px] leading-relaxed text-zinc-500">
+                                <p className="text-center text-[11px] leading-relaxed text-secondary">
                                   0% commission · No per-sale fee · Your bank info goes to Stripe, never to DUM Club.
                                 </p>
 
@@ -5867,7 +5867,7 @@ return (
                                   href={previewUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[12px] text-zinc-400 transition hover:text-emerald-300"
+                                  className="inline-flex items-center gap-1 text-[12px] text-secondary transition hover:text-brand-teal"
                                 >
                                   Preview what your storefront will look like →
                                 </a>
@@ -5879,15 +5879,15 @@ return (
                                     automatic verification — the merchant
                                     audit's MVP scope explicitly held the
                                     real embed-detection backend work. */}
-                                <div className="mt-2 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.05] p-4">
-                                  <p className="text-[12px] leading-relaxed text-zinc-300">
+                                <div className="mt-2 rounded-xl border border-default bg-brand-teal-soft p-4">
+                                  <p className="text-[12px] leading-relaxed text-primary">
                                     <span className="font-bold text-white">Done pasting?</span>{" "}
                                     Click below to confirm — we&apos;ll mark your live storefront as installed.
                                   </p>
                                   <button
                                     type="button"
                                     onClick={confirmInstall}
-                                    className="mt-3 w-full rounded-xl border border-emerald-400/50 bg-emerald-400/10 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-400/20"
+                                    className="mt-3 w-full rounded-xl border border-brand-teal bg-brand-teal-soft px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-teal transition hover:border-brand-teal hover:bg-brand-teal-soft"
                                   >
                                     I pasted it on my site →
                                   </button>
@@ -5907,57 +5907,57 @@ return (
                             </h4>
                           </div>
 
-                          <ol className="space-y-3 text-sm text-zinc-300">
-                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                          <ol className="space-y-3 text-sm text-primary">
+                            <li className="rounded-xl border border-default bg-surface-muted p-4">
                               <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-black">1</span>
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-teal text-xs font-bold text-black">1</span>
                                 <div className="flex-1">
                                   <div className="font-semibold text-white">Copy the install code</div>
                                   <button
                                     type="button"
                                     onClick={() => copyText(scriptSnippet, "script")}
-                                    className="mt-2 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 sm:w-auto"
+                                    className="mt-2 w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal sm:w-auto"
                                   >
                                     {copiedSnippet === "script" ? "Copied ✓" : "Copy Install Code"}
                                   </button>
                                 </div>
                               </div>
                             </li>
-                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                            <li className="rounded-xl border border-default bg-surface-muted p-4">
                               <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">2</span>
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">2</span>
                                 <div className="flex-1">
                                   <div className="font-semibold text-white">Paste it on your website</div>
-                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                  <p className="mt-0.5 text-xs text-secondary">
                                     Open your site editor and paste it on the page where you want the live storefront to appear.
                                   </p>
                                 </div>
                               </div>
                             </li>
-                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                            <li className="rounded-xl border border-default bg-surface-muted p-4">
                               <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">3</span>
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">3</span>
                                 <div className="flex-1">
                                   <div className="font-semibold text-white">Publish your changes</div>
-                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                  <p className="mt-0.5 text-xs text-secondary">
                                     Save and publish so your visitors can see it.
                                   </p>
                                 </div>
                               </div>
                             </li>
-                            <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+                            <li className="rounded-xl border border-default bg-surface-muted p-4">
                               <div className="flex items-start gap-3">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-300">4</span>
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">4</span>
                                 <div className="flex-1">
                                   <div className="font-semibold text-white">Preview my storefront</div>
-                                  <p className="mt-0.5 text-xs text-zinc-500">
+                                  <p className="mt-0.5 text-xs text-secondary">
                                     Open your live storefront in a new tab to see exactly what your customers will see.
                                   </p>
                                   <a
                                     href={previewUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="mt-2 inline-block rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200 transition hover:border-emerald-400/60 hover:text-emerald-300"
+                                    className="mt-2 inline-block rounded-xl border border-default px-4 py-2 text-sm text-primary transition hover:border-brand-teal hover:text-brand-teal"
                                   >
                                     Preview Storefront →
                                   </a>
@@ -5973,7 +5973,7 @@ return (
                         <div className="space-y-5">
                           <div>
                             <h4 className="text-sm font-bold text-white">Advanced setup</h4>
-                            <p className="text-xs text-zinc-500">
+                            <p className="text-xs text-secondary">
                               Raw embed code, iframe fallback, and a local test page.
                               For technical users or when the platform restricts custom scripts.
                             </p>
@@ -5982,18 +5982,18 @@ return (
                           {/* Script tag */}
                           <div>
                             <div className="mb-1.5 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
-                                Script tag <span className="text-zinc-600">· recommended</span>
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-teal">
+                                Script tag <span className="text-muted">· recommended</span>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => copyText(scriptSnippet, "script")}
-                                className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70 hover:bg-emerald-400/20"
+                                className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1 text-[11px] font-bold text-brand-teal transition hover:border-brand-teal/70 hover:bg-brand-teal-soft"
                               >
                                 {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto rounded-xl border border-default bg-black p-3 text-[11px] leading-relaxed text-primary">
                               <code>{scriptSnippet}</code>
                             </pre>
                           </div>
@@ -6001,41 +6001,41 @@ return (
                           {/* iframe fallback */}
                           <div>
                             <div className="mb-1.5 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                                iframe <span className="text-zinc-700">· fallback for platforms that block scripts</span>
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
+                                iframe <span className="text-muted">· fallback for platforms that block scripts</span>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => copyText(iframeSnippet, "iframe")}
-                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                className="rounded-lg border border-default bg-transparent px-3 py-1 text-[11px] font-medium text-primary transition hover:border-strong hover:text-primary"
                               >
                                 {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto rounded-xl border border-default bg-black p-3 text-[11px] leading-relaxed text-primary">
                               <code>{iframeSnippet}</code>
                             </pre>
                           </div>
 
                           {/* Sizing & responsive notes */}
-                          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
-                            <div className="mb-1 font-bold text-zinc-200">Sizing &amp; responsive notes</div>
+                          <div className="rounded-xl border border-default bg-surface-muted p-3 text-xs text-secondary">
+                            <div className="mb-1 font-bold text-primary">Sizing &amp; responsive notes</div>
                             <ul className="space-y-0.5 text-[12px] leading-relaxed">
-                              <li><span className="text-zinc-500">·</span> The script-tag widget auto-sizes to its parent container.</li>
-                              <li><span className="text-zinc-500">·</span> The iframe fallback uses width:100% and a 640px min-height. Adjust as needed.</li>
-                              <li><span className="text-zinc-500">·</span> Sandbox attributes are required — Stripe Checkout opens in a new tab via popups-to-escape-sandbox.</li>
+                              <li><span className="text-secondary">·</span> The script-tag widget auto-sizes to its parent container.</li>
+                              <li><span className="text-secondary">·</span> The iframe fallback uses width:100% and a 640px min-height. Adjust as needed.</li>
+                              <li><span className="text-secondary">·</span> Sandbox attributes are required — Stripe Checkout opens in a new tab via popups-to-escape-sandbox.</li>
                             </ul>
                           </div>
 
                           {/* test.html */}
-                          <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
-                            <div className="font-bold text-zinc-200 text-xs">
+                          <div className="space-y-2 rounded-xl border border-default bg-surface-muted p-3">
+                            <div className="font-bold text-primary text-xs">
                               Local test page
                             </div>
-                            <p className="text-[12px] text-zinc-400">
-                              Save as <code className="rounded bg-zinc-800 px-1 text-emerald-300">test.html</code> and open in any browser to verify the install before touching your real site.
+                            <p className="text-[12px] text-secondary">
+                              Save as <code className="rounded bg-surface-muted px-1 text-brand-teal">test.html</code> and open in any browser to verify the install before touching your real site.
                             </p>
-                            <pre className="overflow-x-auto rounded-lg border border-zinc-800 bg-black p-2 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto rounded-lg border border-default bg-black p-2 text-[11px] leading-relaxed text-primary">
                               <code>{testHtml}</code>
                             </pre>
                           </div>
@@ -6047,12 +6047,12 @@ return (
                         <div className="space-y-5">
                           <div>
                             <h4 className="text-sm font-bold text-white">For developers</h4>
-                            <p className="text-xs text-zinc-500">
+                            <p className="text-xs text-secondary">
                               GitHub Pages, Vercel, Netlify, React, Next.js, or any custom developer-managed site.
                             </p>
                           </div>
 
-                          <ol className="space-y-2 text-sm text-zinc-300">
+                          <ol className="space-y-2 text-sm text-primary">
                             {[
                               "Open your website's repo in your editor.",
                               "Find the page or component where the live storefront should appear.",
@@ -6061,71 +6061,71 @@ return (
                               "Deploy.",
                               "Visit the page and verify the widget loads. Try Pay with Card to confirm Stripe routing.",
                             ].map((step, i) => (
-                              <li key={i} className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/30 p-3">
-                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-[11px] font-bold text-zinc-400">{i + 1}</span>
+                              <li key={i} className="flex items-start gap-3 rounded-lg border border-default bg-surface-muted p-3">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-bold text-secondary">{i + 1}</span>
                                 <span className="text-[13px] leading-relaxed">{step}</span>
                               </li>
                             ))}
                           </ol>
 
-                          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3 text-xs text-emerald-100/80">
-                            <div className="mb-1 font-bold text-emerald-300">React / Next.js tip</div>
-                            JSX doesn't accept a raw <code className="rounded bg-zinc-900 px-1 text-emerald-300">&lt;script&gt;</code> tag inside components. Use the iframe form below — it drops in cleanly anywhere a JSX element is allowed.
+                          <div className="rounded-xl border border-default bg-brand-teal-soft p-3 text-xs text-emerald-100/80">
+                            <div className="mb-1 font-bold text-brand-teal">React / Next.js tip</div>
+                            JSX doesn't accept a raw <code className="rounded bg-surface-muted px-1 text-brand-teal">&lt;script&gt;</code> tag inside components. Use the iframe form below — it drops in cleanly anywhere a JSX element is allowed.
                           </div>
 
                           {/* Snippet copies for devs */}
                           <div>
                             <div className="mb-1.5 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-teal">
                                 Embed snippet (script)
                               </div>
                               <button
                                 type="button"
                                 onClick={() => copyText(scriptSnippet, "script")}
-                                className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-bold text-emerald-300 transition hover:border-emerald-400/70"
+                                className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1 text-[11px] font-bold text-brand-teal transition hover:border-brand-teal/70"
                               >
                                 {copiedSnippet === "script" ? "Copied ✓" : "Copy code"}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto rounded-xl border border-default bg-black p-3 text-[11px] leading-relaxed text-primary">
                               <code>{scriptSnippet}</code>
                             </pre>
                           </div>
 
                           <div>
                             <div className="mb-1.5 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
                                 Embed snippet (iframe — JSX-safe)
                               </div>
                               <button
                                 type="button"
                                 onClick={() => copyText(iframeSnippet, "iframe")}
-                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                className="rounded-lg border border-default bg-transparent px-3 py-1 text-[11px] font-medium text-primary transition hover:border-strong hover:text-primary"
                               >
                                 {copiedSnippet === "iframe" ? "Copied ✓" : "Copy iframe"}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto rounded-xl border border-default bg-black p-3 text-[11px] leading-relaxed text-primary">
                               <code>{iframeSnippet}</code>
                             </pre>
                           </div>
 
                           {/* Send to my developer */}
-                          <div className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                          <div className="space-y-2 rounded-xl border border-default bg-surface-muted p-3">
                             <div className="flex items-center justify-between gap-2">
-                              <div className="text-xs font-bold text-zinc-200">Send to my developer</div>
+                              <div className="text-xs font-bold text-primary">Send to my developer</div>
                               <button
                                 type="button"
                                 onClick={() => copyText(developerMessage, "developer-msg")}
-                                className="rounded-lg border border-zinc-700 bg-transparent px-3 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                className="rounded-lg border border-default bg-transparent px-3 py-1 text-[11px] font-medium text-primary transition hover:border-strong hover:text-primary"
                               >
                                 {copiedSnippet === "developer-msg" ? "Copied ✓" : "Copy message"}
                               </button>
                             </div>
-                            <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black p-3 text-[11px] leading-relaxed text-zinc-300">
+                            <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-default bg-black p-3 text-[11px] leading-relaxed text-primary">
                               <code>{developerMessage}</code>
                             </pre>
-                            <p className="text-[11px] text-zinc-500">
+                            <p className="text-[11px] text-secondary">
                               Email-ready. Paste into a message to your dev or agency.
                             </p>
                           </div>
@@ -6142,11 +6142,11 @@ return (
                         feel stuck without an exit. Single mailto link in
                         the footer covers that until a real support
                         infrastructure ships. */}
-                    <div className="flex shrink-0 items-center justify-center border-t border-zinc-800 px-5 py-3 text-[11px] text-zinc-500">
+                    <div className="flex shrink-0 items-center justify-center border-t border-default px-5 py-3 text-[11px] text-secondary">
                       Stuck?{" "}
                       <a
                         href="mailto:julian@dum.club?subject=DUM%20Live%20install%20help"
-                        className="ml-1 text-emerald-400 underline-offset-2 transition hover:text-emerald-300 hover:underline"
+                        className="ml-1 text-brand-teal underline-offset-2 transition hover:text-brand-teal hover:underline"
                       >
                         Email julian@dum.club →
                       </a>
@@ -6162,38 +6162,38 @@ return (
 
         {/* Checkout result banner */}
         {checkoutResult === "success" && (
-          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4">
+          <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-brand-teal">
                   {isOwner && simulatedPurchase
                     ? `✓ Sale: "${simulatedPurchase}" — $${simulatedRevenue.toFixed(2)} revenue`
                     : "Purchase successful! ✓"}
                 </p>
                 {!isOwner && (
-                  <p className="mt-1 text-lg font-bold text-emerald-400">You earned DUM 🎉</p>
+                  <p className="mt-1 text-lg font-bold text-brand-teal">You earned DUM 🎉</p>
                 )}
               </div>
-              <button onClick={() => setCheckoutResult(null)} className="text-xs text-emerald-400/60 hover:text-emerald-300">×</button>
+              <button onClick={() => setCheckoutResult(null)} className="text-xs text-brand-teal/60 hover:text-brand-teal">×</button>
             </div>
             {!isOwner && (
-              <p className="mt-2 text-xs text-emerald-400/60">
+              <p className="mt-2 text-xs text-brand-teal/60">
                 Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
               </p>
             )}
           </div>
         )}
         {checkoutResult === "cancelled" && (
-          <div className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm text-zinc-400">Checkout was cancelled</span>
-            <button onClick={() => setCheckoutResult(null)} className="text-xs text-zinc-600 hover:text-zinc-300">Dismiss</button>
+          <div className="mt-4 rounded-xl border border-default bg-surface-muted px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-secondary">Checkout was cancelled</span>
+            <button onClick={() => setCheckoutResult(null)} className="text-xs text-muted hover:text-primary">Dismiss</button>
           </div>
         )}
 
         {/* Owner: create/edit offer form (backend offers) */}
         {isOwner && offerFormOpen && offerEditing && (
-          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5 space-y-4">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+          <div className="mt-5 rounded-2xl border border-default bg-surface-muted p-4 sm:p-5 space-y-4">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
               {offerEditing.id ? "Edit Offer" : "New Offer"}
             </div>
             <div>
@@ -6202,13 +6202,13 @@ return (
                 placeholder="Offer title"
                 value={offerEditing.title || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default"
               />
               <button
                 type="button"
                 onClick={() => offerAiAssist("title")}
                 disabled={offerAiField === "title"}
-                className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                className="mt-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
               >
                 {offerAiField === "title" ? "Generating..." : "✨ AI Title"}
               </button>
@@ -6219,13 +6219,13 @@ return (
                 value={offerEditing.description || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
                 rows={3}
-                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
               />
               <button
                 type="button"
                 onClick={() => offerAiAssist("description")}
                 disabled={offerAiField === "description"}
-                className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                className="mt-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
               >
                 {offerAiField === "description" ? "Generating..." : "✨ AI Copy"}
               </button>
@@ -6240,13 +6240,13 @@ return (
                     placeholder="Price (USD)"
                     value={offerEditing.price_usd || ""}
                     onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                    className="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                    className="flex-1 min-w-0 rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                   />
                   <button
                     type="button"
                     onClick={() => offerAiAssist("price")}
                     disabled={offerAiField === "price"}
-                    className="shrink-0 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-3 py-3 text-[10px] font-medium text-emerald-400/70 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                    className="shrink-0 rounded-xl border border-default bg-brand-teal-soft px-3 py-3 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
                   >
                     {offerAiField === "price" ? "..." : "$?"}
                   </button>
@@ -6255,7 +6255,7 @@ return (
               <select
                 value={offerEditing.offer_type || "digital_service"}
                 onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white outline-none focus:border-default"
               >
                 <option value="digital_service">Digital Service</option>
                 <option value="physical_product">Physical Product</option>
@@ -6266,7 +6266,7 @@ return (
               placeholder="Delivery info (e.g. Delivered via email within 24h)"
               value={offerEditing.delivery_info || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
-              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
             />
             <input
               type="number"
@@ -6275,16 +6275,16 @@ return (
               placeholder="Supporter discount % (0-100)"
               value={offerEditing.token_discount_percent || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
-              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
             />
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Inventory</div>
-              <label className="flex items-center gap-2 text-sm text-zinc-400">
+            <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-secondary">Inventory</div>
+              <label className="flex items-center gap-2 text-sm text-secondary">
                 <input
                   type="checkbox"
                   checked={offerEditing.unlimited_inventory ?? true}
                   onChange={(e) => setOfferEditing({ ...offerEditing, unlimited_inventory: e.target.checked })}
-                  className="rounded border-zinc-700"
+                  className="rounded border-default"
                 />
                 Unlimited inventory
               </label>
@@ -6295,12 +6295,12 @@ return (
                   placeholder="Quantity available"
                   value={offerEditing.quantity_available || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                 />
               )}
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Media (optional)</div>
+            <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-secondary">Media (optional)</div>
 
               {/* Image upload */}
               <div>
@@ -6324,7 +6324,7 @@ return (
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-zinc-700 bg-base px-4 py-4 text-sm text-zinc-500 transition hover:border-emerald-400/30 hover:text-zinc-300 active:scale-[0.98]"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-default bg-surface-page px-4 py-4 text-sm text-secondary transition hover:border-default hover:text-primary active:scale-[0.98]"
                 >
                   <span className="text-lg">📷</span>
                   <span className="text-left">
@@ -6335,7 +6335,7 @@ return (
 
               {/* Image preview (upload or existing URL) */}
               {(offerImagePreview || offerEditing.primary_image_url?.trim()) && (
-                <div className="relative rounded-lg overflow-hidden border border-zinc-800">
+                <div className="relative rounded-lg overflow-hidden border border-default">
                   <img
                     src={offerImagePreview || offerEditing.primary_image_url || ""}
                     alt="Preview"
@@ -6349,7 +6349,7 @@ return (
                       setOfferImagePreview(null);
                       setOfferEditing({ ...offerEditing, primary_image_url: "" });
                     }}
-                    className="absolute top-2 right-2 rounded-full bg-base/70 px-2 py-0.5 text-xs text-zinc-400 hover:text-white"
+                    className="absolute top-2 right-2 rounded-full bg-surface-page/70 px-2 py-0.5 text-xs text-secondary hover:text-white"
                   >
                     ✕
                   </button>
@@ -6363,7 +6363,7 @@ return (
                   placeholder="Or paste image URL"
                   value={offerEditing.primary_image_url || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
-                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                 />
               )}
 
@@ -6373,11 +6373,11 @@ return (
                 placeholder="Video URL (YouTube, Loom, etc.)"
                 value={offerEditing.video_url || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
-                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
               />
             </div>
             {offerSaveError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">
                 {offerSaveError}
               </div>
             )}
@@ -6385,13 +6385,13 @@ return (
               <button
                 onClick={() => { setOfferSaveError(null); saveOffer(); }}
                 disabled={offerSaving || !offerEditing.title?.trim() || !offerEditing.price_usd}
-                className="w-full sm:w-auto rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto rounded-xl bg-brand-teal px-5 py-3 text-sm font-semibold text-black transition hover:bg-brand-teal disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
               </button>
               <button
                 onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
-                className="w-full sm:w-auto rounded-xl border border-zinc-800 px-5 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                className="w-full sm:w-auto rounded-xl border border-default px-5 py-3 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
               >
                 Cancel
               </button>
@@ -6401,16 +6401,16 @@ return (
 
         {/* Offer save success toast */}
         {offerSaveSuccess && (
-          <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-emerald-300">Offer created successfully!</span>
-            <button onClick={() => setOfferSaveSuccess(false)} className="text-xs text-emerald-400/60 hover:text-emerald-300">Dismiss</button>
+          <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 flex items-center justify-between">
+            <span className="text-sm font-medium text-brand-teal">Offer created successfully!</span>
+            <button onClick={() => setOfferSaveSuccess(false)} className="text-xs text-brand-teal/60 hover:text-brand-teal">Dismiss</button>
           </div>
         )}
 
         {/* Owner: add/edit form */}
         {isOwner && storeFormOpen && storeEditing && (
-          <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-4">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+          <div className="mt-5 rounded-2xl border border-default bg-surface-muted p-5 space-y-4">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
               {storeEditing.id ? "Edit Offer" : "New Offer"}
             </div>
             <input
@@ -6418,14 +6418,14 @@ return (
               placeholder="Name"
               value={storeEditing.name}
               onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
-              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
             />
             <textarea
               placeholder="Description"
               value={storeEditing.description}
               onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
             />
             <div className="flex gap-3">
               <input
@@ -6433,12 +6433,12 @@ return (
                 placeholder="Price (e.g. $29)"
                 value={storeEditing.price}
                 onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
-                className="flex-1 rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                className="flex-1 rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
               />
               <select
                 value={storeEditing.type}
                 onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
-                className="rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-400/40"
+                className="rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white outline-none focus:border-default"
               >
                 <option value="digital">Digital</option>
                 <option value="physical">Physical</option>
@@ -6457,46 +6457,46 @@ return (
                   })
                 }
                 rows={3}
-                className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40 resize-none"
+                className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
               />
             )}
             {/* Token perk fields */}
             {project?.token_mint_address && !isSimulatedToken(project.token_mint_address) && (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-3 space-y-3">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">Token Perk (optional)</div>
+              <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-brand-teal/60">Token Perk (optional)</div>
                 <input
                   type="number"
                   placeholder="Required token amount (e.g. 100)"
                   value={storeEditing.required_token_amount ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                 />
                 <input
                   type="text"
                   placeholder="Perk description (e.g. 50% off for supporters)"
                   value={storeEditing.perk_description ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                 />
                 <input
                   type="text"
                   placeholder="Member price (e.g. Free or $9.99)"
                   value={storeEditing.token_holder_price ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
-                  className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
+                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
                 />
               </div>
             )}
             <div className="flex gap-2">
               <button
                 onClick={saveStoreItem}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+                className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-black transition hover:bg-brand-teal"
               >
                 {storeEditing.id ? "Save Changes" : "Add Offer"}
               </button>
               <button
                 onClick={() => { setStoreFormOpen(false); setStoreEditing(null); }}
-                className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                className="rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
               >
                 Cancel
               </button>
@@ -6530,17 +6530,17 @@ return (
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-zinc-900/60 p-5 backdrop-blur-sm sm:p-6 flex flex-col transition hover:shadow-[0_0_24px_rgba(0,255,163,0.08)] ${isRecommended ? "border-2 border-emerald-400/50 shadow-[0_0_32px_rgba(0,255,163,0.15)]" : isPopular ? "border-emerald-400/30 hover:border-emerald-400/50" : isBestValue ? "border-sky-400/25 hover:border-sky-400/40" : "border-zinc-700/50 hover:border-emerald-400/30"}`}>
+                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-surface-card p-5 backdrop-blur-sm sm:p-6 flex flex-col transition hover: ${isRecommended ? "border-2 border-brand-teal" : isPopular ? "border-default hover:border-brand-teal" : isBestValue ? "border-sky-400/25 hover:border-sky-400/40" : "border-default hover:border-default"}`}>
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       {isRecommended && (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+                        <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal">
                           {recommendedReasonLabel[recommendedReason || ""] || "Recommended"}
                         </span>
                       )}
                       {isPopular && !isRecommended && (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-400">
+                        <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal">
                           Most Popular
                         </span>
                       )}
@@ -6555,15 +6555,15 @@ return (
                         </span>
                       )}
                       {offer.token_discount_percent > 0 && (
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
+                        <span className="rounded-full border border-default bg-brand-teal-soft px-2.5 py-1 text-[10px] font-semibold text-brand-teal">
                           {offer.token_discount_percent}% off for supporters
                         </span>
                       )}
                     </div>
                     {isOwner && (
                       <div className="flex gap-1">
-                        <button onClick={() => openOfferForm(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-zinc-300">Edit</button>
-                        <button onClick={() => toggleOfferActive(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-amber-400">
+                        <button onClick={() => openOfferForm(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-muted transition hover:bg-surface-muted hover:text-primary">Edit</button>
+                        <button onClick={() => toggleOfferActive(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-muted transition hover:bg-surface-muted hover:text-amber-400">
                           Deactivate
                         </button>
                       </div>
@@ -6572,7 +6572,7 @@ return (
 
                   {/* Media */}
                   {offer.video_url ? (
-                    <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video">
+                    <div className="mb-4 rounded-xl overflow-hidden border border-default bg-surface-muted aspect-video">
                       <iframe
                         src={offer.video_url.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
                         className="w-full h-full"
@@ -6583,7 +6583,7 @@ return (
                     </div>
                   ) : offer.primary_image_url ? (
                     <div
-                      className="mb-4 cursor-pointer rounded-xl overflow-hidden border border-zinc-800 group/img"
+                      className="mb-4 cursor-pointer rounded-xl overflow-hidden border border-default group/img"
                       onClick={() => setLightboxUrl(offer.primary_image_url!)}
                     >
                       <img
@@ -6597,28 +6597,28 @@ return (
                   {/* Content — title + price together */}
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
-                    <div className="shrink-0 font-mono text-lg font-bold text-emerald-400">${Number(offer.price_usd).toFixed(0)}</div>
+                    <div className="shrink-0 font-mono text-lg font-bold text-brand-teal">${Number(offer.price_usd).toFixed(0)}</div>
                   </div>
                   {offer.description && (
-                    <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{offer.description}</p>
+                    <p className="mt-2 text-sm text-secondary leading-relaxed">{offer.description}</p>
                   )}
                   {offer.delivery_info && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-600">
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                       <span>↳</span><span>{offer.delivery_info}</span>
                     </div>
                   )}
 
                   {/* Inventory + social proof */}
-                  <div className="mt-2 flex items-center gap-2 text-xs text-zinc-600">
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted">
                     {(offer.quantity_sold || 0) > 0 && (
-                      <span className="flex items-center gap-1 text-emerald-400/70">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400/50" />
+                      <span className="flex items-center gap-1 text-brand-teal">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-teal-soft" />
                         {offer.quantity_sold} purchased
                       </span>
                     )}
                     {!offer.unlimited_inventory && offer.quantity_available != null && (() => {
                         const remaining = offer.quantity_available - (offer.quantity_sold || 0);
-                        if (remaining <= 0) return <span className="text-red-400">Sold out</span>;
+                        if (remaining <= 0) return <span className="text-state-live">Sold out</span>;
                         if (remaining <= 5) return <span className="text-amber-400">{remaining} left</span>;
                         return <span>{remaining} available</span>;
                       })()}
@@ -6626,8 +6626,8 @@ return (
 
                   {/* DUM Points discount */}
                   {dumDiscountApplied[offer.id] ? (
-                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/[0.08] px-3 py-2">
-                      <span className="text-[11px] font-bold text-emerald-400">◆ 10% DUM discount applied</span>
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-2">
+                      <span className="text-[11px] font-bold text-brand-teal">◆ 10% DUM discount applied</span>
                     </div>
                   ) : (
                     <button
@@ -6667,9 +6667,9 @@ return (
                         window.dispatchEvent(new Event("dum-points-update"));
                         setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
                       }}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.04] px-3 py-2 transition hover:border-emerald-400/30 hover:bg-emerald-400/[0.08]"
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-2 transition hover:border-default hover:bg-brand-teal-soft"
                     >
-                      <span className="text-[11px] font-medium text-emerald-400">◆ Use 10 DUM Points for 10% off</span>
+                      <span className="text-[11px] font-medium text-brand-teal">◆ Use 10 DUM Points for 10% off</span>
                     </button>
                   )}
                   {dumDiscountError && (
@@ -6682,24 +6682,24 @@ return (
                     const basePrice = Number(offer.price_usd);
                     const finalPrice = dumDiscountApplied[offer.id] ? basePrice * 0.9 : basePrice;
                     return (
-                      <div className="mt-auto pt-4 border-t border-zinc-800/60 mt-4">
+                      <div className="mt-auto pt-4 border-t border-default mt-4">
                         {dumDiscountApplied[offer.id] && (
                           <div className="mb-3 flex items-center gap-2">
-                            <span className="font-mono text-sm font-bold text-emerald-400">${finalPrice.toFixed(2)}</span>
-                            <span className="font-mono text-xs text-zinc-600 line-through">${basePrice.toFixed(2)}</span>
-                            <span className="text-[9px] text-emerald-400/60">DUM discount</span>
+                            <span className="font-mono text-sm font-bold text-brand-teal">${finalPrice.toFixed(2)}</span>
+                            <span className="font-mono text-xs text-muted line-through">${basePrice.toFixed(2)}</span>
+                            <span className="text-[9px] text-brand-teal/60">DUM discount</span>
                           </div>
                         )}
                         {soldOut ? (
-                          <div className="w-full rounded-xl bg-red-500/10 border border-red-500/20 px-5 py-3 text-center text-xs font-semibold text-red-400 select-none">
+                          <div className="w-full rounded-xl bg-[var(--state-live)]/10 border border-[var(--state-live)]/30 px-5 py-3 text-center text-xs font-semibold text-state-live select-none">
                             Sold Out
                           </div>
                         ) : isOwner ? (
-                          <div className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-center text-[11px] font-medium text-zinc-600 select-none">
+                          <div className="w-full rounded-xl border border-default bg-surface-muted px-4 py-3 text-center text-[11px] font-medium text-muted select-none">
                             Your Offer
                           </div>
                         ) : !authUser ? (
-                          <button onClick={login} className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)]">
+                          <button onClick={login} className="w-full rounded-xl bg-brand-teal px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black transition hover:bg-brand-teal-hover hover:">
                             Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
@@ -6707,7 +6707,7 @@ return (
                             <button
                               disabled={buyingOfferId === offer.id}
                               onClick={() => buyOffer(offer)}
-                              className="w-full rounded-xl bg-emerald-400 px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black shadow-[0_0_24px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_40px_rgba(0,255,163,0.35)] active:scale-[0.98] disabled:opacity-60"
+                              className="w-full rounded-xl bg-brand-teal px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black transition hover:bg-brand-teal-hover hover: active:scale-[0.98] disabled:opacity-60"
                             >
                               {buyingOfferId === offer.id && !(buyStep[offer.id] || "").startsWith("sol_")
                                 ? "Opening secure checkout…"
@@ -6724,7 +6724,7 @@ return (
                                 type="button"
                                 disabled={buyingOfferId === offer.id}
                                 onClick={() => payOfferWithSolHandler(offer)}
-                                className="mt-2 w-full rounded-lg border border-zinc-800 bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-50"
+                                className="mt-2 w-full rounded-lg border border-default bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal disabled:opacity-50"
                                 aria-label="Pay with Solana wallet"
                               >
                                 {(() => {
@@ -6750,14 +6750,14 @@ return (
 
                   {/* Demo purchase success feedback */}
                   {buyStep[offer.id] === "demo_success" && (
-                    <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-xs text-emerald-300">
+                    <div className="mt-3 rounded-lg border border-default bg-brand-teal-soft px-3 py-2 text-xs text-brand-teal">
                       ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +10 DUM Points earned
                     </div>
                   )}
 
                   {/* Error feedback */}
                   {buyError[offer.id] && (
-                    <div className="mt-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+                    <div className="mt-2 rounded-lg border border-[var(--state-live)]/30 bg-state-live/5 px-3 py-2 text-xs text-state-live">
                       {buyError[offer.id]}
                     </div>
                   )}
@@ -6772,29 +6772,29 @@ return (
         {isOwner && storeItems.length > 0 && (
           <div className="mt-6">
             <div className="mb-3 flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Legacy Items</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Legacy Items</span>
               <span className="rounded-full border border-amber-400/20 bg-amber-400/5 px-2 py-0.5 text-[9px] font-semibold text-amber-400/60">Not purchasable</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {storeItems.map((item) => {
                 const badge = storeTypeBadge[item.type];
                 return (
-                  <div key={item.id} className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/50 p-5 flex flex-col">
+                  <div key={item.id} className="rounded-2xl border border-dashed border-default bg-surface-card p-5 flex flex-col">
                     <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                       <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${badge.color} opacity-60`}>
                         {badge.label}
                       </span>
                       <div className="flex gap-1">
-                        <button onClick={() => removeStoreItem(item.id)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-600 transition hover:bg-zinc-800 hover:text-red-400">Remove</button>
+                        <button onClick={() => removeStoreItem(item.id)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-muted transition hover:bg-surface-muted hover:text-state-live">Remove</button>
                       </div>
                     </div>
-                    <h3 className="text-base font-semibold text-zinc-300">{item.name}</h3>
-                    {item.description && <p className="mt-1 text-sm text-zinc-500 leading-relaxed line-clamp-2">{item.description}</p>}
-                    <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-zinc-800/50 mt-4">
-                      <span className="font-mono text-base text-zinc-500">{item.price || "Free"}</span>
+                    <h3 className="text-base font-semibold text-primary">{item.name}</h3>
+                    {item.description && <p className="mt-1 text-sm text-secondary leading-relaxed line-clamp-2">{item.description}</p>}
+                    <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-default mt-4">
+                      <span className="font-mono text-base text-secondary">{item.price || "Free"}</span>
                       <button
                         onClick={() => convertStoreItemToOffer(item)}
-                        className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                        className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal"
                       >
                         Convert to Offer →
                       </button>
@@ -6808,15 +6808,15 @@ return (
 
         {/* Empty state */}
         {offers.length === 0 && storeItems.length === 0 && (
-          <div className="mt-6 rounded-2xl border border-dashed border-zinc-800 p-10 text-center">
+          <div className="mt-6 rounded-2xl border border-dashed border-default p-10 text-center">
             <div className="text-2xl mb-3 opacity-30">🛍</div>
-            <p className="text-sm font-medium text-zinc-500">
+            <p className="text-sm font-medium text-secondary">
               {isOwner ? "You haven't listed any offers yet" : "This business hasn't listed any offers yet."}
             </p>
             {isOwner && !offerFormOpen && (
               <button
                 onClick={() => openOfferForm()}
-                className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-5 py-2.5 text-sm font-medium text-emerald-400 transition hover:border-emerald-400/40 hover:bg-emerald-400/10"
+                className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-2.5 text-sm font-medium text-brand-teal transition hover:border-default hover:bg-brand-teal-soft"
               >
                 + Create your first offer
               </button>
@@ -6825,11 +6825,11 @@ return (
         )}
       </div>
 
-      <div id="ai-workspace" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">AI Assistant</div>
+      <div id="ai-workspace" className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
+        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">AI Assistant</div>
 
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/5 px-3 py-1 text-xs uppercase tracking-[0.18em] text-emerald-300">
+          <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-xs uppercase tracking-[0.18em] text-brand-teal">
             {chatMeta.is_holder && chatMeta.holder_unlimited
               ? "Unlimited AI"
               : chatMeta.free_questions_left > 0
@@ -6840,9 +6840,9 @@ return (
           </span>
         </div>
 
-        <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300">Built-in AI</div>
-          <div className="text-sm text-zinc-300">
+        <div className="mb-5 rounded-2xl border border-default bg-brand-teal-soft p-4">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-brand-teal">Built-in AI</div>
+          <div className="text-sm text-primary">
             {chatMeta.is_holder && chatMeta.holder_unlimited
               ? `You have unlimited AI access for this business.`
               : `This business includes ${chatMeta.free_limit} free AI questions. Purchase any offer to unlock unlimited access.`}
@@ -6851,18 +6851,18 @@ return (
 
         <h2 className="text-2xl font-bold text-white">Ask AI</h2>
 
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-secondary">
           Ask anything about this business — services, pricing, availability. {chatMeta.free_limit} free question{chatMeta.free_limit === 1 ? "" : "s"} included.
         </p>
 
         {chatMeta.locked && (
-          <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-zinc-950 p-5">
-            <p className="text-sm text-zinc-400">{chatMeta.lock_message}</p>
+          <div className="mt-5 rounded-2xl border border-default bg-surface-card p-5">
+            <p className="text-sm text-secondary">{chatMeta.lock_message}</p>
             {canShowMarketUi && (
               <button
                 type="button"
                 onClick={scrollToBuyPanel}
-                className="mt-3 w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]"
+                className="mt-3 w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal active:scale-[0.98]"
               >
                 Browse offers to unlock →
               </button>
@@ -6877,13 +6877,13 @@ return (
             placeholder={`Ask something about ${projectName}...`}
             rows={5}
             disabled={loadingAsk || chatMeta.locked}
-            className="w-full rounded-2xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none transition focus:border-emerald-400 disabled:opacity-50"
+            className="w-full rounded-2xl border border-default bg-surface-page px-4 py-3 text-white outline-none transition focus:border-brand-teal disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+            className="w-full rounded-2xl border border-default bg-surface-muted px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-surface-muted disabled:opacity-50"
           >
             {loadingAsk ? "Asking..." : chatMeta.locked ? "Purchase to Unlock" : "Ask AI"}
           </button>
@@ -6892,9 +6892,9 @@ return (
         <div className="mt-10">
           <h3 className="text-xl font-bold text-white">AI Response</h3>
 
-          <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-base p-4 text-zinc-300">
+          <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-default bg-surface-page p-4 text-primary">
             {response || (
-              <span className="text-zinc-600">
+              <span className="text-muted">
                 Ask a question above — the AI knows this project deeply.
               </span>
             )}
@@ -6906,15 +6906,15 @@ return (
       {/* ── OWNER TOOLS ──────────────────────────── */}
       {isOwner && (
         <div className="mb-6 mt-2 flex items-center gap-4">
-          <div className="h-px flex-1 bg-zinc-800" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-zinc-600">Owner Tools</span>
-          <div className="h-px flex-1 bg-zinc-800" />
+          <div className="h-px flex-1 bg-surface-muted" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted">Owner Tools</span>
+          <div className="h-px flex-1 bg-surface-muted" />
         </div>
       )}
 
       {isOwner && (
-        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
-          <span className="uppercase tracking-[0.18em] text-zinc-400">
+        <div className="mb-8 rounded-2xl border border-default bg-surface-card p-4 text-sm text-primary">
+          <span className="uppercase tracking-[0.18em] text-secondary">
             Review & publication
           </span>
           <div className="mt-2 text-base text-white">{statusBanner}</div>
@@ -6924,7 +6924,7 @@ return (
 
       {/* ── Legacy Live Control Panel (non-IVS only) ── */}
       {isOwner && !IVS_REALTIME_ENABLED && (
-        <div className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+        <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
 
           {/* Selling controls — shown for non-IVS live providers only (IVS controls are in the banner) */}
           {project?.is_live && !isIVSSession(project) && (
@@ -6934,16 +6934,16 @@ return (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
                     </span>
                     <h2 className="text-xl font-bold text-white">You're Live</h2>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-500">
+                  <div className="flex items-center gap-3 text-sm text-secondary">
                     <span>{liveSalesCount} sale{liveSalesCount !== 1 ? "s" : ""}</span>
                     <button
                       onClick={handleEndLive}
-                      className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
+                      className="rounded-lg border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-3 py-1.5 text-xs font-semibold text-state-live transition hover:bg-[var(--state-live)]/15"
                     >
                       End Stream
                     </button>
@@ -6952,8 +6952,8 @@ return (
               )}
 
               {/* Product selector — immediate access */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4">
-                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">Sell a Product</div>
+              <div className="rounded-2xl border border-default bg-surface-muted p-4">
+                <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
                 <div className="flex flex-wrap gap-2">
                   {offers.filter((o) => o.is_active).map((offer) => (
                     <button
@@ -6961,8 +6961,8 @@ return (
                       onClick={() => handlePinOffer(offer.id === project.pinned_offer_id ? null : offer.id)}
                       className={`rounded-xl border px-3 py-2 text-sm transition ${
                         offer.id === project.pinned_offer_id
-                          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-400"
-                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                          ? "border-default bg-brand-teal-soft text-brand-teal"
+                          : "border-default text-secondary hover:border-strong hover:text-white"
                       }`}
                     >
                       {offer.title} · ${Number(offer.price_usd).toFixed(0)}
@@ -6970,7 +6970,7 @@ return (
                     </button>
                   ))}
                   {offers.filter((o) => o.is_active).length === 0 && (
-                    <p className="text-sm text-zinc-600">No offers yet. Create one from your dashboard.</p>
+                    <p className="text-sm text-muted">No offers yet. Create one from your dashboard.</p>
                   )}
                 </div>
               </div>
@@ -6982,7 +6982,7 @@ return (
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
-                      <div className="text-xs text-zinc-500">{auction.bid_count} bids · {auctionCountdown}</div>
+                      <div className="text-xs text-secondary">{auction.bid_count} bids · {auctionCountdown}</div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(0)}</span>
@@ -6990,20 +6990,20 @@ return (
                     </div>
                   </div>
                 ) : auction && auction.status === "ended" ? (
-                  <div className="text-sm text-zinc-400">Winner: {auction.current_bidder_display || "—"} — ${Number(auction.current_bid).toFixed(0)}</div>
+                  <div className="text-sm text-secondary">Winner: {auction.current_bidder_display || "—"} — ${Number(auction.current_bid).toFixed(0)}</div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
                       {offers.filter((o) => o.is_active).map((offer) => (
                         <button key={offer.id} onClick={() => setAuctionOfferSelect(offer.id === auctionOfferSelect ? null : offer.id)}
-                          className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${offer.id === auctionOfferSelect ? "border-amber-400/40 text-amber-400" : "border-zinc-800 text-zinc-500"}`}
+                          className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${offer.id === auctionOfferSelect ? "border-amber-400/40 text-amber-400" : "border-default text-secondary"}`}
                         >{offer.title}</button>
                       ))}
                     </div>
                     {auctionOfferSelect && (
                       <div className="flex items-center gap-2">
-                        <input type="number" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} placeholder="$10" className="w-20 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs text-white outline-none" />
-                        <select value={auctionDuration} onChange={(e) => setAuctionDuration(Number(e.target.value))} className="rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-xs text-white outline-none">
+                        <input type="number" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} placeholder="$10" className="w-20 rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-white outline-none" />
+                        <select value={auctionDuration} onChange={(e) => setAuctionDuration(Number(e.target.value))} className="rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-white outline-none">
                           <option value={60}>1m</option><option value={120}>2m</option><option value={300}>5m</option>
                         </select>
                         <button onClick={handleStartAuction} disabled={auctionStarting} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black disabled:opacity-40">{auctionStarting ? "..." : "Start Auction"}</button>
@@ -7020,24 +7020,24 @@ return (
             cameraPreview ? (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold text-white">Camera Ready</h2>
-                <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                <div className="overflow-hidden rounded-2xl border border-default bg-black">
                   <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={startLiveFromCamera} disabled={goingLive} className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40">
+                  <button onClick={startLiveFromCamera} disabled={goingLive} className="flex-1 rounded-xl bg-state-live py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40">
                     {goingLive ? "Starting..." : "Start Live"}
                   </button>
-                  <button onClick={cancelCameraPreview} className="rounded-xl border border-zinc-800 px-5 py-3 text-sm text-zinc-400 hover:text-white">Cancel</button>
+                  <button onClick={cancelCameraPreview} className="rounded-xl border border-default px-5 py-3 text-sm text-secondary hover:text-white">Cancel</button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-4">
-                <button onClick={startCameraPreview} className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
+                <button onClick={startCameraPreview} className="rounded-2xl bg-state-live px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
                   Go Live
                 </button>
-                <p className="mt-3 text-sm text-zinc-500">Start selling in seconds</p>
+                <p className="mt-3 text-sm text-secondary">Start selling in seconds</p>
                 {goLiveError && (
-                  <div className="mt-3 mx-auto max-w-md rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">{goLiveError}</div>
+                  <div className="mt-3 mx-auto max-w-md rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">{goLiveError}</div>
                 )}
               </div>
             )
@@ -7047,31 +7047,31 @@ return (
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {isOwner && (
-        <details id="section-orders" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:p-8">
-          <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-zinc-300">
+        <details id="section-orders" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
+          <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-primary">
             <div>
-              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-600">
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-muted">
                 Sales
               </div>
               <h2 className="text-2xl font-bold text-white">Orders</h2>
-              <p className="mt-2 text-sm text-zinc-500">
+              <p className="mt-2 text-sm text-secondary">
                 Purchases from your offers
               </p>
             </div>
-            <span className="shrink-0 rounded-full border border-zinc-800 bg-base px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-400">
+            <span className="shrink-0 rounded-full border border-default bg-surface-page px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-secondary">
               {sellerOrders.length} {sellerOrders.length === 1 ? "order" : "orders"}
             </span>
           </summary>
 
-          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2">
-            <span className="text-[11px] text-zinc-600">
+          <div className="mt-4 rounded-lg border border-default bg-surface-muted px-3 py-2">
+            <span className="text-[11px] text-muted">
               Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
             </span>
           </div>
 
           {sellerOrders.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-zinc-800 p-8 text-center">
-              <p className="text-sm text-zinc-600">No sales yet</p>
+            <div className="mt-5 rounded-2xl border border-dashed border-default p-8 text-center">
+              <p className="text-sm text-muted">No sales yet</p>
             </div>
           ) : (
             <div className="mt-5 space-y-3">
@@ -7079,13 +7079,13 @@ return (
                 const isPaid = order.status === "paid";
                 const isDelivered = order.status === "delivered";
                 return (
-                  <div key={order.id} className="rounded-2xl border border-zinc-800 bg-base p-5">
+                  <div key={order.id} className="rounded-2xl border border-default bg-surface-page p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3 className="text-sm font-semibold text-white truncate">
                           {order.offers?.title || "Offer"}
                         </h3>
-                        <div className="mt-1 text-xs text-zinc-600">
+                        <div className="mt-1 text-xs text-muted">
                           {order.buyer_email || "Anonymous buyer"} · {new Date(order.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                         </div>
                       </div>
@@ -7093,7 +7093,7 @@ return (
                         <div className="font-mono text-base font-bold text-white">
                           ${Number(order.amount_paid_usd).toFixed(2)}
                         </div>
-                        <div className="text-[10px] text-zinc-600 mt-0.5">
+                        <div className="text-[10px] text-muted mt-0.5">
                           You receive: ${Number(order.seller_receives_usd).toFixed(2)}
                         </div>
                       </div>
@@ -7101,15 +7101,15 @@ return (
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                         order.status === "fulfilled" || order.status === "delivered"
-                          ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/10"
+                          ? "border-default text-brand-teal bg-brand-teal-soft"
                           : order.status === "paid"
                           ? "border-sky-400/30 text-sky-400 bg-sky-400/10"
                           : order.status === "pending_payment"
                           ? "border-amber-400/30 text-amber-400 bg-amber-400/10"
-                          : "border-zinc-700 text-zinc-500"
+                          : "border-default text-secondary"
                       }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${
-                          order.status === "fulfilled" || order.status === "delivered" ? "bg-emerald-400"
+                          order.status === "fulfilled" || order.status === "delivered" ? "bg-brand-teal"
                           : order.status === "paid" ? "bg-sky-400"
                           : order.status === "pending_payment" ? "bg-amber-400"
                           : "bg-zinc-600"
@@ -7119,7 +7119,7 @@ return (
                       {order.status === "paid" && (
                         <button
                           onClick={() => updateOrderStatus(order.id, "fulfilled")}
-                          className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-[11px] font-medium text-emerald-400/80 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                          className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal"
                         >
                           Mark Fulfilled
                         </button>
@@ -7136,49 +7136,49 @@ return (
 
       {/* ── AI Tools (Score + Builder — Analytics view) ────────────── */}
       {isOwner && projectView === "analytics" && (
-        <details className="mb-8 rounded-3xl border border-emerald-400/10 bg-zinc-950 p-6">
-          <summary className="flex cursor-pointer items-center justify-between hover:text-zinc-300">
+        <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
+          <summary className="flex cursor-pointer items-center justify-between hover:text-primary">
             <div>
-              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-emerald-400/60">Owner Tools</div>
+              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-brand-teal/60">Owner Tools</div>
               <h2 className="text-xl font-bold text-white tracking-tight">AI Tools</h2>
-              <p className="mt-1 text-sm text-zinc-500">Score, improve, and build your project with AI</p>
+              <p className="mt-1 text-sm text-secondary">Score, improve, and build your project with AI</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={(e) => { e.preventDefault(); togglePitchMode(); }}
-                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300"
+                className="rounded-full border border-default px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal"
               >
                 Presentation Mode
               </button>
-              <span className="text-[10px] text-zinc-600">Click to expand</span>
+              <span className="text-[10px] text-muted">Click to expand</span>
             </div>
           </summary>
 
           {/* ── Project Score ── */}
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5">
+          <div className="mt-6 rounded-2xl border border-default bg-surface-muted p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-[0.3em] text-zinc-500">Project Score</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-secondary">Project Score</span>
               <button
                 onClick={evaluateProjectScore}
                 disabled={scoreLoading}
-                className="rounded-full border border-zinc-700 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-400 transition hover:border-emerald-400/40 hover:text-emerald-300 disabled:opacity-40"
+                className="rounded-full border border-default px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal disabled:opacity-40"
               >
                 {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
               </button>
             </div>
 
             {scoreLoading && (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="rounded-2xl border border-default bg-surface-muted p-5">
                 <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  <span className="text-sm text-zinc-400">Evaluating your project...</span>
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-brand-teal" />
+                  <span className="text-sm text-secondary">Evaluating your project...</span>
                 </div>
               </div>
             )}
 
             {!scoreLoading && !projectScore && (
-              <div className="rounded-2xl border border-dashed border-zinc-800 p-6 text-center">
-                <p className="text-sm text-zinc-600">Click &ldquo;Score My Project&rdquo; to get an AI evaluation</p>
+              <div className="rounded-2xl border border-dashed border-default p-6 text-center">
+                <p className="text-sm text-muted">Click &ldquo;Score My Project&rdquo; to get an AI evaluation</p>
               </div>
             )}
 
@@ -7188,21 +7188,21 @@ return (
                   const entry = projectScore[dim];
                   const label = dim.charAt(0).toUpperCase() + dim.slice(1);
                   return (
-                    <div key={dim} className="rounded-2xl border border-zinc-800 bg-base p-4">
+                    <div key={dim} className="rounded-2xl border border-default bg-surface-page p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-white">{label}</span>
                         <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
                           {entry.score}
                         </span>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden mb-2">
+                      <div className="h-1.5 w-full rounded-full bg-surface-muted overflow-hidden mb-2">
                         <div
                           className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
                           style={{ width: `${entry.score}%` }}
                         />
                       </div>
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-xs text-zinc-500 leading-relaxed">{entry.reason}</p>
+                        <p className="text-xs text-secondary leading-relaxed">{entry.reason}</p>
                         <button
                           onClick={() => {
                             const tips: Record<string, string> = {
@@ -7220,7 +7220,7 @@ return (
                             };
                             runBuilderAction(improveAction, null);
                           }}
-                          className="shrink-0 text-[10px] font-medium text-zinc-600 transition hover:text-emerald-400"
+                          className="shrink-0 text-[10px] font-medium text-muted transition hover:text-brand-teal"
                         >
                           Improve →
                         </button>
@@ -7229,11 +7229,11 @@ return (
                   );
                 })}
 
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                <div className="rounded-2xl border border-default bg-surface-muted p-4 text-center">
                   <span className="font-mono text-2xl font-bold text-white">
                     {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
                   </span>
-                  <span className="ml-2 text-sm text-zinc-500">/ 100 overall</span>
+                  <span className="ml-2 text-sm text-secondary">/ 100 overall</span>
                 </div>
               </div>
             )}
@@ -7241,19 +7241,19 @@ return (
 
           {/* ── Business Builder ── */}
           <div className="mt-6">
-            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">Business Builder</div>
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-secondary">Business Builder</div>
 
             {/* Action buttons */}
             {!builderAction && !storePickerFor && (
               <div className="space-y-4">
                 <div>
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Copy</div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Project Copy</div>
                   <div className="flex flex-wrap gap-2">
                     {builderActions.filter((a) => a.group === "project").map((a) => (
                       <button
                         key={a.key}
                         onClick={() => initiateBuilderAction(a)}
-                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm font-medium text-primary transition-all hover:border-default hover:text-brand-teal"
                       >
                         {a.label}
                       </button>
@@ -7261,13 +7261,13 @@ return (
                   </div>
                 </div>
                 <div>
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Store Intelligence</div>
+                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Store Intelligence</div>
                   <div className="flex flex-wrap gap-2">
                     {builderActions.filter((a) => a.group === "store").map((a) => (
                       <button
                         key={a.key}
                         onClick={() => initiateBuilderAction(a)}
-                        className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm font-medium text-primary transition-all hover:border-default hover:text-brand-teal"
                       >
                         {a.label}
                       </button>
@@ -7279,8 +7279,8 @@ return (
 
             {/* Item picker for store actions */}
             {storePickerFor && (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+              <div className="rounded-2xl border border-default bg-surface-muted p-5">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-secondary">
                   Select an item
                 </div>
                 <div className="space-y-2">
@@ -7291,16 +7291,16 @@ return (
                         const action = builderActions.find((a) => a.key === storePickerFor);
                         if (action) runBuilderAction(action, item);
                       }}
-                      className="w-full rounded-xl border border-zinc-800 bg-base px-4 py-3 text-left transition hover:border-emerald-400/30"
+                      className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-left transition hover:border-default"
                     >
                       <div className="text-sm font-medium text-white">{item.name}</div>
-                      <div className="text-xs text-zinc-500">{item.type} · {item.price || "No price"}</div>
+                      <div className="text-xs text-secondary">{item.type} · {item.price || "No price"}</div>
                     </button>
                   ))}
                 </div>
                 <button
                   onClick={() => setStorePickerFor(null)}
-                  className="mt-3 rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                  className="mt-3 rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
                 >
                   Cancel
                 </button>
@@ -7309,10 +7309,10 @@ return (
 
             {/* Loading state */}
             {builderLoading && (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <div className="rounded-2xl border border-default bg-surface-muted p-5">
                 <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  <span className="text-sm text-zinc-400">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-brand-teal" />
+                  <span className="text-sm text-secondary">
                     DUM AI is analyzing your project...
                   </span>
                 </div>
@@ -7323,19 +7323,19 @@ return (
             {builderResult && !builderLoading && (
               <div className="mt-4 space-y-4">
                 {builderField && builderResult.current && (
-                  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  <div className="rounded-2xl border border-default bg-surface-muted p-4">
+                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-secondary">
                       Current
                     </div>
-                    <div className="text-sm leading-relaxed text-zinc-400">
+                    <div className="text-sm leading-relaxed text-secondary">
                       {builderResult.current}
                     </div>
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                <div className="rounded-2xl border border-default bg-brand-teal-soft p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-400/70">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
                       {builderAction === "roast" ? "Roast"
                         : builderAction === "promo" ? "Promo Copy"
                         : builderAction === "store_ideas" ? "Product Ideas"
@@ -7347,13 +7347,13 @@ return (
                     {(builderAction === "promo" || builderAction === "roast") && (
                       <button
                         onClick={() => copyToClipboard(builderResult.suggested, "text")}
-                        className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                        className="text-[11px] font-medium text-secondary transition-colors hover:text-brand-teal"
                       >
                         Copy
                       </button>
                     )}
                   </div>
-                  <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                  <div className="text-sm leading-relaxed text-primary whitespace-pre-wrap">
                     {builderResult.suggested}
                   </div>
                 </div>
@@ -7362,7 +7362,7 @@ return (
                   {builderAction !== "roast" && (
                     <button
                       onClick={applyBuilderResult}
-                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                      className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-brand-teal"
                     >
                       Apply
                     </button>
@@ -7373,14 +7373,14 @@ return (
                         const action = builderActions.find((a) => a.key === builderAction);
                         if (action) runBuilderAction(action, storeTargetItem);
                       }}
-                      className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                      className="rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition-all hover:border-strong hover:text-primary"
                     >
                       Regenerate
                     </button>
                   )}
                   <button
                     onClick={dismissBuilder}
-                    className="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                    className="rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition-all hover:border-strong hover:text-primary"
                   >
                     {builderAction === "roast" ? "Dismiss" : "Cancel"}
                   </button>
@@ -7390,19 +7390,19 @@ return (
 
             {/* Saved promo copy display */}
             {!builderAction && promoCopy && (
-              <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className="mt-4 rounded-2xl border border-default bg-surface-muted p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                  <span className="text-[11px] uppercase tracking-[0.2em] text-secondary">
                     Saved Promo Copy
                   </span>
                   <button
                     onClick={() => copyToClipboard(promoCopy, "promo copy")}
-                    className="text-[11px] font-medium text-zinc-500 transition-colors hover:text-emerald-400"
+                    className="text-[11px] font-medium text-secondary transition-colors hover:text-brand-teal"
                   >
                     Copy
                   </button>
                 </div>
-                <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                <div className="text-sm leading-relaxed text-primary whitespace-pre-wrap">
                   {promoCopy}
                 </div>
               </div>
@@ -7413,14 +7413,14 @@ return (
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => copyToClipboard(window.location.href, "project link")}
-                  className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-zinc-600 hover:text-zinc-300"
+                  className="rounded-xl border border-default px-4 py-2 text-xs font-medium text-secondary transition-all hover:border-strong hover:text-primary"
                 >
                   Share Project Link
                 </button>
                 {promoCopy && (
                   <button
                     onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
-                    className="rounded-xl border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-500 transition-all hover:border-emerald-400/30 hover:text-emerald-400"
+                    className="rounded-xl border border-default px-4 py-2 text-xs font-medium text-secondary transition-all hover:border-default hover:text-brand-teal"
                   >
                     Share Promo + Link
                   </button>
@@ -7430,8 +7430,8 @@ return (
 
             {/* Success toast */}
             {builderToast && (
-              <div className="mt-4 animate-fade-slide-down rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
-                <span className="text-sm font-medium text-emerald-400">{builderToast}</span>
+              <div className="mt-4 animate-fade-slide-down rounded-xl border border-default bg-brand-teal-soft px-4 py-2.5">
+                <span className="text-sm font-medium text-brand-teal">{builderToast}</span>
               </div>
             )}
           </div>
@@ -7441,18 +7441,18 @@ return (
 
       {projectView === "analytics" && canShowMarketUi ? (
       /* Token Activity — only in analytics view */
-      <div id="section-tokens" className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+      <div id="section-tokens" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         {isSimulated && <SimulatedTokenBanner />}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-zinc-600">
+            <div className="text-xs uppercase tracking-[0.3em] text-muted">
               {isSimulated ? "Preview Analytics" : "Advanced Analytics"}
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+              <span className={`font-mono text-2xl ${rangeChangePct >= 0 ? "text-brand-teal" : "text-state-live"}`}>
                 {formatPercent(rangeChangePct, 2)}
               </span>
-              <span className="text-sm text-zinc-500">selected range</span>
+              <span className="text-sm text-secondary">selected range</span>
             </div>
           </div>
 
@@ -7464,8 +7464,8 @@ return (
                 onClick={() => setChartRange(range)}
                 className={`rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition ${
                   chartRange === range
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                    : "border-zinc-800 bg-base text-zinc-400 hover:bg-zinc-900"
+                    ? "border-default bg-brand-teal-soft text-brand-teal"
+                    : "border-default bg-surface-page text-secondary hover:bg-surface-muted"
                 }`}
               >
                 {range}
@@ -7476,22 +7476,22 @@ return (
 
           <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
             {trades.length === 0 ? (
-              <div className="flex flex-col justify-center gap-6 rounded-3xl border border-zinc-800 bg-base p-8">
-                <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-emerald-400">
+              <div className="flex flex-col justify-center gap-6 rounded-3xl border border-default bg-surface-page p-8">
+                <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-brand-teal">
                   ◆ Day Zero
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">
                     Be the first to support this project
                   </h3>
-                  <p className="mt-3 max-w-sm text-zinc-400">
+                  <p className="mt-3 max-w-sm text-secondary">
                     {isSimulated
                       ? "No activity yet. Tokenized rewards and on-chain trading are planned for a future phase, subject to legal and regulatory review."
                       : "No trades yet. Early supporters back ideas before the market does — and shape the token's opening price history."}
                   </p>
                 </div>
-                <p className="text-sm text-zinc-500">
-                  <span className="font-mono text-zinc-400">${displaySymbol}</span>
+                <p className="text-sm text-secondary">
+                  <span className="font-mono text-secondary">${displaySymbol}</span>
                   {isSimulated && (
                     <span className="ml-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-300">
                       Demo
@@ -7505,48 +7505,48 @@ return (
             ) : (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                <div className="rounded-2xl border border-default bg-surface-page p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "Price (demo)" : "Price"}
                   </div>
                   <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                <div className="rounded-2xl border border-default bg-surface-page p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "Market Cap (demo)" : "Market Cap"}
                   </div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                <div className="rounded-2xl border border-default bg-surface-page p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "24h Volume (demo)" : "24h Volume"}
                   </div>
                   <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Last Trade</div>
-                  <div className="text-sm text-zinc-300">{formatDateTime(market?.last_trade_at)}</div>
+                <div className="rounded-2xl border border-default bg-surface-page p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">Last Trade</div>
+                  <div className="text-sm text-primary">{formatDateTime(market?.last_trade_at)}</div>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">Flow</div>
-                  <div className="font-mono text-sm text-zinc-300">
-                    <span className="text-emerald-300">{buyCount} buy</span>
-                    <span className="mx-2 text-zinc-600">/</span>
-                    <span className="text-red-300">{sellCount} sell</span>
+                <div className="rounded-2xl border border-default bg-surface-page p-5">
+                  <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">Flow</div>
+                  <div className="font-mono text-sm text-primary">
+                    <span className="text-brand-teal">{buyCount} buy</span>
+                    <span className="mx-2 text-muted">/</span>
+                    <span className="text-state-live">{sellCount} sell</span>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-zinc-800 bg-base p-5">
+              <div className="rounded-3xl border border-default bg-surface-page p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  <div className="text-xs uppercase tracking-[0.25em] text-muted">
                     Price Chart
                   </div>
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-secondary">
                     {chartData.length ? `${chartData.length} data points` : "No chart data"}
                   </div>
                 </div>
@@ -7579,73 +7579,73 @@ return (
                 </div>
               </div>
 
-              <details className="rounded-3xl border border-zinc-800 bg-base">
-                <summary className="cursor-pointer select-none px-5 py-4 text-xs uppercase tracking-[0.25em] text-zinc-600 hover:text-zinc-400">
+              <details className="rounded-3xl border border-default bg-surface-page">
+                <summary className="cursor-pointer select-none px-5 py-4 text-xs uppercase tracking-[0.25em] text-muted hover:text-secondary">
                   Latest Candle OHLCV ▸
                 </summary>
                 <div className="px-5 pb-5">
                   <div className="grid gap-4 sm:grid-cols-5">
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Open</div>
+                    <div className="rounded-2xl border border-default bg-surface-card p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Open</div>
                       <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.open)}</div>
                     </div>
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">High</div>
+                    <div className="rounded-2xl border border-default bg-surface-card p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">High</div>
                       <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.high)}</div>
                     </div>
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Low</div>
+                    <div className="rounded-2xl border border-default bg-surface-card p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Low</div>
                       <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.low)}</div>
                     </div>
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Close</div>
+                    <div className="rounded-2xl border border-default bg-surface-card p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Close</div>
                       <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.close)}</div>
                     </div>
-                    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Volume</div>
+                    <div className="rounded-2xl border border-default bg-surface-card p-4">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Volume</div>
                       <div className="mt-2 font-mono text-white">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
                     </div>
                   </div>
-                  <div className="mt-4 text-xs text-zinc-500">
+                  <div className="mt-4 text-xs text-secondary">
                     Candle Bucket: {selectedLatestCandle?.bucket_time ? formatDateTime(selectedLatestCandle.bucket_time) : "-"}
                   </div>
                 </div>
               </details>
 
-              <div className="rounded-3xl border border-zinc-800 bg-base p-5">
+              <div className="rounded-3xl border border-default bg-surface-page p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
-                  <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Recent Trades</div>
+                  <div className="text-xs uppercase tracking-[0.25em] text-muted">Recent Trades</div>
                   <button
                     type="button"
                     onClick={refreshMarketData}
-                    className="rounded-full border border-zinc-700 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-zinc-300 transition hover:bg-zinc-900"
+                    className="rounded-full border border-default px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-primary transition hover:bg-surface-muted"
                   >
                     Refresh
                   </button>
                 </div>
 
                 {trades.length === 0 ? (
-                  <div className="text-sm text-zinc-500">No trades yet.</div>
+                  <div className="text-sm text-secondary">No trades yet.</div>
                 ) : (
                   <div className="space-y-3">
                     {trades.slice(0, 8).map((trade) => (
                       <div
                         key={trade.id}
-                        className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-sm md:grid-cols-[90px_1.05fr_0.9fr_0.9fr_1.2fr] md:gap-3 md:p-4"
+                        className="grid grid-cols-2 gap-2 rounded-2xl border border-default bg-surface-card p-3 text-sm md:grid-cols-[90px_1.05fr_0.9fr_0.9fr_1.2fr] md:gap-3 md:p-4"
                       >
                         <div
                           className={`font-mono uppercase tracking-[0.15em] ${
-                            trade.side === "buy" ? "text-emerald-300" : "text-red-300"
+                            trade.side === "buy" ? "text-brand-teal" : "text-state-live"
                           }`}
                         >
                           {trade.side}
                         </div>
-                        <div className="text-zinc-300">
+                        <div className="text-primary">
                           {formatNumber(trade.amount, 2)} {trade.token_symbol || ""}
                         </div>
-                        <div className="font-mono text-zinc-300">${formatPrice(trade.price)}</div>
-                        <div className="font-mono text-zinc-300">${formatNumber(trade.gross_value, 6)}</div>
-                        <div className="col-span-2 text-zinc-500 md:col-span-1">{formatDateTime(trade.created_at)}</div>
+                        <div className="font-mono text-primary">${formatPrice(trade.price)}</div>
+                        <div className="font-mono text-primary">${formatNumber(trade.gross_value, 6)}</div>
+                        <div className="col-span-2 text-secondary md:col-span-1">{formatDateTime(trade.created_at)}</div>
                       </div>
                     ))}
                   </div>
@@ -7654,8 +7654,8 @@ return (
             </div>
             )}
 
-            <div id="buy-panel" className="rounded-3xl border border-emerald-500/10 bg-base p-5 sm:p-6 shadow-[0_0_40px_rgba(0,255,163,0.03)]">
-              <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-emerald-400/50">DUM Club · Support this business</div>
+            <div id="buy-panel" className="rounded-3xl border border-default bg-surface-page p-5 sm:p-6">
+              <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-brand-teal/50">DUM Club · Support this business</div>
 
               <h2 className="text-xl font-bold text-white">
                 {isSimulated ? "Buy / Sell (demo)" : "Buy / Sell"}
@@ -7664,20 +7664,20 @@ return (
 
               {/* State indicator */}
               <div className="mt-3 flex items-center gap-2">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${authUser ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400" : "border-zinc-700 bg-zinc-900 text-zinc-500"}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${authUser ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${authUser ? "border-default bg-brand-teal-soft text-brand-teal" : "border-default bg-surface-muted text-secondary"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${authUser ? "bg-brand-teal" : "bg-zinc-600"}`} />
                   {authUser ? "Signed in" : "Not signed in"}
                 </span>
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${userWallet ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400" : "border-zinc-700 bg-zinc-900 text-zinc-500"}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${userWallet ? "bg-emerald-400" : "bg-zinc-600"}`} />
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${userWallet ? "border-default bg-brand-teal-soft text-brand-teal" : "border-default bg-surface-muted text-secondary"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${userWallet ? "bg-brand-teal" : "bg-zinc-600"}`} />
                   {userWallet ? "Wallet linked" : "Wallet optional"}
                 </span>
               </div>
 
               {!authUser ? (
                 /* Not signed in */
-                <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                  <p className="text-sm text-zinc-400">Sign in to support this business.</p>
+                <div className="mt-6 rounded-2xl border border-default bg-surface-card p-5 text-center">
+                  <p className="text-sm text-secondary">Sign in to support this business.</p>
                   <button
                     type="button"
                     onClick={login}
@@ -7688,36 +7688,36 @@ return (
                 </div>
               ) : !userWallet ? (
                 /* Signed in but wallet not linked — preview state for a future-phase feature */
-                <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-center">
-                  <p className="text-sm text-zinc-400">Tokenized trading is a future-phase feature and not yet live on DUM Club.</p>
-                  <p className="mt-2 text-xs text-zinc-600">DUM Points power discounts from Stripe purchases today. Wallet linking is optional and reserved for future rewards features.</p>
+                <div className="mt-6 rounded-2xl border border-default bg-surface-card p-5 text-center">
+                  <p className="text-sm text-secondary">Tokenized trading is a future-phase feature and not yet live on DUM Club.</p>
+                  <p className="mt-2 text-xs text-muted">DUM Points power discounts from Stripe purchases today. Wallet linking is optional and reserved for future rewards features.</p>
                 </div>
               ) : (
                 /* Signed in + wallet connected — full trade form */
                 <div className="mt-6 space-y-4">
                   <div>
-                    <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+                    <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-muted">
                       Token Amount
                     </label>
                     <input
                       value={tradeAmount}
                       onChange={(e) => setTradeAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                      className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-white outline-none transition focus:border-brand-teal"
                       type="number"
                       min="0"
                       step="any"
                     />
                   </div>
 
-                  <div className="mb-1 flex rounded-xl border border-zinc-800 p-1">
+                  <div className="mb-1 flex rounded-xl border border-default p-1">
                     <button
                       type="button"
                       onClick={() => setTradeTab("buy")}
                       className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
                         tradeTab === "buy"
-                          ? "bg-emerald-500 text-black"
-                          : "text-zinc-500 hover:text-zinc-300"
+                          ? "bg-brand-teal text-black"
+                          : "text-secondary hover:text-primary"
                       }`}
                     >
                       {isSimulated ? "Demo buy" : "Buy"}
@@ -7727,8 +7727,8 @@ return (
                       onClick={() => setTradeTab("sell")}
                       className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${
                         tradeTab === "sell"
-                          ? "bg-red-500 text-white"
-                          : "text-zinc-500 hover:text-zinc-300"
+                          ? "bg-state-live text-white"
+                          : "text-secondary hover:text-primary"
                       }`}
                     >
                       {isSimulated ? "Demo sell" : "Sell"}
@@ -7741,8 +7741,8 @@ return (
                     onClick={() => executeTrade(tradeTab)}
                     className={`w-full rounded-xl py-3.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
                       tradeTab === "buy"
-                        ? "bg-emerald-500 text-black hover:bg-emerald-400"
-                        : "bg-red-500 text-white hover:bg-red-400"
+                        ? "bg-brand-teal text-black hover:bg-brand-teal"
+                        : "bg-state-live text-white hover:bg-red-400"
                     }`}
                   >
                     {loadingTrade
@@ -7766,10 +7766,10 @@ return (
                     <div
                       className={`rounded-2xl border p-4 text-sm ${
                         tradeWinFlash
-                          ? "win-flash border-emerald-500/30 bg-emerald-950/20 text-emerald-300"
+                          ? "win-flash border-default bg-brand-teal-soft text-brand-teal"
                           : tradeIsError
-                          ? "border-red-500/30 bg-red-950/20 text-red-300"
-                          : "border-zinc-800 bg-zinc-950 text-zinc-300"
+                          ? "border-[var(--state-live)]/30 bg-red-950/20 text-state-live"
+                          : "border-default bg-surface-card text-primary"
                       }`}
                     >
                       {tradeMessage}
@@ -7777,30 +7777,30 @@ return (
                   )}
                 </div>
               )}
-              <div className="mt-8 grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+              <div className="mt-8 grid gap-4 rounded-2xl border border-default bg-surface-card p-4">
   <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Project Fee</span>
-    <span className="font-mono text-zinc-300">1.50%</span>
+    <span className="text-[11px] uppercase tracking-[0.2em] text-muted">Project Fee</span>
+    <span className="font-mono text-primary">1.50%</span>
   </div>
   <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Fee</span>
-    <span className="font-mono text-zinc-300">0.50%</span>
+    <span className="text-[11px] uppercase tracking-[0.2em] text-muted">DUM Fee</span>
+    <span className="font-mono text-primary">0.50%</span>
   </div>
   <div className="flex items-center justify-between gap-4">
-    <span className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Total Fee</span>
+    <span className="text-[11px] uppercase tracking-[0.2em] text-muted">Total Fee</span>
     <span className="font-mono text-white">2.00%</span>
   </div>
 </div>
-<details className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950">
-  <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
+<details className="mt-8 rounded-2xl border border-default bg-surface-card">
+  <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-muted hover:text-secondary">
     Member access ▸
   </summary>
   <div className="p-4 pt-0">
-  <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+  <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-muted">
     Member Access
   </div>
 
-  <div className="mb-3 text-sm text-zinc-400">
+  <div className="mb-3 text-sm text-secondary">
     Support this business to unlock member access and perks.
   </div>
 
@@ -7808,7 +7808,7 @@ return (
     value={redeemAmount}
     onChange={(e) => setRedeemAmount(e.target.value)}
     placeholder="Enter amount"
-    className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
+    className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
     type="number"
     min="0"
     step="any"
@@ -7824,14 +7824,14 @@ return (
   </button>
 
   {redeemStatus && (
-    <div className="mt-3 rounded-xl border border-zinc-800 bg-base p-3 text-sm text-zinc-300">
+    <div className="mt-3 rounded-xl border border-default bg-surface-page p-3 text-sm text-primary">
       {redeemStatus}
     </div>
   )}
 
   {redeemCode && (
-    <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-4">
-      <div className="text-[11px] uppercase tracking-[0.2em] text-emerald-300">
+    <div className="mt-3 rounded-xl border border-default bg-brand-teal-soft p-4">
+      <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
         Access Code
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -7849,8 +7849,8 @@ return (
           }}
           className={`rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition ${
             copyFlash
-              ? "border-emerald-400 bg-emerald-400/20 text-emerald-200"
-              : "border-zinc-600 text-zinc-300 hover:border-emerald-500/50"
+              ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+              : "border-strong text-primary hover:border-strong"
           }`}
         >
           {copyFlash ? "Copied" : "Copy"}
@@ -7877,14 +7877,14 @@ return (
           }}
           className={`rounded-lg border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition ${
             shareFlash
-              ? "border-emerald-400 bg-emerald-400/20 text-emerald-200"
-              : "border-emerald-500/40 text-emerald-200/90 hover:border-emerald-400"
+              ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+              : "border-default text-brand-teal/90 hover:border-brand-teal"
           }`}
         >
           {shareFlash ? "Copied" : "Share"}
         </button>
       </div>
-      <p className="mt-3 text-xs text-zinc-500">
+      <p className="mt-3 text-xs text-secondary">
         Share this code with your team or drop it in Discord.
       </p>
       {/* Mint address hidden per doctrine §12.3 — no blockchain on consumer pages.
@@ -7892,35 +7892,35 @@ return (
     </div>
   )}
 
-  <div className="mt-4 rounded-xl border border-zinc-800 bg-base p-3">
-    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">DUM Points Perks</div>
-    <div className="mt-2 text-sm text-zinc-300">
+  <div className="mt-4 rounded-xl border border-default bg-surface-page p-3">
+    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">DUM Points Perks</div>
+    <div className="mt-2 text-sm text-primary">
       Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
     </div>
   </div>
 
-  <div className="mt-4 border-t border-zinc-800 pt-4">
-    <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">
+  <div className="mt-4 border-t border-default pt-4">
+    <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-muted">
       Access History
     </div>
 
     {redemptions.length === 0 ? (
-      <div className="text-sm text-zinc-500">No access history yet.</div>
+      <div className="text-sm text-secondary">No access history yet.</div>
     ) : (
       <div className="space-y-2">
         {redemptions.slice(0, 5).map((item) => (
           <div
             key={item.id}
-            className="rounded-xl border border-zinc-800 bg-base p-3"
+            className="rounded-xl border border-default bg-surface-page p-3"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="font-mono text-sm text-white">{item.code}</div>
-              <div className="text-xs uppercase tracking-[0.15em] text-zinc-500">
+              <div className="text-xs uppercase tracking-[0.15em] text-secondary">
                 {item.status}
               </div>
             </div>
 
-            <div className="mt-2 flex items-center justify-between gap-3 text-sm text-zinc-400">
+            <div className="mt-2 flex items-center justify-between gap-3 text-sm text-secondary">
               <div>
                 {formatNumber(item.amount, 2)}{" "}
                 {project?.token_symbol || tokenMeta.symbol || "TOKENS"}
@@ -7933,10 +7933,10 @@ return (
     )}
   </div>
 
-  <div className="mt-4 border-t border-zinc-800 pt-4">
+  <div className="mt-4 border-t border-default pt-4">
     <div className="mb-3 flex items-center justify-between gap-3">
-      <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Trust Layer</div>
-      <div className="text-xs text-zinc-500">
+      <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Trust Layer</div>
+      <div className="text-xs text-secondary">
         {totalReviewCount > 0
           ? `${averageRating.toFixed(1)} / 5 (${totalReviewCount} review${
               totalReviewCount === 1 ? "" : "s"
@@ -7947,11 +7947,11 @@ return (
 
     <form onSubmit={submitFeedback} className="space-y-3">
       <div>
-        <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-zinc-600">Rating</label>
+        <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-muted">Rating</label>
         <select
           value={feedbackRating}
           onChange={(e) => setFeedbackRating(Number(e.target.value))}
-          className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
+          className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
         >
           <option value={5}>5 - Excellent</option>
           <option value={4}>4 - Good</option>
@@ -7966,12 +7966,12 @@ return (
         onChange={(e) => setFeedbackComment(e.target.value)}
         rows={3}
         placeholder="Share a quick note about this project..."
-        className="w-full rounded-xl border border-zinc-700 bg-base px-3 py-2 text-white"
+        className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
       />
 
       <button
         type="submit"
-        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+        className="w-full rounded-xl border border-default bg-surface-muted py-2 text-sm font-semibold text-white transition hover:bg-surface-muted"
       >
         Save Review
       </button>
@@ -7979,44 +7979,44 @@ return (
   </div>
   </div>
 </details>
-              <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-zinc-600">Trade Preview</div>
+              <div className="mt-8 rounded-2xl border border-default bg-surface-card p-4">
+                <div className="mb-4 text-[11px] uppercase tracking-[0.22em] text-muted">Trade Preview</div>
 
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Current Price</span>
-                    <span className="font-mono text-zinc-300">${formatPrice(market?.price)}</span>
+                    <span className="text-secondary">Current Price</span>
+                    <span className="font-mono text-primary">${formatPrice(market?.price)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Trade Amount</span>
-                    <span className="font-mono text-zinc-300">
+                    <span className="text-secondary">Trade Amount</span>
+                    <span className="font-mono text-primary">
                       {formatNumber(numericTradeAmount, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Gross Value</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(tradeGrossValue, 4)}</span>
+                    <span className="text-secondary">Gross Value</span>
+                    <span className="font-mono text-primary">${formatNumber(tradeGrossValue, 4)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Project Fee</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(estimatedProjectFee, 4)}</span>
+                    <span className="text-secondary">Project Fee</span>
+                    <span className="font-mono text-primary">${formatNumber(estimatedProjectFee, 4)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">DUM Fee</span>
-                    <span className="font-mono text-zinc-300">${formatNumber(estimatedDumFee, 4)}</span>
+                    <span className="text-secondary">DUM Fee</span>
+                    <span className="font-mono text-primary">${formatNumber(estimatedDumFee, 4)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between gap-4 border-t border-zinc-800 pt-3">
-                    <span className="text-zinc-400">Est. Buy Cost</span>
+                  <div className="flex items-center justify-between gap-4 border-t border-default pt-3">
+                    <span className="text-secondary">Est. Buy Cost</span>
                     <span className="font-mono text-white">${formatNumber(estimatedBuyCost, 4)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-400">Est. Sell Proceeds</span>
+                    <span className="text-secondary">Est. Sell Proceeds</span>
                     <span className="font-mono text-white">${formatNumber(estimatedSellProceeds, 4)}</span>
                   </div>
 
@@ -8032,26 +8032,26 @@ return (
                 </div>
               </div>
 
-              <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Quick Snapshot</div>
+              <div className="mt-8 rounded-2xl border border-default bg-surface-card p-4">
+                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-muted">Quick Snapshot</div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Your Balance</div>
+                  <div className="rounded-2xl border border-default bg-surface-page p-4">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Your Balance</div>
                     <div className="mt-2 font-mono text-2xl text-white">
                       {formatNumber(walletBalance, 2)}
                     </div>
-                    <div className="mt-1 text-xs text-zinc-500">
+                    <div className="mt-1 text-xs text-secondary">
                       {project?.token_symbol || tokenMeta.symbol || ""}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-zinc-600">Mark Value Est.</div>
+                  <div className="rounded-2xl border border-default bg-surface-page p-4">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Mark Value Est.</div>
                     <div className="mt-2 font-mono text-2xl text-white">
                       ${formatNumber(positionValue, 4)}
                     </div>
-                    <div className="mt-1 text-xs text-zinc-500">
+                    <div className="mt-1 text-xs text-secondary">
                       Based on latest trade price
                     </div>
                   </div>
@@ -8059,36 +8059,36 @@ return (
 
                 <div className="mt-4 space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Connected Wallet</span>
-                    <span className="font-mono text-zinc-300">{shortMint(userWallet)}</span>
+                    <span className="text-secondary">Connected Wallet</span>
+                    <span className="font-mono text-primary">{shortMint(userWallet)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-zinc-500">Available to Sell</span>
-                    <span className="font-mono text-zinc-300">
+                    <span className="text-secondary">Available to Sell</span>
+                    <span className="font-mono text-primary">
                       {formatNumber(walletBalance, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-zinc-500">
+                  <div className="text-[11px] text-secondary">
                     Mark value is an estimate only and may differ from actual exit value depending on trade size and liquidity.
                   </div>
 
-                  <details className="mt-2 rounded-2xl border border-zinc-800 bg-base">
-                    <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400">
+                  <details className="mt-2 rounded-2xl border border-default bg-surface-page">
+                    <summary className="cursor-pointer select-none px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-muted hover:text-secondary">
                       Token Structure ▸
                     </summary>
                     <div className="space-y-3 px-4 pb-4">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Circulating</span>
-                        <span className="font-mono text-zinc-300">
+                        <span className="text-secondary">Circulating</span>
+                        <span className="font-mono text-primary">
                           {formatNumber(market?.circulating_supply, 2)} {project?.token_symbol || tokenMeta.symbol || ""}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Max Supply</span>
-                        <span className="font-mono text-zinc-300">
+                        <span className="text-secondary">Max Supply</span>
+                        <span className="font-mono text-primary">
                           {formatNumber(
                             market?.max_supply || Number(tokenMeta.supply) || project?.token_supply,
                             2
@@ -8098,35 +8098,35 @@ return (
                       </div>
 
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Symbol</span>
-                        <span className="font-mono text-zinc-300">
+                        <span className="text-secondary">Symbol</span>
+                        <span className="font-mono text-primary">
                           {project?.token_symbol || tokenMeta.symbol || "-"}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-zinc-500">Mint</span>
-                        <span className="font-mono text-zinc-300">
+                        <span className="text-secondary">Mint</span>
+                        <span className="font-mono text-primary">
                           {shortMint(tokenMeta.mint_address || project?.token_mint_address)}
                         </span>
                       </div>
                     </div>
                   </details>
 
-                  <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-zinc-600">Market Trust Signals</div>
+                  <div className="rounded-2xl border border-default bg-surface-page p-4">
+                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Market Trust Signals</div>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
                         <div className="font-mono text-lg text-white">{trades.length}</div>
-                        <div className="text-xs text-zinc-500">Recent trades</div>
+                        <div className="text-xs text-secondary">Recent trades</div>
                       </div>
                       <div>
                         <div className="font-mono text-lg text-white">{uniqueTradeSources}</div>
-                        <div className="text-xs text-zinc-500">Active participants</div>
+                        <div className="text-xs text-secondary">Active participants</div>
                       </div>
                       <div>
                         <div className="font-mono text-lg text-white">{formatCurrencyCompact(market?.volume_24h, 2)}</div>
-                        <div className="text-xs text-zinc-500">24h volume</div>
+                        <div className="text-xs text-secondary">24h volume</div>
                       </div>
                     </div>
                   </div>
@@ -8136,15 +8136,15 @@ return (
           </div>
         </div>
       ) : (
-        <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-emerald-400/10" : "border-zinc-900"} border bg-zinc-950 p-6`}>
-          <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-emerald-400/60" : "text-zinc-600"}`}>
+        <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-default" : "border-default"} border bg-surface-card p-6`}>
+          <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-brand-teal/60" : "text-muted"}`}>
             Business Status
           </div>
 
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
             {isApprovedProject ? launchSectionHeading : projectName}
           </h2>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-secondary">
             {isApprovedProject
               ? (nextStepHint || "Your business is live on DUM Club.")
               : (project?.description || parsedAiOutput?.description || "No description available yet.")}
@@ -8152,49 +8152,49 @@ return (
 
           {isApprovedProject ? (
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Status</div>
-                <div className="mt-2 text-lg font-bold text-emerald-400">Live</div>
+              <div className="rounded-2xl border border-default bg-surface-page p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted">Status</div>
+                <div className="mt-2 text-lg font-bold text-brand-teal">Live</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
+              <div className="rounded-2xl border border-default bg-surface-page p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
                 <div className="mt-2 text-white">DUM Points</div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Checkout</div>
+              <div className="rounded-2xl border border-default bg-surface-page p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted">Checkout</div>
                 <div className="mt-2 text-white">Stripe + DUM</div>
               </div>
             </div>
           ) : (
             <>
-              <div className="mt-4 inline-flex rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-[0.18em] text-zinc-300">
+              <div className="mt-4 inline-flex rounded-full border border-default px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
                 {category}
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Review</div>
+                <div className="rounded-2xl border border-default bg-surface-page p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Review</div>
                   <div className="mt-2 text-white">{reviewStatus}</div>
                 </div>
-                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Publication</div>
+                <div className="rounded-2xl border border-default bg-surface-page p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Publication</div>
                   <div className="mt-2 text-white">{project?.status || "draft"}</div>
                 </div>
-                <div className="rounded-2xl border border-zinc-800 bg-base p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Rewards</div>
-                  <div className="mt-2 text-emerald-400">DUM Points</div>
+                <div className="rounded-2xl border border-default bg-surface-page p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
+                  <div className="mt-2 text-brand-teal">DUM Points</div>
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-zinc-800 bg-base p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">Next Step</div>
-                <div className="mt-2 text-sm text-zinc-200">{nextStepMessage}</div>
+              <div className="mt-6 rounded-2xl border border-default bg-surface-page p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
+                <div className="mt-2 text-sm text-primary">{nextStepMessage}</div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard"
-                  className="rounded-2xl border border-zinc-700 bg-base px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-zinc-900"
+                  className="rounded-2xl border border-default bg-surface-page px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-surface-muted"
                 >
                   Edit Project
                 </Link>
@@ -8216,44 +8216,44 @@ return (
       )}
 
 
-        <details className="mb-8 rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-          <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-zinc-600 hover:text-zinc-400">
+        <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
+          <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-muted hover:text-secondary">
             <span>Business Blueprint</span>
-            <span className="text-[10px] text-zinc-600">Click to expand</span>
+            <span className="text-[10px] text-muted">Click to expand</span>
           </summary>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
+            <div className="rounded-2xl border border-default bg-surface-page p-5">
               <h2 className="text-2xl font-bold text-white">Original Prompt</h2>
-              <p className="mt-3 text-zinc-400">{project?.prompt || "No prompt saved yet."}</p>
+              <p className="mt-3 text-secondary">{project?.prompt || "No prompt saved yet."}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
+            <div className="rounded-2xl border border-default bg-surface-page p-5">
               <h2 className="text-2xl font-bold text-white">Rewards &amp; Perks</h2>
-              <p className="mt-3 text-zinc-400">
+              <p className="mt-3 text-secondary">
                 {parsedAiOutput?.token_utility || project?.token_utility || "Rewards details are not configured yet."}
               </p>
             </div>
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Description</div>
-              <p className="mt-3 text-zinc-300">
+            <div className="rounded-2xl border border-default bg-surface-page p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-muted">Description</div>
+              <p className="mt-3 text-primary">
                 {parsedAiOutput?.description ||
                   project?.description ||
                   "No AI-generated description available yet."}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Category</div>
-              <p className="mt-3 text-zinc-300">{category}</p>
+            <div className="rounded-2xl border border-default bg-surface-page p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-muted">Category</div>
+              <p className="mt-3 text-primary">{category}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-base p-5">
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-600">Template Type</div>
-              <p className="mt-3 text-zinc-300">
+            <div className="rounded-2xl border border-default bg-surface-page p-5">
+              <div className="text-xs uppercase tracking-[0.25em] text-muted">Template Type</div>
+              <p className="mt-3 text-primary">
                 {parsedAiOutput?.template_type ||
                   project?.template_type ||
                   "No template type available yet."}
@@ -8264,12 +8264,12 @@ return (
 
 
         {false && (
-        <div id="section-memory" className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-600">Project Memory</div>
+        <div id="section-memory" className="rounded-3xl border border-default bg-surface-card p-6">
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">Project Memory</div>
 
             <h2 className="text-3xl font-bold text-white">Add Memory</h2>
 
-            <p className="mt-3 max-w-2xl text-zinc-500">
+            <p className="mt-3 max-w-2xl text-secondary">
               Paste a memory, note, social post, transcript, or product insight so your AI can use it
               later.
             </p>
@@ -8281,7 +8281,7 @@ return (
                 onChange={(e) => setMemoryText(e.target.value)}
                 placeholder="Paste a memory, story, social post, transcript, or note..."
                 rows={7}
-                className="w-full rounded-2xl border border-zinc-800 bg-base px-4 py-3 text-white outline-none transition focus:border-emerald-400"
+                className="w-full rounded-2xl border border-default bg-surface-page px-4 py-3 text-white outline-none transition focus:border-brand-teal"
               />
 
               <button
@@ -8294,7 +8294,7 @@ return (
               </button>
             </form>
              ) : (
-             <div className="mt-6 rounded-2xl border border-zinc-800 bg-base/40 p-5 text-sm text-zinc-500">
+             <div className="mt-6 rounded-2xl border border-default bg-surface-page/40 p-5 text-sm text-secondary">
              Sign in to add a project memory.
              </div>
              )}
@@ -8303,11 +8303,11 @@ return (
               <h3 className="text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
 
               {memories.length === 0 ? (
-                <p className="mt-4 text-zinc-400">No memories saved yet.</p>
+                <p className="mt-4 text-secondary">No memories saved yet.</p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {memories.map((memory) => (
-                    <div key={memory.id} className="rounded-2xl border border-zinc-800 bg-base p-4 text-zinc-300">
+                    <div key={memory.id} className="rounded-2xl border border-default bg-surface-page p-4 text-primary">
                       {memory.content_text || memory.content || "Empty memory"}
                     </div>
                   ))}
@@ -8320,11 +8320,11 @@ return (
     </>)}
 
     {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
-      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-zinc-800 bg-base/90 backdrop-blur-md lg:block">
+      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-default bg-surface-page/90 backdrop-blur-md lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
             <span className="truncate font-black text-white">{heroTitle}</span>
-            <span className="font-mono text-sm text-zinc-400">${displaySymbol}</span>
+            <span className="font-mono text-sm text-secondary">${displaySymbol}</span>
             {isSimulated && (
               <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-300">
                 Demo
@@ -8335,7 +8335,7 @@ return (
             </span>
             <span
               className={`text-sm font-semibold ${
-                heroPriceUp ? "text-emerald-400" : "text-red-400"
+                heroPriceUp ? "text-brand-teal" : "text-state-live"
               }`}
             >
               {heroPriceUp ? "+" : ""}
@@ -8344,13 +8344,13 @@ return (
           </div>
 
           <div className="flex flex-shrink-0 items-center gap-3">
-            <span className="hidden text-xs text-zinc-500 xl:inline">
+            <span className="hidden text-xs text-secondary xl:inline">
               {isSimulated ? "Demo token · in-app ledger only" : "Customers get unlimited AI access"}
             </span>
             <button
               type="button"
               onClick={scrollToBuyPanel}
-              className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-black transition hover:bg-emerald-400"
+              className="rounded-lg bg-brand-teal px-5 py-2 text-sm font-bold text-black transition hover:bg-brand-teal"
             >
               {isSimulated ? `Demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
             </button>
@@ -8363,11 +8363,11 @@ return (
   {/* ── Image Lightbox Modal ── */}
   {lightboxUrl && (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-base/90 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-surface-page/90 backdrop-blur-sm"
       onClick={() => setLightboxUrl(null)}
     >
       <button
-        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800/80 text-xl text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted/80 text-xl text-primary transition hover:bg-zinc-700 hover:text-white"
         onClick={() => setLightboxUrl(null)}
         aria-label="Close"
       >
@@ -8397,10 +8397,10 @@ return (
 
   {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop */}
   {!isOwner && offers.length > 0 && (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md px-4 py-3 lg:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-default bg-surface-card backdrop-blur-md px-4 py-3 lg:hidden">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-xs text-zinc-500">From</div>
+          <div className="text-xs text-secondary">From</div>
           <div className="text-lg font-black text-white">
             ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
           </div>
@@ -8408,7 +8408,7 @@ return (
         <button
           type="button"
           onClick={() => scrollToSection("offers-section")}
-          className="rounded-xl bg-emerald-400 px-6 py-3 text-sm font-bold text-black transition hover:bg-emerald-300"
+          className="rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
         >
           Browse Offers ↓
         </button>
