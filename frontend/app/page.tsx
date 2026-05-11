@@ -353,7 +353,7 @@ function CreatorProofModal({
             {story.emoji}
           </div>
           <div>
-            <div className="text-[15px] font-bold text-white">{story.name}</div>
+            <div className="text-[15px] font-bold text-primary">{story.name}</div>
             <div className="text-[12px] text-secondary">{story.project}</div>
           </div>
         </div>
@@ -374,11 +374,11 @@ function CreatorProofModal({
             </div>
           </div>
           <div className="rounded-xl border border-default bg-surface-card p-3 text-center">
-            <div className="text-xl font-extrabold text-white">AI</div>
+            <div className="text-xl font-extrabold text-primary">AI</div>
             <div className="mt-1 text-[10px] text-secondary">Built by</div>
           </div>
           <div className="rounded-xl border border-default bg-surface-card p-3 text-center">
-            <div className="text-xl font-extrabold text-white">$0</div>
+            <div className="text-xl font-extrabold text-primary">$0</div>
             <div className="mt-1 text-[10px] text-secondary">Setup cost</div>
           </div>
         </div>
@@ -607,7 +607,7 @@ function RecentSalesFeed() {
                   </span>
                 )}
                 <div>
-                  <span className="text-[13px] font-semibold text-white">{sale.business_name || "Business"}</span>
+                  <span className="text-[13px] font-semibold text-primary">{sale.business_name || "Business"}</span>
                   <span className="mx-2 text-muted">·</span>
                   <span className="text-[12px] text-secondary">{sale.offer_title}</span>
                 </div>
@@ -929,7 +929,7 @@ function ProductDemo() {
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-surface-card text-xl shadow-inner">🚗</div>
                     <div>
-                      <div className="text-[15px] font-bold text-white">Sparkle Mobile Wash</div>
+                      <div className="text-[15px] font-bold text-primary">Sparkle Mobile Wash</div>
                       <div className="text-[10px] text-secondary">AI-generated project</div>
                     </div>
                   </div>
@@ -977,7 +977,7 @@ function ProductDemo() {
                       <div className="flex items-center gap-3">
                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-default bg-gradient-to-br from-zinc-900 to-surface-card text-xl shadow-inner">🚗</div>
                         <div>
-                          <div className="text-[16px] font-bold text-white">Sparkle Mobile Wash</div>
+                          <div className="text-[16px] font-bold text-primary">Sparkle Mobile Wash</div>
                           <div className="text-[11px] text-secondary">dum.club/sparkle-wash</div>
                         </div>
                       </div>
@@ -1068,7 +1068,7 @@ function ProductDemo() {
                 </div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-[14px] font-bold text-white">Full Detail Package</div>
+                    <div className="text-[14px] font-bold text-primary">Full Detail Package</div>
                     <div className="text-[11px] text-secondary">Sarah M. just purchased</div>
                   </div>
                   <div className="text-right">
@@ -1078,7 +1078,7 @@ function ProductDemo() {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
-                    <div className="font-mono text-[14px] font-bold text-white">$89</div>
+                    <div className="font-mono text-[14px] font-bold text-primary">$89</div>
                     <div className="text-[8px] text-secondary">This sale</div>
                   </div>
                   <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
@@ -1086,7 +1086,7 @@ function ProductDemo() {
                     <div className="text-[8px] text-secondary">DUM Points</div>
                   </div>
                   <div className="rounded-lg border border-default/40 bg-surface-muted p-2 text-center">
-                    <div className="font-mono text-[14px] font-bold text-white">✓</div>
+                    <div className="font-mono text-[14px] font-bold text-primary">✓</div>
                     <div className="text-[8px] text-secondary">Paid via Stripe</div>
                   </div>
                 </div>
@@ -1183,7 +1183,7 @@ function LiveSaleToast() {
           💳
         </div>
         <div>
-          <div className="text-[12px] font-semibold text-white">{sale.item}</div>
+          <div className="text-[12px] font-semibold text-primary">{sale.item}</div>
           <div className="flex items-center gap-2 text-[10px]">
             <span className="font-bold text-brand-teal">{sale.price}</span>
             <span className="text-secondary">·</span>
@@ -1350,7 +1350,7 @@ function SearchResults({
                 <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
                   {c.name}
                 </div>
-                <div className="mt-1 truncate text-[15px] font-bold text-white">
+                <div className="mt-1 truncate text-[15px] font-bold text-primary">
                   {c.product}
                 </div>
               </div>
@@ -1402,7 +1402,7 @@ function ExternalTopCard({ data }: { data: ExternalTopResult }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-default/60 bg-surface-card p-5">
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-bold text-white">{data.name}</div>
+        <div className="text-[15px] font-bold text-primary">{data.name}</div>
         {data.address ? (
           <div className="mt-1 truncate text-[12px] text-secondary">{data.address}</div>
         ) : null}
@@ -1516,7 +1516,7 @@ function LiveNowSection({ projects }: { projects: Project[] }) {
             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
               {c.name}
             </div>
-            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
+            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-primary">
               {c.product}
             </div>
             <div className="mt-3 font-mono text-xl font-extrabold text-brand-teal">
@@ -1614,7 +1614,7 @@ function DealsSection({ projects }: { projects: Project[] }) {
             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
               {c.business_name}
             </div>
-            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-white">
+            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-primary">
               {c.offer_title}
             </div>
             <div className="mt-3 font-mono text-xl font-extrabold text-brand-teal">
@@ -1661,7 +1661,7 @@ function RetentionSection() {
               <div key={s.step} className="flex gap-4 rounded-xl border border-default/40 bg-surface-muted p-4 transition hover:border-default">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal-soft text-lg">{s.icon}</div>
                 <div>
-                  <div className="text-[13px] font-bold text-white">{s.title}</div>
+                  <div className="text-[13px] font-bold text-primary">{s.title}</div>
                   <div className="mt-0.5 text-[12px] text-secondary">{s.desc}</div>
                 </div>
               </div>
@@ -1781,7 +1781,7 @@ function PricingTiers() {
             )}
             <div className="mb-1 text-[11px] font-bold uppercase tracking-widest text-secondary">{tier.name}</div>
             <div className="mb-1 flex items-baseline gap-1">
-              <span className="text-3xl font-black text-white">{tier.price}</span>
+              <span className="text-3xl font-black text-primary">{tier.price}</span>
               <span className="text-sm text-secondary">{tier.period}</span>
             </div>
             <div className="mb-5 text-[12px] text-secondary">{tier.desc}</div>
@@ -2979,7 +2979,7 @@ export default function Home() {
                 <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-teal-soft text-brand-teal">
                   <u.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                 </div>
-                <div className="mb-2 text-base font-bold text-white">{u.title}</div>
+                <div className="mb-2 text-base font-bold text-primary">{u.title}</div>
                 <p className="text-sm leading-relaxed text-secondary">{u.copy}</p>
               </div>
             ))}
@@ -3030,7 +3030,7 @@ export default function Home() {
                 <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
                   {step.n}
                 </div>
-                <div className="mt-3 text-base font-bold text-white">{step.title}</div>
+                <div className="mt-3 text-base font-bold text-primary">{step.title}</div>
                 <p className="mt-2 text-sm leading-relaxed text-primary">{step.copy}</p>
               </div>
             ))}
@@ -3121,7 +3121,7 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-xl font-black tracking-tight text-white">
+                <span className="text-xl font-black tracking-tight text-primary">
                   DUM<span className="text-brand-teal">CLUB</span>
                 </span>
               </div>

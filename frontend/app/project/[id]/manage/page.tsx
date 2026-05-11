@@ -160,7 +160,7 @@ export default function ManagePage() {
     (project?.name as string) || (project?.title as string) || "Project";
 
   return (
-    <div className="min-h-screen bg-surface-page text-white">
+    <div className="min-h-screen bg-surface-page text-primary">
       <div className="mx-auto max-w-4xl px-6 py-12">
         <Link
           href={`/project/${id}`}
@@ -213,7 +213,7 @@ export default function ManagePage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <div className="font-semibold text-white">
+                        <div className="font-semibold text-primary">
                           {(b.customer_name as string) || "Anonymous"}
                         </div>
                         <div className="mt-1 font-mono text-sm text-secondary">
@@ -328,7 +328,7 @@ export default function ManagePage() {
                   onChange={(e) =>
                     setServiceProfile((p) => ({ ...p, service_type: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-primary outline-none"
                 >
                   <option value="remote">Remote / Online</option>
                   <option value="local">Local / In-person</option>
@@ -348,7 +348,7 @@ export default function ManagePage() {
                       duration_minutes: Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-primary outline-none"
                 />
               </div>
               <div>
@@ -361,7 +361,7 @@ export default function ManagePage() {
                     setServiceProfile((p) => ({ ...p, location: e.target.value }))
                   }
                   placeholder="City, State"
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-primary outline-none"
                 />
               </div>
               <div>
@@ -373,7 +373,7 @@ export default function ManagePage() {
                   onChange={(e) =>
                     setServiceProfile((p) => ({ ...p, timezone: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-primary outline-none"
                 >
                   <option value="America/New_York">Eastern (ET)</option>
                   <option value="America/Chicago">Central (CT)</option>
@@ -397,7 +397,7 @@ export default function ManagePage() {
                 }
                 placeholder="What exactly do customers get when they book?"
                 rows={4}
-                className="w-full resize-none rounded-xl border border-default bg-surface-card px-4 py-3 text-white outline-none"
+                className="w-full resize-none rounded-xl border border-default bg-surface-card px-4 py-3 text-primary outline-none"
               />
             </div>
             <button
