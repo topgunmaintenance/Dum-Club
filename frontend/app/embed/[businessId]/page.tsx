@@ -291,40 +291,101 @@ export default function EmbedShellPage() {
   }, []);
 
   // ── Autobuy resume after iframe-redirect sign-in ──────────────
-  // When a buyer clicks Buy inside the merchant's iframe and
-  // they are not signed in, openTopLevelSignIn() opens a fresh
-  // top-level tab on dum.club at the same embed URL with an
-  // `?autobuy=<offerId>` query param. Once Privy completes sign-
-  // in, this effect notices the param, fires handleBuy() once,
-  // and strips the param from the URL so a refresh doesn't loop.
+  // When a buyer clicks Buy inside the merchant's iframe and they
+  // are not signed in, openTopLevelSignIn() opens a fresh top-
+  // level tab on dum.club at the same embed URL with an
+  // `?autobuy=<offerId>` query param.
+  //
+  // Two sign-in paths can return to this tab:
+  //   - Email OTP: stays on dum.club the whole time. URL is
+  //     preserved, autobuy param survives.
+  //   - Google OAuth: tab navigates away to Google +
+  //     auth.privy.io, then Privy redirects back. Privy's
+  //     redirect target is its registered `redirect_uri` followed
+  //     by a client-side history push — depending on Privy's
+  //     internal state encoding, query params on the original URL
+  //     may or may not survive intact.
+  //
+  // To guarantee resume, we mirror the param into sessionStorage
+  // on the first mount that sees it. The resume effect reads from
+  // EITHER the URL or sessionStorage; whichever still has it
+  // wins. sessionStorage is keyed on the embed origin (dum.club),
+  // so it survives the OAuth roundtrip cleanly and dies when the
+  // tab closes — no cross-session leakage.
+  const AUTOBUY_STORAGE_KEY = "dum_embed_autobuy";
+
+  // Mirror the autobuy intent into sessionStorage on first mount.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("autobuy");
+      if (id) {
+        const pay = params.get("pay") || "";
+        window.sessionStorage.setItem(
+          AUTOBUY_STORAGE_KEY,
+          JSON.stringify({ id, pay, t: Date.now() }),
+        );
+      }
+    } catch {
+      /* storage blocked (sandboxed iframe / Safari private) — fall
+         back to URL params, which are still present in most cases */
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!authUser) return; // wait until Privy returns a user
     if (!pinnedOffer) return; // wait until offers load
+
+    // Prefer URL params; fall back to sessionStorage so the resume
+    // survives a Google OAuth roundtrip even if Privy strips the
+    // query string on the way back.
     const params = new URLSearchParams(window.location.search);
-    const autobuyId = params.get("autobuy");
+    let autobuyId = params.get("autobuy");
+    let pay = params.get("pay") || "";
+    if (!autobuyId) {
+      try {
+        const raw = window.sessionStorage.getItem(AUTOBUY_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { id?: string; pay?: string; t?: number };
+          // 15-minute TTL. If the buyer wandered off and came back
+          // an hour later, don't surprise them with a checkout.
+          if (parsed?.id && (!parsed.t || Date.now() - parsed.t < 15 * 60_000)) {
+            autobuyId = parsed.id;
+            pay = parsed.pay || pay;
+          }
+        }
+      } catch {
+        /* storage blocked — give up on autobuy resume */
+      }
+    }
     if (!autobuyId) return;
+
     // Only auto-resume when the pinned offer matches the one the
     // buyer clicked in the iframe. If the merchant pinned a
     // different offer between sign-in steps, leave the buyer on
     // the storefront — they can re-click and we won't surprise-
     // charge them for the wrong thing.
-    if (pinnedOffer.id !== autobuyId) {
+    function clearAutobuy() {
+      try {
+        window.sessionStorage.removeItem(AUTOBUY_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
       try {
         window.history.replaceState({}, "", window.location.pathname);
       } catch {
         /* sandboxed iframe — leave URL */
       }
+    }
+    if (pinnedOffer.id !== autobuyId) {
+      clearAutobuy();
       return;
     }
     // Strip the autobuy + pay params before firing so a refresh
     // mid-checkout doesn't re-trigger a second payment intent.
-    const pay = params.get("pay");
-    try {
-      window.history.replaceState({}, "", window.location.pathname);
-    } catch {
-      /* sandboxed iframe — leave URL */
-    }
+    clearAutobuy();
     // Defer one tick so any pending state writes from the load
     // path settle before we open the Stripe (or SOL) flow.
     const t = window.setTimeout(() => {
@@ -1016,6 +1077,18 @@ export default function EmbedShellPage() {
                   {!soldOut && (
                     <p className="text-center text-[11px] leading-relaxed text-secondary">
                       Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                    </p>
+                  )}
+
+                  {/* Iframe-unauth helper. Surfaces only when the
+                      buyer is on the merchant's site, not signed
+                      in, and about to be redirected to a new tab.
+                      Email OTP is the recommended path because it
+                      avoids the Google OAuth roundtrip; sign-in
+                      stays on dum.club start to finish. */}
+                  {!soldOut && !authUser && isInIframe() && (
+                    <p className="text-center text-[11px] leading-relaxed text-muted">
+                      Use email sign-in to continue checkout.
                     </p>
                   )}
 
