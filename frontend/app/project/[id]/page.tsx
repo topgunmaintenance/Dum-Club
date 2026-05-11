@@ -3658,7 +3658,7 @@ return (
                 </span>
               </div>
 
-              <h1 className="text-4xl font-bold leading-tight text-white sm:text-6xl">
+              <h1 className="text-4xl font-bold leading-tight text-brand-navy sm:text-6xl">
                 {projectName}
               </h1>
 
@@ -4623,7 +4623,7 @@ return (
                 <div className="h-10 w-72 animate-pulse rounded-lg bg-surface-muted sm:h-14" />
               ) : (
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl">
+                  <h1 className="text-3xl font-bold leading-tight text-brand-navy sm:text-5xl">
                     {projectName}
                   </h1>
                   {ownerBizProfile?.verification_status === "verified" && (
@@ -4742,7 +4742,7 @@ return (
                 {/* Price anchor. show cheapest offer */}
                 {offers.length > 0 && (
                   <div className="mb-4 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-white">
+                    <span className="text-2xl font-black text-brand-navy">
                       From ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
                     </span>
                     <span className="text-sm text-secondary">USD</span>
@@ -4877,7 +4877,7 @@ return (
             ) : projectView === "analytics" ? (
               <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
                 <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">DUM Hub</div>
-                <div className="text-lg font-black text-white">Rewards &amp; Perks</div>
+                <div className="text-lg font-black text-brand-navy">Rewards &amp; Perks</div>
                 <div className="mt-3 space-y-2.5 border-t border-default pt-3">
                   <div className="flex items-center gap-2.5 text-sm text-secondary">
                     <span className="text-brand-teal">💳</span> Stripe checkout active
@@ -5254,7 +5254,7 @@ return (
         </div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="text-2xl font-bold text-white">What&apos;s for sale</h2>
+            <h2 className="text-2xl font-bold text-brand-navy">What&apos;s for sale</h2>
             {(() => {
               const totalSold = offers.reduce((sum, o) => sum + (o.quantity_sold || 0), 0);
               return totalSold > 0 ? (

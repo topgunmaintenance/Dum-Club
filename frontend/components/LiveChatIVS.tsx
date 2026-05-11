@@ -141,14 +141,16 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   return (
     <div
       style={{
-        minHeight: 400,
-        border: "2px solid #ef4444",
+        minHeight: 480,
+        height: 480,
+        maxHeight: "70vh",
+        border: "1px solid #27272a",
         borderRadius: 16,
         background: "#0a0a0a",
         position: "relative",
         zIndex: 10,
         opacity: 1,
-        overflow: "visible",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
       }}
@@ -163,10 +165,12 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: 200 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: 260 }}>
         {messages.length === 0 && (
-          <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center" }}>
-            <p style={{ fontSize: 12, color: "#3f3f46" }}>Say something...</p>
+          <div style={{ display: "flex", height: "100%", minHeight: 200, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "#a1a1aa", lineHeight: 1.5 }}>
+              {connected ? "Be the first to say something." : "Connecting to live chat..."}
+            </p>
           </div>
         )}
         {messages.map((msg) => (
