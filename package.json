@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "check:human-copy": "node scripts/check-human-copy.mjs"
+    "check:human-copy": "node scripts/check-human-copy.mjs",
+    "check:no-stray-text-white": "node scripts/check-no-stray-text-white.mjs"
   },
   "keywords": [],
   "author": "",

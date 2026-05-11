@@ -3714,17 +3714,17 @@ return (
                   <>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-secondary">{isSimulated ? "Price (demo)" : "Price"}</span>
-                      <span className="font-mono font-semibold text-white">${heroPrice.toFixed(6)}</span>
+                      <span className="font-mono font-semibold text-primary">${heroPrice.toFixed(6)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-secondary">{isSimulated ? "Market Cap (demo)" : "Market Cap"}</span>
-                      <span className="font-mono font-semibold text-white">
+                      <span className="font-mono font-semibold text-primary">
                         ${formatNumber(Number(market?.market_cap || 0), 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-secondary">{isSimulated ? "24h Volume (demo)" : "24h Volume"}</span>
-                      <span className="font-mono font-semibold text-white">
+                      <span className="font-mono font-semibold text-primary">
                         ${formatNumber(Number(market?.volume_24h || 0), 2)}
                       </span>
                     </div>
@@ -3732,7 +3732,7 @@ return (
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-secondary">Supply</span>
-                  <span className="font-mono font-semibold text-white">{supplyDisplay}</span>
+                  <span className="font-mono font-semibold text-primary">{supplyDisplay}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-secondary">Status</span>
@@ -3743,7 +3743,7 @@ return (
                 {feedbackEntries.length > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary">Rating</span>
-                    <span className="font-mono font-semibold text-white">
+                    <span className="font-mono font-semibold text-primary">
                       {averageRating.toFixed(1)} / 5
                     </span>
                   </div>
@@ -3836,7 +3836,7 @@ return (
                           </span>
                         )}
                       </div>
-                      <h3 className="text-base font-semibold text-white">{item.name}</h3>
+                      <h3 className="text-base font-semibold text-primary">{item.name}</h3>
                       {item.description && (
                         <p className="mt-1 text-sm text-secondary leading-relaxed">{item.description}</p>
                       )}
@@ -3860,7 +3860,7 @@ return (
                           {pitchFree ? (
                             <span className="text-lg font-bold text-brand-teal">Free for members</span>
                           ) : (
-                            <span className="font-mono text-lg font-bold text-white">{pitchPrice}</span>
+                            <span className="font-mono text-lg font-bold text-primary">{pitchPrice}</span>
                           )}
                           {perkState === "unlocked" && item.token_holder_price != null && item.price && !pitchFree && (
                             <span className="ml-2 text-xs text-muted line-through">{item.price}</span>
@@ -3965,7 +3965,7 @@ return (
         <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
-            <span className="text-sm font-bold text-white">Grow your business with AI</span>
+            <span className="text-sm font-bold text-primary">Grow your business with AI</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {[
@@ -3992,7 +3992,7 @@ return (
                     }
                   }
                 }}
-                className="rounded-lg border border-violet-500/20 bg-violet-500/[0.06] px-3 py-1.5 text-[11px] font-medium text-violet-300 transition hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-violet-200"
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-violet-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
               >
                 {label}
               </button>
@@ -4036,7 +4036,7 @@ return (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal-soft text-xs font-bold text-brand-teal">✓</span>
-              <span className="text-sm font-bold text-white">Show ended</span>
+              <span className="text-sm font-bold text-primary">Show ended</span>
               {streamEndedSummary && streamEndedSummary.sales > 0 && (
                 <span className="text-[12px] text-brand-teal">
                   · {streamEndedSummary.sales} sold this show
@@ -4191,7 +4191,7 @@ return (
                       >
                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-teal text-xs font-bold text-black">$</span>
                         <div>
-                          <div className="text-sm font-bold text-white">{toast.title} just sold!</div>
+                          <div className="text-sm font-bold text-primary">{toast.title} just sold!</div>
                           <div className="text-[11px] text-brand-teal">{toast.count} sold this show</div>
                         </div>
                       </div>
@@ -4205,7 +4205,7 @@ return (
                     <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-black/80 px-4 py-2.5 shadow-lg shadow-amber-500/10 backdrop-blur-sm animate-bounce" style={{ animationDuration: "0.6s", animationIterationCount: "1" }}>
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-black">+</span>
                       <div>
-                        <div className="text-sm font-bold text-white">You earned {dumPointsEarned} DUM Points!</div>
+                        <div className="text-sm font-bold text-primary">You earned {dumPointsEarned} DUM Points!</div>
                         <div className="text-[11px] text-amber-400/70">Rewards on every purchase</div>
                       </div>
                     </div>
@@ -4233,11 +4233,11 @@ return (
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Live Auction</span>
                       {isAuctionActive && (
-                        <span className="font-mono text-lg font-bold text-white">{auctionCountdown}</span>
+                        <span className="font-mono text-lg font-bold text-primary">{auctionCountdown}</span>
                       )}
                     </div>
 
-                    <h3 className="text-lg font-bold text-white">{auctionOffer.title}</h3>
+                    <h3 className="text-lg font-bold text-primary">{auctionOffer.title}</h3>
                     {auctionOffer.description && (
                       <p className="mt-1 text-sm text-secondary line-clamp-1">{auctionOffer.description}</p>
                     )}
@@ -4249,7 +4249,7 @@ return (
                           <div className="text-[10px] uppercase tracking-[0.2em] text-muted">
                             {auction.current_bid ? "Current Bid" : "Starting Price"}
                           </div>
-                          <div className="font-mono text-2xl font-bold text-white">
+                          <div className="font-mono text-2xl font-bold text-primary">
                             ${Number(auction.current_bid || auction.starting_price).toFixed(2)}
                           </div>
                         </div>
@@ -4282,7 +4282,7 @@ return (
                                   value={auctionBidAmount}
                                   onChange={(e) => setAuctionBidAmount(e.target.value)}
                                   placeholder={String(Number(auction.current_bid || auction.starting_price) + 1)}
-                                  className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                                  className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-primary outline-none transition focus:border-amber-400/40"
                                 />
                               </div>
                               <button
@@ -4306,7 +4306,7 @@ return (
                                 value={auctionBidAmount}
                                 onChange={(e) => setAuctionBidAmount(e.target.value)}
                                 placeholder={String(auction.starting_price)}
-                                className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-white outline-none transition focus:border-amber-400/40"
+                                className="w-full rounded-xl border border-default bg-surface-muted py-2.5 pl-7 pr-3 text-sm text-primary outline-none transition focus:border-amber-400/40"
                               />
                             </div>
                             <button
@@ -4370,7 +4370,7 @@ return (
                             className="mb-3 h-32 w-full rounded-xl object-cover"
                           />
                         )}
-                        <h3 className="text-lg font-bold text-white">{pinnedOffer.title}</h3>
+                        <h3 className="text-lg font-bold text-primary">{pinnedOffer.title}</h3>
                         {pinnedOffer.description && (
                           <p className="mt-1 text-sm text-secondary line-clamp-2">{pinnedOffer.description}</p>
                         )}
@@ -4508,10 +4508,10 @@ return (
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400">Live Auction</div>
-                    <div className="truncate text-sm font-bold text-white">{auctionOffer.title}</div>
+                    <div className="truncate text-sm font-bold text-primary">{auctionOffer.title}</div>
                   </div>
                   <div className="flex items-center gap-3 pl-3">
-                    <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(2)}</span>
+                    <span className="font-mono text-lg font-bold text-primary">${Number(auction.current_bid || auction.starting_price).toFixed(2)}</span>
                     {authUser ? (
                       auction.current_bidder === authUser.privyId ? (
                         <span className="rounded-lg bg-brand-teal-soft px-3 py-2 text-xs font-bold text-brand-teal">Top Bid</span>
@@ -4553,7 +4553,7 @@ return (
                 <div className="px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
+                    <div className="truncate text-sm font-bold text-primary">{pinnedOffer.title}</div>
                     <span className="font-mono text-sm font-bold text-brand-teal">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
                     {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
                       // Q4. same low-stock urgency in the mobile sticky bar.
@@ -4835,7 +4835,7 @@ return (
                   )}
                 </div>
                 <div className="flex items-end gap-3">
-                  <span className="font-mono text-3xl font-black text-white">
+                  <span className="font-mono text-3xl font-black text-primary">
                     ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
                   </span>
                   <span
@@ -4852,7 +4852,7 @@ return (
                     <div className="text-[10px] uppercase tracking-wider text-secondary">
                       {isSimulated ? "Market Cap (demo)" : "Market Cap"}
                     </div>
-                    <div className="mt-0.5 font-mono text-sm font-semibold text-white">
+                    <div className="mt-0.5 font-mono text-sm font-semibold text-primary">
                       {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
                     </div>
                   </div>
@@ -4860,7 +4860,7 @@ return (
                     <div className="text-[10px] uppercase tracking-wider text-secondary">
                       {isSimulated ? "Volume 24h (demo)" : "Volume 24h"}
                     </div>
-                    <div className="mt-0.5 font-mono text-sm font-semibold text-white">
+                    <div className="mt-0.5 font-mono text-sm font-semibold text-primary">
                       {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
                     </div>
                   </div>
@@ -5024,7 +5024,7 @@ return (
               className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-default"
             />
             <div className="flex-1 min-w-0">
-              <div className="text-lg font-bold text-white">Julian Mero</div>
+              <div className="text-lg font-bold text-primary">Julian Mero</div>
               <div className="mt-0.5 text-sm text-primary">Founder · A&amp;P Certified Mechanic</div>
               <div className="mt-1 text-xs text-secondary">Morristown Municipal Airport (MMU) · NY NJ PA CT DE</div>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-2">
@@ -5089,7 +5089,7 @@ return (
                         ? "text-brand-teal"
                         : stat.positive === false
                         ? "text-state-live"
-                        : "text-white"
+                        : "text-primary"
                     }`}
                   >
                     {stat.value}
@@ -5121,7 +5121,7 @@ return (
           <div className="mb-8 rounded-3xl border border-default bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-6">
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xl">🎮</span>
-              <span className="text-sm font-bold text-white">Entertainment Business</span>
+              <span className="text-sm font-bold text-primary">Entertainment Business</span>
             </div>
             <p className="text-sm leading-relaxed text-secondary">
               This is a premium experience business. Sell access passes, memberships, and exclusive content to your audience. Your storefront and offers are ready below.
@@ -5175,7 +5175,7 @@ return (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-card backdrop-blur-sm">
                   <div className="mx-4 w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
                     <div className="mb-3 text-3xl">🔒</div>
-                    <h3 className="text-lg font-extrabold text-white">Spend points to keep playing</h3>
+                    <h3 className="text-lg font-extrabold text-primary">Spend points to keep playing</h3>
                     <p className="mt-2 text-sm text-secondary">
                       You&apos;ve used your 3 free plays. Use DUM Points to unlock unlimited access.
                     </p>
@@ -5512,7 +5512,7 @@ return (
               <div className="mt-4 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-white sm:text-xl">
+                    <h3 className="text-lg font-bold text-primary sm:text-xl">
                       Add DUM Live to Your Website
                     </h3>
                     <p className="mt-1 text-sm text-secondary">
@@ -5568,7 +5568,7 @@ return (
                     {/* Header */}
                     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-default px-5 py-4">
                       <div>
-                        <h2 className="text-base font-bold text-white sm:text-lg">
+                        <h2 className="text-base font-bold text-primary sm:text-lg">
                           Activate DUM Live
                         </h2>
                         <p className="text-xs text-secondary">
@@ -5601,7 +5601,7 @@ return (
                           <div className="mb-4 inline-flex items-center justify-center rounded-full bg-brand-teal-soft px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                             ✨ Installed
                           </div>
-                          <h3 className="text-2xl font-extrabold tracking-tight text-white">
+                          <h3 className="text-2xl font-extrabold tracking-tight text-primary">
                             DUM Live is installed on your site.
                           </h3>
                           <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-primary">
@@ -5733,7 +5733,7 @@ return (
                           {embedPlatform === null && (
                             <div className="space-y-3">
                               <div>
-                                <h4 className="text-sm font-bold text-white">
+                                <h4 className="text-sm font-bold text-primary">
                                   What kind of website do you have?
                                 </h4>
                                 <p className="text-xs text-secondary">
@@ -5852,7 +5852,7 @@ return (
                                     real embed-detection backend work. */}
                                 <div className="mt-2 rounded-xl border border-default bg-brand-teal-soft p-4">
                                   <p className="text-[12px] leading-relaxed text-primary">
-                                    <span className="font-bold text-white">Done pasting?</span>{" "}
+                                    <span className="font-bold text-primary">Done pasting?</span>{" "}
                                     Click below to confirm. we&apos;ll mark your live storefront as installed.
                                   </p>
                                   <button
@@ -5873,7 +5873,7 @@ return (
                       {embedActivePath === "self" && (
                         <div className="space-y-5">
                           <div>
-                            <h4 className="text-sm font-bold text-white">
+                            <h4 className="text-sm font-bold text-primary">
                               Four steps. No coding required.
                             </h4>
                           </div>
@@ -5883,7 +5883,7 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-teal text-xs font-bold text-black">1</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Copy the install code</div>
+                                  <div className="font-semibold text-primary">Copy the install code</div>
                                   <button
                                     type="button"
                                     onClick={() => copyText(scriptSnippet, "script")}
@@ -5898,7 +5898,7 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">2</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Paste it on your website</div>
+                                  <div className="font-semibold text-primary">Paste it on your website</div>
                                   <p className="mt-0.5 text-xs text-secondary">
                                     Open your site editor and paste it on the page where you want the live storefront to appear.
                                   </p>
@@ -5909,7 +5909,7 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">3</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Publish your changes</div>
+                                  <div className="font-semibold text-primary">Publish your changes</div>
                                   <p className="mt-0.5 text-xs text-secondary">
                                     Save and publish so your visitors can see it.
                                   </p>
@@ -5920,7 +5920,7 @@ return (
                               <div className="flex items-start gap-3">
                                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-primary">4</span>
                                 <div className="flex-1">
-                                  <div className="font-semibold text-white">Preview my storefront</div>
+                                  <div className="font-semibold text-primary">Preview my storefront</div>
                                   <p className="mt-0.5 text-xs text-secondary">
                                     Open your live storefront in a new tab to see exactly what your customers will see.
                                   </p>
@@ -5943,7 +5943,7 @@ return (
                       {embedActivePath === "advanced" && (
                         <div className="space-y-5">
                           <div>
-                            <h4 className="text-sm font-bold text-white">Advanced setup</h4>
+                            <h4 className="text-sm font-bold text-primary">Advanced setup</h4>
                             <p className="text-xs text-secondary">
                               Raw embed code, iframe fallback, and a local test page.
                               For technical users or when the platform restricts custom scripts.
@@ -6017,7 +6017,7 @@ return (
                       {embedActivePath === "developer" && (
                         <div className="space-y-5">
                           <div>
-                            <h4 className="text-sm font-bold text-white">For developers</h4>
+                            <h4 className="text-sm font-bold text-primary">For developers</h4>
                             <p className="text-xs text-secondary">
                               GitHub Pages, Vercel, Netlify, React, Next.js, or any custom developer-managed site.
                             </p>
@@ -6173,7 +6173,7 @@ return (
                 placeholder="Offer title"
                 value={offerEditing.title || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               />
               <button
                 type="button"
@@ -6190,7 +6190,7 @@ return (
                 value={offerEditing.description || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
                 rows={3}
-                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
+                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40 resize-none"
               />
               <button
                 type="button"
@@ -6211,7 +6211,7 @@ return (
                     placeholder="Price (USD)"
                     value={offerEditing.price_usd || ""}
                     onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                    className="flex-1 min-w-0 rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                    className="flex-1 min-w-0 rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                   />
                   <button
                     type="button"
@@ -6226,7 +6226,7 @@ return (
               <select
                 value={offerEditing.offer_type || "digital_service"}
                 onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-white outline-none focus:border-default"
+                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               >
                 <option value="digital_service">Digital Service</option>
                 <option value="physical_product">Physical Product</option>
@@ -6237,7 +6237,7 @@ return (
               placeholder="Delivery info (e.g. Delivered via email within 24h)"
               value={offerEditing.delivery_info || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
             />
             <input
               type="number"
@@ -6246,7 +6246,7 @@ return (
               placeholder="Supporter discount % (0-100)"
               value={offerEditing.token_discount_percent || ""}
               onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
             />
             <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-secondary">Inventory</div>
@@ -6266,7 +6266,7 @@ return (
                   placeholder="Quantity available"
                   value={offerEditing.quantity_available || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
-                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                 />
               )}
             </div>
@@ -6333,7 +6333,7 @@ return (
                   placeholder="Or paste image URL"
                   value={offerEditing.primary_image_url || ""}
                   onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
-                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                 />
               )}
 
@@ -6343,7 +6343,7 @@ return (
                 placeholder="Video URL (YouTube, Loom, etc.)"
                 value={offerEditing.video_url || ""}
                 onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               />
             </div>
             {offerSaveError && (
@@ -6388,14 +6388,14 @@ return (
               placeholder="Name"
               value={storeEditing.name}
               onChange={(e) => setStoreEditing({ ...storeEditing, name: e.target.value })}
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
             />
             <textarea
               placeholder="Description"
               value={storeEditing.description}
               onChange={(e) => setStoreEditing({ ...storeEditing, description: e.target.value })}
               rows={2}
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
+              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40 resize-none"
             />
             <div className="flex gap-3">
               <input
@@ -6403,12 +6403,12 @@ return (
                 placeholder="Price (e.g. $29)"
                 value={storeEditing.price}
                 onChange={(e) => setStoreEditing({ ...storeEditing, price: e.target.value })}
-                className="flex-1 rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                className="flex-1 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               />
               <select
                 value={storeEditing.type}
                 onChange={(e) => setStoreEditing({ ...storeEditing, type: e.target.value as StoreItemType })}
-                className="rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white outline-none focus:border-default"
+                className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               >
                 <option value="digital">Digital</option>
                 <option value="physical">Physical</option>
@@ -6427,7 +6427,7 @@ return (
                   })
                 }
                 rows={3}
-                className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default resize-none"
+                className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40 resize-none"
               />
             )}
             {/* Token perk fields */}
@@ -6439,21 +6439,21 @@ return (
                   placeholder="Required token amount (e.g. 100)"
                   value={storeEditing.required_token_amount ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, required_token_amount: e.target.value ? Number(e.target.value) : null })}
-                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                 />
                 <input
                   type="text"
                   placeholder="Perk description (e.g. 50% off for supporters)"
                   value={storeEditing.perk_description ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, perk_description: e.target.value || null })}
-                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                 />
                 <input
                   type="text"
                   placeholder="Member price (e.g. Free or $9.99)"
                   value={storeEditing.token_holder_price ?? ""}
                   onChange={(e) => setStoreEditing({ ...storeEditing, token_holder_price: e.target.value || null })}
-                  className="w-full rounded-xl border border-default bg-surface-page px-4 py-2.5 text-sm text-white placeholder:text-muted outline-none focus:border-default"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                 />
               </div>
             )}
@@ -6566,7 +6566,7 @@ return (
 
                   {/* Content. title + price together */}
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
+                    <h3 className="text-lg font-bold text-primary leading-snug">{offer.title}</h3>
                     <div className="shrink-0 font-mono text-lg font-bold text-brand-teal">${Number(offer.price_usd).toFixed(0)}</div>
                   </div>
                   {offer.description && (
@@ -6819,7 +6819,7 @@ return (
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-white">Ask AI</h2>
+        <h2 className="text-2xl font-bold text-primary">Ask AI</h2>
 
         <p className="mt-3 text-secondary">
           Ask anything about this business: services, pricing, availability. {chatMeta.free_limit} free question{chatMeta.free_limit === 1 ? "" : "s"} included.
@@ -6847,20 +6847,20 @@ return (
             placeholder={`Ask something about ${projectName}...`}
             rows={5}
             disabled={loadingAsk || chatMeta.locked}
-            className="w-full rounded-2xl border border-default bg-surface-page px-4 py-3 text-white outline-none transition focus:border-brand-teal disabled:opacity-50"
+            className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-primary outline-none transition focus:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/40 disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
-            className="w-full rounded-2xl border border-default bg-surface-muted px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-surface-muted disabled:opacity-50"
+            className="w-full rounded-2xl border border-default bg-surface-muted px-5 py-3 text-sm uppercase tracking-[0.18em] text-primary transition hover:bg-surface-muted disabled:opacity-50"
           >
             {loadingAsk ? "Asking..." : chatMeta.locked ? "Purchase to Unlock" : "Ask AI"}
           </button>
         </form>
 
         <div className="mt-10">
-          <h3 className="text-xl font-bold text-white">AI Response</h3>
+          <h3 className="text-xl font-bold text-primary">AI Response</h3>
 
           <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-default bg-surface-page p-4 text-primary">
             {response || (
@@ -6887,7 +6887,7 @@ return (
           <span className="uppercase tracking-[0.18em] text-secondary">
             Review & publication
           </span>
-          <div className="mt-2 text-base text-white">{statusBanner}</div>
+          <div className="mt-2 text-base text-primary">{statusBanner}</div>
         </div>
       )}
 
@@ -6907,7 +6907,7 @@ return (
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
                       <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
                     </span>
-                    <h2 className="text-xl font-bold text-white">You're Live</h2>
+                    <h2 className="text-xl font-bold text-primary">You're Live</h2>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-secondary">
                     <span>{liveSalesCount} sale{liveSalesCount !== 1 ? "s" : ""}</span>
@@ -6951,11 +6951,11 @@ return (
                 {isAuctionActive && auction ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-bold text-white">{auctionOffer?.title || "Auction"}</div>
+                      <div className="text-sm font-bold text-primary">{auctionOffer?.title || "Auction"}</div>
                       <div className="text-xs text-secondary">{auction.bid_count} bids · {auctionCountdown}</div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-lg font-bold text-white">${Number(auction.current_bid || auction.starting_price).toFixed(0)}</span>
+                      <span className="font-mono text-lg font-bold text-primary">${Number(auction.current_bid || auction.starting_price).toFixed(0)}</span>
                       <button onClick={() => handleCloseAuction(true)} className="rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs text-amber-400 hover:bg-amber-400/10">End</button>
                     </div>
                   </div>
@@ -6972,8 +6972,8 @@ return (
                     </div>
                     {auctionOfferSelect && (
                       <div className="flex items-center gap-2">
-                        <input type="number" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} placeholder="$10" className="w-20 rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-white outline-none" />
-                        <select value={auctionDuration} onChange={(e) => setAuctionDuration(Number(e.target.value))} className="rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-white outline-none">
+                        <input type="number" value={auctionStartPrice} onChange={(e) => setAuctionStartPrice(e.target.value)} placeholder="$10" className="w-20 rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-primary outline-none" />
+                        <select value={auctionDuration} onChange={(e) => setAuctionDuration(Number(e.target.value))} className="rounded-lg border border-default bg-surface-muted px-2 py-1.5 text-xs text-primary outline-none">
                           <option value={60}>1m</option><option value={120}>2m</option><option value={300}>5m</option>
                         </select>
                         <button onClick={handleStartAuction} disabled={auctionStarting} className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-black disabled:opacity-40">{auctionStarting ? "..." : "Start Auction"}</button>
@@ -6989,7 +6989,7 @@ return (
           {!IVS_REALTIME_ENABLED && !project?.is_live && (
             cameraPreview ? (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">Camera Ready</h2>
+                <h2 className="text-xl font-bold text-primary">Camera Ready</h2>
                 <div className="overflow-hidden rounded-2xl border border-default bg-black">
                   <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
                 </div>
@@ -7023,7 +7023,7 @@ return (
               <div className="mb-1 text-xs uppercase tracking-[0.3em] text-muted">
                 Sales
               </div>
-              <h2 className="text-2xl font-bold text-white">Orders</h2>
+              <h2 className="text-2xl font-bold text-primary">Orders</h2>
               <p className="mt-2 text-sm text-secondary">
                 Purchases from your offers
               </p>
@@ -7052,7 +7052,7 @@ return (
                   <div key={order.id} className="rounded-2xl border border-default bg-surface-page p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-white truncate">
+                        <h3 className="text-sm font-semibold text-primary truncate">
                           {order.offers?.title || "Offer"}
                         </h3>
                         <div className="mt-1 text-xs text-muted">
@@ -7060,7 +7060,7 @@ return (
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-mono text-base font-bold text-white">
+                        <div className="font-mono text-base font-bold text-primary">
                           ${Number(order.amount_paid_usd).toFixed(2)}
                         </div>
                         <div className="text-[10px] text-muted mt-0.5">
@@ -7110,7 +7110,7 @@ return (
           <summary className="flex cursor-pointer items-center justify-between hover:text-primary">
             <div>
               <div className="mb-1 text-xs uppercase tracking-[0.3em] text-brand-teal/60">Owner Tools</div>
-              <h2 className="text-xl font-bold text-white tracking-tight">AI Tools</h2>
+              <h2 className="text-xl font-bold text-primary tracking-tight">AI Tools</h2>
               <p className="mt-1 text-sm text-secondary">Score, improve, and build your project with AI</p>
             </div>
             <div className="flex items-center gap-2">
@@ -7160,7 +7160,7 @@ return (
                   return (
                     <div key={dim} className="rounded-2xl border border-default bg-surface-page p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-white">{label}</span>
+                        <span className="text-sm font-semibold text-primary">{label}</span>
                         <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
                           {entry.score}
                         </span>
@@ -7200,7 +7200,7 @@ return (
                 })}
 
                 <div className="rounded-2xl border border-default bg-surface-muted p-4 text-center">
-                  <span className="font-mono text-2xl font-bold text-white">
+                  <span className="font-mono text-2xl font-bold text-primary">
                     {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
                   </span>
                   <span className="ml-2 text-sm text-secondary">/ 100 overall</span>
@@ -7263,7 +7263,7 @@ return (
                       }}
                       className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-left transition hover:border-default"
                     >
-                      <div className="text-sm font-medium text-white">{item.name}</div>
+                      <div className="text-sm font-medium text-primary">{item.name}</div>
                       <div className="text-xs text-secondary">{item.type} · {item.price || "No price"}</div>
                     </button>
                   ))}
@@ -7451,7 +7451,7 @@ return (
                   ◆ Day Zero
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-xl font-bold text-primary">
                     Be the first to support this project
                   </h3>
                   <p className="mt-3 max-w-sm text-secondary">
@@ -7479,21 +7479,21 @@ return (
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "Price (demo)" : "Price"}
                   </div>
-                  <div className="font-mono text-2xl text-white">${formatPrice(market?.price)}</div>
+                  <div className="font-mono text-2xl text-primary">${formatPrice(market?.price)}</div>
                 </div>
 
                 <div className="rounded-2xl border border-default bg-surface-page p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "Market Cap (demo)" : "Market Cap"}
                   </div>
-                  <div className="font-mono text-2xl text-white">${formatNumber(market?.market_cap, 4)}</div>
+                  <div className="font-mono text-2xl text-primary">${formatNumber(market?.market_cap, 4)}</div>
                 </div>
 
                 <div className="rounded-2xl border border-default bg-surface-page p-5">
                   <div className="mb-2 text-xs uppercase tracking-[0.25em] text-muted">
                     {isSimulated ? "24h Volume (demo)" : "24h Volume"}
                   </div>
-                  <div className="font-mono text-2xl text-white">${formatNumber(market?.volume_24h, 4)}</div>
+                  <div className="font-mono text-2xl text-primary">${formatNumber(market?.volume_24h, 4)}</div>
                 </div>
 
                 <div className="rounded-2xl border border-default bg-surface-page p-5">
@@ -7557,23 +7557,23 @@ return (
                   <div className="grid gap-4 sm:grid-cols-5">
                     <div className="rounded-2xl border border-default bg-surface-card p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Open</div>
-                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.open)}</div>
+                      <div className="mt-2 font-mono text-primary">{formatPrice(selectedLatestCandle?.open)}</div>
                     </div>
                     <div className="rounded-2xl border border-default bg-surface-card p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-muted">High</div>
-                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.high)}</div>
+                      <div className="mt-2 font-mono text-primary">{formatPrice(selectedLatestCandle?.high)}</div>
                     </div>
                     <div className="rounded-2xl border border-default bg-surface-card p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Low</div>
-                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.low)}</div>
+                      <div className="mt-2 font-mono text-primary">{formatPrice(selectedLatestCandle?.low)}</div>
                     </div>
                     <div className="rounded-2xl border border-default bg-surface-card p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Close</div>
-                      <div className="mt-2 font-mono text-white">{formatPrice(selectedLatestCandle?.close)}</div>
+                      <div className="mt-2 font-mono text-primary">{formatPrice(selectedLatestCandle?.close)}</div>
                     </div>
                     <div className="rounded-2xl border border-default bg-surface-card p-4">
                       <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Volume</div>
-                      <div className="mt-2 font-mono text-white">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
+                      <div className="mt-2 font-mono text-primary">{formatNumber(selectedLatestCandle?.volume, 4)}</div>
                     </div>
                   </div>
                   <div className="mt-4 text-xs text-secondary">
@@ -7627,7 +7627,7 @@ return (
             <div id="buy-panel" className="rounded-3xl border border-default bg-surface-page p-5 sm:p-6">
               <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-brand-teal/50">DUM Club · Support this business</div>
 
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-primary">
                 {isSimulated ? "Buy / Sell (demo)" : "Buy / Sell"}
               </h2>
               {isSimulated && <div className="mt-3"><SimulatedTokenBanner variant="compact" /></div>}
@@ -7673,7 +7673,7 @@ return (
                       value={tradeAmount}
                       onChange={(e) => setTradeAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-white outline-none transition focus:border-brand-teal"
+                      className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-primary outline-none transition focus:border-brand-teal"
                       type="number"
                       min="0"
                       step="any"
@@ -7758,7 +7758,7 @@ return (
   </div>
   <div className="flex items-center justify-between gap-4">
     <span className="text-[11px] uppercase tracking-[0.2em] text-muted">Total Fee</span>
-    <span className="font-mono text-white">2.00%</span>
+    <span className="font-mono text-primary">2.00%</span>
   </div>
 </div>
 <details className="mt-8 rounded-2xl border border-default bg-surface-card">
@@ -7778,7 +7778,7 @@ return (
     value={redeemAmount}
     onChange={(e) => setRedeemAmount(e.target.value)}
     placeholder="Enter amount"
-    className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
+    className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-primary"
     type="number"
     min="0"
     step="any"
@@ -7805,7 +7805,7 @@ return (
         Access Code
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="font-mono text-sm text-white">{redeemCode}</span>
+        <span className="font-mono text-sm text-primary">{redeemCode}</span>
         <button
           type="button"
           onClick={async () => {
@@ -7884,7 +7884,7 @@ return (
             className="rounded-xl border border-default bg-surface-page p-3"
           >
             <div className="flex items-center justify-between gap-3">
-              <div className="font-mono text-sm text-white">{item.code}</div>
+              <div className="font-mono text-sm text-primary">{item.code}</div>
               <div className="text-xs uppercase tracking-[0.15em] text-secondary">
                 {item.status}
               </div>
@@ -7921,7 +7921,7 @@ return (
         <select
           value={feedbackRating}
           onChange={(e) => setFeedbackRating(Number(e.target.value))}
-          className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
+          className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-primary"
         >
           <option value={5}>5 - Excellent</option>
           <option value={4}>4 - Good</option>
@@ -7936,12 +7936,12 @@ return (
         onChange={(e) => setFeedbackComment(e.target.value)}
         rows={3}
         placeholder="Share a quick note about this project..."
-        className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-white"
+        className="w-full rounded-xl border border-default bg-surface-page px-3 py-2 text-primary"
       />
 
       <button
         type="submit"
-        className="w-full rounded-xl border border-default bg-surface-muted py-2 text-sm font-semibold text-white transition hover:bg-surface-muted"
+        className="w-full rounded-xl border border-default bg-surface-muted py-2 text-sm font-semibold text-primary transition hover:bg-surface-muted"
       >
         Save Review
       </button>
@@ -7982,12 +7982,12 @@ return (
 
                   <div className="flex items-center justify-between gap-4 border-t border-default pt-3">
                     <span className="text-secondary">Est. Buy Cost</span>
-                    <span className="font-mono text-white">${formatNumber(estimatedBuyCost, 4)}</span>
+                    <span className="font-mono text-primary">${formatNumber(estimatedBuyCost, 4)}</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-secondary">Est. Sell Proceeds</span>
-                    <span className="font-mono text-white">${formatNumber(estimatedSellProceeds, 4)}</span>
+                    <span className="font-mono text-primary">${formatNumber(estimatedSellProceeds, 4)}</span>
                   </div>
 
                   <div className={`mt-2 rounded-2xl border p-3 text-sm ${impactTone}`}>
@@ -8008,7 +8008,7 @@ return (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-default bg-surface-page p-4">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Your Balance</div>
-                    <div className="mt-2 font-mono text-2xl text-white">
+                    <div className="mt-2 font-mono text-2xl text-primary">
                       {formatNumber(walletBalance, 2)}
                     </div>
                     <div className="mt-1 text-xs text-secondary">
@@ -8018,7 +8018,7 @@ return (
 
                   <div className="rounded-2xl border border-default bg-surface-page p-4">
                     <div className="text-[11px] uppercase tracking-[0.2em] text-muted">Mark Value Est.</div>
-                    <div className="mt-2 font-mono text-2xl text-white">
+                    <div className="mt-2 font-mono text-2xl text-primary">
                       ${formatNumber(positionValue, 4)}
                     </div>
                     <div className="mt-1 text-xs text-secondary">
@@ -8087,15 +8087,15 @@ return (
                     <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Market Trust Signals</div>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
-                        <div className="font-mono text-lg text-white">{trades.length}</div>
+                        <div className="font-mono text-lg text-primary">{trades.length}</div>
                         <div className="text-xs text-secondary">Recent trades</div>
                       </div>
                       <div>
-                        <div className="font-mono text-lg text-white">{uniqueTradeSources}</div>
+                        <div className="font-mono text-lg text-primary">{uniqueTradeSources}</div>
                         <div className="text-xs text-secondary">Active participants</div>
                       </div>
                       <div>
-                        <div className="font-mono text-lg text-white">{formatCurrencyCompact(market?.volume_24h, 2)}</div>
+                        <div className="font-mono text-lg text-primary">{formatCurrencyCompact(market?.volume_24h, 2)}</div>
                         <div className="text-xs text-secondary">24h volume</div>
                       </div>
                     </div>
@@ -8111,7 +8111,7 @@ return (
             Business Status
           </div>
 
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+          <h2 className="text-2xl font-bold text-primary sm:text-3xl">
             {isApprovedProject ? launchSectionHeading : projectName}
           </h2>
           <p className="mt-2 text-sm text-secondary">
@@ -8128,11 +8128,11 @@ return (
               </div>
               <div className="rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
-                <div className="mt-2 text-white">DUM Points</div>
+                <div className="mt-2 text-primary">DUM Points</div>
               </div>
               <div className="rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Checkout</div>
-                <div className="mt-2 text-white">Stripe + DUM</div>
+                <div className="mt-2 text-primary">Stripe + DUM</div>
               </div>
             </div>
           ) : (
@@ -8144,11 +8144,11 @@ return (
               <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-2xl border border-default bg-surface-page p-4">
                   <div className="text-xs uppercase tracking-[0.2em] text-muted">Review</div>
-                  <div className="mt-2 text-white">{reviewStatus}</div>
+                  <div className="mt-2 text-primary">{reviewStatus}</div>
                 </div>
                 <div className="rounded-2xl border border-default bg-surface-page p-4">
                   <div className="text-xs uppercase tracking-[0.2em] text-muted">Publication</div>
-                  <div className="mt-2 text-white">{project?.status || "draft"}</div>
+                  <div className="mt-2 text-primary">{project?.status || "draft"}</div>
                 </div>
                 <div className="rounded-2xl border border-default bg-surface-page p-4">
                   <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
@@ -8164,7 +8164,7 @@ return (
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard"
-                  className="rounded-2xl border border-default bg-surface-page px-5 py-3 text-sm uppercase tracking-[0.18em] text-white transition hover:bg-surface-muted"
+                  className="rounded-2xl border border-default bg-surface-page px-5 py-3 text-sm uppercase tracking-[0.18em] text-primary transition hover:bg-surface-muted"
                 >
                   Edit Project
                 </Link>
@@ -8194,12 +8194,12 @@ return (
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-default bg-surface-page p-5">
-              <h2 className="text-2xl font-bold text-white">Original Prompt</h2>
+              <h2 className="text-2xl font-bold text-primary">Original Prompt</h2>
               <p className="mt-3 text-secondary">{project?.prompt || "No prompt saved yet."}</p>
             </div>
 
             <div className="rounded-2xl border border-default bg-surface-page p-5">
-              <h2 className="text-2xl font-bold text-white">Rewards &amp; Perks</h2>
+              <h2 className="text-2xl font-bold text-primary">Rewards &amp; Perks</h2>
               <p className="mt-3 text-secondary">
                 {parsedAiOutput?.token_utility || project?.token_utility || "Rewards details are not configured yet."}
               </p>
@@ -8237,7 +8237,7 @@ return (
         <div id="section-memory" className="rounded-3xl border border-default bg-surface-card p-6">
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">Project Memory</div>
 
-            <h2 className="text-3xl font-bold text-white">Add Memory</h2>
+            <h2 className="text-3xl font-bold text-primary">Add Memory</h2>
 
             <p className="mt-3 max-w-2xl text-secondary">
               Paste a memory, note, social post, transcript, or product insight so your AI can use it
@@ -8251,7 +8251,7 @@ return (
                 onChange={(e) => setMemoryText(e.target.value)}
                 placeholder="Paste a memory, story, social post, transcript, or note..."
                 rows={7}
-                className="w-full rounded-2xl border border-default bg-surface-page px-4 py-3 text-white outline-none transition focus:border-brand-teal"
+                className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-primary outline-none transition focus:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/40"
               />
 
               <button
@@ -8270,7 +8270,7 @@ return (
              )}
 
             <div className="mt-10">
-              <h3 className="text-2xl font-bold text-white">Saved Memories ({memories.length})</h3>
+              <h3 className="text-2xl font-bold text-primary">Saved Memories ({memories.length})</h3>
 
               {memories.length === 0 ? (
                 <p className="mt-4 text-secondary">No memories saved yet.</p>
@@ -8293,14 +8293,14 @@ return (
       <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-default bg-surface-page/90 backdrop-blur-md lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
-            <span className="truncate font-black text-white">{heroTitle}</span>
+            <span className="truncate font-black text-primary">{heroTitle}</span>
             <span className="font-mono text-sm text-secondary">${displaySymbol}</span>
             {isSimulated && (
               <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-300">
                 Demo
               </span>
             )}
-            <span className="text-lg font-bold text-white">
+            <span className="text-lg font-bold text-primary">
               ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
             </span>
             <span
@@ -8371,7 +8371,7 @@ return (
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-xs text-secondary">From</div>
-          <div className="text-lg font-black text-white">
+          <div className="text-lg font-black text-primary">
             ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
           </div>
         </div>

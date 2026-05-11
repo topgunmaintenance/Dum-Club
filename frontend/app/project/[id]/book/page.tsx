@@ -97,12 +97,12 @@ export default function BookPage() {
 
   if (booking) {
     return (
-      <div className="min-h-screen bg-surface-page text-white">
+      <div className="min-h-screen bg-surface-page text-primary">
         <div className="mx-auto max-w-lg px-6 py-16 text-center">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-2 border-brand-teal bg-brand-teal-soft text-4xl">
             ✓
           </div>
-          <h1 className="mb-2 font-mono text-3xl font-black text-white">
+          <h1 className="mb-2 font-mono text-3xl font-black text-primary">
             Booking confirmed
           </h1>
           <p className="mb-8 text-secondary">
@@ -117,7 +117,7 @@ export default function BookPage() {
             <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-brand-teal">
               Redemption code
             </div>
-            <div className="mb-3 font-mono text-2xl font-black tracking-[0.15em] text-white">
+            <div className="mb-3 font-mono text-2xl font-black tracking-[0.15em] text-primary">
               {booking.redemption_code}
             </div>
             <button
@@ -143,19 +143,19 @@ export default function BookPage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <div className="font-mono text-[10px] text-muted">Date</div>
-                <div className="text-white">{selectedSlot?.slot_date}</div>
+                <div className="text-primary">{selectedSlot?.slot_date}</div>
               </div>
               <div>
                 <div className="font-mono text-[10px] text-muted">Time</div>
-                <div className="text-white">{selectedSlot?.slot_time}</div>
+                <div className="text-primary">{selectedSlot?.slot_time}</div>
               </div>
               <div>
                 <div className="font-mono text-[10px] text-muted">Service</div>
-                <div className="text-white">{projectName}</div>
+                <div className="text-primary">{projectName}</div>
               </div>
               <div>
                 <div className="font-mono text-[10px] text-muted">Duration</div>
-                <div className="text-white">
+                <div className="text-primary">
                   {(serviceProfile?.duration_minutes as number) || 60} min
                 </div>
               </div>
@@ -174,7 +174,7 @@ export default function BookPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-page text-white">
+    <div className="min-h-screen bg-surface-page text-primary">
       <div className="mx-auto max-w-2xl px-6 py-12">
         <Link
           href={`/project/${id}`}
@@ -187,7 +187,7 @@ export default function BookPage() {
           <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
             Book service
           </div>
-          <h1 className="font-mono text-3xl font-black text-white">{projectName}</h1>
+          <h1 className="font-mono text-3xl font-black text-primary">{projectName}</h1>
           {serviceProfile?.service_description && (
             <p className="mt-2 text-secondary">
               {String(serviceProfile.service_description)}
@@ -290,32 +290,32 @@ export default function BookPage() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Your name"
-                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
+                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-primary outline-none focus:border-brand-teal"
                   />
                   <input
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="Email (optional. for confirmation)"
                     type="email"
-                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
+                    className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-primary outline-none focus:border-brand-teal"
                   />
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Any notes for the service provider..."
                     rows={3}
-                    className="w-full resize-none rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
+                    className="w-full resize-none rounded-xl border border-default bg-surface-page px-4 py-3 text-primary outline-none focus:border-brand-teal"
                   />
                 </div>
 
                 <div className="mt-4 rounded-xl border border-default bg-surface-page p-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-secondary">Date</span>
-                    <span className="text-white">{selectedDate}</span>
+                    <span className="text-primary">{selectedDate}</span>
                   </div>
                   <div className="mt-2 flex justify-between">
                     <span className="text-secondary">Time</span>
-                    <span className="text-white">
+                    <span className="text-primary">
                       {String(selectedSlot.slot_time).slice(0, 5)}
                     </span>
                   </div>
