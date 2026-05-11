@@ -307,14 +307,17 @@ export default function EmbedShellPage() {
   //     may or may not survive intact.
   //
   // To guarantee resume, we mirror the param into sessionStorage
-  // on the first mount that sees it. The resume effect reads from
-  // EITHER the URL or sessionStorage; whichever still has it
-  // wins. sessionStorage is keyed on the embed origin (dum.club),
-  // so it survives the OAuth roundtrip cleanly and dies when the
-  // tab closes — no cross-session leakage.
+  // on the first mount that sees it. The resume effect (declared
+  // further down so it can reference `pinnedOffer`) reads from
+  // EITHER the URL or sessionStorage; whichever still has it wins.
+  // sessionStorage is keyed on the embed origin (dum.club), so it
+  // survives the OAuth roundtrip cleanly and dies when the tab
+  // closes — no cross-session leakage.
   const AUTOBUY_STORAGE_KEY = "dum_embed_autobuy";
 
   // Mirror the autobuy intent into sessionStorage on first mount.
+  // Does not reference pinnedOffer, so it stays here at the top
+  // of the component near the rest of the mount-only effects.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -332,76 +335,6 @@ export default function EmbedShellPage() {
          back to URL params, which are still present in most cases */
     }
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!authUser) return; // wait until Privy returns a user
-    if (!pinnedOffer) return; // wait until offers load
-
-    // Prefer URL params; fall back to sessionStorage so the resume
-    // survives a Google OAuth roundtrip even if Privy strips the
-    // query string on the way back.
-    const params = new URLSearchParams(window.location.search);
-    let autobuyId = params.get("autobuy");
-    let pay = params.get("pay") || "";
-    if (!autobuyId) {
-      try {
-        const raw = window.sessionStorage.getItem(AUTOBUY_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { id?: string; pay?: string; t?: number };
-          // 15-minute TTL. If the buyer wandered off and came back
-          // an hour later, don't surprise them with a checkout.
-          if (parsed?.id && (!parsed.t || Date.now() - parsed.t < 15 * 60_000)) {
-            autobuyId = parsed.id;
-            pay = parsed.pay || pay;
-          }
-        }
-      } catch {
-        /* storage blocked — give up on autobuy resume */
-      }
-    }
-    if (!autobuyId) return;
-
-    // Only auto-resume when the pinned offer matches the one the
-    // buyer clicked in the iframe. If the merchant pinned a
-    // different offer between sign-in steps, leave the buyer on
-    // the storefront — they can re-click and we won't surprise-
-    // charge them for the wrong thing.
-    function clearAutobuy() {
-      try {
-        window.sessionStorage.removeItem(AUTOBUY_STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      try {
-        window.history.replaceState({}, "", window.location.pathname);
-      } catch {
-        /* sandboxed iframe — leave URL */
-      }
-    }
-    if (pinnedOffer.id !== autobuyId) {
-      clearAutobuy();
-      return;
-    }
-    // Strip the autobuy + pay params before firing so a refresh
-    // mid-checkout doesn't re-trigger a second payment intent.
-    clearAutobuy();
-    // Defer one tick so any pending state writes from the load
-    // path settle before we open the Stripe (or SOL) flow.
-    const t = window.setTimeout(() => {
-      if (pay === "sol") {
-        handlePayWithSol();
-      } else {
-        handleBuy();
-      }
-    }, 50);
-    return () => window.clearTimeout(t);
-    // We intentionally do NOT include handleBuy/handlePayWithSol
-    // in deps — they are defined further down the component and
-    // get fresh closures every render. The effect re-runs on
-    // authUser + pinnedOffer changes which is the right trigger.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser?.privyId, pinnedOffer?.id]);
 
   // ── Iframe auto-resize protocol ───────────────────────────────
   // When the embed page is rendered inside the merchant's iframe
@@ -496,6 +429,82 @@ export default function EmbedShellPage() {
     if (!project?.pinned_offer_id) return null;
     return offers.find((o) => o.id === project.pinned_offer_id) || null;
   }, [offers, project?.pinned_offer_id]);
+
+  // Autobuy resume — declared HERE so it can safely reference
+  // pinnedOffer (defined above). Earlier placement near the
+  // sessionStorage mirror effect ran into the TS Temporal-Dead-
+  // Zone rule ("Block-scoped variable 'pinnedOffer' used before
+  // its declaration") on Vercel's strict typecheck even though
+  // local next-build skipped it. Keep this block AFTER pinnedOffer.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!authUser) return; // wait until Privy returns a user
+    if (!pinnedOffer) return; // wait until offers load
+
+    // Prefer URL params; fall back to sessionStorage so the resume
+    // survives a Google OAuth roundtrip even if Privy strips the
+    // query string on the way back.
+    const params = new URLSearchParams(window.location.search);
+    let autobuyId = params.get("autobuy");
+    let pay = params.get("pay") || "";
+    if (!autobuyId) {
+      try {
+        const raw = window.sessionStorage.getItem(AUTOBUY_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { id?: string; pay?: string; t?: number };
+          // 15-minute TTL. If the buyer wandered off and came back
+          // an hour later, don't surprise them with a checkout.
+          if (parsed?.id && (!parsed.t || Date.now() - parsed.t < 15 * 60_000)) {
+            autobuyId = parsed.id;
+            pay = parsed.pay || pay;
+          }
+        }
+      } catch {
+        /* storage blocked — give up on autobuy resume */
+      }
+    }
+    if (!autobuyId) return;
+
+    // Only auto-resume when the pinned offer matches the one the
+    // buyer clicked in the iframe. If the merchant pinned a
+    // different offer between sign-in steps, leave the buyer on
+    // the storefront — they can re-click and we won't surprise-
+    // charge them for the wrong thing.
+    function clearAutobuy() {
+      try {
+        window.sessionStorage.removeItem(AUTOBUY_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+      try {
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {
+        /* sandboxed iframe — leave URL */
+      }
+    }
+    if (pinnedOffer.id !== autobuyId) {
+      clearAutobuy();
+      return;
+    }
+    // Strip the autobuy + pay params before firing so a refresh
+    // mid-checkout doesn't re-trigger a second payment intent.
+    clearAutobuy();
+    // Defer one tick so any pending state writes from the load
+    // path settle before we open the Stripe (or SOL) flow.
+    const t = window.setTimeout(() => {
+      if (pay === "sol") {
+        handlePayWithSol();
+      } else {
+        handleBuy();
+      }
+    }, 50);
+    return () => window.clearTimeout(t);
+    // We intentionally do NOT include handleBuy/handlePayWithSol
+    // in deps — they are defined further down the component and
+    // get fresh closures every render. The effect re-runs on
+    // authUser + pinnedOffer changes which is the right trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.privyId, pinnedOffer?.id]);
 
   // Drive Your Market Analytics — pinned-offer impression. Fires once
   // per (project, offer) pair as soon as the pinned offer resolves.
