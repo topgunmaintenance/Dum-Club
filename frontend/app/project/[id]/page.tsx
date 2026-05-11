@@ -170,6 +170,12 @@ type Candle = {
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 import { API_BASE } from "../../../lib/apiBase";
+import {
+  createOffer,
+  OffersError,
+  sanitizeBearerToken,
+  updateOffer,
+} from "../../../lib/offers";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROJECT_FEE_RATE = 0.015;
@@ -495,7 +501,7 @@ function getStatusExplanation(status?: string) {
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { user: authUser, login, getToken } = useAuth();
+  const { user: authUser, loading: authLoading, login, getToken } = useAuth();
   const { notify, toast: statusToast } = useStatusToast();
   const { wallets } = useSolanaWallets();
   // External Solana wallet adapter (Phantom / Solflare). Used as a
@@ -1181,8 +1187,17 @@ export default function ProjectPage() {
     setOfferSaveError(null);
     setOfferSaveSuccess(false);
     try {
+      // Auth-readiness gate. If Privy hasn't issued a token yet
+      // (signed-out OR session-not-ready), short-circuit BEFORE
+      // we call fetch so the user gets a clean "please sign in"
+      // toast instead of an opaque "TypeError: Failed to fetch".
       const token = await getToken();
-      if (!token) throw new Error("Not authenticated. Please sign in again.");
+      const cleanToken = sanitizeBearerToken(token);
+      if (!cleanToken) {
+        setOfferSaveError("Please sign in to create an offer.");
+        setOfferSaving(false);
+        return;
+      }
 
       // Upload image if file selected
       let imageUrl = offerEditing.primary_image_url?.trim() || null;
@@ -1196,13 +1211,8 @@ export default function ProjectPage() {
       }
 
       const isEdit = Boolean(offerEditing.id);
-      const url = isEdit
-        ? `${API_BASE}/api/offers/${offerEditing.id}`
-        : `${API_BASE}/api/offers/create`;
-      const method = isEdit ? "PATCH" : "POST";
-
-      const body: Record<string, unknown> = {
-        title: offerEditing.title?.trim(),
+      const body = {
+        title: offerEditing.title?.trim() || "",
         description: offerEditing.description?.trim() || null,
         price_usd: priceNum,
         offer_type: offerEditing.offer_type || "digital_service",
@@ -1213,28 +1223,17 @@ export default function ProjectPage() {
         quantity_available: offerEditing.unlimited_inventory ? null : (offerEditing.quantity_available || null),
         unlimited_inventory: offerEditing.unlimited_inventory ?? true,
       };
-      if (!isEdit) body.project_id = id;
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        // Pydantic 422 errors return detail as an array of objects
-        let msg = "Failed to save offer";
-        if (typeof errData.detail === "string") {
-          msg = errData.detail;
-        } else if (Array.isArray(errData.detail)) {
-          msg = errData.detail.map((e: any) => e.msg || JSON.stringify(e)).join("; ");
-        }
-        throw new Error(msg);
-      }
-      const created = await res.json();
+      const created = isEdit
+        ? await updateOffer({
+            token: cleanToken,
+            offerId: String(offerEditing.id),
+            body,
+          })
+        : await createOffer({
+            token: cleanToken,
+            body: { ...body, project_id: String(id) },
+          });
       // Award DUM Points for creating an offer
       try {
         const privyId = authUser?.privyId;
@@ -1264,8 +1263,15 @@ export default function ProjectPage() {
       setOfferSaveSuccess(true);
       setTimeout(() => setOfferSaveSuccess(false), 5000);
     } catch (err) {
-      console.error("[saveOffer] ERROR:", err);
-      setOfferSaveError(err instanceof Error ? err.message : "Failed to save offer");
+      // OffersError surfaces the friendliest message + a code we
+      // can use to branch on. Generic Errors get their own line.
+      if (err instanceof OffersError) {
+        console.error("[saveOffer] ERROR:", err.code, err.status ?? "", err.message);
+        setOfferSaveError(err.message);
+      } else {
+        console.error("[saveOffer] ERROR:", err);
+        setOfferSaveError(err instanceof Error ? err.message : "Failed to save offer");
+      }
     } finally {
       setOfferSaving(false);
     }
@@ -6352,13 +6358,40 @@ return (
               </div>
             )}
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                onClick={() => { setOfferSaveError(null); saveOffer(); }}
-                disabled={offerSaving || !offerEditing.title?.trim() || !offerEditing.price_usd}
-                className="w-full sm:w-auto rounded-xl bg-brand-teal px-5 py-3 text-sm font-semibold text-black transition hover:bg-brand-teal disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {offerSaving ? "Saving..." : offerEditing.id ? "Save Changes" : "Create Offer"}
-              </button>
+              {(() => {
+                // Auth-readiness gate. Disable the submit until
+                // Privy has fully booted AND we have a signed-in
+                // user. Prevents the "TypeError: Failed to fetch"
+                // class of bug where saveOffer fires before
+                // getToken() can return a real string.
+                const authReady = !authLoading && !!authUser?.privyId;
+                const disabled =
+                  offerSaving ||
+                  !offerEditing.title?.trim() ||
+                  !offerEditing.price_usd ||
+                  !authReady;
+                const tooltip = !authReady
+                  ? authLoading
+                    ? "Signing you in. Try again in a moment."
+                    : "Sign in to create an offer."
+                  : undefined;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setOfferSaveError(null); saveOffer(); }}
+                    disabled={disabled}
+                    title={tooltip}
+                    aria-disabled={disabled}
+                    className="w-full sm:w-auto rounded-xl bg-brand-teal px-5 py-3 text-sm font-semibold text-black transition hover:bg-brand-teal disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {offerSaving
+                      ? "Saving..."
+                      : offerEditing.id
+                      ? "Save Changes"
+                      : "Create Offer"}
+                  </button>
+                );
+              })()}
               <button
                 onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
                 className="w-full sm:w-auto rounded-xl border border-default px-5 py-3 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
