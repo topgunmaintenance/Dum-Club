@@ -21,6 +21,7 @@ import {
 } from "../../../lib/solanaCheckout";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { useStatusToast } from "../../../lib/useStatusToast";
+import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
@@ -1364,6 +1365,14 @@ export default function ProjectPage() {
       }
 
       setBuyStep((p) => ({ ...p, [oid]: "calling_checkout" }));
+
+      // Drive Your Market Analytics — checkout intent. Fires before
+      // the Stripe call so funnel drop-off includes Stripe failures
+      // / cancels.
+      trackEvent("checkout_start", {
+        project_id: project?.id ?? null,
+        offer_id: oid,
+      });
 
       // Strip existing query params to avoid malformed URLs on repeat purchases
       const cleanUrl = window.location.origin + window.location.pathname;
@@ -3089,6 +3098,8 @@ export default function ProjectPage() {
     if (!project?.id) return;
     loadMemories();
     loadOffers();
+    // Drive Your Market Analytics — fires once per project load.
+    trackEvent("project_view", { project_id: project.id });
   }, [project?.id]);
 
   // ── Viewer fast-poll while watching a live stream ─────────────────────

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "../../../lib/analytics";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -211,6 +212,11 @@ export default function EmbedShellPage() {
       if (!mountedRef.current) return;
       setProject(p);
 
+      // Drive Your Market Analytics — embed mount tracker
+      if (p?.id) {
+        trackEvent("embed_view", { project_id: p.id });
+      }
+
       if (p?.id) {
         try {
           const offersRes = await fetch(`${API_BASE}/api/offers/${p.id}`, {
@@ -350,6 +356,19 @@ export default function EmbedShellPage() {
     return offers.find((o) => o.id === project.pinned_offer_id) || null;
   }, [offers, project?.pinned_offer_id]);
 
+  // Drive Your Market Analytics — pinned-offer impression. Fires once
+  // per (project, offer) pair as soon as the pinned offer resolves.
+  // The pinned card is the one always-visible offer in the embed; if
+  // it changes (merchant pins a different offer), we want a fresh row.
+  useEffect(() => {
+    if (project?.id && pinnedOffer?.id) {
+      trackEvent("offer_view", {
+        project_id: project.id,
+        offer_id: pinnedOffer.id,
+      });
+    }
+  }, [project?.id, pinnedOffer?.id]);
+
   // Sold-out logic mirrored from /project/[id]: only meaningful when
   // inventory is finite. Unlimited offers are never sold out.
   const soldOut = useMemo(() => {
@@ -382,6 +401,14 @@ export default function EmbedShellPage() {
   async function handleBuy() {
     if (!pinnedOffer) return;
     if (soldOut) return;
+
+    // Drive Your Market Analytics — checkout intent. Fires before
+    // any auth / Stripe call so we capture funnel drop-off even if
+    // the user bails at the auth modal.
+    trackEvent("checkout_start", {
+      project_id: project?.id ?? null,
+      offer_id: pinnedOffer.id,
+    });
 
     setBuyError(null);
 
