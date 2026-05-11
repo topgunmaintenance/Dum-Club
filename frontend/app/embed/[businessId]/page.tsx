@@ -987,12 +987,17 @@ export default function EmbedShellPage() {
           </section>
 
           {/* RIGHT (desktop) / BELOW VIDEO (mobile) — product card + chat.
-              On mobile, adds extra bottom padding so the chat input
-              (and any errors stacked below it) clears the sticky buy
-              bar Step 9 mounts at the bottom of the viewport. The
-              padding is removed at lg: where the bar is hidden. */}
+              On mobile, adds extra bottom padding so the chat (480px+
+              tall) and its input never sit underneath the sticky buy
+              bar. The sticky bar is ~64-72px tall on standard
+              devices and 88-100px on iOS notched devices with
+              safe-area-inset-bottom; pb-36 (=9rem) gives ample
+              clearance on every viewport tested. The padding is
+              removed at lg: where the sticky bar is hidden and the
+              chat sits in the right grid column with no overlap
+              risk. */}
           <div
-            className={`space-y-4 ${pinnedOffer ? "pb-28 lg:pb-0" : ""}`}
+            className={`space-y-4 ${pinnedOffer ? "pb-36 lg:pb-0" : ""}`}
           >
             {/* Pinned offer card — title / price / description / stock.
                 Adds the embed-sold-flash class for a single ~1s flash
