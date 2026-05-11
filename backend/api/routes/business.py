@@ -172,6 +172,13 @@ async def get_business_analytics(current_user: dict = Depends(get_current_user))
     # Sort projects by revenue descending
     project_summaries.sort(key=lambda p: p["revenue_usd"], reverse=True)
 
+    # ── Drive Your Market Analytics — funnel + visitor metrics ──
+    # Additive fields. Existing dashboard tiles read the legacy fields;
+    # the new <DriveYourMarketAnalytics /> tile reads these. Best-effort
+    # — if the events table or any query fails, we return zeros so the
+    # base analytics response is never broken by the new feature.
+    funnel = _drive_your_market_funnel(supabase, project_ids, paid_orders)
+
     return {
         "total_projects": len(projects),
         "live_projects": live_projects,
@@ -192,6 +199,175 @@ async def get_business_analytics(current_user: dict = Depends(get_current_user))
             }
             for o in recent_orders
         ],
+        # ── Drive Your Market Analytics — additive ──
+        "drive_your_market": funnel,
+    }
+
+
+def _drive_your_market_funnel(supabase, project_ids: list, paid_orders: list) -> dict:
+    """
+    Compute the Drive Your Market funnel for the merchant's projects.
+
+    Returns visitor / view / checkout / repeat-customer metrics + a
+    7d / 30d windowed view. All best-effort: any query failure yields
+    a zero-filled funnel so the parent endpoint never breaks.
+
+    Repeat customers come from `orders.buyer_user_id` (Privy ID),
+    which is already populated for every paid Stripe order — no events
+    table read needed.
+    """
+    zero = {
+        "embed_views": 0,
+        "project_views": 0,
+        "offer_views": 0,
+        "unique_visitors": 0,
+        "returning_visitors": 0,
+        "checkout_starts": 0,
+        "purchases": len(paid_orders),
+        "conversion_rate": 0.0,
+        "repeat_customers": 0,
+        "best_offer": None,
+        "window_7d": {"visitors": 0, "purchases": 0, "revenue_usd": 0.0},
+        "window_30d": {"visitors": 0, "purchases": 0, "revenue_usd": 0.0},
+    }
+    if not project_ids:
+        return zero
+
+    try:
+        # Pull recent events (cap at 10k rows — covers most merchants and
+        # avoids unbounded memory on a busy storefront)
+        ev_res = (
+            supabase.table("merchant_analytics_events")
+            .select("event_type, anonymous_visitor_id, offer_id, created_at, project_id")
+            .in_("project_id", project_ids)
+            .order("created_at", desc=True)
+            .limit(10000)
+            .execute()
+        )
+        events = ev_res.data or []
+    except Exception:
+        return zero
+
+    from collections import Counter
+    from datetime import datetime, timedelta, timezone
+
+    by_type: Counter = Counter()
+    visitors_by_type: dict[str, set] = {"embed_view": set(), "project_view": set()}
+    visitor_visit_count: Counter = Counter()
+    offer_view_counts: Counter = Counter()
+
+    for e in events:
+        et = e.get("event_type")
+        vid = e.get("anonymous_visitor_id")
+        by_type[et] += 1
+        if et in visitors_by_type and vid:
+            visitors_by_type[et].add(vid)
+        if vid:
+            visitor_visit_count[vid] += 1
+        if et == "offer_view" and e.get("offer_id"):
+            offer_view_counts[e["offer_id"]] += 1
+
+    unique_visitors = len(visitors_by_type["project_view"] | visitors_by_type["embed_view"])
+    returning_visitors = sum(1 for c in visitor_visit_count.values() if c > 1)
+    checkout_starts = by_type.get("checkout_start", 0)
+    purchases = len(paid_orders)
+    conversion_rate = (
+        round((purchases / unique_visitors) * 100.0, 2) if unique_visitors else 0.0
+    )
+
+    # Best-performing offer by views (fall back to offers table for title)
+    best_offer = None
+    if offer_view_counts:
+        top_offer_id, top_views = offer_view_counts.most_common(1)[0]
+        try:
+            t_res = (
+                supabase.table("offers")
+                .select("id, title")
+                .eq("id", top_offer_id)
+                .limit(1)
+                .execute()
+            )
+            title = (t_res.data[0]["title"] if t_res.data else None) or "Untitled"
+            best_offer = {"id": top_offer_id, "title": title, "views": top_views}
+        except Exception:
+            best_offer = {"id": top_offer_id, "title": "Untitled", "views": top_views}
+
+    # 7d / 30d windows
+    now = datetime.now(timezone.utc)
+    cutoff_7d = now - timedelta(days=7)
+    cutoff_30d = now - timedelta(days=30)
+
+    def _parse(ts: str | None):
+        if not ts:
+            return None
+        try:
+            # Supabase returns ISO strings
+            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    visitors_7d: set = set()
+    visitors_30d: set = set()
+    for e in events:
+        et = e.get("event_type")
+        vid = e.get("anonymous_visitor_id")
+        if et not in ("project_view", "embed_view") or not vid:
+            continue
+        ts = _parse(e.get("created_at"))
+        if not ts:
+            continue
+        if ts >= cutoff_7d:
+            visitors_7d.add(vid)
+        if ts >= cutoff_30d:
+            visitors_30d.add(vid)
+
+    purchases_7d = 0
+    purchases_30d = 0
+    revenue_7d = 0.0
+    revenue_30d = 0.0
+    for o in paid_orders:
+        ts = _parse(o.get("created_at"))
+        if not ts:
+            continue
+        amt = float(o.get("amount_paid_usd", 0) or 0)
+        if ts >= cutoff_7d:
+            purchases_7d += 1
+            revenue_7d += amt
+        if ts >= cutoff_30d:
+            purchases_30d += 1
+            revenue_30d += amt
+
+    # Repeat customers — from orders, not events (every paid order has
+    # buyer_user_id). Count buyers with > 1 paid order on this merchant's
+    # projects.
+    buyer_counts: Counter = Counter()
+    for o in paid_orders:
+        buyer = o.get("buyer_user_id")
+        if buyer:
+            buyer_counts[buyer] += 1
+    repeat_customers = sum(1 for c in buyer_counts.values() if c > 1)
+
+    return {
+        "embed_views": by_type.get("embed_view", 0),
+        "project_views": by_type.get("project_view", 0),
+        "offer_views": by_type.get("offer_view", 0),
+        "unique_visitors": unique_visitors,
+        "returning_visitors": returning_visitors,
+        "checkout_starts": checkout_starts,
+        "purchases": purchases,
+        "conversion_rate": conversion_rate,
+        "repeat_customers": repeat_customers,
+        "best_offer": best_offer,
+        "window_7d": {
+            "visitors": len(visitors_7d),
+            "purchases": purchases_7d,
+            "revenue_usd": round(revenue_7d, 2),
+        },
+        "window_30d": {
+            "visitors": len(visitors_30d),
+            "purchases": purchases_30d,
+            "revenue_usd": round(revenue_30d, 2),
+        },
     }
 
 

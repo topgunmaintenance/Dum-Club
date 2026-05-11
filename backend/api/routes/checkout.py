@@ -284,6 +284,22 @@ def process_order_paid(
     print(f"[paid] ✓ ORDER PAID: {order_id}")
     audit["order_paid"] = True
 
+    # Drive Your Market Analytics — write a `purchase_completed` event so
+    # the funnel rate (visitors → checkout starts → purchases) lines up
+    # against the order. Best-effort; never raise from analytics.
+    try:
+        amount_usd = order.get("amount_paid_usd") or 0
+        amount_cents = int(round(float(amount_usd) * 100)) if amount_usd else None
+        supabase.table("merchant_analytics_events").insert({
+            "event_type": "purchase_completed",
+            "project_id": order.get("project_id"),
+            "offer_id": order.get("offer_id"),
+            "order_id": order_id,
+            "amount_cents": amount_cents,
+        }).execute()
+    except Exception:
+        pass
+
     # ── 2. Update inventory ──
     offer_id = order.get("offer_id")
     _proj_id_for_broadcast = ""

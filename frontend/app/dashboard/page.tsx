@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { getTier } from "../../lib/dumTiers";
+import { hasAnalyticsAccess } from "../../lib/merchantTier";
+import { DriveYourMarketAnalytics } from "../../components/DriveYourMarketAnalytics";
+import { UpgradeAnalyticsCard } from "../../components/UpgradeAnalyticsCard";
 
 type Project = {
   id: number | string;
@@ -33,6 +36,9 @@ export default function DashboardPage() {
   const [dumBalance, setDumBalance] = useState(0);
   const [bizProfile, setBizProfile] = useState<any>(null);
   const [bizLoading, setBizLoading] = useState(false);
+  // Drive Your Market Analytics — merchant subscription_tier drives the
+  // tier gate. Loaded once when the user is known; null while loading.
+  const [merchant, setMerchant] = useState<{ subscription_tier?: string } | null>(null);
   const [showBizForm, setShowBizForm] = useState(false);
   const [bizName, setBizName] = useState("");
   const [bizCategory, setBizCategory] = useState("General");
@@ -117,6 +123,25 @@ export default function DashboardPage() {
       } catch {}
     }
     loadBiz();
+  }, [user?.privyId]);
+
+  // Load merchant record (for the Drive Your Market Analytics tier gate)
+  useEffect(() => {
+    if (!user?.privyId) return;
+    (async () => {
+      try {
+        const token = await getToken();
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch(`${API_BASE}/api/merchant/me`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setMerchant(data.merchant || null);
+        }
+      } catch {
+        // tier gate falls open to "no access" → upgrade card. Safe.
+      }
+    })();
   }, [user?.privyId]);
 
   // Load business analytics
@@ -544,6 +569,24 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Drive Your Market Analytics — gated by merchant.subscription_tier.
+             Renders the unlocked dashboard for Founding / Growth / Pro /
+             Business / Enterprise; renders an upgrade card otherwise.
+             Both states only render once the merchant record has loaded
+             (so we don't flash the locked card to a Pro merchant). */}
+        {bizProfile && merchant && (
+          hasAnalyticsAccess(merchant) ? (
+            analytics?.drive_your_market ? (
+              <DriveYourMarketAnalytics
+                funnel={analytics.drive_your_market}
+                totalRevenueUsd={Number(analytics.total_revenue_usd) || 0}
+              />
+            ) : null
+          ) : (
+            <UpgradeAnalyticsCard />
+          )
         )}
 
         {bizProfile && analyticsLoading && !analytics && (
