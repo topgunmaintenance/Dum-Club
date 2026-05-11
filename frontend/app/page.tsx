@@ -3202,6 +3202,7 @@ export default function Home() {
                   { label: "For Business", href: "/business" },
                   { label: "Pricing", href: "/pricing" },
                   { label: "About", href: "/about" },
+                  { label: "Investors", href: "/investors" },
                   { label: "Technology", href: "/technology" },
                 ].map((link) => (
                   <li key={link.label}>

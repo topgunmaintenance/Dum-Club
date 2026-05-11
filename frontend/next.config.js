@@ -41,6 +41,11 @@ const nextConfig = {
       // typed as dum.club/m/<slug> resolve correctly. 308 permanent
       // so search engines consolidate signal on the canonical URL.
       { source: "/m/:slug", destination: "/project/:slug", permanent: true },
+      // Investor-page aliases. /raise and /wefunder are convenience
+      // URLs printed on social bios, business cards, and the WeFunder
+      // profile itself. Canonical page is /investors.
+      { source: "/raise", destination: "/investors", permanent: true },
+      { source: "/wefunder", destination: "/investors", permanent: true },
     ];
   },
 };
