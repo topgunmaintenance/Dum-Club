@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header, Query
+from fastapi import APIRouter, HTTPException, Header, Query, Response
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime, timezone
@@ -968,6 +968,75 @@ async def get_project(project_id: str):
         pass  # Never block page load for analytics
 
     return _attach_token_mode(resolved)
+
+
+# -----------------------------
+# Public embed-config (CORS-open)
+# -----------------------------
+
+@router.get("/{project_id}/embed-config")
+async def get_embed_config(project_id: str, response: Response):
+    """
+    Minimal public read for embed.js. Returns the merchant-chosen
+    display mode (bubble / full / automatic) and a couple of public
+    live-state booleans so the embed script can pick the right
+    render path WITHOUT the merchant having to re-paste their
+    snippet every time they switch modes in the dashboard.
+
+    CORS is explicitly opened to "*" because embed.js runs on the
+    merchant's own website (e.g. topgunmaintenance.com) which is
+    NOT on the regular CORSMiddleware allow-list — by design.
+    Every field returned here is public information already
+    visible on /embed/{id}; nothing sensitive crosses this
+    boundary. GET only.
+    """
+    supabase = get_client()
+
+    # Accept slug or UUID — frontend forwards the merchant's
+    # business id verbatim. resolve_project_uuid handles both.
+    resolved_uuid = resolve_project_uuid(supabase, project_id)
+    if not resolved_uuid:
+        # Set CORS even on 404 so the browser can read the error
+        # message inline. Avoids a confusing CORS error masking
+        # what is actually a bad business id.
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    res = (
+        supabase.table("projects")
+        .select(
+            "id, slug, embed_display_mode, is_live, live_provider, "
+            "ivs_stage_arn, pinned_offer_id"
+        )
+        .eq("id", resolved_uuid)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    row = res.data[0]
+
+    # Wildcard ACAO: this endpoint is intentionally public so any
+    # merchant origin can read it. No auth required, no cookies
+    # consulted, allow-credentials NOT set (browsers reject "*"
+    # ACAO when credentials are included).
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Cache-Control"] = "public, max-age=15"
+
+    return {
+        "id": row["id"],
+        "slug": row.get("slug"),
+        "embed_display_mode": row.get("embed_display_mode") or "automatic",
+        "is_live": bool(row.get("is_live")),
+        "live_provider": row.get("live_provider"),
+        "ivs_stage_arn": row.get("ivs_stage_arn"),
+        "pinned_offer_id": row.get("pinned_offer_id"),
+    }
 
 
 # -----------------------------

@@ -80,16 +80,25 @@
   //                  unchanged after the migration's default flips
   //                  them to "automatic".
   //
-  // We do not fetch the project's stored mode from the API because
-  // CORS on /api/* doesn't permit arbitrary merchant origins. The
-  // dashboard snippet generator passes the mode in the data-attr.
-  var displayMode = (script.getAttribute("data-display-mode") || "").toLowerCase();
-  if (displayMode !== "bubble" && displayMode !== "full" && displayMode !== "automatic") {
-    displayMode = "automatic";
-  }
-  if (displayMode === "automatic") {
-    displayMode = "full"; // until live-state awareness ships
-  }
+  // Two paths to resolve the merchant's chosen mode:
+  //
+  //   1. data-display-mode attribute on the script tag — for
+  //      merchants who want to pin a specific mode in their HTML
+  //      snippet (no dashboard round-trip).
+  //   2. Dashboard-saved value at GET /api/projects/{id}/embed-config
+  //      — for merchants who paste the script once and switch
+  //      modes in the DUM dashboard whenever. CORS on that
+  //      endpoint is explicitly opened to "*" because the
+  //      embed script runs on the merchant's origin (e.g.
+  //      topgunmaintenance.com) which is intentionally NOT on
+  //      the regular API CORS allow-list.
+  //
+  // The attribute wins when present. Otherwise we fetch the
+  // dashboard value with a hard timeout fallback to "full" so a
+  // stuck network never leaves the merchant with a blank box.
+  var attrMode = (script.getAttribute("data-display-mode") || "").toLowerCase();
+  var hasExplicitAttr =
+    attrMode === "bubble" || attrMode === "full" || attrMode === "automatic";
 
   // ── 3. Resolve the embed origin from the script's own src ──
   // A script served from staging.dum.club embeds the staging app,
@@ -105,6 +114,67 @@
   }
   var embedUrl = origin + "/embed/" + encodeURIComponent(businessId);
 
+  // Defer all rendering until we know which mode the merchant
+  // chose. If the script tag pinned a mode explicitly via
+  // data-display-mode, use it; otherwise fetch the dashboard
+  // value with a hard 800ms timeout fallback to "full" so a
+  // slow / failed network never leaves the merchant with a
+  // blank box.
+  var rendered = false;
+  function render(mode) {
+    if (rendered) return;
+    rendered = true;
+    // Normalise: "automatic" resolves to "full" until live-state
+    // awareness ships here. Already-resolved modes pass through.
+    if (mode !== "bubble" && mode !== "full" && mode !== "automatic") {
+      mode = "automatic";
+    }
+    if (mode === "automatic") mode = "full";
+    var displayMode = mode;
+    renderForMode(displayMode);
+  }
+
+  if (hasExplicitAttr) {
+    render(attrMode);
+  } else {
+    var configUrl =
+      origin + "/api/projects/" + encodeURIComponent(businessId) + "/embed-config";
+    var timeoutId = window.setTimeout(function () {
+      render("full");
+    }, 800);
+    try {
+      var fetchPromise = window.fetch
+        ? window.fetch(configUrl, { method: "GET", credentials: "omit" })
+        : null;
+      if (!fetchPromise) {
+        window.clearTimeout(timeoutId);
+        render("full");
+      } else {
+        fetchPromise
+          .then(function (r) {
+            if (!r.ok) throw new Error("status " + r.status);
+            return r.json();
+          })
+          .then(function (cfg) {
+            window.clearTimeout(timeoutId);
+            var m =
+              cfg && typeof cfg.embed_display_mode === "string"
+                ? cfg.embed_display_mode.toLowerCase()
+                : "";
+            render(m);
+          })
+          .catch(function () {
+            window.clearTimeout(timeoutId);
+            render("full");
+          });
+      }
+    } catch (e) {
+      window.clearTimeout(timeoutId);
+      render("full");
+    }
+  }
+
+  function renderForMode(displayMode) {
   // ── Bubble launcher (display mode === "bubble") ──
   // When the merchant has chosen Bubble, we skip the inline wrapper
   // entirely and render a fixed-position launcher button. The full
@@ -501,4 +571,5 @@
   if (window.addEventListener) {
     window.addEventListener("message", onMessage, false);
   }
+  } // end renderForMode(displayMode)
 })();
