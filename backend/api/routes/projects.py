@@ -999,8 +999,11 @@ _POPIN_ALLOWED_KEYS = {
     "once_per_session",
     "offer_id",
     "mode",
+    "video_url",
 }
-_POPIN_ACTIVE_MODES = {"bubble"}
+# "recorded" added in PR for Mode B. Live / auto still rejected
+# until the IVS bubble + automatic mode-picker ship in later PRs.
+_POPIN_ACTIVE_MODES = {"bubble", "recorded"}
 
 
 def _sanitize_popin_config(raw: dict) -> dict:
@@ -1036,6 +1039,31 @@ def _sanitize_popin_config(raw: dict) -> dict:
                 cleaned[k] = None
             else:
                 cleaned[k] = str(v)
+        elif k == "video_url":
+            # Empty / null clears the override → bubble mode falls back
+            # to the static avatar even if mode is "recorded".
+            if v is None or v == "":
+                cleaned[k] = None
+                continue
+            s = str(v).strip()
+            if not s:
+                cleaned[k] = None
+                continue
+            # Allow only http / https. Reject javascript: data: file:
+            # and other XSS / local-file vectors. Cap at 2048 chars,
+            # which is well past any sane CDN URL.
+            lo = s.lower()
+            if not (lo.startswith("http://") or lo.startswith("https://")):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Pop-In video_url must be an http(s) URL.",
+                )
+            if len(s) > 2048:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Pop-In video_url is too long (max 2048 chars).",
+                )
+            cleaned[k] = s
         elif k == "mode":
             mode = str(v).strip().lower() if v is not None else "bubble"
             if mode not in _POPIN_ACTIVE_MODES:

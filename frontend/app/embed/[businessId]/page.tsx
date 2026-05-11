@@ -50,6 +50,7 @@ type EmbedProject = {
     once_per_session?: boolean;
     offer_id?: string | null;
     mode?: "bubble" | "recorded" | "live" | "auto";
+    video_url?: string | null;
   } | null;
   // Owner identity — used by the embed to render an
   // owner-only "Manage offers" deep-link (Option A).

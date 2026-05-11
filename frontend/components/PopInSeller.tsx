@@ -24,7 +24,7 @@
  * future poster-frame support without component changes.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type PopInOffer = {
   id: string;
@@ -44,6 +44,20 @@ type PopInSellerProps = {
    *  inside the merchant dashboard's PopInSettings). Defaults to true
    *  for the production embed use. */
   floating?: boolean;
+  /** Optional recorded video URL. When present, the bubble renders a
+   *  16:9 muted + playsInline + loop <video> tile above the greeting
+   *  in place of the static avatar. Tap to unmute. Backend sanitizer
+   *  enforces http(s) only — frontend trusts the URL is safe. */
+  videoUrl?: string | null;
+  /** Fires when the bubble first shows with a video — used by the
+   *  host to emit popin_video_view. */
+  onVideoVisible?: () => void;
+  /** Fires when the visitor explicitly interacts with the video to
+   *  unmute (the user-gesture moment iOS / Safari require). */
+  onVideoPlay?: () => void;
+  /** Fires on any click of the video tile. Separate from onVideoPlay
+   *  so future affordances (expand) can be distinguished. */
+  onVideoClick?: () => void;
 };
 
 export function PopInSeller({
@@ -54,6 +68,10 @@ export function PopInSeller({
   onOfferClick,
   onDismiss,
   floating = true,
+  videoUrl = null,
+  onVideoVisible,
+  onVideoPlay,
+  onVideoClick,
 }: PopInSellerProps) {
   // Slide-in animation gate. We render `mounted=false` for one frame
   // so the initial transform applies before transitioning to the
@@ -65,6 +83,51 @@ export function PopInSeller({
     const id = window.setTimeout(() => setMounted(true), 16);
     return () => window.clearTimeout(id);
   }, [floating]);
+
+  // Video unmute state. iOS / Safari / Chrome block autoplay with
+  // audio, so the <video> starts muted=true and only unmutes after
+  // an explicit user gesture (tap on the video tile or its overlay
+  // unmute affordance). Once unmuted, we don't re-mute on subsequent
+  // taps — that would surprise the user.
+  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoErrored, setVideoErrored] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Fire popin_video_view exactly once when the bubble shows WITH a
+  // video and the video hasn't errored. Parallel to the host's
+  // popin_view; the funnel summary can compare video vs static
+  // impressions.
+  const sawVideoRef = useRef(false);
+  useEffect(() => {
+    if (!floating) return;
+    if (!videoUrl) return;
+    if (videoErrored) return;
+    if (sawVideoRef.current) return;
+    sawVideoRef.current = true;
+    onVideoVisible?.();
+  }, [floating, videoUrl, videoErrored, onVideoVisible]);
+
+  const handleVideoTap = () => {
+    onVideoClick?.();
+    if (videoMuted) {
+      setVideoMuted(false);
+      onVideoPlay?.();
+      // Some browsers don't auto-resume muted-paused → audible-paused
+      // on the mute toggle alone. Kick playback explicitly. Silently
+      // swallow the promise rejection that fires when the play call
+      // races with an existing playing state.
+      const v = videoRef.current;
+      if (v) {
+        v.muted = false;
+        const p = v.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(() => {});
+        }
+      }
+    }
+  };
+
+  const showVideo = Boolean(videoUrl) && !videoErrored;
 
   return (
     <div
@@ -93,22 +156,73 @@ export function PopInSeller({
         ×
       </button>
 
-      <div className="flex items-start gap-3 p-4 pr-9">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt=""
-              aria-hidden="true"
+      {/* When a video is configured we render a 16:9 tile across the
+           full bubble width above the greeting + offer chip. The
+           static avatar / initials variant stays for Mode A (bubble
+           default) — same row layout as PR #133. */}
+      {showVideo ? (
+        <div className="px-4 pt-4 pr-9">
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={
+              videoMuted
+                ? "Tap to unmute video"
+                : `Video from ${merchantName}`
+            }
+            onClick={handleVideoTap}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleVideoTap();
+              }
+            }}
+            className="relative aspect-video w-full cursor-pointer overflow-hidden rounded-xl border border-default bg-surface-muted"
+          >
+            <video
+              ref={videoRef}
+              src={videoUrl ?? undefined}
+              autoPlay
+              muted={videoMuted}
+              playsInline
+              loop
+              preload="metadata"
+              onError={() => setVideoErrored(true)}
               className="h-full w-full object-cover"
             />
-          ) : (
-            <span className="text-sm font-bold text-brand-navy">
-              {initialsOf(merchantName)}
-            </span>
-          )}
+            {/* Mute / unmute affordance — small pill at the bottom-
+                 right of the tile. Hidden once unmuted so the tile
+                 reads as ambient video. */}
+            {videoMuted && (
+              <span
+                className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-brand-navy/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white"
+                aria-hidden="true"
+              >
+                Tap to unmute
+              </span>
+            )}
+          </div>
         </div>
+      ) : null}
+
+      <div className={`flex items-start gap-3 p-4 pr-9 ${showVideo ? "pt-3" : ""}`}>
+        {!showVideo && (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-sm font-bold text-brand-navy">
+                {initialsOf(merchantName)}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-snug text-primary">{greeting}</p>
