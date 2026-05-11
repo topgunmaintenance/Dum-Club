@@ -3969,20 +3969,33 @@ return (
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { label: "Improve my offers", href: `/chat?project_id=${id}` },
-              { label: "Pricing strategy", href: `/chat?project_id=${id}` },
-              { label: "Marketing ideas", href: `/chat?project_id=${id}` },
-              { label: "Write better descriptions", href: `/chat?project_id=${id}` },
-              { label: "Generate ad copy", href: `/chat?project_id=${id}` },
-              { label: "Customer acquisition", href: `/chat?project_id=${id}` },
-            ].map((p) => (
-              <Link
-                key={p.label}
-                href={p.href}
+              "Improve my offers",
+              "Pricing strategy",
+              "Marketing ideas",
+              "Write better descriptions",
+              "Generate ad copy",
+              "Customer acquisition",
+            ].map((label) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  setQuestion(label);
+                  const el = typeof document !== "undefined"
+                    ? document.getElementById("ai-workspace")
+                    : null;
+                  if (el) {
+                    try {
+                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    } catch {
+                      el.scrollIntoView();
+                    }
+                  }
+                }}
                 className="rounded-lg border border-violet-500/20 bg-violet-500/[0.06] px-3 py-1.5 text-[11px] font-medium text-violet-300 transition hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-violet-200"
               >
-                {p.label}
-              </Link>
+                {label}
+              </button>
             ))}
           </div>
         </div>
