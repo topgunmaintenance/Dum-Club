@@ -953,7 +953,7 @@ export default function EmbedShellPage() {
                 fresh so the pinned card's "X left" / sold-out state
                 tracks live without a refetch. */}
             {project?.id && isIVSSession(project) && (
-              <section aria-label="Live chat">
+              <section aria-label="Live chat" className="block min-h-[480px]">
                 <LiveChatIVS
                   projectId={project.id}
                   userId={viewerUserId}
