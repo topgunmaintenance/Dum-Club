@@ -39,6 +39,11 @@ type PopInSellerProps = {
   offer: PopInOffer | null;
   onOfferClick: () => void;
   onDismiss: () => void;
+  /** When false, drops the fixed-position chrome + slide-in animation
+   *  so the same component can be rendered inline (e.g. as a preview
+   *  inside the merchant dashboard's PopInSettings). Defaults to true
+   *  for the production embed use. */
+  floating?: boolean;
 };
 
 export function PopInSeller({
@@ -48,27 +53,35 @@ export function PopInSeller({
   offer,
   onOfferClick,
   onDismiss,
+  floating = true,
 }: PopInSellerProps) {
   // Slide-in animation gate. We render `mounted=false` for one frame
   // so the initial transform applies before transitioning to the
-  // resting position.
-  const [mounted, setMounted] = useState(false);
+  // resting position. Skipped in inline (preview) mode so the
+  // dashboard preview is static.
+  const [mounted, setMounted] = useState(!floating);
   useEffect(() => {
+    if (!floating) return;
     const id = window.setTimeout(() => setMounted(true), 16);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [floating]);
 
   return (
     <div
       role="dialog"
       aria-label={`Greeting from ${merchantName}`}
       className={[
-        "pointer-events-auto fixed bottom-20 right-4 z-[35] w-[320px] max-w-[calc(100vw-2rem)]",
+        floating
+          ? "pointer-events-auto fixed bottom-20 right-4 z-[35]"
+          : "pointer-events-auto relative",
+        "w-[320px] max-w-[calc(100vw-2rem)]",
         "rounded-2xl border border-default bg-surface-card shadow-[0_12px_40px_rgba(11,18,32,0.18)] backdrop-blur-md",
-        "transition-all duration-300 ease-out",
-        mounted
-          ? "translate-y-0 opacity-100"
-          : "translate-y-3 opacity-0",
+        floating ? "transition-all duration-300 ease-out" : "",
+        floating
+          ? mounted
+            ? "translate-y-0 opacity-100"
+            : "translate-y-3 opacity-0"
+          : "",
       ].join(" ")}
     >
       <button

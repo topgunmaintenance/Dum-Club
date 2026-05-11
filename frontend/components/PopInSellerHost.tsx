@@ -30,21 +30,48 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { trackEvent } from "../lib/analytics";
 import { PopInSeller, type PopInOffer } from "./PopInSeller";
 
+/**
+ * Merchant-configurable Pop-In settings. Lives on projects.popin_config
+ * as JSONB. All fields optional — empty object means "use defaults"
+ * (the PR #133 MVP behaviour). Forward-declared modes (recorded /
+ * live / auto) are accepted in the type union but the backend rejects
+ * non-"bubble" writes until those features ship.
+ */
+export type PopInConfig = {
+  enabled?: boolean;
+  greeting?: string;
+  returning_greeting?: string;
+  delay_seconds?: number;
+  once_per_session?: boolean;
+  offer_id?: string | null;
+  mode?: "bubble" | "recorded" | "live" | "auto";
+};
+
 type PopInSellerHostProps = {
   projectId: string | null | undefined;
   merchantName: string;
   avatarUrl?: string | null;
   pinnedOffer: PopInOffer | null;
+  /** Optional merchant-configured overrides loaded from
+   *  projects.popin_config. Missing or empty → falls back to defaults
+   *  that match the PR #133 MVP. */
+  config?: PopInConfig | null;
+  /** Lookup so the offer-override (config.offer_id) can resolve to a
+   *  rich PopInOffer. If the override resolves to nothing, we fall
+   *  back to the pinnedOffer prop. */
+  resolveOffer?: (offerId: string) => PopInOffer | null;
   /** Called when the visitor clicks the offer chip — typically wired
    *  to scroll to / focus the embed's main buy panel. */
   onOfferClick: () => void;
 };
 
-// 5-second dwell before showing. Spec: "show after 5 seconds."
-const FIRST_VISIT_DELAY_MS = 5000;
+// Default dwell on first visit. Spec MVP: "show after 5 seconds."
+// Merchant can override via popin_config.delay_seconds.
+const DEFAULT_FIRST_VISIT_DELAY_S = 5;
 
 // Returning visitors see the bubble sooner — they've already gotten
-// past the "is this a real site" question.
+// past the "is this a real site" question. Not merchant-tunable
+// today; can be a future field.
 const RETURNING_VISITOR_DELAY_MS = 1500;
 
 // Dismiss TTL — once dismissed, the bubble stays hidden on this
@@ -85,11 +112,36 @@ function writeDismissedAt(projectId: string): void {
   }
 }
 
+// localStorage key for once-per-session suppression. The "session"
+// here = browser tab session. Cleared automatically on tab close;
+// distinct from the 24h dismiss key so they don't fight.
+const SESSION_SHOWN_KEY = (projectId: string) => `dum_popin_shown_session_${projectId}`;
+
+function wasShownThisSession(projectId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.sessionStorage.getItem(SESSION_SHOWN_KEY(projectId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markShownThisSession(projectId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SESSION_SHOWN_KEY(projectId), "1");
+  } catch {
+    /* sessionStorage blocked — falls open to "always show" */
+  }
+}
+
 export function PopInSellerHost({
   projectId,
   merchantName,
   avatarUrl,
   pinnedOffer,
+  config,
+  resolveOffer,
   onOfferClick,
 }: PopInSellerHostProps) {
   // Captured once on first render — analytics writes the visitor id
@@ -104,48 +156,98 @@ export function PopInSellerHost({
   // dismiss + persists the dismiss across reload.
   const [visible, setVisible] = useState(false);
 
-  // Suppress entirely if the user dismissed within the TTL window.
-  // We check on mount only; a longer-lived session won't recheck.
+  // Merchant-config resolution. Empty / missing config → all defaults.
+  const cfg = config ?? {};
+  const enabled = cfg.enabled !== false; // default true
+  const delaySeconds =
+    typeof cfg.delay_seconds === "number" && Number.isFinite(cfg.delay_seconds)
+      ? Math.max(0, Math.min(60, cfg.delay_seconds))
+      : DEFAULT_FIRST_VISIT_DELAY_S;
+  const oncePerSession = cfg.once_per_session === true;
+  // Mode is forward-declared; only "bubble" is implemented today.
+  // Anything else → treat as "bubble" so a forged value can't break
+  // the page.
+  const activeMode = cfg.mode === "bubble" || !cfg.mode ? "bubble" : "bubble";
+
+  // Suppress entirely if:
+  //   - merchant disabled it, OR
+  //   - no project id, OR
+  //   - merchant flipped on once-per-session AND we already showed it
+  //     in this browser tab, OR
+  //   - user dismissed within the 24h TTL window
   const [suppressed, setSuppressed] = useState(() => {
-    if (!projectId) return true; // no project → no bubble
+    if (!enabled) return true;
+    if (!projectId) return true;
+    if (oncePerSession && wasShownThisSession(projectId)) return true;
     const at = readDismissedAt(projectId);
     return at > 0 && Date.now() - at < DISMISS_TTL_MS;
   });
 
-  // First-visit vs returning greeting. Personalized with the
-  // merchant's display name per the MVP scoping decision.
+  // Offer resolution: merchant-overridden offer wins over pinned
+  // offer. resolveOffer is provided by the embed so we don't re-fetch
+  // offers in the host (the embed already has them in memory).
+  const offer: PopInOffer | null = useMemo(() => {
+    if (cfg.offer_id && resolveOffer) {
+      const override = resolveOffer(cfg.offer_id);
+      if (override) return override;
+    }
+    return pinnedOffer;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.offer_id, pinnedOffer?.id, resolveOffer]);
+
+  // First-visit vs returning greeting. Merchant-supplied overrides
+  // beat the personalized default. Defaults still inject the merchant
+  // display name so a brand-new merchant gets sensible copy without
+  // touching any settings.
   const greeting = useMemo(() => {
     const name = (merchantName || "").trim() || "this business";
-    return isReturning
-      ? `Welcome back to ${name}. Today's featured offer is below.`
-      : `Welcome to ${name}. Today's featured offer is below.`;
-  }, [merchantName, isReturning]);
+    if (isReturning) {
+      return (
+        cfg.returning_greeting?.trim() ||
+        `Welcome back to ${name}. Today's featured offer is below.`
+      );
+    }
+    return (
+      cfg.greeting?.trim() ||
+      `Welcome to ${name}. Today's featured offer is below.`
+    );
+  }, [merchantName, isReturning, cfg.greeting, cfg.returning_greeting]);
 
-  // Dwell timer → show. No bubble until we have a project id AND a
-  // pinned offer AND the user hasn't dismissed in the last 24h.
+  // Dwell timer → show. No bubble until we have a project id AND an
+  // offer (pinned or overridden) AND not suppressed AND mode is the
+  // active "bubble".
   useEffect(() => {
     if (suppressed) return;
     if (!projectId) return;
-    if (!pinnedOffer) return;
+    if (!offer) return;
+    if (activeMode !== "bubble") return;
     if (visible) return;
 
-    const delay = isReturning ? RETURNING_VISITOR_DELAY_MS : FIRST_VISIT_DELAY_MS;
+    const delay = isReturning
+      ? RETURNING_VISITOR_DELAY_MS
+      : delaySeconds * 1000;
     const t = window.setTimeout(() => setVisible(true), delay);
     return () => window.clearTimeout(t);
-  }, [suppressed, projectId, pinnedOffer, isReturning, visible]);
+  }, [suppressed, projectId, offer, isReturning, visible, delaySeconds, activeMode]);
 
   // Fire popin_view once, the first time the bubble actually shows.
-  // Guarded by `visible` so the trigger conditions can change without
-  // re-firing.
+  // Also writes the session-shown flag if oncePerSession is on so the
+  // bubble stays hidden for the rest of the tab session.
   useEffect(() => {
     if (!visible || !projectId) return;
+    if (oncePerSession) markShownThisSession(projectId);
     trackEvent("popin_view", {
       project_id: projectId,
-      offer_id: pinnedOffer?.id ?? null,
-      metadata: { trigger: isReturning ? "returning_visitor" : "dwell_5s" },
+      offer_id: offer?.id ?? null,
+      metadata: {
+        trigger: isReturning ? "returning_visitor" : "dwell",
+        delay_s: isReturning ? RETURNING_VISITOR_DELAY_MS / 1000 : delaySeconds,
+        once_per_session: oncePerSession,
+        mode: activeMode,
+      },
     });
-    // We intentionally don't include pinnedOffer in deps — the view
-    // event represents the bubble appearing, not the offer changing.
+    // We intentionally don't include offer in deps — the view event
+    // represents the bubble appearing, not the offer changing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -162,28 +264,28 @@ export function PopInSellerHost({
     if (projectId) {
       trackEvent("popin_offer_click", {
         project_id: projectId,
-        offer_id: pinnedOffer?.id ?? null,
+        offer_id: offer?.id ?? null,
       });
       // Generic popin_click — useful when we add more click affordances
       // (e.g. avatar tap, expand, video play). Keeps the funnel summary
       // honest even if we mis-classify a specific click later.
       trackEvent("popin_click", {
         project_id: projectId,
-        offer_id: pinnedOffer?.id ?? null,
+        offer_id: offer?.id ?? null,
         metadata: { target: "offer" },
       });
     }
     onOfferClick();
-  }, [projectId, pinnedOffer?.id, onOfferClick]);
+  }, [projectId, offer?.id, onOfferClick]);
 
-  if (!visible || !projectId || !pinnedOffer) return null;
+  if (!visible || !projectId || !offer) return null;
 
   return (
     <PopInSeller
       greeting={greeting}
       merchantName={merchantName}
       avatarUrl={avatarUrl ?? null}
-      offer={pinnedOffer}
+      offer={offer}
       onOfferClick={handleOfferClick}
       onDismiss={handleDismiss}
     />
