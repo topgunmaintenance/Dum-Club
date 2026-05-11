@@ -64,6 +64,33 @@
     return;
   }
 
+  // ── 2b. Read the outer display mode ──
+  // Three values the merchant sets in the DUM Club dashboard
+  // (migration 040: projects.embed_display_mode):
+  //
+  //   "full"       — inline iframe of the full storefront. Current
+  //                  default behaviour; what every existing snippet
+  //                  shipped before this feature renders.
+  //   "bubble"     — small floating launcher (brand-teal pill,
+  //                  fixed bottom-right) that opens the full
+  //                  storefront in a centered overlay on click.
+  //   "automatic"  — DUM picks at runtime. Until we wire live-state
+  //                  awareness here, automatic resolves to "full"
+  //                  so existing merchants keep their current page
+  //                  unchanged after the migration's default flips
+  //                  them to "automatic".
+  //
+  // We do not fetch the project's stored mode from the API because
+  // CORS on /api/* doesn't permit arbitrary merchant origins. The
+  // dashboard snippet generator passes the mode in the data-attr.
+  var displayMode = (script.getAttribute("data-display-mode") || "").toLowerCase();
+  if (displayMode !== "bubble" && displayMode !== "full" && displayMode !== "automatic") {
+    displayMode = "automatic";
+  }
+  if (displayMode === "automatic") {
+    displayMode = "full"; // until live-state awareness ships
+  }
+
   // ── 3. Resolve the embed origin from the script's own src ──
   // A script served from staging.dum.club embeds the staging app,
   // a script served from dum.club embeds production, etc. Falling
@@ -77,6 +104,168 @@
     origin = window.location.origin;
   }
   var embedUrl = origin + "/embed/" + encodeURIComponent(businessId);
+
+  // ── Bubble launcher (display mode === "bubble") ──
+  // When the merchant has chosen Bubble, we skip the inline wrapper
+  // entirely and render a fixed-position launcher button. The full
+  // storefront lives behind a centred overlay that opens on click.
+  // Everything else in this file (iframe creation, resize protocol,
+  // fallback handling) gets called once the merchant taps the
+  // launcher, so the iframe still goes through the same code path.
+  if (displayMode === "bubble") {
+    if (!document.getElementById("dum-embed-bubble-styles")) {
+      var bs = document.createElement("style");
+      bs.id = "dum-embed-bubble-styles";
+      bs.textContent = [
+        "[data-dum-embed-launcher] {",
+        "  position: fixed;",
+        "  bottom: 20px;",
+        "  right: 20px;",
+        "  z-index: 2147483646;",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 8px;",
+        "  padding: 12px 18px;",
+        "  border: 0;",
+        "  border-radius: 9999px;",
+        "  background: #00d1a4;",
+        "  color: #0b2545;",
+        "  font: 700 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.04em;",
+        "  text-transform: uppercase;",
+        "  cursor: pointer;",
+        "  box-shadow: 0 10px 28px rgba(11,18,32,0.18), 0 0 0 4px rgba(0,209,164,0.18);",
+        "  transition: transform 160ms ease, box-shadow 160ms ease;",
+        "}",
+        "[data-dum-embed-launcher]:hover { transform: translateY(-2px); }",
+        "[data-dum-embed-launcher]:focus-visible {",
+        "  outline: 2px solid #0b2545;",
+        "  outline-offset: 3px;",
+        "}",
+        "[data-dum-embed-launcher] .dum-dot {",
+        "  width: 8px; height: 8px; border-radius: 50%;",
+        "  background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.45);",
+        "  animation: dum-embed-pulse 1.6s ease-in-out infinite;",
+        "}",
+        "[data-dum-embed-overlay] {",
+        "  position: fixed; inset: 0; z-index: 2147483647;",
+        "  display: none; align-items: center; justify-content: center;",
+        "  background: rgba(11,18,32,0.72);",
+        "  backdrop-filter: blur(8px);",
+        "  -webkit-backdrop-filter: blur(8px);",
+        "  padding: 24px;",
+        "  animation: dum-embed-fade 200ms ease;",
+        "}",
+        "[data-dum-embed-overlay].is-open { display: flex; }",
+        "[data-dum-embed-overlay-card] {",
+        "  position: relative;",
+        "  width: 100%;",
+        "  max-width: 720px;",
+        "  height: min(86vh, 900px);",
+        "  border-radius: 20px;",
+        "  overflow: hidden;",
+        "  background: #060606;",
+        "  box-shadow: 0 24px 60px rgba(0,0,0,0.45);",
+        "}",
+        "[data-dum-embed-overlay-card] iframe {",
+        "  position: absolute; inset: 0;",
+        "  width: 100%; height: 100%;",
+        "  border: 0; display: block;",
+        "}",
+        "[data-dum-embed-overlay-close] {",
+        "  position: absolute; top: 12px; right: 12px;",
+        "  width: 36px; height: 36px;",
+        "  display: inline-flex; align-items: center; justify-content: center;",
+        "  border: 0; border-radius: 9999px;",
+        "  background: rgba(255,255,255,0.92); color: #0b2545;",
+        "  font-size: 18px; font-weight: 700; cursor: pointer;",
+        "  z-index: 2;",
+        "}",
+        "@keyframes dum-embed-fade {",
+        "  from { opacity: 0; } to { opacity: 1; }",
+        "}",
+        "@keyframes dum-embed-pulse {",
+        "  0%, 100% { transform: scale(1);   opacity: 0.85; }",
+        "  50%      { transform: scale(1.4); opacity: 1;    }",
+        "}",
+      ].join("\n");
+      document.head.appendChild(bs);
+    }
+
+    var launcher = document.createElement("button");
+    launcher.type = "button";
+    launcher.setAttribute("data-dum-embed-launcher", businessId);
+    launcher.setAttribute("aria-label", "Open DUM Club live storefront");
+    var dot = document.createElement("span");
+    dot.className = "dum-dot";
+    dot.setAttribute("aria-hidden", "true");
+    var label = document.createElement("span");
+    label.textContent = "Shop Live";
+    launcher.appendChild(dot);
+    launcher.appendChild(label);
+
+    var overlay = document.createElement("div");
+    overlay.setAttribute("data-dum-embed-overlay", businessId);
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "DUM Club live storefront");
+
+    var card = document.createElement("div");
+    card.setAttribute("data-dum-embed-overlay-card", "");
+
+    var closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.setAttribute("data-dum-embed-overlay-close", "");
+    closeBtn.setAttribute("aria-label", "Close DUM Club");
+    closeBtn.textContent = "×";
+
+    var overlayIframe = null;
+    function ensureOverlayIframe() {
+      if (overlayIframe) return;
+      overlayIframe = document.createElement("iframe");
+      overlayIframe.src = embedUrl;
+      overlayIframe.title = "DUM Club live storefront";
+      overlayIframe.setAttribute("data-dum-embed", businessId);
+      overlayIframe.setAttribute("frameborder", "0");
+      overlayIframe.setAttribute(
+        "allow",
+        "payment *; fullscreen *; clipboard-write *; popups *"
+      );
+      overlayIframe.setAttribute("allowfullscreen", "true");
+      overlayIframe.setAttribute(
+        "sandbox",
+        "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
+      );
+      card.appendChild(overlayIframe);
+    }
+
+    function openOverlay() {
+      ensureOverlayIframe();
+      overlay.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+    }
+    function closeOverlay() {
+      overlay.classList.remove("is-open");
+      document.body.style.overflow = "";
+    }
+
+    launcher.addEventListener("click", openOverlay);
+    closeBtn.addEventListener("click", closeOverlay);
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeOverlay();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && overlay.classList.contains("is-open")) {
+        closeOverlay();
+      }
+    });
+
+    card.appendChild(closeBtn);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    document.body.appendChild(launcher);
+    return;
+  }
 
   // ── 4. Inject scoped styles once ──
   // Keyframe + structural rules live in a single <style> block we

@@ -984,6 +984,9 @@ class ProjectUpdate(BaseModel):
     # the API validates the small shape it knows about and rejects any
     # display mode outside the active allow-list (_POPIN_ACTIVE_MODES).
     popin_config: Optional[dict] = None
+    # How DUM Club appears on the merchant's own website. One of
+    # bubble / full / automatic. Gated by _EMBED_DISPLAY_MODES below.
+    embed_display_mode: Optional[str] = None
 
 
 # Allow-list of fields the popin_config payload may contain. Unknown
@@ -1004,6 +1007,12 @@ _POPIN_ALLOWED_KEYS = {
 # Pop-In bubble at the existing IVS hero viewer (no second Stage join);
 # "auto" picks live -> recorded -> bubble per merchant state.
 _POPIN_ACTIVE_MODES = {"bubble", "recorded", "live", "auto"}
+
+# Outer embed display mode (migration 040). Controls how DUM Club
+# appears on the merchant's own website when they paste the embed
+# script. Distinct from _POPIN_ACTIVE_MODES which controls the
+# floating greeting bubble INSIDE the iframe.
+_EMBED_DISPLAY_MODES = {"bubble", "full", "automatic"}
 
 
 def _sanitize_popin_config(raw: dict) -> dict:
@@ -1112,6 +1121,18 @@ async def update_project(
     # object back (i.e. "go back to defaults").
     if "popin_config" in updates:
         updates["popin_config"] = _sanitize_popin_config(updates["popin_config"])
+
+    # Outer embed display mode allow-list. Reject anything outside
+    # {bubble, full, automatic} so a forged payload can't slip a
+    # garbage string past the DB CHECK constraint.
+    if "embed_display_mode" in updates:
+        mode = str(updates["embed_display_mode"]).strip().lower()
+        if mode not in _EMBED_DISPLAY_MODES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"embed_display_mode must be one of {sorted(_EMBED_DISPLAY_MODES)}",
+            )
+        updates["embed_display_mode"] = mode
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
