@@ -17,6 +17,7 @@ import {
 import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
+import { LoomExplainer } from "../components/LoomExplainer";
 import { ScrollReveal } from "../components/motion/ScrollReveal";
 // FeeCalculator moved to /business page. seller content lives there now.
 import { useAuth } from "../lib/auth/AuthContext";
@@ -2984,6 +2985,23 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </ScrollReveal>
+
+        {/* ── EXPLAINER VIDEO ──────────────────────────────────────
+             Loom walkthrough sits right above the How-It-Works
+             step cards so the hero's "See How It Works" CTA lands
+             on a clear video first, then the textual breakdown
+             below. Lazy-loaded, 16:9 responsive. */}
+        <ScrollReveal className="mx-auto mt-20 max-w-3xl px-4">
+          <div className="mb-6 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+              90-second walkthrough
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+              See DUM Club in motion.
+            </h2>
+          </div>
+          <LoomExplainer />
         </ScrollReveal>
 
         {/* ── HOW IT WORKS ─────────────────────────────────────────
