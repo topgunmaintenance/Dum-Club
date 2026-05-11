@@ -40,6 +40,17 @@ type EmbedProject = {
   live_provider?: string | null;
   ivs_stage_arn?: string | null;
   pinned_offer_id?: string | null;
+  // DUM Pop-In Seller merchant settings — JSONB on projects.popin_config
+  // (migration 038). Empty / missing → client-side defaults.
+  popin_config?: {
+    enabled?: boolean;
+    greeting?: string;
+    returning_greeting?: string;
+    delay_seconds?: number;
+    once_per_session?: boolean;
+    offer_id?: string | null;
+    mode?: "bubble" | "recorded" | "live" | "auto";
+  } | null;
   // Owner identity — used by the embed to render an
   // owner-only "Manage offers" deep-link (Option A).
   // Returned by /api/projects/<id> already; just surfacing
@@ -1079,10 +1090,12 @@ export default function EmbedShellPage() {
       )}
 
       {/* DUM Pop-In Seller — Mode C MVP. Fires once the merchant has
-           a project id + pinned offer. Trigger logic + dismiss +
-           analytics live inside the host. Clicking the offer chip
-           runs the same handleBuy() that the main offer card uses,
-           so we get auth/Stripe/sold-out handling for free. */}
+           a project id + pinned offer (or the merchant-overridden
+           offer). Trigger logic + dismiss + analytics live inside the
+           host. Clicking the offer chip runs the same handleBuy()
+           that the main offer card uses, so we get auth/Stripe/sold-
+           out handling for free. Merchant settings come from
+           project.popin_config (PR #135). */}
       <PopInSellerHost
         projectId={project?.id ?? null}
         merchantName={displayName}
@@ -1095,6 +1108,16 @@ export default function EmbedShellPage() {
               }
             : null
         }
+        config={project?.popin_config ?? null}
+        resolveOffer={(offerId) => {
+          const match = offers.find((o) => o.id === offerId);
+          if (!match) return null;
+          return {
+            id: match.id,
+            title: match.title || "Featured offer",
+            price_usd: Number(match.price_usd ?? 0),
+          };
+        }}
         onOfferClick={handleBuy}
       />
     </main>

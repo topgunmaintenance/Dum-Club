@@ -980,6 +980,73 @@ class ProjectUpdate(BaseModel):
     token_utility: Optional[str] = None
     promo_copy: Optional[str] = None
     store_items: Optional[list] = None
+    # DUM Pop-In Seller merchant settings. Free-form JSONB on the row;
+    # the API validates the small shape it knows about + rejects any
+    # non-"bubble" display mode until recorded / live / auto ship.
+    popin_config: Optional[dict] = None
+
+
+# Allow-list of fields the popin_config payload may contain. Unknown
+# keys are silently dropped on write to keep the JSONB clean for the
+# embed reader. Only "bubble" mode is accepted today; the spec's
+# coming-soon options surface in the dashboard UI as disabled, but
+# even if a forged request flips the value we reject server-side.
+_POPIN_ALLOWED_KEYS = {
+    "enabled",
+    "greeting",
+    "returning_greeting",
+    "delay_seconds",
+    "once_per_session",
+    "offer_id",
+    "mode",
+}
+_POPIN_ACTIVE_MODES = {"bubble"}
+
+
+def _sanitize_popin_config(raw: dict) -> dict:
+    """
+    Clamp shape + types on the merchant-supplied popin_config blob.
+    Returns a clean dict safe to write straight into JSONB. Caller
+    is responsible for triggering 400s on hard-invalid input
+    (only the mode field rejects on bad values; everything else is
+    silently coerced / dropped).
+    """
+    if not isinstance(raw, dict):
+        return {}
+    cleaned: dict = {}
+    for k, v in raw.items():
+        if k not in _POPIN_ALLOWED_KEYS:
+            continue
+        if k == "enabled" or k == "once_per_session":
+            cleaned[k] = bool(v)
+        elif k == "greeting" or k == "returning_greeting":
+            if v is None:
+                continue
+            s = str(v).strip()
+            if s:
+                cleaned[k] = s[:280]  # one-tweet cap to keep the bubble compact
+        elif k == "delay_seconds":
+            try:
+                n = int(v)
+            except Exception:
+                continue
+            cleaned[k] = max(0, min(60, n))  # 0..60s window
+        elif k == "offer_id":
+            if v is None or v == "":
+                cleaned[k] = None
+            else:
+                cleaned[k] = str(v)
+        elif k == "mode":
+            mode = str(v).strip().lower() if v is not None else "bubble"
+            if mode not in _POPIN_ACTIVE_MODES:
+                # Reject explicitly so the UI can show a clear error
+                # if someone tries to forge a coming-soon mode.
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Pop-In mode '{mode}' is not available yet.",
+                )
+            cleaned[k] = mode
+    return cleaned
 
 
 @router.patch("/{project_id}")
@@ -1010,6 +1077,14 @@ async def update_project(
             raise HTTPException(status_code=403, detail="Not the project owner")
 
     updates = {k: v for k, v in body.dict().items() if v is not None}
+
+    # DUM Pop-In Seller config: sanitize before persistence. We MUST
+    # do this even when popin_config is non-None but `{}` — a merchant
+    # clearing all overrides should be allowed to write an empty
+    # object back (i.e. "go back to defaults").
+    if "popin_config" in updates:
+        updates["popin_config"] = _sanitize_popin_config(updates["popin_config"])
+
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 

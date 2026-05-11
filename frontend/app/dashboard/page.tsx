@@ -7,6 +7,7 @@ import { getTier } from "../../lib/dumTiers";
 import { hasAnalyticsAccess } from "../../lib/merchantTier";
 import { DriveYourMarketAnalytics } from "../../components/DriveYourMarketAnalytics";
 import { UpgradeAnalyticsCard } from "../../components/UpgradeAnalyticsCard";
+import { PopInSettings } from "../../components/PopInSettings";
 
 type Project = {
   id: number | string;
@@ -17,6 +18,16 @@ type Project = {
   status?: string;
   review_status?: string | null;
   // token_symbol and token_status removed — Phase 3 infrastructure only.
+  // DUM Pop-In Seller merchant settings (migration 038, PR #135).
+  popin_config?: {
+    enabled?: boolean;
+    greeting?: string;
+    returning_greeting?: string;
+    delay_seconds?: number;
+    once_per_session?: boolean;
+    offer_id?: string | null;
+    mode?: "bubble" | "recorded" | "live" | "auto";
+  } | null;
 };
 
 import { API_BASE } from "../../lib/apiBase";
@@ -588,6 +599,40 @@ export default function DashboardPage() {
             <UpgradeAnalyticsCard />
           )
         )}
+
+        {/* DUM Pop-In Seller settings (PR #135). Renders for the
+             merchant's primary live project so they can edit greetings,
+             timing, offer override, and toggle the bubble on/off. Live
+             preview included. No tier gate — Pop-In is conversion
+             infrastructure that ships for all merchants (PR #133). */}
+        {(() => {
+          const primary = projects.find((p) => p.status === "live")
+            ?? projects[0];
+          if (!primary) return null;
+          return (
+            <PopInSettings
+              project={{
+                id: String(primary.id),
+                title: primary.title,
+                name: primary.name,
+                popin_config: primary.popin_config ?? null,
+              }}
+              offers={(analytics?.top_offers ?? []).map((o: {
+                id: string;
+                title?: string | null;
+                price_usd?: number | null;
+                project_id?: string | null;
+              }) => ({
+                id: o.id,
+                title: o.title,
+                price_usd: o.price_usd,
+                project_id: o.project_id,
+              }))}
+              getToken={getToken}
+              onSaved={() => loadProjects()}
+            />
+          );
+        })()}
 
         {bizProfile && analyticsLoading && !analytics && (
           <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6 text-center">
