@@ -36,6 +36,7 @@ import {
   Heading,
   Section,
 } from "../../components/ui";
+import { LoomExplainer } from "../../components/LoomExplainer";
 
 const WEFUNDER_URL = "https://wefunder.com/dumclub";
 const DECK_URL = "/investors/DUM_Club_Deck_Final_Accurate.pdf";
@@ -168,6 +169,23 @@ export default function InvestorsPage() {
               ))}
             </ul>
           </div>
+        </Container>
+      </Section>
+
+      {/* ── Explainer video ───────────────────────────────────── */}
+      <Section spacing="default" bg="page">
+        <Container size="md">
+          <div className="mb-6 text-center">
+            <Eyebrow tone="brand">90-second walkthrough</Eyebrow>
+            <Heading level="h1" className="mt-3">
+              See DUM Club in motion.
+            </Heading>
+            <p className="mx-auto mt-3 max-w-xl text-secondary">
+              Founder-led tour of the platform every investor sees in the
+              first call.
+            </p>
+          </div>
+          <LoomExplainer />
         </Container>
       </Section>
 
