@@ -3998,27 +3998,15 @@ return (
         </Link>
 
         {isOwner && (
+          /* DUM Hub view-toggle removed for the buyer-conversion pass —
+              the project page now focuses on watch/browse/buy. Merchants
+              still reach their analytics + memory views from /dashboard.
+              Kept a single Storefront pill so the owner has a visible
+              "you are viewing the public storefront" affordance. */
           <div className="flex items-center gap-1 rounded-full border border-default bg-surface-card p-1">
-            <button
-              onClick={() => setProjectView("storefront")}
-              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
-                projectView === "storefront"
-                  ? "bg-brand-teal text-black"
-                  : "text-secondary hover:text-primary"
-              }`}
-            >
+            <span className="rounded-full bg-brand-teal px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-black">
               Storefront
-            </button>
-            <button
-              onClick={() => setProjectView("analytics")}
-              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition ${
-                projectView === "analytics"
-                  ? "bg-brand-teal text-black"
-                  : "text-secondary hover:text-primary"
-              }`}
-            >
-              DUM Hub
-            </button>
+            </span>
           </div>
         )}
       </div>
