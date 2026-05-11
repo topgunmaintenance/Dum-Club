@@ -9,10 +9,12 @@
  * title / description / promo_copy. Backend sanitizes the JSONB
  * shape, so this UI only owns presentation + a thin save action.
  *
- * Modes Recorded Video / Live Video / Automatic are rendered as
- * visually disabled "Coming soon" options so the spec's display-
- * mode selector is honest about what's actually wired today
- * (Bubble only — see PR #133).
+ * All four display modes are now wired end-to-end:
+ *   bubble    — floating greeting + offer chip
+ *   recorded  — short pre-recorded video tile in the bubble
+ *   live      — LIVE NOW affordance that scrolls to the embed's
+ *               existing hero <IVSStageViewer> (no second viewer)
+ *   auto      — picks live > recorded > bubble at render time
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -68,32 +70,27 @@ const MODES: Array<{
   value: "bubble" | "recorded" | "live" | "auto";
   label: string;
   description: string;
-  active: boolean;
 }> = [
   {
     value: "bubble",
     label: "Bubble",
     description: "Floating greeting + offer chip on your embed.",
-    active: true,
   },
   {
     value: "recorded",
     label: "Recorded Video",
     description: "Short pre-recorded clip from the seller, muted by default.",
-    active: true,
   },
   {
     value: "live",
     label: "Live Video",
     description: "Show your live stream in the Pop-In when you are live.",
-    active: true,
   },
   {
     value: "auto",
     label: "Automatic",
     description:
       "DUM chooses the best display: live stream first, recorded video second, bubble if nothing else is active.",
-    active: true,
   },
 ];
 
@@ -391,18 +388,16 @@ export function PopInSettings({
 
           <Field
             label="Display mode"
-            help="Bubble + Recorded Video are live. Live + Automatic are on the roadmap."
+            help="Pick how the Pop-In appears to visitors. Automatic adapts to your storefront in real time."
           >
             <div className="grid gap-2 sm:grid-cols-2">
               {MODES.map((m) => (
                 <label
                   key={m.value}
                   className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
-                    m.active
-                      ? mode === m.value
-                        ? "border-brand-teal bg-brand-teal-soft"
-                        : "border-default bg-surface-card hover:border-strong"
-                      : "cursor-not-allowed border-dashed border-default bg-surface-muted opacity-60"
+                    mode === m.value
+                      ? "border-brand-teal bg-brand-teal-soft"
+                      : "border-default bg-surface-card hover:border-strong"
                   }`}
                 >
                   <input
@@ -410,21 +405,12 @@ export function PopInSettings({
                     name="popin-mode"
                     value={m.value}
                     checked={mode === m.value}
-                    onChange={() => {
-                      if (!m.active) return;
-                      setMode(m.value);
-                    }}
-                    disabled={!m.active}
+                    onChange={() => setMode(m.value)}
                     className="mt-0.5 h-4 w-4 accent-brand-teal"
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-brand-navy">
                       {m.label}
-                      {!m.active && (
-                        <span className="ml-2 rounded-full bg-surface-card px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted">
-                          Coming soon
-                        </span>
-                      )}
                     </span>
                     <span className="block text-[12px] leading-relaxed text-secondary">
                       {m.description}
