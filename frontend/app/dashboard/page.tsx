@@ -8,6 +8,8 @@ import { hasAnalyticsAccess } from "../../lib/merchantTier";
 import { DriveYourMarketAnalytics } from "../../components/DriveYourMarketAnalytics";
 import { UpgradeAnalyticsCard } from "../../components/UpgradeAnalyticsCard";
 import { PopInSettings } from "../../components/PopInSettings";
+import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
+import { GetLiveSteps } from "../../components/GetLiveSteps";
 
 type Project = {
   id: number | string;
@@ -17,7 +19,12 @@ type Project = {
   template_type?: string;
   status?: string;
   review_status?: string | null;
-  // token_symbol and token_status removed — Phase 3 infrastructure only.
+  // Outer embed display mode (migration 040). Controls how DUM Club
+  // appears on the merchant's own website. One of bubble / full /
+  // automatic. Default automatic.
+  embed_display_mode?: "bubble" | "full" | "automatic" | null;
+  // Live state (used by the 5-step progress flow).
+  is_live?: boolean | null;
   // DUM Pop-In Seller merchant settings (migration 038, PR #135).
   // Recorded-video mode added via PR for Mode B (migration 039 +
   // popin_config.video_url).
@@ -52,7 +59,10 @@ export default function DashboardPage() {
   const [bizLoading, setBizLoading] = useState(false);
   // Drive Your Market Analytics — merchant subscription_tier drives the
   // tier gate. Loaded once when the user is known; null while loading.
-  const [merchant, setMerchant] = useState<{ subscription_tier?: string } | null>(null);
+  const [merchant, setMerchant] = useState<{
+    subscription_tier?: string;
+    stripe_connect_status?: string | null;
+  } | null>(null);
   const [showBizForm, setShowBizForm] = useState(false);
   const [bizName, setBizName] = useState("");
   const [bizCategory, setBizCategory] = useState("General");
@@ -603,37 +613,65 @@ export default function DashboardPage() {
           )
         )}
 
-        {/* DUM Pop-In Seller settings (PR #135). Renders for the
-             merchant's primary live project so they can edit greetings,
-             timing, offer override, and toggle the bubble on/off. Live
-             preview included. No tier gate — Pop-In is conversion
-             infrastructure that ships for all merchants (PR #133). */}
+        {/* DUM Pop-In Seller settings (PR #135) + outer Embed Display
+             Mode card (migration 040). Renders for the merchant's
+             primary live project. The 5-step Get Live in Minutes flow
+             above gives a one-glance status. Both surfaces render for
+             every merchant — no tier gate. */}
         {(() => {
           const primary = projects.find((p) => p.status === "live")
             ?? projects[0];
           if (!primary) return null;
+          const offers = (analytics?.top_offers ?? []).map((o: {
+            id: string;
+            title?: string | null;
+            price_usd?: number | null;
+            project_id?: string | null;
+          }) => ({
+            id: o.id,
+            title: o.title,
+            price_usd: o.price_usd,
+            project_id: o.project_id,
+          }));
+          const stripeVerified = merchant?.stripe_connect_status === "verified";
+          const hasOffer = offers.length > 0;
+          const isLive = primary.is_live === true;
+          // Display-mode card considered "done" once the merchant has
+          // explicitly saved the value (i.e. it differs from the DB
+          // default OR the column is non-null). Every fresh project
+          // already has 'automatic' as the default, so we treat any
+          // non-empty value as a done step — the column existed,
+          // therefore the merchant has the option to change it.
+          const hasDisplayMode = Boolean(primary.embed_display_mode);
           return (
-            <PopInSettings
-              project={{
-                id: String(primary.id),
-                title: primary.title,
-                name: primary.name,
-                popin_config: primary.popin_config ?? null,
-              }}
-              offers={(analytics?.top_offers ?? []).map((o: {
-                id: string;
-                title?: string | null;
-                price_usd?: number | null;
-                project_id?: string | null;
-              }) => ({
-                id: o.id,
-                title: o.title,
-                price_usd: o.price_usd,
-                project_id: o.project_id,
-              }))}
-              getToken={getToken}
-              onSaved={() => loadProjects()}
-            />
+            <>
+              <GetLiveSteps
+                hasDisplayMode={hasDisplayMode}
+                stripeVerified={stripeVerified}
+                hasOffer={hasOffer}
+                isLive={isLive}
+                hasSale={hasOffer && (analytics?.total_orders ?? 0) > 0}
+              />
+              <EmbedDisplayModeCard
+                project={{
+                  id: String(primary.id),
+                  embed_display_mode: primary.embed_display_mode ?? "automatic",
+                }}
+                getToken={getToken}
+                onSaved={() => loadProjects()}
+              />
+              <PopInSettings
+                project={{
+                  id: String(primary.id),
+                  title: primary.title,
+                  name: primary.name,
+                  popin_config: primary.popin_config ?? null,
+                }}
+                offers={offers}
+                getToken={getToken}
+                onSaved={() => loadProjects()}
+              />
+            </>
           );
         })()}
 
