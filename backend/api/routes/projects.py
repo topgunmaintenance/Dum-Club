@@ -1001,9 +1001,10 @@ _POPIN_ALLOWED_KEYS = {
     "mode",
     "video_url",
 }
-# "recorded" added in PR for Mode B. Live / auto still rejected
-# until the IVS bubble + automatic mode-picker ship in later PRs.
-_POPIN_ACTIVE_MODES = {"bubble", "recorded"}
+# All four display modes are now wired client-side. "live" points the
+# Pop-In bubble at the existing IVS hero viewer (no second Stage join);
+# "auto" picks live -> recorded -> bubble per merchant state.
+_POPIN_ACTIVE_MODES = {"bubble", "recorded", "live", "auto"}
 
 
 def _sanitize_popin_config(raw: dict) -> dict:
