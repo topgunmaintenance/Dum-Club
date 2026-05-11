@@ -85,14 +85,15 @@ const MODES: Array<{
   {
     value: "live",
     label: "Live Video",
-    description: "Small live stream bubble of the seller. Coming soon.",
-    active: false,
+    description: "Show your live stream in the Pop-In when you are live.",
+    active: true,
   },
   {
     value: "auto",
     label: "Automatic",
-    description: "DUM chooses the best mode for each visitor. Future.",
-    active: false,
+    description:
+      "DUM chooses the best display: live stream first, recorded video second, bubble if nothing else is active.",
+    active: true,
   },
 ];
 
@@ -117,12 +118,14 @@ export function PopInSettings({
     initial.once_per_session === true,
   );
   const [offerId, setOfferId] = useState<string>(initial.offer_id ?? "");
-  // Mode is editable for the two active modes (bubble + recorded).
-  // Coming-soon modes (live / auto) are rendered as disabled radios
-  // so the merchant can't select them; the backend rejects them too.
-  const [mode, setMode] = useState<"bubble" | "recorded">(
-    initial.mode === "recorded" ? "recorded" : "bubble",
-  );
+  // All four display modes are editable. "live" reuses the existing
+  // IVS hero viewer on the embed (no second Stage join). "auto" picks
+  // live -> recorded -> bubble based on the merchant's runtime state.
+  type Mode = "bubble" | "recorded" | "live" | "auto";
+  const [mode, setMode] = useState<Mode>(() => {
+    const m = initial.mode;
+    return m === "recorded" || m === "live" || m === "auto" ? m : "bubble";
+  });
   const [videoUrl, setVideoUrl] = useState<string>(initial.video_url ?? "");
 
   // Upload UI state. uploadingVideo is set during the network hop so
@@ -409,9 +412,7 @@ export function PopInSettings({
                     checked={mode === m.value}
                     onChange={() => {
                       if (!m.active) return;
-                      if (m.value === "bubble" || m.value === "recorded") {
-                        setMode(m.value);
-                      }
+                      setMode(m.value);
                     }}
                     disabled={!m.active}
                     className="mt-0.5 h-4 w-4 accent-brand-teal"
@@ -538,7 +539,7 @@ export function PopInSettings({
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value.slice(0, 2048))}
                 placeholder="https://example.com/intro.mp4"
-                disabled={mode !== "recorded"}
+                disabled={mode !== "recorded" && mode !== "auto"}
                 className="mt-2 w-full rounded-lg border border-default bg-surface-card px-3 py-2 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal disabled:cursor-not-allowed disabled:opacity-60"
               />
               <p className="mt-1 text-[11px] leading-relaxed text-muted">
@@ -589,10 +590,12 @@ export function PopInSettings({
                   onDismiss={() => {}}
                   floating={false}
                   videoUrl={
-                    mode === "recorded" && videoUrl.trim()
+                    (mode === "recorded" || mode === "auto") && videoUrl.trim()
                       ? videoUrl.trim()
                       : null
                   }
+                  liveActive={mode === "live" || mode === "auto"}
+                  onLiveClick={() => {}}
                 />
               </div>
             ) : (
@@ -603,7 +606,8 @@ export function PopInSettings({
             <p className="mt-3 text-[11px] leading-relaxed text-muted">
               Visitors see the Pop-In after the delay above. Returning
               visitors see the second greeting (or the first one if you
-              leave that field blank).
+              leave that field blank). Live and Automatic show a LIVE
+              NOW button when the storefront is actually streaming.
             </p>
           </div>
         </div>
