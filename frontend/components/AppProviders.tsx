@@ -35,7 +35,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["google", "email"],
+        // Email first, Google second. Email OTP is a single-tab,
+        // first-party flow that survives the iframe-to-new-tab
+        // redirect cleanly. Google OAuth roundtrips through
+        // auth.privy.io and Google.com, which can be flaky in
+        // incognito + iframe-launched contexts. Privy renders
+        // them in the order listed here.
+        loginMethods: ["email", "google"],
         embeddedWallets: {
           solana: {
             createOnLogin: "users-without-wallets",
