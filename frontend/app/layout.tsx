@@ -19,21 +19,21 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "DUM Club — Drive Ur Market. Live Selling. Zero Commission.",
+  title: "DUM Club. Drive Ur Market. Live Selling. Zero Commission.",
   description:
-    "Drive Ur Market — the loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee — $29 to $99/mo — and keep 100% of every sale. 0% commission, always.",
+    "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee from $29 to $99 a month and keep 100% of every sale. 0% commission, always.",
   openGraph: {
-    title: "DUM Club — Drive Ur Market. Live Selling. Zero Commission.",
+    title: "DUM Club. Drive Ur Market. Live Selling. Zero Commission.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep everything — flat fee, no commission. The Whatnot alternative that doesn't tax every sale.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep every sale, with a flat fee and no commission. The Whatnot alternative that does not tax every sale.",
     siteName: "DUM Club",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DUM Club — Drive Ur Market. Live Selling. Zero Commission.",
+    title: "DUM Club. Drive Ur Market. Live Selling. Zero Commission.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep everything — flat fee, no commission. The Whatnot alternative that doesn't tax every sale.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep every sale, with a flat fee and no commission. The Whatnot alternative that does not tax every sale.",
   },
 };
 

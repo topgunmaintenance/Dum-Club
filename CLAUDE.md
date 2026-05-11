@@ -201,9 +201,54 @@ You MUST:
 ### EXECUTION SYSTEM vs DOCTRINE
 
 This section is the **execution contract**: how Claude should run.
-Sections 1–13 below are the **product doctrine**: what DUM Club is,
+Sections 1-13 below are the **product doctrine**: what DUM Club is,
 what it charges, what it never does. Both are binding. If they
 conflict, the doctrine wins.
+
+---
+
+### HUMAN COPY GUARD
+
+Customer-facing copy on DUM Club must read like a founder talking
+to a local shop owner. Direct, practical, simple. Never robotic
+SaaS / AI marketing language.
+
+Banned phrases and patterns are enforced by:
+
+    npm run check:human-copy
+
+This script (`scripts/check-human-copy.mjs`) scans every public-
+facing page, layout, and shared component for:
+
+- em dashes (`—`) and en dashes (`–`) in user-visible strings
+- repeated dash separators (three or more " - " chunks on one line)
+- banned SaaS / AI marketing words: seamlessly, cutting-edge,
+  comprehensive, optimize, empower, elevate, robust, leverage,
+  frictionless, industry-leading, world-class, revolutionary,
+  game-changing, streamline, next-generation, state-of-the-art,
+  best-in-class, and "unlock" inside display copy
+- specific phrases the founder explicitly does not want shipped,
+  including "AI retention agent", "cross-merchant discovery",
+  "technical layer", "canonical state", and "source of truth"
+
+Approved compound terms (allowed): real-time, first-time,
+mobile-first, pop-in, AI-powered, FAA-certified, time-sensitive,
+in-app, follow-up, same-day, off-peak, mid-size.
+
+Approved phrase replacements:
+
+- "AI retention agent"        -> "tools that help bring customers back"
+- "cross-merchant discovery"  -> "customers can find nearby deals"
+- "technical layer"           -> "the system behind DUM Club"
+- "canonical state / source of truth" -> plain developer wording or
+                                  "where the data lives"
+
+Run `npm run check:human-copy` before every PR. It exits non-zero
+when a violation is found and refuses to ship robotic copy.
+
+Out of scope for the guard: admin tooling (/admin/*), API routes
+(/api/*), the /_dev preview surface, tests, and code comments.
+Those are developer-facing and may contain dashes.
 
 ---
 

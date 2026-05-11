@@ -88,13 +88,13 @@ export function AiSalesChat({
       setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
       if (data.offers?.length) setOffers(data.offers);
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Having trouble right now — try again in a moment." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Having trouble right now. Try again in a moment." }]);
     } finally {
       setLoading(false);
     }
   }
 
-  // Parse offer references in AI response — detect "$XX" or offer titles
+  // Parse offer references in AI response. detect "$XX" or offer titles
   function renderResponse(text: string) {
     if (!offers.length) return <span>{text}</span>;
 

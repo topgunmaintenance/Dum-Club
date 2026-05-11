@@ -339,7 +339,7 @@ export function PopInSettings({
           </Field>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Display delay (seconds)" help="0–60. Default 5.">
+            <Field label="Display delay (seconds)" help="0 to 60. Default 5.">
               <input
                 type="number"
                 min={0}

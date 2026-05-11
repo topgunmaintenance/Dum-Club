@@ -18,7 +18,7 @@ import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
 import { ProofOfMotion } from "../components/ProofOfMotion";
 import { FounderNote } from "../components/FounderNote";
 import { ScrollReveal } from "../components/motion/ScrollReveal";
-// FeeCalculator moved to /business page — seller content lives there now.
+// FeeCalculator moved to /business page. seller content lives there now.
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -252,7 +252,7 @@ const CREATOR_STORIES: CreatorStory[] = [
     sold: "8-week transformation program",
     result: "22 sign-ups in 3 days",
     detail:
-      "Sarah typed 'I run an 8-week body transformation program for women.' The AI created her page, pricing tiers, and booking flow. She posted the link to her Instagram story — 22 people signed up before the weekend.",
+      "Sarah typed 'I run an 8-week body transformation program for women.' The AI created her page, pricing tiers, and booking flow. She posted the link to her Instagram story. 22 people signed up before the weekend.",
     stat: { value: "22", label: "Sign-ups" },
   },
   {
@@ -264,7 +264,7 @@ const CREATOR_STORIES: CreatorStory[] = [
     sold: "Figma template packs",
     result: "12 sales in one day",
     detail:
-      "Alex uploaded his Figma templates and let the AI write the product descriptions. Within 24 hours he had 12 sales — without building a website or setting up Stripe manually.",
+      "Alex uploaded his Figma templates and let the AI write the product descriptions. Within 24 hours he had 12 sales, without building a website or setting up Stripe manually.",
     stat: { value: "12", label: "Sales today" },
   },
   {
@@ -288,7 +288,7 @@ const CREATOR_STORIES: CreatorStory[] = [
     sold: "Lo-fi beat pack downloads",
     result: "200 downloads on day one",
     detail:
-      "Dani dropped a link to his beat pack. The AI wrote the copy, set three pricing tiers, and the page went live. 200 downloads on the first day — no distributor, no middleman.",
+      "Dani dropped a link to his beat pack. The AI wrote the copy, set three pricing tiers, and the page went live. 200 downloads on the first day. No distributor, no middleman.",
     stat: { value: "200", label: "Downloads" },
   },
   {
@@ -643,7 +643,7 @@ const ACTIVITY_MESSAGES = [
   { icon: "🟢", text: "Storefront launched with 3 offers" },
   { icon: "💳", text: "Subscription offer purchased" },
   { icon: "⚡", text: "Business created from single sentence" },
-  { icon: "✓", text: "Offer fulfilled — seller paid out" },
+  { icon: "✓", text: "Offer fulfilled. Seller paid out." },
 ];
 
 function PlatformActivity({ projectCount }: { projectCount: number }) {
@@ -841,7 +841,7 @@ function ProductDemo() {
   return (
     <div className="mt-16">
       <div className="mb-6 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-secondary">
-        Watch it happen — idea to revenue
+        Watch it happen. idea to revenue
       </div>
 
       {/* Progress dots */}
@@ -861,7 +861,7 @@ function ProductDemo() {
         ))}
       </div>
 
-      {/* DUM CLUB AI Window — same chrome as the product */}
+      {/* DUM CLUB AI Window. same chrome as the product */}
       <div className="mx-auto max-w-2xl rounded-2xl border border-default bg-surface-card/90 shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_40px_rgba(0,255,163,0.04)] overflow-hidden">
         {/* Title bar */}
         <div className="flex items-center gap-2 border-b border-default/80 bg-surface-card px-4 py-2.5">
@@ -970,7 +970,7 @@ function ProductDemo() {
           {phase === 2 && (
             <div className="hero-chat-msg">
               <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted overflow-hidden">
-                {/* Storefront header — looks like a real project page */}
+                {/* Storefront header. looks like a real project page */}
                 {liveStep >= 1 && (
                   <div className="hero-chat-msg border-b border-default/30 px-5 py-4">
                     <div className="flex items-center justify-between">
@@ -1022,7 +1022,7 @@ function ProductDemo() {
                         <div className="flex-1">
                           <div className="text-[9px] font-bold uppercase tracking-wider text-secondary mb-1">AI Sales Assistant</div>
                           <div className="text-[11px] leading-relaxed text-secondary">
-                            Most customers go with the Full Detail at $89 — it covers interior, exterior, and wax. Great value for the price.
+                            Most customers go with the Full Detail at $89. it covers interior, exterior, and wax. Great value for the price.
                           </div>
                         </div>
                       </div>
@@ -1122,7 +1122,7 @@ const HOME_SECTIONS = [
   { id: "section-cta", label: "Get Started" },
 ];
 
-/* ─── Live Sale Toast (real Stripe sales only — no demo data) ─── */
+/* ─── Live Sale Toast (real Stripe sales only. no demo data) ─── */
 const SALE_TOAST_FLOOR = 1; // minimum real sales before toast appears
 
 interface RealSale {
@@ -1137,7 +1137,7 @@ function LiveSaleToast() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Fetch real Stripe-verified sales — same endpoint LiveActivityTicker uses
+    // Fetch real Stripe-verified sales. same endpoint LiveActivityTicker uses
     fetch("/api/checkout/recent-sales?limit=6")
       .then((r) => (r.ok ? r.json() : { sales: [] }))
       .then((data) => {
@@ -1212,12 +1212,12 @@ function ComparisonTable() {
           </thead>
           <tbody>
             {[
-              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29–$99/mo" },
-              { f: "Per-sale commission", w: "8%", c: "Varies", g: "—", d: "0% ever" },
+              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29 to $99/mo" },
+              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
               { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
               { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
               { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
-              { f: "AI retention", w: "None", c: "None", g: "None", d: "Built in" },
+              { f: "Bring customers back", w: "None", c: "None", g: "None", d: "Built in" },
               { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
               { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
             ].map((row, i) => (
@@ -1321,12 +1321,12 @@ function SearchResults({
   }, [results]);
 
   // Hidden until the user has actually run a search. Once search runs we may
-  // have either DUM Club cards or a Google fallback — both require rendering.
+  // have either DUM Club cards or a Google fallback. both require rendering.
   if (results === null && externalResults.length === 0) return null;
 
   const hasDumResults = cards.length > 0;
   // External fallback renders ONLY when DUM Club returned nothing. Google is
-  // the "there's no one on DUM Club for this yet" safety net — never shown
+  // the "there's no one on DUM Club for this yet" safety net. never shown
   // alongside on-platform results.
   const showExternalFallback =
     loaded && !hasDumResults && externalResults.length > 0;
@@ -1385,7 +1385,7 @@ function ExternalTopCard({ data }: { data: ExternalTopResult }) {
   const rating = typeof data.rating === "number" ? data.rating.toFixed(1) : null;
   const reviews = data.review_count > 0 ? data.review_count.toLocaleString() : null;
 
-  // Google Maps URLs API — free, no API-key billing. Opens Google Maps with
+  // Google Maps URLs API. free, no API-key billing. Opens Google Maps with
   // driving directions to the business. Using place_id is the precise match;
   // destination text is a fallback label for clients that don't honour place_id.
   // https://developers.google.com/maps/documentation/urls/get-started
@@ -1646,7 +1646,7 @@ function RetentionSection() {
           <span className="text-brand-teal">Automate repeat business.</span>
         </h2>
         <p className="mb-8 max-w-xl text-sm text-secondary">
-          DUM Points bring customers back automatically. Our AI retention agent sends reminders, deal pushes, and expiry alerts — so you never lose a customer to a competitor again.
+          DUM Points bring customers back automatically. Our tools that help bring customers back send reminders, deal pushes, and expiry alerts, so you never lose a customer to a competitor again.
         </p>
 
         <div className="grid gap-8 sm:grid-cols-2">
@@ -1655,7 +1655,7 @@ function RetentionSection() {
             {[
               { step: "1", title: "Customer buys from you", desc: "They earn DUM Points automatically at checkout. No stamps, no cards.", icon: "💳" },
               { step: "2", title: "AI sends them back", desc: "Automated point reminders and deal pushes via email. Zero effort from you.", icon: "🤖" },
-              { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Cross-merchant discovery grows your network.", icon: "🔄" },
+              { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Customers can find nearby deals across the network, which grows yours.", icon: "🔄" },
               { step: "4", title: "You keep them forever", desc: "The switching cost is high. Points + deals + AI = a loyalty moat no competitor can touch.", icon: "🏆" },
             ].map((s) => (
               <div key={s.step} className="flex gap-4 rounded-xl border border-default/40 bg-surface-muted p-4 transition hover:border-default">
@@ -1741,7 +1741,7 @@ function PricingTiers() {
       price: "$49",
       period: "/mo",
       desc: "Retain customers automatically",
-      features: ["Everything in Starter", "Featured placement", "AI retention agent", "Google review display", "Best Deals eligibility"],
+      features: ["Everything in Starter", "Featured placement", "Tools that help bring customers back", "Google review display", "Best Deals eligibility"],
       cta: "Most Popular",
       highlight: true,
     },
@@ -1871,7 +1871,7 @@ function WhatnotPitch() {
               <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
             </div>
             <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:text-white">
-              Switch from Whatnot — Free →
+              Switch from Whatnot. Free →
             </Link>
           </div>
         </div>
@@ -2095,7 +2095,7 @@ export default function Home() {
     if (!user || !walletAddress) return;
     const idea = localStorage.getItem("pendingIdea");
     if (!idea?.trim()) { setPendingAutoLaunch(false); return; }
-    // All conditions met — auto-launch
+    // All conditions met. auto-launch
     setPendingAutoLaunch(false);
     doHeroLaunch(idea.trim());
   }, [pendingAutoLaunch, user, walletAddress, heroLaunching]);
@@ -2133,7 +2133,7 @@ export default function Home() {
           setHeroError("Daily creation limit reached. Try again tomorrow or upgrade.");
           return;
         }
-        throw new Error(data?.detail || "Launch failed — please try again.");
+        throw new Error(data?.detail || "Launch failed. Please try again.");
       }
       const data = await res.json();
       localStorage.removeItem("pendingIdea");
@@ -2276,7 +2276,7 @@ export default function Home() {
             }
           })
           .catch(() => {
-            // Backend search failed — show fallback
+            // Backend search failed. show fallback
             setFindResults([]);
             setFindLoading(false);
           });
@@ -2433,13 +2433,13 @@ export default function Home() {
     return n > 0 ? n : allPublicProjects.length;
   }, [allPublicProjects]);
 
-  // Projects that are CURRENTLY streaming (is_live === true) — drives the
+  // Projects that are CURRENTLY streaming (is_live === true). drives the
   // dynamic hero banner. Falls back to the no-streams value-prop state when
   // this list is empty OR when the live-streams hero is disabled by env flag.
   //
   // The feature flag NEXT_PUBLIC_ENABLE_LIVE_STREAMS defaults to OFF per the
   // local-services wedge strategy (Master Playbook Phase 0/1). The Whatnot-
-  // style live commerce hero is dormant code, not deleted code — flip the
+  // style live commerce hero is dormant code, not deleted code. flip the
   // env var on in Vercel to re-enable when the live-commerce loop matters
   // again (Phase 3+ at the earliest).
   const liveStreamsEnabled = process.env.NEXT_PUBLIC_ENABLE_LIVE_STREAMS === "true";
@@ -2451,7 +2451,7 @@ export default function Home() {
     [allPublicProjects, liveStreamsEnabled]
   );
 
-  // Live Now section (top-of-homepage) — real data only, not gated by
+  // Live Now section (top-of-homepage). real data only, not gated by
   // the live-streams env flag because the section is hidden at render
   // time when no projects have is_live === true.
   const liveNowProjects = useMemo(
@@ -2632,7 +2632,7 @@ export default function Home() {
           <LiveNowSection projects={liveNowProjects} />
         )}
 
-        {/* ── HERO — light-theme migration (Phase 1) ──
+        {/* ── HERO. light-theme migration (Phase 1) ──
              Switched from the dark glassmorphism panel to a clean
              surface-card on surface-page. Ambient radial-gradient
              orbs (emerald + violet) removed: they were dark-page
@@ -2645,7 +2645,7 @@ export default function Home() {
           id="section-hero"
           className="relative overflow-hidden rounded-2xl border border-default bg-surface-card shadow-sm"
         >
-          {/* Ambient hero glow — single soft brand-teal radial behind the
+          {/* Ambient hero glow. single soft brand-teal radial behind the
                headline. Low opacity (~8%) + heavy blur means it reads as
                warmth around the wordmark rather than as a distinct shape
                (the failure mode of the v1 emerald+violet "neon orbs"
@@ -2678,7 +2678,7 @@ export default function Home() {
                   </span>
                 </div>
               )}
-              {/* Phase 5 hero — outcome-led headline ("Sell Live. Keep
+              {/* Phase 5 hero. outcome-led headline ("Sell Live. Keep
                   Every Dollar.") with the merchant-first value-prop
                   subhead. Replaces the brand-led "DUM Club / Drive
                   Your Market" pairing because conversion testing on
@@ -2687,7 +2687,7 @@ export default function Home() {
                   brand still owns the page through the navbar
                   wordmark, the founder note directly below, and the
                   product-preview section. */}
-              {/* Brand decoder eyebrow — "Drive Ur Market" is the
+              {/* Brand decoder eyebrow. "Drive Ur Market" is the
                    expansion of DUM. Sits above the outcome headline so
                    first-time visitors see the brand line without it
                    competing with the value prop on a single line. */}
@@ -2698,10 +2698,10 @@ export default function Home() {
                 Sell Live. <span className="text-brand-navy">Keep Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                Add live selling, loyalty, AI retention, and local flash sales to your business for one flat monthly fee. Built for local businesses, by a local business.
+                Add live selling, loyalty, tools that help bring customers back, and local flash sales to your business for one flat monthly fee. Built for local businesses, by a local business.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">Flat $29–$99/month.</span> 0% commission. Keep every sale.
+                <span className="font-bold text-brand-navy">Flat $29 to $99/month.</span> 0% commission. Keep every sale.
               </p>
 
               {/* Primary CTA: brand-teal fill with brand-navy text for
@@ -2734,16 +2734,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── SEARCH RESULTS removed — the homepage no longer has a
+        {/* ── SEARCH RESULTS removed. the homepage no longer has a
              customer search surface, so there's nothing to render
              results into. Buyer-side search lives at /discover. ── */}
 
-        {/* ── DEALS + RECENT SALES removed — too noisy on homepage
+        {/* ── DEALS + RECENT SALES removed. too noisy on homepage
              per product review. Deals are visible on /discover and
              individual storefronts. Sales proof can return when GMV
              volume is high enough to be impressive, not distracting. ── */}
 
-        {/* ── Founder note — Phase 5 promotion ──
+        {/* ── Founder note. Phase 5 promotion ──
              Moved from its old position inside the
              ProofOfMotion fallback (just before the final CTA) up
              to directly below the hero. The "real local-business
@@ -2771,7 +2771,7 @@ export default function Home() {
              merchant's own website. NO real data, NO API calls, NO
              IVS. The "Preview" badge is permanent so this can never
              be confused with a real sale. Sample copy is illustrative
-             only — these are not live offers. */}
+             only. these are not live offers. */}
         <div className="mx-auto mt-16 max-w-5xl px-4">
           <div className="mb-6 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
@@ -2803,7 +2803,7 @@ export default function Home() {
                 <div className="absolute right-4 top-4 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-mono text-primary backdrop-blur-sm">
                   47 watching
                 </div>
-                {/* Center play icon — purely decorative */}
+                {/* Center play icon. purely decorative */}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full border border-default bg-brand-teal-soft text-brand-teal">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </div>
@@ -2844,7 +2844,7 @@ export default function Home() {
                   type="button"
                   disabled
                   className="mt-4 w-full cursor-default rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-black opacity-90"
-                  aria-label="Buy Now button — preview only"
+                  aria-label="Buy Now button. Preview only."
                 >
                   Buy Now
                 </button>
@@ -2866,7 +2866,7 @@ export default function Home() {
                 </div>
                 <div>
                   <span className="font-semibold text-brand-teal">Sara:</span>{" "}
-                  <span className="text-primary">just bought one — thanks!</span>
+                  <span className="text-primary">just bought one. thanks!</span>
                 </div>
                 <div>
                   <span className="font-semibold text-brand-teal">Daniel:</span>{" "}
@@ -2907,17 +2907,17 @@ export default function Home() {
               Stop paying for five things that don&apos;t talk to each other.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-secondary">
-              Live selling, loyalty, retention, deals, your storefront — one system, one bill.
+              Live selling, loyalty, retention, deals, your storefront. One simple system, one monthly bill.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {[
-              { name: "Delivery apps", fees: "15–30%", detail: "of every order", muted: true },
+              { name: "Delivery apps", fees: "15 to 30%", detail: "of every order", muted: true },
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
-              { name: "Loyalty software", fees: "$50–$300", detail: "per month", muted: true },
-              { name: "SMS retention", fees: "$20–$200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "$29–$99", detail: "flat / month · 0% commission", muted: false },
+              { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
+              { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
+              { name: "DUM Club", fees: "$29 to $99", detail: "flat / month · 0% commission", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -2947,7 +2947,7 @@ export default function Home() {
         {/* ── USE-CASE CARDS ──────────────────────────────────────
              Five concrete local-business angles. Each card answers
              the question "what would I actually use DUM Live for?"
-             in one sentence. Industries are deliberately broad — a
+             in one sentence. Industries are deliberately broad. a
              non-technical owner should see themselves in one of
              these in under five seconds. */}
         <ScrollReveal className="mx-auto mt-20 max-w-6xl px-4">
@@ -2964,7 +2964,7 @@ export default function Home() {
             {([
               { Icon: UtensilsCrossed, title: "Restaurants", copy: "Go live during slow hours and sell limited-time specials." },
               { Icon: Wrench, title: "Auto shops & mechanics", copy: "Offer same-day service deals, inspections, seasonal promos, or maintenance specials." },
-              { Icon: HardHat, title: "HVAC & contractors", copy: "Run flash promotions to fill empty schedule slots — same-day deals, seasonal tune-ups, off-peak pricing." },
+              { Icon: HardHat, title: "HVAC & contractors", copy: "Run flash promotions to fill empty schedule slots: same-day deals, seasonal tune-ups, off-peak pricing." },
               { Icon: Dumbbell, title: "Gyms & wellness", copy: "Sell memberships, classes, recovery sessions, or event promos live." },
               { Icon: ShoppingBag, title: "Retail & local shops", copy: "Move inventory with live product drops and loyalty rewards." },
             ] as Array<{ Icon: LucideIcon; title: string; copy: string }>).map((u) => (
@@ -2972,7 +2972,7 @@ export default function Home() {
                 key={u.title}
                 className="rounded-2xl border border-default bg-surface-card p-6 backdrop-blur-sm transition hover:border-default"
               >
-                {/* Lucide icon — Phase 5 emoji-to-icon swap.
+                {/* Lucide icon. Phase 5 emoji-to-icon swap.
                     Inverse-tinted background so the icon reads against
                     the dark feature card; switches to brand-teal when
                     these cards are migrated to light theme later. */}
@@ -2989,7 +2989,7 @@ export default function Home() {
         {/* ── HOW IT WORKS ─────────────────────────────────────────
              Anchor target for the hero's "See How It Works" CTA.
              Four short steps, no jargon. Step 4 mentions DUM Points
-             as a loyalty rewards primitive only — no token framing. */}
+             as a loyalty rewards primitive only. no token framing. */}
         <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
@@ -3005,7 +3005,7 @@ export default function Home() {
               {
                 n: "01",
                 title: "Connect Stripe",
-                copy: "One click. Money goes straight to your bank — never to us.",
+                copy: "One click. Money goes straight to your bank. We do not hold it.",
               },
               {
                 n: "02",
@@ -3015,12 +3015,12 @@ export default function Home() {
               {
                 n: "03",
                 title: "Add DUM Live to your site",
-                copy: "Paste one script tag. Or list on DUM Club — your choice.",
+                copy: "Paste one small code snippet, or just list your business on DUM Club.",
               },
               {
                 n: "04",
                 title: "Customers buy and come back",
-                copy: "Every purchase earns DUM Points — loyalty rewards that bring them back.",
+                copy: "Every purchase earns DUM Points. Customers can use them for rewards that bring buyers back.",
               },
             ].map((step) => (
               <div
@@ -3037,7 +3037,7 @@ export default function Home() {
           </div>
         </ScrollReveal>
 
-        {/* ── ProofOfMotion — pre-final-CTA stats ──
+        {/* ── ProofOfMotion. pre-final-CTA stats ──
              FounderNote was moved up directly under the hero in
              Phase 5; ProofOfMotion still renders here when its
              4-cell honest-data rule has enough real numbers, but
@@ -3049,7 +3049,7 @@ export default function Home() {
 
         {/* ── FINAL CTA ────────────────────────────────────────────
              Single closing block. The previous page had a separate
-             "seller banner" + "bottom CTA" — collapsed into one to
+             "seller banner" + "bottom CTA". collapsed into one to
              match the user-direction "less clutter, clear CTA
              hierarchy." Pricing CTA points at /business; Activate
              CTA points at /merchant. */}
@@ -3063,7 +3063,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $29–$99/month. 0% commission, always. Founding merchants get preferred pricing after launch.
+              Flat $29 to $99/month. 0% commission, always. Founding merchants get preferred pricing after launch.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
@@ -3079,19 +3079,19 @@ export default function Home() {
                 See Pricing
               </Link>
             </div>
-            {/* Final-CTA closer. The earlier "Drive your market — not
+            {/* Final-CTA closer. The earlier "Drive your market. not
                 platform fees." line was removed when "Drive Your
                 Market" was promoted to the hero slogan in the
                 light-theme migration; the contrast-pair phrasing
                 duplicated the new H1 and competed with it. */}
             <div className="mx-auto mt-6 max-w-md rounded-xl border border-default bg-brand-teal-soft px-5 py-3 text-center text-[12px] text-secondary">
-              <span className="text-brand-teal">◆</span> Every purchase earns DUM Points — loyalty rewards customers can redeem at <strong className="text-primary">any</strong> business on the network.
+              <span className="text-brand-teal">◆</span> Every purchase earns DUM Points. Customers can use them for rewards across the network, redeemable at <strong className="text-primary">any</strong> business on the network.
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust strip — Phase 5 reframe. Was a "Built with" stack
+      {/* Trust strip. Phase 5 reframe. Was a "Built with" stack
           credit for Stripe / Supabase / Next.js / Vercel; reframed
           to merchant-facing trust language ("Powered by Stripe ·
           SSL secured · Trusted infrastructure") so the message
@@ -3222,7 +3222,7 @@ export default function Home() {
               DUM Club operates in early access. Content on this platform is for
               informational purposes only and does not constitute financial, legal, or
               investment advice. DUM Points are a loyalty unit redeemable for discounts at
-              participating merchants — not an investment, with no secondary market and no
+              participating merchants. They are not an investment, with no secondary market and no
               expectation of price appreciation. For technical details on how the platform
               is built, see the{" "}
               <Link href="/technology" className="text-secondary underline-offset-4 hover:text-primary hover:underline">

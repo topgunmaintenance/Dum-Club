@@ -50,7 +50,7 @@ export default function MerchantPage() {
   const [loading, setLoading] = useState(true);
   const [showSignup, setShowSignup] = useState(false);
 
-  // Founding program status — pulled from a public endpoint, no auth needed.
+  // Founding program status. pulled from a public endpoint, no auth needed.
   const [foundingStatus, setFoundingStatus] = useState<FoundingStatus | null>(null);
 
   // Signup form
@@ -72,14 +72,14 @@ export default function MerchantPage() {
   // + slug; ignore the rest of the project payload.
   const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null } | null>(null);
 
-  // Live Stripe Connect verification — fetched from
+  // Live Stripe Connect verification. fetched from
   // /api/merchant/stripe-connect/status which does a fresh
   // Stripe.Account.retrieve and writes the resolved status back to
   // the merchants row. The shape includes charges/payouts/details
   // booleans and the requirements lists Stripe surfaces during
   // onboarding. `null` while loading; `error` if the backend's
   // Stripe.Account.retrieve fails (typically a key/account mismatch
-  // — most often surfaces while live OAuth is still being set up).
+  //. most often surfaces while live OAuth is still being set up).
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [stripeStatusError, setStripeStatusError] = useState<string | null>(null);
 
@@ -122,7 +122,7 @@ export default function MerchantPage() {
   }, []);
 
   useEffect(() => {
-    // Founding-status is public — fetch on mount regardless of auth so
+    // Founding-status is public. fetch on mount regardless of auth so
     // unauthenticated visitors see the counter on the signup form too.
     fetch(`${API_BASE}/api/merchant/founding-status`)
       .then((r) => (r.ok ? r.json() : null))
@@ -161,7 +161,7 @@ export default function MerchantPage() {
   }
 
   async function loadFirstProject() {
-    // No auth header needed — /api/projects/ accepts owner_id as a
+    // No auth header needed. /api/projects/ accepts owner_id as a
     // public filter. We only care about (id, slug) so a thrown
     // request or a missing field is non-fatal: firstProject stays
     // null and the checklist falls back to a "create your storefront
@@ -182,7 +182,7 @@ export default function MerchantPage() {
         setFirstProject({ id: first.id, slug: first.slug ?? null });
       }
     } catch {
-      // non-fatal — checklist still renders, just lands on /dashboard
+      // non-fatal. checklist still renders, just lands on /dashboard
     }
   }
 
@@ -339,7 +339,7 @@ export default function MerchantPage() {
           {/* ── HERO ──
                Continues the homepage pitch instead of dropping a form
                in a void. Scarcity pill matches homepage framing
-               ("claimed" not "remaining" — progress/social-proof). */}
+               ("claimed" not "remaining". progress/social-proof). */}
           {programOpen && claimed !== null && (
             <div className="mb-6 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
@@ -369,13 +369,13 @@ export default function MerchantPage() {
             </p>
           </div>
 
-          {/* ── The form — one field only ──
+          {/* ── The form. one field only ──
                Dropped from 4 fields to 1. Rule of thumb: each extra
                field on a cold signup CTA costs ~10% completion. Biz
                type + city + state move to progressive profile after
                signup. Phase 4 of the merchant audit moved the form
                above the 5-expense-line comparison, the 3-point sell,
-               and the founder testimonial — on a 393px-wide phone
+               and the founder testimonial. on a 393px-wide phone
                the input was previously ~2.5 screens of scroll below
                the H1, costing visible mobile abandonment. The proof
                / sell content sits below the form for hesitant
@@ -411,7 +411,7 @@ export default function MerchantPage() {
                 {saving
                   ? "Claiming your spot..."
                   : programOpen
-                  ? "Claim My Founding Spot — $0 Today →"
+                  ? "Claim My Founding Spot. $0 Today →"
                   : "Create Merchant Account →"}
               </button>
               <p className="text-center text-[11px] text-secondary">
@@ -425,7 +425,7 @@ export default function MerchantPage() {
                Whatnot-only contrast box with the same 5-expense-line
                framing used on the homepage. A barber, restaurant
                owner, mechanic, gym, contractor, or local shop has
-               typically NEVER used Whatnot — leading the signup
+               typically NEVER used Whatnot. leading the signup
                with "you'd save vs Whatnot" alienates the very
                audience this page is meant to convert. The five
                expense lines below are the bills a normal local
@@ -441,10 +441,10 @@ export default function MerchantPage() {
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               {[
-                { name: "Delivery apps", fees: "15–30%", detail: "of every order" },
+                { name: "Delivery apps", fees: "15 to 30%", detail: "of every order" },
                 { name: "Live selling", fees: "8% + fees", detail: "per sale" },
-                { name: "Loyalty software", fees: "$50–$300", detail: "per month" },
-                { name: "SMS retention", fees: "$20–$200", detail: "per month" },
+                { name: "Loyalty software", fees: "$50 to $300", detail: "per month" },
+                { name: "SMS retention", fees: "$20 to $200", detail: "per month" },
               ].map((p) => (
                 <div
                   key={p.name}
@@ -464,7 +464,7 @@ export default function MerchantPage() {
                   DUM Club
                 </div>
                 <div className="mt-1 font-mono text-base font-extrabold text-brand-teal">
-                  $29–$99
+                  $29 to $99
                 </div>
                 <div className="text-[10px] text-brand-teal">
                   flat / month · 0% commission
@@ -480,8 +480,8 @@ export default function MerchantPage() {
           <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <ul className="space-y-3">
               {[
-                "Keep 100% of every sale — 0% commission, always",
-                "Customers earn DUM Points on every purchase — loyalty rewards they redeem at any DUM Club business, so they come back without you paying for ads",
+                "Keep 100% of every sale. 0% commission, always",
+                "Customers earn DUM Points on every purchase. They can redeem these loyalty rewards at any DUM Club business, so customers come back without you paying for ads",
                 "Founding merchants pay $0 today and receive preferred founding pricing after launch",
               ].map((line) => (
                 <li
@@ -497,17 +497,17 @@ export default function MerchantPage() {
             </ul>
           </div>
 
-          {/* ── Founder testimonial — social proof, real face ── */}
+          {/* ── Founder testimonial. social proof, real face ── */}
           <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <div className="flex items-start gap-4">
               <img
                 src="/Julian.jpeg"
-                alt="Julian Mero — founder, Topgun Maintenance LLC"
+                alt="Julian Mero. founder, Topgun Maintenance LLC"
                 className="h-12 w-12 shrink-0 rounded-full border border-default object-cover"
               />
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-relaxed text-primary">
-                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission — it just works.&rdquo;
+                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission. it just works.&rdquo;
                 </p>
                 <div className="mt-3 text-[11px] text-secondary">
                   <span className="font-bold text-primary">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
@@ -539,7 +539,7 @@ export default function MerchantPage() {
   // their first sale. Surface those as a checklist at the very top of
   // the dashboard so "what's my next step?" is never ambiguous.
   //
-  // stepStripe is true the moment OAuth completes — i.e. as soon as a
+  // stepStripe is true the moment OAuth completes. i.e. as soon as a
   // stripe_connect_id is on the row. The cached stripe_connect_status
   // string drifts through "connected" → "pending_verification" →
   // "verified" as Stripe's verification progresses, but the checklist
@@ -548,7 +548,7 @@ export default function MerchantPage() {
   // Verification card below.
   const stepAccount = true;
   const stepStripe = !!merchant.stripe_connect_id;
-  // Step 3 — "Add DUM Live to your website" — has no direct
+  // Step 3. "Add DUM Live to your website". has no direct
   // signal we can read (we don't have a server-side "embed
   // installed" flag, and even if we did, "merchant pasted the
   // snippet on a page we never see" can't be verified
@@ -577,7 +577,7 @@ export default function MerchantPage() {
       case "missing_code":
         return "Stripe didn't return an authorization code. Please try connecting again.";
       case "missing_state":
-        return "The secure connection token was lost between Stripe and this page. Try connecting again — don't use a back-button or stale link.";
+        return "The secure connection token was lost between Stripe and this page. Try connecting again, and don't use a back-button or stale link.";
       case "stripe_denied":
         return detail
           ? `Stripe declined the connection (${detail}). Try again or contact support.`
@@ -738,7 +738,7 @@ export default function MerchantPage() {
                   </div>
                   <div className="text-xs text-secondary">
                     {stepStripe
-                      ? "You'll get paid directly on every sale — 0% commission."
+                      ? "You'll get paid directly on every sale. 0% commission."
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
@@ -784,7 +784,7 @@ export default function MerchantPage() {
                     {stepInstall
                       ? "Your storefront is live and selling."
                       : firstProject
-                        ? "Paste one script tag on your site — turns any page into a live storefront."
+                        ? "Paste one small code snippet on your site. It turns any page into a live storefront."
                         : "Set up your storefront first, then paste one script tag on your site."}
                   </div>
                   {!stepInstall && stepStripe && (
@@ -831,7 +831,7 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Connections — once onboarding is done this is the durable
+        {/* Connections. once onboarding is done this is the durable
             surface for managing the Stripe connection. While onboarding
             is in progress the checklist above is the primary CTA, so we
             only render this card when Stripe is already connected (to
@@ -865,7 +865,7 @@ export default function MerchantPage() {
             Re-skinned in Phase 2 of the merchant audit. The previous
             version always rendered with three "No"s right after
             Stripe connect, which read as "I'm broken" to a non-
-            technical merchant — even though that's the normal
+            technical merchant. even though that's the normal
             "Stripe is reviewing your account" state.
             Render rules now (Q12):
               - status = verified    → not rendered (the checklist
@@ -891,7 +891,7 @@ export default function MerchantPage() {
             !isVerified &&
             !hasOpenRequirements;
 
-          // Skip rendering entirely when fully verified — the
+          // Skip rendering entirely when fully verified. the
           // checklist already conveys the success state and a
           // "Verified" pill on its own is noise.
           if (isVerified && !hasRetrieveError) return null;
@@ -923,7 +923,7 @@ export default function MerchantPage() {
                 // Soft amber, not red. The "Payment Connections" panel
                 // above already shows Stripe as CONNECTED from the cached
                 // merchant row, so a retrieve failure here is a transient
-                // network blip — not a "your account is broken" event.
+                // network blip. not a "your account is broken" event.
                 // The amber colour reflects "we'll re-check"; the inline
                 // Retry button gives the merchant agency without forcing
                 // a full page refresh.
@@ -955,7 +955,7 @@ export default function MerchantPage() {
                 <div className="text-[11px] text-secondary">Loading…</div>
               ) : isPendingClean ? (
                 /* Q8: calm reassurance for the common post-connect
-                   case — Stripe is reviewing, nothing for the
+                   case. Stripe is reviewing, nothing for the
                    merchant to do, no scary "all No" grid. */
                 <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
                   <div className="text-sm font-bold text-amber-400">
@@ -963,7 +963,7 @@ export default function MerchantPage() {
                   </div>
                   <div className="mt-1 text-[12px] leading-relaxed text-primary">
                     This usually takes a few minutes. We&apos;ll show
-                    &ldquo;Verified&rdquo; here as soon as Stripe finishes — you don&apos;t need to do anything else right now.
+                    &ldquo;Verified&rdquo; here as soon as Stripe finishes. you don&apos;t need to do anything else right now.
                   </div>
                   {/* Raw booleans behind a disclosure for the
                       curious / for support sessions. Default-collapsed
@@ -999,7 +999,7 @@ export default function MerchantPage() {
                         Stripe has paused this account. Open the Stripe dashboard to see what&apos;s needed and resolve it.
                       </div>
                       {/* Raw Stripe disabled_reason hidden behind
-                          disclosure — it's typically a code string
+                          disclosure. it's typically a code string
                           like "rejected.platform_fraud" that
                           confuses merchants. */}
                       <details className="mt-2">
@@ -1019,7 +1019,7 @@ export default function MerchantPage() {
                         Stripe needs a bit more info ({stripeStatus.requirements_currently_due.length} item{stripeStatus.requirements_currently_due.length === 1 ? "" : "s"})
                       </div>
                       <div className="mt-1 text-[11px] text-secondary">
-                        Open the Stripe dashboard to finish — you&apos;ll come right back here when it&apos;s done.
+                        Open the Stripe dashboard to finish. you&apos;ll come right back here when it&apos;s done.
                       </div>
                       {/* Raw requirement codes behind a disclosure.
                           They look like "external_account",
@@ -1047,7 +1047,7 @@ export default function MerchantPage() {
                   )}
 
                   {/* Eventually-due requirements stay behind a
-                      disclosure — same as before; not surfaced to
+                      disclosure. same as before; not surfaced to
                       casual readers. */}
                   {stripeStatus.requirements_eventually_due.length > 0 && (
                     <details className="rounded-xl border border-default bg-surface-card p-3">
@@ -1055,7 +1055,7 @@ export default function MerchantPage() {
                         Coming up later ({stripeStatus.requirements_eventually_due.length})
                       </summary>
                       <div className="mt-1.5 text-[11px] text-secondary">
-                        Stripe will ask for these eventually — no rush.
+                        Stripe will ask for these eventually. No rush.
                       </div>
                       <ul className="mt-1.5 space-y-0.5 text-[11px] text-secondary">
                         {stripeStatus.requirements_eventually_due.map((r) => (
@@ -1066,7 +1066,7 @@ export default function MerchantPage() {
                   )}
 
                   {/* Raw boolean grid hidden behind a "What does this
-                      mean?" disclosure — Phase 2 surfaces only
+                      mean?" disclosure. Phase 2 surfaces only
                       merchant-language labels by default. */}
                   <details className="rounded-xl border border-default bg-surface-card p-3">
                     <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-secondary hover:text-primary">
@@ -1131,7 +1131,7 @@ export default function MerchantPage() {
             </div>
             <p className="mx-auto mt-2 max-w-sm text-sm text-secondary">
               Once your first sale lands, this panel lights up with live stats.
-              No data yet — let's get you your first sale.
+              No data yet. let's get you your first sale.
             </p>
             <Link
               href="/dashboard"
@@ -1147,7 +1147,7 @@ export default function MerchantPage() {
           <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Your QR Code</h3>
           <div className="flex items-center gap-4">
             <div className="flex h-32 w-32 items-center justify-center rounded-xl border border-default bg-white p-2">
-              {/* QR code generator — Google's chart.googleapis.com endpoint
+              {/* QR code generator. Google's chart.googleapis.com endpoint
                   was retired in 2024 and now 404s, which is why this image
                   was rendering as a broken placeholder. Switched to the
                   free api.qrserver.com generator (same query shape, returns
@@ -1172,7 +1172,7 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        {/* Quick links — the two next-actions a converted merchant
+        {/* Quick links. the two next-actions a converted merchant
             actually needs. The previous bottom-row had "Manage My
             Business" + "Browse Marketplace"; the second one routed
             converted merchants to the buyer-side /discover page,

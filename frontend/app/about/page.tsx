@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About DUM Club — Built by a Local Business, for Local Businesses",
+  title: "About DUM Club. Built by a Local Business, for Local Businesses",
   description:
-    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business — flat monthly fee, 0% commission, always.",
+    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business. Flat monthly fee, 0% commission, always.",
   openGraph: {
-    title: "About DUM Club — Built by a Local Business, for Local Businesses",
+    title: "About DUM Club. Built by a Local Business, for Local Businesses",
     description:
       "Built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. Flat monthly fee, 0% commission, always.",
     siteName: "DUM Club",
@@ -29,9 +29,9 @@ export default function AboutPage() {
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
           DUM Club is the loyalty network for local commerce. Live selling,
-          DUM Points loyalty, AI retention, and flash sales — every tool
-          a local business needs to keep its own customers, on its own
-          website, for one flat monthly fee. No commissions, ever.
+          DUM Points loyalty, tools that help bring customers back, and flash
+          sales. Every tool a local business needs to keep its own customers,
+          on its own website, for one flat monthly fee. No commissions, ever.
         </p>
 
         {/* Founder Note */}
@@ -62,8 +62,8 @@ export default function AboutPage() {
                 across NY, NJ, PA, CT, and DE since long before any of
                 this. I was tired of platforms taking a cut every time
                 a business made a sale, and tired of paying for five
-                separate tools — delivery apps, live selling, loyalty,
-                SMS retention, and an agency — when none of them talked
+                separate tools (delivery apps, live selling, loyalty,
+                SMS retention, and an agency) when none of them talked
                 to each other.
               </p>
               <p className="mt-4 text-[15px] leading-relaxed text-primary sm:text-base">
@@ -92,11 +92,11 @@ export default function AboutPage() {
           </h2>
           <p className="mt-4 text-base leading-relaxed text-secondary">
             Local businesses already pay for the tools they need to compete
-            online. The math doesn&apos;t add up: 15–30% to delivery apps,
-            8% + 2.9% to live-selling platforms, $50–$300/month to loyalty
-            software, $20–$200/month to SMS retention, $500+/month to an
+            online. The math doesn&apos;t add up: 15 to 30% to delivery apps,
+            8% + 2.9% to live-selling platforms, $50 to $300 a month to loyalty
+            software, $20 to $200 a month to SMS retention, $500+ a month to an
             agency for social posts. DUM Club replaces that entire stack
-            with one flat bill — $29 to $99/month, depending on tier — so
+            with one flat bill, from $29 to $99 a month depending on tier, so
             the owner keeps the customer, the data, and 100% of every
             sale.
           </p>
@@ -118,8 +118,8 @@ export default function AboutPage() {
                 body: "Customers earn points at every DUM Club merchant and redeem at any other. Built-in switching cost for your customers.",
               },
               {
-                label: "AI retention agent (Growth+)",
-                body: "Automated point-expiry reminders and cross-merchant discovery. Replaces $500–$1,000/month direct-mail spend.",
+                label: "Tools that help bring customers back (Growth+)",
+                body: "Automated point-expiry reminders, plus customers can find nearby deals across the network. Replaces $500 to $1,000 a month in direct-mail spend.",
               },
               {
                 label: "Local flash sales",
@@ -147,7 +147,7 @@ export default function AboutPage() {
             Pricing
           </div>
           <p className="mt-3 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-            Flat $29–$99/month. 0% commission. Always.
+            Flat $29 to $99 a month. 0% commission. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
             Founding merchants pay $0 today and receive preferred founding
@@ -181,7 +181,7 @@ export default function AboutPage() {
             Talk to Julian directly
           </h2>
           <p className="mt-3 text-base leading-relaxed text-secondary">
-            Investor, merchant, partner, or just curious — the easiest way
+            Investor, merchant, partner, or just curious. The easiest way
             to reach the founder is email. No gatekeepers.
           </p>
           <div className="mt-5 space-y-1 text-sm">

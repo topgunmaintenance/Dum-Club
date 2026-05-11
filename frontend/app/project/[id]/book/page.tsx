@@ -229,7 +229,7 @@ export default function BookPage() {
           <div className="space-y-6">
             <div className="rounded-2xl border border-default bg-surface-card p-6">
               <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
-                Step 1 — Select date
+                Step 1. Select date
               </div>
               <div className="flex flex-wrap gap-2">
                 {uniqueDates.map((d) => (
@@ -259,7 +259,7 @@ export default function BookPage() {
             {selectedDate && (
               <div className="rounded-2xl border border-default bg-surface-card p-6">
                 <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
-                  Step 2 — Select time
+                  Step 2. Select time
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {slotsForDate.map((slot) => (
@@ -283,7 +283,7 @@ export default function BookPage() {
             {selectedSlot && (
               <div className="rounded-2xl border border-default bg-surface-card p-6">
                 <div className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted">
-                  Step 3 — Your details
+                  Step 3. Your details
                 </div>
                 <div className="space-y-3">
                   <input
@@ -295,7 +295,7 @@ export default function BookPage() {
                   <input
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="Email (optional — for confirmation)"
+                    placeholder="Email (optional. for confirmation)"
                     type="email"
                     className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-white outline-none focus:border-brand-teal"
                   />
@@ -335,7 +335,7 @@ export default function BookPage() {
                 >
                   {loading
                     ? "Confirming..."
-                    : `Confirm booking — 1 $${tokenSymbol}`}
+                    : `Confirm booking. 1 $${tokenSymbol}`}
                 </button>
               </div>
             )}

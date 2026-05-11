@@ -264,7 +264,7 @@ function shortMint(value?: string | null) {
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
 }
 
-/* ── Scroll helper — accounts for sticky navbar offset ── */
+/* ── Scroll helper. accounts for sticky navbar offset ── */
 const NAV_OFFSET = 110; // navbar ~92px + 18px breathing room
 function scrollToSection(id: string) {
   const el = document.getElementById(id);
@@ -353,7 +353,7 @@ function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: str
   );
 }
 
-/** Legacy DB values not in TOKEN_LIFECYCLE — treat as draft for UI/pipeline. */
+/** Legacy DB values not in TOKEN_LIFECYCLE. treat as draft for UI/pipeline. */
 function normalizeTokenLifecycleStatus(status?: string | null) {
   const s = (status || "").trim();
   if (s === "active" || s === "pending") return "draft";
@@ -501,7 +501,7 @@ export default function ProjectPage() {
   // External Solana wallet adapter (Phantom / Solflare). Used as a
   // fallback for the "Pay with SOL" CTA when the user prefers an
   // external wallet over the Privy embedded wallet. Always called
-  // — rules of hooks — and consumed only when SOL checkout fires.
+  //. rules of hooks. and consumed only when SOL checkout fires.
   const adapterWallet = useWallet();
 
   // Diagnostic: log effective API base on mount
@@ -517,11 +517,11 @@ export default function ProjectPage() {
   const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
   // Embed installer / activation state (owner-only).
-  //   copiedSnippet  — flashes "Copied ✓" on whichever copy button
+  //   copiedSnippet . flashes "Copied ✓" on whichever copy button
   //                    was just clicked. Shared across all tabs.
-  //   embedModalOpen — controls the Activate-DUM-Live wizard modal.
-  //   embedActivePath — which tab is currently selected.
-  //   embedPlatform   — selected platform inside the Guided tab.
+  //   embedModalOpen. controls the Activate-DUM-Live wizard modal.
+  //   embedActivePath. which tab is currently selected.
+  //   embedPlatform  . selected platform inside the Guided tab.
   const [copiedSnippet, setCopiedSnippet] = useState<
     "script" | "iframe" | "instructions" | "developer-msg" | null
   >(null);
@@ -531,12 +531,12 @@ export default function ProjectPage() {
   >("guided");
   const [embedPlatform, setEmbedPlatform] = useState<string | null>(null);
 
-  // Phase 4 of the embed installer audit — manual "I pasted it"
+  // Phase 4 of the embed installer audit. manual "I pasted it"
   // confirmation toggle. localStorage-backed per slug so the
   // merchant doesn't lose the success state on reload. We
   // explicitly do NOT verify the install (no real embed
   // detection, no merchant-URL ping) per the merchant audit's
-  // MVP scope — this is a trust-based toggle that flips the
+  // MVP scope. this is a trust-based toggle that flips the
   // modal to a celebration view and queues the next action.
   const [installConfirmed, setInstallConfirmed] = useState<boolean>(false);
 
@@ -556,7 +556,7 @@ export default function ProjectPage() {
       );
     } catch {
       // localStorage can throw in private browsing on some
-      // browsers — non-fatal, the merchant can re-confirm.
+      // browsers. non-fatal, the merchant can re-confirm.
     }
   }, [project?.slug]);
 
@@ -565,7 +565,7 @@ export default function ProjectPage() {
     try {
       window.localStorage.setItem(`dum-live-installed-${project.slug}`, "true");
     } catch {
-      // ignore — see useEffect above
+      // ignore. see useEffect above
     }
     setInstallConfirmed(true);
   }
@@ -575,7 +575,7 @@ export default function ProjectPage() {
     try {
       window.localStorage.removeItem(`dum-live-installed-${project.slug}`);
     } catch {
-      // ignore — see useEffect above
+      // ignore. see useEffect above
     }
     setInstallConfirmed(false);
   }
@@ -809,7 +809,7 @@ export default function ProjectPage() {
   const [projectScore, setProjectScore] = useState<ProjectScore | null>(null);
   const [scoreLoading, setScoreLoading] = useState(false);
 
-  // Live banner — shown only on launch arrivals via ?launched=1 from /build
+  // Live banner. shown only on launch arrivals via ?launched=1 from /build
   const [showLiveBanner, setShowLiveBanner] = useState(false);
 
   // Live Commerce state
@@ -818,12 +818,12 @@ export default function ProjectPage() {
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
-  // Audit #4 Phase 1 (Q2) — viewer count lifted from LiveChatIVS so
+  // Audit #4 Phase 1 (Q2). viewer count lifted from LiveChatIVS so
   // the public live banner can show "X watching" without opening a
   // second WebSocket connection. Stays 0 until the first
   // `viewer_count` event arrives over the existing chat socket.
   const [liveViewerCount, setLiveViewerCount] = useState(0);
-  // Audit #4 Phase 1 (Q11) — when the host ends a stream during
+  // Audit #4 Phase 1 (Q11). when the host ends a stream during
   // the same page session, hold a "Show ended" banner for ~30s so
   // the buyer who was watching gets acknowledgement instead of a
   // silent revert to storefront mode. We only flip this on a real
@@ -1001,13 +1001,13 @@ export default function ProjectPage() {
   }
 
   async function loadMemories() {
-    // Use the resolved project UUID, not the URL param — the URL param
+    // Use the resolved project UUID, not the URL param. the URL param
     // may be a slug (e.g. "topgun-maintenance") which the memories
     // endpoint does not support.
     if (!project?.id) return;
 
     // Best-effort: memories are a non-critical AI-context enrichment.
-    // Non-2xx means "no memories indexed yet" — not an error.
+    // Non-2xx means "no memories indexed yet". not an error.
     try {
       const res = await fetch(`${API_BASE}/api/memories/?project_id=${project.id}`);
       if (!res.ok) {
@@ -1023,7 +1023,7 @@ export default function ProjectPage() {
   }
 
   async function loadOffers() {
-    // Use the resolved project UUID, not the URL param — the URL param
+    // Use the resolved project UUID, not the URL param. the URL param
     // may be a slug (e.g. "topgun-maintenance") which the offers
     // endpoint does not support.
     if (!project?.id) return;
@@ -1064,7 +1064,7 @@ export default function ProjectPage() {
         status: fresh.status ?? prev.status,
       } : fresh);
     } catch {
-      // Silent — the next poll tick will retry.
+      // Silent. the next poll tick will retry.
     }
   }
 
@@ -1156,7 +1156,7 @@ export default function ProjectPage() {
         if (!isNaN(num)) setOfferEditing({ ...offerEditing, price_usd: num });
       }
     } catch {
-      // silently fail — user can type manually
+      // silently fail. user can type manually
     } finally {
       setOfferAiField(null);
     }
@@ -1169,7 +1169,7 @@ export default function ProjectPage() {
       return;
     }
     if (!id) {
-      setOfferSaveError("Project ID missing — try refreshing the page");
+      setOfferSaveError("Project ID missing. Try refreshing the page.");
       return;
     }
     const priceNum = Number(offerEditing.price_usd);
@@ -1182,7 +1182,7 @@ export default function ProjectPage() {
     setOfferSaveSuccess(false);
     try {
       const token = await getToken();
-      if (!token) throw new Error("Not authenticated — please sign in again");
+      if (!token) throw new Error("Not authenticated. Please sign in again.");
 
       // Upload image if file selected
       let imageUrl = offerEditing.primary_image_url?.trim() || null;
@@ -1191,7 +1191,7 @@ export default function ProjectPage() {
         if (uploaded) {
           imageUrl = uploaded;
         } else {
-          setOfferSaveError("Image upload failed — offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
+          setOfferSaveError("Image upload failed. Offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
         }
       }
 
@@ -1298,7 +1298,7 @@ export default function ProjectPage() {
 
     if (!authUser) {
       setBuyStep((p) => ({ ...p, [oid]: "blocked_no_auth" }));
-      // Buyer hit Buy Now while signed out — kick the Privy login
+      // Buyer hit Buy Now while signed out. kick the Privy login
       // modal instead of silently no-op'ing. The pinned-offer card
       // and mobile sticky bar both call buyOffer() unconditionally
       // (they don't gate on auth like the per-offer grid does), so
@@ -1339,7 +1339,7 @@ export default function ProjectPage() {
         setLiveSalesCount((c) => c + 1);
         broadcastLiveEvent(id, {
           user: authUser?.email || "Viewer",
-          text: `purchased ${offer.title} — +10 DUM`,
+          text: `purchased ${offer.title}. +10 DUM`,
           type: "purchase",
         });
         broadcastLiveEvent(id, {
@@ -1359,14 +1359,14 @@ export default function ProjectPage() {
       const token = await getToken();
       if (!token) {
         setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
-        setBuyError((p) => ({ ...p, [oid]: "Authentication failed — please sign in again" }));
+        setBuyError((p) => ({ ...p, [oid]: "Authentication failed. Please sign in again." }));
         setBuyingOfferId(null);
         return;
       }
 
       setBuyStep((p) => ({ ...p, [oid]: "calling_checkout" }));
 
-      // Drive Your Market Analytics — checkout intent. Fires before
+      // Drive Your Market Analytics. checkout intent. Fires before
       // the Stripe call so funnel drop-off includes Stripe failures
       // / cancels.
       trackEvent("checkout_start", {
@@ -1428,7 +1428,7 @@ export default function ProjectPage() {
     }
   }
 
-  // Solana wallet checkout — secondary CTA, additive to Stripe.
+  // Solana wallet checkout. secondary CTA, additive to Stripe.
   // Same per-offer state (buyingOfferId, buyStep, buyError) so the
   // Stripe button is disabled while a SOL payment is in flight.
   async function payOfferWithSolHandler(
@@ -1467,7 +1467,7 @@ export default function ProjectPage() {
         setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
         setBuyError((p) => ({
           ...p,
-          [oid]: "Authentication failed — please sign in again",
+          [oid]: "Authentication failed. Please sign in again.",
         }));
         setBuyingOfferId(null);
         return;
@@ -2048,7 +2048,7 @@ export default function ProjectPage() {
       field: null,
       group: "project",
       prompt: (p) =>
-        `You are a brutally honest business critic known for sharp, useful feedback. Review this business — be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be helpful but direct.\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
+        `You are a brutally honest business critic known for sharp, useful feedback. Review this business. be honest, pointed, and constructive. Highlight weak spots, vague claims, or missed opportunities. Be helpful but direct.\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"\nCategory: ${p.template_type || "General"}\n\nKeep it to 3-5 sentences.`,
     },
     // ── Store Intelligence ──
     {
@@ -2150,7 +2150,7 @@ export default function ProjectPage() {
   async function applyBuilderResult() {
     if (!builderResult || !project) return;
 
-    // Promo copy — persist via PATCH
+    // Promo copy. persist via PATCH
     if (builderAction === "promo") {
       setPromoCopy(builderResult.suggested);
       try {
@@ -2162,7 +2162,7 @@ export default function ProjectPage() {
       } catch (err) {
         console.error("Failed to persist promo copy:", err);
       }
-      showBuilderToast("Promo copy saved — ready to share");
+      showBuilderToast("Promo copy saved. Ready to share.");
       dismissBuilder();
       return;
     }
@@ -2185,7 +2185,7 @@ export default function ProjectPage() {
         persistStoreItems(nextItems);
         showBuilderToast(`${newItems.length} offer${newItems.length > 1 ? "s" : ""} added to your store`);
       } catch {
-        showBuilderToast("Could not parse product ideas — try regenerating");
+        showBuilderToast("Could not parse product ideas. Try regenerating.");
         return;
       }
       dismissBuilder();
@@ -2210,7 +2210,7 @@ export default function ProjectPage() {
         persistStoreItems(nextItems);
         showBuilderToast("Subscription offer added");
       } catch {
-        showBuilderToast("Could not parse subscription — try regenerating");
+        showBuilderToast("Could not parse subscription. Try regenerating.");
         return;
       }
       dismissBuilder();
@@ -2253,7 +2253,7 @@ export default function ProjectPage() {
         const updated = await res.json();
         setProject(updated);
         setProjectName(updated.name || updated.title || "DUM Club Business");
-        showBuilderToast("Updated — your project just got stronger");
+        showBuilderToast("Updated. Your project just got stronger.");
       }
     } catch (err) {
       console.error("Failed to apply:", err);
@@ -2314,7 +2314,7 @@ export default function ProjectPage() {
       setCameraStream(stream);
       setCameraPreview(true);
 
-      // Attach to video element after render — retry a few times for mobile
+      // Attach to video element after render. retry a few times for mobile
       const attachToVideo = (attempt = 0) => {
         if (previewVideoRef.current) {
           previewVideoRef.current.srcObject = stream;
@@ -2352,10 +2352,10 @@ export default function ProjectPage() {
     setGoingLive(true);
     setGoLiveError(null);
 
-    // Keep the camera stream alive — we need it for MediaRecorder
+    // Keep the camera stream alive. we need it for MediaRecorder
     const stream = cameraStream;
     if (!stream) {
-      setGoLiveError("Camera stream lost — please try again");
+      setGoLiveError("Camera stream lost. Please try again.");
       setGoingLive(false);
       return;
     }
@@ -2373,7 +2373,7 @@ export default function ProjectPage() {
         const detail = typeof errData.detail === "string" ? errData.detail : "Failed to create stream";
         // Fallback: if Mux isn't configured, go live without video
         if (res.status === 503 || res.status === 502) {
-          // Mux not available — fall back to live-without-video mode
+          // Mux not available. fall back to live-without-video mode
           const fallbackRes = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
             method: "POST",
             headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
@@ -2461,13 +2461,13 @@ export default function ProjectPage() {
 
         recorder.onerror = (e) => {
           console.error("[go-live] MediaRecorder error:", e);
-          setGoLiveError("Recording error — please try again");
+          setGoLiveError("Recording error. Please try again.");
         };
 
         recorder.onstop = () => {
         };
 
-        // Send chunks every 1000ms — gives ffmpeg substantial data per chunk
+        // Send chunks every 1000ms. gives ffmpeg substantial data per chunk
         recorder.start(1000);
       };
 
@@ -2608,11 +2608,11 @@ export default function ProjectPage() {
   async function handlePinOffer(offerId: string | null) {
     // Backend matches projects by UUID, not slug. The URL param `id`
     // can be either (e.g. /project/topgun-maintenance is a slug),
-    // so we must call with project.id — same canonical-UUID
+    // so we must call with project.id. same canonical-UUID
     // convention /api/offers/${project.id} uses (line ~944).
     const projectUuid = project?.id;
     if (!projectUuid) {
-      setPinError("Project not loaded yet — try again in a moment.");
+      setPinError("Project not loaded yet. Try again in a moment.");
       return;
     }
     setPinError(null);
@@ -2721,7 +2721,7 @@ export default function ProjectPage() {
         if (id) {
           broadcastLiveEvent(id, {
             user: "System",
-            text: `Auction started: ${data.offer_title} — starting at $${Number(auctionStartPrice).toFixed(0)} (${Math.floor(auctionDuration / 60)}:${(auctionDuration % 60).toString().padStart(2, "0")})`,
+            text: `Auction started: ${data.offer_title}. starting at $${Number(auctionStartPrice).toFixed(0)} (${Math.floor(auctionDuration / 60)}:${(auctionDuration % 60).toString().padStart(2, "0")})`,
             type: "system",
           });
         }
@@ -2774,8 +2774,8 @@ export default function ProjectPage() {
         setProject((prev) => prev ? { ...prev, active_auction_id: null } : prev);
         if (id) {
           const msg = data.winner_display
-            ? `Auction ended! ${data.winner_display} wins — $${Number(data.winning_bid).toFixed(0)}`
-            : "Auction ended — no bids";
+            ? `Auction ended! ${data.winner_display} wins. $${Number(data.winning_bid).toFixed(0)}`
+            : "Auction ended. No bids.";
           broadcastLiveEvent(id, { user: "System", text: msg, type: "system" });
         }
       }
@@ -2800,7 +2800,7 @@ export default function ProjectPage() {
       if (id) {
         broadcastLiveEvent(id, {
           user: auction.current_bidder_display || "Winner",
-          text: `purchased ${auctionOffer.title} for $${price.toFixed(0)} — +10 DUM`,
+          text: `purchased ${auctionOffer.title} for $${price.toFixed(0)}. +10 DUM`,
           type: "purchase",
         });
         broadcastLiveEvent(id, {
@@ -2812,7 +2812,7 @@ export default function ProjectPage() {
       setTimeout(() => setSimulatedPurchase(null), 6000);
       return;
     }
-    // Real Stripe path — pass auction_id and override_price
+    // Real Stripe path. pass auction_id and override_price
     buyOffer(auctionOffer, auction.id, Number(auction.current_bid));
   }
 
@@ -2824,7 +2824,7 @@ export default function ProjectPage() {
     const storeSummary = storeItems.length
       ? storeItems.map((i) => `${i.name} (${i.type}, ${i.price})`).join(", ")
       : "none";
-    const prompt = `You are a startup scoring engine. Evaluate this project on 3 dimensions and return ONLY a valid JSON object.\n\nProject: "${project.title || project.name || "Untitled"}"\nDescription: "${project.description || "N/A"}"\nToken: ${project.token_symbol || "N/A"}\nToken utility: "${project.token_utility || "N/A"}"\nPromo copy: "${promoCopy || "N/A"}"\nStore items: ${storeSummary}\nCategory: ${project.template_type || "General"}\n\nScore each dimension 0-100:\n1. Virality — how shareable and attention-grabbing is this project?\n2. Trust — how credible and professional does it appear?\n3. Utility — how useful and valuable is the token/product offering?\n\nReturn ONLY this JSON:\n{"virality":{"score":N,"reason":"..."},"trust":{"score":N,"reason":"..."},"utility":{"score":N,"reason":"..."}}\n\nKeep each reason under 80 characters. Be honest and specific. No markdown.`;
+    const prompt = `You are a startup scoring engine. Evaluate this project on 3 dimensions and return ONLY a valid JSON object.\n\nProject: "${project.title || project.name || "Untitled"}"\nDescription: "${project.description || "N/A"}"\nToken: ${project.token_symbol || "N/A"}\nToken utility: "${project.token_utility || "N/A"}"\nPromo copy: "${promoCopy || "N/A"}"\nStore items: ${storeSummary}\nCategory: ${project.template_type || "General"}\n\nScore each dimension 0-100:\n1. Virality. how shareable and attention-grabbing is this project?\n2. Trust. how credible and professional does it appear?\n3. Utility. how useful and valuable is the token/product offering?\n\nReturn ONLY this JSON:\n{"virality":{"score":N,"reason":"..."},"trust":{"score":N,"reason":"..."},"utility":{"score":N,"reason":"..."}}\n\nKeep each reason under 80 characters. Be honest and specific. No markdown.`;
     try {
       const res = await fetch(`${API_BASE}/api/chat/`, {
         method: "POST",
@@ -2842,7 +2842,7 @@ export default function ProjectPage() {
       });
     } catch (err) {
       console.error("Score evaluation failed:", err);
-      showBuilderToast("Failed to evaluate — try again");
+      showBuilderToast("Failed to evaluate. Try again.");
     } finally {
       setScoreLoading(false);
     }
@@ -3046,7 +3046,7 @@ export default function ProjectPage() {
       await loadProject();
       await loadTokenMetadata();
       setActionIsError(false);
-      setActionMessage(`Token created — mint: ${data.mint}`);
+      setActionMessage(`Token created. mint: ${data.mint}`);
     } catch (err: any) {
       console.error(err);
       setActionIsError(true);
@@ -3098,7 +3098,7 @@ export default function ProjectPage() {
     if (!project?.id) return;
     loadMemories();
     loadOffers();
-    // Drive Your Market Analytics — fires once per project load.
+    // Drive Your Market Analytics. fires once per project load.
     trackEvent("project_view", { project_id: project.id });
   }, [project?.id]);
 
@@ -3138,7 +3138,7 @@ export default function ProjectPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, project?.is_live, isOwner]);
 
-  // Audit #4 Phase 1 (Q11) — detect a true → false transition on
+  // Audit #4 Phase 1 (Q11). detect a true → false transition on
   // is_live during this page session and surface a temporary
   // "Show ended" banner with the live-show recap (sale count
   // captured from liveSalesCount before it resets). Auto-dismisses
@@ -3503,14 +3503,14 @@ const heroUtility =
   const statusBanner = canShowMarketUi
     ? "Approved / Live"
     : isApprovedProject
-    ? "Approved — business is live"
+    ? "Approved. Business is live."
     : isRejected
     ? "Needs changes before resubmission"
     : isSubmitted
     ? "Under review"
     : isPending
-    ? "Created — not yet submitted"
-    : "Draft — continue setting up your business";
+    ? "Created. Not yet submitted."
+    : "Draft. Continue setting up your business.";
   const nextTokenActionLabel =
     tokenStatus === "draft"
       ? "Set Up Business"
@@ -3604,7 +3604,7 @@ return (
       canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
-    {/* Schema.org JSON-LD — invisible to humans, primary signal for
+    {/* Schema.org JSON-LD. invisible to humans, primary signal for
         Google rich results and AI crawlers (Claude, GPT, Perplexity,
         Gemini). Emits LocalBusiness with embedded Offers, plus a
         BroadcastEvent only while is_live=true (eligibility gate for
@@ -3666,7 +3666,7 @@ return (
                 {parsedAiOutput?.description || project?.description || ""}
               </p>
 
-              {/* DUM Points badge — Audit #4 Phase 2 (Q7).
+              {/* DUM Points badge. Audit #4 Phase 2 (Q7).
                   Was "DUM Points accepted" which implied redemption
                   (held until Phase 2 doctrine unlock). Buyers earn
                   points on every purchase; the framing now matches
@@ -3922,7 +3922,7 @@ return (
             <span className="text-brand-teal">✦</span>
             <span className="text-sm font-semibold text-brand-teal">
               <span className="uppercase tracking-[0.15em]">{heroTitle}</span>
-              {" is live — "}
+              {" is live. "}
               <span className="font-normal text-brand-teal">share it with your community</span>
             </span>
           </div>
@@ -4011,12 +4011,12 @@ return (
         )}
       </div>
 
-      {/* Audit #4 Phase 1 (Q11) — temporary "Show ended" banner.
+      {/* Audit #4 Phase 1 (Q11). temporary "Show ended" banner.
            Renders for ~30s after a real is_live true→false
            transition during the same page session. Recap copy
            uses the cumulative sale count captured at end-of-show.
            The banner does not block the storefront-mode UI below
-           it — the page just gets a brief acknowledgement chip
+           it. the page just gets a brief acknowledgement chip
            between live mode and silent revert. */}
       {streamJustEnded && (
         <div className="mb-6 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted px-5 py-3">
@@ -4042,14 +4042,14 @@ return (
         </div>
       )}
 
-      {/* ── IVS Host (must stay mounted across live session — rendered at top) ── */}
+      {/* ── IVS Host (must stay mounted across live session. rendered at top) ── */}
       {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
         <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-default bg-surface-card p-6"}>
           <IVSStageHost
             projectId={id as string}
             userId={authUser?.privyId || ""}
             autoStart={autoGoLive}
-            // Phase 3 (Q6) — pre-stream guard. The component shows a
+            // Phase 3 (Q6). pre-stream guard. The component shows a
             // confirm dialog before requesting camera if no offer is
             // pinned, so the merchant doesn't go live to viewers who
             // can't buy.
@@ -4069,14 +4069,14 @@ return (
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
         <div className="mb-6">
-          {/* ── LIVE banner — always full width above the grid ──
+          {/* ── LIVE banner. always full width above the grid ──
                Audit #4 Phase 1 surfaces three real-data signals that
                were previously hidden: the cumulative sales count
                (Q1, was buried inside the bouncing toast), the viewer
                count (Q2, was scoped to LiveChatIVS), and the rewards
                pill (Q8, was zinc-on-zinc and easy to miss). All real
                data; nothing fabricated. The Q3 "Live for HH:MM"
-               since-timer is intentionally absent — it requires a
+               since-timer is intentionally absent. it requires a
                backend `live_started_at` field; client-side approx.
                would mislead late-joiners. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-[var(--state-live)]/30 bg-state-live/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
@@ -4087,13 +4087,13 @@ return (
               </span>
               <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-state-live">Live</span>
               <span className="text-xs sm:text-sm text-secondary truncate">{projectName}</span>
-              {/* Q2 — viewer count (real, from existing WebSocket) */}
+              {/* Q2. viewer count (real, from existing WebSocket) */}
               {liveViewerCount > 0 && (
                 <span className="rounded-full border border-default bg-surface-card px-2 py-0.5 text-[10px] font-mono text-secondary">
                   {liveViewerCount} watching
                 </span>
               )}
-              {/* Q1 — persistent sold-this-show counter (real,
+              {/* Q1. persistent sold-this-show counter (real,
                   from `liveSalesCount` already incremented on
                   every `item_sold` WebSocket event). Hidden until
                   the first sale to avoid a sad "0 sold" pill. */}
@@ -4103,7 +4103,7 @@ return (
                 </span>
               )}
             </div>
-            {/* Q8 — promote the rewards pill from zinc-on-zinc to
+            {/* Q8. promote the rewards pill from zinc-on-zinc to
                  emerald so the buyer's biggest reward signal isn't
                  whispered. Same visual weight as the founding-100
                  pill on /merchant. */}
@@ -4163,7 +4163,7 @@ return (
                 </div>
                 )}
 
-                {/* ── Sale toast overlay — bottom-left of video ── */}
+                {/* ── Sale toast overlay. bottom-left of video ── */}
                 {saleToasts.length > 0 && (
                   <div
                     aria-live="polite"
@@ -4186,7 +4186,7 @@ return (
                   </div>
                 )}
 
-                {/* ── DUM Points earned toast — top-right of video ── */}
+                {/* ── DUM Points earned toast. top-right of video ── */}
                 {dumPointsEarned !== null && (
                   <div className="pointer-events-none absolute top-3 right-3 z-10">
                     <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-black/80 px-4 py-2.5 shadow-lg shadow-amber-500/10 backdrop-blur-sm animate-bounce" style={{ animationDuration: "0.6s", animationIterationCount: "1" }}>
@@ -4200,13 +4200,13 @@ return (
                 )}
               </div>
 
-              {/* Reward visibility — hidden on mobile, visible on lg: (stays in DOM) */}
+              {/* Reward visibility. hidden on mobile, visible on lg: (stays in DOM) */}
               <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-teal-soft py-2.5">
                 <span className="text-brand-teal text-sm font-semibold">Earn DUM when you buy</span>
                 <span className="text-[11px] text-brand-teal/50">Rewards on every purchase</span>
               </div>
 
-              {/* Pinned product / auction — full card on every viewport.
+              {/* Pinned product / auction. full card on every viewport.
                   On mobile this sits above the chat (the chat is a separate
                   grid item that falls below the left column when collapsed).
                   The fixed sticky buy bar at the bottom of the screen is
@@ -4318,7 +4318,7 @@ return (
                           onClick={handleAuctionPayNow}
                           className="w-full rounded-xl bg-brand-teal py-3 text-sm font-bold text-black transition hover:bg-brand-teal"
                         >
-                          Pay Now — ${Number(auction.current_bid).toFixed(2)}
+                          Pay Now. ${Number(auction.current_bid).toFixed(2)}
                         </button>
                       </div>
                     )}
@@ -4326,7 +4326,7 @@ return (
                     {/* Ended states for non-winners */}
                     {auction.status === "ended" && !isAuctionWinner && auction.current_bidder && (
                       <div className="mt-3 rounded-xl border border-default bg-surface-page px-4 py-2 text-center text-sm text-secondary">
-                        Auction ended — sold for ${Number(auction.current_bid).toFixed(2)}
+                        Auction ended. sold for ${Number(auction.current_bid).toFixed(2)}
                       </div>
                     )}
                     {(auction.status === "awaiting_payment" || auction.status === "paid") && (
@@ -4343,7 +4343,7 @@ return (
                     )}
                   </div>
                 ) : (
-                  /* ── Standard Pinned Offer (Buy Now) — desktop card ── */
+                  /* ── Standard Pinned Offer (Buy Now). desktop card ── */
                   <div className="rounded-2xl border border-default bg-surface-card p-5">
                     <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
                       {pinnedOffer ? "Featured Product" : "No product pinned"}
@@ -4367,7 +4367,7 @@ return (
                               ${Number(pinnedOffer.price_usd).toFixed(2)}
                             </span>
                             {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
-                              // Audit #4 Phase 2 (Q4) — promote inventory
+                              // Audit #4 Phase 2 (Q4). promote inventory
                               // urgency below 5 left. Real data only;
                               // amber/red surfacing only fires when the
                               // numbers actually warrant it.
@@ -4379,7 +4379,7 @@ return (
                               return (
                                 <span className={`ml-2 text-xs font-medium ${lowStock ? "text-amber-400" : "text-secondary"}`}>
                                   {lowStock && <span aria-hidden="true">🔥 </span>}
-                                  {remaining} left{lowStock ? " — almost gone" : ""}
+                                  {remaining} left{lowStock ? ". almost gone" : ""}
                                 </span>
                               );
                             })()}
@@ -4406,7 +4406,7 @@ return (
                             {buyError[pinnedOffer.id]}
                           </div>
                         )}
-                        {/* Audit #4 Phase 2 (Q5) — Stripe trust copy at
+                        {/* Audit #4 Phase 2 (Q5). Stripe trust copy at
                             the buyer's highest-friction moment. Mirrors
                             the merchant onboarding line ("your bank info
                             goes to Stripe, never to DUM Club") so the
@@ -4426,7 +4426,7 @@ return (
                 )}
               </div>
 
-              {/* Host controls — below product on desktop */}
+              {/* Host controls. below product on desktop */}
               {isOwner && isIVSSession(project) && (
                 <div className="space-y-3 rounded-2xl border border-default bg-surface-card p-4">
                   <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
@@ -4487,7 +4487,7 @@ return (
 
           </div>
 
-          {/* ── MOBILE STICKY BUY BAR — pinned product/auction as bottom bar on mobile ── */}
+          {/* ── MOBILE STICKY BUY BAR. pinned product/auction as bottom bar on mobile ── */}
           {!isOwner && (
             <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-default bg-surface-card backdrop-blur-sm lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
               {auction && auctionOffer && isAuctionActive ? (
@@ -4504,7 +4504,7 @@ return (
                         <span className="rounded-lg bg-brand-teal-soft px-3 py-2 text-xs font-bold text-brand-teal">Top Bid</span>
                       ) : (
                         <button
-                          // Q9 — if there's no bid amount entered yet,
+                          // Q9. if there's no bid amount entered yet,
                           // tapping the sticky-bar Bid button on mobile
                           // would submit an empty/NaN amount through
                           // handlePlaceBid. Scroll to the auction card's
@@ -4534,7 +4534,7 @@ return (
                 </div>
               ) : pinnedOffer ? (
                 /* Pinned offer sticky bar
-                   Q5 — Stripe trust caption added below the row so the
+                   Q5. Stripe trust caption added below the row so the
                    highest-conversion-density surface on mobile carries
                    the same payment trust signal as the desktop card. */
                 <div className="px-4 py-3">
@@ -4543,7 +4543,7 @@ return (
                     <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
                     <span className="font-mono text-sm font-bold text-brand-teal">${Number(pinnedOffer.price_usd).toFixed(2)}</span>
                     {!pinnedOffer.unlimited_inventory && pinnedOffer.quantity_available && (() => {
-                      // Q4 — same low-stock urgency in the mobile sticky bar.
+                      // Q4. same low-stock urgency in the mobile sticky bar.
                       const remaining = Math.max(
                         0,
                         (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0),
@@ -4726,7 +4726,7 @@ return (
                   </div>
                 )}
 
-                {/* Price anchor — show cheapest offer */}
+                {/* Price anchor. show cheapest offer */}
                 {offers.length > 0 && (
                   <div className="mb-4 flex items-baseline gap-2">
                     <span className="text-2xl font-black text-white">
@@ -5000,14 +5000,14 @@ return (
         )}
       </div>
 
-      {/* ── FOUNDER CARD — Topgun Maintenance only (Phase 0B pilot) ── */}
+      {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (
         <div className="mb-8 rounded-3xl border border-default border-l-2 border-l-brand-teal bg-surface-card p-6 backdrop-blur-sm">
           <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">Founding Merchant</div>
           <div className="flex items-start gap-5">
             <img
               src="/Julian.jpeg"
-              alt="Julian Mero — founder, Topgun Maintenance LLC"
+              alt="Julian Mero. founder, Topgun Maintenance LLC"
               className="h-20 w-20 shrink-0 rounded-full object-cover border-2 border-default"
             />
             <div className="flex-1 min-w-0">
@@ -5030,7 +5030,7 @@ return (
         <div className="mb-8 border-b border-t border-default bg-surface-page">
           {isSimulated && (
             <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
-              Preview only — trading is a future-phase feature
+              Preview only. Trading is a future-phase feature.
             </div>
           )}
           <div className="mx-auto max-w-6xl px-2">
@@ -5154,7 +5154,7 @@ return (
                 sandbox="allow-scripts"
                 className={`w-full border-0 transition-all duration-300 ${gameLocked ? "pointer-events-none blur-sm" : ""}`}
                 style={{ height: embedExpanded ? "80vh" : 420, background: "#07071A" }}
-                title={`${tmpl.label} — interactive demo`}
+                title={`${tmpl.label} interactive demo`}
               />
 
               {/* Lock overlay */}
@@ -5162,7 +5162,7 @@ return (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-card backdrop-blur-sm">
                   <div className="mx-4 w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
                     <div className="mb-3 text-3xl">🔒</div>
-                    <h3 className="text-lg font-extrabold text-white">Unlock to keep playing</h3>
+                    <h3 className="text-lg font-extrabold text-white">Spend points to keep playing</h3>
                     <p className="mt-2 text-sm text-secondary">
                       You&apos;ve used your 3 free plays. Use DUM Points to unlock unlimited access.
                     </p>
@@ -5217,7 +5217,7 @@ return (
         </div>
       </div>
 
-      {/* ── Offers (Public Storefront + Owner Tools) — hidden for viewers during live ── */}
+      {/* ── Offers (Public Storefront + Owner Tools). hidden for viewers during live ── */}
       <div id="offers-section" className={`mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -5327,7 +5327,7 @@ return (
 
         {/* Owner-only: Add DUM Live to Your Website ─────────────────
             Merchant-first activation experience. The compact card is
-            the only thing visible by default — clicking "Activate DUM
+            the only thing visible by default. clicking "Activate DUM
             Live" opens a wizard modal with four guided paths. All
             technical detail (script tag, iframe fallback, test.html)
             lives inside the Advanced tab. Default flow uses
@@ -5373,7 +5373,7 @@ return (
           // Plain-text install instructions for the Developer tab's
           // "Send to my developer" message. Email-friendly, no markup.
           const developerMessage =
-            `Hi — I'd like to add a DUM Live storefront widget to our website.\n\n` +
+            `Hi. I'd like to add a DUM Live storefront widget to our website.\n\n` +
             `It's a single line of code (a <script> tag) that I paste on a page. The widget shows our\n` +
             `live stream, products, and checkout. Customers stay on our domain; payments go through\n` +
             `our Stripe account directly.\n\n` +
@@ -5402,9 +5402,9 @@ return (
 
           // Per-platform setup instructions for the Guided tab. Each
           // entry maps a merchant's website type to a one-line
-          // instruction in their language — no iframe / script / JS
+          // instruction in their language. no iframe / script / JS
           // jargon in the default flow.
-          // Q10 — added a `mobileNote` per platform so a merchant
+          // Q10. added a `mobileNote` per platform so a merchant
           // editing their site from a phone gets editor-specific
           // guidance. Mobile editors of these platforms diverge
           // meaningfully from desktop; without this hint the
@@ -5438,7 +5438,7 @@ return (
               instruction:
                 "Open the page template in your theme editor and paste this into a Custom Liquid section.",
               mobileNote:
-                "Shopify's theme editor is best on desktop — open this on a laptop if you can.",
+                "Shopify's theme editor is best on desktop. Open this on a laptop if you can.",
             },
             {
               id: "squarespace",
@@ -5454,13 +5454,13 @@ return (
               instruction:
                 "Drag an Embed element onto the page and paste this in.",
               mobileNote:
-                "Webflow's editor is desktop-only — open this on a laptop.",
+                "Webflow's editor is desktop-only. Open this on a laptop.",
             },
             {
               id: "developer",
               name: "GitHub / Vercel",
               instruction:
-                "See the For Developers tab — full repo + deploy instructions.",
+                "See the For Developers tab for the full repo and deploy instructions.",
             },
             {
               id: "custom",
@@ -5468,13 +5468,13 @@ return (
               instruction:
                 "Paste this just before </body>, or inside the section where you want it to appear.",
               mobileNote:
-                "Same instructions work on most mobile editors — paste into any HTML / Code block.",
+                "Same instructions work on most mobile editors. Paste into any HTML or Code block.",
             },
             {
               id: "unsure",
               name: "Not sure",
               instruction:
-                "No worries — use the Custom HTML method. It works on most websites.",
+                "No worries. Use the Custom HTML method. It works on most websites.",
               mobileNote:
                 "If you only have your phone, the Custom HTML method works in most mobile editors too.",
             },
@@ -5493,7 +5493,7 @@ return (
 
           return (
             <>
-              {/* Compact activation card — the only thing visible by
+              {/* Compact activation card. the only thing visible by
                   default. Replaces the previous developer-first panel
                   that exposed code immediately. */}
               <div className="mt-4 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5 sm:p-6">
@@ -5503,7 +5503,7 @@ return (
                       Add DUM Live to Your Website
                     </h3>
                     <p className="mt-1 text-sm text-secondary">
-                      Live video, pinned flash offers, Stripe checkout, and loyalty rewards — all on your own site.
+                      Live video, pinned flash offers, Stripe checkout, and loyalty rewards, all on your own site.
                     </p>
                   </div>
                   <div className="flex flex-col items-start gap-1 sm:items-end">
@@ -5511,12 +5511,12 @@ return (
                       type="button"
                       onClick={() => {
                         setEmbedActivePath("guided");
-                        // Q9 — on a phone, skip the 8-platform picker
+                        // Q9. on a phone, skip the 8-platform picker
                         // and pre-select Custom HTML. Mobile editors
                         // for WordPress / Wix / Shopify / Squarespace
                         // typically only expose a generic HTML / Code
                         // block anyway, so the platform-specific
-                        // instructions buy little on a phone — they
+                        // instructions buy little on a phone. they
                         // mostly add a step. The merchant can still
                         // tap "← Choose different website" to reveal
                         // the full picker.
@@ -5575,7 +5575,7 @@ return (
                       </button>
                     </div>
 
-                    {/* Phase 4 of the installer audit — when the
+                    {/* Phase 4 of the installer audit. when the
                         merchant has confirmed the paste, the modal
                         flips to a celebration / next-action view
                         instead of re-rendering the install tabs.
@@ -5598,7 +5598,7 @@ return (
                           {/* Next-step nudges. Linking to surfaces
                               that already exist on this page so the
                               merchant doesn't have to navigate
-                              elsewhere — clicking either button
+                              elsewhere. clicking either button
                               closes the modal and lets the merchant
                               act inline. */}
                           <div className="mt-6 space-y-2">
@@ -5622,13 +5622,13 @@ return (
                             </a>
                           </div>
 
-                          {/* Brand-stance closer — the activation
+                          {/* Brand-stance closer. the activation
                               moment is the right place to lightly
-                              echo "Drive your market — not platform
+                              echo "Drive your market. not platform
                               fees." Per direction this stays
                               supporting, not a headline. */}
                           <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal/70">
-                            Drive your market — not platform fees.
+                            Drive your market, not platform fees.
                           </p>
 
                           <button
@@ -5716,7 +5716,7 @@ return (
                             })}
                           </ol>
 
-                          {/* Platform picker — shown until a platform is chosen */}
+                          {/* Platform picker. shown until a platform is chosen */}
                           {embedPlatform === null && (
                             <div className="space-y-3">
                               <div>
@@ -5781,7 +5781,7 @@ return (
                                     className="w-full rounded-xl bg-brand-teal px-5 py-4 text-sm font-bold text-black transition hover:bg-brand-teal"
                                   >
                                     {copiedSnippet === "script"
-                                      ? "Copied ✓ — now paste it on your site"
+                                      ? "Copied. Now paste it on your site."
                                       : "Copy Install Code"}
                                   </button>
                                   <p className="mt-1.5 text-center text-[11px] text-secondary">
@@ -5830,17 +5830,17 @@ return (
                                   Preview what your storefront will look like →
                                 </a>
 
-                                {/* Q8 — manual "I pasted it" affordance.
+                                {/* Q8. manual "I pasted it" affordance.
                                     Trust-based confirmation: clicking
                                     flips the modal to the celebration
                                     view via confirmInstall(). No
-                                    automatic verification — the merchant
+                                    automatic verification. the merchant
                                     audit's MVP scope explicitly held the
                                     real embed-detection backend work. */}
                                 <div className="mt-2 rounded-xl border border-default bg-brand-teal-soft p-4">
                                   <p className="text-[12px] leading-relaxed text-primary">
                                     <span className="font-bold text-white">Done pasting?</span>{" "}
-                                    Click below to confirm — we&apos;ll mark your live storefront as installed.
+                                    Click below to confirm. we&apos;ll mark your live storefront as installed.
                                   </p>
                                   <button
                                     type="button"
@@ -5981,7 +5981,7 @@ return (
                             <ul className="space-y-0.5 text-[12px] leading-relaxed">
                               <li><span className="text-secondary">·</span> The script-tag widget auto-sizes to its parent container.</li>
                               <li><span className="text-secondary">·</span> The iframe fallback uses width:100% and a 640px min-height. Adjust as needed.</li>
-                              <li><span className="text-secondary">·</span> Sandbox attributes are required — Stripe Checkout opens in a new tab via popups-to-escape-sandbox.</li>
+                              <li><span className="text-secondary">·</span> Sandbox attributes are required. Stripe Checkout opens in a new tab via popups-to-escape-sandbox.</li>
                             </ul>
                           </div>
 
@@ -6028,7 +6028,7 @@ return (
 
                           <div className="rounded-xl border border-default bg-brand-teal-soft p-3 text-xs text-emerald-100/80">
                             <div className="mb-1 font-bold text-brand-teal">React / Next.js tip</div>
-                            JSX doesn't accept a raw <code className="rounded bg-surface-muted px-1 text-brand-teal">&lt;script&gt;</code> tag inside components. Use the iframe form below — it drops in cleanly anywhere a JSX element is allowed.
+                            JSX doesn't accept a raw <code className="rounded bg-surface-muted px-1 text-brand-teal">&lt;script&gt;</code> tag inside components. Use the iframe form below. it drops in cleanly anywhere a JSX element is allowed.
                           </div>
 
                           {/* Snippet copies for devs */}
@@ -6053,7 +6053,7 @@ return (
                           <div>
                             <div className="mb-1.5 flex items-center justify-between gap-2">
                               <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
-                                Embed snippet (iframe — JSX-safe)
+                                Embed snippet (iframe. JSX-safe)
                               </div>
                               <button
                                 type="button"
@@ -6125,7 +6125,7 @@ return (
               <div>
                 <p className="text-sm font-semibold text-brand-teal">
                   {isOwner && simulatedPurchase
-                    ? `✓ Sale: "${simulatedPurchase}" — $${simulatedRevenue.toFixed(2)} revenue`
+                    ? `✓ Sale: "${simulatedPurchase}". $${simulatedRevenue.toFixed(2)} revenue`
                     : "Purchase successful! ✓"}
                 </p>
                 {!isOwner && (
@@ -6136,7 +6136,7 @@ return (
             </div>
             {!isOwner && (
               <p className="mt-2 text-xs text-brand-teal/60">
-                Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
+                Every purchase earns DUM Points. They are redeemable for discounts at any business on the DUM Club network.
               </p>
             )}
           </div>
@@ -6470,11 +6470,11 @@ return (
               const sorted = [...offers].sort((a, b) => Number(a.price_usd) - Number(b.price_usd));
               const bestValueId = sorted.length >= 3 ? sorted[Math.floor(sorted.length / 2)].id : "";
               const recommendedReasonLabel: Record<string, string> = {
-                best_seller: "Recommended — most purchased",
-                mid_tier: "Recommended — best value",
-                cheapest: "Recommended — most affordable",
-                premium: "Recommended — most comprehensive",
-                popular: "Recommended — most popular",
+                best_seller: "Recommended. Most purchased.",
+                mid_tier: "Recommended. Best value.",
+                cheapest: "Recommended. Most affordable.",
+                premium: "Recommended. Covers the most",
+                popular: "Recommended. Most popular.",
                 pick: "Recommended for you",
                 next: "Recommended",
                 only: "Recommended",
@@ -6551,7 +6551,7 @@ return (
                     </div>
                   ) : null}
 
-                  {/* Content — title + price together */}
+                  {/* Content. title + price together */}
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="text-lg font-bold text-white leading-snug">{offer.title}</h3>
                     <div className="shrink-0 font-mono text-lg font-bold text-brand-teal">${Number(offer.price_usd).toFixed(0)}</div>
@@ -6657,7 +6657,7 @@ return (
                           </div>
                         ) : !authUser ? (
                           <button onClick={login} className="w-full rounded-xl bg-brand-teal px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black transition hover:bg-brand-teal-hover hover:">
-                            Sign in to buy — ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
+                            Sign in to buy. ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
                           </button>
                         ) : (
                           <>
@@ -6670,7 +6670,7 @@ return (
                                 ? "Opening secure checkout…"
                                 : buyStep[offer.id] === "demo_success"
                                 ? "✓ Purchased!"
-                                : `Buy Now — $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
+                                : `Buy Now. $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
                             </button>
                             {/* Secondary CTA: pay with SOL. Feature-flagged
                                 off by default. Stripe stays the primary
@@ -6708,7 +6708,7 @@ return (
                   {/* Demo purchase success feedback */}
                   {buyStep[offer.id] === "demo_success" && (
                     <div className="mt-3 rounded-lg border border-default bg-brand-teal-soft px-3 py-2 text-xs text-brand-teal">
-                      ✓ Purchase simulated — ${Number(offer.price_usd).toFixed(2)} · +10 DUM Points earned
+                      ✓ Purchase simulated. ${Number(offer.price_usd).toFixed(2)} · +10 DUM Points earned
                     </div>
                   )}
 
@@ -6725,7 +6725,7 @@ return (
           </div>
         )}
 
-        {/* Legacy store items (owner-only — not checkout-enabled) */}
+        {/* Legacy store items (owner-only. not checkout-enabled) */}
         {isOwner && storeItems.length > 0 && (
           <div className="mt-6">
             <div className="mb-3 flex items-center gap-2">
@@ -6809,7 +6809,7 @@ return (
         <h2 className="text-2xl font-bold text-white">Ask AI</h2>
 
         <p className="mt-3 text-secondary">
-          Ask anything about this business — services, pricing, availability. {chatMeta.free_limit} free question{chatMeta.free_limit === 1 ? "" : "s"} included.
+          Ask anything about this business: services, pricing, availability. {chatMeta.free_limit} free question{chatMeta.free_limit === 1 ? "" : "s"} included.
         </p>
 
         {chatMeta.locked && (
@@ -6852,7 +6852,7 @@ return (
           <div className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-default bg-surface-page p-4 text-primary">
             {response || (
               <span className="text-muted">
-                Ask a question above — the AI knows this project deeply.
+                Ask a question above. The AI knows this project deeply.
               </span>
             )}
           </div>
@@ -6883,7 +6883,7 @@ return (
       {isOwner && !IVS_REALTIME_ENABLED && (
         <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
 
-          {/* Selling controls — shown for non-IVS live providers only (IVS controls are in the banner) */}
+          {/* Selling controls. shown for non-IVS live providers only (IVS controls are in the banner) */}
           {project?.is_live && !isIVSSession(project) && (
             <div className="space-y-4">
               {/* Only show legacy live header when NOT using IVS (IVS has its own) */}
@@ -6908,7 +6908,7 @@ return (
                 </div>
               )}
 
-              {/* Product selector — immediate access */}
+              {/* Product selector. immediate access */}
               <div className="rounded-2xl border border-default bg-surface-muted p-4">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
                 <div className="flex flex-wrap gap-2">
@@ -6938,7 +6938,7 @@ return (
                 {isAuctionActive && auction ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-bold text-white">{auctionOffer?.title || "—"}</div>
+                      <div className="text-sm font-bold text-white">{auctionOffer?.title || "Auction"}</div>
                       <div className="text-xs text-secondary">{auction.bid_count} bids · {auctionCountdown}</div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -6947,7 +6947,7 @@ return (
                     </div>
                   </div>
                 ) : auction && auction.status === "ended" ? (
-                  <div className="text-sm text-secondary">Winner: {auction.current_bidder_display || "—"} — ${Number(auction.current_bid).toFixed(0)}</div>
+                  <div className="text-sm text-secondary">Winner: {auction.current_bidder_display || "unknown"}. ${Number(auction.current_bid).toFixed(0)}</div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
@@ -6972,7 +6972,7 @@ return (
             </div>
           )}
 
-          {/* Legacy Mux/camera flow — only when IVS is NOT enabled and NOT live */}
+          {/* Legacy Mux/camera flow. only when IVS is NOT enabled and NOT live */}
           {!IVS_REALTIME_ENABLED && !project?.is_live && (
             cameraPreview ? (
               <div className="space-y-4">
@@ -7091,7 +7091,7 @@ return (
       )}
 
 
-      {/* ── AI Tools (Score + Builder — Analytics view) ────────────── */}
+      {/* ── AI Tools (Score + Builder. Analytics view) ────────────── */}
       {isOwner && projectView === "analytics" && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between hover:text-primary">
@@ -7397,7 +7397,7 @@ return (
 
 
       {projectView === "analytics" && canShowMarketUi ? (
-      /* Token Activity — only in analytics view */
+      /* Token Activity. only in analytics view */
       <div id="section-tokens" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         {isSimulated && <SimulatedTokenBanner />}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -7444,7 +7444,7 @@ return (
                   <p className="mt-3 max-w-sm text-secondary">
                     {isSimulated
                       ? "No activity yet. Tokenized rewards and on-chain trading are planned for a future phase, subject to legal and regulatory review."
-                      : "No trades yet. Early supporters back ideas before the market does — and shape the token's opening price history."}
+                      : "No trades yet. Early supporters back ideas before the market does, and shape the token's opening price history."}
                   </p>
                 </div>
                 <p className="text-sm text-secondary">
@@ -7644,13 +7644,13 @@ return (
                   </button>
                 </div>
               ) : !userWallet ? (
-                /* Signed in but wallet not linked — preview state for a future-phase feature */
+                /* Signed in but wallet not linked. preview state for a future-phase feature */
                 <div className="mt-6 rounded-2xl border border-default bg-surface-card p-5 text-center">
                   <p className="text-sm text-secondary">Tokenized trading is a future-phase feature and not yet live on DUM Club.</p>
                   <p className="mt-2 text-xs text-muted">DUM Points power discounts from Stripe purchases today. Wallet linking is optional and reserved for future rewards features.</p>
                 </div>
               ) : (
-                /* Signed in + wallet connected — full trade form */
+                /* Signed in + wallet connected. full trade form */
                 <div className="mt-6 space-y-4">
                   <div>
                     <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-muted">
@@ -7715,7 +7715,7 @@ return (
 
                   {isSimulated && (
                     <p className="text-center text-[11px] text-amber-200/80">
-                      Preview only — tokenized rewards are planned for a future phase, subject to legal and regulatory review.
+                      Preview only. Tokenized rewards are planned for a future phase, subject to legal and regulatory review.
                     </p>
                   )}
 
@@ -7844,7 +7844,7 @@ return (
       <p className="mt-3 text-xs text-secondary">
         Share this code with your team or drop it in Discord.
       </p>
-      {/* Mint address hidden per doctrine §12.3 — no blockchain on consumer pages.
+      {/* Mint address hidden per doctrine §12.3. no blockchain on consumer pages.
            Will return in Phase 3 when Solana claim flow is legally cleared. */}
     </div>
   )}
@@ -7852,7 +7852,7 @@ return (
   <div className="mt-4 rounded-xl border border-default bg-surface-page p-3">
     <div className="text-[11px] uppercase tracking-[0.2em] text-muted">DUM Points Perks</div>
     <div className="mt-2 text-sm text-primary">
-      Every purchase earns DUM Points — redeemable for discounts at any business on the DUM Club network.
+      Every purchase earns DUM Points. They are redeemable for discounts at any business on the DUM Club network.
     </div>
   </div>
 
@@ -8339,7 +8339,7 @@ return (
     </div>
   )}
 
-  {/* AI Sales Assistant — visible to all visitors */}
+  {/* AI Sales Assistant. visible to all visitors */}
   {offers.length > 0 && (
     <AiSalesChat
       projectId={id}
@@ -8352,7 +8352,7 @@ return (
     />
   )}
 
-  {/* Sticky mobile CTA bar — only visible on mobile, hides on desktop */}
+  {/* Sticky mobile CTA bar. only visible on mobile, hides on desktop */}
   {!isOwner && offers.length > 0 && (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-default bg-surface-card backdrop-blur-md px-4 py-3 lg:hidden">
       <div className="flex items-center justify-between gap-3">
