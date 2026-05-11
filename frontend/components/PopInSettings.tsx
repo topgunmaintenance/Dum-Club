@@ -15,9 +15,14 @@
  * (Bubble only — see PR #133).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PopInSeller, type PopInOffer } from "./PopInSeller";
 import { trackEvent } from "../lib/analytics";
+import {
+  uploadPopinVideo,
+  validatePopinVideo,
+  POPIN_VIDEO_MAX_BYTES,
+} from "../lib/popinVideoUpload";
 
 import { API_BASE } from "../lib/apiBase";
 
@@ -119,6 +124,50 @@ export function PopInSettings({
     initial.mode === "recorded" ? "recorded" : "bubble",
   );
   const [videoUrl, setVideoUrl] = useState<string>(initial.video_url ?? "");
+
+  // Upload UI state. uploadingVideo is set during the network hop so
+  // we can show an indeterminate "Uploading…" indicator. uploadError
+  // captures both client-side validation failures (size, MIME) and
+  // Supabase Storage errors. The hidden file input is opened via
+  // fileInputRef.current.click() from the "Upload Video" button so
+  // we can style the trigger freely.
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showAdvancedUrl, setShowAdvancedUrl] = useState<boolean>(
+    // Auto-expand the manual URL section if the merchant already has
+    // a URL saved (typically pasted from a CDN before upload shipped)
+    // — they were using the advanced path, don't hide it from them.
+    Boolean(initial.video_url),
+  );
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleFilePicked(file: File | null) {
+    if (!file) return;
+    setUploadError(null);
+    const check = validatePopinVideo(file);
+    if (check.ok !== true) {
+      setUploadError(check.error);
+      return;
+    }
+    setUploadingVideo(true);
+    const result = await uploadPopinVideo(file, project.id);
+    setUploadingVideo(false);
+    if (result.ok !== true) {
+      setUploadError(result.error);
+      return;
+    }
+    setVideoUrl(result.url);
+    // If the merchant uploaded a video while Bubble was selected,
+    // flip mode → recorded so they don't have to make a second choice.
+    // If they were already on recorded, no-op.
+    if (mode !== "recorded") setMode("recorded");
+  }
+
+  function handleRemoveVideo() {
+    setVideoUrl("");
+    setUploadError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
@@ -385,22 +434,119 @@ export function PopInSettings({
             </div>
           </Field>
 
-          {/* Video URL — only meaningful when mode is "recorded". We
-               always render the field (so merchants can prep a URL
-               without committing the mode switch) but greyed out
-               until they pick the Recorded Video radio. */}
+          {/* Video upload — primary path. Hidden file input with a
+               styled button trigger; the input itself is mobile-
+               friendly (accept="video/*" opens the photo library +
+               camera shortcut on iOS Safari and Chrome Android,
+               capture="user" hints front-camera selfie capture).
+               If the merchant already has a saved URL we show
+               Replace + Remove instead of Upload. */}
           <Field
-            label="Recorded video URL"
-            help="MP4 / WebM hosted on a public URL. Plays muted with the option to tap-to-unmute. Keep clips under 10 MB for fast load."
+            label="Pop-In video"
+            help={`Record a short clip on your phone or upload an MP4 / WebM / MOV. Max ${Math.round(POPIN_VIDEO_MAX_BYTES / 1024 / 1024)} MB. Plays muted in the bubble; visitors tap to unmute.`}
           >
             <input
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value.slice(0, 2048))}
-              placeholder="https://example.com/intro.mp4"
-              disabled={mode !== "recorded"}
-              className="w-full rounded-lg border border-default bg-surface-card px-3 py-2 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal disabled:cursor-not-allowed disabled:opacity-60"
+              ref={fileInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/*"
+              capture="user"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                handleFilePicked(f);
+              }}
+              className="hidden"
+              aria-label="Choose or record Pop-In video"
             />
+
+            {videoUrl ? (
+              <div className="space-y-3">
+                <div className="overflow-hidden rounded-xl border border-default bg-surface-muted">
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <video
+                    src={videoUrl}
+                    muted
+                    playsInline
+                    controls
+                    preload="metadata"
+                    className="block aspect-video w-full bg-black object-contain"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingVideo}
+                    className="inline-flex items-center justify-center rounded-lg border border-default bg-surface-card px-3 py-2 text-xs font-semibold text-primary transition hover:border-strong disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploadingVideo ? "Uploading…" : "Replace video"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveVideo}
+                    disabled={uploadingVideo}
+                    className="inline-flex items-center justify-center rounded-lg border border-default px-3 py-2 text-xs font-semibold text-secondary transition hover:text-state-live disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingVideo}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-default bg-surface-card px-4 text-sm font-semibold text-primary transition hover:border-brand-teal hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {uploadingVideo ? (
+                    <>
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-default border-t-brand-teal" />
+                      <span>Uploading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span aria-hidden="true">🎬</span>
+                      <span>Upload video</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {uploadError ? (
+              <p className="mt-2 text-[12px] font-medium text-state-live">
+                {uploadError}
+              </p>
+            ) : null}
+
+            {/* Manual URL — advanced path. Collapsed by default unless
+                 the merchant already has a saved URL (pre-upload
+                 vintage). Useful for CDN-hosted clips or for shops
+                 reusing a marketing reel. */}
+            <details
+              open={showAdvancedUrl}
+              onToggle={(e) =>
+                setShowAdvancedUrl((e.target as HTMLDetailsElement).open)
+              }
+              className="mt-3"
+            >
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-primary">
+                Or paste a video URL
+              </summary>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value.slice(0, 2048))}
+                placeholder="https://example.com/intro.mp4"
+                disabled={mode !== "recorded"}
+                className="mt-2 w-full rounded-lg border border-default bg-surface-card px-3 py-2 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                Paste any public MP4 / WebM URL. Useful if your clip is
+                already hosted on a CDN. Uploaded videos and pasted
+                URLs share the same field.
+              </p>
+            </details>
           </Field>
 
           <div className="flex items-center gap-3 pt-2">
