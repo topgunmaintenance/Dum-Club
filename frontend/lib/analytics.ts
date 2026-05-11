@@ -30,7 +30,11 @@ export type AnalyticsEventType =
   | "checkout_start"
   | "purchase_completed"
   | "live_view"
-  | "return_visit";
+  | "return_visit"
+  | "popin_view"
+  | "popin_click"
+  | "popin_dismiss"
+  | "popin_offer_click";
 
 type EventPayload = {
   project_id?: string | null;
