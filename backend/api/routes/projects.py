@@ -981,16 +981,15 @@ class ProjectUpdate(BaseModel):
     promo_copy: Optional[str] = None
     store_items: Optional[list] = None
     # DUM Pop-In Seller merchant settings. Free-form JSONB on the row;
-    # the API validates the small shape it knows about + rejects any
-    # non-"bubble" display mode until recorded / live / auto ship.
+    # the API validates the small shape it knows about and rejects any
+    # display mode outside the active allow-list (_POPIN_ACTIVE_MODES).
     popin_config: Optional[dict] = None
 
 
 # Allow-list of fields the popin_config payload may contain. Unknown
 # keys are silently dropped on write to keep the JSONB clean for the
-# embed reader. Only "bubble" mode is accepted today; the spec's
-# coming-soon options surface in the dashboard UI as disabled, but
-# even if a forged request flips the value we reject server-side.
+# embed reader. Display mode is gated by _POPIN_ACTIVE_MODES below —
+# any forged value outside that set is rejected server-side.
 _POPIN_ALLOWED_KEYS = {
     "enabled",
     "greeting",
