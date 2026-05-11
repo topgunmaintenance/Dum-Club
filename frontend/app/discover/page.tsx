@@ -328,7 +328,7 @@ export default function DiscoverPage() {
             "more ways to earn and redeem are coming" line was
             advertising a held-pending feature. */}
         <p className="mt-10 text-center text-[11px] text-secondary">
-          Earn DUM Points on every purchase — loyalty rewards across the network.
+          Earn DUM Points on every purchase. Loyalty rewards across the network.
         </p>
 
         {/* Merchant recruitment strip */}

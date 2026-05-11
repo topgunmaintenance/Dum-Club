@@ -31,11 +31,11 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Flat $29–$99/month. 0% commission. Keep every sale. Founding merchants get preferred pricing after launch.",
+    "Flat $29 to $99 a month. 0% commission. Keep every sale. Founding merchants get preferred pricing after launch.",
   openGraph: {
-    title: "Pricing — DUM Club",
+    title: "Pricing | DUM Club",
     description:
-      "One flat monthly fee covers live selling, loyalty, AI retention, and local flash sales. 0% commission, ever.",
+      "One flat monthly fee covers live selling, loyalty, tools that help bring customers back, and local flash sales. 0% commission, ever.",
     type: "website",
   },
 };
@@ -75,7 +75,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "AI retention agent for point reminders",
+      "Tools that help bring customers back (point reminders)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
     ],
@@ -108,7 +108,7 @@ const TIERS: Tier[] = [
       "DUM Points under your brand name",
       "Custom rewards rules + earning rates",
       "API access for your own platform",
-      "Dedicated AI retention agent",
+      "Dedicated tools that help bring customers back",
       "For mid-size businesses building loyalty",
     ],
     ctaLabel: "Talk to sales",
@@ -119,7 +119,7 @@ const TIERS: Tier[] = [
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Do you ever take a percentage of my sales?",
-    a: "No. DUM Club charges a flat monthly fee. We never take a per-transaction commission, and we never have. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout — DUM Club doesn't sit between you and your money.",
+    a: "No. DUM Club charges a flat monthly fee. We never take a per-transaction commission, and we never have. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout. DUM Club does not sit between you and your money.",
   },
   {
     q: "What does 'founding merchant' actually get me?",
@@ -127,7 +127,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Why is there no Free tier?",
-    a: "We charge for the platform so we can keep the platform running without taking a cut from you. A free tier would force a commission model later — we'd rather be upfront and aligned with you from day one.",
+    a: "We charge for the platform so we can keep the platform running without taking a cut from you. A free tier would force a commission model later. We'd rather be upfront and aligned with you from day one.",
   },
   {
     q: "Can I cancel any time?",
@@ -135,15 +135,15 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Do I need to integrate Stripe?",
-    a: "Yes. Stripe is the only payment processor on DUM Club — same one Whatnot, Square, and Shopify use. Connecting takes about 60 seconds via Stripe Connect; payouts land in your bank on Stripe's standard schedule.",
+    a: "Yes. Stripe is the only payment processor on DUM Club, the same one Whatnot, Square, and Shopify use. Connecting takes about 60 seconds via Stripe Connect, and payouts land in your bank on Stripe's standard schedule.",
   },
   {
-    q: "What's included in the AI retention agent?",
-    a: "Automated point-expiry reminders, deal pushes when customers haven't visited in a while, and cross-merchant discovery (a customer of a detailer might get a pizza-shop coupon). Replaces what most businesses pay $500–$1,000/month for via direct mail.",
+    q: "What's included in the tools that help bring customers back?",
+    a: "Automated point-expiry reminders, deal pushes when customers haven't visited in a while, and a way for customers to find nearby deals across the network (a detailer's customer might get a pizza-shop coupon). Replaces what most businesses pay $500 to $1,000 a month for via direct mail.",
   },
   {
     q: "How is this different from Shopify or Square?",
-    a: "Shopify and Square are point-of-sale and storefront tools — they don't include live selling, loyalty, retention, or local discovery. DUM Club bundles all five. The flat fee replaces a stack of separate monthly bills (loyalty SaaS, SMS retention, ad spend, social-agency).",
+    a: "Shopify and Square are point-of-sale and storefront tools. They do not include live selling, loyalty, retention, or local discovery. DUM Club bundles all five. The flat fee replaces a stack of separate monthly bills (loyalty SaaS, SMS retention, ad spend, social-agency).",
   },
 ];
 
@@ -156,13 +156,13 @@ export default function PricingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <Eyebrow tone="brand">Pricing · One flat fee</Eyebrow>
             <Heading level="display" className="mt-4">
-              Flat <span className="text-brand-navy">$29–$99/month</span>.<br />
+              Flat <span className="text-brand-navy">$29 to $99 a month</span>.<br />
               0% commission. Keep every sale.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
-              Live selling, loyalty, AI retention, and local flash sales — one
-              monthly fee replaces five separate bills. Founding merchants get
-              preferred pricing after launch.
+              Live selling, loyalty, tools that help bring customers back, and
+              local flash sales. One monthly fee replaces five separate bills.
+              Founding merchants get preferred pricing after launch.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button href="/merchant" variant="primary" size="lg">
@@ -340,7 +340,7 @@ export default function PricingPage() {
 
           <p className="mt-8 text-center text-[13px] text-secondary">
             <span className="font-semibold text-brand-navy">$1,041/month</span>{" "}
-            saved on Whatnot's fees alone — before the loyalty, retention,
+            saved on Whatnot's fees alone, before the loyalty, retention,
             and AI social tooling Growth includes.
           </p>
         </Container>

@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   try {
     const res = await fetch(`${API_BASE}/api/projects/${params.id}`, {
-      // SSR fetch — cache briefly so a popular storefront doesn't pound
+      // SSR fetch. cache briefly so a popular storefront doesn't pound
       // the API on every cold render but stays reasonably fresh.
       next: { revalidate: 60 },
     });
@@ -29,7 +29,7 @@ export async function generateMetadata({
       title: `${name} | DUM Club`,
       description:
         desc ||
-        `Shop ${name} on DUM Club — live offers, flash deals, and Stripe checkout.`,
+        `Shop ${name} on DUM Club. live offers, flash deals, and Stripe checkout.`,
     };
   } catch {
     return {

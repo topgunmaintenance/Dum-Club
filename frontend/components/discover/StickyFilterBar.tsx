@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Sticky filter bar — sticks below header on scroll.
+ * Sticky filter bar. sticks below header on scroll.
  *
  * Category dropdown on desktop, chips on mobile.
  * "Live now" disabled with tooltip when no live results.
@@ -47,7 +47,7 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
 
       {/* Category chips (mobile) / dropdown (desktop) + filters */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Category — chips on mobile, dropdown on desktop. */}
+        {/* Category. chips on mobile, dropdown on desktop. */}
         <div className="flex w-full min-w-0 gap-1 overflow-x-auto sm:hidden sm:w-auto [&::-webkit-scrollbar]:hidden">
           {DISCOVER_CATEGORIES.map((cat) => (
             <button
@@ -116,7 +116,7 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
         <button
           onClick={() => props.hasAnyLive && props.setLiveOnly(!props.liveOnly)}
           disabled={!props.hasAnyLive}
-          title={props.hasAnyLive ? undefined : "No live shows yet — check back soon"}
+          title={props.hasAnyLive ? undefined : "No live shows yet. check back soon"}
           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
             !props.hasAnyLive
               ? "cursor-not-allowed border-default text-muted"
@@ -138,7 +138,7 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
           Live now
         </button>
 
-        {/* Deals only toggle — hidden if no project has promo_copy */}
+        {/* Deals only toggle. hidden if no project has promo_copy */}
         {props.hasAnyPromo && (
           <button
             onClick={() => props.setDealsOnly(!props.dealsOnly)}

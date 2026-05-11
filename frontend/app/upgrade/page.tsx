@@ -15,7 +15,7 @@ const TIERS = [
       "Storefront on DUM Club marketplace",
       "DUM Points built in automatically",
       "Basic sales analytics",
-      "Stripe direct payouts — keep 100%",
+      "Stripe direct payouts. Keep 100%",
       "Listed on Discover page",
       "Founding seller badge (permanent)",
     ],
@@ -34,7 +34,7 @@ const TIERS = [
       "Storefront on DUM Club marketplace",
       "DUM Points built in automatically",
       "Basic sales analytics",
-      "Stripe direct payouts — keep 100%",
+      "Stripe direct payouts. Keep 100%",
       "Listed on Discover page",
     ],
     cta: "Get Started",
@@ -51,7 +51,7 @@ const TIERS = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "AI retention agent (auto point reminders)",
+      "Tools that help bring customers back (auto point reminders)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
     ],
@@ -111,7 +111,7 @@ export default function PricingPage() {
         <div className="mx-auto mt-8 max-w-xl rounded-xl border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-5 py-3 text-center text-sm text-secondary">
           <span className="text-red-400 font-semibold">Whatnot charges 8% + 2.9% per sale.</span>{" "}
           Sell $10k/month and you lose $1,090.
-          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $29–$99 flat.</span>
+          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $29 to $99 flat.</span>
         </div>
 
         {/* Tier cards */}
@@ -169,7 +169,7 @@ export default function PricingPage() {
               Every tier includes DUM Points
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-secondary">
-              Your customers automatically earn DUM Points on every purchase. Points are redeemable at any business on the network — bringing buyers back without you lifting a finger.
+              Your customers automatically earn DUM Points on every purchase. Points are redeemable at any business on the network, bringing buyers back without you lifting a finger.
             </p>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function PricingPage() {
             { icon: "💸", title: "Whatnot", desc: "8% + 2.9% per sale", bad: true },
             { icon: "💰", title: "Commonsold", desc: "% per sale + monthly", bad: true },
             { icon: "📍", title: "Google Maps", desc: "Pay to rank in ads", bad: true },
-            { icon: "◆", title: "DUM Club", desc: "$29–$99/mo flat", bad: false },
+            { icon: "◆", title: "DUM Club", desc: "$29 to $99/mo flat", bad: false },
           ].map((comp) => (
             <div key={comp.title} className={`rounded-xl border p-4 text-center ${comp.bad ? "border-default bg-surface-muted" : "border-default bg-brand-teal-soft"}`}>
               <div className="text-xl">{comp.icon}</div>

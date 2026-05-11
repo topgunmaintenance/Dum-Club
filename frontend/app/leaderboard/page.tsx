@@ -86,7 +86,7 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Businesses ranked by storefront completeness — description, offers, and promotions
+          Businesses ranked by storefront completeness: description, offers, and promotions.
         </p>
 
         {loading ? (

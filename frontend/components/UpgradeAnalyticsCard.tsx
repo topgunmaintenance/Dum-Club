@@ -1,5 +1,5 @@
 /**
- * UpgradeAnalyticsCard — locked Drive Your Market Analytics tile.
+ * UpgradeAnalyticsCard. locked Drive Your Market Analytics tile.
  *
  * Rendered on /dashboard for merchants whose subscription_tier
  * doesn't qualify for analytics (per hasAnalyticsAccess in
@@ -22,13 +22,13 @@ export function UpgradeAnalyticsCard() {
         id="upgrade-analytics-heading"
         className="text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl"
       >
-        Unlock Drive Your Market Analytics
+        See your Drive Your Market Analytics
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-secondary sm:text-base">
         See how many visitors, buyers, repeat customers, and sales
-        DUM Club brings to your business. Track the full funnel —
-        embed views → offer views → checkout starts → completed
-        purchases — in one dashboard.
+        DUM Club brings to your business. Track the full funnel:
+        embed views, offer views, checkout starts, and completed
+        purchases. All in one dashboard.
       </p>
       <div className="mt-5">
         <Link

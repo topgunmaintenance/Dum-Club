@@ -458,7 +458,7 @@ function HoursTab({
                   className="w-20 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-white"
                   placeholder="09:00"
                 />
-                <span className="text-zinc-500">–</span>
+                <span className="text-zinc-500">·</span>
                 <input
                   type="text"
                   value={h.close || "17:00"}

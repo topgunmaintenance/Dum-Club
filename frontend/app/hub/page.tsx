@@ -477,7 +477,7 @@ function ReferTab({ getToken }: { getToken: () => Promise<string | null> }) {
 
             <div className="mt-4 flex gap-2">
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Join me on DUM Club — build a business, earn rewards.\n\n")}&url=${encodeURIComponent(referralUrl)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Join me on DUM Club. Build a business, earn rewards.\n\n")}&url=${encodeURIComponent(referralUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-default py-2.5 text-xs font-semibold text-primary transition hover:border-strong hover:text-primary"

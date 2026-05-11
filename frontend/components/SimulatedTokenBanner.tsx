@@ -1,5 +1,5 @@
 /**
- * SimulatedTokenBanner — renders a "Coming Soon" notice on surfaces that
+ * SimulatedTokenBanner. renders a "Coming Soon" notice on surfaces that
  * preview tokenized rewards. Per CLAUDE.md rule #3, tokenization and
  * on-chain features are future-phase, not current product. This banner
  * frames them accordingly instead of describing a live simulation.
@@ -47,7 +47,7 @@ export function SimulatedTokenBanner({ variant = "default" }: Props) {
         </div>
         <div className="flex-1 leading-relaxed">
           <div className="font-bold uppercase tracking-[0.18em] text-amber-300">
-            Coming Soon — future-phase feature
+            Coming Soon. future-phase feature
           </div>
           <div className="mt-1 text-amber-100/90">
             DUM Points power discounts from Stripe purchases today. Tokenized

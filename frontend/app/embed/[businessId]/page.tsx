@@ -343,8 +343,8 @@ export default function EmbedShellPage() {
     };
   }, []);
 
-  const displayName = project?.name || project?.title || "—";
-  const displaySlug = project?.slug || businessId || "—";
+  const displayName = project?.name || project?.title || "?";
+  const displaySlug = project?.slug || businessId || "?";
 
   // Option A — owner identity check so the embed can render a
   // discreet "Manage offers" deep-link only to the merchant viewing
@@ -444,7 +444,7 @@ export default function EmbedShellPage() {
     try {
       const token = await getToken();
       if (!token) {
-        setBuyError("Authentication failed — please sign in again");
+        setBuyError("Authentication failed. Please sign in again.");
         setBuying(false);
         return;
       }
@@ -503,7 +503,7 @@ export default function EmbedShellPage() {
           // Popup blocked — surface a message and leave the user on
           // the embed so they can retry with a click that the
           // browser will accept as an explicit gesture.
-          setBuyError("Pop-up blocked — allow pop-ups for this site and try again");
+          setBuyError("Pop-up blocked. Allow pop-ups for this site and try again.");
         }
         setBuying(false);
       } else {
@@ -553,7 +553,7 @@ export default function EmbedShellPage() {
     try {
       const token = await getToken();
       if (!token) {
-        setSolError("Authentication failed — please sign in again");
+        setSolError("Authentication failed. Please sign in again.");
         setSolBuying(false);
         setSolStep(null);
         return;
@@ -685,7 +685,7 @@ export default function EmbedShellPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-auto inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal transition hover:border-brand-teal hover:text-brand-teal"
-                title="Owner only — opens your DUM Club admin in a new tab"
+                title="Owner only. Opens your DUM Club admin in a new tab."
               >
                 Owner · Manage offers ↗
               </a>
@@ -710,7 +710,7 @@ export default function EmbedShellPage() {
                 Payment received
               </p>
               <p className="mt-0.5 text-xs text-brand-teal/80">
-                Thanks — your order is on its way. The seller has been
+                Thanks. Your order is on its way. The seller has been
                 notified.
               </p>
             </div>
@@ -950,7 +950,7 @@ export default function EmbedShellPage() {
                     );
                     setInventoryEventCount((c) => c + 1);
                     pushEvent(
-                      `Inventory event received — offer ${data.offer_id} sold ${data.quantity_sold}${
+                      `Inventory event received. Offer ${data.offer_id} sold ${data.quantity_sold}${
                         data.sold_out ? " (sold out)" : ""
                       }`
                     );
@@ -967,7 +967,7 @@ export default function EmbedShellPage() {
                     );
                     const title = fresh?.title || data.title || "Item";
                     pushEvent(
-                      `Sold event received — ${title} (offer ${data.offer_id})`
+                      `Sold event received, ${title} (offer ${data.offer_id})`
                     );
                     spawnSaleToast(title);
                     spawnEmojiBurst();

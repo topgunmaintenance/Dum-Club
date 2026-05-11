@@ -18,7 +18,7 @@ import Link from "next/link";
 const PROGRAM_ID = "FYgLqjJ7RHmT46xb5EiNGNa8XFbckqPWkEVLt2ztjnLV";
 
 export const metadata = {
-  title: "Technology — DUM Club",
+  title: "Technology | DUM Club",
   description:
     "How DUM Club is built. Stripe payments, Supabase database, and an SPL token rewards program on Solana for users who want on-chain claim.",
 };
@@ -35,7 +35,7 @@ export default function TechnologyPage() {
         </h1>
         <p className="mt-4 text-base leading-relaxed text-zinc-400">
           DUM Club is a local-commerce platform first. Card payments, real
-          merchants, real customers. The technical layer below is for
+          merchants, real customers. The system behind DUM Club below is for
           developers, integration partners, and users who want to take
           their DUM Points balance on-chain. If you came here looking for
           a local handyman or a mobile detailer, head back to{" "}
@@ -66,7 +66,7 @@ export default function TechnologyPage() {
               {
                 label: "Database",
                 title: "Supabase / PostgreSQL",
-                body: "All canonical state — merchants, projects, offers, orders, DUM balances. Row-level security on user data, public read on listings.",
+                body: "All app data lives here: merchants, projects, offers, orders, DUM balances. Row-level security on user data, public read on listings.",
               },
               {
                 label: "Payments",
@@ -76,12 +76,12 @@ export default function TechnologyPage() {
               {
                 label: "Auth",
                 title: "Privy",
-                body: "Email and Google sign-in. Privy DIDs are the canonical user identifier across the platform. Solana wallets are auto-provisioned but never required for buying.",
+                body: "Email and Google sign-in. Privy DIDs are the user identifier across the platform. Solana wallets are auto-provisioned but never required for buying.",
               },
               {
                 label: "Live streaming",
                 title: "AWS IVS Real-Time",
-                body: "WebRTC-based live commerce streaming. Currently feature-flagged off (NEXT_PUBLIC_ENABLE_LIVE_STREAMS=false) — dormant infrastructure for future category drops.",
+                body: "WebRTC-based live commerce streaming. Currently feature-flagged off (NEXT_PUBLIC_ENABLE_LIVE_STREAMS=false). Dormant infrastructure for future category drops.",
               },
             ].map((item) => (
               <div
@@ -103,9 +103,9 @@ export default function TechnologyPage() {
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
             On-chain
           </div>
-          <h2 className="text-2xl font-bold text-white">Solana — for the people who want it.</h2>
+          <h2 className="text-2xl font-bold text-white">Solana, for the people who want it.</h2>
           <p className="mt-3 text-[14px] leading-relaxed text-zinc-400">
-            DUM Points are tracked off-chain in PostgreSQL by default — that's
+            DUM Points are tracked off-chain in PostgreSQL by default. That's
             how 99% of users will ever interact with them. Customers earn
             points at participating merchants, redeem them for discounts at
             other merchants, never touch a wallet, never pay gas, never
@@ -145,7 +145,7 @@ export default function TechnologyPage() {
                 <span className="text-zinc-300">SPL Token, mint-on-claim, platform-paid gas (~$0.00025 per mint)</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-600">Source of truth</span>
+                <span className="text-[10px] uppercase tracking-widest text-zinc-600">Where the real data lives</span>
                 <span className="text-zinc-300">Off-chain PostgreSQL. Solana mirrors it; never the master.</span>
               </div>
             </div>

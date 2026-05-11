@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * FeeCalculator — interactive fee savings calculator for the homepage.
+ * FeeCalculator. interactive fee savings calculator for the homepage.
  *
  * A slider between $1k and $100k monthly GMV, showing what Whatnot and
  * Commonsold would take vs DUM Club's flat Growth-tier fee ($49/mo).
@@ -37,7 +37,7 @@ function formatMoneyPrecise(n: number): string {
 
 /**
  * Pick a contextual "that's enough to..." example based on annual savings.
- * Rough anchors, not precise quotes — these are emotional hooks, not
+ * Rough anchors, not precise quotes. these are emotional hooks, not
  * financial guarantees. All comparisons are framed around small-business
  * reinvestment, not lifestyle.
  */
@@ -95,7 +95,7 @@ export function FeeCalculator() {
             See what you&apos;d save on commission alone.
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            Drag the slider. This is just the live-selling line on your bill — DUM Club replaces loyalty, retention, and deal-platform tools too, all in the same flat fee.
+            Drag the slider. This is just the live-selling line on your bill. DUM Club replaces loyalty, retention, and deal-platform tools too, all in the same flat fee.
           </p>
         </div>
 
@@ -195,7 +195,7 @@ export function FeeCalculator() {
             href="/merchant"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_32px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_48px_rgba(0,255,163,0.35)]"
           >
-            Start selling — founding merchants join free →
+            Start selling. founding merchants join free →
           </Link>
           <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
             Founding merchants · $0 during founding · Preferred founding pricing after launch
@@ -203,7 +203,7 @@ export function FeeCalculator() {
         </div>
       </div>
 
-      {/* Slider styling — scoped via a className, styled here with plain
+      {/* Slider styling. scoped via a className, styled here with plain
           CSS in a <style jsx>. Matches the site's emerald palette. */}
       <style jsx>{`
         .fee-calc-slider {

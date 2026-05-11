@@ -709,7 +709,7 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
                 <div className="mb-1 text-base font-bold text-primary">Start selling on DUM Club</div>
-                <p className="mb-4 text-sm text-secondary">Join as a founding merchant — $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
+                <p className="mb-4 text-sm text-secondary">Join as a founding merchant. $0 during the founding period, with preferred founding pricing after launch. 0% commission, always.</p>
                 <Link
                   href="/merchant"
                   className="inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
@@ -783,7 +783,7 @@ export default function DashboardPage() {
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-default bg-surface-card p-10 text-center">
-              <p className="text-base font-semibold text-primary">No businesses yet — create your first one below</p>
+              <p className="text-base font-semibold text-primary">No businesses yet. Create your first one below.</p>
               <p className="mt-2 text-sm text-muted">
                 Generate your first project to get started.
               </p>

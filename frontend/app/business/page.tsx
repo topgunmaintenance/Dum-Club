@@ -149,7 +149,7 @@ function BusinessPageInner() {
             Talk to Julian.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm text-secondary">
-            I built DUM Club. I also run Topgun Maintenance LLC, the founding merchant. Email or call me directly — I&apos;ll get back same day.
+            I built DUM Club. I also run Topgun Maintenance LLC, the founding merchant. Email or call me directly. I&apos;ll get back same day.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
             <a
@@ -208,11 +208,11 @@ function OverviewTab({
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            { name: "Delivery apps", fees: "15–30%", detail: "of every order", muted: true },
+            { name: "Delivery apps", fees: "15 to 30%", detail: "of every order", muted: true },
             { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
-            { name: "Loyalty software", fees: "$50–$300", detail: "per month", muted: true },
-            { name: "SMS retention", fees: "$20–$200", detail: "per month", muted: true },
-            { name: "DUM Club", fees: "$29–$99", detail: "flat / month · 0% commission", muted: false },
+            { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
+            { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
+            { name: "DUM Club", fees: "$29 to $99", detail: "flat / month · 0% commission", muted: false },
           ].map((p) => (
             <div
               key={p.name}
@@ -233,8 +233,8 @@ function OverviewTab({
           ))}
         </div>
         <p className="mt-8 text-center text-sm text-primary">
-          One bill, no commissions —{" "}
-          <span className="font-bold text-brand-teal">keep everything you earn.</span>
+          One bill, no commissions.{" "}
+          <span className="font-bold text-brand-teal">Keep everything you earn.</span>
         </p>
       </section>
 
@@ -250,9 +250,9 @@ function OverviewTab({
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8–30% of every order. We charge $29–$99/month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
-              { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank — not our account first, not a platform wallet." },
-              { n: "03", title: "Customers come back automatically", desc: "DUM Points and AI retention bring one-time buyers back. Replaces the loyalty + SMS tools you're already paying for." },
+              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8 to 30% of every order. We charge $29 to $99 a month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
+              { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We do not hold it. No platform wallet." },
+              { n: "03", title: "Customers come back automatically", desc: "DUM Points and our tools that help bring customers back turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -277,7 +277,7 @@ function OverviewTab({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
-            { title: "DUM Points loyalty", desc: "Customers earn points on every purchase. Redeemable at any DUM Club seller — the loyalty network that makes them come back." },
+            { title: "DUM Points loyalty", desc: "Customers earn points on every purchase, redeemable at any DUM Club seller. The loyalty network that brings them back." },
             { title: "Stripe direct payouts", desc: "Money goes straight to your bank via Stripe Connect. No marketplace holding your funds. No payout delays." },
             { title: "Storefront on the marketplace", desc: "A real buyable page with your offers, photos, and Stripe checkout. Shareable anywhere." },
             { title: "AI sales assistant", desc: "A customer-facing chatbot that answers questions using your real offer data. Helps close sales 24/7." },
@@ -304,7 +304,7 @@ function OverviewTab({
           </p>
           <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-default bg-surface-card px-6 py-4 backdrop-blur-sm">
             <span className="font-mono text-4xl font-extrabold text-brand-teal">
-              {claimed != null ? claimed : "—"}
+              {claimed != null ? claimed : "0"}
             </span>
             <span className="text-xs uppercase tracking-[0.2em] text-secondary">of {totalCap} founding spots claimed</span>
           </div>
@@ -340,7 +340,7 @@ function PricingTab() {
           Pricing
         </div>
         <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-          Flat $29–$99/month. <span className="text-brand-navy">0% commission.</span>
+          Flat $29 to $99 a month. <span className="text-brand-navy">0% commission.</span>
         </h2>
         <p className="mx-auto mb-6 max-w-md text-sm text-secondary">
           Tier comparison, Whatnot vs DUM at $10k GMV, FAQ, and the Talk-to-Julian
@@ -409,7 +409,7 @@ function CalculatorTab() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">Fee calculator</div>
             <h2 className="text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">See what you&apos;d save.</h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-secondary">
-              Drag the slider. See what Whatnot and Commonsold take — and what DUM Club charges instead.
+              Drag the slider. See what Whatnot and Commonsold take, and what DUM Club charges instead.
             </p>
           </div>
 
@@ -464,7 +464,7 @@ function CalculatorTab() {
 
           <div className="mt-8 text-center">
             <Link href="/merchant" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
-              Start selling — founding merchants join free →
+              Start selling. Founding merchants join free →
             </Link>
           </div>
         </div>
@@ -478,7 +478,7 @@ function CalculatorTab() {
             Stop losing customers. <span className="text-brand-teal">Automate repeat business.</span>
           </h2>
           <p className="mb-8 max-w-xl text-sm text-secondary">
-            DUM Points bring customers back automatically. Our AI retention agent sends reminders, deal pushes, and expiry alerts.
+            DUM Points bring customers back automatically. Our tools that help bring customers back send reminders, deal pushes, and expiry alerts.
           </p>
 
           <div className="grid gap-8 sm:grid-cols-2">
@@ -486,7 +486,7 @@ function CalculatorTab() {
               {[
                 { step: "1", title: "Customer buys from you", desc: "They earn DUM Points automatically at checkout. No stamps, no cards.", icon: "💳" },
                 { step: "2", title: "AI sends them back", desc: "Automated point reminders and deal pushes via email. Zero effort from you.", icon: "🤖" },
-                { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Cross-merchant discovery grows your network.", icon: "🔄" },
+                { step: "3", title: "They discover more businesses", desc: "Points work at ANY business on DUM Club. Customers can find nearby deals across the whole network.", icon: "🔄" },
                 { step: "4", title: "You keep them forever", desc: "The switching cost is high. Points + deals + AI = a loyalty moat no competitor can touch.", icon: "🏆" },
               ].map((s) => (
                 <div key={s.step} className="flex gap-4 rounded-xl border border-default bg-surface-muted p-4 transition hover:border-default">
@@ -589,7 +589,7 @@ function CompareTab() {
                 <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
               </div>
               <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover">
-                Switch from Whatnot — Free →
+                Switch from Whatnot. Free →
               </Link>
             </div>
           </div>
@@ -619,12 +619,12 @@ function CompareTab() {
             </thead>
             <tbody>
               {[
-                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29–$99/mo" },
-                { f: "Per-sale commission", w: "8%", c: "Varies", g: "—", d: "0% ever" },
+                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29 to $99/mo" },
+                { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
                 { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
                 { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
                 { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
-                { f: "AI retention", w: "None", c: "None", g: "None", d: "Built in" },
+                { f: "Bring customers back", w: "None", c: "None", g: "None", d: "Built in" },
                 { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
                 { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
               ].map((row, i) => (
