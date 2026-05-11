@@ -67,6 +67,14 @@ type PopInSellerHostProps = {
   /** Called when the visitor clicks the offer chip — typically wired
    *  to scroll to / focus the embed's main buy panel. */
   onOfferClick: () => void;
+  /** True when the embed's hero IVS viewer is actively streaming
+   *  (project.is_live AND IVS session AND stage ARN). Drives the
+   *  "live" and "auto" mode resolution. Default false. */
+  isLiveActive?: boolean;
+  /** Called when the visitor taps the LIVE NOW affordance. Wired by
+   *  the embed to smooth-scroll to the existing hero
+   *  <section aria-label="Live video">. */
+  onLiveClick?: () => void;
 };
 
 // Default dwell on first visit. Spec MVP: "show after 5 seconds."
@@ -147,6 +155,8 @@ export function PopInSellerHost({
   config,
   resolveOffer,
   onOfferClick,
+  isLiveActive = false,
+  onLiveClick,
 }: PopInSellerHostProps) {
   // Captured once on first render — analytics writes the visitor id
   // when its first event fires (e.g. embed_view on the page mount),
@@ -169,18 +179,40 @@ export function PopInSellerHost({
       : DEFAULT_FIRST_VISIT_DELAY_S;
   const oncePerSession = cfg.once_per_session === true;
 
-  // Mode resolution. "bubble" is the always-on default. "recorded"
-  // requires a non-empty video_url; otherwise we fall back to
-  // bubble so the visitor never sees a broken / empty video tile.
-  // "live" and "auto" are forward-declared and treated as bubble
-  // for now (their dedicated PRs flip this).
+  // Mode resolution. The merchant picks one of four configured modes
+  // ("bubble" | "recorded" | "live" | "auto"); we resolve to one of
+  // three rendered modes ("bubble" | "recorded" | "live") based on
+  // runtime state so the bubble never tries to render something it
+  // can't actually show:
+  //
+  //   bubble   → always bubble
+  //   recorded → recorded if video_url present, else bubble
+  //   live     → live if the hero IVS viewer is streaming, else fall
+  //              back through recorded → bubble
+  //   auto     → live → recorded → bubble
+  //
+  // The "live" rendered mode does NOT mount a second IVS viewer; it
+  // shows a LIVE NOW affordance in the bubble that scrolls to the
+  // embed's existing hero <IVSStageViewer>.
   const rawMode = cfg.mode ?? "bubble";
   const videoUrl =
     typeof cfg.video_url === "string" && cfg.video_url.trim()
       ? cfg.video_url.trim()
       : null;
-  const activeMode: "bubble" | "recorded" =
-    rawMode === "recorded" && videoUrl ? "recorded" : "bubble";
+  const activeMode: "bubble" | "recorded" | "live" = (() => {
+    if (rawMode === "live") {
+      if (isLiveActive) return "live";
+      if (videoUrl) return "recorded";
+      return "bubble";
+    }
+    if (rawMode === "auto") {
+      if (isLiveActive) return "live";
+      if (videoUrl) return "recorded";
+      return "bubble";
+    }
+    if (rawMode === "recorded" && videoUrl) return "recorded";
+    return "bubble";
+  })();
 
   // Suppress entirely if:
   //   - merchant disabled it, OR
@@ -319,6 +351,20 @@ export function PopInSellerHost({
     });
   }, [projectId, offer?.id]);
 
+  // LIVE NOW affordance — only fires when activeMode resolved to "live".
+  // Reuses popin_click so the funnel summary stays consistent; the
+  // metadata.target lets us slice the click as "live" specifically.
+  const handleLiveClick = useCallback(() => {
+    if (projectId) {
+      trackEvent("popin_click", {
+        project_id: projectId,
+        offer_id: offer?.id ?? null,
+        metadata: { target: "live" },
+      });
+    }
+    onLiveClick?.();
+  }, [projectId, offer?.id, onLiveClick]);
+
   if (!visible || !projectId || !offer) return null;
 
   return (
@@ -333,6 +379,8 @@ export function PopInSellerHost({
       onVideoVisible={handleVideoVisible}
       onVideoPlay={handleVideoPlay}
       onVideoClick={handleVideoClick}
+      liveActive={activeMode === "live"}
+      onLiveClick={handleLiveClick}
     />
   );
 }

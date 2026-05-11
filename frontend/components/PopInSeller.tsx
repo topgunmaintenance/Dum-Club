@@ -58,6 +58,15 @@ type PopInSellerProps = {
   /** Fires on any click of the video tile. Separate from onVideoPlay
    *  so future affordances (expand) can be distinguished. */
   onVideoClick?: () => void;
+  /** When true, the bubble renders a "LIVE NOW · Watch live"
+   *  affordance instead of the static avatar / recorded tile. The
+   *  Pop-In does NOT mount a second IVS viewer; the embed's existing
+   *  hero <IVSStageViewer> is the single source of live video, and
+   *  the affordance scrolls the viewer there via onLiveClick. */
+  liveActive?: boolean;
+  /** Fires when the visitor taps the LIVE NOW affordance. The embed
+   *  wires this to smooth-scroll the existing hero live section. */
+  onLiveClick?: () => void;
 };
 
 export function PopInSeller({
@@ -72,6 +81,8 @@ export function PopInSeller({
   onVideoVisible,
   onVideoPlay,
   onVideoClick,
+  liveActive = false,
+  onLiveClick,
 }: PopInSellerProps) {
   // Slide-in animation gate. We render `mounted=false` for one frame
   // so the initial transform applies before transitioning to the
@@ -127,7 +138,11 @@ export function PopInSeller({
     }
   };
 
-  const showVideo = Boolean(videoUrl) && !videoErrored;
+  // Live mode wins when active — we suppress the recorded video tile
+  // and the static avatar so the LIVE NOW affordance owns the top of
+  // the bubble.
+  const showLive = liveActive;
+  const showVideo = !showLive && Boolean(videoUrl) && !videoErrored;
 
   return (
     <div
@@ -155,6 +170,40 @@ export function PopInSeller({
       >
         ×
       </button>
+
+      {/* LIVE NOW — Mode "live" / "auto" affordance. Sits above the
+           greeting + offer chip and points the visitor at the embed's
+           existing hero IVS viewer via onLiveClick. The Pop-In does
+           not mount a second IVS Stage — one stream per page is the
+           IVS viewer's invariant. */}
+      {showLive ? (
+        <div className="px-4 pt-4 pr-9">
+          <button
+            type="button"
+            onClick={onLiveClick}
+            aria-label={`${merchantName} is live now. Watch the live stream.`}
+            className="group relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl border border-state-live/40 bg-state-live/10 px-3 py-2.5 text-left transition hover:border-state-live hover:bg-state-live/15"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="relative inline-flex h-2.5 w-2.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-state-live" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-state-live">
+                  Live now
+                </span>
+                <span className="mt-0.5 block truncate text-sm font-semibold text-primary">
+                  {merchantName} is streaming
+                </span>
+              </span>
+            </span>
+            <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.14em] text-state-live transition group-hover:translate-x-0.5">
+              Watch live →
+            </span>
+          </button>
+        </div>
+      ) : null}
 
       {/* When a video is configured we render a 16:9 tile across the
            full bubble width above the greeting + offer chip. The
@@ -205,8 +254,12 @@ export function PopInSeller({
         </div>
       ) : null}
 
-      <div className={`flex items-start gap-3 p-4 pr-9 ${showVideo ? "pt-3" : ""}`}>
-        {!showVideo && (
+      <div
+        className={`flex items-start gap-3 p-4 pr-9 ${
+          showVideo || showLive ? "pt-3" : ""
+        }`}
+      >
+        {!showVideo && !showLive && (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

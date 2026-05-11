@@ -362,6 +362,21 @@ export default function EmbedShellPage() {
   const manageHref = `/project/${project?.slug || businessId}/manage`;
   const liveLabel = project?.is_live ? "live" : "offline";
   const ivsActive = !!project && isIVSSession(project) && !!project.ivs_stage_arn;
+  // True when the hero <IVSStageViewer> is actually mounted and
+  // subscribing. The Pop-In Live mode reuses this section exactly —
+  // no second viewer is created, the LIVE NOW affordance scrolls
+  // the visitor here.
+  const isLivePresent = !!project?.is_live && ivsActive;
+  const liveSectionRef = useRef<HTMLElement | null>(null);
+  const handlePopInLiveClick = useCallback(() => {
+    const el = liveSectionRef.current;
+    if (!el) return;
+    try {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch {
+      el.scrollIntoView();
+    }
+  }, []);
 
   // Pinned offer derivation — single source of truth for the card.
   const pinnedOffer = useMemo<Offer | null>(() => {
@@ -750,7 +765,11 @@ export default function EmbedShellPage() {
               a relative container so the floating emoji burst overlay
               can absolute-position inside the video bounds without
               escaping the conversion grid. */}
-          <section aria-label="Live video" className="relative">
+          <section
+            ref={liveSectionRef}
+            aria-label="Live video"
+            className="relative"
+          >
             {project?.id && ivsActive ? (
               <IVSStageViewer projectId={project.id} userId={viewerUserId} />
             ) : (
@@ -1120,6 +1139,8 @@ export default function EmbedShellPage() {
           };
         }}
         onOfferClick={handleBuy}
+        isLiveActive={isLivePresent}
+        onLiveClick={handlePopInLiveClick}
       />
     </main>
   );
