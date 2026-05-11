@@ -86,7 +86,7 @@ Commission on sales: 0% — always.
 
 ## Current Phase
 
-Phase 0B — building the Topgun Maintenance founding merchant storefront and completing the first live Stripe transaction.
+Active development — expanding merchant onboarding, live selling, loyalty rewards, AI retention tools, and local discovery.
 
 See `CLAUDE.md v5.0` for the full roadmap and development doctrine.
 
