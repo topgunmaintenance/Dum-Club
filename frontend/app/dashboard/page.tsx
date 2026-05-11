@@ -348,20 +348,20 @@ export default function DashboardPage() {
         {user && (
           <div className="mb-6">
             {bizProfile ? (
-              <div className="rounded-2xl border border-default bg-gradient-to-r from-zinc-950 to-zinc-900/50 p-5">
+              <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-surface-muted text-lg">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-brand-teal-soft text-lg">
                       🏢
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-primary">{bizProfile.business_name}</span>
+                        <span className="text-sm font-bold text-brand-navy">{bizProfile.business_name}</span>
                         {bizProfile.verification_status === "verified" && (
                           <span className="rounded-full bg-brand-teal-soft border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-brand-teal">✓ Verified</span>
                         )}
                         {bizProfile.verification_status === "pending" && (
-                          <span className="rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400">Pending</span>
+                          <span className="rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-500">Pending</span>
                         )}
                         {bizProfile.verification_status === "unverified" && (
                           <span className="rounded-full bg-surface-muted border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-secondary">Unverified</span>
@@ -397,7 +397,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 {bizProfile.short_description && (
-                  <p className="mt-3 text-xs text-secondary">{bizProfile.short_description}</p>
+                  <p className="mt-3 text-xs text-primary">{bizProfile.short_description}</p>
                 )}
               </div>
             ) : (
