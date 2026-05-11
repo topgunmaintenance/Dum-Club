@@ -19,6 +19,8 @@ type Project = {
   review_status?: string | null;
   // token_symbol and token_status removed — Phase 3 infrastructure only.
   // DUM Pop-In Seller merchant settings (migration 038, PR #135).
+  // Recorded-video mode added via PR for Mode B (migration 039 +
+  // popin_config.video_url).
   popin_config?: {
     enabled?: boolean;
     greeting?: string;
@@ -27,6 +29,7 @@ type Project = {
     once_per_session?: boolean;
     offer_id?: string | null;
     mode?: "bubble" | "recorded" | "live" | "auto";
+    video_url?: string | null;
   } | null;
 };
 

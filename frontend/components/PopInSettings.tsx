@@ -29,6 +29,7 @@ type PopInConfig = {
   once_per_session?: boolean;
   offer_id?: string | null;
   mode?: "bubble" | "recorded" | "live" | "auto";
+  video_url?: string | null;
 };
 
 type MerchantProject = {
@@ -73,8 +74,8 @@ const MODES: Array<{
   {
     value: "recorded",
     label: "Recorded Video",
-    description: "Short pre-recorded clip from the seller. Coming soon.",
-    active: false,
+    description: "Short pre-recorded clip from the seller, muted by default.",
+    active: true,
   },
   {
     value: "live",
@@ -111,10 +112,13 @@ export function PopInSettings({
     initial.once_per_session === true,
   );
   const [offerId, setOfferId] = useState<string>(initial.offer_id ?? "");
-  // Mode is forward-declared. Only "bubble" is selectable today; the
-  // backend rejects any non-bubble write. We still surface the radios
-  // as a deliberate roadmap signal per the spec.
-  const [mode] = useState<"bubble">("bubble");
+  // Mode is editable for the two active modes (bubble + recorded).
+  // Coming-soon modes (live / auto) are rendered as disabled radios
+  // so the merchant can't select them; the backend rejects them too.
+  const [mode, setMode] = useState<"bubble" | "recorded">(
+    initial.mode === "recorded" ? "recorded" : "bubble",
+  );
+  const [videoUrl, setVideoUrl] = useState<string>(initial.video_url ?? "");
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
@@ -173,6 +177,30 @@ export function PopInSettings({
     if (g) payload.greeting = g;
     if (rg) payload.returning_greeting = rg;
     payload.offer_id = offerId.trim() || null;
+    const vu = videoUrl.trim();
+    payload.video_url = vu || null;
+
+    // Client-side URL sanity check — server enforces the same rule
+    // but we want to surface the error inline before the network hop.
+    if (vu) {
+      const lo = vu.toLowerCase();
+      if (!lo.startsWith("http://") && !lo.startsWith("https://")) {
+        setSaveStatus({
+          kind: "error",
+          message: "Video URL must start with http:// or https://",
+        });
+        setSaving(false);
+        return;
+      }
+      if (vu.length > 2048) {
+        setSaveStatus({
+          kind: "error",
+          message: "Video URL is too long (max 2048 characters).",
+        });
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       const token = await getToken();
@@ -311,7 +339,7 @@ export function PopInSettings({
 
           <Field
             label="Display mode"
-            help="More modes coming soon — only Bubble is live today."
+            help="Bubble + Recorded Video are live. Live + Automatic are on the roadmap."
           >
             <div className="grid gap-2 sm:grid-cols-2">
               {MODES.map((m) => (
@@ -330,7 +358,12 @@ export function PopInSettings({
                     name="popin-mode"
                     value={m.value}
                     checked={mode === m.value}
-                    readOnly
+                    onChange={() => {
+                      if (!m.active) return;
+                      if (m.value === "bubble" || m.value === "recorded") {
+                        setMode(m.value);
+                      }
+                    }}
                     disabled={!m.active}
                     className="mt-0.5 h-4 w-4 accent-brand-teal"
                   />
@@ -350,6 +383,24 @@ export function PopInSettings({
                 </label>
               ))}
             </div>
+          </Field>
+
+          {/* Video URL — only meaningful when mode is "recorded". We
+               always render the field (so merchants can prep a URL
+               without committing the mode switch) but greyed out
+               until they pick the Recorded Video radio. */}
+          <Field
+            label="Recorded video URL"
+            help="MP4 / WebM hosted on a public URL. Plays muted with the option to tap-to-unmute. Keep clips under 10 MB for fast load."
+          >
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value.slice(0, 2048))}
+              placeholder="https://example.com/intro.mp4"
+              disabled={mode !== "recorded"}
+              className="w-full rounded-lg border border-default bg-surface-card px-3 py-2 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal disabled:cursor-not-allowed disabled:opacity-60"
+            />
           </Field>
 
           <div className="flex items-center gap-3 pt-2">
@@ -391,6 +442,11 @@ export function PopInSettings({
                   onOfferClick={() => {}}
                   onDismiss={() => {}}
                   floating={false}
+                  videoUrl={
+                    mode === "recorded" && videoUrl.trim()
+                      ? videoUrl.trim()
+                      : null
+                  }
                 />
               </div>
             ) : (

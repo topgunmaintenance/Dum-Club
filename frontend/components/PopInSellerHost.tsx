@@ -45,6 +45,10 @@ export type PopInConfig = {
   once_per_session?: boolean;
   offer_id?: string | null;
   mode?: "bubble" | "recorded" | "live" | "auto";
+  /** Mode B (recorded video). Plain http(s) URL — sanitized by the
+   *  backend on write. Falls back to bubble mode silently if missing
+   *  even when mode === "recorded". */
+  video_url?: string | null;
 };
 
 type PopInSellerHostProps = {
@@ -164,10 +168,19 @@ export function PopInSellerHost({
       ? Math.max(0, Math.min(60, cfg.delay_seconds))
       : DEFAULT_FIRST_VISIT_DELAY_S;
   const oncePerSession = cfg.once_per_session === true;
-  // Mode is forward-declared; only "bubble" is implemented today.
-  // Anything else → treat as "bubble" so a forged value can't break
-  // the page.
-  const activeMode = cfg.mode === "bubble" || !cfg.mode ? "bubble" : "bubble";
+
+  // Mode resolution. "bubble" is the always-on default. "recorded"
+  // requires a non-empty video_url; otherwise we fall back to
+  // bubble so the visitor never sees a broken / empty video tile.
+  // "live" and "auto" are forward-declared and treated as bubble
+  // for now (their dedicated PRs flip this).
+  const rawMode = cfg.mode ?? "bubble";
+  const videoUrl =
+    typeof cfg.video_url === "string" && cfg.video_url.trim()
+      ? cfg.video_url.trim()
+      : null;
+  const activeMode: "bubble" | "recorded" =
+    rawMode === "recorded" && videoUrl ? "recorded" : "bubble";
 
   // Suppress entirely if:
   //   - merchant disabled it, OR
@@ -214,13 +227,13 @@ export function PopInSellerHost({
   }, [merchantName, isReturning, cfg.greeting, cfg.returning_greeting]);
 
   // Dwell timer → show. No bubble until we have a project id AND an
-  // offer (pinned or overridden) AND not suppressed AND mode is the
-  // active "bubble".
+  // offer (pinned or overridden) AND not suppressed. activeMode is
+  // either "bubble" or "recorded" by this point — both render the
+  // bubble; recorded just swaps the avatar for a video tile.
   useEffect(() => {
     if (suppressed) return;
     if (!projectId) return;
     if (!offer) return;
-    if (activeMode !== "bubble") return;
     if (visible) return;
 
     const delay = isReturning
@@ -278,6 +291,34 @@ export function PopInSellerHost({
     onOfferClick();
   }, [projectId, offer?.id, onOfferClick]);
 
+  // Video analytics callbacks. The video tile renders inside
+  // PopInSeller; the host owns event firing so projectId/offer
+  // context stays here.
+  const handleVideoVisible = useCallback(() => {
+    if (!projectId) return;
+    trackEvent("popin_video_view", {
+      project_id: projectId,
+      offer_id: offer?.id ?? null,
+      metadata: { mode: activeMode },
+    });
+  }, [projectId, offer?.id, activeMode]);
+
+  const handleVideoPlay = useCallback(() => {
+    if (!projectId) return;
+    trackEvent("popin_video_play", {
+      project_id: projectId,
+      offer_id: offer?.id ?? null,
+    });
+  }, [projectId, offer?.id]);
+
+  const handleVideoClick = useCallback(() => {
+    if (!projectId) return;
+    trackEvent("popin_video_click", {
+      project_id: projectId,
+      offer_id: offer?.id ?? null,
+    });
+  }, [projectId, offer?.id]);
+
   if (!visible || !projectId || !offer) return null;
 
   return (
@@ -288,6 +329,10 @@ export function PopInSellerHost({
       offer={offer}
       onOfferClick={handleOfferClick}
       onDismiss={handleDismiss}
+      videoUrl={activeMode === "recorded" ? videoUrl : null}
+      onVideoVisible={handleVideoVisible}
+      onVideoPlay={handleVideoPlay}
+      onVideoClick={handleVideoClick}
     />
   );
 }

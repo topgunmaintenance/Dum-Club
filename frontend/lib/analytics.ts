@@ -34,7 +34,10 @@ export type AnalyticsEventType =
   | "popin_view"
   | "popin_click"
   | "popin_dismiss"
-  | "popin_offer_click";
+  | "popin_offer_click"
+  | "popin_video_view"
+  | "popin_video_play"
+  | "popin_video_click";
 
 type EventPayload = {
   project_id?: string | null;

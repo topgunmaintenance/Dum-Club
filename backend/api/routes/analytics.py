@@ -38,6 +38,9 @@ ALLOWED_EVENT_TYPES = {
     "popin_click",
     "popin_dismiss",
     "popin_offer_click",
+    "popin_video_view",
+    "popin_video_play",
+    "popin_video_click",
 }
 
 # Soft cap. The events that come out of normal browsing
