@@ -290,6 +290,58 @@ export default function EmbedShellPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Autobuy resume after iframe-redirect sign-in ──────────────
+  // When a buyer clicks Buy inside the merchant's iframe and
+  // they are not signed in, openTopLevelSignIn() opens a fresh
+  // top-level tab on dum.club at the same embed URL with an
+  // `?autobuy=<offerId>` query param. Once Privy completes sign-
+  // in, this effect notices the param, fires handleBuy() once,
+  // and strips the param from the URL so a refresh doesn't loop.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!authUser) return; // wait until Privy returns a user
+    if (!pinnedOffer) return; // wait until offers load
+    const params = new URLSearchParams(window.location.search);
+    const autobuyId = params.get("autobuy");
+    if (!autobuyId) return;
+    // Only auto-resume when the pinned offer matches the one the
+    // buyer clicked in the iframe. If the merchant pinned a
+    // different offer between sign-in steps, leave the buyer on
+    // the storefront — they can re-click and we won't surprise-
+    // charge them for the wrong thing.
+    if (pinnedOffer.id !== autobuyId) {
+      try {
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {
+        /* sandboxed iframe — leave URL */
+      }
+      return;
+    }
+    // Strip the autobuy + pay params before firing so a refresh
+    // mid-checkout doesn't re-trigger a second payment intent.
+    const pay = params.get("pay");
+    try {
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch {
+      /* sandboxed iframe — leave URL */
+    }
+    // Defer one tick so any pending state writes from the load
+    // path settle before we open the Stripe (or SOL) flow.
+    const t = window.setTimeout(() => {
+      if (pay === "sol") {
+        handlePayWithSol();
+      } else {
+        handleBuy();
+      }
+    }, 50);
+    return () => window.clearTimeout(t);
+    // We intentionally do NOT include handleBuy/handlePayWithSol
+    // in deps — they are defined further down the component and
+    // get fresh closures every render. The effect re-runs on
+    // authUser + pinnedOffer changes which is the right trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.privyId, pinnedOffer?.id]);
+
   // ── Iframe auto-resize protocol ───────────────────────────────
   // When the embed page is rendered inside the merchant's iframe
   // (i.e. window !== window.parent), post our actual content height
@@ -426,6 +478,40 @@ export default function EmbedShellPage() {
     }
   }
 
+  // When the embed renders inside a 3rd-party iframe (e.g.
+  // topgunmaintenance.com), Privy can't reliably show its login UI
+  // because:
+  //   1. Privy needs to mount its own iframe (embedded wallets,
+  //      auth modal). Browsers refuse double-nested iframes in
+  //      certain partitioned-storage configurations.
+  //   2. Even when the UI works, third-party-cookie partitioning
+  //      (Safari ITP, Chrome storage partitioning) sandboxes the
+  //      Privy session away from dum.club's regular cookie jar,
+  //      so the buyer ends up signed in inside the partition but
+  //      signed out everywhere else.
+  //   3. Privy can fall back to a top-frame redirect to
+  //      auth.privy.io which strands the buyer on a raw auth URL.
+  //
+  // Solution: open the same embed URL in a new TOP-LEVEL tab on
+  // dum.club. The new tab is not iframed, Privy works as designed,
+  // cookies are first-party. We carry an `autobuy` query param so
+  // the new tab can resume the buy click after sign-in completes.
+  function openTopLevelSignIn(opts: {
+    autobuyOfferId?: string;
+    payment?: "sol";
+  } = {}): boolean {
+    if (typeof window === "undefined") return false;
+    try {
+      const url = new URL(window.location.pathname, window.location.origin);
+      if (opts.autobuyOfferId) url.searchParams.set("autobuy", opts.autobuyOfferId);
+      if (opts.payment) url.searchParams.set("pay", opts.payment);
+      const win = window.open(url.toString(), "_blank", "noopener,noreferrer");
+      return Boolean(win);
+    } catch {
+      return false;
+    }
+  }
+
   async function handleBuy() {
     if (!pinnedOffer) return;
     if (soldOut) return;
@@ -440,11 +526,25 @@ export default function EmbedShellPage() {
 
     setBuyError(null);
 
-    // Existing auth pattern: if no user yet, kick off Privy login. The
-    // button copy below switches to "Sign in to buy" so this click is
-    // the user's first auth gesture. Privy renders its own modal; we
-    // do not implement a separate sign-in UI here.
+    // Auth gate.
+    //
+    // Top-level (no iframe): show Privy's modal in place — the
+    // existing flow.
+    //
+    // Iframed (e.g. embedded on topgunmaintenance.com): redirect
+    // sign-in to a new top-level tab on dum.club with an
+    // `?autobuy=<offerId>` query so the same buy click resumes
+    // after sign-in. See openTopLevelSignIn() above for why.
     if (!authUser) {
+      if (isInIframe()) {
+        const ok = openTopLevelSignIn({ autobuyOfferId: pinnedOffer.id });
+        if (!ok) {
+          setBuyError(
+            "Sign in opens in a new tab on dum.club. Allow pop-ups for this site and try again.",
+          );
+        }
+        return;
+      }
       try {
         login();
       } catch (err) {
@@ -545,6 +645,18 @@ export default function EmbedShellPage() {
     setSolError(null);
 
     if (!authUser) {
+      if (isInIframe()) {
+        const ok = openTopLevelSignIn({
+          autobuyOfferId: pinnedOffer.id,
+          payment: "sol",
+        });
+        if (!ok) {
+          setSolError(
+            "Sign in opens in a new tab on dum.club. Allow pop-ups for this site and try again.",
+          );
+        }
+        return;
+      }
       try {
         login();
       } catch (err) {
@@ -885,7 +997,9 @@ export default function EmbedShellPage() {
                       {buying
                         ? "Opening secure checkout…"
                         : !authUser
-                          ? "Sign in to buy"
+                          ? isInIframe()
+                            ? "Sign in to buy (opens new tab)"
+                            : "Sign in to buy"
                           : "Pay with Card"}
                     </button>
                   )}
@@ -1076,7 +1190,9 @@ export default function EmbedShellPage() {
                     {buying
                       ? "Opening…"
                       : !authUser
-                        ? "Sign in"
+                        ? isInIframe()
+                          ? "Sign in →"
+                          : "Sign in"
                         : "Pay with Card"}
                   </button>
                 )}
