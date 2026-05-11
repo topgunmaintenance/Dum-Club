@@ -34,6 +34,10 @@ ALLOWED_EVENT_TYPES = {
     "purchase_completed",
     "live_view",
     "return_visit",
+    "popin_view",
+    "popin_click",
+    "popin_dismiss",
+    "popin_offer_click",
 }
 
 # Soft cap. The events that come out of normal browsing

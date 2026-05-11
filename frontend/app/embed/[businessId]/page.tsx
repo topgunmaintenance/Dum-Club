@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "../../../lib/analytics";
+import { PopInSellerHost } from "../../../components/PopInSellerHost";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -1076,6 +1077,26 @@ export default function EmbedShellPage() {
           </div>
         </div>
       )}
+
+      {/* DUM Pop-In Seller — Mode C MVP. Fires once the merchant has
+           a project id + pinned offer. Trigger logic + dismiss +
+           analytics live inside the host. Clicking the offer chip
+           runs the same handleBuy() that the main offer card uses,
+           so we get auth/Stripe/sold-out handling for free. */}
+      <PopInSellerHost
+        projectId={project?.id ?? null}
+        merchantName={displayName}
+        pinnedOffer={
+          pinnedOffer
+            ? {
+                id: pinnedOffer.id,
+                title: pinnedOffer.title || "Featured offer",
+                price_usd: Number(pinnedOffer.price_usd ?? 0),
+              }
+            : null
+        }
+        onOfferClick={handleBuy}
+      />
     </main>
   );
 }
