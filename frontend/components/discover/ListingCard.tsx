@@ -31,7 +31,7 @@ const CATEGORY_LABELS: Record<CategoryId, string> = {
   auto: "Auto",
   home: "Home",
   beauty: "Beauty",
-  restaurants: "Restaurants",
+  restaurants: "Food & Dining",
   aviation: "Aviation",
   pets: "Pets",
   health: "Health",

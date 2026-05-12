@@ -37,6 +37,7 @@ import {
   Section,
 } from "../../components/ui";
 import { LoomExplainer } from "../../components/LoomExplainer";
+import { InvestorSignupForm } from "../../components/InvestorSignupForm";
 
 const WEFUNDER_URL = "https://wefunder.com/dumclub";
 const DECK_URL = "/investors/DUM_Club_Deck_Final_Accurate.pdf";
@@ -186,6 +187,23 @@ export default function InvestorsPage() {
             </p>
           </div>
           <LoomExplainer />
+
+          {/* Investor lead capture. Single email field + Join
+              Investor Updates button. Persists to investor_leads
+              table (migration 041) via POST /api/investor-leads.
+              Sits directly under the explainer so a curious
+              prospect can opt in the moment they finish the
+              walkthrough — no scrolling needed. */}
+          <div className="mt-10">
+            <p className="mb-3 text-center text-[12px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+              Stay close to the round
+            </p>
+            <InvestorSignupForm />
+            <p className="mx-auto mt-3 max-w-md text-center text-[11px] leading-relaxed text-muted">
+              Occasional email-only updates about the WeFunder round,
+              milestones, and merchant traction. No spam.
+            </p>
+          </div>
         </Container>
       </Section>
 

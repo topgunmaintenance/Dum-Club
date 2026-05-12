@@ -35,7 +35,7 @@ export type CategoryDefinition = {
  * one of these keys.
  */
 export const CATEGORIES: readonly CategoryDefinition[] = [
-  { key: "restaurants",   label: "Restaurants",    icon: "🍕" },
+  { key: "restaurants",   label: "Food & Dining",  icon: "🍕" },
   { key: "auto",          label: "Auto Services",  icon: "🚗" },
   { key: "home",          label: "Home Services",  icon: "🏠" },
   { key: "aviation",      label: "Aviation",       icon: "✈️" },

@@ -55,7 +55,7 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
               onClick={() => props.setActiveCategory(cat.id)}
               className={`flex flex-shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
                 props.activeCategory === cat.id
-                  ? "bg-brand-teal text-white"
+                  ? "bg-brand-teal text-brand-navy"
                   : "text-secondary hover:text-primary"
               }`}
             >
