@@ -101,9 +101,36 @@ const SAME_LINE_ALLOWLIST_PATTERNS = [
   /\bbg-brand-(?:navy|teal-hover)\b[^"]*\btext-white\b/,
   /\bbg-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:[5-9]00)\b[^"]*\btext-white\b/,
   /\bbg-black\b[^"]*\btext-white\b/,
-  // SVG, CSS-in-JS, or inline style fragments
-  /color:\s*['"]?#fff/,
-  /color:\s*['"]?white/,
+];
+
+// Detect inline-style white-color anti-pattern that bypasses
+// Tailwind classes entirely:
+//   <p style={{ color: "#ffffff" }}>...
+//   <span style={{ color: "white" }}>...
+// This pattern slipped past the Tailwind sweep twice
+// (DiscoverHero, MerchantStrip) before being caught manually.
+// Allowlisted only when the SAME element also carries a clearly
+// dark background hint (Recharts tooltip on #050505, the IVS
+// chat panel on #0a0a0a, etc).
+const INLINE_WHITE_PATTERN =
+  /color:\s*['"]?(?:#[fF]{3}\b|#[fF]{6}\b|white\b|rgb\(\s*255\s*,\s*255\s*,\s*255)/;
+const INLINE_WHITE_ALLOWLIST_PATTERNS = [
+  /background(?:Color)?:\s*['"]?#0/,           // dark hex bg on same element
+  /background(?:Color)?:\s*['"]?#1/,
+  /background(?:Color)?:\s*['"]?#2/,
+  /background(?:Color)?:\s*['"]?rgba?\(\s*0\b/, // background: rgb(0,...) / rgba
+  /background(?:Color)?:\s*['"]?black/,
+];
+
+// When an inline `color: "#fff"` appears inside one of these
+// well-known dark-by-default shapes, treat it as allowlisted
+// even when the paired `background:` is on a different line of
+// the same object literal. Keeps Recharts tooltips green
+// without needing to scan a multi-line window for every chart.
+const INLINE_WHITE_OBJECT_HINTS = [
+  /\bcontentStyle\s*[:=]/,   // Recharts <Tooltip contentStyle={{ ... }}>
+  /\btooltipStyle\s*[:=]/,
+  /\btitleColor\s*[:=]/,
 ];
 
 const ALLOWED_EXT = new Set([".tsx", ".ts", ".jsx", ".js"]);
@@ -128,12 +155,26 @@ function main() {
     const rel = relative(REPO_ROOT, file).replace(/\\/g, "/");
     if (FILE_ALLOWLIST.has(rel)) continue;
     const src = readFileSync(file, "utf8");
-    if (!/\btext-white\b/.test(src)) continue;
+    const hasTailwind = /\btext-white\b/.test(src);
+    const hasInline = INLINE_WHITE_PATTERN.test(src);
+    if (!hasTailwind && !hasInline) continue;
     const lines = src.split("\n");
     lines.forEach((line, idx) => {
-      if (!/\btext-white\b/.test(line)) return;
-      if (SAME_LINE_ALLOWLIST_PATTERNS.some((re) => re.test(line))) return;
-      violations.push({ rel, line: idx + 1, text: line.trim().slice(0, 160) });
+      if (/\btext-white\b/.test(line)) {
+        if (!SAME_LINE_ALLOWLIST_PATTERNS.some((re) => re.test(line))) {
+          violations.push({ rel, line: idx + 1, text: line.trim().slice(0, 160), kind: "tailwind" });
+        }
+      }
+      if (INLINE_WHITE_PATTERN.test(line)) {
+        if (INLINE_WHITE_ALLOWLIST_PATTERNS.some((re) => re.test(line))) return;
+        // Look back 6 lines for an object-hint marker (e.g.
+        // Recharts contentStyle:) that signals a known dark
+        // surface even when the paired `background:` is on a
+        // different line of the same object literal.
+        const lookback = lines.slice(Math.max(0, idx - 6), idx).join("\n");
+        if (INLINE_WHITE_OBJECT_HINTS.some((re) => re.test(lookback))) return;
+        violations.push({ rel, line: idx + 1, text: line.trim().slice(0, 160), kind: "inline" });
+      }
     });
   }
 
@@ -143,10 +184,13 @@ function main() {
   }
   console.error(`check-no-stray-text-white: ${violations.length} violation(s):\n`);
   for (const v of violations) {
-    console.error(`  ${v.rel}:${v.line}`);
+    console.error(`  ${v.rel}:${v.line} [${v.kind}]`);
     console.error(`    ${v.text}`);
   }
-  console.error(`\nFix: swap text-white -> text-primary (or another semantic token), or add the file to FILE_ALLOWLIST in scripts/check-no-stray-text-white.mjs with a comment explaining why the surface is dark.`);
+  console.error(`\nFix:`);
+  console.error(`  - tailwind: swap text-white -> text-primary (or another semantic token).`);
+  console.error(`  - inline:   swap style={{ color: "#fff" / "white" }} -> a Tailwind class (e.g. text-primary). Inline white on a light card has bitten us twice.`);
+  console.error(`  Or add the file to FILE_ALLOWLIST in scripts/check-no-stray-text-white.mjs with a comment explaining why the surface is dark.`);
   process.exit(1);
 }
 
