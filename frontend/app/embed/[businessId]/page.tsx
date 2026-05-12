@@ -942,11 +942,30 @@ export default function EmbedShellPage() {
              Desktop (lg:): video on the left, product card stacked
              above chat on the right.
              Mobile: video first, then product card, then chat. */}
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        {/* When a live IVS session is active the grid is 2:1 video-
+            heavy. When offline (the common state) we drop the video
+            column entirely and let the offer card lead, instead of
+            painting a giant black "Stream offline" rectangle that
+            dominates the page and reads as a dead state. The offer
+            column expands to full width on its own (single-column
+            grid). The merchant can still pin offers, accept Stripe
+            checkout, and chat — none of which require IVS. */}
+        <div
+          className={
+            project?.id && ivsActive
+              ? "grid gap-4 lg:grid-cols-[2fr_1fr]"
+              : "grid gap-4"
+          }
+        >
           {/* LEFT (desktop) / TOP (mobile) — Live video. Wrapped in
               a relative container so the floating emoji burst overlay
               can absolute-position inside the video bounds without
-              escaping the conversion grid. */}
+              escaping the conversion grid.
+              Only mounted when an IVS session is actually active —
+              skips the giant black box on offline. While loading we
+              still show a compact placeholder so the page doesn't
+              jank when ivsActive flips. */}
+          {(project?.id && ivsActive) || loading ? (
           <section
             ref={liveSectionRef}
             aria-label="Live video"
@@ -957,9 +976,9 @@ export default function EmbedShellPage() {
             ) : (
               <div
                 className="flex items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary"
-                style={{ minHeight: 300, aspectRatio: "16/9" }}
+                style={{ minHeight: 180, aspectRatio: "16/9" }}
               >
-                {loading ? "Loading video…" : "Stream offline"}
+                Loading video…
               </div>
             )}
 
@@ -985,6 +1004,7 @@ export default function EmbedShellPage() {
               </div>
             )}
           </section>
+          ) : null}
 
           {/* RIGHT (desktop) / BELOW VIDEO (mobile) — product card + chat.
               On mobile, adds extra bottom padding so the chat (480px+
@@ -1144,7 +1164,38 @@ export default function EmbedShellPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-secondary">No live offer pinned yet</p>
+                // No pinned offer fallback. Previously rendered a
+                // bare "No live offer pinned yet" line — a customer
+                // who tapped the bubble's "Tap to shop live" /
+                // "View today's deal" CTA landed on a dead state.
+                // Now we surface a friendly card with the merchant
+                // identity + a clear "Browse storefront" CTA that
+                // deep-links to the full /project/{slug} page so
+                // there's always somewhere actionable to go.
+                <div className="rounded-2xl border border-default bg-surface-card p-5 text-sm">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+                    {(project?.title || project?.name || "This merchant")} on DUM Club
+                  </p>
+                  <p className="mb-4 text-base font-bold text-primary">
+                    {offers.length > 0
+                      ? "Browse today's offers"
+                      : "Get in touch about today's deal"}
+                  </p>
+                  <p className="mb-4 text-sm text-secondary">
+                    {offers.length > 0
+                      ? `${offers.length} offer${offers.length === 1 ? "" : "s"} available right now. Tap below to see prices and book.`
+                      : "No offer is pinned right now. You can still reach the merchant directly through their storefront."}
+                  </p>
+                  <a
+                    href={`https://www.dum.club/project/${project?.slug || businessId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:translate-y-[-1px] hover:shadow-md"
+                  >
+                    {offers.length > 0 ? "View today's offers" : "Open storefront"}
+                    <span aria-hidden="true" className="ml-1.5">→</span>
+                  </a>
+                </div>
               )}
             </section>
 
@@ -1198,31 +1249,34 @@ export default function EmbedShellPage() {
           </div>
         </div>
 
-        {/* Event-wire debug — visible confirmation that the WS callbacks
-            are firing. Stays in place until real product / checkout UI
-            replaces it in later steps. */}
-        <section
-          aria-label="Event debug"
-          className="rounded-2xl border border-default bg-surface-card p-4 text-xs"
-        >
-          <div className="mb-2 flex gap-4 text-[var(--color-text-muted)]">
-            <span>Inventory events: {inventoryEventCount}</span>
-            <span>Sold events: {soldEventCount}</span>
-          </div>
-          {lastEvents.length === 0 ? (
-            <p className="text-[var(--color-text-muted)]">No events yet</p>
-          ) : (
-            <ul className="space-y-1 font-mono">
-              {lastEvents.map((ev) => (
-                <li key={ev.id}>{ev.text}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)]">
-          Embed shell loaded
-        </p>
+        {/* Event-wire debug — visible only on non-production builds.
+            Originally meant as a "real product / checkout UI replaces
+            it later" placeholder; left visible to merchants it read
+            as a dead "Inventory events: 0 / No events yet" panel on
+            the public embed surface. The WS event handlers still run
+            (they drive the toast + emoji burst + inventory state); we
+            just don't render the developer-facing readout on prod.
+            Toggle visible by setting NEXT_PUBLIC_EMBED_DEBUG=1. */}
+        {process.env.NEXT_PUBLIC_EMBED_DEBUG === "1" && (
+          <section
+            aria-label="Event debug"
+            className="rounded-2xl border border-default bg-surface-card p-4 text-xs"
+          >
+            <div className="mb-2 flex gap-4 text-[var(--color-text-muted)]">
+              <span>Inventory events: {inventoryEventCount}</span>
+              <span>Sold events: {soldEventCount}</span>
+            </div>
+            {lastEvents.length === 0 ? (
+              <p className="text-[var(--color-text-muted)]">No events yet</p>
+            ) : (
+              <ul className="space-y-1 font-mono">
+                {lastEvents.map((ev) => (
+                  <li key={ev.id}>{ev.text}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
 
       {/* ── Mobile sticky buy bar (Step 9) ─────────────────────────

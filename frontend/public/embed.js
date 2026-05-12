@@ -578,8 +578,13 @@
         "    font-size: 12.5px;",
         "  }",
         "  [data-dum-embed-card-close] {",
-        "    top: 6px; right: 6px;",
-        "    width: 32px; height: 32px;",
+        // iOS HIG minimum tap target = 44x44. The card stays at
+        // 280px wide on mobile so a 44px close button is ~16% of
+        // the width — chunky enough to mis-tap-proof without
+        // visually dominating the card. The icon stays at 16px;
+        // the box just grows around it.
+        "    top: 4px; right: 4px;",
+        "    width: 44px; height: 44px;",
         "  }",
         "  [data-dum-embed-launcher] {",
         "    bottom: 12px;",

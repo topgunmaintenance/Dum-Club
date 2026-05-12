@@ -29,6 +29,38 @@ import { getServiceClient } from "../../../../../lib/ai/supabase-service";
  * (the dashboard-shaped contract) and snake_case (so the
  * existing embed.js readers that grab popin_config.greeting
  * etc. keep working without a same-PR client change).
+ *
+ * Display-mode TODO (tracked for a follow-up PR):
+ *
+ *   There are two display-mode concepts in the schema, and the
+ *   merchant dashboard exposes one of them with four options
+ *   ("Bubble", "Recorded Video", "Live Video", "Automatic")
+ *   while only one option is wired end-to-end in embed.js
+ *   today. Documenting the surface so we don't ship the others
+ *   half-done by accident.
+ *
+ *     - embed_display_mode (migration 040)
+ *         "bubble" | "full" | "automatic"
+ *         Controls how DUM Club appears on the merchant's own
+ *         site when they paste the embed script. Read by
+ *         embed.js's outer routing. All three values are wired.
+ *
+ *     - popin_config.mode (migration 038)
+ *         "bubble" | "recorded" | "live" | "auto"
+ *         Controls the INNER pop-in surface inside the embed.
+ *         Today only "bubble" is wired end-to-end. "recorded"
+ *         and "live" require IVS preview / video upload UI;
+ *         "auto" needs both. The dashboard form
+ *         (PopInSettings.tsx) lets merchants pick all four —
+ *         that's a UX mismatch we should resolve either by
+ *         disabling the unsupported options behind a feature
+ *         flag in PopInSettings until the renderer ships, or
+ *         by wiring the renderers and surfacing them through
+ *         this endpoint.
+ *
+ *   This endpoint already returns popinMode as a snake/camel
+ *   pair so the embed.js will pick it up automatically once
+ *   the renderers are built — no breaking change required.
  */
 
 export const dynamic = "force-dynamic";
