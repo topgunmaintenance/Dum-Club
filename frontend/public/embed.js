@@ -534,10 +534,13 @@
             dumLog("First-visit greeting shown");
           }
           if (oncePerSession) safeSessionWrite(keys.sessionShown, "1");
-          // Mark the visitor as known for future sessions. We write
-          // after the greeting actually renders so a delay that
-          // never fires (tab closed early) doesn't burn the
-          // first-visit flag.
+          // Mark the visitor as known for future sessions ONLY after
+          // the greeting actually renders. Writing the flag earlier
+          // (or on the no-greeting fallthrough below) used to "burn"
+          // the first-visit state for tab-closed-during-delay users,
+          // meaning their next session would resolve to the
+          // returning-visitor greeting even though they never saw
+          // the first one.
           if (!hasVisited) safeLocalWrite(keys.visited, "1");
         };
 
@@ -552,11 +555,12 @@
         };
         greetClose.addEventListener("click", dismissGreeting);
         launcher.addEventListener("click", dismissGreeting);
-      } else if (!hasVisited) {
-        // Even without a greeting we want to remember the visitor
-        // so the next page load resolves to the returning state.
-        safeLocalWrite(keys.visited, "1");
       }
+      // No fallthrough write: if there's no greeting to render, the
+      // visited flag stays unset so the visitor doesn't silently get
+      // bumped from first-visit to returning state. Once a merchant
+      // configures a greeting and the visitor actually sees it, the
+      // showGreeting() callback above writes the flag.
     }
     return;
   }
