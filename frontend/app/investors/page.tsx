@@ -39,7 +39,10 @@ import {
 import { LoomExplainer } from "../../components/LoomExplainer";
 import { InvestorSignupForm } from "../../components/InvestorSignupForm";
 
-const WEFUNDER_URL = "https://wefunder.com/dumclub";
+// Live WeFunder deal slug. The campaign is published at the
+// versioned slug `dum.club.1` (per the founder's confirmation in
+// the urgent fix request); the bare `dumclub` slug 404s.
+const WEFUNDER_URL = "https://wefunder.com/dum.club.1";
 const DECK_URL = "/investors/DUM_Club_Deck_Final_Accurate.pdf";
 const DECK_DOWNLOAD_NAME = "DUM_Club_Investor_Deck.pdf";
 
@@ -144,7 +147,13 @@ export default function InvestorsPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button href={WEFUNDER_URL} variant="primary" size="lg">
+              <Button
+                href={WEFUNDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                size="lg"
+              >
                 Invest on WeFunder
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
@@ -434,7 +443,13 @@ export default function InvestorsPage() {
               merchant loyalty network.
             </p>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Button href={WEFUNDER_URL} variant="primary" size="lg">
+              <Button
+                href={WEFUNDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="primary"
+                size="lg"
+              >
                 Invest on WeFunder
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
