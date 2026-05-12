@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
+import { SiteFooter } from "./SiteFooter";
 
 const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
 // VERCEL_ENV / NEXT_PUBLIC_VERCEL_ENV: only the NEXT_PUBLIC_-prefixed form
@@ -18,15 +19,61 @@ const vercelEnv =
   process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || "";
 const isPreview = vercelEnv === "preview";
 
+// Path prefixes that opt out of the SiteFooter even though they keep
+// the rest of the chrome (navbar, ticker, points pill). Embed routes
+// are already handled by the isEmbed early-return below — these are
+// pages where a marketing footer would distract from the task at
+// hand or, in the case of /project/[id]/{manage,book}, conflict with
+// the in-page workflow chrome.
+//
+// Public storefronts at /project/[id] keep the footer; only the
+// owner-only /manage surface and the buyer /book checkout flow
+// strip it.
+const FOOTER_EXCLUDED_PREFIXES = [
+  "/dashboard",
+  "/admin",
+  "/auth",
+  "/_dev",
+  "/verify/",
+];
+const FOOTER_EXCLUDED_EXACT = new Set<string>([
+  "/merchant/stripe-callback",
+]);
+const FOOTER_EXCLUDED_REGEXES = [
+  /^\/project\/[^/]+\/(manage|book)(?:\/|$)/,
+];
+
+function shouldHideFooter(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  if (FOOTER_EXCLUDED_EXACT.has(pathname)) return true;
+  for (const prefix of FOOTER_EXCLUDED_PREFIXES) {
+    if (pathname.startsWith(prefix)) return true;
+  }
+  for (const re of FOOTER_EXCLUDED_REGEXES) {
+    if (re.test(pathname)) return true;
+  }
+  return false;
+}
+
 /**
  * Wraps page content with the global DUM Club chrome (navbar, ticker,
- * DUM Points pill, deploy indicator) on every route EXCEPT the embed
- * routes.
+ * DUM Points pill, deploy indicator, marketing footer) on every route
+ * EXCEPT the embed routes.
  *
  * The /embed/[businessId] surface is loaded inside merchant websites
  * via iframe and must present zero DUM Club chrome — no nav, no
- * ticker, no points pill, no deploy badge. Anything that screams
- * "you're on dum.club" breaks the merchant's experience.
+ * ticker, no points pill, no deploy badge, no footer. Anything that
+ * screams "you're on dum.club" breaks the merchant's experience.
+ *
+ * The SiteFooter is mounted here too so every public marketing /
+ * informational page (home, discover, merchant, pricing, about,
+ * technology, investors, terms, privacy, hub, leaderboard, etc.)
+ * gets the same canonical footer without each page rendering its
+ * own copy. A small exclusion list strips it from dashboards,
+ * admin tooling, auth callbacks, the verify-code surface, the
+ * Stripe Connect callback, and the per-project /manage and /book
+ * flows — surfaces where a marketing footer would distract from
+ * the task at hand.
  *
  * Implementation: client component, gates on `usePathname()`. The
  * root layout still wraps everything in HTML/body and the providers
@@ -43,6 +90,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isEmbed =
     pathname === "/embed" || (pathname?.startsWith("/embed/") ?? false);
+  const hideFooter = shouldHideFooter(pathname);
 
   // Defer the deploy-badge render to post-mount. The badge depends on
   // VERCEL_ENV which is only reliably available on the server, so SSR
@@ -71,6 +119,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       {/* Global live activity ticker — sits directly below the navbar. */}
       <LiveActivityTicker />
       {children}
+      {!hideFooter && <SiteFooter />}
       <DumPill />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in
           production. Gated on `mounted` so SSR + first client paint
