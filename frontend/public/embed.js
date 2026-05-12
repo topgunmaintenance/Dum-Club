@@ -318,40 +318,202 @@
   // fallback handling) gets called once the merchant taps the
   // launcher, so the iframe still goes through the same code path.
   if (displayMode === "bubble") {
+    // Loom-style identity card. Replaces the old "Shop Live" pill
+    // with a single cohesive bubble that carries merchant identity,
+    // a LIVE/Deal badge, the greeting copy, and a tap-to-open CTA.
+    // The whole card is the click target; clicking opens the
+    // existing centered storefront overlay (unchanged below).
+    //
+    // Card never autoplays media, never covers the page above the
+    // fold. Pulse animation is on the avatar ring only — subtle
+    // enough not to read as spam, prominent enough to draw the eye.
     if (!document.getElementById("dum-embed-bubble-styles")) {
       var bs = document.createElement("style");
       bs.id = "dum-embed-bubble-styles";
       bs.textContent = [
+        // Card container. Fixed bottom-right on desktop; the right
+        // anchor + max-width keeps it inside the viewport on every
+        // mobile width. Translates in from below on mount.
+        "[data-dum-embed-card] {",
+        "  position: fixed;",
+        "  bottom: 20px;",
+        "  right: 20px;",
+        "  z-index: 2147483646;",
+        "  display: flex;",
+        "  align-items: stretch;",
+        "  gap: 12px;",
+        "  width: min(340px, calc(100vw - 32px));",
+        "  padding: 14px 14px 14px 14px;",
+        "  border: 0;",
+        "  border-radius: 18px;",
+        "  background: #ffffff;",
+        "  color: #0b2545;",
+        "  font: 500 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  text-align: left;",
+        "  cursor: pointer;",
+        "  box-shadow: 0 18px 44px rgba(11,18,32,0.22), 0 0 0 1px rgba(11,18,32,0.06);",
+        "  opacity: 0;",
+        "  transform: translateY(12px);",
+        "  transition: opacity 240ms ease, transform 240ms ease, box-shadow 200ms ease;",
+        "}",
+        "[data-dum-embed-card].is-visible {",
+        "  opacity: 1;",
+        "  transform: translateY(0);",
+        "}",
+        "[data-dum-embed-card]:hover {",
+        "  box-shadow: 0 22px 52px rgba(11,18,32,0.28), 0 0 0 1px rgba(0,209,164,0.4);",
+        "}",
+        "[data-dum-embed-card]:focus-visible {",
+        "  outline: 2px solid #00d1a4;",
+        "  outline-offset: 3px;",
+        "}",
+        // Avatar — circular monogram with a slow brand-teal pulse
+        // ring. The ring is the attention animation; the avatar
+        // itself stays still so it doesn't read as anxious.
+        "[data-dum-embed-card] .dum-avatar {",
+        "  position: relative;",
+        "  flex: 0 0 auto;",
+        "  width: 44px; height: 44px;",
+        "  border-radius: 50%;",
+        "  background: linear-gradient(135deg, #00d1a4 0%, #00ffa3 100%);",
+        "  color: #0b2545;",
+        "  display: inline-flex;",
+        "  align-items: center; justify-content: center;",
+        "  font: 700 15px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.02em;",
+        "}",
+        "[data-dum-embed-card] .dum-avatar::after {",
+        "  content: '';",
+        "  position: absolute; inset: -6px;",
+        "  border-radius: 50%;",
+        "  border: 2px solid rgba(0,209,164,0.5);",
+        "  animation: dum-embed-ring 2.2s ease-out infinite;",
+        "  pointer-events: none;",
+        "}",
+        // Body — name + greeting + CTA stacked.
+        "[data-dum-embed-card] .dum-body {",
+        "  flex: 1 1 auto;",
+        "  min-width: 0;",
+        "  display: flex;",
+        "  flex-direction: column;",
+        "  gap: 4px;",
+        "  padding-right: 20px;", // leave room for the close x
+        "}",
+        "[data-dum-embed-card] .dum-meta {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 8px;",
+        "  font-weight: 700;",
+        "  font-size: 13px;",
+        "  color: #0b2545;",
+        "}",
+        "[data-dum-embed-card] .dum-name {",
+        "  max-width: 100%;",
+        "  overflow: hidden;",
+        "  text-overflow: ellipsis;",
+        "  white-space: nowrap;",
+        "}",
+        // Live / Deal badge — semantic colour: red dot for IVS-
+        // live merchants, teal dot for deal-only. Tiny, all-caps,
+        // not distracting.
+        "[data-dum-embed-card] .dum-badge {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 5px;",
+        "  padding: 2px 7px;",
+        "  border-radius: 9999px;",
+        "  font-size: 9px;",
+        "  font-weight: 800;",
+        "  letter-spacing: 0.08em;",
+        "  text-transform: uppercase;",
+        "  white-space: nowrap;",
+        "}",
+        "[data-dum-embed-card] .dum-badge.is-live {",
+        "  background: rgba(239,68,68,0.12);",
+        "  color: #b91c1c;",
+        "}",
+        "[data-dum-embed-card] .dum-badge.is-deal {",
+        "  background: rgba(0,209,164,0.14);",
+        "  color: #036f56;",
+        "}",
+        "[data-dum-embed-card] .dum-badge-dot {",
+        "  width: 6px; height: 6px; border-radius: 50%;",
+        "}",
+        "[data-dum-embed-card] .dum-badge.is-live .dum-badge-dot {",
+        "  background: #ef4444;",
+        "  animation: dum-embed-blink 1.4s ease-in-out infinite;",
+        "}",
+        "[data-dum-embed-card] .dum-badge.is-deal .dum-badge-dot {",
+        "  background: #00d1a4;",
+        "}",
+        "[data-dum-embed-card] .dum-greeting {",
+        "  margin: 2px 0 4px 0;",
+        "  font-size: 13px;",
+        "  line-height: 1.4;",
+        "  color: #213047;",
+        "  display: -webkit-box;",
+        "  -webkit-line-clamp: 3;",
+        "  -webkit-box-orient: vertical;",
+        "  overflow: hidden;",
+        "}",
+        "[data-dum-embed-card] .dum-cta {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 4px;",
+        "  font-size: 12px;",
+        "  font-weight: 700;",
+        "  color: #036f56;",
+        "  letter-spacing: 0.02em;",
+        "}",
+        "[data-dum-embed-card] .dum-cta::after {",
+        "  content: '→';",
+        "  font-size: 14px;",
+        "  line-height: 1;",
+        "  transition: transform 160ms ease;",
+        "}",
+        "[data-dum-embed-card]:hover .dum-cta::after {",
+        "  transform: translateX(3px);",
+        "}",
+        // Close × in the top-right of the card. Stops propagation
+        // so it doesn't double-fire the open-overlay click.
+        "[data-dum-embed-card-close] {",
+        "  position: absolute; top: 8px; right: 8px;",
+        "  width: 26px; height: 26px;",
+        "  display: inline-flex; align-items: center; justify-content: center;",
+        "  border: 0; border-radius: 9999px;",
+        "  background: transparent; color: #5b6478;",
+        "  font-size: 16px; line-height: 1; cursor: pointer;",
+        "}",
+        "[data-dum-embed-card-close]:hover { color: #0b2545; background: rgba(11,18,32,0.06); }",
+        // After the card is dismissed, fall back to a tiny round
+        // launcher so the merchant CTA is still reachable. Stays
+        // out of the way until the visitor wants it back.
         "[data-dum-embed-launcher] {",
         "  position: fixed;",
         "  bottom: 20px;",
         "  right: 20px;",
         "  z-index: 2147483646;",
-        "  display: inline-flex;",
+        "  display: none;", // hidden by default; revealed on dismiss
         "  align-items: center;",
-        "  gap: 8px;",
-        "  padding: 12px 18px;",
+        "  justify-content: center;",
+        "  width: 56px; height: 56px;",
         "  border: 0;",
-        "  border-radius: 9999px;",
-        "  background: #00d1a4;",
+        "  border-radius: 50%;",
+        "  background: linear-gradient(135deg, #00d1a4 0%, #00ffa3 100%);",
         "  color: #0b2545;",
-        "  font: 700 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
-        "  letter-spacing: 0.04em;",
-        "  text-transform: uppercase;",
+        "  font: 700 22px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
         "  cursor: pointer;",
-        "  box-shadow: 0 10px 28px rgba(11,18,32,0.18), 0 0 0 4px rgba(0,209,164,0.18);",
+        "  box-shadow: 0 12px 28px rgba(11,18,32,0.2), 0 0 0 4px rgba(0,209,164,0.18);",
         "  transition: transform 160ms ease, box-shadow 160ms ease;",
         "}",
+        "[data-dum-embed-launcher].is-visible { display: inline-flex; }",
         "[data-dum-embed-launcher]:hover { transform: translateY(-2px); }",
         "[data-dum-embed-launcher]:focus-visible {",
         "  outline: 2px solid #0b2545;",
         "  outline-offset: 3px;",
         "}",
-        "[data-dum-embed-launcher] .dum-dot {",
-        "  width: 8px; height: 8px; border-radius: 50%;",
-        "  background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.45);",
-        "  animation: dum-embed-pulse 1.6s ease-in-out infinite;",
-        "}",
+        // Overlay + iframe — unchanged contract; clicking the card
+        // (or the small launcher) opens the centered storefront.
         "[data-dum-embed-overlay] {",
         "  position: fixed; inset: 0; z-index: 2147483647;",
         "  display: none; align-items: center; justify-content: center;",
@@ -386,37 +548,20 @@
         "  font-size: 18px; font-weight: 700; cursor: pointer;",
         "  z-index: 2;",
         "}",
-        "[data-dum-embed-greeting] {",
-        "  position: fixed;",
-        "  bottom: 76px;",
-        "  right: 20px;",
-        "  z-index: 2147483646;",
-        "  max-width: min(320px, calc(100vw - 32px));",
-        "  padding: 14px 40px 14px 16px;",
-        "  border-radius: 16px;",
-        "  background: #ffffff;",
-        "  color: #0b2545;",
-        "  font: 500 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
-        "  box-shadow: 0 18px 40px rgba(11,18,32,0.18), 0 0 0 1px rgba(11,18,32,0.06);",
-        "  opacity: 0;",
-        "  transform: translateY(6px);",
-        "  transition: opacity 220ms ease, transform 220ms ease;",
-        "  pointer-events: none;",
+        // Mobile tuning. Phones get a slightly snugger bottom
+        // anchor + tighter padding so the card doesn't crowd
+        // important page content above the fold.
+        "@media (max-width: 480px) {",
+        "  [data-dum-embed-card] {",
+        "    bottom: 12px;",
+        "    right: 12px;",
+        "    width: calc(100vw - 24px);",
+        "  }",
+        "  [data-dum-embed-launcher] {",
+        "    bottom: 12px;",
+        "    right: 12px;",
+        "  }",
         "}",
-        "[data-dum-embed-greeting].is-visible {",
-        "  opacity: 1;",
-        "  transform: translateY(0);",
-        "  pointer-events: auto;",
-        "}",
-        "[data-dum-embed-greeting-close] {",
-        "  position: absolute; top: 6px; right: 6px;",
-        "  width: 24px; height: 24px;",
-        "  display: inline-flex; align-items: center; justify-content: center;",
-        "  border: 0; border-radius: 9999px;",
-        "  background: transparent; color: #5b6478;",
-        "  font-size: 16px; line-height: 1; cursor: pointer;",
-        "}",
-        "[data-dum-embed-greeting-close]:hover { color: #0b2545; }",
         "@keyframes dum-embed-fade {",
         "  from { opacity: 0; } to { opacity: 1; }",
         "}",
@@ -424,36 +569,71 @@
         "  0%, 100% { transform: scale(1);   opacity: 0.85; }",
         "  50%      { transform: scale(1.4); opacity: 1;    }",
         "}",
+        "@keyframes dum-embed-ring {",
+        "  0%   { transform: scale(1);    opacity: 0.55; }",
+        "  80%  { transform: scale(1.25); opacity: 0;    }",
+        "  100% { transform: scale(1.25); opacity: 0;    }",
+        "}",
+        "@keyframes dum-embed-blink {",
+        "  0%, 100% { opacity: 1; }",
+        "  50%      { opacity: 0.35; }",
+        "}",
       ].join("\n");
       document.head.appendChild(bs);
     }
 
-    var launcher = document.createElement("button");
-    launcher.type = "button";
-    launcher.setAttribute("data-dum-embed-launcher", businessId);
-    launcher.setAttribute("aria-label", "Open DUM Club live storefront");
-    var dot = document.createElement("span");
-    dot.className = "dum-dot";
-    dot.setAttribute("aria-hidden", "true");
-    var label = document.createElement("span");
-    label.textContent = "Shop Live";
-    launcher.appendChild(dot);
-    launcher.appendChild(label);
+    // ── Compute identity copy ──
+    var cfg = popinConfig || {};
+    var popinEnabled = cfg.enabled !== false;
+    var merchantTitle =
+      (cfg.title || cfg.merchant_title || "").trim() ||
+      // Last-resort: convert the businessId/slug into a Title-Case
+      // approximation so we never render a slug verbatim ("topgun-
+      // maintenance" -> "Topgun Maintenance").
+      businessId
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
 
+    // Initials for the circular avatar — up to two letters,
+    // uppercased, from the first two words of the merchant title.
+    var initials = merchantTitle
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(function (w) { return w.charAt(0).toUpperCase(); })
+      .join("") || "•";
+
+    // First-visit vs returning-visitor greeting selection. Mirror
+    // PR #161's contract: the localStorage `visited` flag is only
+    // written after the card actually renders so a tab-closed-
+    // during-delay user doesn't get bumped to "returning" state.
+    var keys = popinStorageKeys();
+    var hasVisited = !!safeLocalRead(keys.visited);
+    var firstGreeting = (cfg.greeting || "").trim();
+    var returningGreeting = (cfg.returning_greeting || "").trim();
+    var greetingText = hasVisited
+      ? returningGreeting || firstGreeting
+      : firstGreeting || returningGreeting;
+    var isReturning = hasVisited && !!returningGreeting;
+    var oncePerSession = cfg.once_per_session === true;
+    var alreadyShownThisSession =
+      oncePerSession && safeSessionRead(keys.sessionShown) === "1";
+
+    // ── Build the storefront overlay (unchanged contract) ──
     var overlay = document.createElement("div");
     overlay.setAttribute("data-dum-embed-overlay", businessId);
     overlay.setAttribute("role", "dialog");
     overlay.setAttribute("aria-modal", "true");
     overlay.setAttribute("aria-label", "DUM Club live storefront");
 
-    var card = document.createElement("div");
-    card.setAttribute("data-dum-embed-overlay-card", "");
+    var overlayCard = document.createElement("div");
+    overlayCard.setAttribute("data-dum-embed-overlay-card", "");
 
-    var closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.setAttribute("data-dum-embed-overlay-close", "");
-    closeBtn.setAttribute("aria-label", "Close DUM Club");
-    closeBtn.textContent = "×";
+    var overlayClose = document.createElement("button");
+    overlayClose.type = "button";
+    overlayClose.setAttribute("data-dum-embed-overlay-close", "");
+    overlayClose.setAttribute("aria-label", "Close DUM Club");
+    overlayClose.textContent = "×";
 
     var overlayIframe = null;
     function ensureOverlayIframe() {
@@ -472,9 +652,8 @@
         "sandbox",
         "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
       );
-      card.appendChild(overlayIframe);
+      overlayCard.appendChild(overlayIframe);
     }
-
     function openOverlay() {
       ensureOverlayIframe();
       overlay.classList.add("is-open");
@@ -484,9 +663,7 @@
       overlay.classList.remove("is-open");
       document.body.style.overflow = "";
     }
-
-    launcher.addEventListener("click", openOverlay);
-    closeBtn.addEventListener("click", closeOverlay);
+    overlayClose.addEventListener("click", closeOverlay);
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay) closeOverlay();
     });
@@ -495,89 +672,172 @@
         closeOverlay();
       }
     });
-
-    card.appendChild(closeBtn);
-    overlay.appendChild(card);
+    overlayCard.appendChild(overlayClose);
+    overlay.appendChild(overlayCard);
     document.body.appendChild(overlay);
+
+    // ── Build the fallback round launcher (hidden until card is
+    //    dismissed; gives the visitor a way back in) ──
+    var launcher = document.createElement("button");
+    launcher.type = "button";
+    launcher.setAttribute("data-dum-embed-launcher", businessId);
+    launcher.setAttribute("aria-label", "Open DUM Club live storefront");
+    launcher.textContent = "▸";
+    launcher.addEventListener("click", openOverlay);
     document.body.appendChild(launcher);
 
-    // ── Pop-in greeting card ──
-    // Surfaced only when popin_config.enabled is true (default) AND
-    // a non-empty greeting string is available for the visitor's
-    // first-vs-returning state. Mirrors the merchant's dashboard
-    // settings exactly: delay_seconds + once_per_session.
-    var cfg = popinConfig || {};
-    var popinEnabled = cfg.enabled !== false;
-    if (popinEnabled) {
-      var keys = popinStorageKeys();
-      var hasVisited = !!safeLocalRead(keys.visited);
-      var firstGreeting = (cfg.greeting || "").trim();
-      var returningGreeting = (cfg.returning_greeting || "").trim();
-      var greetingText = hasVisited
-        ? returningGreeting || firstGreeting
-        : firstGreeting || returningGreeting;
-      var isReturning = hasVisited && !!returningGreeting;
-      var oncePerSession = cfg.once_per_session === true;
-      var alreadyShownThisSession =
-        oncePerSession && safeSessionRead(keys.sessionShown) === "1";
+    // ── Build the Loom-style identity card ──
+    // Rendered as a <button> so it's keyboard-tabbable + Enter-
+    // activatable without extra ARIA wiring. Greeting text uses
+    // textContent (never innerHTML) — merchants can put arbitrary
+    // strings in the dashboard and we treat them as untrusted.
+    var cardEl = null;
+    function buildCard() {
+      cardEl = document.createElement("button");
+      cardEl.type = "button";
+      cardEl.setAttribute("data-dum-embed-card", businessId);
+      cardEl.setAttribute(
+        "aria-label",
+        "Open " + merchantTitle + " live storefront"
+      );
 
-      if (greetingText && !alreadyShownThisSession) {
-        var greet = document.createElement("div");
-        greet.setAttribute("data-dum-embed-greeting", businessId);
-        greet.setAttribute("role", "status");
-        greet.setAttribute("aria-live", "polite");
+      var avatar = document.createElement("span");
+      avatar.className = "dum-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = initials;
 
-        var greetBody = document.createElement("div");
-        greetBody.textContent = greetingText;
-        var greetClose = document.createElement("button");
-        greetClose.type = "button";
-        greetClose.setAttribute("data-dum-embed-greeting-close", "");
-        greetClose.setAttribute("aria-label", "Dismiss greeting");
-        greetClose.textContent = "×";
+      var body = document.createElement("span");
+      body.className = "dum-body";
 
-        greet.appendChild(greetBody);
-        greet.appendChild(greetClose);
-        document.body.appendChild(greet);
+      var meta = document.createElement("span");
+      meta.className = "dum-meta";
 
-        var delayMs = Math.max(0, Number(cfg.delay_seconds) || 0) * 1000;
-        var delayCap = 60000; // mirror server clamp
-        if (delayMs > delayCap) delayMs = delayCap;
+      var name = document.createElement("span");
+      name.className = "dum-name";
+      name.textContent = merchantTitle;
 
-        var showGreeting = function () {
-          greet.classList.add("is-visible");
-          if (isReturning) {
-            dumLog("Returning-visitor greeting shown");
-          } else {
-            dumLog("First-visit greeting shown");
-          }
-          if (oncePerSession) safeSessionWrite(keys.sessionShown, "1");
-          // Mark the visitor as known for future sessions ONLY after
-          // the greeting actually renders. Writing the flag earlier
-          // (or on the no-greeting fallthrough below) used to "burn"
-          // the first-visit state for tab-closed-during-delay users,
-          // meaning their next session would resolve to the
-          // returning-visitor greeting even though they never saw
-          // the first one.
-          if (!hasVisited) safeLocalWrite(keys.visited, "1");
-        };
+      var badge = document.createElement("span");
+      var isLive = cfg.is_live === true || popinConfig && popinConfig.is_live === true;
+      badge.className = "dum-badge " + (isLive ? "is-live" : "is-deal");
+      var badgeDot = document.createElement("span");
+      badgeDot.className = "dum-badge-dot";
+      var badgeLabel = document.createElement("span");
+      badgeLabel.textContent = isLive ? "Live now" : "Deal";
+      badge.appendChild(badgeDot);
+      badge.appendChild(badgeLabel);
 
-        if (delayMs > 0) {
-          window.setTimeout(showGreeting, delayMs);
-        } else {
-          showGreeting();
+      meta.appendChild(name);
+      meta.appendChild(badge);
+
+      var greetingEl = document.createElement("span");
+      greetingEl.className = "dum-greeting";
+      greetingEl.textContent =
+        greetingText ||
+        (isLive
+          ? "Live now. Tap to join."
+          : "Check today's live deal.");
+
+      var cta = document.createElement("span");
+      cta.className = "dum-cta";
+      cta.textContent = isLive ? "Tap to shop live" : "View today's deal";
+
+      body.appendChild(meta);
+      body.appendChild(greetingEl);
+      body.appendChild(cta);
+
+      var close = document.createElement("span");
+      close.setAttribute("data-dum-embed-card-close", "");
+      close.setAttribute("role", "button");
+      close.setAttribute("tabindex", "0");
+      close.setAttribute("aria-label", "Dismiss");
+      close.textContent = "×";
+
+      // Card click → open overlay. Close × stops propagation so
+      // dismiss doesn't double as open.
+      cardEl.addEventListener("click", function () {
+        openOverlay();
+      });
+      function dismissCard(e) {
+        if (e) {
+          e.stopPropagation();
+          if (e.preventDefault) e.preventDefault();
         }
-
-        var dismissGreeting = function () {
-          greet.classList.remove("is-visible");
-        };
-        greetClose.addEventListener("click", dismissGreeting);
-        launcher.addEventListener("click", dismissGreeting);
+        if (!cardEl) return;
+        cardEl.classList.remove("is-visible");
+        // Reveal the small round launcher so the visitor still has
+        // a path back into the storefront after dismissal.
+        launcher.classList.add("is-visible");
+        // Remove the card from the layout tree after the fade out
+        // finishes so it doesn't keep grabbing focus.
+        window.setTimeout(function () {
+          if (cardEl && cardEl.parentNode) {
+            cardEl.parentNode.removeChild(cardEl);
+            cardEl = null;
+          }
+        }, 280);
       }
-      // No fallthrough write: if there's no greeting to render, the
-      // visited flag stays unset so the visitor doesn't silently get
-      // bumped from first-visit to returning state. Once a merchant
-      // configures a greeting and the visitor actually sees it, the
-      // showGreeting() callback above writes the flag.
+      close.addEventListener("click", dismissCard);
+      close.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") dismissCard(e);
+      });
+
+      cardEl.appendChild(avatar);
+      cardEl.appendChild(body);
+      cardEl.appendChild(close);
+      document.body.appendChild(cardEl);
+    }
+
+    // ── Mount logic ──
+    // Always build the card so the merchant identity is visible.
+    // The greeting copy is selected above; if neither greeting is
+    // configured we still surface the merchant name + a sensible
+    // default greeting + CTA so the card never reads blank.
+    //
+    // showOncePerSession means "once we've shown this card with a
+    // configured greeting this session, don't show it again" — in
+    // that case we skip straight to the dismissed-state launcher.
+    if (!popinEnabled) {
+      // Merchant explicitly disabled pop-in. Show only the launcher
+      // so the storefront remains reachable.
+      launcher.classList.add("is-visible");
+      return;
+    }
+    if (alreadyShownThisSession) {
+      launcher.classList.add("is-visible");
+      return;
+    }
+
+    buildCard();
+
+    var delayMs = Math.max(0, Number(cfg.delay_seconds) || 0) * 1000;
+    var delayCap = 60000; // mirror server clamp
+    if (delayMs > delayCap) delayMs = delayCap;
+
+    function showCard() {
+      if (!cardEl) return;
+      cardEl.classList.add("is-visible");
+      if (greetingText) {
+        if (isReturning) {
+          dumLog("Returning-visitor greeting shown");
+        } else {
+          dumLog("First-visit greeting shown");
+        }
+      } else {
+        dumLog("Identity card shown (no greeting configured)");
+      }
+      // Once-per-session bookkeeping: tag the session so a SPA
+      // reload within the tab doesn't re-show the card.
+      if (oncePerSession) safeSessionWrite(keys.sessionShown, "1");
+      // Mark the visitor as known ONLY after the card actually
+      // renders. Preserves the PR #161 contract — tab-closed-
+      // during-delay users don't get bumped to returning state.
+      if (!hasVisited && greetingText) safeLocalWrite(keys.visited, "1");
+    }
+
+    if (delayMs > 0) {
+      window.setTimeout(showCard, delayMs);
+    } else {
+      showCard();
     }
     return;
   }

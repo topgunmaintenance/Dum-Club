@@ -76,6 +76,9 @@ function softFallback(slug: string, reason: string) {
       businessSlug: slug,
       id: null,
       slug,
+      // No row available; surface the slug as the visible identity
+      // line so the bubble doesn't render blank.
+      title: slug,
       // Outer embed display mode — automatic is the safest default
       // because embed.js falls back to bubble on its own when this
       // endpoint can't load.
@@ -154,7 +157,12 @@ export async function GET(
     const base = supabase
       .from("projects")
       .select(
-        "id, slug, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, popin_config",
+        // title is included so the embed bubble can render the
+        // merchant's name as identity (e.g. "Topgun Maintenance").
+        // The bubble falls back to the slug + a derived initial
+        // when title is null/empty, so this select staying string-
+        // shaped is correctness-preserving for older rows.
+        "id, slug, title, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, popin_config",
       )
       .eq("is_deleted", false)
       .limit(1);
@@ -207,6 +215,10 @@ export async function GET(
         businessSlug: row.slug ?? slug,
         id: row.id,
         slug: row.slug ?? slug,
+        // Human-friendly merchant name. The embed bubble renders
+        // this as the identity line; falls back to the slug
+        // server-side so the bubble never displays a blank.
+        title: row.title || row.slug || slug,
         // Outer embed display mode (bubble / full / automatic)
         displayMode,
         embed_display_mode: displayMode,
