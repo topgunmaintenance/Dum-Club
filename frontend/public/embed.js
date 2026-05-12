@@ -479,12 +479,21 @@
         "[data-dum-embed-card-close] {",
         "  position: absolute; top: 8px; right: 8px;",
         "  width: 26px; height: 26px;",
+        "  padding: 0;",
+        "  margin: 0;",
         "  display: inline-flex; align-items: center; justify-content: center;",
         "  border: 0; border-radius: 9999px;",
         "  background: transparent; color: #5b6478;",
-        "  font-size: 16px; line-height: 1; cursor: pointer;",
+        "  font: 700 16px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  cursor: pointer;",
+        "  -webkit-appearance: none;",
+        "  appearance: none;",
         "}",
         "[data-dum-embed-card-close]:hover { color: #0b2545; background: rgba(11,18,32,0.06); }",
+        "[data-dum-embed-card-close]:focus-visible {",
+        "  outline: 2px solid #00d1a4;",
+        "  outline-offset: 2px;",
+        "}",
         // After the card is dismissed, fall back to a tiny round
         // launcher so the merchant CTA is still reachable. Stays
         // out of the way until the visitor wants it back.
@@ -548,14 +557,29 @@
         "  font-size: 18px; font-weight: 700; cursor: pointer;",
         "  z-index: 2;",
         "}",
-        // Mobile tuning. Phones get a slightly snugger bottom
-        // anchor + tighter padding so the card doesn't crowd
-        // important page content above the fold.
+        // Mobile tuning. Cap the card at 280px on small phones
+        // (vs the calc(100vw - 24px) we used initially — that was
+        // basically full width and crowded the bottom of merchant
+        // pages). 280px leaves ~95px on the left visible for page
+        // content on a 375px iPhone, still gives the body enough
+        // room for a 2-line greeting + CTA.
+        // Greeting clamps to 2 lines on mobile (vs 3 on desktop)
+        // so the card stays compact in the vertical direction too.
+        // Close x grows to 32px so the tap target is forgiving.
         "@media (max-width: 480px) {",
         "  [data-dum-embed-card] {",
         "    bottom: 12px;",
         "    right: 12px;",
-        "    width: calc(100vw - 24px);",
+        "    width: min(280px, calc(100vw - 24px));",
+        "    padding: 12px;",
+        "  }",
+        "  [data-dum-embed-card] .dum-greeting {",
+        "    -webkit-line-clamp: 2;",
+        "    font-size: 12.5px;",
+        "  }",
+        "  [data-dum-embed-card-close] {",
+        "    top: 6px; right: 6px;",
+        "    width: 32px; height: 32px;",
         "  }",
         "  [data-dum-embed-launcher] {",
         "    bottom: 12px;",
@@ -687,15 +711,22 @@
     document.body.appendChild(launcher);
 
     // ── Build the Loom-style identity card ──
-    // Rendered as a <button> so it's keyboard-tabbable + Enter-
-    // activatable without extra ARIA wiring. Greeting text uses
-    // textContent (never innerHTML) — merchants can put arbitrary
-    // strings in the dashboard and we treat them as untrusted.
+    // Rendered as a div with role="button" rather than a literal
+    // <button>: the close × must be a real interactive element
+    // for keyboard / screen-reader users, and <button> inside
+    // <button> is invalid HTML that confuses assistive tech. The
+    // role + tabindex + keydown handler below give the outer card
+    // identical keyboard behaviour without the nesting bug.
+    //
+    // Greeting text uses textContent (never innerHTML) — merchants
+    // can put arbitrary strings in the dashboard and we treat them
+    // as untrusted.
     var cardEl = null;
     function buildCard() {
-      cardEl = document.createElement("button");
-      cardEl.type = "button";
+      cardEl = document.createElement("div");
       cardEl.setAttribute("data-dum-embed-card", businessId);
+      cardEl.setAttribute("role", "button");
+      cardEl.setAttribute("tabindex", "0");
       cardEl.setAttribute(
         "aria-label",
         "Open " + merchantTitle + " live storefront"
@@ -745,17 +776,24 @@
       body.appendChild(greetingEl);
       body.appendChild(cta);
 
-      var close = document.createElement("span");
+      var close = document.createElement("button");
+      close.type = "button";
       close.setAttribute("data-dum-embed-card-close", "");
-      close.setAttribute("role", "button");
-      close.setAttribute("tabindex", "0");
       close.setAttribute("aria-label", "Dismiss");
       close.textContent = "×";
 
-      // Card click → open overlay. Close × stops propagation so
-      // dismiss doesn't double as open.
+      // Card click / Enter / Space → open overlay. Close × stops
+      // propagation so dismiss doesn't double as open.
       cardEl.addEventListener("click", function () {
         openOverlay();
+      });
+      cardEl.addEventListener("keydown", function (e) {
+        // Don't hijack arrow keys, Tab, Esc — only the
+        // button-activation keys.
+        if (e.key === "Enter" || e.key === " ") {
+          if (e.preventDefault) e.preventDefault();
+          openOverlay();
+        }
       });
       function dismissCard(e) {
         if (e) {
@@ -777,9 +815,6 @@
         }, 280);
       }
       close.addEventListener("click", dismissCard);
-      close.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") dismissCard(e);
-      });
 
       cardEl.appendChild(avatar);
       cardEl.appendChild(body);
