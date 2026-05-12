@@ -351,6 +351,39 @@ export default function EmbedShellPage() {
   // closes — no cross-session leakage.
   const AUTOBUY_STORAGE_KEY = "dum_embed_autobuy";
 
+  // Persist a buy intent into sessionStorage so the resume effect
+  // below can pick it up after auth completes. Two call sites:
+  //   1. Mount mirror of ?autobuy=<id> URL params (top-level new-
+  //      tab landing back from openTopLevelSignIn — iframe path).
+  //   2. Inline anon Buy / Pay-with-SOL click (Piece 2 of the chat
+  //      flow design): the user is on /embed/[slug] directly, taps
+  //      Buy, we stash the intent + call Privy login(). The same
+  //      resume effect that handles the iframe round-trip resumes
+  //      checkout here once authUser flips truthy.
+  // The shape stays the same across both paths: { id, pay, t }.
+  // Scoped per (project, offer) at the resume site below — if the
+  // merchant pins a different offer between sign-in steps we
+  // intentionally leave the buyer on the storefront instead of
+  // surprise-charging for the wrong thing.
+  function writeAutobuyIntent(offerId: string, pay: "card" | "sol") {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        AUTOBUY_STORAGE_KEY,
+        JSON.stringify({
+          id: offerId,
+          pay: pay === "sol" ? "sol" : "",
+          t: Date.now(),
+        }),
+      );
+    } catch {
+      // Storage blocked (private browsing / sandboxed iframe without
+      // allow-same-origin). Auto-resume can't fire; the user will
+      // need to tap Buy a second time after sign-in. Silent
+      // fallthrough is correct.
+    }
+  }
+
   // Mirror the autobuy intent into sessionStorage on first mount.
   // Does not reference pinnedOffer, so it stays here at the top
   // of the component near the rest of the mount-only effects.
@@ -651,6 +684,11 @@ export default function EmbedShellPage() {
         }
         return;
       }
+      // Inline (non-iframe) anon path. Stash the buy intent before
+      // Privy login() so the resume effect below auto-fires
+      // Stripe Checkout the moment authUser flips truthy. No
+      // second Buy click required.
+      writeAutobuyIntent(pinnedOffer.id, "card");
       try {
         login();
       } catch (err) {
@@ -763,6 +801,10 @@ export default function EmbedShellPage() {
         }
         return;
       }
+      // Inline anon path — see writeAutobuyIntent for the
+      // resume-after-login contract. "sol" tells the resume
+      // effect to dispatch handlePayWithSol instead of handleBuy.
+      writeAutobuyIntent(pinnedOffer.id, "sol");
       try {
         login();
       } catch (err) {
