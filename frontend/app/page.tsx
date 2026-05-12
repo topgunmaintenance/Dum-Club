@@ -3139,7 +3139,7 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-xl font-black tracking-tight text-primary">
+                <span className="text-xl font-black tracking-tight text-zinc-100">
                   DUM<span className="text-brand-teal">CLUB</span>
                 </span>
               </div>
@@ -3251,7 +3251,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-80" />
+                <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto" />
                 <span className="text-[12px] font-bold tracking-tight">
                   <span className="text-zinc-100">DUM </span><span className="text-brand-teal">CLUB</span>
                 </span>
