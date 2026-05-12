@@ -262,7 +262,7 @@ export function Navbar() {
                     "block border-b border-default px-5 py-4 text-base font-medium transition-colors",
                     active
                       ? "bg-brand-teal-soft text-brand-navy"
-                      : "text-primary hover:bg-surface-muted",
+                      : "text-primary hover:bg-surface-muted hover:text-brand-teal focus-visible:text-brand-teal",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
                 >
@@ -310,7 +310,7 @@ export function Navbar() {
                         "block border-b border-default px-4 py-3 text-sm font-medium transition-colors last:border-b-0",
                         active
                           ? "bg-brand-teal-soft text-brand-navy"
-                          : "text-primary hover:bg-surface-muted",
+                          : "text-primary hover:bg-surface-muted hover:text-brand-teal focus-visible:text-brand-teal",
                       ].join(" ")}
                       aria-current={active ? "page" : undefined}
                     >

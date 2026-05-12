@@ -978,10 +978,10 @@ async def get_project(project_id: str):
 async def get_embed_config(project_id: str, response: Response):
     """
     Minimal public read for embed.js. Returns the merchant-chosen
-    display mode (bubble / full / automatic) and a couple of public
-    live-state booleans so the embed script can pick the right
-    render path WITHOUT the merchant having to re-paste their
-    snippet every time they switch modes in the dashboard.
+    outer display mode (bubble / full / automatic) plus the inner
+    pop-in greeting payload (popin_config) so the embed script can
+    drive the floating bubble on the merchant's own site without a
+    second round-trip.
 
     CORS is explicitly opened to "*" because embed.js runs on the
     merchant's own website (e.g. topgunmaintenance.com) which is
@@ -989,44 +989,94 @@ async def get_embed_config(project_id: str, response: Response):
     Every field returned here is public information already
     visible on /embed/{id}; nothing sensitive crosses this
     boundary. GET only.
+
+    Resilience contract:
+      This endpoint MUST NOT 5xx. embed.js is loaded on third-party
+      merchant sites; an upstream 5xx collapses the embed back to a
+      hard-to-debug "renders the wrong UI" failure mode (see PR fix
+      for the topgunmaintenance.com bubble outage). Any unexpected
+      Supabase/DB error degrades to a 200 with conservative defaults
+      so the merchant page keeps rendering something sane while the
+      backend log captures the real exception.
     """
-    supabase = get_client()
-
-    # Accept slug or UUID — frontend forwards the merchant's
-    # business id verbatim. resolve_project_uuid handles both.
-    resolved_uuid = resolve_project_uuid(supabase, project_id)
-    if not resolved_uuid:
-        # Set CORS even on 404 so the browser can read the error
-        # message inline. Avoids a confusing CORS error masking
-        # what is actually a bad business id.
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    res = (
-        supabase.table("projects")
-        .select(
-            "id, slug, embed_display_mode, is_live, live_provider, "
-            "ivs_stage_arn, pinned_offer_id"
-        )
-        .eq("id", resolved_uuid)
-        .eq("is_deleted", False)
-        .limit(1)
-        .execute()
-    )
-    if not res.data:
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    row = res.data[0]
-
-    # Wildcard ACAO: this endpoint is intentionally public so any
-    # merchant origin can read it. No auth required, no cookies
-    # consulted, allow-credentials NOT set (browsers reject "*"
-    # ACAO when credentials are included).
+    # Common CORS headers — set unconditionally so every code path
+    # (success, 404, soft-degraded fallback) is readable cross-origin.
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     response.headers["Cache-Control"] = "public, max-age=15"
+
+    def _fallback(reason: str) -> dict:
+        # Log the slug + reason so Railway picks up the real cause
+        # without leaking an exception to the merchant's page.
+        try:
+            import logging
+            logging.getLogger(__name__).warning(
+                "embed-config soft-degraded for project_id=%r reason=%s",
+                project_id,
+                reason,
+            )
+        except Exception:
+            pass
+        return {
+            "id": None,
+            "slug": project_id,
+            "embed_display_mode": "automatic",
+            "is_live": False,
+            "live_provider": None,
+            "ivs_stage_arn": None,
+            "pinned_offer_id": None,
+            "popin_config": {},
+            "degraded": True,
+        }
+
+    try:
+        supabase = get_client()
+    except Exception as exc:
+        return _fallback(f"supabase_client_init:{type(exc).__name__}")
+
+    # Accept slug or UUID — frontend forwards the merchant's
+    # business id verbatim. resolve_project_uuid handles both.
+    try:
+        resolved_uuid = resolve_project_uuid(supabase, project_id)
+    except Exception as exc:
+        return _fallback(f"resolve_uuid:{type(exc).__name__}")
+
+    if not resolved_uuid:
+        # Genuine not-found stays a 404 (with CORS already set
+        # above so the browser can read the body inline). This is
+        # the only non-200 path we deliberately keep — a missing
+        # business id is a snippet / dashboard mistake, not a
+        # transient backend failure.
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        res = (
+            supabase.table("projects")
+            .select(
+                "id, slug, embed_display_mode, is_live, live_provider, "
+                "ivs_stage_arn, pinned_offer_id, popin_config"
+            )
+            .eq("id", resolved_uuid)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        # Most likely path here is a transient Supabase / PostgREST
+        # error or a column drift if migration 040 / 038 ever
+        # regresses. Soft-degrade rather than 5xx.
+        return _fallback(f"projects_select:{type(exc).__name__}")
+
+    if not res.data:
+        # Project resolved but row disappeared between calls (race).
+        # Treat as 404 to match the genuine-not-found path above.
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    row = res.data[0]
+    popin_raw = row.get("popin_config") or {}
+    if not isinstance(popin_raw, dict):
+        popin_raw = {}
 
     return {
         "id": row["id"],
@@ -1036,7 +1086,36 @@ async def get_embed_config(project_id: str, response: Response):
         "live_provider": row.get("live_provider"),
         "ivs_stage_arn": row.get("ivs_stage_arn"),
         "pinned_offer_id": row.get("pinned_offer_id"),
+        # Pop-in seller payload. Keys mirror migration 038's allow-list
+        # (see _POPIN_ALLOWED_KEYS) so embed.js can render the floating
+        # greeting without a second API call. Unknown keys are dropped
+        # on write upstream; we forward only the known shape here.
+        "popin_config": {
+            "enabled": bool(popin_raw.get("enabled", True)),
+            "greeting": popin_raw.get("greeting") or "",
+            "returning_greeting": popin_raw.get("returning_greeting") or "",
+            "delay_seconds": _coerce_delay_seconds(popin_raw.get("delay_seconds")),
+            "once_per_session": bool(popin_raw.get("once_per_session", False)),
+            "offer_id": popin_raw.get("offer_id"),
+            "mode": popin_raw.get("mode") or "bubble",
+            "video_url": popin_raw.get("video_url"),
+        },
     }
+
+
+def _coerce_delay_seconds(value) -> int:
+    """Clamp the merchant-supplied delay into [0, 60]. Defaults to 0
+    when the value is missing, non-numeric, or out of range — that way
+    a malformed write doesn't strand the embed waiting forever."""
+    try:
+        n = int(value) if value is not None else 0
+    except (TypeError, ValueError):
+        return 0
+    if n < 0:
+        return 0
+    if n > 60:
+        return 60
+    return n
 
 
 # -----------------------------
