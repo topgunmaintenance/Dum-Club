@@ -31,6 +31,7 @@ from api.routes import (
     generate_app,
     refine_project,
     token,
+    investor_leads,
     project_tokens,
     market,
     booking,
@@ -208,6 +209,7 @@ app.include_router(transcribe.router, prefix="/api/transcribe", tags=["Transcrip
 app.include_router(speech.router, prefix="/api/speech", tags=["Speech"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(memories.router, prefix="/api/memories", tags=["Memories"])
+app.include_router(investor_leads.router, prefix="/api/investor-leads", tags=["Investor Leads"])
 app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
 app.include_router(market.router, tags=["Market"])
 app.include_router(booking.router, tags=["Booking"])
