@@ -3173,7 +3173,7 @@ export default function Home() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-secondary transition hover:text-primary"
+                      className="text-sm text-secondary transition hover:text-brand-teal"
                     >
                       {link.label}
                     </Link>
@@ -3202,7 +3202,7 @@ export default function Home() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-secondary transition hover:text-primary"
+                      className="text-sm text-secondary transition hover:text-brand-teal"
                     >
                       {link.label}
                     </a>
@@ -3226,7 +3226,7 @@ export default function Home() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-secondary transition hover:text-primary"
+                      className="text-sm text-secondary transition hover:text-brand-teal"
                     >
                       {link.label}
                     </a>
@@ -3244,7 +3244,7 @@ export default function Home() {
               participating merchants. They are not an investment, with no secondary market and no
               expectation of price appreciation. For technical details on how the platform
               is built, see the{" "}
-              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-primary hover:underline">
+              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-brand-teal hover:underline">
                 Technology page
               </Link>
               .
@@ -3253,16 +3253,16 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto opacity-80" />
                 <span className="text-[12px] font-bold tracking-tight">
-                  <span className="text-primary">DUM </span><span style={{ color: "#00FFA3" }}>CLUB</span>
+                  <span className="text-zinc-100">DUM </span><span className="text-brand-teal">CLUB</span>
                 </span>
                 <span className="text-[10px] text-muted">© 2026 · All rights reserved</span>
               </div>
               <div className="flex gap-6">
                 <div className="flex gap-6">
-                  <Link href="/terms" className="text-[10px] text-muted transition hover:text-secondary">
+                  <Link href="/terms" className="text-[10px] text-muted transition hover:text-brand-teal">
                     Terms of Use
                   </Link>
-                  <Link href="/privacy" className="text-[10px] text-muted transition hover:text-secondary">
+                  <Link href="/privacy" className="text-[10px] text-muted transition hover:text-brand-teal">
                     Privacy Policy
                   </Link>
                 </div>
