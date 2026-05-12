@@ -2,7 +2,10 @@
  * useProjects — loads projects + batched market data.
  *
  * Calls GET /api/projects/public on mount, then polls market
- * snapshots every 45s (visibility-aware — pauses when tab hidden).
+ * snapshots every 60s (visibility-aware — pauses when tab hidden).
+ * 60s matches the LiveActivityTicker cadence so the marketplace
+ * never has two staggered refresh waves competing for the same
+ * Railway endpoints.
  */
 
 "use client";
@@ -12,7 +15,7 @@ import { API_BASE } from "../apiBase";
 import type { Project, MarketSnapshot } from "./types";
 import { loadMarketSnapshotsBatch } from "./useMarketBatch";
 
-const MARKET_POLL_INTERVAL = 45_000;
+const MARKET_POLL_INTERVAL = 60_000;
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);

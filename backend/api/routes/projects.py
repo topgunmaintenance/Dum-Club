@@ -1004,7 +1004,12 @@ async def get_embed_config(project_id: str, response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Cache-Control"] = "public, max-age=15"
+    # 60s public cache. Cuts request volume from third-party merchant
+    # sites by ~4x vs the previous 15s while staying responsive to
+    # dashboard edits (worst-case staleness = one minute). The
+    # endpoint payload is intentionally public and revalidates
+    # automatically on the next browser request after the TTL.
+    response.headers["Cache-Control"] = "public, max-age=60"
 
     def _fallback(reason: str) -> dict:
         # Log the slug + reason so Railway picks up the real cause

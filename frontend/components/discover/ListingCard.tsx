@@ -162,9 +162,12 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           )}
         </div>
 
-        {/* Title — verified merchants get the brand-teal check pill. */}
-        <div className="flex items-center gap-1.5">
-          <h3 className="truncate text-base font-bold text-primary sm:text-lg">
+        {/* Title — verified merchants get the brand-teal check pill.
+            line-clamp-2 instead of truncate so multi-word names like
+            "Topgun Maintenance" wrap to a second line rather than
+            getting chopped mid-word in the marketplace grid. */}
+        <div className="flex items-start gap-1.5">
+          <h3 className="line-clamp-2 text-base font-bold text-primary sm:text-lg">
             {project.title || project.name || "Untitled"}
           </h3>
           {project.verified && (
