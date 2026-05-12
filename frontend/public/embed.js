@@ -37,6 +37,45 @@
 (function () {
   "use strict";
 
+  // ── 0. Self-deduplication ──
+  // The merchant's CMS or theme may inject the same snippet twice
+  // (e.g. both dum.club/embed.js and www.dum.club/embed.js end up
+  // in the rendered head). Without a guard each instance would
+  // mount its own wrapper or floating launcher. The flag is set on
+  // window — not module-scoped — so a second copy of this same
+  // file, loaded under a different origin, still sees the marker.
+  if (window.__DUM_EMBED_LOADED__) {
+    if (window.console && window.console.info) {
+      window.console.info(
+        "[DUM embed] Skipping duplicate embed.js load — already initialised."
+      );
+    }
+    return;
+  }
+  window.__DUM_EMBED_LOADED__ = true;
+
+  // Single logger so production users see one well-namespaced
+  // breadcrumb per state transition. Silent if the host page has
+  // muted the console, which some merchant CMS plugins do.
+  function dumLog(message) {
+    if (window.console && window.console.log) {
+      try {
+        window.console.log("[DUM embed] " + message);
+      } catch (e) {
+        // no-op — never break the merchant page over a log line
+      }
+    }
+  }
+  function dumWarn(message) {
+    if (window.console && window.console.warn) {
+      try {
+        window.console.warn("[DUM embed] " + message);
+      } catch (e) {
+        // no-op
+      }
+    }
+  }
+
   // ── 1. Locate the <script> tag this code is running inside ──
   // Prefer document.currentScript (set on script load); fall back
   // to the last <script> tag in the DOM, which is what older
@@ -117,10 +156,21 @@
   // Defer all rendering until we know which mode the merchant
   // chose. If the script tag pinned a mode explicitly via
   // data-display-mode, use it; otherwise fetch the dashboard
-  // value with a hard 800ms timeout fallback to "full" so a
-  // slow / failed network never leaves the merchant with a
-  // blank box.
+  // value with a hard 2500ms timeout. On fetch failure we fall
+  // back to "bubble" — a self-contained, non-blocking launcher —
+  // rather than to "full", which would steal the merchant's
+  // viewport when their dashboard had specifically configured
+  // the lighter-weight bubble. The previous behaviour
+  // (fallback → "full") was the root cause of the topgun
+  // bubble outage: a transient 503 from /embed-config caused
+  // the script to hijack the page with the storefront iframe.
+  //
+  // The pop-in payload (greetings, delay, once-per-session) is
+  // captured here too so renderForMode can drive the bubble
+  // greeting without a second API round-trip.
   var rendered = false;
+  var popinConfig = null; // populated from /embed-config when available
+
   function render(mode) {
     if (rendered) return;
     rendered = true;
@@ -131,6 +181,9 @@
     }
     if (mode === "automatic") mode = "full";
     var displayMode = mode;
+    dumLog(displayMode === "bubble"
+      ? "Bubble mode activated"
+      : "Full storefront mode activated");
     renderForMode(displayMode);
   }
 
@@ -139,38 +192,103 @@
   } else {
     var configUrl =
       origin + "/api/projects/" + encodeURIComponent(businessId) + "/embed-config";
+    // 2.5s is conservative for a single cached PostgREST round trip;
+    // the previous 800ms was tight enough that a cold Railway start
+    // could blow past it and trigger the storefront fallback.
+    var timeoutFiredAsBubble = false;
     var timeoutId = window.setTimeout(function () {
-      render("full");
-    }, 800);
+      timeoutFiredAsBubble = true;
+      dumWarn("embed-config timed out — defaulting to bubble launcher");
+      render("bubble");
+    }, 2500);
     try {
       var fetchPromise = window.fetch
         ? window.fetch(configUrl, { method: "GET", credentials: "omit" })
         : null;
       if (!fetchPromise) {
         window.clearTimeout(timeoutId);
-        render("full");
+        dumWarn("fetch unsupported in this browser — defaulting to bubble launcher");
+        render("bubble");
       } else {
         fetchPromise
           .then(function (r) {
-            if (!r.ok) throw new Error("status " + r.status);
+            if (!r.ok) {
+              var err = new Error("status " + r.status);
+              err.__status = r.status;
+              throw err;
+            }
             return r.json();
           })
           .then(function (cfg) {
             window.clearTimeout(timeoutId);
+            if (timeoutFiredAsBubble) return; // race-loser, already rendered
+            if (cfg && typeof cfg === "object" && cfg.popin_config) {
+              popinConfig = cfg.popin_config;
+            }
             var m =
               cfg && typeof cfg.embed_display_mode === "string"
                 ? cfg.embed_display_mode.toLowerCase()
                 : "";
             render(m);
           })
-          .catch(function () {
+          .catch(function (err) {
             window.clearTimeout(timeoutId);
-            render("full");
+            if (timeoutFiredAsBubble) return;
+            var status = (err && err.__status) || "network";
+            dumWarn(
+              "Failed to load embed-config (" + status + ") — " +
+              "defaulting to bubble launcher"
+            );
+            render("bubble");
           });
       }
     } catch (e) {
       window.clearTimeout(timeoutId);
-      render("full");
+      if (!timeoutFiredAsBubble) {
+        dumWarn("fetch threw synchronously — defaulting to bubble launcher");
+        render("bubble");
+      }
+    }
+  }
+
+  // ── Pop-in greeting helpers ──
+  // The dashboard-saved popin_config drives a small chat-style
+  // bubble that opens above the launcher to nudge first-time
+  // visitors and welcome back returning ones. Storage keys are
+  // scoped per businessId so a merchant who installs multiple
+  // embeds on different pages doesn't bleed state between them.
+  function popinStorageKeys() {
+    return {
+      visited: "dum-embed-visited:" + businessId,
+      sessionShown: "dum-embed-shown:" + businessId,
+    };
+  }
+  function safeLocalRead(key) {
+    try {
+      return window.localStorage && window.localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+  function safeLocalWrite(key, value) {
+    try {
+      if (window.localStorage) window.localStorage.setItem(key, value);
+    } catch (e) {
+      // Quota / disabled storage — degrade silently
+    }
+  }
+  function safeSessionRead(key) {
+    try {
+      return window.sessionStorage && window.sessionStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+  function safeSessionWrite(key, value) {
+    try {
+      if (window.sessionStorage) window.sessionStorage.setItem(key, value);
+    } catch (e) {
+      // no-op
     }
   }
 
@@ -251,6 +369,37 @@
         "  font-size: 18px; font-weight: 700; cursor: pointer;",
         "  z-index: 2;",
         "}",
+        "[data-dum-embed-greeting] {",
+        "  position: fixed;",
+        "  bottom: 76px;",
+        "  right: 20px;",
+        "  z-index: 2147483646;",
+        "  max-width: min(320px, calc(100vw - 32px));",
+        "  padding: 14px 40px 14px 16px;",
+        "  border-radius: 16px;",
+        "  background: #ffffff;",
+        "  color: #0b2545;",
+        "  font: 500 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  box-shadow: 0 18px 40px rgba(11,18,32,0.18), 0 0 0 1px rgba(11,18,32,0.06);",
+        "  opacity: 0;",
+        "  transform: translateY(6px);",
+        "  transition: opacity 220ms ease, transform 220ms ease;",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-greeting].is-visible {",
+        "  opacity: 1;",
+        "  transform: translateY(0);",
+        "  pointer-events: auto;",
+        "}",
+        "[data-dum-embed-greeting-close] {",
+        "  position: absolute; top: 6px; right: 6px;",
+        "  width: 24px; height: 24px;",
+        "  display: inline-flex; align-items: center; justify-content: center;",
+        "  border: 0; border-radius: 9999px;",
+        "  background: transparent; color: #5b6478;",
+        "  font-size: 16px; line-height: 1; cursor: pointer;",
+        "}",
+        "[data-dum-embed-greeting-close]:hover { color: #0b2545; }",
         "@keyframes dum-embed-fade {",
         "  from { opacity: 0; } to { opacity: 1; }",
         "}",
@@ -334,6 +483,81 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
     document.body.appendChild(launcher);
+
+    // ── Pop-in greeting card ──
+    // Surfaced only when popin_config.enabled is true (default) AND
+    // a non-empty greeting string is available for the visitor's
+    // first-vs-returning state. Mirrors the merchant's dashboard
+    // settings exactly: delay_seconds + once_per_session.
+    var cfg = popinConfig || {};
+    var popinEnabled = cfg.enabled !== false;
+    if (popinEnabled) {
+      var keys = popinStorageKeys();
+      var hasVisited = !!safeLocalRead(keys.visited);
+      var firstGreeting = (cfg.greeting || "").trim();
+      var returningGreeting = (cfg.returning_greeting || "").trim();
+      var greetingText = hasVisited
+        ? returningGreeting || firstGreeting
+        : firstGreeting || returningGreeting;
+      var isReturning = hasVisited && !!returningGreeting;
+      var oncePerSession = cfg.once_per_session === true;
+      var alreadyShownThisSession =
+        oncePerSession && safeSessionRead(keys.sessionShown) === "1";
+
+      if (greetingText && !alreadyShownThisSession) {
+        var greet = document.createElement("div");
+        greet.setAttribute("data-dum-embed-greeting", businessId);
+        greet.setAttribute("role", "status");
+        greet.setAttribute("aria-live", "polite");
+
+        var greetBody = document.createElement("div");
+        greetBody.textContent = greetingText;
+        var greetClose = document.createElement("button");
+        greetClose.type = "button";
+        greetClose.setAttribute("data-dum-embed-greeting-close", "");
+        greetClose.setAttribute("aria-label", "Dismiss greeting");
+        greetClose.textContent = "×";
+
+        greet.appendChild(greetBody);
+        greet.appendChild(greetClose);
+        document.body.appendChild(greet);
+
+        var delayMs = Math.max(0, Number(cfg.delay_seconds) || 0) * 1000;
+        var delayCap = 60000; // mirror server clamp
+        if (delayMs > delayCap) delayMs = delayCap;
+
+        var showGreeting = function () {
+          greet.classList.add("is-visible");
+          if (isReturning) {
+            dumLog("Returning-visitor greeting shown");
+          } else {
+            dumLog("First-visit greeting shown");
+          }
+          if (oncePerSession) safeSessionWrite(keys.sessionShown, "1");
+          // Mark the visitor as known for future sessions. We write
+          // after the greeting actually renders so a delay that
+          // never fires (tab closed early) doesn't burn the
+          // first-visit flag.
+          if (!hasVisited) safeLocalWrite(keys.visited, "1");
+        };
+
+        if (delayMs > 0) {
+          window.setTimeout(showGreeting, delayMs);
+        } else {
+          showGreeting();
+        }
+
+        var dismissGreeting = function () {
+          greet.classList.remove("is-visible");
+        };
+        greetClose.addEventListener("click", dismissGreeting);
+        launcher.addEventListener("click", dismissGreeting);
+      } else if (!hasVisited) {
+        // Even without a greeting we want to remember the visitor
+        // so the next page load resolves to the returning state.
+        safeLocalWrite(keys.visited, "1");
+      }
+    }
     return;
   }
 
