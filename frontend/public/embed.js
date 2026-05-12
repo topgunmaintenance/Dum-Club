@@ -1,10 +1,13 @@
 /* DUM Club embed installer — drop-in script that mounts a live
  * commerce experience inside any merchant's website.
  *
- * Usage on the merchant's page (snippet shape unchanged):
+ * Usage on the merchant's page (canonical host is www.dum.club —
+ * apex dum.club is currently misconfigured at the Vercel routing
+ * layer and is canonicalised at runtime regardless of which host
+ * the merchant pastes):
  *
  *   <script
- *     src="https://dum.club/embed.js"
+ *     src="https://www.dum.club/embed.js"
  *     data-business-id="topgun-maintenance"
  *     async
  *   ></script>
@@ -139,17 +142,31 @@
   var hasExplicitAttr =
     attrMode === "bubble" || attrMode === "full" || attrMode === "automatic";
 
-  // ── 3. Resolve the embed origin from the script's own src ──
-  // A script served from staging.dum.club embeds the staging app,
-  // a script served from dum.club embeds production, etc. Falling
-  // back to window.location.origin is only correct in the rare
-  // case the script is served same-origin with the merchant page,
-  // which doesn't happen in practice but keeps us safe.
-  var origin;
+  // ── 3. Resolve the embed origin ──
+  // Production pins to https://www.dum.club because the apex host
+  // (dum.club) is currently misconfigured at Vercel's routing
+  // layer — /api/* paths there don't reach the Next.js function
+  // tree, so the embed-config endpoint returns 503 when fetched
+  // via apex. The www subdomain routes correctly. Hard-pinning
+  // here means a merchant who installed the apex snippet
+  // (<script src="https://dum.club/embed.js">) still gets working
+  // config + iframe loads because every subsequent network hop
+  // canonicalises to www.
+  //
+  // Localhost / 127.0.0.1 escape preserved so the dev server at
+  // localhost:3000 keeps working without touching DNS. Anything
+  // that doesn't look like a local-dev origin falls through to
+  // the canonical www host.
+  var CANONICAL_PROD_ORIGIN = "https://www.dum.club";
+  var LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+  var origin = CANONICAL_PROD_ORIGIN;
   try {
-    origin = new URL(script.src).origin;
+    var scriptOrigin = new URL(script.src).origin;
+    if (LOCAL_ORIGIN_RE.test(scriptOrigin)) {
+      origin = scriptOrigin;
+    }
   } catch (err) {
-    origin = window.location.origin;
+    // Stay on the canonical prod origin.
   }
   var embedUrl = origin + "/embed/" + encodeURIComponent(businessId);
 

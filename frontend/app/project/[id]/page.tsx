@@ -5357,10 +5357,25 @@ return (
             (Vercel preview alias, production custom domain, localhost).
             No new dependencies. */}
         {isOwner && project?.slug && (() => {
-          const origin =
-            typeof window !== "undefined"
-              ? window.location.origin
-              : "https://dum.club";
+          // Canonical host for production embed snippets. The apex
+          // host (dum.club) is currently misconfigured at the
+          // Vercel routing layer, so generated merchant snippets
+          // must point at the www subdomain to guarantee the
+          // embed-config and iframe loads route correctly. The
+          // embed.js itself also hard-pins to www at runtime, so a
+          // merchant who copied an older apex snippet still works
+          // — but new copies should be on the canonical host so
+          // the merchant's Network panel stays clean.
+          //
+          // Localhost dev is preserved: when the dashboard is
+          // viewed at http://localhost:* the snippet uses the
+          // local origin so the dev embed loop keeps working.
+          const w = typeof window !== "undefined" ? window : null;
+          const isLocal =
+            !!w &&
+            (w.location.hostname === "localhost" ||
+              w.location.hostname === "127.0.0.1");
+          const origin = isLocal ? w!.location.origin : "https://www.dum.club";
           const slug = project.slug as string;
           const scriptSnippet =
             `<script\n` +
