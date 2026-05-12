@@ -39,14 +39,32 @@ interface LiveChatIVSProps {
   onViewerCountChange?: (count: number) => void;
 }
 
+// Anonymous viewer ids carry an "anon-" prefix (set client-side in
+// /embed/[businessId]/page.tsx when no Privy user is signed in). The
+// chat renders these messages with a subtle "guest" tag so the host
+// can read trust at a glance — authenticated users render with their
+// email-prefix display name, guests render as "Guest #XXXX guest".
+function isGuestSenderId(senderId: string | undefined | null): boolean {
+  return typeof senderId === "string" && senderId.startsWith("anon-");
+}
+
+// Client-side send floor. Stops a chat-tab-spam keypress loop from
+// pegging the websocket; the real abuse surface is server-side rate
+// limiting (a follow-up). 1500ms matches the perceptual "typed reply"
+// cadence — fast enough to feel responsive, slow enough to make
+// scripted flooding obvious.
+const SEND_MIN_INTERVAL_MS = 1500;
+
 export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [viewerCount, setViewerCount] = useState(0);
   const [connected, setConnected] = useState(false);
+  const [sendCooldown, setSendCooldown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSendRef = useRef<number>(0);
 
   useEffect(() => {
     __debug && console.log("[live-chat] MOUNTED — host:", isHost, "project:", projectId, "user:", userId);
@@ -126,6 +144,20 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
     const body = input.trim();
     if (!body || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
+    // Client-side rate limit. Bail (and visibly disable the send
+    // button for the remaining window) if the user clicks/Enters
+    // faster than SEND_MIN_INTERVAL_MS.
+    const now = Date.now();
+    const sinceLast = now - lastSendRef.current;
+    if (sinceLast < SEND_MIN_INTERVAL_MS) {
+      setSendCooldown(true);
+      window.setTimeout(() => setSendCooldown(false), SEND_MIN_INTERVAL_MS - sinceLast);
+      return;
+    }
+    lastSendRef.current = now;
+    setSendCooldown(true);
+    window.setTimeout(() => setSendCooldown(false), SEND_MIN_INTERVAL_MS);
+
     wsRef.current.send(JSON.stringify({
       type: "chat",
       sender_id: userId,
@@ -173,15 +205,36 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             </p>
           </div>
         )}
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ fontSize: 14, lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 600, color: msg.sender_role === "host" ? "#f87171" : "#a1a1aa", marginRight: 6 }}>
-              {msg.sender_name}
-              {msg.sender_role === "host" && <span style={{ fontSize: 9, color: "#ef444480", marginLeft: 4 }}>HOST</span>}
-            </span>
-            <span style={{ color: "#d4d4d8" }}>{msg.body}</span>
-          </div>
-        ))}
+        {messages.map((msg) => {
+          const guest =
+            msg.sender_role === "viewer" && isGuestSenderId(msg.sender_id);
+          return (
+            <div key={msg.id} style={{ fontSize: 14, lineHeight: 1.6 }}>
+              <span style={{
+                fontWeight: 600,
+                color: msg.sender_role === "host"
+                  ? "#f87171"
+                  : guest ? "#8a8a92" : "#a1a1aa",
+                marginRight: 6,
+              }}>
+                {msg.sender_name}
+                {msg.sender_role === "host" && (
+                  <span style={{ fontSize: 9, color: "#ef444480", marginLeft: 4 }}>HOST</span>
+                )}
+                {guest && (
+                  <span style={{
+                    fontSize: 9,
+                    color: "#71717a",
+                    marginLeft: 4,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}>guest</span>
+                )}
+              </span>
+              <span style={{ color: "#d4d4d8" }}>{msg.body}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Input */}
@@ -190,7 +243,11 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={userId ? "Say something..." : "Sign in to chat"}
+            placeholder={
+              !connected
+                ? "Connecting…"
+                : "Say something..."
+            }
             disabled={!userId || !connected}
             maxLength={300}
             style={{
@@ -208,7 +265,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           />
           <button
             type="submit"
-            disabled={!userId || !connected || !input.trim()}
+            disabled={!userId || !connected || !input.trim() || sendCooldown}
             style={{
               minHeight: 44,
               borderRadius: 8,
@@ -219,7 +276,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
               color: "#000",
               border: "none",
               cursor: "pointer",
-              opacity: (!userId || !connected || !input.trim()) ? 0.3 : 1,
+              opacity: (!userId || !connected || !input.trim() || sendCooldown) ? 0.3 : 1,
             }}
           >
             Send

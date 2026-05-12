@@ -94,8 +94,44 @@ export default function EmbedShellPage() {
   const businessId = params?.businessId;
 
   const { user: authUser, login, getToken } = useAuth();
-  const viewerUserId = authUser?.privyId || "";
-  const viewerName = authUser?.email || "Viewer";
+
+  // Anonymous viewer identity. When the visitor isn't signed in to
+  // Privy we still want the chat input to work so they can ask the
+  // host a question before buying — the checkout flow stays
+  // authenticated, but reading + reacting + asking shouldn't be
+  // gated behind an email handover.
+  //
+  // The anon id is scoped to sessionStorage so it sticks across SPA
+  // navigations and reloads within the tab, but doesn't persist to
+  // future sessions (avoids a fingerprint-grade identifier). Each
+  // merchant slug gets its own anon id so two embeds on the same
+  // page don't share state.
+  //
+  // The display name is "Guest #XXXX" using the last 4 chars of the
+  // random id (uppercased) so the host can distinguish multiple
+  // simultaneous guests at a glance.
+  const [anonId, setAnonId] = useState<string>("");
+  useEffect(() => {
+    if (authUser?.privyId) return;
+    if (typeof window === "undefined") return;
+    try {
+      const key = `dum-anon:${businessId}`;
+      let id = window.sessionStorage.getItem(key);
+      if (!id) {
+        id = `anon-${Math.random().toString(36).slice(2, 10)}`;
+        window.sessionStorage.setItem(key, id);
+      }
+      setAnonId(id);
+    } catch {
+      // Private browsing or storage disabled — fall through with an
+      // ephemeral, in-memory id. Lives for the page's lifetime.
+      setAnonId(`anon-${Math.random().toString(36).slice(2, 10)}`);
+    }
+  }, [authUser?.privyId, businessId]);
+
+  const viewerUserId = authUser?.privyId || anonId;
+  const viewerName = authUser?.email
+    || (anonId ? `Guest #${anonId.slice(-4).toUpperCase()}` : "Viewer");
 
   // SOL wallet sources — Privy embedded wallet first, then any
   // external wallet adapter (Phantom / Solflare). pickSolPayWallet
