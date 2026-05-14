@@ -387,6 +387,24 @@
         "  object-fit: cover;",
         "  display: block;",
         "}",
+        // Live IVS preview iframe — clipped by .dum-clip's circle.
+        // pointer-events: none so a click anywhere on the bubble
+        // bubbles up to the host-page wrapper's click handler and
+        // opens the overlay (vs. eating clicks inside the iframe).
+        "[data-dum-embed-bubble] .dum-clip iframe {",
+        "  position: absolute; inset: 0;",
+        "  width: 100%; height: 100%;",
+        "  border: 0;",
+        "  display: block;",
+        "  background: #060606;",
+        "  pointer-events: none;",
+        "}",
+        // When live, the .dum-clip backdrop becomes black so a
+        // brief stream-loading flash doesn't show the brand-teal
+        // gradient peeking through behind the video.
+        "[data-dum-embed-bubble].is-live .dum-clip {",
+        "  background: #060606;",
+        "}",
         "[data-dum-embed-bubble] .dum-initials {",
         "  position: absolute; inset: 0;",
         "  display: flex; align-items: center; justify-content: center;",
@@ -455,9 +473,84 @@
         "[data-dum-embed-bubble-close]:focus-visible {",
         "  outline: 2px solid #00d1a4; outline-offset: 2px; opacity: 1;",
         "}",
+        // ── Product chip — pinned offer CTA next to the bubble ──
+        // Independent fixed element. Sits to the LEFT of the bubble
+        // on desktop (so it doesn't extend past the right edge of
+        // the viewport) and ABOVE the bubble on mobile. Click opens
+        // the same storefront overlay focused on the pinned offer.
+        // Title is truncated at the natural ellipsis; price renders
+        // monospaced for legibility next to it.
+        "[data-dum-embed-product-chip] {",
+        "  position: fixed;",
+        "  bottom: 32px;",         // align with the centre of a 140px bubble
+        "  right: 178px;",          // 20 (bubble right) + 140 (bubble) + 18 gap
+        "  z-index: 2147483646;",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 10px;",
+        "  max-width: min(280px, calc(100vw - 200px));",
+        "  padding: 10px 14px;",
+        "  border: 0;",
+        "  border-radius: 9999px;",
+        "  background: #ffffff;",
+        "  color: #0b2545;",
+        "  font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  text-align: left;",
+        "  cursor: pointer;",
+        "  box-shadow: 0 14px 32px rgba(11,18,32,0.22), 0 0 0 1px rgba(11,18,32,0.06);",
+        "  opacity: 0;",
+        "  transform: translateX(8px);",
+        "  transition: opacity 240ms ease, transform 240ms ease, box-shadow 200ms ease;",
+        "  -webkit-tap-highlight-color: transparent;",
+        "}",
+        "[data-dum-embed-product-chip].is-visible {",
+        "  opacity: 1; transform: translateX(0);",
+        "}",
+        "[data-dum-embed-product-chip]:hover {",
+        "  box-shadow: 0 18px 40px rgba(11,18,32,0.28), 0 0 0 1px rgba(0,209,164,0.5);",
+        "}",
+        "[data-dum-embed-product-chip]:focus-visible {",
+        "  outline: 2px solid #00d1a4; outline-offset: 3px;",
+        "}",
+        "[data-dum-embed-product-chip] .dum-chip-body {",
+        "  display: inline-flex; flex-direction: column; gap: 1px;",
+        "  min-width: 0;",
+        "}",
+        "[data-dum-embed-product-chip] .dum-chip-label {",
+        "  font-size: 9px;",
+        "  font-weight: 800;",
+        "  letter-spacing: 0.16em;",
+        "  text-transform: uppercase;",
+        "  color: #036f56;",
+        "}",
+        "[data-dum-embed-product-chip] .dum-chip-title {",
+        "  font-size: 13px;",
+        "  font-weight: 600;",
+        "  color: #0b2545;",
+        "  max-width: 200px;",
+        "  overflow: hidden;",
+        "  text-overflow: ellipsis;",
+        "  white-space: nowrap;",
+        "}",
+        "[data-dum-embed-product-chip] .dum-chip-price {",
+        "  font: 700 14px/1 ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;",
+        "  color: #036f56;",
+        "  white-space: nowrap;",
+        "}",
+        "[data-dum-embed-product-chip] .dum-chip-arrow {",
+        "  font-size: 14px; line-height: 1;",
+        "  color: #036f56;",
+        "  transition: transform 160ms ease;",
+        "}",
+        "[data-dum-embed-product-chip]:hover .dum-chip-arrow {",
+        "  transform: translateX(3px);",
+        "}",
         // ── Mobile sizing ─────────────────────────────────────
         // Diameter drops to 96px; dismiss × becomes a 30px tap
         // target and is always visible (no hover state on touch).
+        // Product chip stacks ABOVE the bubble on small phones so
+        // it doesn't fight for horizontal space; max-width caps it
+        // at the viewport minus the safe-area gutters.
         "@media (max-width: 480px) {",
         "  [data-dum-embed-bubble] {",
         "    width: 96px; height: 96px;",
@@ -469,6 +562,15 @@
         "  }",
         "  [data-dum-embed-bubble-close] {",
         "    width: 30px; height: 30px; opacity: 1;",
+        "  }",
+        "  [data-dum-embed-product-chip] {",
+        "    bottom: 124px;",        // bubble bottom 16 + bubble 96 + gap 12
+        "    right: 16px;",
+        "    max-width: calc(100vw - 32px);",
+        "    padding: 9px 12px;",
+        "  }",
+        "  [data-dum-embed-product-chip] .dum-chip-title {",
+        "    max-width: calc(100vw - 160px);",
         "  }",
         "}",
         // ── Reduced-motion override ───────────────────────────
@@ -636,14 +738,46 @@
       );
       overlayCard.appendChild(overlayIframe);
     }
+    // Reference to the bubble's live IVS iframe (populated only
+    // when the merchant is live and we mount the preview route).
+    // Lets openOverlay / closeOverlay postMessage pause + resume so
+    // we don't double-count viewer slots against the backend's
+    // MAX_VIEWERS_PER_STREAM cap (services/live_limits.py:15).
+    var bubbleLiveIframe = null;
+    function pauseBubbleStream() {
+      if (!bubbleLiveIframe || !bubbleLiveIframe.contentWindow) return;
+      try {
+        bubbleLiveIframe.contentWindow.postMessage(
+          { type: "bubble-pause" },
+          "*"
+        );
+      } catch (e) {
+        // Cross-origin postMessage failures are silently swallowed
+        // — the bubble keeps running, the visitor double-counts,
+        // but the page never breaks over a messaging hiccup.
+      }
+    }
+    function resumeBubbleStream() {
+      if (!bubbleLiveIframe || !bubbleLiveIframe.contentWindow) return;
+      try {
+        bubbleLiveIframe.contentWindow.postMessage(
+          { type: "bubble-resume" },
+          "*"
+        );
+      } catch (e) {
+        // see pauseBubbleStream
+      }
+    }
     function openOverlay() {
       ensureOverlayIframe();
       overlay.classList.add("is-open");
       document.body.style.overflow = "hidden";
+      pauseBubbleStream();
     }
     function closeOverlay() {
       overlay.classList.remove("is-open");
       document.body.style.overflow = "";
+      resumeBubbleStream();
     }
     overlayClose.addEventListener("click", closeOverlay);
     overlay.addEventListener("click", function (e) {
@@ -688,10 +822,40 @@
     clip.className = "dum-clip";
     clip.setAttribute("aria-hidden", "true");
 
-    // Avatar path uses an <img> with a hard error fallback to the
-    // initials monogram so a broken / slow URL never leaves the
-    // bubble reading as a placeholder.
-    if (avatarUrl) {
+    // Bubble interior. Three branches, in priority order:
+    //   1. Live merchant → mount the lightweight preview iframe at
+    //      /embed/bubble/[id]. The iframe's React app subscribes to
+    //      the IVS Stage and paints the video full-bleed; our
+    //      circular .dum-clip masks it into a circle on the host
+    //      page. Iframe is pointer-events: none so the host-page
+    //      bubble click handler still fires.
+    //   2. Avatar / poster URL configured → <img> with a hard
+    //      error fallback to initials.
+    //   3. Otherwise → initials monogram on the brand gradient.
+    if (isLive) {
+      bubbleLiveIframe = document.createElement("iframe");
+      bubbleLiveIframe.src =
+        origin + "/embed/bubble/" + encodeURIComponent(businessId);
+      bubbleLiveIframe.title = merchantTitle + " live preview";
+      bubbleLiveIframe.setAttribute("frameborder", "0");
+      bubbleLiveIframe.setAttribute("scrolling", "no");
+      // autoplay is required for the muted preview video element
+      // inside the iframe to start without a tap. fullscreen is
+      // not needed here (full overlay handles that path) but we
+      // leave it permissive in case a future iframe surface uses
+      // it.
+      bubbleLiveIframe.setAttribute("allow", "autoplay; fullscreen *");
+      // Minimum sandbox to run the React app + WebRTC subscribe.
+      // allow-same-origin is required so sessionStorage (anon
+      // viewer id) and the IVS SDK's internal storage work. We
+      // intentionally do NOT include allow-popups / allow-forms
+      // — checkout happens in the full overlay, not here.
+      bubbleLiveIframe.setAttribute(
+        "sandbox",
+        "allow-scripts allow-same-origin"
+      );
+      clip.appendChild(bubbleLiveIframe);
+    } else if (avatarUrl) {
       var img = document.createElement("img");
       img.src = avatarUrl;
       img.alt = "";
@@ -731,6 +895,68 @@
     bubble.appendChild(livePill);
     bubble.appendChild(close);
 
+    // ── Product chip — pinned offer CTA next to the bubble ──
+    // Rendered only when the embed-config payload includes a
+    // pinned_offer with at least a title. Click opens the existing
+    // storefront overlay (NOT direct host-page Stripe checkout —
+    // that would require per-merchant origin allowlisting + auth
+    // surface area we're not ready to ship). When the visitor
+    // dismisses the bubble, the chip dismisses with it so we
+    // don't leave an orphaned floating button on the page.
+    var productChip = null;
+    var pinnedOffer = cfg && cfg.pinned_offer;
+    if (
+      pinnedOffer &&
+      typeof pinnedOffer === "object" &&
+      typeof pinnedOffer.title === "string" &&
+      pinnedOffer.title.trim()
+    ) {
+      productChip = document.createElement("button");
+      productChip.type = "button";
+      productChip.setAttribute("data-dum-embed-product-chip", businessId);
+      productChip.setAttribute(
+        "aria-label",
+        "Buy " + pinnedOffer.title + " from " + merchantTitle
+      );
+
+      var chipBody = document.createElement("span");
+      chipBody.className = "dum-chip-body";
+      var chipLabel = document.createElement("span");
+      chipLabel.className = "dum-chip-label";
+      chipLabel.textContent = isLive ? "Buy live" : "Featured";
+      var chipTitle = document.createElement("span");
+      chipTitle.className = "dum-chip-title";
+      chipTitle.textContent = pinnedOffer.title;
+      chipBody.appendChild(chipLabel);
+      chipBody.appendChild(chipTitle);
+
+      productChip.appendChild(chipBody);
+
+      // Price renders monospaced when present. Skipping it on
+      // null / non-numeric prices avoids "$NaN" on free or
+      // service-quote offers.
+      if (
+        typeof pinnedOffer.price_usd === "number" &&
+        isFinite(pinnedOffer.price_usd)
+      ) {
+        var chipPrice = document.createElement("span");
+        chipPrice.className = "dum-chip-price";
+        chipPrice.textContent = "$" + pinnedOffer.price_usd.toFixed(2);
+        productChip.appendChild(chipPrice);
+      }
+
+      var chipArrow = document.createElement("span");
+      chipArrow.className = "dum-chip-arrow";
+      chipArrow.setAttribute("aria-hidden", "true");
+      chipArrow.textContent = "→";
+      productChip.appendChild(chipArrow);
+
+      productChip.addEventListener("click", function () {
+        openOverlay();
+      });
+      document.body.appendChild(productChip);
+    }
+
     // Click / Enter / Space on the bubble opens the overlay.
     bubble.addEventListener("click", function () {
       openOverlay();
@@ -742,23 +968,48 @@
       }
     });
 
-    // Dismiss × → fade out, mark the session so it stays hidden
-    // until a new tab / session opens. Stops propagation so the
-    // click doesn't double-fire the open-overlay handler above.
+    // Dismiss × → fade out the bubble + chip, mark the session so
+    // they stay hidden until a new tab / session opens. Stops
+    // propagation so the close click doesn't double-fire the
+    // open-overlay handler above.
     function dismissBubble(e) {
       if (e) {
         e.stopPropagation();
         if (e.preventDefault) e.preventDefault();
       }
       bubble.classList.remove("is-visible");
+      if (productChip) productChip.classList.remove("is-visible");
       safeSessionWrite(keys.sessionShown, "1");
       window.setTimeout(function () {
         if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        if (productChip && productChip.parentNode) {
+          productChip.parentNode.removeChild(productChip);
+        }
       }, 280);
     }
     close.addEventListener("click", dismissBubble);
 
     document.body.appendChild(bubble);
+
+    // ── Live-state echo from the preview iframe ──
+    // The /embed/bubble route postMessages its authoritative
+    // is_live reading after fetching its own embed-config copy.
+    // We use it to (a) keep the gold ring in sync if the merchant
+    // ends a stream while the visitor is on the page, and (b)
+    // confirm the iframe is reachable. Origin guard mirrors the
+    // canonical embed origin so a hostile parent frame can't fake
+    // the message.
+    function onBubbleMessage(event) {
+      if (event.origin !== origin) return;
+      var data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.type !== "bubble-live-state") return;
+      if (data.live === true) bubble.classList.add("is-live");
+      else bubble.classList.remove("is-live");
+    }
+    if (window.addEventListener) {
+      window.addEventListener("message", onBubbleMessage, false);
+    }
 
     // Delay before reveal, clamped to mirror the server-side cap.
     var delayMs = Math.max(0, Number(cfg.delay_seconds) || 0) * 1000;
@@ -768,6 +1019,7 @@
     function showBubble() {
       if (!bubble.parentNode) return;
       bubble.classList.add("is-visible");
+      if (productChip) productChip.classList.add("is-visible");
       dumLog(isLive
         ? "Circular bubble shown (merchant is live)"
         : "Circular bubble shown");
