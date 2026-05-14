@@ -77,7 +77,7 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
 ];
 
 export default function InstallPage() {
-  const { user, login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -99,6 +99,12 @@ export default function InstallPage() {
   }, []);
 
   useEffect(() => {
+    // Auth hydration guard. AuthContext starts in loading=true
+    // while Privy's `ready` flag is still flipping; user?.privyId
+    // is undefined for one render. Without this gate, /install
+    // briefly painted the signed-out CTA on hard refresh even for
+    // signed-in merchants (QA T4 finding).
+    if (authLoading) return;
     if (!user?.privyId) {
       setLoading(false);
       return;
@@ -125,7 +131,7 @@ export default function InstallPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.privyId]);
+  }, [authLoading, user?.privyId]);
 
   const slug = project?.slug || project?.id || "";
   const origin =
@@ -171,10 +177,19 @@ export default function InstallPage() {
       .catch(() => setTestState("missing"));
   }
 
-  if (loading) {
+  // Show loading skeleton while auth resolves OR our own
+  // project fetch is in flight. Either gate alone produces a
+  // flash of wrong content: authLoading alone misses the project
+  // fetch; loading alone misses the auth-pending window.
+  if (authLoading || loading) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-12 text-sm text-secondary">
-        Loading…
+      <main className="mx-auto max-w-3xl px-4 py-12" aria-busy="true">
+        <div className="mb-3 h-8 w-3/4 animate-pulse rounded bg-surface-muted" />
+        <div className="mb-8 h-4 w-full animate-pulse rounded bg-surface-muted" />
+        <div className="space-y-3">
+          <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
+          <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
+        </div>
       </main>
     );
   }
