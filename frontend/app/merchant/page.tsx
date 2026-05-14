@@ -558,8 +558,84 @@ export default function MerchantPage() {
   // a deep-link CTA.
   const stepFirstSale = (analytics?.total_orders ?? 0) > 0;
   const stepInstall = stepFirstSale;
-  const completedSteps = [stepAccount, stepStripe, stepInstall, stepFirstSale].filter(Boolean).length;
-  const totalSteps = 4;
+
+  // QA spec 5-step checklist. Same data signals — re-grouped to
+  // match the directive's order + adds two new steps the previous
+  // 4-step version didn't surface:
+  //
+  //   1. Connect Stripe              → stepStripe
+  //   2. Add your first offer         → hasOffer (fetched in
+  //                                      the effect below)
+  //   3. Paste the snippet on your site
+  //                                   → stepInstall (proxied via
+  //                                      first sale or sessionStorage
+  //                                      "dum-install-seen" set by
+  //                                      /install)
+  //   4. Print your QR                → printed flag in
+  //                                      sessionStorage when /qr
+  //                                      visited
+  //   5. Go live for the first time   → stepLive (project.is_live
+  //                                      or has-ever-been-live flag)
+  //
+  // The page always renders the checklist now, even when complete —
+  // a 5/5 celebration line replaces the next-step copy.
+  const [hasOffer, setHasOffer] = useState(false);
+  const [installSeen, setInstallSeen] = useState(false);
+  const [qrPrinted, setQrPrinted] = useState(false);
+  const [stepLive, setStepLive] = useState(false);
+
+  useEffect(() => {
+    try {
+      setInstallSeen(window.sessionStorage.getItem("dum-install-seen") === "1");
+      setQrPrinted(window.sessionStorage.getItem("dum-qr-seen") === "1");
+    } catch {
+      // private mode — both stay false; non-blocking
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!firstProject?.id) {
+      setHasOffer(false);
+      setStepLive(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [offersRes, statusRes] = await Promise.all([
+          fetch(`${API_BASE}/api/offers/${encodeURIComponent(firstProject.id)}`),
+          fetch(
+            `${API_BASE}/api/projects/${encodeURIComponent(firstProject.id)}/live-status`,
+          ),
+        ]);
+        if (cancelled) return;
+        if (offersRes.ok) {
+          const arr = await offersRes.json();
+          setHasOffer(Array.isArray(arr) && arr.length > 0);
+        }
+        if (statusRes.ok) {
+          const j = await statusRes.json();
+          setStepLive(!!j.is_live);
+        }
+      } catch {
+        // soft fail
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [firstProject?.id]);
+
+  const stepSnippet = installSeen || stepInstall;
+  const stepLiveEver = stepLive || stepFirstSale;
+  const completedSteps = [
+    stepStripe,
+    hasOffer,
+    stepSnippet,
+    qrPrinted,
+    stepLiveEver,
+  ].filter(Boolean).length;
+  const totalSteps = 5;
   const onboardingComplete = completedSteps === totalSteps;
   // Where the "Add DUM Live to your website" CTA sends the
   // merchant. If they have at least one project, deep-link
@@ -682,23 +758,29 @@ export default function MerchantPage() {
         )}
 
         {/* ── Onboarding checklist ──
-            Only rendered while the merchant still has steps to complete.
-            Once everything's done this disappears and the normal
-            dashboard takes over. Stripe Connect is the primary CTA
-            when it's the blocking step. */}
-        {!onboardingComplete && (
+            Always rendered. Even at 5 of 5 we keep the row visible
+            with a celebration line so merchants can revisit /qr or
+            /install, instead of the checklist disappearing once
+            "complete". */}
+        {(
           <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Get Set Up</div>
                 <div className="mt-1 text-sm font-semibold text-primary">
-                  {completedSteps} of {totalSteps} complete —{" "}
+                  {completedSteps} of {totalSteps} complete.{" "}
                   <span className="text-brand-teal">
                     {!stepStripe
                       ? "Connect Stripe to start getting paid"
-                      : !stepInstall
-                        ? "Add DUM Live to your website"
-                        : "Waiting on your first sale"}
+                      : !hasOffer
+                        ? "Add your first offer"
+                        : !stepSnippet
+                          ? "Paste the snippet on your site"
+                          : !qrPrinted
+                            ? "Print your QR"
+                            : !stepLiveEver
+                              ? "Go live for the first time"
+                              : "You are set. Go live and start selling."}
                   </span>
                 </div>
               </div>
@@ -716,16 +798,7 @@ export default function MerchantPage() {
             </div>
 
             <ul className="space-y-3">
-              {/* Step 1: Account created */}
-              <li className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-primary line-through decoration-brand-teal">Founding spot claimed</div>
-                  <div className="text-xs text-secondary">You&apos;re on founding merchant pricing.</div>
-                </div>
-              </li>
-
-              {/* Step 2: Connect Stripe */}
+              {/* Step 1 — Connect Stripe */}
               <li className="flex items-start gap-3">
                 {stepStripe ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
@@ -734,42 +807,27 @@ export default function MerchantPage() {
                 )}
                 <div className="flex-1">
                   <div className={`text-sm font-semibold ${stepStripe ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
-                    Connect Stripe to receive payouts
+                    Connect Stripe
                   </div>
                   <div className="text-xs text-secondary">
                     {stepStripe
-                      ? "You'll get paid directly on every sale. 0% commission."
+                      ? "You will get paid directly on every sale. 0% commission."
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
-                    <>
-                      <p className="mt-2 text-[11px] text-secondary">
-                        Your bank info goes to Stripe, never to DUM Club.
-                      </p>
-                      <button
-                        onClick={connectStripe}
-                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
-                      >
-                        Connect Stripe →
-                      </button>
-                    </>
+                    <button
+                      onClick={connectStripe}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                    >
+                      Connect Stripe →
+                    </button>
                   )}
                 </div>
               </li>
 
-              {/* Step 3: Add DUM Live to your website
-                  Phase 3 of the merchant audit. Closes the "what's
-                  next after Stripe?" gap by surfacing the Activate-
-                  DUM-Live moment from the merchant home, instead of
-                  forcing the merchant to navigate /dashboard ->
-                  project page -> activation card on their own.
-                  Deep-links to the merchant's first project when
-                  one exists, else to /dashboard so they create the
-                  storefront first. Marked complete by stepInstall
-                  (which today proxies first-sale; see comment by
-                  the const). */}
+              {/* Step 2 — Add your first offer */}
               <li className="flex items-start gap-3">
-                {stepInstall ? (
+                {hasOffer ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : stepStripe ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
@@ -777,43 +835,109 @@ export default function MerchantPage() {
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepInstall ? "text-primary line-through decoration-brand-teal" : stepStripe ? "text-primary" : "text-primary"}`}>
-                    Add DUM Live to your website
+                  <div className={`text-sm font-semibold ${hasOffer ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                    Add your first offer
                   </div>
                   <div className="text-xs text-secondary">
-                    {stepInstall
-                      ? "Your storefront is live and selling."
-                      : firstProject
-                        ? "Paste one small code snippet on your site. It turns any page into a live storefront."
-                        : "Set up your storefront first, then paste one script tag on your site."}
+                    {hasOffer
+                      ? "You have a live product or service customers can buy."
+                      : "Pick one thing you sell and set a price."}
                   </div>
-                  {!stepInstall && stepStripe && (
+                  {!hasOffer && firstProject && (
                     <Link
-                      href={installLink}
+                      href={`/project/${firstProject.slug || firstProject.id}/manage#offers`}
                       className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                     >
-                      {firstProject ? "Add DUM Live to my site →" : "Set up my storefront →"}
+                      Add offer →
                     </Link>
                   )}
                 </div>
               </li>
 
-              {/* Step 4: First sale */}
+              {/* Step 3 — Paste the snippet on your site */}
               <li className="flex items-start gap-3">
-                {stepFirstSale ? (
+                {stepSnippet ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : hasOffer ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
                 ) : (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepFirstSale ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
-                    Make your first sale
+                  <div className={`text-sm font-semibold ${stepSnippet ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                    Paste the snippet on your site
                   </div>
                   <div className="text-xs text-secondary">
-                    {stepFirstSale
-                      ? "You&apos;re live. DUM Points are being issued automatically as loyalty rewards."
-                      : "Share your storefront link or print the QR below."}
+                    {stepSnippet
+                      ? "Your storefront is wired to your website."
+                      : "One line of code. We walk you through it for Wix, Squarespace, Shopify, and WordPress."}
                   </div>
+                  {!stepSnippet && (
+                    <Link
+                      href="/install"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                    >
+                      Get my snippet →
+                    </Link>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 4 — Print your QR */}
+              <li className="flex items-start gap-3">
+                {qrPrinted ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : stepSnippet ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${qrPrinted ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                    Print your QR
+                  </div>
+                  <div className="text-xs text-secondary">
+                    {qrPrinted
+                      ? "Stick it at your counter, register, or window."
+                      : "A code customers scan to land on your storefront."}
+                  </div>
+                  {!qrPrinted && (
+                    <Link
+                      href="/qr"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                    >
+                      Print my QR →
+                    </Link>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 5 — Go live for the first time */}
+              <li className="flex items-start gap-3">
+                {stepLiveEver ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : qrPrinted ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${stepLiveEver ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                    Go live for the first time
+                  </div>
+                  <div className="text-xs text-secondary">
+                    {stepLiveEver
+                      ? "Customers can watch you and buy in real time."
+                      : "Camera and mic on. Customers see you in real time on your own site."}
+                  </div>
+                  {!stepLiveEver && firstProject && (
+                    <Link
+                      href={`/project/${firstProject.slug || firstProject.id}#project-live-host`}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                    >
+                      Go Live →
+                    </Link>
+                  )}
                 </div>
               </li>
             </ul>
