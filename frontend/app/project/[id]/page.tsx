@@ -4718,12 +4718,28 @@ return (
             {projectView === "storefront" && (
               <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
                 <div className="mb-3 flex items-center gap-2 flex-wrap">
+                  {/* Live-state dot. Animated ping only when the
+                      project is actually broadcasting — keeping
+                      the ping on offline projects was the visual
+                      "still LIVE" bug after End Stream. */}
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
+                    {project?.is_live && (
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
+                    )}
+                    <span
+                      className={`relative inline-flex h-2 w-2 rounded-full ${
+                        project?.is_live ? "bg-brand-teal" : "bg-muted"
+                      }`}
+                    />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-widest text-brand-teal">
-                    {isOwner ? "Your Business · Live" : "Live Business"}
+                    {isOwner
+                      ? project?.is_live
+                        ? "Your Business · Live"
+                        : "Your Business"
+                      : project?.is_live
+                        ? "Live Business"
+                        : "Business"}
                   </span>
                   <span className="rounded-full border border-default px-2.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-secondary">
                     {category}
