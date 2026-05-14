@@ -45,6 +45,58 @@ function viewAsCustomerKey(projectSlug: string): string {
   return `dum-view-as-customer:${projectSlug}`;
 }
 
+function writeViewAsCustomer(projectSlug: string, value: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (value) {
+      window.sessionStorage.setItem(viewAsCustomerKey(projectSlug), "1");
+    } else {
+      window.sessionStorage.removeItem(viewAsCustomerKey(projectSlug));
+    }
+  } catch {
+    // private browsing — degrade silently
+  }
+  try {
+    window.dispatchEvent(
+      new CustomEvent(VIEW_AS_CUSTOMER_EVENT, {
+        detail: { slug: projectSlug, value },
+      }),
+    );
+  } catch {
+    // no-op
+  }
+}
+
+/**
+ * Exit-customer-view chip rendered separately from the AdminBar
+ * so it can stay visible after the bar hides. Used by the
+ * project page (mounted alongside AdminBar) so a merchant
+ * previewing as a customer still has a one-click path back to
+ * admin mode.
+ */
+export function ExitCustomerViewChip({
+  projectSlug,
+  isOwner,
+}: {
+  projectSlug: string;
+  isOwner: boolean;
+}) {
+  const viewAsCustomer = useViewAsCustomer(projectSlug);
+  if (!isOwner) return null;
+  if (!viewAsCustomer) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => writeViewAsCustomer(projectSlug, false)}
+      aria-label="Exit customer view and show admin controls"
+      className="fixed bottom-5 right-5 z-[55] inline-flex items-center gap-2 rounded-full bg-brand-navy px-4 py-2.5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(11,18,32,0.32)] transition hover:translate-y-[-1px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:bottom-6 sm:right-6"
+    >
+      <span aria-hidden="true">←</span>
+      Back to business view
+    </button>
+  );
+}
+
 /**
  * Read the current "View as Customer" flag for a project from
  * sessionStorage. Defaults to false (admin UI visible). Safe to
@@ -110,24 +162,27 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
 
   const enableViewAsCustomer = useCallback(() => {
     setHidden(true);
-    try {
-      window.sessionStorage.setItem(viewAsCustomerKey(projectSlug), "1");
-    } catch {
-      // private browsing — degrade silently, the bar still
-      // hides until the visitor reloads
-    }
-    try {
-      window.dispatchEvent(
-        new CustomEvent(VIEW_AS_CUSTOMER_EVENT, {
-          detail: { slug: projectSlug, value: true },
-        }),
-      );
-    } catch {
-      // no-op
-    }
+    writeViewAsCustomer(projectSlug, true);
   }, [projectSlug]);
 
+  // All admin actions target same-page anchors that already
+  // exist in /project/[id]/page.tsx:
+  //   #project-live-host  → IVSStageHost wrapper (line 4078)
+  //   #offers-section     → offers grid (line 5268)
+  //   #section-orders     → orders <details> (line 7077)
+  // Previously Edit offers / Orders / Settings linked into
+  // /project/[slug]/manage which doesn't carry the same surfaces
+  // — the merchant landed on a near-empty page wondering where
+  // their offers went. Same-page scroll lands on the actual
+  // affordance the click promised.
   const goLiveHref = `#project-live-host`;
+  const editOffersHref = `#offers-section`;
+  const ordersHref = `#section-orders`;
+  // Real business settings live at /merchant (business profile,
+  // Stripe Connect, founding status). /manage is service/booking
+  // specific. Route Settings there until /manage grows a settings
+  // panel.
+  const settingsHref = `/merchant`;
 
   if (hidden) return null;
 
@@ -154,22 +209,22 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
         {isLive ? "Live now" : "Go Live"}
       </a>
 
-      <Link
-        href={`/project/${projectSlug}/manage#offers`}
+      <a
+        href={editOffersHref}
         className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
       >
         Edit offers
-      </Link>
+      </a>
 
-      <Link
-        href={`/project/${projectSlug}/manage#orders`}
+      <a
+        href={ordersHref}
         className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
       >
         Orders{orderCount > 0 ? ` (${orderCount})` : ""}
-      </Link>
+      </a>
 
       <Link
-        href={`/project/${projectSlug}/manage#settings`}
+        href={settingsHref}
         className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
       >
         Settings
