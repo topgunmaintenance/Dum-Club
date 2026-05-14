@@ -96,6 +96,27 @@ def get_current_user(
     return verify_privy_token(credentials.credentials)
 
 
+def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+) -> dict | None:
+    """Like get_current_user but returns None for unauthenticated
+    requests instead of raising 401.
+
+    Used on endpoints that should accept both signed-in and guest
+    visitors — most notably the Stripe checkout path, where a
+    visitor can complete a purchase without a Privy account by
+    relying on Stripe's email capture during checkout.
+
+    A malformed / expired token still raises 401 (delegates to
+    verify_privy_token) so we never silently treat a bad token as
+    a guest — that path keeps existing behaviour for tampered
+    credentials.
+    """
+    if not credentials:
+        return None
+    return verify_privy_token(credentials.credentials)
+
+
 def require_admin(
     credentials: HTTPAuthorizationCredentials = Security(security),
 ) -> dict:

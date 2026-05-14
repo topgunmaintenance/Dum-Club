@@ -1316,24 +1316,10 @@ export default function ProjectPage() {
     setBuyStep((p) => ({ ...p, [oid]: "clicked" }));
     setBuyError((p) => ({ ...p, [oid]: "" }));
 
-    if (!authUser) {
-      setBuyStep((p) => ({ ...p, [oid]: "blocked_no_auth" }));
-      // Buyer hit Buy Now while signed out. kick the Privy login
-      // modal instead of silently no-op'ing. The pinned-offer card
-      // and mobile sticky bar both call buyOffer() unconditionally
-      // (they don't gate on auth like the per-offer grid does), so
-      // without this branch the click does nothing on dum.club —
-      // /embed already does the right thing in handleBuy().
-      try {
-        login();
-      } catch (err) {
-        setBuyError((p) => ({
-          ...p,
-          [oid]: err instanceof Error ? err.message : "Sign-in failed",
-        }));
-      }
-      return;
-    }
+    // Guest checkout — the backend accepts unauthenticated
+    // /create-payment-intent calls and mints a synthetic
+    // guest:<token> buyer id; Stripe Checkout captures the real
+    // email at the payment step. No Privy modal blocks the sale.
     if (isOwner) {
       setBuyStep((p) => ({ ...p, [oid]: "blocked_owner" }));
       return;
@@ -1376,12 +1362,17 @@ export default function ProjectPage() {
     setBuyStep((p) => ({ ...p, [oid]: "getting_token" }));
 
     try {
-      const token = await getToken();
-      if (!token) {
-        setBuyStep((p) => ({ ...p, [oid]: "no_privy_token" }));
-        setBuyError((p) => ({ ...p, [oid]: "Authentication failed. Please sign in again." }));
-        setBuyingOfferId(null);
-        return;
+      // Token is optional now — the backend accepts guest
+      // checkouts and Stripe collects the email on the payment
+      // page. If a signed-in buyer's token fetch fails, we
+      // proceed without it rather than blocking the sale.
+      let token: string | null = null;
+      if (authUser) {
+        try {
+          token = await getToken();
+        } catch {
+          token = null;
+        }
       }
 
       setBuyStep((p) => ({ ...p, [oid]: "calling_checkout" }));
@@ -1411,7 +1402,7 @@ export default function ProjectPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(checkoutPayload),
       });
@@ -6707,10 +6698,6 @@ return (
                           <div className="w-full rounded-xl border border-default bg-surface-muted px-4 py-3 text-center text-[11px] font-medium text-muted select-none">
                             Your Offer
                           </div>
-                        ) : !authUser ? (
-                          <button onClick={login} className="w-full rounded-xl bg-brand-teal px-6 py-4 text-base font-bold uppercase tracking-[0.05em] text-black transition hover:bg-brand-teal-hover hover:">
-                            Sign in to buy. ${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}
-                          </button>
                         ) : (
                           <>
                             <button

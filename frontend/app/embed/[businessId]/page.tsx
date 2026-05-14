@@ -674,38 +674,27 @@ export default function EmbedShellPage() {
     // sign-in to a new top-level tab on dum.club with an
     // `?autobuy=<offerId>` query so the same buy click resumes
     // after sign-in. See openTopLevelSignIn() above for why.
-    if (!authUser) {
-      if (isInIframe()) {
-        const ok = openTopLevelSignIn({ autobuyOfferId: pinnedOffer.id });
-        if (!ok) {
-          setBuyError(
-            "Sign in opens in a new tab on dum.club. Allow pop-ups for this site and try again.",
-          );
-        }
-        return;
-      }
-      // Inline (non-iframe) anon path. Stash the buy intent before
-      // Privy login() so the resume effect below auto-fires
-      // Stripe Checkout the moment authUser flips truthy. No
-      // second Buy click required.
-      writeAutobuyIntent(pinnedOffer.id, "card");
-      try {
-        login();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Sign-in failed";
-        setBuyError(msg);
-      }
-      return;
-    }
-
+    // Guest checkout path. The backend now treats POST
+    // /api/checkout/create-payment-intent as auth-optional and
+    // mints a synthetic guest:<token> buyer id when no
+    // Authorization header is sent. Stripe Checkout captures the
+    // visitor's email + payment on its own page, so we don't
+    // need a Privy account to complete the sale.
+    //
+    // For signed-in visitors we still pass the Bearer token so
+    // their orders, DUM Points balance, and saved email stay
+    // attached to their identity.
     setBuying(true);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        setBuyError("Authentication failed. Please sign in again.");
-        setBuying(false);
-        return;
+      let token: string | null = null;
+      if (authUser) {
+        token = await getToken();
+        if (!token) {
+          // Signed in but token fetch failed — fall back to
+          // guest checkout rather than blocking the sale.
+          token = null;
+        }
       }
 
       // Strip any existing query params, then append the explicit
@@ -730,7 +719,7 @@ export default function EmbedShellPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });
@@ -1149,11 +1138,9 @@ export default function EmbedShellPage() {
                     >
                       {buying
                         ? "Opening secure checkout…"
-                        : !authUser
-                          ? isInIframe()
-                            ? "Sign in to buy (opens new tab)"
-                            : "Sign in to buy"
-                          : "Pay with Card"}
+                        : pinnedOffer
+                          ? `Buy now · $${Number(pinnedOffer.price_usd || 0).toFixed(2)}`
+                          : "Buy now"}
                     </button>
                   )}
 
