@@ -1078,6 +1078,37 @@
     var liveSession =
       (embedConfig && embedConfig.live_session) || null;
 
+    // Defensive fallback: when we're live but the embed-config
+    // response has no active_offers (either because the backend
+    // hasn't redeployed PR #170, or because the merchant has
+    // zero is_active=true offer rows), synthesise a 1-element
+    // stack from the pinned_offer field. PR #168's pinned_offer
+    // is the same shape the rows expect (id, title, price_usd),
+    // so the panel still renders the same way; we just lose the
+    // row-level "Only N left" tag because pinned_offer doesn't
+    // carry quantity_remaining. The countdown banner still works
+    // when live_session is populated, and gracefully drops out
+    // when it isn't. Without this fallback, a stale Railway
+    // backend leaves live merchants with an empty commerce
+    // surface even though they have a featured offer wired up.
+    if (
+      isLive &&
+      activeOffers.length === 0 &&
+      pinnedOffer &&
+      typeof pinnedOffer === "object" &&
+      typeof pinnedOffer.title === "string" &&
+      pinnedOffer.title.trim()
+    ) {
+      activeOffers = [{
+        id: pinnedOffer.id || null,
+        title: pinnedOffer.title,
+        price_usd: typeof pinnedOffer.price_usd === "number"
+          ? pinnedOffer.price_usd
+          : null,
+        quantity_remaining: null,
+      }];
+    }
+
     function formatCountdown(totalSeconds) {
       var s = Math.max(0, Math.floor(totalSeconds));
       var m = Math.floor(s / 60);
