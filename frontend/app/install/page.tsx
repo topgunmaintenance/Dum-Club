@@ -84,6 +84,20 @@ export default function InstallPage() {
   const [testState, setTestState] = useState<"idle" | "ok" | "missing">("idle");
   const [activePlatform, setActivePlatform] = useState<string>("wix");
 
+  // Mark "Add DUM Live to your website" complete on the dashboard
+  // checklist (GetLiveSteps step 4). Pasting the snippet is an
+  // off-site action we can't observe directly, so "the merchant
+  // visited /install and saw their snippet" is the best signal
+  // we have until the bubble starts loading on a real merchant
+  // origin (which also flips the step true via isLive).
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem("dum-install-seen", "1");
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     if (!user?.privyId) {
       setLoading(false);

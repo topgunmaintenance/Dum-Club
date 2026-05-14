@@ -1,73 +1,101 @@
 "use client";
 
 /**
- * GetLiveSteps — Loom-style 5-step visual progress flow.
+ * GetLiveSteps — 5-step visual progress checklist matched to the
+ * UX Simplification sprint directive's onboarding plan:
  *
- * Sits at the top of the merchant dashboard so a non-technical
- * owner can see exactly how close they are to selling live.
- *
- *   1. Choose Display Mode
+ *   1. Business name set
  *   2. Connect Stripe
- *   3. Create Flash Sale
- *   4. Go Live
- *   5. Start Selling
+ *   3. Create your first offer
+ *   4. Add DUM Live to your website
+ *   5. Press Go Live
  *
- * Status is derived from props the dashboard already loads:
+ * Each step has a clear pass signal we can derive from data the
+ * dashboard already loads, plus a CTA so the merchant can finish
+ * the step without leaving the dashboard. Completed rows go
+ * dimmed with a strikethrough on the label so the visual focus
+ * lands on the next pending action.
  *
- *   - hasDisplayMode  → projects.embed_display_mode is set (always
- *                       true once the row exists, since the column
- *                       has a default; treated as "active" once the
- *                       merchant has clicked Activate at least once)
- *   - stripeVerified  → merchants.stripe_connect_status === "verified"
- *   - hasOffer        → at least one active offer exists
- *   - isLive          → projects.is_live === true
- *   - hasSale         → orders count > 0 (best-effort, optional)
- *
- * The component is presentation-only: status checkmarks light up,
- * the next pending step renders with a brand-teal ring, completed
- * steps fade slightly. No CTAs (each step has its own surface
- * elsewhere on the dashboard).
+ * Step-4 ("Add DUM Live to your website") is unknowable from the
+ * server alone — pasting the snippet is an off-site action. We
+ * approximate "done" two ways:
+ *   - hasVisitedInstall: sessionStorage flag set when the
+ *     merchant lands on /install (proxy for "they've seen the
+ *     snippet")
+ *   - isLive: if the merchant has ever flipped is_live=true, the
+ *     bubble can't appear on their site without the snippet
+ *     being present, so they must have installed it
+ * Either signal marks the step done.
  */
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Check,
   CircleDollarSign,
-  Layout,
+  Code,
+  User,
   Radio,
-  ShoppingBag,
   Tag,
 } from "lucide-react";
 
 type Props = {
-  hasDisplayMode: boolean;
+  /** Project has a non-empty title — proxy for the merchant
+   *  having explicitly named their business. */
+  hasBusinessName: boolean;
   stripeVerified: boolean;
   hasOffer: boolean;
   isLive: boolean;
-  hasSale: boolean;
+  /** Project slug for the step-3 + step-4 + step-5 CTA targets. */
+  projectSlug?: string;
 };
 
 type Step = {
   n: 1 | 2 | 3 | 4 | 5;
   title: string;
   body: string;
-  icon: typeof Layout;
+  icon: typeof User;
   done: boolean;
+  ctaLabel: string;
+  ctaHref: string;
 };
 
 export function GetLiveSteps({
-  hasDisplayMode,
+  hasBusinessName,
   stripeVerified,
   hasOffer,
   isLive,
-  hasSale,
+  projectSlug,
 }: Props) {
+  // Step 4 — has the merchant installed the embed snippet on
+  // their website? Read sessionStorage flag set by /install.
+  // isLive=true also implies the snippet must be in place,
+  // so accept either signal.
+  const [installSeen, setInstallSeen] = useState(false);
+  useEffect(() => {
+    try {
+      setInstallSeen(
+        window.sessionStorage.getItem("dum-install-seen") === "1",
+      );
+    } catch {
+      // Private mode or disabled storage — keep false; relying
+      // on isLive as the secondary signal is still accurate.
+    }
+  }, []);
+
+  const installDone = installSeen || isLive;
+
+  const projectHref = projectSlug ? `/project/${projectSlug}` : "/dashboard";
+
   const steps: Step[] = [
     {
       n: 1,
-      title: "Choose Display Mode",
-      body: "Bubble, Full Sale, or Automatic. Set it once below.",
-      icon: Layout,
-      done: hasDisplayMode,
+      title: "Business name set",
+      body: "Pick a clear name customers will recognise.",
+      icon: User,
+      done: hasBusinessName,
+      ctaLabel: hasBusinessName ? "Edit" : "Set name",
+      ctaHref: `${projectHref}/manage#settings`,
     },
     {
       n: 2,
@@ -75,33 +103,43 @@ export function GetLiveSteps({
       body: "Money goes straight to your bank. DUM Club never holds it.",
       icon: CircleDollarSign,
       done: stripeVerified,
+      ctaLabel: stripeVerified ? "Manage" : "Connect Stripe",
+      ctaHref: "/merchant",
     },
     {
       n: 3,
-      title: "Create Flash Sale",
-      body: "Add a service or product, set the price, and pin it as featured.",
+      title: "Create your first offer",
+      body: "A service or product with a price. Pin it as featured.",
       icon: Tag,
       done: hasOffer,
+      ctaLabel: hasOffer ? "Add another" : "Add offer",
+      ctaHref: `${projectHref}/manage#offers`,
     },
     {
       n: 4,
-      title: "Go Live",
-      body: "Camera and mic on. Customers see you in real time.",
-      icon: Radio,
-      done: isLive,
+      title: "Add DUM Live to your website",
+      body: "Paste one line of code. Bubble appears in the corner.",
+      icon: Code,
+      done: installDone,
+      ctaLabel: installDone ? "View snippet" : "Get my snippet",
+      ctaHref: "/install",
     },
     {
       n: 5,
-      title: "Start Selling",
-      body: "Customers buy with one tap. Payouts hit Stripe.",
-      icon: ShoppingBag,
-      done: hasSale,
+      title: "Press Go Live",
+      body: "Camera and mic on. Customers see you in real time.",
+      icon: Radio,
+      done: isLive,
+      ctaLabel: isLive ? "Open broadcast" : "Go Live",
+      ctaHref: `${projectHref}#project-live-host`,
     },
   ];
 
   // First step that is not yet done is the merchant's next action.
   const nextIdx = steps.findIndex((s) => !s.done);
   const completedCount = steps.filter((s) => s.done).length;
+
+  const progressPct = Math.round((completedCount / steps.length) * 100);
 
   return (
     <section
@@ -125,6 +163,22 @@ export function GetLiveSteps({
       <p className="mt-1 text-sm text-secondary">
         Click below to set up each step. You can go live the same day.
       </p>
+
+      {/* Progress bar — quick visual gauge so the merchant can
+          see "I'm 60% there" at a glance. */}
+      <div
+        className="mt-5 h-2 w-full overflow-hidden rounded-full bg-surface-muted"
+        role="progressbar"
+        aria-valuenow={progressPct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Onboarding progress"
+      >
+        <div
+          className="h-full rounded-full bg-brand-teal transition-all duration-300"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
 
       <ol className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {steps.map((s, i) => {
@@ -168,8 +222,30 @@ export function GetLiveSteps({
                   </span>
                 )}
               </div>
-              <div className="text-sm font-bold text-brand-navy">{s.title}</div>
-              <p className="text-[12px] leading-relaxed text-secondary">{s.body}</p>
+              <div
+                className={`text-sm font-bold ${
+                  isDone ? "text-secondary line-through" : "text-brand-navy"
+                }`}
+              >
+                {s.title}
+              </div>
+              <p
+                className={`text-[12px] leading-relaxed ${
+                  isDone ? "text-muted line-through" : "text-secondary"
+                }`}
+              >
+                {s.body}
+              </p>
+              <Link
+                href={s.ctaHref}
+                className={`mt-auto inline-flex items-center gap-1.5 self-start rounded-lg px-3 py-1.5 text-[11px] font-bold transition ${
+                  isDone
+                    ? "border border-default text-secondary hover:border-strong"
+                    : "bg-brand-teal text-brand-navy hover:bg-brand-teal-hover"
+                }`}
+              >
+                {s.ctaLabel} →
+              </Link>
             </li>
           );
         })}
