@@ -3988,7 +3988,7 @@ return (
       )}
 
       {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ── */}
-      {isOwner && projectView === "storefront" && (
+      {showOwnerInlineUi && projectView === "storefront" && (
         <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -5270,7 +5270,7 @@ return (
               </span>
             )}
           </div>
-          {isOwner && !offerFormOpen && (
+          {showOwnerInlineUi && !offerFormOpen && (
             <button
               onClick={() => openOfferForm()}
               className="rounded-full border border-default bg-brand-teal-soft px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-brand-teal transition hover:border-default hover:text-brand-teal"
@@ -5377,7 +5377,7 @@ return (
             time so the URL adapts to whatever domain serves this page
             (Vercel preview alias, production custom domain, localhost).
             No new dependencies. */}
-        {isOwner && project?.slug && (() => {
+        {showOwnerInlineUi && project?.slug && (() => {
           // Canonical host for production embed snippets. The apex
           // host (dum.club) is currently misconfigured at the
           // Vercel routing layer, so generated merchant snippets
@@ -6833,7 +6833,7 @@ return (
             <p className="text-sm font-medium text-secondary">
               {isOwner ? "You haven't listed any offers yet" : "This business hasn't listed any offers yet."}
             </p>
-            {isOwner && !offerFormOpen && (
+            {showOwnerInlineUi && !offerFormOpen && (
               <button
                 onClick={() => openOfferForm()}
                 className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-2.5 text-sm font-medium text-brand-teal transition hover:border-default hover:bg-brand-teal-soft"
@@ -6846,28 +6846,32 @@ return (
       </div>
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
-        <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">AI Assistant</div>
+        {showOwnerInlineUi && (
+          <>
+            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">AI Assistant</div>
 
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-xs uppercase tracking-[0.18em] text-brand-teal">
-            {chatMeta.is_holder && chatMeta.holder_unlimited
-              ? "Unlimited AI"
-              : chatMeta.free_questions_left > 0
-              ? `${chatMeta.free_questions_left} free question${
-                  chatMeta.free_questions_left === 1 ? "" : "s"
-                } remaining`
-              : "Upgrade for more"}
-          </span>
-        </div>
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-xs uppercase tracking-[0.18em] text-brand-teal">
+                {chatMeta.is_holder && chatMeta.holder_unlimited
+                  ? "Unlimited AI"
+                  : chatMeta.free_questions_left > 0
+                  ? `${chatMeta.free_questions_left} free question${
+                      chatMeta.free_questions_left === 1 ? "" : "s"
+                    } remaining`
+                  : "Upgrade for more"}
+              </span>
+            </div>
 
-        <div className="mb-5 rounded-2xl border border-default bg-brand-teal-soft p-4">
-          <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-brand-teal">Built-in AI</div>
-          <div className="text-sm text-primary">
-            {chatMeta.is_holder && chatMeta.holder_unlimited
-              ? `You have unlimited AI access for this business.`
-              : `This business includes ${chatMeta.free_limit} free AI questions. Purchase any offer to unlock unlimited access.`}
-          </div>
-        </div>
+            <div className="mb-5 rounded-2xl border border-default bg-brand-teal-soft p-4">
+              <div className="mb-2 text-[11px] uppercase tracking-[0.24em] text-brand-teal">Built-in AI</div>
+              <div className="text-sm text-primary">
+                {chatMeta.is_holder && chatMeta.holder_unlimited
+                  ? `You have unlimited AI access for this business.`
+                  : `This business includes ${chatMeta.free_limit} free AI questions. Purchase any offer to unlock unlimited access.`}
+              </div>
+            </div>
+          </>
+        )}
 
         <h2 className="text-2xl font-bold text-primary">Ask AI</h2>
 
@@ -6924,7 +6928,7 @@ return (
 
 
       {/* ── OWNER TOOLS ──────────────────────────── */}
-      {isOwner && (
+      {showOwnerInlineUi && (
         <div className="mb-6 mt-2 flex items-center gap-4">
           <div className="h-px flex-1 bg-surface-muted" />
           <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted">Owner Tools</span>
@@ -6932,7 +6936,7 @@ return (
         </div>
       )}
 
-      {isOwner && (
+      {showOwnerInlineUi && (
         <div className="mb-8 rounded-2xl border border-default bg-surface-card p-4 text-sm text-primary">
           <span className="uppercase tracking-[0.18em] text-secondary">
             Review & publication
@@ -7066,7 +7070,7 @@ return (
       )}
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
-      {isOwner && (
+      {showOwnerInlineUi && (
         <details id="section-orders" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
           <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-primary">
             <div>
@@ -7155,7 +7159,7 @@ return (
 
 
       {/* ── AI Tools (Score + Builder. Analytics view) ────────────── */}
-      {isOwner && projectView === "analytics" && (
+      {showOwnerInlineUi && projectView === "analytics" && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between hover:text-primary">
             <div>
@@ -8236,6 +8240,7 @@ return (
       )}
 
 
+        {showOwnerInlineUi && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-muted hover:text-secondary">
             <span>Business Blueprint</span>
@@ -8281,6 +8286,7 @@ return (
             </div>
           </div>
         </details>
+        )}
 
 
         {false && (
