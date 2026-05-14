@@ -12,6 +12,37 @@ import { AuthProvider } from "../lib/auth/AuthContext";
 // embeddedWallets.solana is configured.
 const solanaConnectors = toSolanaWalletConnectors();
 
+// Privy's internal SDK still emits a handful of warnings even with
+// connectors registered. They're harmless and unfixable from outside
+// the SDK ("Wallet proxy not initialized", "Failed to add embedded
+// wallet connector", "no Solana wallet connectors" once-on-first-
+// paint). Silence them on the production bundle so the merchant
+// devtools console reads clean for new merchants doing install
+// debug. Dev + preview builds keep the full warning stream so we
+// can still investigate genuine regressions.
+const _NOISY_WALLET_FRAGMENTS = [
+  "Wallet proxy not initialized",
+  "Failed to add embedded wallet connector",
+  "no Solana wallet connectors",
+];
+if (
+  typeof window !== "undefined" &&
+  process.env.NODE_ENV === "production"
+) {
+  const _origWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    const first = typeof args[0] === "string" ? args[0] : String(args[0] || "");
+    if (_NOISY_WALLET_FRAGMENTS.some((f) => first.includes(f))) return;
+    _origWarn.apply(console, args);
+  };
+  const _origError = console.error;
+  console.error = (...args: unknown[]) => {
+    const first = typeof args[0] === "string" ? args[0] : String(args[0] || "");
+    if (_NOISY_WALLET_FRAGMENTS.some((f) => first.includes(f))) return;
+    _origError.apply(console, args);
+  };
+}
+
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 

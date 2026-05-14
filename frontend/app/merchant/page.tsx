@@ -93,6 +93,25 @@ export default function MerchantPage() {
     | null
   >(null);
 
+  // ── 5-step checklist state (hoisted above all early returns) ──
+  // These four hooks + two effects used to live below the
+  //   if (!merchant) return null;
+  // guard further down in the component (introduced in PR #187 /
+  // QA T2). That violated the rules of hooks: on the first render
+  // (merchant=null) zero of these hooks were called; on a later
+  // render (merchant loaded) all six were called — React #310:
+  // "Rendered more hooks than during the previous render."
+  // /merchant white-screened for every signed-in merchant.
+  //
+  // Hoisting fixes the crash without changing behaviour: the
+  // hooks now run on every render regardless of whether the
+  // checklist JSX downstream actually renders. The JSX itself
+  // still gates on merchant + firstProject + offer-fetch state.
+  const [hasOffer, setHasOffer] = useState(false);
+  const [installSeen, setInstallSeen] = useState(false);
+  const [qrPrinted, setQrPrinted] = useState(false);
+  const [stepLive, setStepLive] = useState(false);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
@@ -136,6 +155,51 @@ export default function MerchantPage() {
     if (!user) { setLoading(false); return; }
     loadMerchant();
   }, [user]);
+
+  // Checklist signal effects — hoisted alongside the state above
+  // so all hooks run on every render, regardless of which JSX
+  // branch the early returns below ultimately pick.
+  useEffect(() => {
+    try {
+      setInstallSeen(window.sessionStorage.getItem("dum-install-seen") === "1");
+      setQrPrinted(window.sessionStorage.getItem("dum-qr-seen") === "1");
+    } catch {
+      // private mode — both stay false; non-blocking
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!firstProject?.id) {
+      setHasOffer(false);
+      setStepLive(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [offersRes, statusRes] = await Promise.all([
+          fetch(`${API_BASE}/api/offers/${encodeURIComponent(firstProject.id)}`),
+          fetch(
+            `${API_BASE}/api/projects/${encodeURIComponent(firstProject.id)}/live-status`,
+          ),
+        ]);
+        if (cancelled) return;
+        if (offersRes.ok) {
+          const arr = await offersRes.json();
+          setHasOffer(Array.isArray(arr) && arr.length > 0);
+        }
+        if (statusRes.ok) {
+          const j = await statusRes.json();
+          setStepLive(!!j.is_live);
+        }
+      } catch {
+        // soft fail
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [firstProject?.id]);
 
   async function loadMerchant() {
     try {
@@ -579,52 +643,10 @@ export default function MerchantPage() {
   //
   // The page always renders the checklist now, even when complete —
   // a 5/5 celebration line replaces the next-step copy.
-  const [hasOffer, setHasOffer] = useState(false);
-  const [installSeen, setInstallSeen] = useState(false);
-  const [qrPrinted, setQrPrinted] = useState(false);
-  const [stepLive, setStepLive] = useState(false);
-
-  useEffect(() => {
-    try {
-      setInstallSeen(window.sessionStorage.getItem("dum-install-seen") === "1");
-      setQrPrinted(window.sessionStorage.getItem("dum-qr-seen") === "1");
-    } catch {
-      // private mode — both stay false; non-blocking
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!firstProject?.id) {
-      setHasOffer(false);
-      setStepLive(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const [offersRes, statusRes] = await Promise.all([
-          fetch(`${API_BASE}/api/offers/${encodeURIComponent(firstProject.id)}`),
-          fetch(
-            `${API_BASE}/api/projects/${encodeURIComponent(firstProject.id)}/live-status`,
-          ),
-        ]);
-        if (cancelled) return;
-        if (offersRes.ok) {
-          const arr = await offersRes.json();
-          setHasOffer(Array.isArray(arr) && arr.length > 0);
-        }
-        if (statusRes.ok) {
-          const j = await statusRes.json();
-          setStepLive(!!j.is_live);
-        }
-      } catch {
-        // soft fail
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [firstProject?.id]);
+  // (Hooks for hasOffer / installSeen / qrPrinted / stepLive +
+  // their effects live above the early returns near line 95 to
+  // satisfy the rules of hooks. See the "5-step checklist state"
+  // block in the top hook section.)
 
   const stepSnippet = installSeen || stepInstall;
   const stepLiveEver = stepLive || stepFirstSale;

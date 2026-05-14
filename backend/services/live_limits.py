@@ -18,10 +18,11 @@ MAX_JOIN_PER_MINUTE = int(os.getenv("MAX_JOIN_PER_MINUTE", "10"))
 # Host heartbeat threshold. The frontend host posts a heartbeat
 # every 5s while broadcasting; if the most recent heartbeat is
 # older than this, the on-read auto-clear flips is_live=false in
-# the database. 15s catches abrupt disconnects (tab close, laptop
-# lid shut, network drop) without being so aggressive that a
-# transient blip ends the stream.
-HEARTBEAT_STALE_AFTER_SECONDS = int(os.getenv("HEARTBEAT_STALE_AFTER_SECONDS", "15"))
+# the database. 60s tolerates a brief network blip (~12 missed
+# beats) while still catching genuine disconnects within a minute.
+# Was 15s initially; QA flagged that as too aggressive for jittery
+# mobile networks where a transient blip would end the stream.
+HEARTBEAT_STALE_AFTER_SECONDS = int(os.getenv("HEARTBEAT_STALE_AFTER_SECONDS", "60"))
 
 # ── In-Memory State ──────────────────────────────────────────
 

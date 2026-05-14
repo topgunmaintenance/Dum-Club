@@ -228,7 +228,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
               </>
             ) : (
               <span className="text-[10px] uppercase tracking-[0.12em] text-secondary">
-                Contact for quote
+                Ask for a price
               </span>
             )}
           </div>
