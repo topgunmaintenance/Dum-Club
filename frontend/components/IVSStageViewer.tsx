@@ -22,15 +22,31 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stageRef = useRef<any>(null);
   const mountedRef = useRef(true);
+  // Per-instance guard. The module-level `_activeStageProjectId`
+  // alone can't catch React StrictMode double-mounts in dev or a
+  // rapid prop-change re-run, because both pass the guard check
+  // before the cleanup that nulls it out runs. The ref makes each
+  // mount idempotent: even if useEffect fires twice for the same
+  // instance, the second pass short-circuits before calling
+  // stage.join() and the backend doesn't see a duplicate viewer.
+  const joinAttemptedRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
 
-    // Guard: only one Stage instance per project across all mounts
+    // Per-instance: this useEffect already ran for this mount.
+    if (joinAttemptedRef.current) {
+      return;
+    }
+    // Module-level: another mount of the same project elsewhere
+    // (e.g., the full overlay opened while the bubble preview is
+    // still subscribed) is already holding the slot. Bail rather
+    // than double-counting the visitor against MAX_VIEWERS_PER_STREAM.
     if (_activeStageProjectId === projectId) {
       console.log("[ivs-viewer] Stage already active for this project, skipping");
       return;
     }
+    joinAttemptedRef.current = true;
     _activeStageProjectId = projectId;
 
     async function join() {
@@ -228,6 +244,10 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         audioRef.current.srcObject = null;
         audioRef.current = null;
       }
+      // Reset both guards in cleanup so a genuine re-mount on
+      // the same instance (StrictMode dev double-mount or a
+      // prop change) can join cleanly the second time.
+      joinAttemptedRef.current = false;
       _activeStageProjectId = null;
     };
   }, [projectId, userId]);

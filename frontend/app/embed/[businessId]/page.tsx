@@ -1226,6 +1226,96 @@ export default function EmbedShellPage() {
               )}
             </section>
 
+            {/* All-offers strip — browse beyond the pinned offer.
+                Renders the rest of the merchant's active offers as
+                view-only tiles. Each tile links out to the offer's
+                anchor on /project/[id], where the full storefront
+                already exposes per-offer detail + Buy CTA. We
+                intentionally do NOT add a second checkout path
+                here; keeping checkout on the pinned card avoids
+                pulling Stripe auth + sign-in + autobuy resume into
+                a new surface. */}
+            {(() => {
+              const browseOffers = offers.filter(
+                (o) =>
+                  o.id !== (pinnedOffer ? pinnedOffer.id : null) &&
+                  typeof o.title === "string" &&
+                  o.title.trim().length > 0,
+              );
+              if (browseOffers.length === 0) return null;
+              return (
+                <section
+                  aria-label="More offers"
+                  className="rounded-2xl border border-default bg-surface-card p-4"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+                      More from this seller
+                    </div>
+                    <div className="text-[10px] font-medium text-muted">
+                      {browseOffers.length} more
+                    </div>
+                  </div>
+                  <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 lg:max-h-72 lg:flex-col lg:snap-none lg:overflow-y-auto">
+                    {browseOffers.map((o) => {
+                      const price =
+                        typeof o.price_usd === "number" && isFinite(o.price_usd)
+                          ? `$${o.price_usd.toFixed(2)}`
+                          : null;
+                      const remaining = (() => {
+                        if (o.unlimited_inventory) return null;
+                        const qa = Number(o.quantity_available || 0);
+                        const qs = Number(o.quantity_sold || 0);
+                        const left = Math.max(0, qa - qs);
+                        if (left <= 0) return "Sold out";
+                        if (left <= 5) return `${left} left`;
+                        return null;
+                      })();
+                      const isSoldOut = remaining === "Sold out";
+                      return (
+                        <a
+                          key={o.id}
+                          href={`/project/${project?.slug || businessId}#offer-${o.id}`}
+                          target="_top"
+                          className={`group flex shrink-0 snap-start flex-col gap-1 rounded-xl border border-default bg-surface-page p-3 transition hover:border-brand-teal/50 lg:flex-row lg:items-center lg:gap-3 lg:shrink ${
+                            isSoldOut ? "opacity-60" : ""
+                          }`}
+                          style={{ minWidth: "180px" }}
+                          aria-label={`View ${o.title}${price ? ` for ${price}` : ""}`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate text-sm font-semibold text-primary">
+                              {o.title}
+                            </div>
+                            {remaining && (
+                              <div
+                                className={`mt-0.5 text-[10px] font-semibold ${
+                                  isSoldOut ? "text-state-live" : "text-amber-400"
+                                }`}
+                              >
+                                {remaining}
+                              </div>
+                            )}
+                          </div>
+                          {price && (
+                            <div className="font-mono text-sm font-bold text-brand-teal">
+                              {price}
+                            </div>
+                          )}
+                          <span
+                            aria-hidden="true"
+                            className="text-sm leading-none text-brand-teal transition group-hover:translate-x-0.5"
+                          >
+                            →
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })()}
+
             {/* LiveChatIVS — websocket wiring + basic chat display. The
                 component renders its own header showing the live viewer
                 count from the WS. onItemUpdate keeps the offers array
