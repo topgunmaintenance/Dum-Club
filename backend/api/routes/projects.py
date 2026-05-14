@@ -1031,6 +1031,7 @@ async def get_embed_config(project_id: str, response: Response):
             "live_provider": None,
             "ivs_stage_arn": None,
             "pinned_offer_id": None,
+            "pinned_offer": None,
             "popin_config": {},
             "degraded": True,
         }
@@ -1083,6 +1084,42 @@ async def get_embed_config(project_id: str, response: Response):
     if not isinstance(popin_raw, dict):
         popin_raw = {}
 
+    # Hydrate pinned_offer details (title + price) so embed.js can
+    # render a single product chip next to the host-site bubble
+    # without a second cross-origin round trip. Same CORS-open
+    # response, same 60s cache, additive only — failure to load the
+    # offer is silently degraded to None so the chip just doesn't
+    # render. Price is normalised to a number; titles are passed
+    # through verbatim (textContent on the host side handles escaping).
+    pinned_offer_payload = None
+    pinned_offer_id = row.get("pinned_offer_id")
+    if pinned_offer_id:
+        try:
+            offer_res = (
+                supabase.table("offers")
+                .select("id, title, price_usd")
+                .eq("id", pinned_offer_id)
+                .eq("is_active", True)
+                .limit(1)
+                .execute()
+            )
+            if offer_res.data:
+                offer_row = offer_res.data[0]
+                price_raw = offer_row.get("price_usd")
+                try:
+                    price_val = float(price_raw) if price_raw is not None else None
+                except (TypeError, ValueError):
+                    price_val = None
+                pinned_offer_payload = {
+                    "id": offer_row.get("id"),
+                    "title": offer_row.get("title") or "",
+                    "price_usd": price_val,
+                }
+        except Exception:
+            # Swallow — embed-config must not 5xx on third-party
+            # merchant sites; the chip just won't render.
+            pinned_offer_payload = None
+
     return {
         "id": row["id"],
         "slug": row.get("slug"),
@@ -1090,7 +1127,8 @@ async def get_embed_config(project_id: str, response: Response):
         "is_live": bool(row.get("is_live")),
         "live_provider": row.get("live_provider"),
         "ivs_stage_arn": row.get("ivs_stage_arn"),
-        "pinned_offer_id": row.get("pinned_offer_id"),
+        "pinned_offer_id": pinned_offer_id,
+        "pinned_offer": pinned_offer_payload,
         # Pop-in seller payload. Keys mirror migration 038's allow-list
         # (see _POPIN_ALLOWED_KEYS) so embed.js can render the floating
         # greeting without a second API call. Unknown keys are dropped
