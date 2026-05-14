@@ -455,6 +455,46 @@
         "  pointer-events: none;",
         "}",
         "[data-dum-embed-bubble].is-live .dum-live-pill { display: inline-flex; }",
+        // "Tap to watch" caption — small white pill that sits
+        // just below the bubble when live. Visible only with
+        // .is-live so the offline bubble stays clean.
+        "[data-dum-embed-bubble] .dum-tap-hint {",
+        "  position: absolute;",
+        "  left: 50%; top: 100%;",
+        "  transform: translate(-50%, 14px);",
+        "  display: none;",
+        "  padding: 4px 10px;",
+        "  border-radius: 9999px;",
+        "  background: rgba(11,18,32,0.9);",
+        "  color: #ffffff;",
+        "  font: 700 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.1em;",
+        "  text-transform: uppercase;",
+        "  white-space: nowrap;",
+        "  box-shadow: 0 4px 10px rgba(11,18,32,0.25);",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble].is-live .dum-tap-hint { display: inline-flex; }",
+        // Viewer-count pill — inline element used inside the
+        // countdown banner row to surface "12 watching". Calm
+        // colour so it reads as data, not urgency.
+        "[data-dum-embed-product-viewers] {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 5px;",
+        "  padding: 4px 8px;",
+        "  border-radius: 9999px;",
+        "  background: rgba(11,18,32,0.06);",
+        "  color: #213047;",
+        "  font: 700 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.08em;",
+        "  text-transform: uppercase;",
+        "  margin-left: 6px;",
+        "}",
+        "[data-dum-embed-product-viewers] .dum-viewers-dot {",
+        "  width: 5px; height: 5px; border-radius: 50%;",
+        "  background: #00d1a4;",
+        "}",
         "[data-dum-embed-bubble] .dum-live-dot {",
         "  width: 6px; height: 6px; border-radius: 50%;",
         "  background: #ffffff;",
@@ -1040,6 +1080,16 @@
     livePill.appendChild(liveDot);
     livePill.appendChild(liveLabel);
 
+    // "Tap to watch" caption — sits just under the bubble when
+    // the merchant is live so visitors know the circle is
+    // interactive (some users miss that the bubble is clickable
+    // when the live face is the dominant signal). Hidden when
+    // offline so the offline initials stay clean.
+    var tapHint = document.createElement("span");
+    tapHint.className = "dum-tap-hint";
+    tapHint.setAttribute("aria-hidden", "true");
+    tapHint.textContent = "Tap to watch";
+
     var close = document.createElement("button");
     close.type = "button";
     close.setAttribute("data-dum-embed-bubble-close", "");
@@ -1048,6 +1098,7 @@
 
     bubble.appendChild(clip);
     bubble.appendChild(livePill);
+    bubble.appendChild(tapHint);
     bubble.appendChild(close);
 
     // ── Commerce surface ──────────────────────────────────────
@@ -1195,7 +1246,46 @@
             topQty === 1 ? "Only 1 left" : "Only " + topQty + " left";
           cd.appendChild(stockLabel);
         }
+        // Viewer count chip — appended to the right of the
+        // urgency banner when the backend reports any viewers.
+        // get_viewer_count returns the live WebSocket join total,
+        // so this only shows when the chat socket has at least
+        // one connected listener on the stream.
+        var viewersCount = sessionData &&
+          typeof sessionData.viewer_count === "number"
+          ? sessionData.viewer_count
+          : 0;
+        if (viewersCount > 0) {
+          var vChip = document.createElement("span");
+          vChip.setAttribute("data-dum-embed-product-viewers", "");
+          var vDot = document.createElement("span");
+          vDot.className = "dum-viewers-dot";
+          var vLabel = document.createElement("span");
+          vLabel.textContent =
+            viewersCount === 1 ? "1 watching" : viewersCount + " watching";
+          vChip.appendChild(vDot);
+          vChip.appendChild(vLabel);
+          cd.appendChild(vChip);
+        }
         productPanel.appendChild(cd);
+      } else if (
+        sessionData &&
+        typeof sessionData.viewer_count === "number" &&
+        sessionData.viewer_count > 0
+      ) {
+        // No urgency banner but we still want to surface
+        // "12 watching" so visitors see live momentum. Mount a
+        // calm viewer-only pill at the top of the panel.
+        var vOnly = document.createElement("div");
+        vOnly.setAttribute("data-dum-embed-product-countdown", "");
+        var vOnlyDot = document.createElement("span");
+        vOnlyDot.className = "dum-cd-dot";
+        var vOnlyLabel = document.createElement("span");
+        var vc = sessionData.viewer_count;
+        vOnlyLabel.textContent = vc === 1 ? "1 watching" : vc + " watching";
+        vOnly.appendChild(vOnlyDot);
+        vOnly.appendChild(vOnlyLabel);
+        productPanel.appendChild(vOnly);
       }
 
       // Up to 3 offer rows. Each is a real <button> so keyboard +

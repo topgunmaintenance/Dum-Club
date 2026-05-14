@@ -61,7 +61,11 @@ type BubbleConfig = {
   ivs_stage_arn: string | null;
   live_provider: string | null;
   // Set by PR #170 backend; may be absent on stale deploys.
-  live_session?: { remaining_seconds: number } | null;
+  // viewer_count added in schema v1.7 (sprint PR 2).
+  live_session?: {
+    remaining_seconds: number;
+    viewer_count?: number;
+  } | null;
   popin_config?: {
     title?: string;
     avatar_url?: string;
