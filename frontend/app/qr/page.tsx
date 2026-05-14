@@ -26,7 +26,7 @@ interface ProjectSummary {
 }
 
 export default function QrPage() {
-  const { user, login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +42,11 @@ export default function QrPage() {
   }, []);
 
   useEffect(() => {
+    // Wait for Privy/Auth hydration before deciding whether to
+    // show the signed-out CTA — otherwise the page flashes the
+    // sign-in screen on hard refresh for already-logged-in
+    // merchants (mirror of QA T4 fix on /install).
+    if (authLoading) return;
     if (!user?.privyId) {
       setLoading(false);
       return;
@@ -68,7 +73,7 @@ export default function QrPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.privyId]);
+  }, [authLoading, user?.privyId]);
 
   const projectUrl = useMemo(() => {
     if (!project) return "";
@@ -84,10 +89,12 @@ export default function QrPage() {
     ? `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=12&data=${encodeURIComponent(projectUrl)}`
     : "";
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-12 text-sm text-secondary">
-        Loading...
+      <main className="mx-auto max-w-3xl px-4 py-12" aria-busy="true">
+        <div className="mb-3 h-8 w-3/4 animate-pulse rounded bg-surface-muted" />
+        <div className="mb-8 h-4 w-full animate-pulse rounded bg-surface-muted" />
+        <div className="h-80 animate-pulse rounded-2xl bg-surface-card" />
       </main>
     );
   }
