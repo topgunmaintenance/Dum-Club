@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from db.supabase import get_client
-from auth.privy import get_current_user, require_admin
+from auth.privy import get_current_user, get_optional_current_user, require_admin
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
 from services.solana_verify import (
     LAMPORTS_PER_SOL,
@@ -474,7 +474,7 @@ def process_order_paid(
 @router.post("/create-payment-intent")
 async def create_payment_intent(
     body: PaymentIntentRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
     if not _STRIPE_SECRET:
         raise HTTPException(status_code=503, detail="Stripe is not configured")
@@ -482,8 +482,20 @@ async def create_payment_intent(
     print(f"[checkout] Request: offer_id={body.offer_id}, source={body.source}, auction_id={body.auction_id}, override_price={body.override_price}, use_dum_discount={body.use_dum_discount}")
 
     supabase = get_client()
-    privy_id = current_user.get("sub")
-    print(f"[checkout] Buyer: privy_id={privy_id}")
+    # Guest checkout: when the caller isn't signed in, mint a
+    # synthetic buyer id so downstream order rows (which have
+    # buyer_user_id NOT NULL) can be created without an account.
+    # Stripe Checkout captures the real email at the payment step;
+    # the webhook handler reconciles that back to the order. Auth
+    # is now optional, but a TAMPERED token still 401s upstream
+    # via verify_privy_token — so we never silently accept a bad
+    # token as a guest.
+    import secrets as _secrets
+    privy_id = (current_user or {}).get("sub")
+    is_guest = not privy_id
+    if is_guest:
+        privy_id = f"guest:{_secrets.token_urlsafe(12)}"
+    print(f"[checkout] Buyer: privy_id={privy_id} guest={is_guest}")
 
     # 1. Fetch offer
     offer_res = (
@@ -538,7 +550,11 @@ async def create_payment_intent(
 
     # ── DUM Points discount: verify balance, deduct, reduce price ──
     # SUBSIDY MODEL: customer pays discounted price, business gets paid on original price
-    if body.use_dum_discount and privy_id:
+    # Guests (synthetic privy_id starting with "guest:") never have
+    # a DUM balance row, so short-circuit cleanly — saves a useless
+    # users lookup and avoids any chance of a "no such user"
+    # error being treated as an empty balance.
+    if body.use_dum_discount and privy_id and not is_guest:
         try:
             dum_res = supabase.table("users").select("dum_balance").eq("privy_id", privy_id).limit(1).execute()
             dum_bal = dum_res.data[0].get("dum_balance", 0) if dum_res.data else 0
@@ -595,9 +611,12 @@ async def create_payment_intent(
     else:
         print(f"[checkout] Unlimited inventory or no limit set: unlimited={is_unlimited}, qty_available={qty_available}")
 
-    # 5. Resolve buyer email for Stripe receipt
+    # 5. Resolve buyer email for Stripe receipt. Guests have no
+    # users row — skip the lookup, Stripe Checkout will collect
+    # the email on the payment page (default behaviour when
+    # customer_email is not passed in session create).
     buyer_email = body.buyer_email
-    if not buyer_email and privy_id:
+    if not buyer_email and privy_id and not is_guest:
         try:
             user_res = supabase.table("users").select("email").eq("privy_id", privy_id).limit(1).execute()
             if user_res.data:
