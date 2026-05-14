@@ -703,16 +703,48 @@ async def list_public_projects():
     # Discover cards can render "12 watching" without N parallel
     # /embed-config fetches. get_viewer_count is a defaultdict lookup
     # populated by the chat WebSocket — zero-cost for offline projects.
+    # Same listing also runs the heartbeat-staleness check so a host
+    # who disconnects without firing /end-stage doesn't keep a "Live
+    # now" card on /discover indefinitely.
     try:
-        from services.live_limits import get_viewer_count
+        from services.live_limits import (
+            get_viewer_count,
+            is_heartbeat_stale,
+            mark_stale_cleared,
+            was_stale_cleared,
+            clear_stream,
+        )
     except Exception:
         get_viewer_count = None  # type: ignore[assignment]
+        is_heartbeat_stale = None  # type: ignore[assignment]
+        mark_stale_cleared = None  # type: ignore[assignment]
+        was_stale_cleared = None  # type: ignore[assignment]
+        clear_stream = None  # type: ignore[assignment]
 
     for p in projects:
         p["owner_verified"] = (
             verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
             or bool(p.get("verified"))
         )
+        # On-read auto-clear. Mirrors /embed-config + /live-status.
+        if (
+            is_heartbeat_stale
+            and p.get("is_live")
+            and p.get("id")
+            and is_heartbeat_stale(p["id"])
+            and not (was_stale_cleared and was_stale_cleared(p["id"]))
+        ):
+            try:
+                supabase.table("projects").update({
+                    "is_live": False,
+                }).eq("id", p["id"]).eq("is_live", True).execute()
+            except Exception:
+                pass
+            if clear_stream:
+                clear_stream(p["id"])
+            if mark_stale_cleared:
+                mark_stale_cleared(p["id"])
+            p["is_live"] = False
         if get_viewer_count and p.get("is_live") and p.get("id"):
             try:
                 p["viewer_count"] = int(get_viewer_count(p["id"]))
@@ -1205,6 +1237,39 @@ async def get_embed_config(project_id: str, response: Response):
     except Exception:
         active_offers_payload = []
 
+    # Stale-heartbeat auto-clear. If the project row claims
+    # is_live=true but the host hasn't checked in within
+    # HEARTBEAT_STALE_AFTER_SECONDS, the host has almost
+    # certainly disconnected without firing /end-stage (tab
+    # close, laptop sleep, network drop). Flip is_live=false
+    # in the DB once (dedup via mark_stale_cleared so
+    # subsequent reads skip the redundant UPDATE) and return
+    # the corrected state in this response so the bubble +
+    # Discover render offline immediately.
+    is_live_effective = bool(row.get("is_live"))
+    if is_live_effective:
+        try:
+            from services.live_limits import (
+                is_heartbeat_stale,
+                mark_stale_cleared,
+                was_stale_cleared,
+                clear_stream,
+            )
+            if is_heartbeat_stale(row["id"]) and not was_stale_cleared(row["id"]):
+                try:
+                    supabase.table("projects").update({
+                        "is_live": False,
+                    }).eq("id", row["id"]).eq("is_live", True).execute()
+                except Exception:
+                    pass
+                clear_stream(row["id"])
+                mark_stale_cleared(row["id"])
+                is_live_effective = False
+        except Exception:
+            # Soft fail — the helper module shouldn't take down
+            # embed-config under any circumstances.
+            pass
+
     # Live-session countdown — exposes the per-stream duration cap
     # (services/live_limits.MAX_STREAM_DURATION_MINUTES) so the
     # host-page bubble can paint an honest "live deal ends in
@@ -1213,7 +1278,7 @@ async def get_embed_config(project_id: str, response: Response):
     # land after the restart. That's acceptable degradation —
     # the cap is a real product constraint, not a fake urgency.
     live_session_payload: dict | None = None
-    if bool(row.get("is_live")):
+    if is_live_effective:
         try:
             from services.live_limits import (
                 get_stream_remaining_seconds,
@@ -1238,7 +1303,9 @@ async def get_embed_config(project_id: str, response: Response):
         "id": row["id"],
         "slug": row.get("slug"),
         "embed_display_mode": row.get("embed_display_mode") or "automatic",
-        "is_live": bool(row.get("is_live")),
+        # Effective is_live after heartbeat-staleness check —
+        # not the raw DB value. Stale broadcasts auto-clear above.
+        "is_live": is_live_effective,
         "live_provider": row.get("live_provider"),
         "ivs_stage_arn": row.get("ivs_stage_arn"),
         "pinned_offer_id": pinned_offer_id,
@@ -1652,8 +1719,34 @@ async def get_live_status(project_id: str, response: Response):
         raise HTTPException(status_code=404, detail="Project not found")
 
     project = res.data[0]
+    # Same heartbeat-staleness check as /embed-config. /live-status
+    # is the Vercel shim's source for in-process presence so a
+    # stale flag here would echo "is_live: true, viewer_count: 0"
+    # downstream and read as "Live Business but nobody watching".
+    is_live_effective = bool(project.get("is_live", False))
+    if is_live_effective:
+        try:
+            from services.live_limits import (
+                is_heartbeat_stale,
+                mark_stale_cleared,
+                was_stale_cleared,
+                clear_stream,
+            )
+            if is_heartbeat_stale(project["id"]) and not was_stale_cleared(project["id"]):
+                try:
+                    supabase.table("projects").update({
+                        "is_live": False,
+                    }).eq("id", project["id"]).eq("is_live", True).execute()
+                except Exception:
+                    pass
+                clear_stream(project["id"])
+                mark_stale_cleared(project["id"])
+                is_live_effective = False
+        except Exception:
+            pass
+
     result = {
-        "is_live": project.get("is_live", False),
+        "is_live": is_live_effective,
         "provider": project.get("live_provider"),
         "playback_id": project.get("live_playback_id"),
         "stream_url": project.get("stream_url"),
@@ -1675,7 +1768,7 @@ async def get_live_status(project_id: str, response: Response):
         # actually live — get_stream_remaining_seconds returns the
         # full cap (3600) for unknown project_ids, which would
         # surface as "60:00 countdown" on offline projects.
-        if bool(project.get("is_live")):
+        if is_live_effective:
             result["remaining_seconds"] = int(
                 get_stream_remaining_seconds(project["id"])
             )

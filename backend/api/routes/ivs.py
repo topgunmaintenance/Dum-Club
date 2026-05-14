@@ -16,7 +16,14 @@ from typing import Optional
 
 from db.supabase import get_client
 from services.ivs_realtime import is_ivs_enabled, create_stage, create_participant_token, delete_stage
-from services.live_limits import register_stream_start, clear_stream, check_join_rate, add_viewer, remove_viewer
+from services.live_limits import (
+    register_stream_start,
+    clear_stream,
+    check_join_rate,
+    add_viewer,
+    remove_viewer,
+    record_heartbeat,
+)
 
 router = APIRouter()
 
@@ -78,6 +85,35 @@ class TokenRequest(BaseModel):
 
 class EndStageRequest(BaseModel):
     project_id: str
+
+
+class HeartbeatRequest(BaseModel):
+    project_id: str
+
+
+# ── Heartbeat ────────────────────────────────────────────────
+
+@router.post("/heartbeat")
+async def api_heartbeat(
+    body: HeartbeatRequest,
+    user_id: str = Header(default="", convert_underscores=False),
+):
+    """Host posts every ~5s while broadcasting. Updates the
+    in-memory last-heartbeat timestamp so on-read endpoints can
+    detect "host went away" within ~15s and flip is_live=false
+    in the DB (see services/live_limits.HEARTBEAT_STALE_AFTER_SECONDS).
+
+    Owner check matches the rest of /api/ivs/*: a misbehaving
+    third party can't keep a stream artificially "alive" by
+    pinging this endpoint for someone else's project.
+
+    Cheap path: in-memory dict write, no DB call, no AWS call.
+    Designed for 5-second cadence × N concurrent hosts.
+    """
+    _require_ivs()
+    project = _verify_owner(body.project_id, user_id)
+    record_heartbeat(project["id"])
+    return {"status": "ok"}
 
 
 # ── Create Stage ─────────────────────────────────────────────

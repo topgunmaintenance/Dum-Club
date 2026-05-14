@@ -41,6 +41,38 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  // Heartbeat poll handle. While the stage is live, the host
+  // posts to /api/ivs/heartbeat every 5s so the backend can
+  // detect an abrupt disconnect (tab close, laptop sleep,
+  // network drop) and flip is_live=false within ~15s. Without
+  // this, viewers landed on /embed/* and saw "Waiting for host
+  // video..." indefinitely after a host crash.
+  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function stopHeartbeat() {
+    if (heartbeatTimerRef.current) {
+      clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  }
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    const send = () => {
+      // Fire-and-forget. A single failed beat doesn't end the
+      // stream; the backend's 15s threshold tolerates one
+      // missed poll. Catch silently — we never want a heartbeat
+      // failure to interrupt the live UI.
+      fetch(`${API_BASE}/api/ivs/heartbeat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: userId },
+        body: JSON.stringify({ project_id: projectId }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    send(); // immediate first beat so the freshly-live state is recorded
+    heartbeatTimerRef.current = setInterval(send, 5000);
+  }
 
   const startPreview = useCallback(async () => {
     // Audit #4 Phase 3 (Q6) — pre-stream guard. If the merchant
@@ -98,6 +130,11 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     if (_stageInstance) {
       __debug && console.log("[ivs-host] Stage already exists, skipping");
       setStatus("live");
+      // Re-arm the heartbeat in case this is a re-mount on the
+      // same module-level stage — without it, navigating away
+      // and back would leave the host live in the UI but no
+      // longer beating the backend.
+      startHeartbeat();
       return;
     }
 
@@ -176,6 +213,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         if (state === ConnectionState.CONNECTED) {
           __debug && console.log("[ivs-host] ✓ CONNECTED — calling onLive");
           setStatus("live");
+          startHeartbeat();
           onLive();
         }
       });
@@ -195,6 +233,10 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
   const endStream = useCallback(async () => {
     __debug && console.log("[ivs-host] Ending stream (user action)...");
+
+    // Stop heartbeat first so the explicit end isn't accompanied
+    // by stray heartbeats racing the /end-stage call.
+    stopHeartbeat();
 
     if (_stageInstance) {
       try { _stageInstance.leave(); } catch {}
@@ -229,6 +271,12 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       // (not just a re-render). Check if we should keep the stage alive.
       // The module-level _stageInstance will persist across re-mounts.
       __debug && console.log("[ivs-host] useEffect cleanup — stage preserved in module scope");
+      // Always stop the heartbeat interval on cleanup. If the
+      // component is genuinely unmounting (navigation away, tab
+      // close) the backend's 15s threshold will trip and the
+      // bubble + Discover will flip to offline within seconds —
+      // exactly the auto-end-stale behaviour we want.
+      stopHeartbeat();
     };
   }, []);
 
