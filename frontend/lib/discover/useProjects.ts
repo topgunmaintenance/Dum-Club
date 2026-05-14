@@ -16,6 +16,12 @@ import type { Project, MarketSnapshot } from "./types";
 import { loadMarketSnapshotsBatch } from "./useMarketBatch";
 
 const MARKET_POLL_INTERVAL = 60_000;
+// Refresh the project list itself every 20s so a merchant
+// flipping is_live (Go Live / End Stream) propagates to all
+// open /discover tabs within a normal page-glance window. The
+// market poll loop is a separate cadence — that one refreshes
+// price/volume snapshots and runs at 60s.
+const PROJECTS_POLL_INTERVAL = 20_000;
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -77,7 +83,7 @@ export function useProjects() {
     return () => { cancelled = true; };
   }, [loadProjects, loadMarkets]);
 
-  // Market poll every 45s (visibility-aware)
+  // Market poll every 60s (visibility-aware)
   useEffect(() => {
     if (!projects.length) return;
     if (pollRef.current) clearInterval(pollRef.current);
@@ -91,6 +97,33 @@ export function useProjects() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [projects, loadMarkets]);
+
+  // Project-list refresh poll. Separate from the market poll
+  // because the field we care about (is_live + viewer_count)
+  // sits on the project row itself, not on the per-project
+  // /market snapshot. Without this, /discover stayed stuck on
+  // the initial-mount snapshot — a merchant going live mid-
+  // session never appeared as live on already-open Discover
+  // tabs (QA T3 finding).
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      loadProjects();
+    }, PROJECTS_POLL_INTERVAL);
+    return () => clearInterval(iv);
+  }, [loadProjects]);
+
+  // Refresh on tab refocus too — visitors who switch tabs
+  // back to Discover after a few minutes should see the
+  // freshest live state without waiting for the next poll tick.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    function onVisible() {
+      if (document.visibilityState === "visible") loadProjects();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadProjects]);
 
   return { projects, marketByProject, loading, error, marketLoaded };
 }
