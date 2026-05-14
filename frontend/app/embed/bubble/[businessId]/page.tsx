@@ -60,6 +60,8 @@ type BubbleConfig = {
   is_live: boolean;
   ivs_stage_arn: string | null;
   live_provider: string | null;
+  // Set by PR #170 backend; may be absent on stale deploys.
+  live_session?: { remaining_seconds: number } | null;
   popin_config?: {
     title?: string;
     avatar_url?: string;
@@ -208,8 +210,18 @@ export default function BubblePreviewPage() {
             };
           });
         try {
+          // Forward live_session alongside active_offers so the
+          // host-page countdown banner fires as soon as the
+          // backend exposes get_stream_remaining_seconds (PR #170
+          // /embed-config), even when the host page's own
+          // embed-config fetch missed the field. The bubble route
+          // is same-origin to dum.club and gets a fresh read.
           window.parent.postMessage(
-            { type: "bubble-offers", active_offers: active },
+            {
+              type: "bubble-offers",
+              active_offers: active,
+              live_session: config?.live_session ?? null,
+            },
             "*",
           );
         } catch {
@@ -360,11 +372,19 @@ export default function BubblePreviewPage() {
 
 /**
  * Square crop of `IVSStageViewer`. The shared component renders a
- * 16:9 box with `aspect-ratio: 16/9` baked in; here we override
- * the surrounding bounds and let `object-fit: cover` on the inner
- * video crop the centre of the frame to fill the square. That
- * combined with a `border-radius: 50%; overflow: hidden` parent
- * on the host site is what produces a true circle.
+ * 16:9 box with `aspect-ratio: 16/9` baked in AND a min-height of
+ * 200px on its outer wrapper. Inside a ~140px circular bubble that
+ * geometry leaves the source video taller than the iframe viewport
+ * and crops the host's face off-centre.
+ *
+ * We override with a `style jsx global` block so the rules win
+ * over the IVSStageViewer's inline + tailwind styling, force the
+ * wrapper + video to fill 100% of the iframe exactly, and hide
+ * the IVSStageViewer's internal status / error / audio-blocked
+ * overlays — which are useful in the full overlay but inside a
+ * 140px circle they read as floating chat. The full overlay
+ * (/embed/[id]) still surfaces those overlays at their normal
+ * size — only the preview bubble suppresses them.
  *
  * No additional IVS subscription happens here — the viewer's
  * module-level `_activeStageProjectId` guard ensures the bubble
@@ -379,27 +399,61 @@ function BubbleIVSWrapper({
   userId: string;
 }) {
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        // Hide the IVSStageViewer's own rounded border / status
-        // overlays so the host-side circular clip is the only
-        // visible chrome.
-      }}
-    >
-      <style jsx>{`
-        div :global(div[style*="border"]) {
-          border: 0 !important;
-          border-radius: 0 !important;
-          background: transparent !important;
+    <div className="dum-bubble-ivs-host">
+      <style jsx global>{`
+        .dum-bubble-ivs-host {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          background: #000;
         }
-        div :global(video) {
+        /* IVSStageViewer's outer div — neutralise its
+           min-height: 200, rounded corners, border, and let it
+           fill the iframe exactly so the inner video can crop
+           against a square box instead of a 140 x 200 strip. */
+        .dum-bubble-ivs-host > div {
+          position: absolute !important;
+          inset: 0 !important;
           width: 100% !important;
           height: 100% !important;
           min-height: 0 !important;
+          min-width: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          background: #000 !important;
+          overflow: hidden !important;
+        }
+        /* Inner <video> — force absolute fill so the iframe
+           viewport (140 x 140 desktop, 96 x 96 mobile) is the
+           single source of truth for the crop box, then
+           object-fit: cover handles the 16:9 source. Face
+           centres naturally; sides crop equally instead of
+           top/bottom cropping. */
+        .dum-bubble-ivs-host video {
+          position: absolute !important;
+          inset: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          min-width: 0 !important;
+          max-height: none !important;
           aspect-ratio: auto !important;
           object-fit: cover !important;
+          background: #000 !important;
+          display: block !important;
+        }
+        /* Hide IVSStageViewer's internal overlays inside the
+           bubble: status ("Connecting…"), error ("Retry"), ended,
+           and the "🔊 Tap to hear audio" autoplay-recovery
+           button. The bubble is silent by design; these widgets
+           live in the full overlay only. */
+        .dum-bubble-ivs-host > div > div,
+        .dum-bubble-ivs-host > div > button {
+          display: none !important;
         }
       `}</style>
       <IVSStageViewer projectId={projectId} userId={userId} />

@@ -1395,7 +1395,17 @@
         // if the bubble was already dismissed.
         if (!isLive) return;
         if (!bubble.parentNode) return;
-        buildProductPanel(data.active_offers, liveSession);
+        // Prefer the host-page's own liveSession (from its
+        // embed-config fetch). Fall back to the iframe's reading
+        // when the host page missed the field — this lets the
+        // countdown banner fire as soon as backend support is
+        // deployed, even if the host's first fetch was stale.
+        var effectiveSession = liveSession;
+        if (!effectiveSession && data.live_session) {
+          effectiveSession = data.live_session;
+          liveSession = effectiveSession;
+        }
+        buildProductPanel(data.active_offers, effectiveSession);
         return;
       }
     }
