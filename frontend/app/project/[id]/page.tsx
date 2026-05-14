@@ -176,6 +176,8 @@ import {
   sanitizeBearerToken,
   updateOffer,
 } from "../../../lib/offers";
+import { AdminBar, useViewAsCustomer } from "../../../components/project/AdminBar";
+import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROJECT_FEE_RATE = 0.015;
@@ -720,6 +722,18 @@ export default function ProjectPage() {
 
   const [serviceProfile, setServiceProfile] = useState<Record<string, unknown> | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  // "View as customer" preview toggle from the AdminBar. When
+  // true, owner-only inline chrome (offer-card ellipsis menus,
+  // edit forms, etc.) is hidden so the merchant can see the
+  // page exactly the way a real visitor does. The toggle is
+  // sessionStorage-scoped per project — a new tab clears it,
+  // and a hard refresh restores the admin view.
+  const viewAsCustomer = useViewAsCustomer(id || "");
+  // Anywhere we previously gated on `isOwner`, the new gate is
+  // `showOwnerInlineUi` — hides chrome under preview mode while
+  // keeping the underlying owner flag for data-fetching paths
+  // (orders, market etc) that the visitor never sees.
+  const showOwnerInlineUi = isOwner && !viewAsCustomer;
 
   // AI Builder state
   const [builderAction, setBuilderAction] = useState<string | null>(null);
@@ -3625,6 +3639,13 @@ return (
     )}
     <SectionNav refreshKey={projectView} mode={projectView} />
     {statusToast}
+    {isOwner && (
+      <AdminBar
+        projectSlug={project?.slug || id || ""}
+        orderCount={sellerOrders.length}
+        isLive={!!project?.is_live}
+      />
+    )}
     <div className="relative z-[1] mx-auto max-w-6xl">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
@@ -4063,7 +4084,7 @@ return (
 
       {/* ── IVS Host (must stay mounted across live session. rendered at top) ── */}
       {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
-        <div className={project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-default bg-surface-card p-6"}>
+        <div id="project-live-host" className={`scroll-mt-28 ${project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-default bg-surface-card p-6"}`}>
           <IVSStageHost
             projectId={id as string}
             userId={authUser?.privyId || ""}
@@ -6548,7 +6569,7 @@ return (
                 ? { label: "Physical Product", color: "border-amber-400/30 text-amber-400 bg-amber-400/5" }
                 : { label: "Digital Service", color: "border-sky-400/30 text-sky-400 bg-sky-400/5" };
               return (
-                <div id={`offer-${offer.id}`} key={offer.id} className={`rounded-2xl border bg-surface-card p-5 backdrop-blur-sm sm:p-6 flex flex-col transition hover: ${isRecommended ? "border-2 border-brand-teal" : isPopular ? "border-default hover:border-brand-teal" : isBestValue ? "border-sky-400/25 hover:border-sky-400/40" : "border-default hover:border-default"}`}>
+                <div id={`offer-${offer.id}`} key={offer.id} className={`group rounded-2xl border bg-surface-card p-5 backdrop-blur-sm sm:p-6 flex flex-col transition hover: ${isRecommended ? "border-2 border-brand-teal" : isPopular ? "border-default hover:border-brand-teal" : isBestValue ? "border-sky-400/25 hover:border-sky-400/40" : "border-default hover:border-default"}`}>
                   {/* Header: badge + owner controls */}
                   <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -6578,13 +6599,12 @@ return (
                         </span>
                       )}
                     </div>
-                    {isOwner && (
-                      <div className="flex gap-1">
-                        <button onClick={() => openOfferForm(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-muted transition hover:bg-surface-muted hover:text-primary">Edit</button>
-                        <button onClick={() => toggleOfferActive(offer)} className="rounded-lg px-2.5 py-1.5 text-[11px] text-muted transition hover:bg-surface-muted hover:text-amber-400">
-                          Deactivate
-                        </button>
-                      </div>
+                    {showOwnerInlineUi && (
+                      <OfferActionsMenu
+                        isActive={offer.is_active}
+                        onEdit={() => openOfferForm(offer)}
+                        onToggleActive={() => toggleOfferActive(offer)}
+                      />
                     )}
                   </div>
 
@@ -6642,53 +6662,24 @@ return (
                       })()}
                   </div>
 
-                  {/* DUM Points discount */}
+                  {/* DUM Points discount — compacted from a full-width
+                       green banner into a small inline note under the
+                       price. Per CLAUDE.md doctrine, DUM Points are
+                       hidden from public surfaces until Phase 2; the
+                       hard-CTA button shouted about a feature that is
+                       not yet promoted. The note still tells customers
+                       the discount exists; the actual discount stays
+                       wired through into checkout via the existing
+                       dumDiscountApplied state for owners + earlier
+                       paths that already set it. */}
                   {dumDiscountApplied[offer.id] ? (
-                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-2">
-                      <span className="text-[11px] font-bold text-brand-teal">◆ 10% DUM discount applied</span>
+                    <div className="mt-2 text-[11px] font-medium text-brand-teal">
+                      ◆ 10% DUM discount applied
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setDumDiscountError(null);
-                        const privyId = authUser?.privyId;
-                        if (privyId) {
-                          try {
-                            const dumToken = await getToken();
-                            const res = await fetch(`${API_BASE}/api/dum/spend`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json", ...(dumToken ? { Authorization: `Bearer ${dumToken}` } : {}) },
-                              body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "discount", project_id: id }),
-                            });
-                            if (!res.ok) {
-                              const err = await res.json().catch(() => ({}));
-                              setDumDiscountError(err.detail || "Not enough DUM Points.");
-                              setTimeout(() => setDumDiscountError(null), 4000);
-                              return;
-                            }
-                            const data = await res.json();
-                            localStorage.setItem("dum_points", String(data.balance));
-                            window.dispatchEvent(new Event("dum-points-update"));
-                            setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
-                            return;
-                          } catch {}
-                        }
-                        // Fallback: localStorage
-                        const pts = Number(localStorage.getItem("dum_points") || "0");
-                        if (pts < 10) {
-                          setDumDiscountError("Not enough DUM Points. Earn more by launching projects and creating offers.");
-                          setTimeout(() => setDumDiscountError(null), 4000);
-                          return;
-                        }
-                        localStorage.setItem("dum_points", String(pts - 10));
-                        window.dispatchEvent(new Event("dum-points-update"));
-                        setDumDiscountApplied((prev) => ({ ...prev, [offer.id]: true }));
-                      }}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-2 transition hover:border-default hover:bg-brand-teal-soft"
-                    >
-                      <span className="text-[11px] font-medium text-brand-teal">◆ Use 10 DUM Points for 10% off</span>
-                    </button>
+                    <div className="mt-2 text-[11px] font-medium text-muted">
+                      10% off with points
+                    </div>
                   )}
                   {dumDiscountError && (
                     <div className="mt-2 text-[11px] text-amber-400/80">{dumDiscountError}</div>
@@ -6731,7 +6722,18 @@ return (
                                 ? "Opening secure checkout…"
                                 : buyStep[offer.id] === "demo_success"
                                 ? "✓ Purchased!"
-                                : `Buy Now. $${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`}
+                                : (() => {
+                                    // Context-aware primary CTA. Schema only
+                                    // distinguishes physical_product vs
+                                    // digital_service today; service-typed
+                                    // offers (most of Topgun's catalog) read
+                                    // more naturally as "Book" than "Buy".
+                                    const priceLabel = `$${dumDiscountApplied[offer.id] ? finalPrice.toFixed(0) : basePrice.toFixed(0)}`;
+                                    if (offer.offer_type === "physical_product") {
+                                      return `Buy ${priceLabel}`;
+                                    }
+                                    return `Book ${priceLabel}`;
+                                  })()}
                             </button>
                             {/* Secondary CTA: pay with SOL. Feature-flagged
                                 off by default. Stripe stays the primary
