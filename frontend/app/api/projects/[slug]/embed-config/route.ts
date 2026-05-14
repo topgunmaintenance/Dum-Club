@@ -71,6 +71,10 @@ function softFallback(slug: string, reason: string) {
   console.warn(`[embed-config] soft-degraded slug=${slug} reason=${reason}`);
   return NextResponse.json(
     {
+      // Schema fingerprint — bump whenever fields change. Lets a
+      // curl against production confirm the shim ran:
+      //   curl ... | grep schema_version  →  "v1.7"
+      schema_version: "v1.7",
       // Identifiers (camelCase + snake_case mirrors)
       projectSlug: slug,
       businessSlug: slug,
@@ -106,6 +110,14 @@ function softFallback(slug: string, reason: string) {
       live_provider: null,
       ivs_stage_arn: null,
       pinned_offer_id: null,
+      // Commerce surface fields (mirror Railway's shape — v1.7).
+      // Soft-degraded path emits empty/null values; the bubble
+      // gracefully treats these as "no commerce surface" and
+      // shows just the bubble itself.
+      pinned_offer: null,
+      active_offers: [],
+      live_session: null,
+      viewer_count: 0,
       degraded: true,
     },
     {
@@ -202,6 +214,140 @@ export async function GET(
         : "bubble";
     const displayMode = row.embed_display_mode || "automatic";
 
+    // ── Commerce surface (v1.7) ────────────────────────────
+    // Resolve pinned_offer + active_offers (up to 3) via a
+    // single Supabase query. The Railway FastAPI path does the
+    // same join in backend/api/routes/projects.py — this shim
+    // mirrors that contract so embed.js can rely on identical
+    // shape regardless of which origin serves the response.
+    let pinnedOffer: {
+      id: string;
+      title: string;
+      price_usd: number | null;
+    } | null = null;
+    let activeOffers: Array<{
+      id: string;
+      title: string;
+      price_usd: number | null;
+      quantity_remaining: number | null;
+      pinned: boolean;
+    }> = [];
+    try {
+      const offersRes = await supabase
+        .from("offers")
+        .select(
+          "id, title, price_usd, quantity_available, quantity_sold, unlimited_inventory",
+        )
+        .eq("project_id", row.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      const offers = offersRes.data || [];
+      // Pinned first, then most-recent. Dedupe the pinned id
+      // from the latest-4 window without a second round trip.
+      const ordered: typeof offers = [];
+      if (row.pinned_offer_id) {
+        const p = offers.find((o) => o.id === row.pinned_offer_id);
+        if (p) ordered.push(p);
+      }
+      for (const o of offers) {
+        if (o.id === row.pinned_offer_id) continue;
+        ordered.push(o);
+        if (ordered.length >= 3) break;
+      }
+      const top = ordered.slice(0, 3);
+      activeOffers = top.map((o) => {
+        const priceRaw = o.price_usd;
+        const priceNum =
+          typeof priceRaw === "number"
+            ? priceRaw
+            : typeof priceRaw === "string"
+              ? parseFloat(priceRaw)
+              : null;
+        let qr: number | null = null;
+        if (!o.unlimited_inventory) {
+          const qa =
+            typeof o.quantity_available === "number"
+              ? o.quantity_available
+              : null;
+          const qs =
+            typeof o.quantity_sold === "number" ? o.quantity_sold : 0;
+          if (qa !== null) qr = Math.max(0, qa - qs);
+        }
+        return {
+          id: o.id,
+          title: o.title || "",
+          price_usd:
+            typeof priceNum === "number" && Number.isFinite(priceNum)
+              ? priceNum
+              : null,
+          quantity_remaining: qr,
+          pinned: !!(row.pinned_offer_id && o.id === row.pinned_offer_id),
+        };
+      });
+      if (row.pinned_offer_id) {
+        const pin = activeOffers.find((o) => o.pinned);
+        if (pin) {
+          pinnedOffer = {
+            id: pin.id,
+            title: pin.title,
+            price_usd: pin.price_usd,
+          };
+        }
+      }
+    } catch {
+      // Soft fail — commerce surface drops out, rest of the
+      // bubble still loads.
+      activeOffers = [];
+      pinnedOffer = null;
+    }
+
+    // ── Live presence (viewer_count + remaining_seconds) ───
+    // These live in Railway's in-process state (chat WS counters
+    // + stream-duration tracker). Vercel can't compute them; fetch
+    // from Railway with a tight timeout and degrade gracefully if
+    // the call fails. Only attempt when the project is live —
+    // saves a cross-origin hop on every offline embed-config call.
+    let liveSession: { remaining_seconds: number; viewer_count: number } | null = null;
+    let topLevelViewerCount = 0;
+    if (row.is_live) {
+      const railwayBase = (
+        process.env.NEXT_PUBLIC_API_URL ||
+        process.env.BACKEND_API_URL ||
+        ""
+      ).replace(/\/+$/, "");
+      if (railwayBase) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const r = await fetch(
+            `${railwayBase}/api/projects/${encodeURIComponent(row.id)}/live-status`,
+            { signal: controller.signal },
+          );
+          clearTimeout(timeoutId);
+          if (r.ok) {
+            const live = (await r.json()) as {
+              viewer_count?: number;
+              remaining_seconds?: number;
+            };
+            const vc =
+              typeof live.viewer_count === "number" ? live.viewer_count : 0;
+            const rs =
+              typeof live.remaining_seconds === "number"
+                ? live.remaining_seconds
+                : 0;
+            topLevelViewerCount = vc;
+            if (rs > 0 || vc > 0) {
+              liveSession = { remaining_seconds: rs, viewer_count: vc };
+            }
+          }
+        } catch {
+          // Timeout or network error — leave liveSession null.
+          // The bubble silently drops the countdown + viewer chip.
+        }
+      }
+    }
+
     console.info(
       `[embed-config] ok slug=${slug} project_id=${row.id} ` +
         `display_mode=${displayMode} popin_enabled=${popInEnabled} ` +
@@ -210,6 +356,10 @@ export async function GET(
 
     return NextResponse.json(
       {
+        // Schema fingerprint — bumped whenever the response
+        // shape changes. v1.7 added pinned_offer, active_offers,
+        // live_session, viewer_count.
+        schema_version: "v1.7",
         // Identifiers
         projectSlug: row.slug ?? slug,
         businessSlug: row.slug ?? slug,
@@ -247,10 +397,24 @@ export async function GET(
         live_provider: row.live_provider ?? null,
         ivs_stage_arn: row.ivs_stage_arn ?? null,
         pinned_offer_id: row.pinned_offer_id ?? null,
+        // Commerce surface (v1.7) — mirrors Railway's shape so
+        // embed.js consumes both origins identically.
+        pinned_offer: pinnedOffer,
+        active_offers: activeOffers,
+        // Live presence — null when offline or Railway is
+        // unreachable. Bubble + Discover treat null/0 as
+        // "no live signal" and skip the countdown / viewer
+        // chip silently.
+        live_session: liveSession,
+        viewer_count: topLevelViewerCount,
       },
       {
         status: 200,
-        headers: corsHeaders({ "Cache-Control": "public, max-age=60" }),
+        // 15s cache so go-live transitions surface within
+        // seconds instead of up to a minute. Vercel CDN handles
+        // most repeat hits; first paint pays the Supabase round
+        // trip + optional Railway live-status fetch.
+        headers: corsHeaders({ "Cache-Control": "public, max-age=15" }),
       },
     );
   } catch (e: unknown) {

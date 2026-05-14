@@ -1622,12 +1622,27 @@ async def end_live(
 
 
 @router.get("/{project_id}/live-status")
-async def get_live_status(project_id: str):
-    """Public endpoint: returns live provider info and stream health."""
+async def get_live_status(project_id: str, response: Response):
+    """Public endpoint: returns live provider info, stream health,
+    and in-memory live-presence signals (viewer_count +
+    remaining_seconds).
+
+    Also serves as the Vercel embed-config shim's source for
+    Railway-only fields, so CORS is opened to "*" and the
+    response is cached for 10s. Cross-origin reachability is
+    required because the dum.club Next.js route handler calls
+    this endpoint during a server-rendered request to enrich
+    the embed-config payload with live presence.
+    """
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Cache-Control"] = "public, max-age=10"
+
     supabase = get_client()
     res = (
         supabase.table("projects")
-        .select("is_live, live_provider, live_playback_id, live_stream_id, stream_url")
+        .select("id, is_live, live_provider, live_playback_id, live_stream_id, stream_url")
         .eq("id", project_id)
         .eq("is_deleted", False)
         .limit(1)
@@ -1642,7 +1657,31 @@ async def get_live_status(project_id: str):
         "provider": project.get("live_provider"),
         "playback_id": project.get("live_playback_id"),
         "stream_url": project.get("stream_url"),
+        # Live-presence signals from the in-process trackers in
+        # services/live_limits.py. Both default to 0 when the
+        # project isn't broadcasting or the trackers haven't
+        # been populated (Railway restart, etc.).
+        "viewer_count": 0,
+        "remaining_seconds": 0,
     }
+
+    try:
+        from services.live_limits import (
+            get_viewer_count,
+            get_stream_remaining_seconds,
+        )
+        result["viewer_count"] = int(get_viewer_count(project["id"]))
+        # Only expose remaining_seconds when the project is
+        # actually live — get_stream_remaining_seconds returns the
+        # full cap (3600) for unknown project_ids, which would
+        # surface as "60:00 countdown" on offline projects.
+        if bool(project.get("is_live")):
+            result["remaining_seconds"] = int(
+                get_stream_remaining_seconds(project["id"])
+            )
+    except Exception:
+        # Soft-fail — defaults already in result.
+        pass
 
     # Optionally check Mux stream health
     if project.get("live_provider") == "native_mux" and project.get("live_stream_id"):
