@@ -1024,7 +1024,7 @@ async def get_embed_config(project_id: str, response: Response):
         except Exception:
             pass
         return {
-            "schema_version": "v1.6",
+            "schema_version": "v1.7",
             "id": None,
             "slug": project_id,
             "embed_display_mode": "automatic",
@@ -1199,10 +1199,17 @@ async def get_embed_config(project_id: str, response: Response):
     live_session_payload: dict | None = None
     if bool(row.get("is_live")):
         try:
-            from services.live_limits import get_stream_remaining_seconds
+            from services.live_limits import (
+                get_stream_remaining_seconds,
+                get_viewer_count,
+            )
             remaining = int(get_stream_remaining_seconds(row["id"]))
-            if remaining > 0:
-                live_session_payload = {"remaining_seconds": remaining}
+            viewers = int(get_viewer_count(row["id"]))
+            if remaining > 0 or viewers > 0:
+                live_session_payload = {
+                    "remaining_seconds": remaining,
+                    "viewer_count": viewers,
+                }
         except Exception:
             live_session_payload = None
 
@@ -1211,7 +1218,7 @@ async def get_embed_config(project_id: str, response: Response):
         # schema_version` from the merchant side confirms which
         # backend code is actually serving the request — catches
         # stale Railway deploys without having to walk every key.
-        "schema_version": "v1.6",
+        "schema_version": "v1.7",
         "id": row["id"],
         "slug": row.get("slug"),
         "embed_display_mode": row.get("embed_display_mode") or "automatic",
