@@ -13,6 +13,7 @@ import { GetLiveSteps } from "../../components/GetLiveSteps";
 
 type Project = {
   id: number | string;
+  slug?: string | null;
   name?: string;
   title?: string;
   description?: string;
@@ -646,11 +647,11 @@ export default function DashboardPage() {
           return (
             <>
               <GetLiveSteps
-                hasDisplayMode={hasDisplayMode}
+                hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
                 stripeVerified={stripeVerified}
                 hasOffer={hasOffer}
                 isLive={isLive}
-                hasSale={hasOffer && (analytics?.total_orders ?? 0) > 0}
+                projectSlug={(primary.slug || primary.id || "").toString()}
               />
               <EmbedDisplayModeCard
                 project={{
