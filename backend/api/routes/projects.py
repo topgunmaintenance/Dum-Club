@@ -1004,12 +1004,12 @@ async def get_embed_config(project_id: str, response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    # 60s public cache. Cuts request volume from third-party merchant
-    # sites by ~4x vs the previous 15s while staying responsive to
-    # dashboard edits (worst-case staleness = one minute). The
-    # endpoint payload is intentionally public and revalidates
-    # automatically on the next browser request after the TTL.
-    response.headers["Cache-Control"] = "public, max-age=60"
+    # 15s public cache. Cut from 60s to keep go-live transitions
+    # snappy: when a merchant flips is_live, visitors who land in
+    # the next minute were previously stuck on the pre-live
+    # response. 15s is a reasonable floor that still cuts most of
+    # the request volume from third-party merchant sites.
+    response.headers["Cache-Control"] = "public, max-age=15"
 
     def _fallback(reason: str) -> dict:
         # Log the slug + reason so Railway picks up the real cause
@@ -1024,6 +1024,7 @@ async def get_embed_config(project_id: str, response: Response):
         except Exception:
             pass
         return {
+            "schema_version": "v1.6",
             "id": None,
             "slug": project_id,
             "embed_display_mode": "automatic",
@@ -1180,6 +1181,10 @@ async def get_embed_config(project_id: str, response: Response):
                 "title": o.get("title") or "",
                 "price_usd": price_val,
                 "quantity_remaining": quantity_remaining,
+                # Marks the pinned/featured offer so the host-side
+                # product stack + modal carousel can highlight it
+                # without a second lookup against pinned_offer_id.
+                "pinned": bool(pinned_offer_id and o.get("id") == pinned_offer_id),
             })
     except Exception:
         active_offers_payload = []
@@ -1202,6 +1207,11 @@ async def get_embed_config(project_id: str, response: Response):
             live_session_payload = None
 
     return {
+        # Bump on every shape change so a `curl ... | grep
+        # schema_version` from the merchant side confirms which
+        # backend code is actually serving the request — catches
+        # stale Railway deploys without having to walk every key.
+        "schema_version": "v1.6",
         "id": row["id"],
         "slug": row.get("slug"),
         "embed_display_mode": row.get("embed_display_mode") or "automatic",
