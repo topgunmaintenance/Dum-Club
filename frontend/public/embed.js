@@ -1118,8 +1118,14 @@
       return mm + ":" + ss;
     }
 
-    if (isLive && activeOffers.length > 0) {
-      // ── Path 1: Live product stack ───────────────────────────
+    // Extracted so the bubble-iframe → /api/offers postMessage
+    // recovery path can build the same panel after initial render.
+    // Idempotent: bails if productPanel or productChip is already
+    // mounted, so a slow second source doesn't double-render.
+    function buildProductPanel(offers, sessionData) {
+      if (productPanel || productChip) return;
+      if (!Array.isArray(offers) || offers.length === 0) return;
+
       productPanel = document.createElement("div");
       productPanel.setAttribute("data-dum-embed-product-panel", businessId);
       productPanel.setAttribute("role", "region");
@@ -1136,16 +1142,16 @@
       //       quantity_remaining is a non-null small number.
       // Prefer (a) when both apply (stream-end is the harder
       // ceiling); fall back to (b); otherwise no banner.
-      var topOffer = activeOffers[0];
-      var topQty = topOffer && typeof topOffer.quantity_remaining === "number"
-        ? topOffer.quantity_remaining
-        : null;
+      var topOffer = offers[0];
+      var topQty =
+        topOffer && typeof topOffer.quantity_remaining === "number"
+          ? topOffer.quantity_remaining
+          : null;
       var hasTimer =
-        liveSession &&
-        typeof liveSession.remaining_seconds === "number" &&
-        liveSession.remaining_seconds > 0;
-      var hasStockUrgency =
-        topQty !== null && topQty > 0 && topQty <= 5;
+        sessionData &&
+        typeof sessionData.remaining_seconds === "number" &&
+        sessionData.remaining_seconds > 0;
+      var hasStockUrgency = topQty !== null && topQty > 0 && topQty <= 5;
       if (hasTimer || hasStockUrgency) {
         var cd = document.createElement("div");
         cd.setAttribute("data-dum-embed-product-countdown", "");
@@ -1161,7 +1167,7 @@
           cdLabel.textContent = "Live deal ends in";
           var cdDigits = document.createElement("span");
           cdDigits.className = "dum-cd-digits";
-          var initialRemaining = liveSession.remaining_seconds;
+          var initialRemaining = sessionData.remaining_seconds;
           cdDigits.textContent = formatCountdown(initialRemaining);
           cd.appendChild(cdLabel);
           cd.appendChild(cdDigits);
@@ -1179,10 +1185,6 @@
                 window.clearInterval(countdownTimer);
                 countdownTimer = null;
               }
-              // Don't yank the banner — the live stream itself
-              // ends when the cap hits, and the bubble's live-
-              // state echo handler below will paint the offline
-              // state on the next iframe message.
               return;
             }
             cdDigits.textContent = formatCountdown(remaining);
@@ -1199,7 +1201,7 @@
       // Up to 3 offer rows. Each is a real <button> so keyboard +
       // screen-reader users get the affordance for free. Click
       // opens the same storefront overlay the bubble click does.
-      var rowsToRender = activeOffers.slice(0, 3);
+      var rowsToRender = offers.slice(0, 3);
       for (var ri = 0; ri < rowsToRender.length; ri++) {
         var off = rowsToRender[ri];
         if (!off || typeof off.title !== "string" || !off.title.trim()) {
@@ -1219,11 +1221,10 @@
         rowTitle.className = "dum-row-title";
         rowTitle.textContent = off.title;
         rowBody.appendChild(rowTitle);
-        // Stock meta — only renders for low-stock rows so we don't
-        // shout "47 left" when there's no real urgency.
-        var qr = typeof off.quantity_remaining === "number"
-          ? off.quantity_remaining
-          : null;
+        var qr =
+          typeof off.quantity_remaining === "number"
+            ? off.quantity_remaining
+            : null;
         if (qr !== null && qr > 0 && qr <= 5) {
           var rowMeta = document.createElement("span");
           rowMeta.className = "dum-row-meta is-low";
@@ -1256,6 +1257,17 @@
       }
 
       document.body.appendChild(productPanel);
+      // If the bubble is already on screen, fade the panel in
+      // immediately. Otherwise the initial showBubble() will pick
+      // it up when it runs.
+      if (bubble.classList.contains("is-visible")) {
+        productPanel.classList.add("is-visible");
+      }
+    }
+
+    if (isLive && activeOffers.length > 0) {
+      // ── Path 1: Live product stack ───────────────────────────
+      buildProductPanel(activeOffers, liveSession);
     } else if (
       pinnedOffer &&
       typeof pinnedOffer === "object" &&
@@ -1350,21 +1362,42 @@
 
     document.body.appendChild(bubble);
 
-    // ── Live-state echo from the preview iframe ──
-    // The /embed/bubble route postMessages its authoritative
-    // is_live reading after fetching its own embed-config copy.
-    // We use it to (a) keep the gold ring in sync if the merchant
-    // ends a stream while the visitor is on the page, and (b)
-    // confirm the iframe is reachable. Origin guard mirrors the
-    // canonical embed origin so a hostile parent frame can't fake
-    // the message.
+    // ── Messages from the preview iframe ──
+    // The /embed/bubble route postMessages two payloads:
+    //
+    //   1. bubble-live-state — authoritative is_live reading from
+    //      the iframe's own embed-config fetch. Keeps the gold
+    //      ring in sync if the merchant ends a stream mid-session.
+    //   2. bubble-offers — active offer list fetched directly from
+    //      /api/offers/{project_id} (same-origin from inside the
+    //      iframe, no CORS gate). Recovery path for when the
+    //      host-page embed-config response is missing active_offers
+    //      (stale Railway deploy) or the merchant has no pinned
+    //      offer to fall back on. Builds the product panel via
+    //      buildProductPanel — idempotent, so it bails if a panel
+    //      or chip was already mounted from the initial render.
+    //
+    // Origin guard mirrors the canonical embed origin so a hostile
+    // parent frame can't fake either message.
     function onBubbleMessage(event) {
       if (event.origin !== origin) return;
       var data = event.data;
       if (!data || typeof data !== "object") return;
-      if (data.type !== "bubble-live-state") return;
-      if (data.live === true) bubble.classList.add("is-live");
-      else bubble.classList.remove("is-live");
+      if (data.type === "bubble-live-state") {
+        if (data.live === true) bubble.classList.add("is-live");
+        else bubble.classList.remove("is-live");
+        return;
+      }
+      if (data.type === "bubble-offers") {
+        // Only render the stack when we're live — the iframe is
+        // already only mounted under is-live, but the host page
+        // may have flipped to offline in between. Skip silently
+        // if the bubble was already dismissed.
+        if (!isLive) return;
+        if (!bubble.parentNode) return;
+        buildProductPanel(data.active_offers, liveSession);
+        return;
+      }
     }
     if (window.addEventListener) {
       window.addEventListener("message", onBubbleMessage, false);

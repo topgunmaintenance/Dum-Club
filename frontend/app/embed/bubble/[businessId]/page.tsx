@@ -142,6 +142,91 @@ export default function BubblePreviewPage() {
     }
   }, [config]);
 
+  // Push the active-offer list up to embed.js via postMessage.
+  // This bypasses the host-page embed-config dependency for the
+  // product stack: even if the merchant origin is hitting a stale
+  // Railway backend that doesn't return active_offers, this
+  // route is same-origin to dum.club and can hit /api/offers
+  // directly. embed.js's onBubbleMessage handler builds the
+  // product panel from this payload when it didn't already get
+  // one from embed-config.
+  useEffect(() => {
+    if (!config?.id) return;
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/offers/${encodeURIComponent(config.id!)}`,
+          { method: "GET", credentials: "omit" },
+        );
+        if (!res.ok) return;
+        const raw = await res.json();
+        if (cancelled || !Array.isArray(raw)) return;
+        // Reshape into the same { id, title, price_usd,
+        // quantity_remaining } contract the embed-config server
+        // path emits, so embed.js consumes both paths with one
+        // builder. Cap at 3. Filter out untitled / inactive rows
+        // defensively (the endpoint already filters is_active
+        // server-side but we re-check here as belt-and-suspenders).
+        const active = raw
+          .filter(
+            (o: any) =>
+              o &&
+              typeof o === "object" &&
+              o.is_active !== false &&
+              typeof o.title === "string" &&
+              o.title.trim().length > 0,
+          )
+          .slice(0, 3)
+          .map((o: any) => {
+            const priceRaw = o.price_usd;
+            const priceNum =
+              typeof priceRaw === "number"
+                ? priceRaw
+                : typeof priceRaw === "string"
+                  ? parseFloat(priceRaw)
+                  : null;
+            let qr: number | null = null;
+            if (o.unlimited_inventory !== true) {
+              const qa =
+                typeof o.quantity_available === "number"
+                  ? o.quantity_available
+                  : null;
+              const qs =
+                typeof o.quantity_sold === "number" ? o.quantity_sold : 0;
+              if (qa !== null) qr = Math.max(0, qa - qs);
+            }
+            return {
+              id: o.id,
+              title: o.title,
+              price_usd:
+                typeof priceNum === "number" && isFinite(priceNum)
+                  ? priceNum
+                  : null,
+              quantity_remaining: qr,
+            };
+          });
+        try {
+          window.parent.postMessage(
+            { type: "bubble-offers", active_offers: active },
+            "*",
+          );
+        } catch {
+          // no-op — opaque parent
+        }
+      } catch {
+        // Soft-fail. The host page already has its own
+        // active_offers path via embed-config; if both this
+        // fetch and that one fail, the bubble simply shows
+        // no commerce surface — never an error.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [config?.id]);
+
   // Listen for pause / resume so the full overlay can claim the
   // single viewer slot per visitor.
   useEffect(() => {
