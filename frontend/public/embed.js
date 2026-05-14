@@ -187,6 +187,15 @@
   // greeting without a second API round-trip.
   var rendered = false;
   var popinConfig = null; // populated from /embed-config when available
+  // Full /embed-config response. is_live, ivs_stage_arn, and
+  // pinned_offer all live at the TOP LEVEL of that payload — they
+  // are NOT inside popin_config. Storing only popinConfig (the
+  // sub-object) was the root cause of the live-bubble outage:
+  // the bubble's `isLive` check evaluated `popinConfig.is_live`
+  // which is always undefined, so the live-iframe branch never
+  // fired. Capture the whole response so the bubble branch can
+  // read top-level fields directly.
+  var embedConfig = null;
 
   function render(mode) {
     if (rendered) return;
@@ -239,8 +248,12 @@
           .then(function (cfg) {
             window.clearTimeout(timeoutId);
             if (timeoutFiredAsBubble) return; // race-loser, already rendered
-            if (cfg && typeof cfg === "object" && cfg.popin_config) {
-              popinConfig = cfg.popin_config;
+            if (cfg && typeof cfg === "object") {
+              // Capture the FULL response. is_live, pinned_offer,
+              // ivs_stage_arn live here at the top level; the
+              // bubble branch reads them directly via embedConfig.
+              embedConfig = cfg;
+              if (cfg.popin_config) popinConfig = cfg.popin_config;
             }
             var m =
               cfg && typeof cfg.embed_display_mode === "string"
@@ -689,7 +702,14 @@
       avatarUrl = cfg.poster_url;
     }
 
-    var isLive = cfg.is_live === true ||
+    // is_live + pinned_offer are TOP-LEVEL fields on the embed-
+    // config response, not inside popin_config. Read from
+    // embedConfig directly. The legacy popinConfig fallback is
+    // kept defensively in case a future server change ever
+    // mirrors the flag down into popin_config.
+    var isLive =
+      (embedConfig && embedConfig.is_live === true) ||
+      cfg.is_live === true ||
       (popinConfig && popinConfig.is_live === true);
 
     // Once-per-session bookkeeping survives intact so merchants who
@@ -904,7 +924,11 @@
     // dismisses the bubble, the chip dismisses with it so we
     // don't leave an orphaned floating button on the page.
     var productChip = null;
-    var pinnedOffer = cfg && cfg.pinned_offer;
+    // pinned_offer is top-level on the embed-config response —
+    // read from embedConfig, with cfg as a defensive fallback.
+    var pinnedOffer =
+      (embedConfig && embedConfig.pinned_offer) ||
+      (cfg && cfg.pinned_offer);
     if (
       pinnedOffer &&
       typeof pinnedOffer === "object" &&
