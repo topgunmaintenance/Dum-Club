@@ -374,6 +374,7 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
     <Link
       href="/"
       className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] rounded-md"
+      aria-label="DUM Club. Drive Your Market"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -382,14 +383,32 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
         className={isMobile ? "h-7 w-auto" : "h-8 w-auto"}
         aria-hidden="true"
       />
-      <span
-        className={[
-          "font-bold tracking-tight",
-          isMobile ? "text-[18px]" : "text-[20px]",
-        ].join(" ")}
-      >
-        <span className="text-primary">DUM </span>
-        <span className="text-brand-teal">CLUB</span>
+      {/* Two-line lockup: wordmark on top, "Drive Your Market"
+          tagline below. leading-tight clamps the row height so
+          the navbar bar stays the same h-16 / h-20 it was
+          before the tagline landed. */}
+      <span className="flex flex-col leading-tight">
+        <span
+          className={[
+            "font-bold tracking-tight",
+            isMobile ? "text-[18px]" : "text-[20px]",
+          ].join(" ")}
+        >
+          <span className="text-primary">DUM </span>
+          <span className="text-brand-teal">CLUB</span>
+        </span>
+        <span
+          className={[
+            "font-medium uppercase text-brand-teal animate-[fadeIn_400ms_ease-out]",
+            // Tighter on mobile so the lockup tucks under the
+            // 18px wordmark without poking into the hamburger
+            // / user menu on small viewports.
+            isMobile ? "text-[9px] tracking-[0.18em]" : "text-[10px] tracking-[0.22em]",
+          ].join(" ")}
+          aria-hidden="true"
+        >
+          Drive Your Market
+        </span>
       </span>
     </Link>
   );
