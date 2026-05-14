@@ -307,7 +307,7 @@ export default function DiscoverPage() {
                             </span>
                           ) : (
                             <span className="text-[10px] uppercase tracking-[0.12em] text-secondary">
-                              Contact for quote
+                              Ask for a price
                             </span>
                           )}
                           <span className="rounded-lg bg-brand-teal-soft px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-brand-navy transition group-hover:bg-brand-teal group-hover:text-white">

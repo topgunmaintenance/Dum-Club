@@ -151,7 +151,10 @@ export default function InstallPage() {
     try {
       await navigator.clipboard.writeText(snippet);
       setCopyState("copied");
-      window.setTimeout(() => setCopyState("idle"), 2200);
+      // 1500ms per QA spec — long enough to read "Copied ✓",
+      // short enough that the button label is back to normal
+      // before the merchant returns to the page.
+      window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
       // Older browsers without clipboard API — fall through silently
     }
@@ -262,7 +265,7 @@ export default function InstallPage() {
             onClick={handleCopy}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-teal px-4 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
           >
-            {copyState === "copied" ? "Copied" : "Copy snippet"}
+            {copyState === "copied" ? "Copied ✓" : "Copy snippet"}
           </button>
           <a
             href={`mailto:?subject=${encodeURIComponent(
