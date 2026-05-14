@@ -699,11 +699,27 @@ async def list_public_projects():
             except Exception:
                 pass
 
+    # Attach in-memory viewer count for currently-live projects so the
+    # Discover cards can render "12 watching" without N parallel
+    # /embed-config fetches. get_viewer_count is a defaultdict lookup
+    # populated by the chat WebSocket — zero-cost for offline projects.
+    try:
+        from services.live_limits import get_viewer_count
+    except Exception:
+        get_viewer_count = None  # type: ignore[assignment]
+
     for p in projects:
         p["owner_verified"] = (
             verification_map.get(p.get("privy_id", ""), "unverified") == "verified"
             or bool(p.get("verified"))
         )
+        if get_viewer_count and p.get("is_live") and p.get("id"):
+            try:
+                p["viewer_count"] = int(get_viewer_count(p["id"]))
+            except Exception:
+                p["viewer_count"] = 0
+        else:
+            p["viewer_count"] = 0
         _attach_token_mode(p)
 
     return projects

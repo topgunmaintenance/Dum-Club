@@ -106,7 +106,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   // get an order CTA; entertainment maps to tickets; everything
   // else lands on the generic shop-now.
   const ctaLabel = isLive
-    ? "Watch live →"
+    ? "Join live →"
     : category === "restaurants"
       ? "Order now →"
       : category === "entertainment"
@@ -119,8 +119,8 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             category === "pets" ||
             category === "health"
           )
-          ? "Request a quote →"
-          : "Shop now →";
+          ? "Ask for a price →"
+          : "Browse offers →";
 
   return (
     <Link href={href} className="group block">
@@ -157,7 +157,13 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-state-live" />
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-state-live">LIVE</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-state-live">
+                Live now
+                {typeof (project as { viewer_count?: number }).viewer_count === "number" &&
+                ((project as { viewer_count?: number }).viewer_count || 0) > 0
+                  ? ` · ${(project as { viewer_count?: number }).viewer_count} watching`
+                  : ""}
+              </span>
             </span>
           )}
         </div>
