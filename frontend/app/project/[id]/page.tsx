@@ -176,7 +176,7 @@ import {
   sanitizeBearerToken,
   updateOffer,
 } from "../../../lib/offers";
-import { AdminBar, useViewAsCustomer } from "../../../components/project/AdminBar";
+import { AdminBar, ExitCustomerViewChip, useViewAsCustomer } from "../../../components/project/AdminBar";
 import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -3631,11 +3631,21 @@ return (
     <SectionNav refreshKey={projectView} mode={projectView} />
     {statusToast}
     {isOwner && (
-      <AdminBar
-        projectSlug={project?.slug || id || ""}
-        orderCount={sellerOrders.length}
-        isLive={!!project?.is_live}
-      />
+      <>
+        <AdminBar
+          projectSlug={project?.slug || id || ""}
+          orderCount={sellerOrders.length}
+          isLive={!!project?.is_live}
+        />
+        {/* Exit-customer-view chip — rendered separately so it
+            stays visible after the AdminBar hides itself when
+            the merchant toggles into customer preview. One tap
+            to come back to admin mode. */}
+        <ExitCustomerViewChip
+          projectSlug={project?.slug || id || ""}
+          isOwner={isOwner}
+        />
+      </>
     )}
     <div className="relative z-[1] mx-auto max-w-6xl">
 
@@ -5265,7 +5275,7 @@ return (
       </div>
 
       {/* ── Offers (Public Storefront + Owner Tools). hidden for viewers during live ── */}
-      <div id="offers-section" className={`mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-brand-teal/50">
@@ -7074,7 +7084,20 @@ return (
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
       {showOwnerInlineUi && (
-        <details id="section-orders" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
+        <details
+          id="section-orders"
+          // Open by default when there are orders to show OR when
+          // the merchant navigated here via the AdminBar's
+          // Orders link — scrolling to a collapsed section reads
+          // as a broken link. Empty-state remains collapsed so
+          // brand-new merchants aren't faced with an empty box.
+          open={
+            sellerOrders.length > 0 ||
+            (typeof window !== "undefined" &&
+              window.location.hash === "#section-orders")
+          }
+          className="scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8"
+        >
           <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-primary">
             <div>
               <div className="mb-1 text-xs uppercase tracking-[0.3em] text-muted">
