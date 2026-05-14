@@ -1032,6 +1032,8 @@ async def get_embed_config(project_id: str, response: Response):
             "ivs_stage_arn": None,
             "pinned_offer_id": None,
             "pinned_offer": None,
+            "active_offers": [],
+            "live_session": None,
             "popin_config": {},
             "degraded": True,
         }
@@ -1120,6 +1122,85 @@ async def get_embed_config(project_id: str, response: Response):
             # merchant sites; the chip just won't render.
             pinned_offer_payload = None
 
+    # Hydrate up to 3 active offers for the host-page bubble's
+    # product stack. Pinned offer comes first when present; the
+    # rest are most-recently-created active offers. We bound the
+    # query at 4 so we can drop the pinned id from a 1+3 result
+    # without an additional round trip. Same CORS-open response,
+    # same 60s cache, soft-fails to an empty list on any error so
+    # the bubble gracefully falls back to "no stack".
+    active_offers_payload: list[dict] = []
+    try:
+        offers_query = (
+            supabase.table("offers")
+            .select(
+                "id, title, price_usd, quantity_available, "
+                "quantity_sold, unlimited_inventory"
+            )
+            .eq("project_id", resolved_uuid)
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .limit(4)
+            .execute()
+        )
+        raw_offers = list(offers_query.data or [])
+        # Pinned first, then most-recently-created. The dedupe by
+        # id keeps a pinned offer from appearing twice if it also
+        # happens to be in the latest-4 window.
+        ordered: list[dict] = []
+        if pinned_offer_id:
+            for o in raw_offers:
+                if o.get("id") == pinned_offer_id:
+                    ordered.append(o)
+                    break
+        for o in raw_offers:
+            if o.get("id") == pinned_offer_id:
+                continue
+            ordered.append(o)
+            if len(ordered) >= 3:
+                break
+        ordered = ordered[:3]
+        for o in ordered:
+            price_raw = o.get("price_usd")
+            try:
+                price_val = float(price_raw) if price_raw is not None else None
+            except (TypeError, ValueError):
+                price_val = None
+            quantity_remaining = None
+            if not o.get("unlimited_inventory"):
+                qa = o.get("quantity_available")
+                qs = o.get("quantity_sold") or 0
+                if qa is not None:
+                    try:
+                        quantity_remaining = max(0, int(qa) - int(qs))
+                    except (TypeError, ValueError):
+                        quantity_remaining = None
+            active_offers_payload.append({
+                "id": o.get("id"),
+                "title": o.get("title") or "",
+                "price_usd": price_val,
+                "quantity_remaining": quantity_remaining,
+            })
+    except Exception:
+        active_offers_payload = []
+
+    # Live-session countdown — exposes the per-stream duration cap
+    # (services/live_limits.MAX_STREAM_DURATION_MINUTES) so the
+    # host-page bubble can paint an honest "live deal ends in
+    # MM:SS" timer. In-process state: if the API restarts mid-
+    # stream the timer resets to the full cap for visitors who
+    # land after the restart. That's acceptable degradation —
+    # the cap is a real product constraint, not a fake urgency.
+    live_session_payload: dict | None = None
+    if bool(row.get("is_live")):
+        try:
+            from services.live_limits import get_stream_remaining_seconds
+            remaining = int(get_stream_remaining_seconds(row["id"]))
+            if remaining > 0:
+                live_session_payload = {"remaining_seconds": remaining}
+        except Exception:
+            live_session_payload = None
+
     return {
         "id": row["id"],
         "slug": row.get("slug"),
@@ -1129,6 +1210,8 @@ async def get_embed_config(project_id: str, response: Response):
         "ivs_stage_arn": row.get("ivs_stage_arn"),
         "pinned_offer_id": pinned_offer_id,
         "pinned_offer": pinned_offer_payload,
+        "active_offers": active_offers_payload,
+        "live_session": live_session_payload,
         # Pop-in seller payload. Keys mirror migration 038's allow-list
         # (see _POPIN_ALLOWED_KEYS) so embed.js can render the floating
         # greeting without a second API call. Unknown keys are dropped

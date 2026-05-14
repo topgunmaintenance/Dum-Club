@@ -486,6 +486,135 @@
         "[data-dum-embed-bubble-close]:focus-visible {",
         "  outline: 2px solid #00d1a4; outline-offset: 2px; opacity: 1;",
         "}",
+        // ── Product panel — countdown + up to 3 offer rows ──
+        // When the merchant is live AND embed-config exposes
+        // active_offers, the panel replaces the PR #168 single
+        // chip with a compact storefront stack: an honest
+        // countdown banner on top (from live_session.remaining_
+        // seconds) plus offer rows the visitor can tap into the
+        // full overlay from. When offline, falls back to the
+        // single chip layout (still rendered via the same
+        // [data-dum-embed-product-chip] selector below).
+        "[data-dum-embed-product-panel] {",
+        "  position: fixed;",
+        "  bottom: 20px;",
+        "  right: 178px;",          // 20 (bubble right) + 140 (bubble) + 18 gap
+        "  z-index: 2147483646;",
+        "  display: flex;",
+        "  flex-direction: column;",
+        "  align-items: stretch;",
+        "  gap: 6px;",
+        "  width: 280px;",
+        "  max-width: calc(100vw - 200px);",
+        "  opacity: 0;",
+        "  transform: translateX(8px);",
+        "  transition: opacity 240ms ease, transform 240ms ease;",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-product-panel].is-visible {",
+        "  opacity: 1; transform: translateX(0);",
+        "  pointer-events: auto;",
+        "}",
+        // Countdown banner — anchored to the top of the panel.
+        // Single line, small + bold, monospace for the digit
+        // section so it doesn't reflow each second. Background
+        // is a soft red wash when an urgent "Only N left" stock
+        // state is on; brand teal otherwise.
+        "[data-dum-embed-product-countdown] {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 6px;",
+        "  padding: 6px 10px;",
+        "  border-radius: 9999px;",
+        "  background: rgba(0,209,164,0.14);",
+        "  color: #036f56;",
+        "  font: 800 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.14em;",
+        "  text-transform: uppercase;",
+        "  align-self: flex-start;",
+        "  box-shadow: 0 6px 14px rgba(11,18,32,0.08);",
+        "}",
+        "[data-dum-embed-product-countdown].is-stock {",
+        "  background: rgba(239,68,68,0.14);",
+        "  color: #b91c1c;",
+        "}",
+        "[data-dum-embed-product-countdown] .dum-cd-dot {",
+        "  width: 6px; height: 6px; border-radius: 50%;",
+        "  background: #00d1a4;",
+        "  animation: dum-embed-blink 1.4s ease-in-out infinite;",
+        "}",
+        "[data-dum-embed-product-countdown].is-stock .dum-cd-dot {",
+        "  background: #ef4444;",
+        "}",
+        "[data-dum-embed-product-countdown] .dum-cd-digits {",
+        "  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;",
+        "  font-weight: 700;",
+        "  letter-spacing: 0.04em;",
+        "}",
+        // Product row — full-width button styled like a list item.
+        "[data-dum-embed-product-row] {",
+        "  display: inline-flex;",
+        "  align-items: center;",
+        "  gap: 10px;",
+        "  padding: 9px 12px;",
+        "  border: 0;",
+        "  border-radius: 14px;",
+        "  background: #ffffff;",
+        "  color: #0b2545;",
+        "  font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  text-align: left;",
+        "  cursor: pointer;",
+        "  box-shadow: 0 10px 24px rgba(11,18,32,0.18), 0 0 0 1px rgba(11,18,32,0.06);",
+        "  transition: box-shadow 200ms ease, transform 160ms ease;",
+        "  -webkit-tap-highlight-color: transparent;",
+        "  -webkit-appearance: none; appearance: none;",
+        "  width: 100%;",
+        "}",
+        "[data-dum-embed-product-row]:hover {",
+        "  transform: translateY(-1px);",
+        "  box-shadow: 0 14px 28px rgba(11,18,32,0.24), 0 0 0 1px rgba(0,209,164,0.5);",
+        "}",
+        "[data-dum-embed-product-row]:focus-visible {",
+        "  outline: 2px solid #00d1a4; outline-offset: 3px;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-body {",
+        "  display: inline-flex;",
+        "  flex-direction: column;",
+        "  gap: 2px;",
+        "  flex: 1 1 auto;",
+        "  min-width: 0;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-title {",
+        "  font-size: 13px;",
+        "  font-weight: 600;",
+        "  color: #0b2545;",
+        "  overflow: hidden;",
+        "  text-overflow: ellipsis;",
+        "  white-space: nowrap;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-meta {",
+        "  font-size: 11px;",
+        "  color: #5b6478;",
+        "  font-weight: 600;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-meta.is-low {",
+        "  color: #b91c1c;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-price {",
+        "  font: 700 13px/1 ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;",
+        "  color: #036f56;",
+        "  flex: 0 0 auto;",
+        "  white-space: nowrap;",
+        "}",
+        "[data-dum-embed-product-row] .dum-row-arrow {",
+        "  font-size: 14px; line-height: 1;",
+        "  color: #036f56;",
+        "  flex: 0 0 auto;",
+        "  transition: transform 160ms ease;",
+        "}",
+        "[data-dum-embed-product-row]:hover .dum-row-arrow {",
+        "  transform: translateX(3px);",
+        "}",
         // ── Product chip — pinned offer CTA next to the bubble ──
         // Independent fixed element. Sits to the LEFT of the bubble
         // on desktop (so it doesn't extend past the right edge of
@@ -584,6 +713,12 @@
         "  }",
         "  [data-dum-embed-product-chip] .dum-chip-title {",
         "    max-width: calc(100vw - 160px);",
+        "  }",
+        "  [data-dum-embed-product-panel] {",
+        "    bottom: 124px;",        // same anchor as the chip
+        "    right: 16px;",
+        "    width: calc(100vw - 32px);",
+        "    max-width: 360px;",
         "  }",
         "}",
         // ── Reduced-motion override ───────────────────────────
@@ -915,26 +1050,188 @@
     bubble.appendChild(livePill);
     bubble.appendChild(close);
 
-    // ── Product chip — pinned offer CTA next to the bubble ──
-    // Rendered only when the embed-config payload includes a
-    // pinned_offer with at least a title. Click opens the existing
-    // storefront overlay (NOT direct host-page Stripe checkout —
-    // that would require per-merchant origin allowlisting + auth
-    // surface area we're not ready to ship). When the visitor
-    // dismisses the bubble, the chip dismisses with it so we
-    // don't leave an orphaned floating button on the page.
+    // ── Commerce surface ──────────────────────────────────────
+    // Three states, in priority order:
+    //   1. Live + active_offers.length > 0 → product STACK
+    //      (countdown banner on top + up to 3 offer rows). The
+    //      stack creates instant buying intent next to the live
+    //      video without trying to cram checkout into the bubble
+    //      itself — each row opens the existing full overlay.
+    //   2. Not live + pinned_offer present → single chip
+    //      (PR #168 contract). Less prominent surface for offline
+    //      merchants.
+    //   3. Otherwise → no commerce surface. Bubble alone.
+    //
+    // Both surfaces dismiss with the bubble × so we never leave
+    // an orphaned CTA floating after the visitor opts out.
     var productChip = null;
-    // pinned_offer is top-level on the embed-config response —
-    // read from embedConfig, with cfg as a defensive fallback.
+    var productPanel = null;
+    var countdownTimer = null;
+
     var pinnedOffer =
       (embedConfig && embedConfig.pinned_offer) ||
       (cfg && cfg.pinned_offer);
-    if (
+    var activeOffers =
+      (embedConfig && Array.isArray(embedConfig.active_offers))
+        ? embedConfig.active_offers
+        : [];
+    var liveSession =
+      (embedConfig && embedConfig.live_session) || null;
+
+    function formatCountdown(totalSeconds) {
+      var s = Math.max(0, Math.floor(totalSeconds));
+      var m = Math.floor(s / 60);
+      var sec = s % 60;
+      var mm = m < 10 ? "0" + m : "" + m;
+      var ss = sec < 10 ? "0" + sec : "" + sec;
+      return mm + ":" + ss;
+    }
+
+    if (isLive && activeOffers.length > 0) {
+      // ── Path 1: Live product stack ───────────────────────────
+      productPanel = document.createElement("div");
+      productPanel.setAttribute("data-dum-embed-product-panel", businessId);
+      productPanel.setAttribute("role", "region");
+      productPanel.setAttribute(
+        "aria-label",
+        merchantTitle + " live deals"
+      );
+
+      // Urgency banner. Two honest sources:
+      //   (a) live_session.remaining_seconds — the per-stream
+      //       duration cap really exists, so "Live deal ends in
+      //       MM:SS" reflects a real product constraint.
+      //   (b) Stock urgency on the TOP offer — only painted when
+      //       quantity_remaining is a non-null small number.
+      // Prefer (a) when both apply (stream-end is the harder
+      // ceiling); fall back to (b); otherwise no banner.
+      var topOffer = activeOffers[0];
+      var topQty = topOffer && typeof topOffer.quantity_remaining === "number"
+        ? topOffer.quantity_remaining
+        : null;
+      var hasTimer =
+        liveSession &&
+        typeof liveSession.remaining_seconds === "number" &&
+        liveSession.remaining_seconds > 0;
+      var hasStockUrgency =
+        topQty !== null && topQty > 0 && topQty <= 5;
+      if (hasTimer || hasStockUrgency) {
+        var cd = document.createElement("div");
+        cd.setAttribute("data-dum-embed-product-countdown", "");
+        if (!hasTimer && hasStockUrgency) {
+          cd.className = "is-stock";
+        }
+        var cdDot = document.createElement("span");
+        cdDot.className = "dum-cd-dot";
+        cd.appendChild(cdDot);
+
+        if (hasTimer) {
+          var cdLabel = document.createElement("span");
+          cdLabel.textContent = "Live deal ends in";
+          var cdDigits = document.createElement("span");
+          cdDigits.className = "dum-cd-digits";
+          var initialRemaining = liveSession.remaining_seconds;
+          cdDigits.textContent = formatCountdown(initialRemaining);
+          cd.appendChild(cdLabel);
+          cd.appendChild(cdDigits);
+
+          // Client-side ticker. Anchored to wall-clock so we don't
+          // drift on tab throttle: every tick recomputes from the
+          // start timestamp instead of decrementing by 1.
+          var startedAt = Date.now();
+          countdownTimer = window.setInterval(function () {
+            var elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            var remaining = initialRemaining - elapsed;
+            if (remaining <= 0) {
+              cdDigits.textContent = "00:00";
+              if (countdownTimer) {
+                window.clearInterval(countdownTimer);
+                countdownTimer = null;
+              }
+              // Don't yank the banner — the live stream itself
+              // ends when the cap hits, and the bubble's live-
+              // state echo handler below will paint the offline
+              // state on the next iframe message.
+              return;
+            }
+            cdDigits.textContent = formatCountdown(remaining);
+          }, 1000);
+        } else {
+          var stockLabel = document.createElement("span");
+          stockLabel.textContent =
+            topQty === 1 ? "Only 1 left" : "Only " + topQty + " left";
+          cd.appendChild(stockLabel);
+        }
+        productPanel.appendChild(cd);
+      }
+
+      // Up to 3 offer rows. Each is a real <button> so keyboard +
+      // screen-reader users get the affordance for free. Click
+      // opens the same storefront overlay the bubble click does.
+      var rowsToRender = activeOffers.slice(0, 3);
+      for (var ri = 0; ri < rowsToRender.length; ri++) {
+        var off = rowsToRender[ri];
+        if (!off || typeof off.title !== "string" || !off.title.trim()) {
+          continue;
+        }
+        var row = document.createElement("button");
+        row.type = "button";
+        row.setAttribute("data-dum-embed-product-row", off.id || "");
+        row.setAttribute(
+          "aria-label",
+          "View " + off.title + " from " + merchantTitle
+        );
+
+        var rowBody = document.createElement("span");
+        rowBody.className = "dum-row-body";
+        var rowTitle = document.createElement("span");
+        rowTitle.className = "dum-row-title";
+        rowTitle.textContent = off.title;
+        rowBody.appendChild(rowTitle);
+        // Stock meta — only renders for low-stock rows so we don't
+        // shout "47 left" when there's no real urgency.
+        var qr = typeof off.quantity_remaining === "number"
+          ? off.quantity_remaining
+          : null;
+        if (qr !== null && qr > 0 && qr <= 5) {
+          var rowMeta = document.createElement("span");
+          rowMeta.className = "dum-row-meta is-low";
+          rowMeta.textContent =
+            qr === 1 ? "Only 1 left" : qr + " left";
+          rowBody.appendChild(rowMeta);
+        }
+        row.appendChild(rowBody);
+
+        if (
+          typeof off.price_usd === "number" &&
+          isFinite(off.price_usd)
+        ) {
+          var rowPrice = document.createElement("span");
+          rowPrice.className = "dum-row-price";
+          rowPrice.textContent = "$" + off.price_usd.toFixed(2);
+          row.appendChild(rowPrice);
+        }
+
+        var rowArrow = document.createElement("span");
+        rowArrow.className = "dum-row-arrow";
+        rowArrow.setAttribute("aria-hidden", "true");
+        rowArrow.textContent = "→";
+        row.appendChild(rowArrow);
+
+        row.addEventListener("click", function () {
+          openOverlay();
+        });
+        productPanel.appendChild(row);
+      }
+
+      document.body.appendChild(productPanel);
+    } else if (
       pinnedOffer &&
       typeof pinnedOffer === "object" &&
       typeof pinnedOffer.title === "string" &&
       pinnedOffer.title.trim()
     ) {
+      // ── Path 2: Offline pinned-offer chip (PR #168 contract) ──
       productChip = document.createElement("button");
       productChip.type = "button";
       productChip.setAttribute("data-dum-embed-product-chip", businessId);
@@ -956,9 +1253,6 @@
 
       productChip.appendChild(chipBody);
 
-      // Price renders monospaced when present. Skipping it on
-      // null / non-numeric prices avoids "$NaN" on free or
-      // service-quote offers.
       if (
         typeof pinnedOffer.price_usd === "number" &&
         isFinite(pinnedOffer.price_usd)
@@ -992,10 +1286,12 @@
       }
     });
 
-    // Dismiss × → fade out the bubble + chip, mark the session so
-    // they stay hidden until a new tab / session opens. Stops
-    // propagation so the close click doesn't double-fire the
-    // open-overlay handler above.
+    // Dismiss × → fade out the bubble + commerce surface, mark
+    // the session so they stay hidden until a new tab / session
+    // opens. Stops propagation so the close click doesn't
+    // double-fire the open-overlay handler above. Clears the
+    // countdown ticker so we don't keep firing setInterval after
+    // the panel is removed.
     function dismissBubble(e) {
       if (e) {
         e.stopPropagation();
@@ -1003,11 +1299,19 @@
       }
       bubble.classList.remove("is-visible");
       if (productChip) productChip.classList.remove("is-visible");
+      if (productPanel) productPanel.classList.remove("is-visible");
+      if (countdownTimer) {
+        window.clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
       safeSessionWrite(keys.sessionShown, "1");
       window.setTimeout(function () {
         if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
         if (productChip && productChip.parentNode) {
           productChip.parentNode.removeChild(productChip);
+        }
+        if (productPanel && productPanel.parentNode) {
+          productPanel.parentNode.removeChild(productPanel);
         }
       }, 280);
     }
@@ -1044,6 +1348,7 @@
       if (!bubble.parentNode) return;
       bubble.classList.add("is-visible");
       if (productChip) productChip.classList.add("is-visible");
+      if (productPanel) productPanel.classList.add("is-visible");
       dumLog(isLive
         ? "Circular bubble shown (merchant is live)"
         : "Circular bubble shown");
