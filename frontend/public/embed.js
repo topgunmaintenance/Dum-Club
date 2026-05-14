@@ -455,6 +455,33 @@
         "  pointer-events: none;",
         "}",
         "[data-dum-embed-bubble].is-live .dum-live-pill { display: inline-flex; }",
+        // Viewer count pill on the bubble itself. Tucked next to
+        // the LIVE pill at the bottom of the circle so visitors
+        // see live momentum even when no product stack renders
+        // (offline merchant turned the panel off, or no offers
+        // configured). Hidden when viewer_count is 0 / unknown.
+        "[data-dum-embed-bubble] .dum-bubble-viewers {",
+        "  position: absolute;",
+        "  left: 50%; bottom: -6px;",
+        "  transform: translate(calc(-50% + 64px), 0);",
+        "  display: none;",
+        "  align-items: center; gap: 4px;",
+        "  padding: 3px 8px;",
+        "  border-radius: 9999px;",
+        "  background: rgba(11,18,32,0.92);",
+        "  color: #ffffff;",
+        "  font: 700 9px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.12em;",
+        "  text-transform: uppercase;",
+        "  box-shadow: 0 4px 10px rgba(11,18,32,0.35), 0 0 0 2px #ffffff;",
+        "  white-space: nowrap;",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble].is-live .dum-bubble-viewers.is-visible { display: inline-flex; }",
+        "[data-dum-embed-bubble] .dum-bubble-viewers-dot {",
+        "  width: 4px; height: 4px; border-radius: 50%;",
+        "  background: #00d1a4;",
+        "}",
         // "Tap to watch" caption — small white pill that sits
         // just below the bubble when live. Visible only with
         // .is-live so the offline bubble stays clean.
@@ -1080,6 +1107,36 @@
     livePill.appendChild(liveDot);
     livePill.appendChild(liveLabel);
 
+    // Viewer count pill directly on the bubble. Sits next to the
+    // LIVE pill at the bottom of the circle. Built empty/hidden;
+    // updateBubbleViewers() below populates + reveals when we
+    // know a live count > 0. Refreshes when bubble-offers
+    // postMessage arrives with fresh live_session data.
+    var bubbleViewersPill = document.createElement("span");
+    bubbleViewersPill.className = "dum-bubble-viewers";
+    bubbleViewersPill.setAttribute("aria-hidden", "true");
+    var bubbleViewersDot = document.createElement("span");
+    bubbleViewersDot.className = "dum-bubble-viewers-dot";
+    var bubbleViewersLabel = document.createElement("span");
+    bubbleViewersPill.appendChild(bubbleViewersDot);
+    bubbleViewersPill.appendChild(bubbleViewersLabel);
+    function updateBubbleViewers(session) {
+      var count =
+        session &&
+        typeof session.viewer_count === "number" &&
+        session.viewer_count > 0
+          ? session.viewer_count
+          : 0;
+      if (count > 0) {
+        bubbleViewersLabel.textContent =
+          count === 1 ? "1 watching" : count + " watching";
+        bubbleViewersPill.classList.add("is-visible");
+      } else {
+        bubbleViewersPill.classList.remove("is-visible");
+      }
+    }
+    updateBubbleViewers(liveSession);
+
     // "Tap to watch" caption — sits just under the bubble when
     // the merchant is live so visitors know the circle is
     // interactive (some users miss that the bubble is clickable
@@ -1098,6 +1155,7 @@
 
     bubble.appendChild(clip);
     bubble.appendChild(livePill);
+    bubble.appendChild(bubbleViewersPill);
     bubble.appendChild(tapHint);
     bubble.appendChild(close);
 
@@ -1491,10 +1549,18 @@
         // countdown banner fire as soon as backend support is
         // deployed, even if the host's first fetch was stale.
         var effectiveSession = liveSession;
-        if (!effectiveSession && data.live_session) {
+        if (data.live_session) {
+          // Always prefer the iframe's fresher viewer_count even
+          // when the host-page side already had one — the iframe
+          // reads /live-status directly which is the source of
+          // truth for in-process presence.
           effectiveSession = data.live_session;
           liveSession = effectiveSession;
         }
+        // Refresh the on-bubble viewer pill whenever a new
+        // bubble-offers message arrives, regardless of whether
+        // the panel actually renders.
+        updateBubbleViewers(effectiveSession);
         buildProductPanel(data.active_offers, effectiveSession);
         return;
       }
