@@ -6,6 +6,7 @@ import { Navbar } from "./Navbar";
 import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
 import { SiteFooter } from "./SiteFooter";
+import { FloatingGoLive } from "./FloatingGoLive";
 
 const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
 // VERCEL_ENV / NEXT_PUBLIC_VERCEL_ENV: only the NEXT_PUBLIC_-prefixed form
@@ -121,6 +122,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       {children}
       {!hideFooter && <SiteFooter />}
       <DumPill />
+      <FloatingGoLive />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in
           production. Gated on `mounted` so SSR + first client paint
           stay identical and React hydration doesn't disagree about
