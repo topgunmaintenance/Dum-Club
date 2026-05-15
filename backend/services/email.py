@@ -372,3 +372,144 @@ def send_outreach_email(contact: str, subject: str, html_body: str):
         err = f"{type(e).__name__}: {e}"
         print(f"[email] outreach FAILED to={contact} subject={subject!r} err={err}")
         return False, err
+
+
+# ────────────────────────────────────────────────────────────
+# Trial reminder emails
+# ────────────────────────────────────────────────────────────
+# Five plain-English templates fired from the daily reminder cron
+# (T-14, T-7, T-1) and from the Stripe webhook handler (conversion
+# confirmation, payment failure). Every call is one-shot per merchant
+# per reminder_type — idempotency is enforced by the
+# trial_reminder_log table's UNIQUE (merchant_id, reminder_type).
+#
+# Calling code is responsible for:
+#   1. Inserting into trial_reminder_log FIRST
+#   2. If the insert succeeds, calling the send function below
+#   3. If the unique-constraint blew up, skipping silently (already sent)
+#
+# This module exposes the send fns + the trial_reminder_html helper.
+# All copy is short, declarative, no jargon.
+
+
+def _trial_reminder_html(
+    headline: str,
+    body_paragraphs: list[str],
+    cta_label: str | None = None,
+    cta_href: str | None = None,
+) -> str:
+    """Shared HTML shell so every trial email looks the same. Plain and
+    direct — a 4th-grader can read it. The same shell is used for the
+    countdown emails, conversion confirmation, and the payment-failed
+    notice. Caller picks the headline + body + optional CTA."""
+    para_html = "\n".join(
+        f'<p style="color:#444;font-size:15px;line-height:1.65;margin:0 0 14px;">{p}</p>'
+        for p in body_paragraphs
+    )
+    cta_html = ""
+    if cta_label and cta_href:
+        cta_html = (
+            f'<a href="{cta_href}" style="display:inline-block;margin-top:8px;'
+            f'padding:12px 22px;background:#00FFA3;color:#000;text-decoration:none;'
+            f'border-radius:10px;font-size:14px;font-weight:700;">{cta_label}</a>'
+        )
+    return f"""
+    <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#fff;color:#111;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#00A36F;margin-bottom:14px;">DUM Club</div>
+      <h2 style="color:#111;margin:0 0 14px;font-size:22px;line-height:1.25;">{headline}</h2>
+      {para_html}
+      {cta_html}
+      <p style="color:#888;font-size:12px;line-height:1.5;margin-top:28px;">
+        DUM Club helps businesses sell live on their own website and keep every sale.
+      </p>
+    </div>
+    """
+
+
+def send_trial_t_minus_14(merchant_email: str, business_name: str, plan_price_usd: int, trial_end_date: str) -> bool:
+    """Sent 14 days before trial_ends_at."""
+    if not merchant_email:
+        return False
+    subject = "Your free trial ends in 2 weeks"
+    html = _trial_reminder_html(
+        headline=f"Hey {business_name or 'there'} — two weeks left in your free trial",
+        body_paragraphs=[
+            f"Your 60-day free trial of DUM Club ends on <strong>{trial_end_date}</strong>.",
+            f"After that, your plan will be <strong>${plan_price_usd}/month</strong>. No commission. Ever.",
+            "Add a payment method any time before then to keep your shop running with no break. If you do nothing, your plan pauses automatically — no surprise charges.",
+        ],
+        cta_label="Open my dashboard",
+        cta_href=f"{_PLATFORM_URL}/dashboard",
+    )
+    return _send(merchant_email, subject, html)
+
+
+def send_trial_t_minus_7(merchant_email: str, business_name: str, plan_price_usd: int, trial_end_date: str) -> bool:
+    """Sent 7 days before trial_ends_at."""
+    if not merchant_email:
+        return False
+    subject = "1 week left in your free trial"
+    html = _trial_reminder_html(
+        headline="One week to go",
+        body_paragraphs=[
+            f"Your free trial ends on <strong>{trial_end_date}</strong>.",
+            f"Add a payment method to keep going at <strong>${plan_price_usd}/month</strong>. You can cancel any time before then with one click.",
+        ],
+        cta_label="Open my dashboard",
+        cta_href=f"{_PLATFORM_URL}/dashboard",
+    )
+    return _send(merchant_email, subject, html)
+
+
+def send_trial_t_minus_1(merchant_email: str, business_name: str, plan_price_usd: int, trial_end_date: str) -> bool:
+    """Sent 1 day before trial_ends_at."""
+    if not merchant_email:
+        return False
+    subject = "Your trial ends tomorrow — payment starts in 24 hours"
+    html = _trial_reminder_html(
+        headline="Your trial ends tomorrow",
+        body_paragraphs=[
+            f"Tomorrow ({trial_end_date}), your free trial ends.",
+            f"If a payment method is on file, you'll start your <strong>${plan_price_usd}/month</strong> plan. If not, your plan will pause and you can pick it up later.",
+        ],
+        cta_label="Add payment method",
+        cta_href=f"{_PLATFORM_URL}/dashboard",
+    )
+    return _send(merchant_email, subject, html)
+
+
+def send_trial_conversion_confirmed(merchant_email: str, business_name: str, plan_price_usd: int) -> bool:
+    """Sent on first invoice.paid after the trial ends."""
+    if not merchant_email:
+        return False
+    subject = f"You're in. Your {business_name or 'DUM Club'} plan is now active."
+    html = _trial_reminder_html(
+        headline="You're in. Plan is active.",
+        body_paragraphs=[
+            f"Your free trial is over and your <strong>${plan_price_usd}/month</strong> plan is now running.",
+            "No commission, ever. Money still goes straight to your bank.",
+            "Thanks for building with us.",
+        ],
+        cta_label="Open my dashboard",
+        cta_href=f"{_PLATFORM_URL}/dashboard",
+    )
+    return _send(merchant_email, subject, html)
+
+
+def send_payment_failed_notice(merchant_email: str, business_name: str, grace_end_date: str) -> bool:
+    """Sent on invoice.payment_failed. Tells the merchant they have a
+    grace window to fix the card before the plan pauses."""
+    if not merchant_email:
+        return False
+    subject = "Your payment didn't go through"
+    html = _trial_reminder_html(
+        headline="Your card didn't go through",
+        body_paragraphs=[
+            "We tried to charge your card and it didn't go through.",
+            f"Update your payment method by <strong>{grace_end_date}</strong> to keep your shop running. If we can't get a payment by then, your plan will pause.",
+            "No charge happens automatically until the card is fixed.",
+        ],
+        cta_label="Update payment method",
+        cta_href=f"{_PLATFORM_URL}/dashboard",
+    )
+    return _send(merchant_email, subject, html)

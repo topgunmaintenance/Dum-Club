@@ -1127,6 +1127,62 @@ async def stripe_webhook(request: Request):
             except Exception as exc:
                 print(f"[webhook] ✗ invoice event update failed sub={sub_id}: {exc!r}")
 
+            # Fire the corresponding reminder email through the same
+            # idempotent insert-log-then-send path the daily cron uses.
+            # Founding/grandfathered rows are excluded by the merchant
+            # lookup below (they never have a stripe_subscription_id in
+            # the first place, but we double-check the flag to be sure).
+            try:
+                from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+                from services.agents.trial_reminders import (
+                    send_reminder_once,
+                    _plan_price_for,
+                )
+                from services.email import (
+                    send_trial_conversion_confirmed,
+                    send_payment_failed_notice,
+                )
+                m_res = (
+                    supabase.table("merchants")
+                    .select("id, owner_privy_id, business_name, "
+                            "subscription_price_id, grandfathered")
+                    .eq("stripe_subscription_id", sub_id)
+                    .limit(1)
+                    .execute()
+                )
+                m_row = (m_res.data or [None])[0]
+                if m_row and not m_row.get("grandfathered"):
+                    email = None
+                    if m_row.get("owner_privy_id"):
+                        u_res = (
+                            supabase.table("users")
+                            .select("email")
+                            .eq("privy_id", m_row["owner_privy_id"])
+                            .limit(1)
+                            .execute()
+                        )
+                        if u_res.data:
+                            email = (u_res.data[0] or {}).get("email")
+                    plan_price = _plan_price_for(m_row.get("subscription_price_id"))
+                    if email:
+                        if event["type"] == "invoice.paid":
+                            send_reminder_once(
+                                m_row["id"], "conversion_confirmed",
+                                send_trial_conversion_confirmed,
+                                email, m_row.get("business_name") or "", plan_price,
+                            )
+                        else:  # invoice.payment_failed
+                            grace_end = (_dt.now(_tz.utc) + _td(days=3)).strftime("%B %-d, %Y")
+                            send_reminder_once(
+                                m_row["id"], "payment_failed",
+                                send_payment_failed_notice,
+                                email, m_row.get("business_name") or "", grace_end,
+                            )
+                    else:
+                        print(f"[webhook] {event['type']} merchant={m_row['id']}: no email on file, skip reminder")
+            except Exception as mail_exc:
+                print(f"[webhook] reminder dispatch failed sub={sub_id}: {mail_exc!r}")
+
     else:
         print(f"[webhook] Unhandled event: {event['type']}")
 
