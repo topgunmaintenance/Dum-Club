@@ -14,7 +14,7 @@
 | **Next unlock** | Phase 0B → Phase 1 (100 founding seller recruitment sprint) |
 
 ### Active diagnostics
-- ⚠️ `/project/topgun-maintenance` renders as "Untitled Project" in production despite a fully healthy DB. Confirmed via direct SQL against Supabase: project row, business_profile, and all 6 offers exist with correct values; project is `live` / `public` / `verified=TRUE`; `business_profile_id` is linked. Railway backend is up and serving 200s. **The bug:** the client-side `loadProject()` call at `frontend/app/project/[id]/page.tsx:801` never hits Railway — across hours of production logs, no bare `GET /api/projects/<id>` request appears for any storefront (only `/api/projects/<uuid>/market` calls). Page falls back to its initial empty state. Investigation deferred until Stripe Connect onboarding so it can ship in the same sitting. Next step on resume: open DevTools Network + Console on `dum.club/project/topgun-maintenance` and capture whether the fetch fires at all, what URL it targets, and any console error.
+- _None._ The "Untitled Project" fallback on `/project/topgun-maintenance` is resolved in production; `loadProject()` is reaching Railway and the seeded row is hydrating. Visual QA spec `frontend/tests/visual/project-page.spec.ts` now hard-fails if the placeholder reappears.
 
 ### Known issues — non-blocking
 - `_resolve_owner_uuid` in `backend/api/routes/projects.py` raises `AttributeError("'SyncQueryRequestBuilder' object has no attribute 'select'")` on profile upsert (visible in Railway logs at the `/api/projects/?owner_id=...` endpoint). Supabase SDK version mismatch — the endpoint still returns 200, only pollutes logs. Fix when next touching that file.

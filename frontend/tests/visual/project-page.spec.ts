@@ -21,25 +21,22 @@ test("/project/topgun-maintenance loads cleanly as visitor", async ({
     fullPage: true,
   });
 
-  // KNOWN PRE-SESSION BUG (ROADMAP.md:17): the production
-  // /project/topgun-maintenance currently renders as
-  // "Untitled Project" because the client-side loadProject()
-  // call doesn't reach Railway. This visual QA spec
-  // intentionally does NOT assert on the headline text — that
-  // would convert a documented backlog issue into a CI failure
-  // every run, which would mute the actual signal we want from
-  // this suite. The headline check moves back in once that
-  // backlog item is resolved (search for ROADMAP "Untitled
-  // Project" before re-enabling).
-  //
-  // What we DO check: the page didn't 404, didn't white-screen,
-  // and the AdminBar isn't leaking to anonymous visitors.
-
+  // Headline assertion (re-enabled): the client-side
+  // loadProject() fetch is now hitting Railway and the seeded
+  // Topgun row is hydrating, so the page no longer falls back
+  // to "Untitled Project". This is the canary that catches a
+  // regression in the project-fetch path — if loadProject()
+  // ever silently fails again, the headline collapses to the
+  // placeholder and this assertion fires.
   const bodyText = await page.locator("body").textContent({ timeout: 5_000 });
   expect(
     bodyText && bodyText.trim().length > 50,
     "project page rendered as effectively blank",
   ).toBe(true);
+  expect(
+    bodyText?.toLowerCase().includes("untitled project"),
+    "project page fell back to 'Untitled Project' placeholder — loadProject() likely not reaching Railway (was ROADMAP active diagnostic)",
+  ).toBe(false);
 
   // Visitor view → no AdminBar (data attribute set by PR #175's
   // toolbar render). Signed-out users should never see it.
