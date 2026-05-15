@@ -60,9 +60,9 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     stopHeartbeat();
     const send = () => {
       // Fire-and-forget. A single failed beat doesn't end the
-      // stream; the backend's 15s threshold tolerates one
-      // missed poll. Catch silently — we never want a heartbeat
-      // failure to interrupt the live UI.
+      // stream; the backend's 60s threshold tolerates up to
+      // ~12 missed polls. Catch silently — we never want a
+      // heartbeat failure to interrupt the live UI.
       fetch(`${API_BASE}/api/ivs/heartbeat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: userId },
