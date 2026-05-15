@@ -288,10 +288,15 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
       {status === "idle" && (
         <div className="text-center py-4">
+          <ol className="mx-auto mb-5 max-w-md space-y-1 text-left text-sm text-zinc-400">
+            <li><span className="font-bold text-zinc-200">1.</span> Click Go Live.</li>
+            <li><span className="font-bold text-zinc-200">2.</span> Allow camera and microphone.</li>
+            <li><span className="font-bold text-zinc-200">3.</span> Customers see you on your website.</li>
+          </ol>
           <button onClick={startPreview} className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
             Go Live
           </button>
-          <p className="mt-3 text-sm text-zinc-500">Start selling in seconds</p>
+          <p className="mt-3 text-sm text-zinc-500">Start selling in seconds.</p>
         </div>
       )}
 
