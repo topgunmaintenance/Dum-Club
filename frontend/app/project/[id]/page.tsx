@@ -4083,29 +4083,13 @@ return (
         </div>
       )}
 
-      {/* ── IVS Host (must stay mounted across live session. rendered at top) ── */}
-      {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
-        <div id="project-live-host" className={`scroll-mt-28 ${project?.is_live ? "mb-2" : "mb-8 rounded-3xl border border-default bg-surface-card p-6"}`}>
-          <IVSStageHost
-            projectId={id as string}
-            userId={authUser?.privyId || ""}
-            autoStart={autoGoLive}
-            // Phase 3 (Q6). pre-stream guard. The component shows a
-            // confirm dialog before requesting camera if no offer is
-            // pinned, so the merchant doesn't go live to viewers who
-            // can't buy.
-            pinnedOfferId={project?.pinned_offer_id ?? null}
-            onLive={() => {
-              setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
-              setLiveSalesCount(0);
-            }}
-            onEnd={() => {
-              setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
-            }}
-            onError={(msg) => setGoLiveError(msg)}
-          />
-        </div>
-      )}
+      {/* ── IVS Host wrapper relocated below into the
+           live+offers side-by-side grid (search for
+           project-live-host). The component uses module-level
+           state, so its DOM position doesn't affect the
+           broadcast lifecycle — only the visual placement
+           changed. AdminBar's #project-live-host anchor still
+           points at the new location. */}
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
@@ -5274,8 +5258,66 @@ return (
         </div>
       </div>
 
-      {/* ── Offers (Public Storefront + Owner Tools). hidden for viewers during live ── */}
-      <div id="offers-section" className={`scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      {/* ── Live + Offers side-by-side grid ──────────────────────
+           Owner-only layout per the production owner-view audit:
+           the live host preview + Go Live controls sit on the
+           left, with the offers list and Add Offer on the right,
+           so the merchant can pin / edit offers without losing
+           sight of the live surface.
+
+           On mobile (below lg) the grid collapses to a single
+           column and the host stacks above offers, matching the
+           directive's "Live video first, Offers second" rule.
+
+           For non-owners (visitors) the IVS host condition
+           ({isOwner && IVS_REALTIME_ENABLED && ...}) is falsy so
+           the left column doesn't render and the layout
+           gracefully reduces to a single offers column — same
+           visual result as before the move.
+
+           Hidden-during-IVS gate was previously on the offers
+           section. We drop it for OWNERS so the merchant can
+           still see + pin offers mid-broadcast. Visitors keep
+           the hide-while-IVS behaviour because the live viewer
+           card below already surfaces the pinned offer with
+           a Buy button. */}
+      <div className={
+        isOwner
+          ? "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start"
+          : ""
+      }>
+        {/* LEFT — IVS Host (must stay mounted across the live
+            session. The component carries module-level state,
+            so its DOM position here is purely visual; the
+            broadcast lifecycle is unaffected by the move from
+            its previous top-of-page slot.) */}
+        {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
+          <div id="project-live-host" className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"}`}>
+            <IVSStageHost
+              projectId={id as string}
+              userId={authUser?.privyId || ""}
+              autoStart={autoGoLive}
+              // Phase 3 (Q6). pre-stream guard. The component shows a
+              // confirm dialog before requesting camera if no offer is
+              // pinned, so the merchant doesn't go live to viewers who
+              // can't buy.
+              pinnedOfferId={project?.pinned_offer_id ?? null}
+              onLive={() => {
+                setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
+                setLiveSalesCount(0);
+              }}
+              onEnd={() => {
+                setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
+              }}
+              onError={(msg) => setGoLiveError(msg)}
+            />
+          </div>
+        )}
+
+      {/* ── Offers (Public Storefront + Owner Tools) ──
+           Side-by-side with the host block above for owners;
+           single column otherwise. */}
+      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-[0.3em] text-brand-teal/50">
@@ -6857,6 +6899,7 @@ return (
           </div>
         )}
       </div>
+      </div>{/* /Live + Offers side-by-side grid */}
 
       <div id="ai-workspace" className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
         {showOwnerInlineUi && (
