@@ -1,0 +1,131 @@
+name: Visual QA
+
+# Headless browser sweeps the unverified surfaces and posts
+# screenshots + a pass/fail summary on the PR.
+#
+# Triggers:
+#   - PR open / sync to main → tests against BASE_URL input
+#     (defaults to https://www.dum.club; pass a Vercel preview
+#     URL via workflow_dispatch when verifying a specific PR).
+#   - Push to main → tests against production after merge.
+#   - workflow_dispatch → manual run with custom URL.
+#
+# Cost: free on this public repo (unlimited Actions minutes
+# on standard runners). ~2-3 min per run.
+#
+# Out of scope for v1:
+#   - Signed-in flows (no test Privy account stored as a secret
+#     yet). Add MERCHANT_TEST_EMAIL + MERCHANT_TEST_PASSWORD
+#     secrets later and gate signed-in specs on that env.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to test against (default https://www.dum.club)"
+        required: false
+        default: "https://www.dum.club"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Resolve BASE_URL
+        id: resolve-url
+        run: |
+          if [ -n "${{ inputs.base_url }}" ]; then
+            echo "BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "BASE_URL=https://www.dum.club" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Resolved BASE_URL=$(cat $GITHUB_OUTPUT | grep BASE_URL | cut -d= -f2)"
+
+      - name: Run visual QA specs
+        id: run-tests
+        env:
+          BASE_URL: ${{ steps.resolve-url.outputs.BASE_URL }}
+        run: npm run test:visual
+        continue-on-error: true
+
+      - name: Upload screenshots + report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-${{ github.run_id }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Post PR comment with summary
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const reportDir = 'frontend/test-results';
+            let summary = '';
+            try {
+              const summaryPath = path.join(reportDir, 'summary.txt');
+              if (fs.existsSync(summaryPath)) {
+                summary = fs.readFileSync(summaryPath, 'utf8');
+              }
+            } catch (e) {
+              summary = `Could not read summary: ${e.message}`;
+            }
+            const passed = '${{ steps.run-tests.outcome }}' === 'success';
+            const baseUrl = '${{ steps.resolve-url.outputs.BASE_URL }}';
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `## Visual QA · ${passed ? '✅ pass' : '❌ fail'}`,
+              ``,
+              `**Tested against:** \`${baseUrl}\``,
+              ``,
+              summary ? '```\n' + summary + '\n```' : '_No summary file produced._',
+              ``,
+              `Full report + screenshots: [Action run](${artifactUrl}) → Artifacts → \`visual-qa-${context.runId}\``,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+
+      - name: Fail job if tests failed
+        if: steps.run-tests.outcome == 'failure'
+        run: |
+          echo "Visual QA tests failed. See artifacts for screenshots + report."
+          exit 1
