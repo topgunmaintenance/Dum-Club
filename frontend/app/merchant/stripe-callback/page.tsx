@@ -40,7 +40,7 @@ function StripeCallbackInner() {
   const params = useSearchParams();
   const router = useRouter();
   const { getToken, loading: authLoading, user } = useAuth();
-  const [statusLine, setStatusLine] = useState("Connecting Stripe…");
+  const [statusLine, setStatusLine] = useState("Setting up your payments…");
   const [inFlight, setInFlight] = useState(false);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ function StripeCallbackInner() {
     //    happens entirely server-side in the backend callback —
     //    STRIPE_SECRET_KEY never touches the browser.
     setInFlight(true);
-    setStatusLine("Verifying with Stripe…");
+    setStatusLine("Almost done. Confirming your details…");
 
     (async () => {
       const token = await getToken();

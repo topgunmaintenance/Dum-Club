@@ -245,11 +245,6 @@ export function Navbar() {
           id="mobile-menu"
           className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-surface-card lg:hidden"
         >
-          <div className="border-b border-default px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-teal">
-              Drive Ur Market
-            </p>
-          </div>
           <div className="border-b border-default">
             {PRIMARY_LINKS.map((l) => {
               const active = path === l.href;
