@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test frontend/__tests__/lib/offers.test.mjs",
     "check:human-copy": "node scripts/check-human-copy.mjs",
-    "check:no-stray-text-white": "node scripts/check-no-stray-text-white.mjs"
+    "check:no-stray-text-white": "node scripts/check-no-stray-text-white.mjs",
+    "check:storefront-images": "node scripts/check-storefront-images.mjs"
   },
   "keywords": [],
   "author": "",
