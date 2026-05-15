@@ -2706,7 +2706,7 @@ export default function Home() {
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
                 >
-                  Get Your Storefront →
+                  Start Free →
                 </Link>
                 <a
                   href="#how-it-works"
@@ -2998,21 +2998,22 @@ export default function Home() {
 
         {/* ── HOW IT WORKS ─────────────────────────────────────────
              Anchor target for the hero's "See How It Works" CTA.
-             Five short steps, plain English, in the order a merchant
-             does them. Rewritten in the simplicity-audit pass so a
-             non-technical small-business owner can read the whole
-             flow in five seconds. */}
+             Six short steps, plain English, in the order a merchant
+             does them. The canonical end-to-end flow, including the
+             site embed (step 3) which the prior 5-step list collapsed
+             into "Go Live". Rewritten so a non-technical small-
+             business owner reads the whole flow in five seconds. */}
         <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               How it works
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
-              Five steps. No developer required.
+              Six steps. No developer required.
             </h2>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 n: "01",
@@ -3026,16 +3027,21 @@ export default function Home() {
               },
               {
                 n: "03",
+                title: "Add DUM Club to Your Website",
+                copy: "Paste one line of code. A small bubble appears in the corner of your site.",
+              },
+              {
+                n: "04",
                 title: "Go Live",
                 copy: "Camera on. Customers watch on your website.",
               },
               {
-                n: "04",
+                n: "05",
                 title: "Customers Buy",
                 copy: "One tap. Stripe handles payment.",
               },
               {
-                n: "05",
+                n: "06",
                 title: "You Get Paid",
                 copy: "Direct deposit. You keep every dollar.",
               },
@@ -3087,7 +3093,7 @@ export default function Home() {
                 href="/merchant"
                 className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:text-white"
               >
-                Get Your Storefront →
+                Start Free →
               </Link>
               <Link
                 href="/business"
