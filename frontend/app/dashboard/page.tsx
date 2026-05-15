@@ -10,6 +10,7 @@ import { UpgradeAnalyticsCard } from "../../components/UpgradeAnalyticsCard";
 import { PopInSettings } from "../../components/PopInSettings";
 import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
 import { GetLiveSteps } from "../../components/GetLiveSteps";
+import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 
 type Project = {
   id: number | string;
@@ -646,6 +647,7 @@ export default function DashboardPage() {
           const hasDisplayMode = Boolean(primary.embed_display_mode);
           return (
             <>
+              <StripeResumeBanner getToken={getToken} />
               <GetLiveSteps
                 hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
                 stripeVerified={stripeVerified}

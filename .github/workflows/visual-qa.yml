@@ -57,6 +57,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check referenced storefront images exist on disk
+        # Scans rendered frontend code for /images/<dir>/<file>
+        # paths and fails fast if any are missing from
+        # frontend/public/. Catches the failure mode where a new
+        # local <img src="/images/foo.jpg"/> ships without the
+        # file. Topgun's storefront images route through absolute
+        # topgunmaintenance.com URLs per migration 033, so the
+        # /images/topgun/ mirror script is not required at deploy
+        # time — but if a future image reference is added locally,
+        # this guard fails before Playwright sees the 404.
+        working-directory: ${{ github.workspace }}
+        run: npm run check:storefront-images
+
       - name: Install Playwright browsers (chromium only)
         run: npx playwright install --with-deps chromium
 

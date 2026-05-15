@@ -165,8 +165,8 @@ Things that aren't Claude-solvable and need a human decision or action.
 
 | Status | Blocker | Owner | Blocks |
 |---|---|---|---|
-| ⏸️ | Run `bash scripts/fetch-topgun-photos.sh` from the repo root to mirror the 5 plane photos into `frontend/public/images/topgun/` | Julian | Storefront render quality (image 404s) |
-| ⏸️ | Rebind Topgun `business_profiles.owner_privy_id` from the seed sentinel `seed:topgun-maintenance` to Julian's real Privy DID once he signs in. SQL: `UPDATE business_profiles SET owner_privy_id = '<real-did>' WHERE owner_privy_id = 'seed:topgun-maintenance';` plus the matching `UPDATE projects SET privy_id = '<real-did>' WHERE slug = 'topgun-maintenance';` | Julian | Merchant dashboard access for Topgun |
+| ✅ | ~~Run `bash scripts/fetch-topgun-photos.sh` to mirror Topgun photos locally~~ — superseded by migration 033, which points image URLs at the public originals on topgunmaintenance.com. The mirror script stays as a contingency. | — | _resolved_ |
+| ✅ | ~~Rebind Topgun `business_profiles.owner_privy_id` from `seed:topgun-maintenance` to Julian's real Privy DID~~ — now automatic via `backend/services/seed_claim.py`. First sign-in with `julian@topgunmaintenance.com` triggers the rebind on both `business_profiles` and `projects`. Audit row written to `seed_claim_audit`. | — | _resolved_ |
 | ⏸️ | **Send `/project/topgun-maintenance` link to 20 real contacts** | Julian | Phase 0B → Phase 1 |
 | 🔒 | Legal review of DUM Points purchase flow | Legal | Phase 2 |
 | 🔒 | Legal sign-off on Solana claim flow | Legal | Phase 3 |
