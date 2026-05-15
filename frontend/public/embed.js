@@ -367,6 +367,16 @@
         "  transform: translateY(12px) scale(0.94);",
         "  transition: opacity 240ms ease, transform 240ms ease;",
         "  -webkit-tap-highlight-color: transparent;",
+        "  touch-action: none;",  // Prevents iOS scroll-cancel during drag
+        "}",
+        "[data-dum-embed-bubble].is-dragging {",
+        "  cursor: grabbing;",
+        "  transition: none;",   // Snap to pointer, no animation lag
+        "}",
+        "[data-dum-embed-bubble].is-dragging .dum-tap-hint,",
+        "[data-dum-embed-bubble].is-dragging .dum-live-pill,",
+        "[data-dum-embed-bubble].is-dragging .dum-bubble-viewers {",
+        "  opacity: 0.4;",       // Dim chrome while dragging
         "}",
         "[data-dum-embed-bubble].is-visible {",
         "  opacity: 1; transform: translateY(0) scale(1);",
@@ -1509,6 +1519,159 @@
     close.addEventListener("click", dismissBubble);
 
     document.body.appendChild(bubble);
+
+    // ── Drag-and-drop (Phase 2 from PR #167 audit) ──
+    // Lets visitors move the bubble away from the bottom-right
+    // corner if it covers something they want to see. Position
+    // persists per-merchant in localStorage so a returning
+    // visitor sees the bubble where they left it.
+    //
+    // Drag gate: 6px movement threshold before .is-dragging fires.
+    // Below that, the pointerup fires the bubble's click handler
+    // normally (opens the overlay) — without this, every click
+    // would be treated as a drag and the overlay would never open.
+    //
+    // Touch-only viewports: touch-action: none on the bubble (CSS)
+    // prevents iOS Safari from interpreting the drag as a page
+    // scroll. The dismiss × and bubble preview iframe carry their
+    // own pointer-events / stop-propagation so they don't get
+    // hijacked into a drag.
+    var posKey = "dum-embed-position:" + businessId;
+    var dragState = {
+      active: false,
+      moved: false,
+      startX: 0,
+      startY: 0,
+      origLeft: 0,
+      origTop: 0,
+    };
+
+    function applyPosition(leftPx, topPx) {
+      var w = bubble.offsetWidth || 140;
+      var h = bubble.offsetHeight || 140;
+      // Viewport clamp — ~4px gutter so the bubble never sits
+      // fully against an edge.
+      var maxLeft = Math.max(4, window.innerWidth - w - 4);
+      var maxTop = Math.max(4, window.innerHeight - h - 4);
+      var clampedLeft = Math.min(Math.max(4, leftPx), maxLeft);
+      var clampedTop = Math.min(Math.max(4, topPx), maxTop);
+      bubble.style.left = clampedLeft + "px";
+      bubble.style.top = clampedTop + "px";
+      bubble.style.right = "auto";
+      bubble.style.bottom = "auto";
+    }
+
+    // Restore saved position. Bail (keep CSS default bottom-right)
+    // when the saved position would land off-screen after a
+    // resize — applyPosition's clamp handles that case too.
+    try {
+      var savedRaw = window.localStorage &&
+        window.localStorage.getItem(posKey);
+      if (savedRaw) {
+        var saved = JSON.parse(savedRaw);
+        if (saved && isFinite(saved.left) && isFinite(saved.top)) {
+          applyPosition(saved.left, saved.top);
+        }
+      }
+    } catch (e) {
+      // ignore JSON / storage errors
+    }
+
+    function onPointerDown(e) {
+      // Don't start a drag from the dismiss × or the live-video
+      // iframe — those have their own click handlers.
+      var target = e.target;
+      if (
+        target &&
+        (target.closest("[data-dum-embed-bubble-close]") ||
+          target.tagName === "IFRAME")
+      ) {
+        return;
+      }
+      var rect = bubble.getBoundingClientRect();
+      dragState.active = true;
+      dragState.moved = false;
+      dragState.startX = e.clientX;
+      dragState.startY = e.clientY;
+      dragState.origLeft = rect.left;
+      dragState.origTop = rect.top;
+      // Capture so we keep receiving moves even if the pointer
+      // leaves the bubble's bounding box.
+      if (bubble.setPointerCapture && e.pointerId !== undefined) {
+        try { bubble.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+    }
+
+    function onPointerMove(e) {
+      if (!dragState.active) return;
+      var dx = e.clientX - dragState.startX;
+      var dy = e.clientY - dragState.startY;
+      if (!dragState.moved) {
+        // 6px threshold — small enough to feel responsive, big
+        // enough that a normal tap doesn't trigger a drag.
+        if (Math.sqrt(dx * dx + dy * dy) < 6) return;
+        dragState.moved = true;
+        bubble.classList.add("is-dragging");
+      }
+      if (e.preventDefault) e.preventDefault();
+      applyPosition(dragState.origLeft + dx, dragState.origTop + dy);
+    }
+
+    function onPointerUp(e) {
+      if (!dragState.active) return;
+      var wasMoved = dragState.moved;
+      dragState.active = false;
+      dragState.moved = false;
+      bubble.classList.remove("is-dragging");
+      if (bubble.releasePointerCapture && e.pointerId !== undefined) {
+        try { bubble.releasePointerCapture(e.pointerId); } catch (err) {}
+      }
+      if (wasMoved) {
+        // Persist the resting position and suppress the click
+        // that would otherwise fire from the same pointerup.
+        var rect = bubble.getBoundingClientRect();
+        try {
+          if (window.localStorage) {
+            window.localStorage.setItem(
+              posKey,
+              JSON.stringify({ left: rect.left, top: rect.top })
+            );
+          }
+        } catch (err) {
+          // quota / disabled storage — degrade silently
+        }
+        // Block the upcoming click event from opening the overlay.
+        var blocker = function (ev) {
+          ev.stopPropagation();
+          ev.preventDefault();
+          bubble.removeEventListener("click", blocker, true);
+        };
+        bubble.addEventListener("click", blocker, true);
+      }
+    }
+
+    if (bubble.addEventListener) {
+      bubble.addEventListener("pointerdown", onPointerDown);
+      // pointermove/up listen on document so dragging out of the
+      // bubble doesn't lose the cursor mid-drag.
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerUp);
+    }
+
+    // Re-clamp on viewport resize / orientation change so a
+    // saved position that's now off-screen comes back into view.
+    function onResize() {
+      var rect = bubble.getBoundingClientRect();
+      // Only re-clamp if the bubble is in custom position (left/top
+      // are set). The default bottom-right anchor handles itself.
+      if (bubble.style.left && bubble.style.top) {
+        applyPosition(rect.left, rect.top);
+      }
+    }
+    if (window.addEventListener) {
+      window.addEventListener("resize", onResize);
+    }
 
     // ── Messages from the preview iframe ──
     // The /embed/bubble route postMessages two payloads:
