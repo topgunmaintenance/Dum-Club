@@ -19,6 +19,10 @@ from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user
 from services.seed_claim import maybe_claim_seed_profiles
+from services.subscriptions import (
+    create_trial_subscription,
+    cancel_subscription,
+)
 
 router = APIRouter()
 
@@ -379,6 +383,72 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             detail = f"{detail}: {last_error!r}"
         raise HTTPException(status_code=500, detail=detail)
 
+    # ── 60-day trial provisioning ─────────────────────────────────
+    # Founding-100 merchants are grandfathered into $0-forever pricing per
+    # CLAUDE.md doctrine and skip the trial flow entirely. Non-founding
+    # signups get a Stripe Subscription with trial_period_days=60 and
+    # pause-on-missing-payment-method, so no card is required at signup.
+    #
+    # Best-effort: a Stripe outage here doesn't fail the signup. The merchant
+    # lands in the dashboard, the trial banner shows "Setting up your trial.."
+    # state, and a follow-up dashboard load can call this code path again
+    # (gated by stripe_subscription_id IS NULL) to retry.
+    if not inserted.get("founding_merchant"):
+        # Look up the merchant's cached email from users.email — sync writes
+        # it on every Privy session, so first-signup callers have it.
+        user_email: Optional[str] = None
+        try:
+            user_res = (
+                supabase.table("users")
+                .select("email")
+                .eq("privy_id", privy_id)
+                .limit(1)
+                .execute()
+            )
+            if user_res.data:
+                user_email = (user_res.data[0] or {}).get("email")
+        except Exception as exc:
+            print(f"[merchant/signup] email lookup failed: {exc!r}")
+
+        trial = create_trial_subscription(
+            privy_id=privy_id,
+            email=user_email,
+            business_name=body.business_name,
+            tier="growth",
+        )
+        if not trial.get("error"):
+            try:
+                trial_update = {
+                    "stripe_customer_id": trial.get("stripe_customer_id"),
+                    "stripe_subscription_id": trial.get("stripe_subscription_id"),
+                    "subscription_price_id": trial.get("subscription_price_id"),
+                    "trial_start_at": trial.get("trial_start_at"),
+                    "trial_ends_at": trial.get("trial_ends_at"),
+                    "next_billing_at": trial.get("next_billing_at"),
+                    "subscription_status": trial.get("subscription_status") or "trialing",
+                    "grandfathered": False,
+                }
+                # Drop None values so we don't overwrite real columns with NULL
+                # if Stripe gave us a partial response.
+                trial_update = {k: v for k, v in trial_update.items() if v is not None}
+                supabase.table("merchants").update(trial_update).eq(
+                    "id", inserted["id"]
+                ).execute()
+                inserted.update(trial_update)
+            except Exception as exc:
+                print(f"[merchant/signup] trial write-through failed: {exc!r}")
+        else:
+            print(f"[merchant/signup] trial provisioning skipped: {trial.get('error')}")
+    else:
+        # Grandfather founding rows so the cron + dashboard banner skip them.
+        try:
+            supabase.table("merchants").update({"grandfathered": True}).eq(
+                "id", inserted["id"]
+            ).execute()
+            inserted["grandfathered"] = True
+        except Exception as exc:
+            print(f"[merchant/signup] grandfather write failed: {exc!r}")
+
     return {"merchant": inserted, "created": True}
 
 
@@ -446,6 +516,135 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
     if not res.data:
         return {"merchant": None}
     return {"merchant": res.data[0]}
+
+
+# ── 60-day trial status (dashboard countdown) ──
+
+# Plan price labels keyed off the cached subscription_price_id. Read-side
+# only — Stripe is authoritative for the actual charge amount; this map is
+# for the dashboard banner copy ("$49/month plan starts on...").
+_PRICE_LABEL_FROM_ENV = {
+    os.getenv("STRIPE_PRICE_ID_STARTER"): ("Starter", 29),
+    os.getenv("STRIPE_PRICE_ID_GROWTH"): ("Growth", 49),
+    os.getenv("STRIPE_PRICE_ID_PRO"): ("Pro", 99),
+}
+
+
+def _days_until(iso_ts: Optional[str]) -> Optional[int]:
+    """Return whole days from now to the given ISO timestamp. Negative if past."""
+    if not iso_ts:
+        return None
+    try:
+        from datetime import datetime, timezone
+        target = datetime.fromisoformat(iso_ts.replace("Z", "+00:00"))
+        if target.tzinfo is None:
+            target = target.replace(tzinfo=timezone.utc)
+        delta = target - datetime.now(timezone.utc)
+        return int(delta.total_seconds() // 86400)
+    except Exception:
+        return None
+
+
+@router.get("/trial-status")
+async def get_trial_status(current_user: dict = Depends(get_current_user)):
+    """
+    Trial countdown payload for the dashboard banner. Pure read endpoint —
+    serves cached fields from the merchants row; no Stripe calls. Webhooks
+    keep the cache fresh.
+
+    Returns:
+      {
+        "has_merchant": bool,
+        "grandfathered": bool,        # True = no trial, no auto-convert
+        "subscription_status": str | None,
+        "trial_ends_at": str | None,  # ISO timestamp
+        "days_remaining": int | None, # negative when trial has ended
+        "next_billing_at": str | None,
+        "plan_label": str | None,     # "Starter" | "Growth" | "Pro"
+        "plan_price_usd": int | None, # 29 | 49 | 99
+      }
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    sb = get_client()
+    res = (
+        sb.table("merchants")
+        .select(
+            "grandfathered, subscription_status, trial_ends_at, "
+            "next_billing_at, subscription_price_id, stripe_subscription_id"
+        )
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        return {"has_merchant": False}
+    row = res.data[0]
+
+    price_id = row.get("subscription_price_id")
+    label_price = _PRICE_LABEL_FROM_ENV.get(price_id) if price_id else None
+    plan_label = label_price[0] if label_price else None
+    plan_price = label_price[1] if label_price else None
+
+    trial_ends_at = row.get("trial_ends_at")
+    return {
+        "has_merchant": True,
+        "grandfathered": bool(row.get("grandfathered")),
+        "subscription_status": row.get("subscription_status"),
+        "trial_ends_at": trial_ends_at,
+        "days_remaining": _days_until(trial_ends_at),
+        "next_billing_at": row.get("next_billing_at"),
+        "plan_label": plan_label,
+        "plan_price_usd": plan_price,
+        "has_subscription": bool(row.get("stripe_subscription_id")),
+    }
+
+
+@router.post("/cancel-trial")
+async def cancel_trial(current_user: dict = Depends(get_current_user)):
+    """
+    Cancel the merchant's Stripe Subscription immediately. Called from a
+    "Cancel before billing" CTA on the dashboard during the trial window.
+
+    Idempotent: if there's no subscription on the merchants row, returns
+    {cancelled: False, reason: "no_subscription"}.
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    sb = get_client()
+    res = (
+        sb.table("merchants")
+        .select("id, stripe_subscription_id, grandfathered")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="merchant_not_found")
+    row = res.data[0]
+    if row.get("grandfathered"):
+        return {"cancelled": False, "reason": "grandfathered"}
+    sub_id = row.get("stripe_subscription_id")
+    if not sub_id:
+        return {"cancelled": False, "reason": "no_subscription"}
+
+    if not cancel_subscription(sub_id):
+        raise HTTPException(status_code=502, detail="stripe_cancel_failed")
+
+    # Reflect immediately so the dashboard doesn't have to wait for the
+    # customer.subscription.deleted webhook.
+    try:
+        sb.table("merchants").update({
+            "subscription_status": "cancelled",
+        }).eq("id", row["id"]).execute()
+    except Exception as exc:
+        print(f"[merchant/cancel-trial] write-through failed: {exc!r}")
+
+    return {"cancelled": True}
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

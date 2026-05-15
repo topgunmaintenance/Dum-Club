@@ -11,6 +11,7 @@ import { PopInSettings } from "../../components/PopInSettings";
 import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
 import { GetLiveSteps } from "../../components/GetLiveSteps";
 import { StripeResumeBanner } from "../../components/StripeResumeBanner";
+import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
 
 type Project = {
   id: number | string;
@@ -647,6 +648,7 @@ export default function DashboardPage() {
           const hasDisplayMode = Boolean(primary.embed_display_mode);
           return (
             <>
+              <TrialCountdownBanner getToken={getToken} />
               <StripeResumeBanner getToken={getToken} />
               <GetLiveSteps
                 hasBusinessName={Boolean((primary.title || primary.name || "").trim())}

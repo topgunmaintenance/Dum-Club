@@ -1075,6 +1075,58 @@ async def stripe_webhook(request: Request):
             except Exception as exc:
                 print(f"[webhook] ✗ Failed to update merchants row for {acct_id}: {exc!r}")
 
+    elif event["type"] in (
+        "customer.subscription.trial_will_end",
+        "customer.subscription.updated",
+        "customer.subscription.deleted",
+        "customer.subscription.paused",
+        "customer.subscription.resumed",
+    ):
+        # Platform-side recurring billing (separate from merchant payouts
+        # above). The merchants row carries cached trial/subscription state
+        # so the dashboard countdown doesn't have to round-trip Stripe.
+        # Refresh from authoritative Stripe state on every relevant event.
+        sub = event["data"]["object"]
+        sub_id = sub.get("id")
+        from datetime import datetime, timezone
+        if sub_id:
+            update: dict = {"subscription_status": sub.get("status")}
+            if sub.get("trial_end"):
+                update["trial_ends_at"] = datetime.fromtimestamp(
+                    sub["trial_end"], tz=timezone.utc
+                ).isoformat()
+            if sub.get("current_period_end"):
+                update["next_billing_at"] = datetime.fromtimestamp(
+                    sub["current_period_end"], tz=timezone.utc
+                ).isoformat()
+            try:
+                supabase.table("merchants").update(update).eq(
+                    "stripe_subscription_id", sub_id
+                ).execute()
+                print(
+                    f"[webhook] ✓ {event['type']} sub={sub_id} → "
+                    f"status={update.get('subscription_status')} "
+                    f"trial_ends_at={update.get('trial_ends_at')}"
+                )
+            except Exception as exc:
+                print(f"[webhook] ✗ subscription update failed sub={sub_id}: {exc!r}")
+
+    elif event["type"] in ("invoice.payment_failed", "invoice.paid"):
+        # Dunning / receipt events. invoice.paid is the canonical "trial
+        # converted to paid" moment; invoice.payment_failed is the start of
+        # the grace period before Stripe pauses or cancels.
+        invoice = event["data"]["object"]
+        sub_id = invoice.get("subscription")
+        if sub_id:
+            new_status = "past_due" if event["type"] == "invoice.payment_failed" else "active"
+            try:
+                supabase.table("merchants").update({
+                    "subscription_status": new_status,
+                }).eq("stripe_subscription_id", sub_id).execute()
+                print(f"[webhook] ✓ {event['type']} sub={sub_id} → status={new_status}")
+            except Exception as exc:
+                print(f"[webhook] ✗ invoice event update failed sub={sub_id}: {exc!r}")
+
     else:
         print(f"[webhook] Unhandled event: {event['type']}")
 
