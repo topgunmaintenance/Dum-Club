@@ -246,9 +246,8 @@ export default function InstallPage() {
         Add DUM Club to your website
       </h1>
       <p className="mb-8 text-secondary">
-        Paste one line of code into your site. That's it. When you go live, a
-        small circular bubble appears in the corner with your live video, and
-        customers can buy without leaving your page.
+        Paste one line of code into your site. When you go live, a small bubble
+        appears in the corner. Customers tap it to watch and buy.
       </p>
 
       {/* Step 1 — Copy snippet */}
