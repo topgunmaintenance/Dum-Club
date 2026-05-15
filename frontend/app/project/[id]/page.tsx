@@ -6268,6 +6268,13 @@ return (
             <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
               {offerEditing.id ? "Edit Offer" : "New Offer"}
             </div>
+            {!offerEditing.id && (
+              <ol className="rounded-xl border border-default bg-surface-card p-3 text-sm text-secondary space-y-1">
+                <li><span className="font-bold text-primary">1.</span> Name what you sell.</li>
+                <li><span className="font-bold text-primary">2.</span> Set a price.</li>
+                <li><span className="font-bold text-primary">3.</span> Save. It goes live on your page.</li>
+              </ol>
+            )}
             <div>
               <input
                 type="text"
