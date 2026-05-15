@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from auth.privy import get_current_user
 from db.supabase import get_client
+from services.seed_claim import maybe_claim_seed_profiles
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -60,6 +61,16 @@ async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_
                 .execute()
             )
             print("✅ SYNC SUCCESS (update)")
+            # Auto-claim any seed-sentinel business_profiles whose
+            # contact_email matches this user's verified email. No-op
+            # if the user has already claimed (owner_privy_id no longer
+            # starts with 'seed:') or no match exists.
+            try:
+                claimed = maybe_claim_seed_profiles(body.privy_id)
+                if claimed:
+                    print(f"[sync] auto-claimed {claimed} seed profile(s) for {body.privy_id[-6:]}")
+            except Exception as claim_exc:
+                print(f"[sync] auto-claim failed: {claim_exc!r}")
             return (updated.data or [{}])[0]
 
         created = (
@@ -78,6 +89,13 @@ async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_
             .execute()
         )
         print("✅ SYNC SUCCESS (insert)")
+        # First-time sync — same auto-claim attempt as the update branch.
+        try:
+            claimed = maybe_claim_seed_profiles(body.privy_id)
+            if claimed:
+                print(f"[sync] auto-claimed {claimed} seed profile(s) for {body.privy_id[-6:]}")
+        except Exception as claim_exc:
+            print(f"[sync] auto-claim failed: {claim_exc!r}")
         return (created.data or [{}])[0]
     except HTTPException:
         raise

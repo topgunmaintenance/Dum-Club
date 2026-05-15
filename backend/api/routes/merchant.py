@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user
+from services.seed_claim import maybe_claim_seed_profiles
 
 router = APIRouter()
 
@@ -424,6 +425,15 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid auth")
+
+    # Belt + suspenders: if the user signed in via a path that
+    # bypassed /api/auth/sync (rare but possible during dev),
+    # the auto-claim attempt here covers the case where their
+    # email matches a seed business_profiles row.
+    try:
+        maybe_claim_seed_profiles(privy_id)
+    except Exception as claim_exc:
+        print(f"[merchant/me] auto-claim failed: {claim_exc!r}")
 
     supabase = get_client()
     res = (
