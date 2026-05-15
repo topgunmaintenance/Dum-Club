@@ -610,7 +610,6 @@ export default function MerchantPage() {
   // is asking "did you connect Stripe?", not "did Stripe verify you?".
   // Verification state is surfaced separately by the Stripe
   // Verification card below.
-  const stepAccount = true;
   const stepStripe = !!merchant.stripe_connect_id;
   // Step 3. "Add DUM Live to your website". has no direct
   // signal we can read (we don't have a server-side "embed
@@ -658,7 +657,6 @@ export default function MerchantPage() {
     stepLiveEver,
   ].filter(Boolean).length;
   const totalSteps = 5;
-  const onboardingComplete = completedSteps === totalSteps;
   // Where the "Add DUM Live to your website" CTA sends the
   // merchant. If they have at least one project, deep-link
   // straight to that project's page (the Activate-DUM-Live
