@@ -2679,30 +2679,22 @@ export default function Home() {
                   </span>
                 </div>
               )}
-              {/* Phase 5 hero. outcome-led headline ("Sell Live. Keep
-                  Every Dollar.") with the merchant-first value-prop
-                  subhead. Replaces the brand-led "DUM Club / Drive
-                  Your Market" pairing because conversion testing on
-                  Stripe / Square / Shopify shows outcome headlines
-                  beat brand-led ones for first-time visitors. The
-                  brand still owns the page through the navbar
-                  wordmark, the founder note directly below, and the
-                  product-preview section. */}
-              {/* Brand decoder eyebrow. "Drive Ur Market" is the
-                   expansion of DUM. Sits above the outcome headline so
-                   first-time visitors see the brand line without it
-                   competing with the value prop on a single line. */}
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-brand-teal">
-                Drive Ur Market
-              </p>
+              {/* Phase 5 hero. Outcome-led headline with a single
+                  plain-English subhead that a non-technical small-
+                  business owner reads in five seconds. The brand-
+                  decoder eyebrow ("Drive Ur Market") was removed
+                  in the simplicity-audit pass — it competed with
+                  the value prop for a beat without adding meaning.
+                  Brand recognition is carried by the navbar
+                  wordmark and the founder note directly below. */}
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
                 Sell Live. <span className="text-brand-navy">Keep Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                Add live selling, loyalty, tools that help bring customers back, and local flash sales to your business for one flat monthly fee. Built for local businesses, by a local business.
+                DUM Club helps businesses sell live on their own website and keep every sale. Flat monthly fee. No commission. Ever.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">Flat $29 to $99/month.</span> 0% commission. Keep every sale.
+                <span className="font-bold text-brand-navy">Flat $29 to $99/month.</span> 0% commission. Your website. Your customers. Your money.
               </p>
 
               {/* Primary CTA: brand-teal fill with brand-navy text for
@@ -3006,39 +2998,46 @@ export default function Home() {
 
         {/* ── HOW IT WORKS ─────────────────────────────────────────
              Anchor target for the hero's "See How It Works" CTA.
-             Four short steps, no jargon. Step 4 mentions DUM Points
-             as a loyalty rewards primitive only. no token framing. */}
+             Five short steps, plain English, in the order a merchant
+             does them. Rewritten in the simplicity-audit pass so a
+             non-technical small-business owner can read the whole
+             flow in five seconds. */}
         <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
           <div className="mb-10 text-center">
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               How it works
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
-              Four steps. No developer required.
+              Five steps. No developer required.
             </h2>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {[
               {
                 n: "01",
                 title: "Connect Stripe",
-                copy: "One click. Money goes straight to your bank. We do not hold it.",
+                copy: "One click. Money goes straight to your bank.",
               },
               {
                 n: "02",
-                title: "Create a live offer",
-                copy: "Pin a flash deal, set inventory, and you’re ready to go live.",
+                title: "Create a Deal",
+                copy: "Pick what you sell and set a price.",
               },
               {
                 n: "03",
-                title: "Add DUM Live to your site",
-                copy: "Paste one small code snippet, or just list your business on DUM Club.",
+                title: "Go Live",
+                copy: "Camera on. Customers watch on your website.",
               },
               {
                 n: "04",
-                title: "Customers buy and come back",
-                copy: "Every purchase earns DUM Points. Customers can use them for rewards that bring buyers back.",
+                title: "Customers Buy",
+                copy: "One tap. Stripe handles payment.",
+              },
+              {
+                n: "05",
+                title: "You Get Paid",
+                copy: "Direct deposit. You keep every dollar.",
               },
             ].map((step) => (
               <div

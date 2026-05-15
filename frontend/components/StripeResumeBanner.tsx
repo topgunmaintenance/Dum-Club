@@ -189,7 +189,7 @@ export function StripeResumeBanner({ getToken }: Props) {
         </span>
         <div className="flex-1">
           <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-            Phase 0B blocker
+            Stripe setup
           </div>
           <h2
             id="stripe-resume-heading"
