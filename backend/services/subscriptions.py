@@ -70,7 +70,20 @@ class TrialResult(TypedDict, total=False):
 
 
 def _resolve_price_id(tier: str) -> Optional[str]:
-    """Map a plan tier label to the configured Stripe Price id."""
+    """Map a plan tier label to the configured Stripe Price id.
+
+    Three self-serve tiers: starter, growth (default), pro.
+
+    The "business" tier ($499/mo, white-label loyalty) is intentionally
+    NOT handled here. Business is custom-quote — merchants reach Julian
+    via the mailto: CTA on /pricing, the contract is negotiated, and
+    Stripe Subscription is created manually in the Stripe Dashboard for
+    that specific account. The auto-trial signup flow always defaults
+    to growth.
+
+    Anything we don't recognise (including "business") falls back to
+    growth so a typo on the caller side never crashes signup.
+    """
     tier = (tier or "growth").lower()
     if tier == "starter":
         return _STRIPE_PRICE_ID_STARTER
