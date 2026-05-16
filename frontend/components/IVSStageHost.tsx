@@ -25,6 +25,12 @@ interface IVSStageHostProps {
   // "no pinned offer yet" → confirm fires; a non-empty string
   // (offer UUID) means everything's wired up → confirm skipped.
   pinnedOfferId?: string | null;
+  // Optional Privy bearer-token resolver. When provided, the host
+  // checks /api/merchant/trial-status on mount and hides the Go Live
+  // button if the merchant's plan is suspended. Without it the gate
+  // still works server-side (create-stage returns 402) but the UI
+  // won't lead with a "Shop paused" notice.
+  getToken?: () => Promise<string | null | undefined>;
 }
 
 // Stable refs outside component to survive re-renders and strict mode
@@ -33,12 +39,39 @@ let _localStreams: any[] = [];
 let _videoTrackId: string | null = null;
 let _audioTrackId: string | null = null;
 
-export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId }: IVSStageHostProps) {
+export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId, getToken }: IVSStageHostProps) {
   const [status, setStatus] = useState<HostStatus>(() => {
     // If stage exists from a previous render, stay in live state
     return _stageInstance ? "live" : "idle";
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Suspension flag — Phase 2 grace-period rollout. When the merchant's
+  // plan is suspended (3-day payment-failure grace elapsed without a
+  // recovery), Go Live is replaced with a plain-English notice. The
+  // backend /api/ivs/create-stage already rejects suspended hosts with
+  // 402, but the UI should not lead them to a button that errors out.
+  const [isSuspended, setIsSuspended] = useState(false);
+  useEffect(() => {
+    if (!getToken) return;
+    let cancelled = false;
+    async function checkSuspension() {
+      try {
+        const token = await getToken!();
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/api/merchant/trial-status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) setIsSuspended(Boolean(json?.is_suspended));
+      } catch {
+        // Fail open — never lock a host out of Go Live because of a
+        // network blip checking trial status.
+      }
+    }
+    checkSuspension();
+    return () => { cancelled = true; };
+  }, [getToken]);
   const previewRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   // Heartbeat poll handle. While the stage is live, the host
@@ -286,7 +319,24 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         <video ref={previewRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
       </div>
 
-      {status === "idle" && (
+      {status === "idle" && isSuspended && (
+        <div className="text-center py-6">
+          <div className="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300">
+            !
+          </div>
+          <div className="text-sm font-bold text-zinc-200">Your shop is paused</div>
+          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+            Going live is off until you update your payment method. Open your dashboard to fix it.
+          </p>
+          <a
+            href="/dashboard"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover"
+          >
+            Open Dashboard →
+          </a>
+        </div>
+      )}
+      {status === "idle" && !isSuspended && (
         <div className="text-center py-4">
           <ol className="mx-auto mb-5 max-w-md space-y-1 text-left text-sm text-zinc-400">
             <li><span className="font-bold text-zinc-200">1.</span> Click Go Live.</li>

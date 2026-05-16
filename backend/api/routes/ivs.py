@@ -127,6 +127,17 @@ async def api_create_stage(
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
 
+    # Suspension gate (Phase 2 grace-period rollout). Suspended merchants
+    # keep dashboard access so they can update their card, but cannot
+    # start new broadcasts. Plain-English 402 detail mirrors the banner
+    # copy so the frontend can surface it verbatim.
+    from api.routes.merchant import is_merchant_suspended
+    if is_merchant_suspended(user_id):
+        raise HTTPException(
+            status_code=402,
+            detail="Your shop is paused. Update your payment method to go live.",
+        )
+
     # Canonical UUID — every DB write and live-limit key from here on
     # must use this, NOT body.project_id, which may be a slug. The
     # previous version mixed both: _verify_owner resolved correctly,

@@ -5302,6 +5302,11 @@ return (
               // pinned, so the merchant doesn't go live to viewers who
               // can't buy.
               pinnedOfferId={project?.pinned_offer_id ?? null}
+              // Phase 2 grace-period rollout: lets the host check
+              // /api/merchant/trial-status so it can replace the Go
+              // Live button with a "Shop paused" notice when the plan
+              // is suspended. The backend rejects with 402 either way.
+              getToken={getToken}
               onLive={() => {
                 setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
                 setLiveSalesCount(0);

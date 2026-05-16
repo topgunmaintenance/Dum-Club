@@ -231,18 +231,70 @@ def _send_countdown(target_days: int, reminder_type: str, send_fn) -> int:
     return sent
 
 
+def _sweep_expired_grace_periods() -> int:
+    """Move merchants from past_due to suspended when their 3-day grace
+    period has elapsed without an invoice.paid recovery. Returns the
+    number of rows flipped.
+
+    Idempotent: a second run on the same merchant is a no-op because
+    the WHERE clause requires subscription_status='past_due'.
+
+    Founding-merchant safety: grandfathered rows never have a
+    grace_period_ends_at set in the first place (the webhook handler
+    populates it only when invoice.payment_failed lands on a
+    stripe_subscription_id, and grandfathered rows have none).
+    """
+    now_iso = datetime.now(timezone.utc).isoformat()
+    sb = get_client()
+    try:
+        res = (
+            sb.table("merchants")
+            .select("id, owner_privy_id")
+            .eq("subscription_status", "past_due")
+            .lt("grace_period_ends_at", now_iso)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[trial-reminders] suspend sweep query failed: {exc!r}")
+        return 0
+    rows = res.data or []
+    if not rows:
+        return 0
+    ids = [r["id"] for r in rows]
+    try:
+        sb.table("merchants").update({
+            "subscription_status": "suspended",
+        }).in_("id", ids).execute()
+    except Exception as exc:
+        print(f"[trial-reminders] suspend sweep update failed: {exc!r}")
+        return 0
+    for r in rows:
+        print(
+            f"[trial-reminders] suspended merchant={r['id']} "
+            f"(grace period elapsed without payment recovery)"
+        )
+    return len(rows)
+
+
 def run() -> dict:
     """Entrypoint for `python -m backend.services.agents.trial_reminders`."""
     print(f"[trial-reminders] start at {datetime.now(timezone.utc).isoformat()}")
     t14 = _send_countdown(14, "t_minus_14", send_trial_t_minus_14)
     t7 = _send_countdown(7, "t_minus_7", send_trial_t_minus_7)
     t1 = _send_countdown(1, "t_minus_1", send_trial_t_minus_1)
+    suspended = _sweep_expired_grace_periods()
     total = t14 + t7 + t1
     print(
         f"[trial-reminders] done. sent total={total} "
-        f"(t-14={t14}, t-7={t7}, t-1={t1})"
+        f"(t-14={t14}, t-7={t7}, t-1={t1}) suspended={suspended}"
     )
-    return {"sent_total": total, "t_minus_14": t14, "t_minus_7": t7, "t_minus_1": t1}
+    return {
+        "sent_total": total,
+        "t_minus_14": t14,
+        "t_minus_7": t7,
+        "t_minus_1": t1,
+        "suspended_today": suspended,
+    }
 
 
 if __name__ == "__main__":

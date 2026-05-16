@@ -573,7 +573,8 @@ async def get_trial_status(current_user: dict = Depends(get_current_user)):
         sb.table("merchants")
         .select(
             "grandfathered, subscription_status, trial_ends_at, "
-            "next_billing_at, subscription_price_id, stripe_subscription_id"
+            "next_billing_at, subscription_price_id, stripe_subscription_id, "
+            "grace_period_starts_at, grace_period_ends_at"
         )
         .eq("owner_privy_id", privy_id)
         .limit(1)
@@ -589,17 +590,68 @@ async def get_trial_status(current_user: dict = Depends(get_current_user)):
     plan_price = label_price[1] if label_price else None
 
     trial_ends_at = row.get("trial_ends_at")
+    grace_ends_at = row.get("grace_period_ends_at")
+    status = row.get("subscription_status")
+    # "Suspended" is an internal-only label. We never surface it to users —
+    # the dashboard banner says "Your shop is paused. Update your payment
+    # method to keep selling." The status value here is for the frontend
+    # to gate Go Live + new orders; copy is decided in the React layer.
+    is_suspended = status == "suspended"
+    is_past_due = status == "past_due"
+
     return {
         "has_merchant": True,
         "grandfathered": bool(row.get("grandfathered")),
-        "subscription_status": row.get("subscription_status"),
+        "subscription_status": status,
         "trial_ends_at": trial_ends_at,
         "days_remaining": _days_until(trial_ends_at),
         "next_billing_at": row.get("next_billing_at"),
         "plan_label": plan_label,
         "plan_price_usd": plan_price,
         "has_subscription": bool(row.get("stripe_subscription_id")),
+        "grace_period_starts_at": row.get("grace_period_starts_at"),
+        "grace_period_ends_at": grace_ends_at,
+        "grace_days_remaining": _days_until(grace_ends_at) if grace_ends_at else None,
+        "is_past_due": is_past_due,
+        "is_suspended": is_suspended,
     }
+
+
+def is_merchant_suspended(privy_id: Optional[str]) -> bool:
+    """Helper used by Go Live + new-order endpoints to gate access when
+    the merchant's plan is suspended after a failed-payment grace period.
+
+    Returns True only when:
+      - a merchants row exists for this privy_id, AND
+      - subscription_status == 'suspended'
+
+    Grandfathered merchants are never suspended (they have no
+    Stripe Subscription and never enter the grace flow). Missing-merchant
+    callers return False so anonymous flows + non-merchant users are not
+    blocked. Never raises.
+    """
+    if not privy_id:
+        return False
+    try:
+        sb = get_client()
+        res = (
+            sb.table("merchants")
+            .select("subscription_status, grandfathered")
+            .eq("owner_privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            return False
+        row = res.data[0]
+        if row.get("grandfathered"):
+            return False
+        return row.get("subscription_status") == "suspended"
+    except Exception as exc:
+        # Fail open. A DB blip during suspension check should not lock
+        # merchants out of their own dashboard.
+        print(f"[is_merchant_suspended] check failed: {exc!r}")
+        return False
 
 
 @router.post("/cancel-trial")
