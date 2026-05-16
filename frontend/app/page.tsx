@@ -1764,7 +1764,7 @@ function PricingTiers() {
         Flat fee. <span className="text-brand-teal">0% commission. Ever.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
-        Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission on any sale, always.
+        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 0% commission. Keep every sale.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -2675,7 +2675,7 @@ export default function Home() {
                   </span>
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-navy">
                     {foundingStatus.total_cap - foundingStatus.founding_slots_remaining} of {foundingStatus.total_cap} founding spots claimed
-                    <span className="ml-2 text-brand-teal">· $0 today · Preferred founding pricing</span>
+                    <span className="ml-2 text-brand-teal">· 60 days free · Lock in founding pricing for life</span>
                   </span>
                 </div>
               )}

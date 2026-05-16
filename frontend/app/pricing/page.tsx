@@ -123,7 +123,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "What does 'founding merchant' actually get me?",
-    a: "$0 today during the founding period, then preferred founding pricing after launch. You also get a permanent founding-merchant badge on your storefront. The first 100 merchants to sign up qualify.",
+    a: "60 days free, then locked-in founding pricing for life. You also get a permanent founding-merchant badge on your storefront. The first 100 merchants to sign up qualify.",
   },
   {
     q: "Why is there no Free tier?",
@@ -162,11 +162,11 @@ export default function PricingPage() {
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
               Live selling, loyalty, tools that help bring customers back, and
               local flash sales. One monthly fee replaces five separate bills.
-              Founding merchants get preferred pricing after launch.
+              Get 60 days free and lock in founding pricing for life.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button href="/merchant" variant="primary" size="lg">
-                Become a founding merchant
+                Claim Your Founding Spot
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button href="#tiers" variant="secondary" size="lg">
