@@ -191,8 +191,12 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {TIERS.map((tier) => (
+          {/* Phase 4 visibility rule: show Starter / Growth / Pro by
+              default. Business is hidden behind the "Need a bigger
+              plan?" link below — most local businesses never need it
+              and the four-column grid was visually busy. */}
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
+            {TIERS.filter((t) => t.name !== "Business").map((tier) => (
               <Card
                 key={tier.name}
                 variant={tier.highlight ? "elevated" : "surface"}
@@ -246,34 +250,70 @@ export default function PricingPage() {
         </Container>
       </Section>
 
-      {/* ── Enterprise full-width row ─────────────────────────── */}
+      {/* ── Bigger plans (collapsed) ────────────────────────────
+           Phase 4 visibility rule: Business + Enterprise tiers are
+           hidden behind a single disclosure link. Local businesses
+           almost never need them and surfacing them by default made
+           the page look like enterprise SaaS. The full content is
+           preserved inside the <details> so anyone who clicks "Need
+           a bigger plan?" still sees both. */}
       <Section spacing="tight" bg="page">
         <Container size="xl">
-          <Card variant="surface" padding="lg" className="bg-brand-navy text-white border-brand-navy">
-            <div className="flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-                  Enterprise · $2,000+/month
+          <details className="group">
+            <summary className="cursor-pointer list-none text-center text-sm font-bold text-brand-teal transition hover:text-brand-teal-hover">
+              Need a bigger plan? →
+            </summary>
+            <div className="mt-6 space-y-6">
+              {/* Business tier card (lifted from TIERS list above). */}
+              {TIERS.filter((t) => t.name === "Business").map((tier) => (
+                <Card key={tier.name} variant="surface" padding="lg" className="max-w-3xl mx-auto">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+                    {tier.name} · {tier.price}{tier.cadence}
+                  </div>
+                  <div className="mb-2 text-2xl font-bold tracking-tight text-primary">
+                    {tier.tagline}
+                  </div>
+                  <ul className="mt-4 mb-6 space-y-2">
+                    {tier.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[13px] text-primary">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden="true" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button href={tier.ctaHref} variant="secondary" size="md">{tier.ctaLabel}</Button>
+                </Card>
+              ))}
+
+              {/* Enterprise full-width row (unchanged copy, just moved
+                  inside the disclosure). */}
+              <Card variant="surface" padding="lg" className="bg-brand-navy text-white border-brand-navy">
+                <div className="flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-2xl">
+                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+                      Enterprise · $2,000+/month
+                    </div>
+                    <div className="mb-2 text-2xl font-bold tracking-tight">
+                      Full white-label loyalty infrastructure.
+                    </div>
+                    <p className="text-[14px] leading-relaxed text-white/80">
+                      Multi-location support, custom POS / CRM / ERP integrations,
+                      dedicated account manager. For hotel chains, retail chains,
+                      franchise networks, and grocery groups that want their own
+                      loyalty network without building it.
+                    </p>
+                  </div>
+                  <a
+                    href="mailto:julian@dum.club?subject=DUM%20Club%20Enterprise"
+                    className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-semibold text-brand-navy transition-colors hover:bg-brand-teal-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-navy"
+                  >
+                    Contact sales
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
                 </div>
-                <div className="mb-2 text-2xl font-bold tracking-tight">
-                  Full white-label loyalty infrastructure.
-                </div>
-                <p className="text-[14px] leading-relaxed text-white/80">
-                  Multi-location support, custom POS / CRM / ERP integrations,
-                  dedicated account manager. For hotel chains, retail chains,
-                  franchise networks, and grocery groups that want their own
-                  loyalty network without building it.
-                </p>
-              </div>
-              <a
-                href="mailto:julian@dum.club?subject=DUM%20Club%20Enterprise"
-                className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-semibold text-brand-navy transition-colors hover:bg-brand-teal-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-navy"
-              >
-                Contact sales
-                <ArrowRight className="h-4 w-4" />
-              </a>
+              </Card>
             </div>
-          </Card>
+          </details>
         </Container>
       </Section>
 
@@ -357,9 +397,9 @@ export default function PricingPage() {
           </div>
 
           <div className="space-y-3">
-            {FAQS.map((f) => (
+            {FAQS.map((f, i) => (
               <Card key={f.q} variant="surface" padding="md">
-                <details className="group">
+                <details className="group" open={i < 2}>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-primary">
                     {f.q}
                     <span

@@ -85,11 +85,24 @@ export function LiveActivityTicker() {
 
     async function loadSales() {
       try {
-        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=10`, { cache: "no-store" });
+        const res = await fetch(`${API_BASE}/api/checkout/recent-sales?limit=20`, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        setSales(Array.isArray(data?.sales) ? data.sales : []);
+        // Phase 4 sales-ticker hygiene: filter out test orders (offer
+        // titles containing "test" / "testing" case-insensitive) and
+        // micro-amounts under $1. These show up during Stripe-mode
+        // verification + accidental $0.99 demos and they make the
+        // homepage look like a sandbox.
+        const raw = Array.isArray(data?.sales) ? data.sales : [];
+        const cleaned = raw.filter((s: any) => {
+          const title = String(s?.offer_title || "").toLowerCase();
+          if (/\btest(ing)?\b/.test(title)) return false;
+          const amount = Number(s?.amount ?? 0);
+          if (!Number.isFinite(amount) || amount < 1) return false;
+          return true;
+        });
+        setSales(cleaned.slice(0, 10));
       } catch {
         // Silent — empty state correctly hides the ticker.
       }
