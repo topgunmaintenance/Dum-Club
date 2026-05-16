@@ -358,24 +358,24 @@ export default function MerchantPage() {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
               </span>
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-                {claimed} of {totalCap} founding spots claimed
+                {claimed} of {totalCap} founding spots claimed · 60 days free · Lock in founding pricing for life
               </span>
             </div>
           )}
 
           <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
-            Keep 100% of every sale.{" "}
-            <span className="text-brand-teal">Forever.</span>
+            Join the first 100 merchants.{" "}
+            <span className="text-brand-teal">Lock in founding pricing for life.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
-            Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card.
+            Get 60 days free, then keep founding pricing for life. Flat monthly fee. 0% commission. Keep every sale. No credit card.
           </p>
 
           <button
             onClick={() => login()}
             className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:"
           >
-            Sign In to Continue →
+            Claim Your Founding Spot →
           </button>
 
           <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-secondary">
@@ -412,7 +412,7 @@ export default function MerchantPage() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
                 </span>
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-                  {claimed} of {totalCap} founding spots claimed
+                  {claimed} of {totalCap} founding spots claimed · 60 days free · Lock in founding pricing for life
                 </span>
               </div>
             </div>
@@ -420,15 +420,15 @@ export default function MerchantPage() {
 
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-primary sm:text-5xl">
-              Keep{" "}
+              Join the first{" "}
               <span className="text-brand-teal" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
-                100% of every sale.
+                100 merchants.
               </span>{" "}
-              Forever.
+              Lock in founding pricing for life.
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
-                ? "Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, always. No credit card."
+                ? "Get 60 days free, then keep founding pricing for life. Flat monthly fee. 0% commission. Keep every sale. No credit card."
                 : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
             </p>
           </div>
@@ -475,7 +475,7 @@ export default function MerchantPage() {
                 {saving
                   ? "Claiming your spot..."
                   : programOpen
-                  ? "Claim My Founding Spot. $0 Today →"
+                  ? "Claim Your Founding Spot →"
                   : "Create Merchant Account →"}
               </button>
               <p className="text-center text-[11px] text-secondary">
@@ -546,7 +546,7 @@ export default function MerchantPage() {
               {[
                 "Keep 100% of every sale. 0% commission, always",
                 "Customers earn DUM Points on every purchase. They can redeem these loyalty rewards at any DUM Club business, so customers come back without you paying for ads",
-                "Founding merchants pay $0 today and receive preferred founding pricing after launch",
+                "Get 60 days free and lock in founding pricing for life when you join the first 100 merchants",
               ].map((line) => (
                 <li
                   key={line}
@@ -771,7 +771,7 @@ export default function MerchantPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
                 <div className="text-sm font-bold text-brand-teal">Founding Merchant</div>
-                <div className="text-xs text-brand-teal/60">$0 today · Preferred founding pricing · 0% commission</div>
+                <div className="text-xs text-brand-teal/60">60 days free · Lock in founding pricing for life · 0% commission</div>
               </div>
             </div>
           </div>

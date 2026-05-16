@@ -79,7 +79,7 @@ function BusinessPageInner() {
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
               {claimed != null ? `${claimed} of ${totalCap} founding spots claimed` : "Founding 100 · spots limited"}
-              <span className="ml-2 text-brand-teal">· $0 today · Preferred founding pricing</span>
+              <span className="ml-2 text-brand-teal">· 60 days free · Lock in founding pricing for life</span>
             </span>
           </div>
 
@@ -91,7 +91,7 @@ function BusinessPageInner() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
-            Flat monthly fee. 0% commission, always. Founding merchants pay $0 today and receive preferred founding pricing after launch.
+            Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. Flat monthly fee. 0% commission. Keep every sale.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -99,7 +99,7 @@ function BusinessPageInner() {
               href="/merchant"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
             >
-              Claim Your Free Spot →
+              Claim Your Founding Spot →
             </Link>
             <Link
               href="/discover"
@@ -297,10 +297,10 @@ function OverviewTab({
         <div className="rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-10 text-center">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">Limited · Founding 100</div>
           <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-primary sm:text-4xl">
-            The first 100 merchants get in free.
+            Join the first 100 merchants.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-secondary">
-            $0 during the founding period. Preferred founding pricing after launch. Founding merchant badge permanent on your profile.
+            Get 60 days free and lock in founding pricing for life. Founding merchant badge permanent on your profile.
           </p>
           <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-default bg-surface-card px-6 py-4 backdrop-blur-sm">
             <span className="font-mono text-4xl font-extrabold text-brand-teal">
@@ -661,7 +661,7 @@ function CompareTab() {
 
         <div className="mt-10 text-center">
           <Link href="/merchant" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
-            Claim Your Free Spot →
+            Claim Your Founding Spot →
           </Link>
         </div>
       </section>

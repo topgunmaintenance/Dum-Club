@@ -195,10 +195,10 @@ export function FeeCalculator() {
             href="/merchant"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black shadow-[0_0_32px_rgba(0,255,163,0.2)] transition hover:bg-emerald-300 hover:shadow-[0_0_48px_rgba(0,255,163,0.35)]"
           >
-            Start selling. founding merchants join free →
+            Claim Your Founding Spot →
           </Link>
           <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-            Founding merchants · $0 during founding · Preferred founding pricing after launch
+            Founding merchants · 60 days free · Lock in founding pricing for life
           </p>
         </div>
       </div>

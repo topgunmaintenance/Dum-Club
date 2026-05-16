@@ -328,32 +328,49 @@ Browse live sellers + best local deals this week
 
 ### Canonical wording for founding-pricing copy
 This wording is mandatory across all merchant-facing
-surfaces. Doctrine drift toward "locked in forever" /
-"lock in $29 forever" / "after the cap closes" is
-deprecated; sweep on sight.
+surfaces. Founder doctrine update May 2026: founding offer
+language now explicitly commits to lifelong founding-tier
+pricing for the first 100 merchants. The prior "preferred
+founding pricing after launch" wording was vague about what
+the merchant actually pays after the trial; the new line ties
+the founding tier to the merchant for the life of the
+account.
 
 **Long form** (signup body, pricing pages, onboarding subhead):
-> "Founding merchants pay $0 today and receive preferred
-> founding pricing after launch. 0% commission, always."
+> "Join the first 100 merchants. Get 60 days free and lock
+> in founding pricing for life."
 
-**Short form** (founding pill, badges, captions):
-> "$0 today · Preferred founding pricing · 0% commission"
+**Supporting line** (always pairs with the long form):
+> "Flat monthly fee. 0% commission. Keep every sale."
 
-**Single-line variant** (meta descriptions, OG):
-> "Founding merchants get preferred pricing after launch.
-> 0% commission, always."
+**Short form / scarcity pill / banner**:
+> "X of 100 founding spots claimed · 60 days free · Lock in
+> founding pricing for life"
 
-Forbidden phrasing:
-- "locked in forever" / "lock in forever"
-- "$29/mo locked in forever" / "$29/month forever"
-- "locked at $29/month forever after"
-- "after the cap closes" / "after the founding period"
-  (replace with "after launch" — clearer, less rigid)
-- Hard "First 100 merchants free" energy in marketing
-  copy (the founding-spots scarcity pill is real-data
-  driven and stays; the loose "free" hook does not).
-  The platform is maturing — copy should feel more
-  credible and business-oriented.
+**CTA button labels (pick the one that fits the surface)**:
+- "Claim Your Founding Spot"
+- "Start Free for 60 Days"
+- "Lock In Founding Pricing"
+
+Forbidden phrasing (sweep on sight):
+- "free forever" / "$0 forever" — implies the platform is
+  free; contradicts the trial → paid flow
+- "$29/mo locked in forever" / "$29/month forever" — never
+  quote a specific dollar amount as locked; the founding tier
+  number can change in the future even though the locked-in
+  promise to founding merchants stands
+- "preferred founding pricing" / "preferred founding pricing
+  after launch" — replaced; vague about what the merchant pays
+- "$0 today" / "$0 during the founding period" / "during the
+  founding period" — replaced by "60 days free"
+- Hard "First 100 merchants get in free" / "first 100 free"
+  energy outside of the canonical phrasing above
+- DUM Points framed as investments / tradable assets / yield-
+  bearing instruments
+
+The founding-spots scarcity pill stays real-data driven (count
+fetched from /api/merchant/founding-status). Never hard-code
+"X spots remaining."
 
 ### Standard Tiers (seller 101+)
 
