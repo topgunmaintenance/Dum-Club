@@ -102,9 +102,12 @@ check is fixed.
 
 ### Pre-flight (~25 min total)
 
-- [ ] **Stripe Dashboard — create 4 Products + Prices**
+- [ ] **Stripe Dashboard — create 3 Products + Prices** (Business optional)
       Per `docs/stripe-setup.md` §1. Recurring monthly USD: Starter $29,
-      Growth $49, Pro $99, Business $499. Copy each Price id (`price_…`).
+      Growth $49, Pro $99. Copy each Price id (`price_…`). The $499
+      Business plan is intentionally NOT auto-provisioned and is not
+      read by any code path today — defer creating it until a real
+      custom-quote merchant signs up via the `mailto:` CTA on `/pricing`.
 
 - [ ] **Stripe Dashboard — webhook endpoint**
       Per `docs/stripe-setup.md` §2. Endpoint URL points at Railway
@@ -112,9 +115,10 @@ check is fixed.
       events listed there. Copy the `whsec_…` signing secret.
 
 - [ ] **Railway backend service — env vars**
-      Set `STRIPE_PRICE_ID_STARTER`, `_GROWTH`, `_PRO`, `_BUSINESS`,
-      `STRIPE_WEBHOOK_SECRET`, confirm `RESEND_API_KEY` and
-      `STRIPE_SECRET_KEY` are present. Redeploy.
+      Set `STRIPE_PRICE_ID_STARTER`, `_GROWTH`, `_PRO`, plus
+      `STRIPE_WEBHOOK_SECRET`. Confirm `RESEND_API_KEY` and
+      `STRIPE_SECRET_KEY` are present. Leave `STRIPE_PRICE_ID_BUSINESS`
+      unset for launch. Redeploy.
 
 - [ ] **Apply migrations 043, 044, 045** in Supabase SQL editor (in order).
 

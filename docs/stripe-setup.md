@@ -8,21 +8,43 @@ Estimated time: 20 minutes.
 
 ## 1. Create Stripe Products + Prices
 
-In the Stripe Dashboard ([dashboard.stripe.com](https://dashboard.stripe.com/products)), create four recurring Products. For each Product create one Price (monthly recurring USD).
+In the Stripe Dashboard ([dashboard.stripe.com](https://dashboard.stripe.com/products)), create the three self-serve recurring Products. For each Product create one Price (monthly recurring USD).
 
-| Product name | Price | Billing | Stripe Price id → record into |
-|---|---|---|---|
-| **DUM Club Starter** | $29.00 | Recurring · monthly | `STRIPE_PRICE_ID_STARTER` |
-| **DUM Club Growth** | $49.00 | Recurring · monthly | `STRIPE_PRICE_ID_GROWTH` |
-| **DUM Club Pro** | $99.00 | Recurring · monthly | `STRIPE_PRICE_ID_PRO` |
-| **DUM Club Business** | $499.00 | Recurring · monthly | `STRIPE_PRICE_ID_BUSINESS` |
+| Product name | Price | Billing | Stripe Price id → record into | Required? |
+|---|---|---|---|---|
+| **DUM Club Starter** | $29.00 | Recurring · monthly | `STRIPE_PRICE_ID_STARTER` | yes |
+| **DUM Club Growth** | $49.00 | Recurring · monthly | `STRIPE_PRICE_ID_GROWTH` | **yes — default tier on signup** |
+| **DUM Club Pro** | $99.00 | Recurring · monthly | `STRIPE_PRICE_ID_PRO` | yes |
+| **DUM Club Business** | $499.00 | Recurring · monthly | `STRIPE_PRICE_ID_BUSINESS` | **no — optional / defer** |
 
-Notes:
+### About the Business tier
+
+The Business plan is **internal / custom-quote**. It is intentionally NOT
+wired into the auto-trial signup flow:
+
+- `backend/services/subscriptions.py:_resolve_price_id` only knows
+  `starter`, `growth`, and `pro`. Business is never auto-provisioned.
+- The Stripe Subscription created on signup always uses `STRIPE_PRICE_ID_GROWTH`
+  (the default tier).
+- Both `/pricing` and `/business` hide Business + Enterprise behind a
+  "Need a bigger plan? →" disclosure. The CTA is a `mailto:` link to
+  Julian, not a self-serve checkout.
+- Public marketing copy (homepage, /business, /pricing summary,
+  investors page, layout `<meta>`) all use "$29 to $99/month" — the
+  range that excludes Business.
+
+**Recommendation:** skip creating the Business Product + Price now.
+Create it only when a real merchant emails about white-label loyalty
+and you negotiate the actual contract terms (the $499 figure may
+shift up or down per deal). Setting `STRIPE_PRICE_ID_BUSINESS` in
+Railway env is a no-op until that day.
+
+### Notes
 - All prices in USD.
 - Tax behavior: leave default ("Exclusive") unless you're already collecting tax.
 - Lookup keys are optional; the env vars below carry the canonical reference.
 
-After creating, copy each Price id (format `price_1ABC...`) and keep them ready for step 3.
+After creating the three required Products, copy each Price id (format `price_1ABC...`) and keep them ready for step 3.
 
 ## 2. Configure the Stripe webhook endpoint
 
@@ -54,9 +76,9 @@ Railway → DUM Club backend service → **Variables**. Add or update:
 | Variable | Value | Where it's read |
 |---|---|---|
 | `STRIPE_PRICE_ID_STARTER` | `price_…` from step 1 | `backend/services/subscriptions.py`, `backend/api/routes/merchant.py` |
-| `STRIPE_PRICE_ID_GROWTH` | `price_…` from step 1 | same |
+| `STRIPE_PRICE_ID_GROWTH` | `price_…` from step 1 | same — default tier; required |
 | `STRIPE_PRICE_ID_PRO` | `price_…` from step 1 | same |
-| `STRIPE_PRICE_ID_BUSINESS` | `price_…` from step 1 | reserved for future tier upgrade; currently unused |
+| `STRIPE_PRICE_ID_BUSINESS` | leave unset for launch | reserved; not read by code today. Set only when you've created the Business Product per step 1's optional path |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` from step 2 | `backend/api/routes/checkout.py:stripe_webhook` |
 | `STRIPE_SECRET_KEY` | `sk_live_…` (already set) | confirm still present |
 | `TRIAL_DAYS` | `60` *(optional override; default 60)* | `backend/services/subscriptions.py` |
