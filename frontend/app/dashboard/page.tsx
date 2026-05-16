@@ -646,17 +646,25 @@ export default function DashboardPage() {
           // non-empty value as a done step — the column existed,
           // therefore the merchant has the option to change it.
           const hasDisplayMode = Boolean(primary.embed_display_mode);
-          return (
+          // Phase 4 progressive-disclosure: when the SIMPLIFIED_DASHBOARD
+          // flag is on, the "Display mode" + "Welcome message" cards
+          // collapse into a single Settings disclosure so the dashboard
+          // shows ONE primary action (the next pending step in
+          // GetLiveSteps) instead of three competing panels.
+          //
+          // Flag is read from NEXT_PUBLIC_SIMPLIFIED_DASHBOARD at build
+          // time. Default is off in production until the founder flips
+          // it; that gives us a single env-var rollback path if the
+          // collapsed view confuses an early merchant.
+          const simplifiedDashboard =
+            process.env.NEXT_PUBLIC_SIMPLIFIED_DASHBOARD === "true";
+          const onboardingComplete =
+            Boolean((primary.title || primary.name || "").trim()) &&
+            stripeVerified &&
+            hasOffer &&
+            isLive;
+          const settingsCards = (
             <>
-              <TrialCountdownBanner getToken={getToken} />
-              <StripeResumeBanner getToken={getToken} />
-              <GetLiveSteps
-                hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
-                stripeVerified={stripeVerified}
-                hasOffer={hasOffer}
-                isLive={isLive}
-                projectSlug={(primary.slug || primary.id || "").toString()}
-              />
               <EmbedDisplayModeCard
                 project={{
                   id: String(primary.id),
@@ -676,6 +684,41 @@ export default function DashboardPage() {
                 getToken={getToken}
                 onSaved={() => loadProjects()}
               />
+            </>
+          );
+          return (
+            <>
+              <TrialCountdownBanner getToken={getToken} />
+              <StripeResumeBanner getToken={getToken} />
+              <GetLiveSteps
+                hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
+                stripeVerified={stripeVerified}
+                hasOffer={hasOffer}
+                isLive={isLive}
+                projectSlug={(primary.slug || primary.id || "").toString()}
+              />
+              {simplifiedDashboard ? (
+                onboardingComplete ? (
+                  // 5/5 complete — settings live behind a disclosure so
+                  // the merchant sees the action grid first.
+                  <details className="mb-6 rounded-3xl border border-default bg-surface-card p-4">
+                    <summary className="cursor-pointer list-none px-2 py-2 text-sm font-bold text-primary transition hover:text-brand-teal">
+                      Settings
+                    </summary>
+                    <div className="mt-4 space-y-4">{settingsCards}</div>
+                  </details>
+                ) : (
+                  // Onboarding still in progress — hide the settings
+                  // cards entirely so the merchant focuses on the next
+                  // step shown in GetLiveSteps above.
+                  null
+                )
+              ) : (
+                // Default behaviour (flag off): render both settings
+                // cards inline as before. Existing merchants see no
+                // change until the flag is flipped.
+                settingsCards
+              )}
             </>
           );
         })()}
