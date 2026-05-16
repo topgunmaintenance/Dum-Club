@@ -261,12 +261,12 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="mb-10">
           <div className="text-[10px] uppercase tracking-[0.35em] text-muted">
-            Command Center
+            Dashboard
           </div>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-            Dashboard
+            Your DUM Club shop
           </h1>
-          <p className="mt-2 text-sm text-secondary">Your DUM Club activity</p>
+          <p className="mt-2 text-sm text-secondary">Everything you sold, paid, and have left to set up.</p>
         </div>
 
         {/* Stats + Wallet + CTA row */}
