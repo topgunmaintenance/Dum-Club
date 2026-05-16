@@ -2694,7 +2694,7 @@ export default function Home() {
                 DUM Club helps businesses sell live on their own website and keep every sale. Flat monthly fee. No commission. Ever.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">Flat $29 to $99/month.</span> 0% commission. Your website. Your customers. Your money.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $29/month.</span> No commission. Keep every sale.
               </p>
 
               {/* Primary CTA: brand-teal fill with brand-navy text for
@@ -2706,14 +2706,14 @@ export default function Home() {
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
                 >
-                  Start Free →
+                  Start Free for 60 Days →
                 </Link>
-                <a
-                  href="#how-it-works"
+                <Link
+                  href="/pricing"
                   className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
                 >
-                  See how it works →
-                </a>
+                  See Pricing →
+                </Link>
               </div>
             </div>
 
@@ -2726,6 +2726,59 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* ── HOMEPAGE PRICING SUMMARY ──
+             Phase 5 of the pre-launch plan: small-business owners want
+             to see cost upfront. Three columns sit directly under the
+             hero; the full /pricing page stays intact behind "See full
+             pricing →". Mobile stacks vertically (grid-cols-1 →
+             sm:grid-cols-3). */}
+        <section
+          aria-labelledby="homepage-pricing-heading"
+          className="mx-auto mt-12 max-w-5xl px-4"
+        >
+          <h2
+            id="homepage-pricing-heading"
+            className="sr-only"
+          >
+            Pricing
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { name: "Starter", price: 29 },
+              { name: "Growth", price: 49, highlighted: true },
+              { name: "Pro", price: 99 },
+            ].map((tier) => (
+              <div
+                key={tier.name}
+                className={`rounded-2xl border p-6 text-center transition ${
+                  tier.highlighted
+                    ? "border-brand-teal bg-brand-teal-soft"
+                    : "border-default bg-surface-card"
+                }`}
+              >
+                <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-teal">
+                  {tier.name}
+                </div>
+                <div className="mt-3 text-3xl font-extrabold text-brand-navy">
+                  ${tier.price}
+                  <span className="text-base font-medium text-secondary">/month</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-center text-sm text-secondary">
+            Every new business gets 60 days free. Cancel anytime.
+          </p>
+          <div className="mt-4 text-center">
+            <Link
+              href="/pricing"
+              className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
+            >
+              See full pricing →
+            </Link>
+          </div>
+        </section>
 
         {/* ── SEARCH RESULTS removed. the homepage no longer has a
              customer search surface, so there's nothing to render
