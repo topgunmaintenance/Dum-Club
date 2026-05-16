@@ -150,8 +150,8 @@ export default function AboutPage() {
             Flat $29 to $99 a month. 0% commission. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
-            Founding merchants pay $0 today and receive preferred founding
-            pricing after launch. No credit card required to start.
+            Join the first 100 merchants. Get 60 days free and lock in
+            founding pricing for life. No credit card required to start.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -164,7 +164,7 @@ export default function AboutPage() {
               href="/merchant"
               className="inline-flex h-11 items-center justify-center rounded-xl border border-default bg-surface-card px-5 text-sm font-semibold text-brand-navy transition hover:border-strong"
             >
-              Become a founding merchant
+              Claim Your Founding Spot
             </Link>
           </div>
         </section>

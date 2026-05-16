@@ -20,7 +20,7 @@ export function MerchantStrip() {
         href="/merchant"
         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold uppercase tracking-[0.08em] text-black transition hover:bg-brand-teal-hover"
       >
-        Become a founding merchant
+        Claim Your Founding Spot
       </Link>
     </section>
   );

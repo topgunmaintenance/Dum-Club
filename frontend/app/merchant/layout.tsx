@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Become a Merchant. Join the Founding 100 | DUM Club",
   description:
-    "Founding merchants pay $0 today and receive preferred founding pricing after launch. 0% commission, Stripe direct payouts, AI-powered customer retention. Claim your spot now.",
+    "Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. Flat monthly fee. 0% commission. Keep every sale.",
 };
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
