@@ -42,6 +42,13 @@ type TrialStatus = {
   plan_label: string | null;
   plan_price_usd: number | null;
   has_subscription: boolean;
+  // Phase 2: grace period + suspension fields. Optional so older
+  // backend versions returning the pre-grace shape still hydrate.
+  grace_period_starts_at?: string | null;
+  grace_period_ends_at?: string | null;
+  grace_days_remaining?: number | null;
+  is_past_due?: boolean;
+  is_suspended?: boolean;
 };
 
 function formatDate(iso: string | null): string {
@@ -136,16 +143,23 @@ export function TrialCountdownBanner({ getToken }: Props) {
   if (!status.has_subscription) return null;
 
   const isCancelled = status.subscription_status === "cancelled";
-  const isPastDue = status.subscription_status === "past_due";
+  const isSuspended = status.is_suspended === true || status.subscription_status === "suspended";
+  const isPastDue = !isSuspended && (status.is_past_due === true || status.subscription_status === "past_due");
   const isPaused = status.subscription_status === "paused";
   const isTrialing = status.subscription_status === "trialing";
   const daysLeft = status.days_remaining;
+  const graceEndDate = formatDate(status.grace_period_ends_at ?? null);
 
   if (isCancelled) return null;
 
-  const danger = isPastDue || isPaused;
-  const headline = isPastDue
-    ? "Your payment did not go through"
+  const danger = isSuspended || isPastDue || isPaused;
+  // Plain-English copy — never surface the raw status words "past_due" or
+  // "suspended" to the merchant. The banner colour + tone signal urgency;
+  // the copy gives them the next action.
+  const headline = isSuspended
+    ? "Your shop is paused"
+    : isPastDue
+    ? "Your payment didn't go through"
     : isPaused
     ? "Your plan is paused"
     : isTrialing && daysLeft !== null && daysLeft > 0
@@ -156,13 +170,22 @@ export function TrialCountdownBanner({ getToken }: Props) {
   const planLabel = status.plan_label ? ` ${status.plan_label}` : "";
   const startDate = formatDate(status.next_billing_at);
 
-  const body = isPastDue
-    ? "We could not charge your card. Add or update a payment method in Stripe to keep your plan active."
+  const body = isSuspended
+    ? "Going live and new orders are off until you update your payment method. Everything else still works so you can come back any time."
+    : isPastDue && graceEndDate
+    ? `Your payment didn't go through. Update your card by ${graceEndDate} to keep your shop active. No charges until the card is fixed.`
+    : isPastDue
+    ? "Your payment didn't go through. Update your payment method to keep your shop active."
     : isPaused
-    ? "Add a payment method in Stripe to resume your plan and keep selling."
+    ? "Add a payment method to resume your plan and keep selling."
     : isTrialing && daysLeft !== null && daysLeft > 0 && startDate
     ? `Your${planLabel} plan at ${planPrice} starts on ${startDate}. No charge until then. You can cancel any time.`
     : `Your${planLabel} plan at ${planPrice} starts now.`;
+
+  // Action CTA for the payment-failed and suspended states. Routes to the
+  // existing Stripe Connect resume path, which is where merchants manage
+  // their payment method via Stripe's hosted form.
+  const showUpdatePaymentCTA = isSuspended || isPastDue || isPaused;
 
   return (
     <section
@@ -190,7 +213,7 @@ export function TrialCountdownBanner({ getToken }: Props) {
         </span>
         <div className="flex-1">
           <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-            Free trial
+            {showUpdatePaymentCTA ? "Payment" : "Free trial"}
           </div>
           <h2
             id="trial-countdown-heading"
@@ -201,6 +224,14 @@ export function TrialCountdownBanner({ getToken }: Props) {
           <p className="mt-2 text-sm leading-relaxed text-secondary">{body}</p>
           {error && (
             <p className="mt-3 text-xs font-medium text-red-400">{error}</p>
+          )}
+          {showUpdatePaymentCTA && (
+            <a
+              href="/merchant"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover"
+            >
+              Update Payment Method →
+            </a>
           )}
           {isTrialing && !confirmingCancel && (
             <button

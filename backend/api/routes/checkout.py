@@ -649,6 +649,24 @@ async def create_payment_intent(
     # Guard: if the seller hasn't finished OAuth OR Stripe says their
     # account isn't charges_enabled yet, we refuse up front. Better a
     # visible 400 than a stranded payment.
+    # Suspension gate (Phase 2 grace-period rollout). Suspended merchants
+    # cannot take new orders even if their Stripe Connect account is
+    # otherwise verified — the platform plan they pay us for is paused.
+    # Dashboard stays accessible so they can fix their card.
+    from api.routes.merchant import is_merchant_suspended
+    if is_merchant_suspended(seller_user_id):
+        print(f"[checkout] Refusing session: seller {seller_user_id} is suspended (payment grace expired)")
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "merchant_suspended",
+                "message": (
+                    "This shop is paused while the owner updates their "
+                    "payment method. New orders are off right now."
+                ),
+            },
+        )
+
     merchant_stripe_id = _get_seller_stripe_connect_id(supabase, seller_user_id)
     if not merchant_stripe_id:
         print(
@@ -1118,11 +1136,28 @@ async def stripe_webhook(request: Request):
         invoice = event["data"]["object"]
         sub_id = invoice.get("subscription")
         if sub_id:
+            from datetime import datetime as _dt2, timedelta as _td2, timezone as _tz2
             new_status = "past_due" if event["type"] == "invoice.payment_failed" else "active"
+            update: dict = {"subscription_status": new_status}
+            if event["type"] == "invoice.payment_failed":
+                # Open the 3-day grace window. Idempotent re-fire of the
+                # same event resets the window to NOW + 3d — Stripe's
+                # default dunning cadence is 1/3/5/7 days so the second
+                # failure landing in the original grace window slides the
+                # deadline forward, giving the merchant a fresh 3 days
+                # from the latest attempt.
+                grace_start = _dt2.now(_tz2.utc)
+                grace_end = grace_start + _td2(days=3)
+                update["grace_period_starts_at"] = grace_start.isoformat()
+                update["grace_period_ends_at"] = grace_end.isoformat()
+            else:
+                # invoice.paid — payment recovered. Clear the grace window.
+                update["grace_period_starts_at"] = None
+                update["grace_period_ends_at"] = None
             try:
-                supabase.table("merchants").update({
-                    "subscription_status": new_status,
-                }).eq("stripe_subscription_id", sub_id).execute()
+                supabase.table("merchants").update(update).eq(
+                    "stripe_subscription_id", sub_id
+                ).execute()
                 print(f"[webhook] ✓ {event['type']} sub={sub_id} → status={new_status}")
             except Exception as exc:
                 print(f"[webhook] ✗ invoice event update failed sub={sub_id}: {exc!r}")
@@ -1172,7 +1207,16 @@ async def stripe_webhook(request: Request):
                                 email, m_row.get("business_name") or "", plan_price,
                             )
                         else:  # invoice.payment_failed
-                            grace_end = (_dt.now(_tz.utc) + _td(days=3)).strftime("%B %-d, %Y")
+                            # Use the exact grace_period_ends_at we just
+                            # wrote above so the email + dashboard banner
+                            # show identical dates.
+                            grace_end_iso = update.get("grace_period_ends_at")
+                            try:
+                                grace_end = _dt.fromisoformat(
+                                    (grace_end_iso or "").replace("Z", "+00:00")
+                                ).strftime("%B %-d, %Y")
+                            except Exception:
+                                grace_end = (_dt.now(_tz.utc) + _td(days=3)).strftime("%B %-d, %Y")
                             send_reminder_once(
                                 m_row["id"], "payment_failed",
                                 send_payment_failed_notice,

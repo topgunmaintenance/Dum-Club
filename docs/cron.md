@@ -5,9 +5,15 @@ the daily trial-reminder sweep.
 
 ## Trial reminder cron (daily 09:00 America/New_York)
 
-Sends the T-14, T-7, and T-1 trial countdown emails to non-grandfathered
-merchants whose Stripe subscription is `trialing` or `active` and whose
-`trial_ends_at` falls in the relevant window.
+Two responsibilities, run in sequence by the same entrypoint:
+
+1. **Trial reminder emails.** Sends T-14 / T-7 / T-1 countdown emails to
+   non-grandfathered merchants whose Stripe subscription is `trialing` or
+   `active` and whose `trial_ends_at` falls in the relevant window.
+2. **Suspension sweep.** Moves merchants from `subscription_status='past_due'`
+   to `'suspended'` once their 3-day payment-failure grace period has
+   elapsed without an `invoice.paid` recovery. Suspended merchants keep
+   dashboard access but cannot Go Live or take new orders.
 
 Conversion-confirmed and payment-failed emails are not sent by this cron —
 they fire from the Stripe webhook handler in `backend/api/routes/checkout.py`
