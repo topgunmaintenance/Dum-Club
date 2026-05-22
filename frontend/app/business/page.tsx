@@ -252,7 +252,7 @@ function OverviewTab({
             {[
               { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8 to 30% of every order. We charge $29 to $99 a month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We do not hold it. No platform wallet." },
-              { n: "03", title: "Customers come back automatically", desc: "DUM Points and our tools that help bring customers back turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
+              { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
               <div
                 key={step.n}
@@ -478,7 +478,7 @@ function CalculatorTab() {
             Stop losing customers. <span className="text-brand-teal">Automate repeat business.</span>
           </h2>
           <p className="mb-8 max-w-xl text-sm text-secondary">
-            DUM Points bring customers back automatically. Our tools that help bring customers back send reminders, deal pushes, and expiry alerts.
+            DUM Points bring customers back automatically. Our automatic customer win-back texts send reminders, deal pushes, and expiry alerts.
           </p>
 
           <div className="grid gap-8 sm:grid-cols-2">

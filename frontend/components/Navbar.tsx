@@ -36,9 +36,9 @@ import { Card } from "./ui/Card";
 // Primary nav — three top-level destinations. Build / Dashboard /
 // AI Chat live in the authenticated user dropdown, not here.
 const PRIMARY_LINKS = [
-  { href: "/discover", label: "Explore" },
+  { href: "/discover", label: "Discover" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/business", label: "For Business" },
-  { href: "/merchant", label: "Merchant" },
   { href: "/about", label: "About" },
 ];
 
