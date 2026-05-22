@@ -2697,6 +2697,20 @@ export default function Home() {
                 <span className="font-bold text-brand-navy">60 days free. Plans start at $29/month.</span> No commission. Keep every sale.
               </p>
 
+              {/* Founder trust row — direct line to Julian under the
+                  subhead. Non-technical owners trust a real phone +
+                  email more than any badge. */}
+              <p className="mx-auto mt-4 text-[13px] text-secondary">
+                Talk to the founder:{" "}
+                <a href="tel:+12014521986" className="font-medium text-brand-navy transition hover:text-brand-teal">
+                  📞 (201) 452-1986
+                </a>{" "}
+                ·{" "}
+                <a href="mailto:julian@topgunmaintenance.com" className="font-medium text-brand-navy transition hover:text-brand-teal">
+                  ✉️ julian@topgunmaintenance.com
+                </a>
+              </p>
+
               {/* Primary CTA: brand-teal fill with brand-navy text for
                   WCAG AA contrast (~6.2:1). Hover transitions to
                   brand-teal-hover. The old emerald glow shadow is
@@ -2706,13 +2720,13 @@ export default function Home() {
                   href="/merchant"
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
                 >
-                  Start Free for 60 Days →
+                  Start free for 60 days →
                 </Link>
                 <Link
                   href="/pricing"
                   className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
                 >
-                  See Pricing →
+                  See pricing →
                 </Link>
               </div>
             </div>
@@ -2727,76 +2741,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── HOMEPAGE PRICING SUMMARY ──
-             Phase 5 of the pre-launch plan: small-business owners want
-             to see cost upfront. Three columns sit directly under the
-             hero; the full /pricing page stays intact behind "See full
-             pricing →". Mobile stacks vertically (grid-cols-1 →
-             sm:grid-cols-3). */}
-        <section
-          aria-labelledby="homepage-pricing-heading"
-          className="mx-auto mt-12 max-w-5xl px-4"
-        >
-          <h2
-            id="homepage-pricing-heading"
-            className="sr-only"
-          >
-            Pricing
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { name: "Starter", price: 29 },
-              { name: "Growth", price: 49, highlighted: true },
-              { name: "Pro", price: 99 },
-            ].map((tier) => (
-              <div
-                key={tier.name}
-                className={`rounded-2xl border p-6 text-center transition ${
-                  tier.highlighted
-                    ? "border-brand-teal bg-brand-teal-soft"
-                    : "border-default bg-surface-card"
-                }`}
-              >
-                <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-teal">
-                  {tier.name}
-                </div>
-                <div className="mt-3 text-3xl font-extrabold text-brand-navy">
-                  ${tier.price}
-                  <span className="text-base font-medium text-secondary">/month</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="mt-5 text-center text-sm text-secondary">
-            Every new business gets 60 days free. Cancel anytime.
-          </p>
-          <div className="mt-4 text-center">
-            <Link
-              href="/pricing"
-              className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
-            >
-              See full pricing →
-            </Link>
-          </div>
-        </section>
-
-        {/* ── SEARCH RESULTS removed. the homepage no longer has a
-             customer search surface, so there's nothing to render
-             results into. Buyer-side search lives at /discover. ── */}
-
-        {/* ── DEALS + RECENT SALES removed. too noisy on homepage
-             per product review. Deals are visible on /discover and
-             individual storefronts. Sales proof can return when GMV
-             volume is high enough to be impressive, not distracting. ── */}
-
-        {/* ── Founder note. Phase 5 promotion ──
-             Moved from its old position inside the
-             ProofOfMotion fallback (just before the final CTA) up
-             to directly below the hero. The "real local-business
-             owner built this" signal is the strongest trust anchor
-             we have at MVP scale; burying it 80% down the page
-             wasted it. Same component, light-themed in this PR. */}
-        <FounderNote />
+        {/* ── SEARCH RESULTS + DEALS removed. the homepage no longer
+             has a customer search surface; buyer-side search lives at
+             /discover. Founder note + pricing summary moved down to
+             just before the Final CTA in the clarity pass so the page
+             leads with product (embed preview + how it works) before
+             trust + price. ── */}
 
         {/* ── Platform Activity ──
              Gated behind a trust-safe project-count threshold so
@@ -2939,6 +2889,53 @@ export default function Home() {
              moved to /business page (sub-tabs). Homepage stays buyer-
              focused: live grid + search + featured sellers. ── */}
 
+        {/* ── HOW IT WORKS ─────────────────────────────────────────
+             Three short steps — the minimum a non-technical owner needs
+             to picture the whole flow in five seconds. Sits right after
+             the embed preview so the "what" (the bubble on your site) is
+             immediately followed by the "how" (three steps to get it). */}
+        <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
+          <div className="mb-10 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+              How it works
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+              Three steps. No developer required.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                n: "01",
+                title: "Connect Stripe",
+                copy: "One click. Money goes straight to your bank.",
+              },
+              {
+                n: "02",
+                title: "Paste one line of code on your site",
+                copy: "A small bubble appears in the corner of your website.",
+              },
+              {
+                n: "03",
+                title: "Go live and get paid direct",
+                copy: "Customers watch and buy. Money lands in your bank.",
+              },
+            ].map((step) => (
+              <div
+                key={step.n}
+                className="relative overflow-hidden rounded-2xl border border-default bg-surface-card p-6 backdrop-blur-sm transition hover:border-default"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
+                  {step.n}
+                </div>
+                <div className="mt-3 text-base font-bold text-primary">{step.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-primary">{step.copy}</p>
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
+
         {/* ── ONE-FEE-REPLACES-FIVE comparison ────────────────────────
              Visual 5-second scan: the stack of monthly expenses a local
              business already pays vs. one DUM Club flat fee. Numbers
@@ -3049,70 +3046,6 @@ export default function Home() {
           <LoomExplainer />
         </ScrollReveal>
 
-        {/* ── HOW IT WORKS ─────────────────────────────────────────
-             Anchor target for the hero's "See How It Works" CTA.
-             Six short steps, plain English, in the order a merchant
-             does them. The canonical end-to-end flow, including the
-             site embed (step 3) which the prior 5-step list collapsed
-             into "Go Live". Rewritten so a non-technical small-
-             business owner reads the whole flow in five seconds. */}
-        <ScrollReveal id="how-it-works" className="mx-auto mt-20 max-w-5xl px-4 scroll-mt-24" delay={0.1}>
-          <div className="mb-10 text-center">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
-              How it works
-            </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
-              Six steps. No developer required.
-            </h2>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                n: "01",
-                title: "Connect Stripe",
-                copy: "One click. Money goes straight to your bank.",
-              },
-              {
-                n: "02",
-                title: "Create a Deal",
-                copy: "Pick what you sell and set a price.",
-              },
-              {
-                n: "03",
-                title: "Add DUM Club to Your Website",
-                copy: "Paste one line of code. A small bubble appears in the corner of your site.",
-              },
-              {
-                n: "04",
-                title: "Go Live",
-                copy: "Camera on. Customers watch on your website.",
-              },
-              {
-                n: "05",
-                title: "Customers Buy",
-                copy: "One tap. Stripe handles payment.",
-              },
-              {
-                n: "06",
-                title: "You Get Paid",
-                copy: "Direct deposit. You keep every dollar.",
-              },
-            ].map((step) => (
-              <div
-                key={step.n}
-                className="relative overflow-hidden rounded-2xl border border-default bg-surface-card p-6 backdrop-blur-sm transition hover:border-default"
-              >
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
-                  {step.n}
-                </div>
-                <div className="mt-3 text-base font-bold text-primary">{step.title}</div>
-                <p className="mt-2 text-sm leading-relaxed text-primary">{step.copy}</p>
-              </div>
-            ))}
-          </div>
-        </ScrollReveal>
-
         {/* ── ProofOfMotion. pre-final-CTA stats ──
              FounderNote was moved up directly under the hero in
              Phase 5; ProofOfMotion still renders here when its
@@ -3122,6 +3055,63 @@ export default function Home() {
         <div className="mx-auto mt-20 max-w-3xl px-4">
           <ProofOfMotion fallback={null} />
         </div>
+
+        {/* ── Founder note ──
+             Moved down here in the clarity pass (was directly under
+             the hero). The page now leads with product, then closes
+             with trust (founder) + price (summary) before the CTA. */}
+        <FounderNote />
+
+        {/* ── HOMEPAGE PRICING SUMMARY ──
+             Cost upfront, but placed near the close so the page leads
+             with product. Three columns; full /pricing behind the
+             link. Mobile stacks vertically (sm:grid-cols-3). */}
+        <section
+          aria-labelledby="homepage-pricing-heading"
+          className="mx-auto mt-12 max-w-5xl px-4"
+        >
+          <h2
+            id="homepage-pricing-heading"
+            className="sr-only"
+          >
+            Pricing
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { name: "Starter", price: 29 },
+              { name: "Growth", price: 49, highlighted: true },
+              { name: "Pro", price: 99 },
+            ].map((tier) => (
+              <div
+                key={tier.name}
+                className={`rounded-2xl border p-6 text-center transition ${
+                  tier.highlighted
+                    ? "border-brand-teal bg-brand-teal-soft"
+                    : "border-default bg-surface-card"
+                }`}
+              >
+                <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-teal">
+                  {tier.name}
+                </div>
+                <div className="mt-3 text-3xl font-extrabold text-brand-navy">
+                  ${tier.price}
+                  <span className="text-base font-medium text-secondary">/month</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-center text-sm text-secondary">
+            Every new business gets 60 days free. Cancel anytime.
+          </p>
+          <div className="mt-4 text-center">
+            <Link
+              href="/pricing"
+              className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
+            >
+              See full pricing →
+            </Link>
+          </div>
+        </section>
 
         {/* ── FINAL CTA ────────────────────────────────────────────
              Single closing block. The previous page had a separate
@@ -3139,20 +3129,20 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $29 to $99/month. 0% commission, always. Founding merchants get preferred pricing after launch.
+              Flat $29 to $99/month. 0% commission. Join the first 100 merchants and lock in founding pricing for life.
             </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link
                 href="/merchant"
                 className="rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:text-white"
               >
-                Start Free →
+                Start free for 60 days →
               </Link>
               <Link
-                href="/business"
-                className="rounded-xl border border-default px-8 py-4 text-sm font-bold uppercase tracking-[0.12em] text-primary transition hover:border-default hover:text-brand-teal"
+                href="/pricing"
+                className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
               >
-                See Pricing
+                See pricing →
               </Link>
             </div>
             {/* Final-CTA closer. The earlier "Drive your market. not
