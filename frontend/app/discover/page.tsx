@@ -232,6 +232,10 @@ export default function DiscoverPage() {
               errorMessage={error}
               onRetry={() => window.location.reload()}
             />
+          ) : projects.length === 0 ? (
+            // Genuine zero-data: no merchants live yet. Show the
+            // founding-100 onboarding state, not a "no matches" message.
+            <EmptyState variant="no-listings" />
           ) : filteredProjects.length === 0 ? (
             liveOnly ? (
               <EmptyState variant="no-live" onClearLive={() => setLiveOnly(false)} />
