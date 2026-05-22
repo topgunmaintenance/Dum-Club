@@ -128,6 +128,9 @@ const FOUNDER_FACTS: Array<{ icon: typeof Plane; title: string; body: string }> 
   },
 ];
 
+// ISR: static marketing content, regenerate at most hourly.
+export const revalidate = 3600;
+
 export default function InvestorsPage() {
   return (
     <main className="min-h-screen bg-surface-page text-primary">

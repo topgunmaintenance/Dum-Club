@@ -23,6 +23,9 @@ export const metadata = {
     "How DUM Club is built. Stripe payments, Supabase database, and an SPL token rewards program on Solana for users who want on-chain claim.",
 };
 
+// ISR: static marketing content, regenerate at most hourly.
+export const revalidate = 3600;
+
 export default function TechnologyPage() {
   return (
     <div className="min-h-screen bg-zinc-950 px-6 pt-28 pb-20 text-zinc-300">

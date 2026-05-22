@@ -27,6 +27,20 @@ const nextConfig = {
       },
     ],
   },
+  // Long-lived immutable cache for static brand assets. The logo files
+  // are content-stable; serving them with a 1-year immutable header lets
+  // the browser + CDN skip revalidation entirely. Safe because a changed
+  // logo ships under a new filename, not a mutated one.
+  async headers() {
+    return [
+      {
+        source: "/dum-logo-:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+    ];
+  },
   // Permanent redirects for renamed routes. Old links and any external
   // marketing copy still pointing at /explore or /ai-chat resolve to
   // the canonical pages (/discover, /chat) without a 404.
