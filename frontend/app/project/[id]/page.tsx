@@ -6893,20 +6893,39 @@ return (
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state. For visitors, a clean "Coming soon" with a way
+            to reach the merchant — never blank gray bars. For the owner,
+            a prompt to create their first offer. */}
         {offers.length === 0 && storeItems.length === 0 && (
           <div className="mt-6 rounded-2xl border border-dashed border-default p-10 text-center">
-            <div className="text-2xl mb-3 opacity-30">🛍</div>
-            <p className="text-sm font-medium text-secondary">
-              {isOwner ? "You haven't listed any offers yet" : "This business hasn't listed any offers yet."}
-            </p>
-            {showOwnerInlineUi && !offerFormOpen && (
-              <button
-                onClick={() => openOfferForm()}
-                className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-2.5 text-sm font-medium text-brand-teal transition hover:border-default hover:bg-brand-teal-soft"
-              >
-                + Create your first offer
-              </button>
+            {isOwner ? (
+              <>
+                <div className="text-2xl mb-3 opacity-30">🛍</div>
+                <p className="text-sm font-medium text-secondary">
+                  You haven&apos;t listed any offers yet
+                </p>
+                {showOwnerInlineUi && !offerFormOpen && (
+                  <button
+                    onClick={() => openOfferForm()}
+                    className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-2.5 text-sm font-medium text-brand-teal transition hover:border-default hover:bg-brand-teal-soft"
+                  >
+                    + Create your first offer
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-bold text-primary">Coming soon</div>
+                <p className="mt-2 text-sm text-secondary">
+                  {projectName} is still setting up. Message them and they&apos;ll get back to you.
+                </p>
+                <a
+                  href="#ai-workspace"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+                >
+                  Contact this merchant →
+                </a>
+              </>
             )}
           </div>
         )}
