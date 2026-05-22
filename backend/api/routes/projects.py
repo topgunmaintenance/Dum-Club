@@ -757,6 +757,104 @@ async def list_public_projects():
     return projects
 
 
+@router.get("/discover")
+async def discover_projects(
+    response: Response,
+    limit: int = Query(24, ge=1),
+    offset: int = Query(0, ge=0),
+    category: Optional[str] = None,
+    live_only: bool = False,
+    search: Optional[str] = None,
+    if_none_match: Optional[str] = Header(None),
+):
+    """Consolidated /discover feed: projects + their market summary in ONE
+    request, replacing the old fan-out (GET /public + N x /{id}/market).
+
+    Scaling approach (per the "server-side loop" decision): this reuses the
+    existing list_public_projects() logic verbatim and loops the existing
+    compute_market_snapshot() per project on the SERVER. The browser makes
+    exactly one HTTP request instead of 1 + N. Market math is byte-identical
+    to GET /api/projects/{id}/market. Reducing the per-call Supabase query
+    count (indexes / true aggregation) is deferred to the DB + caching PRs.
+
+    Filters (category / live_only / search) and pagination run in Python on
+    the already-capped public list — consistent with the existing endpoint,
+    which builds its union and sort in Python. limit is capped at 100.
+    """
+    if limit > 100:
+        raise HTTPException(status_code=400, detail="limit must be <= 100")
+
+    all_projects = await list_public_projects()
+
+    filtered = all_projects
+    if category:
+        c = category.strip().lower()
+        filtered = [p for p in filtered if (p.get("category") or "").strip().lower() == c]
+    if live_only:
+        filtered = [p for p in filtered if p.get("is_live")]
+    if search:
+        q = search.strip().lower()
+        filtered = [
+            p
+            for p in filtered
+            if q in (p.get("name") or p.get("title") or "").lower()
+            or q in (p.get("description") or "").lower()
+        ]
+
+    total = len(filtered)
+    page = filtered[offset : offset + limit]
+
+    # ETag from the max(updated_at|created_at) across the page so an
+    # unchanged feed returns 304. Cheap content fingerprint; no extra query.
+    stamps = [
+        str(p.get("updated_at") or p.get("created_at") or "")
+        for p in page
+    ]
+    import hashlib
+
+    etag = '"' + hashlib.sha1(
+        (f"{offset}:{limit}:{total}:" + "|".join(stamps)).encode("utf-8")
+    ).hexdigest() + '"'
+
+    cache_headers = {
+        "Cache-Control": "public, max-age=30, stale-while-revalidate=120",
+        "ETag": etag,
+    }
+    response.headers.update(cache_headers)
+    if if_none_match and if_none_match == etag:
+        return Response(status_code=304, headers=cache_headers)
+
+    # Server-side market loop — one request from the browser, exact same math.
+    # Lazy import: market.py lazily imports this module, so a top-level
+    # import here would risk a circular import at startup.
+    from api.routes.market import compute_market_snapshot
+
+    supabase = get_client()
+    for p in page:
+        pid = p.get("id")
+        if not pid:
+            p["market_summary"] = None
+            continue
+        try:
+            snap = compute_market_snapshot(supabase, pid)
+            p["market_summary"] = {
+                "price": snap["price"],
+                "market_cap": snap["market_cap"],
+                "volume_24h": snap["volume_24h"],
+            }
+        except Exception as exc:
+            print(f"[projects] discover market compute failed for {pid}: {exc!r}")
+            p["market_summary"] = None
+
+    return {
+        "projects": page,
+        "limit": limit,
+        "offset": offset,
+        "total": total,
+        "has_more": offset + limit < total,
+    }
+
+
 def _neg_iso(s: str) -> str:
     """Return a string that sorts opposite to the input ISO timestamp.
 

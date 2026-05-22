@@ -43,7 +43,7 @@ import { MerchantStrip } from "../../components/discover/MerchantStrip";
 
 export default function DiscoverPage() {
   /* ─── Data ─── */
-  const { projects, marketByProject, loading, error, marketLoaded } = useProjects();
+  const { projects, marketByProject, loading, error, marketLoaded, hasMore, loadMore, loadingMore } = useProjects();
 
   /* ─── Filter state ─── */
   const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("all");
@@ -329,6 +329,21 @@ export default function DiscoverPage() {
             </>
           )}
         </div>
+
+        {/* Load more — appears only when the feed has another page. Simple
+            button (no infinite-scroll observer); bumps the request limit. */}
+        {!loading && !error && hasMore && (
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="inline-flex items-center justify-center rounded-xl border border-default bg-surface-card px-6 py-3 text-sm font-bold text-primary transition hover:border-strong hover:text-brand-teal disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          </div>
+        )}
 
         {/* DUM Points caption — earn-only framing per CLAUDE.md §5.
             Redemption surfaces are held until Phase 2; the previous
