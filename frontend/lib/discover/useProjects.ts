@@ -37,6 +37,27 @@ export function useProjects() {
         `${API_BASE}/api/projects/discover?limit=${limitRef.current}&offset=0`,
         { cache: "no-store" },
       );
+
+      // Deploy-safety fallback: if the consolidated endpoint isn't live
+      // yet (e.g. frontend deployed before the backend during a rollout),
+      // fall back to the still-present GET /public so /discover never
+      // hard-breaks. Cards render without price chips until the backend
+      // catches up, then the next poll self-heals.
+      if (res.status === 404 || res.status === 405) {
+        const pub = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
+        if (!pub.ok) throw new Error(`Failed to load listings: ${pub.status}`);
+        const pdata = await pub.json();
+        const plist: Project[] = Array.isArray(pdata?.projects)
+          ? pdata.projects
+          : Array.isArray(pdata)
+            ? pdata
+            : [];
+        setProjects(plist);
+        setMarketByProject({});
+        setHasMore(false);
+        return;
+      }
+
       if (!res.ok) throw new Error(`Failed to load listings: ${res.status}`);
       const data = await res.json();
       const list: Project[] = Array.isArray(data?.projects) ? data.projects : [];
