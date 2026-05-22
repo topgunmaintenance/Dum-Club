@@ -46,3 +46,6 @@ stripe==11.4.1
 
 # ── Email ─────────────────────────────────────────────────────
 resend==2.5.1
+
+# Observability (optional; activated by SENTRY_DSN_BACKEND). See docs/OBSERVABILITY.md
+sentry-sdk[fastapi]>=2.0.0

@@ -67,6 +67,27 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# ── Sentry (optional) ─────────────────────────────────────────
+# Guarded init: a no-op unless BOTH sentry-sdk is installed AND
+# SENTRY_DSN_BACKEND is set. This keeps the import safe in environments
+# where the SDK isn't installed yet (the dependency is declared in
+# requirements.txt for the operator to install on deploy). See
+# docs/OBSERVABILITY.md for the frontend wiring + DSN setup.
+try:
+    if os.getenv("SENTRY_DSN_BACKEND"):
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+        sentry_sdk.init(
+            dsn=os.environ["SENTRY_DSN_BACKEND"],
+            traces_sample_rate=0.1,
+            environment=os.getenv("RAILWAY_ENVIRONMENT", "development"),
+            integrations=[FastApiIntegration()],
+        )
+except Exception as _sentry_exc:  # noqa: BLE001
+    print(f"[sentry] backend init skipped: {_sentry_exc!r}")
+
+
 app = FastAPI(
     title="DUM Club API",
     description="Digital Utility Model Club — Solana-native AI app builder",
