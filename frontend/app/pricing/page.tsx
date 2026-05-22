@@ -399,7 +399,7 @@ export default function PricingPage() {
           <div className="space-y-3">
             {FAQS.map((f, i) => (
               <Card key={f.q} variant="surface" padding="md">
-                <details className="group" open={i < 2}>
+                <details className="group" open={i < 3}>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-primary">
                     {f.q}
                     <span

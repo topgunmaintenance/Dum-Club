@@ -90,15 +90,33 @@ export default function AboutPage() {
           <h2 className="text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
             Why DUM Club exists
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-secondary">
-            Local businesses already pay for the tools they need to compete
-            online. The math doesn&apos;t add up: 15 to 30% to delivery apps,
-            8% + 2.9% to live-selling platforms, $50 to $300 a month to loyalty
-            software, $20 to $200 a month to SMS retention, $500+ a month to an
-            agency for social posts. DUM Club replaces that entire stack
-            with one flat bill, from $29 to $99 a month depending on tier, so
-            the owner keeps the customer, the data, and 100% of every
-            sale.
+          <ul className="mt-5 space-y-3">
+            {[
+              {
+                title: "The math problem",
+                body: "Delivery apps take 15 to 30%. Live-selling platforms take 8% + 2.9%. The fees never stop.",
+              },
+              {
+                title: "The customer-ownership problem",
+                body: "On those platforms the customer belongs to them, not to you. You rent your own traffic.",
+              },
+              {
+                title: "The fragmented-tools problem",
+                body: "Loyalty, SMS, social, deals. Five separate monthly bills that don't talk to each other.",
+              },
+            ].map((row) => (
+              <li
+                key={row.title}
+                className="rounded-xl border border-default bg-surface-card p-4"
+              >
+                <div className="font-semibold text-brand-navy">{row.title}</div>
+                <p className="mt-1 text-sm leading-relaxed text-secondary">{row.body}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-base leading-relaxed text-secondary">
+            DUM Club replaces that whole stack with one flat bill, from $29 to
+            $99 a month, so you keep the customer, the data, and 100% of every sale.
           </p>
         </section>
 
@@ -169,10 +187,12 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Contact / talk to Julian */}
+        {/* Contact / talk to Julian — id="contact" is the anchor the
+            /contact redirect lands on. */}
         <section
+          id="contact"
           aria-labelledby="contact-heading"
-          className="mt-12 rounded-2xl border border-default bg-surface-card p-8"
+          className="mt-12 scroll-mt-24 rounded-2xl border border-default bg-surface-card p-8"
         >
           <h2
             id="contact-heading"
@@ -181,11 +201,24 @@ export default function AboutPage() {
             Talk to Julian directly
           </h2>
           <p className="mt-3 text-base leading-relaxed text-secondary">
-            Investor, merchant, partner, or just curious. The easiest way
-            to reach the founder is email. No gatekeepers.
+            Investor, merchant, partner, or just curious. Call, text, or
+            email the founder. No gatekeepers.
           </p>
           <div className="mt-5 space-y-1 text-sm">
             <div>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                Phone
+              </span>
+              <div>
+                <a
+                  href="tel:+12014521986"
+                  className="font-semibold text-brand-teal hover:text-brand-teal-hover"
+                >
+                  (201) 452-1986
+                </a>
+              </div>
+            </div>
+            <div className="pt-3">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                 Email
               </span>
@@ -207,6 +240,35 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
+          {/* Simple mailto form. No backend — submitting opens the
+              visitor's mail client pre-addressed to Julian with their
+              subject + message. Keeps /about a static server component. */}
+          <form
+            action="mailto:julian@topgunmaintenance.com"
+            method="post"
+            encType="text/plain"
+            className="mt-6 space-y-3"
+          >
+            <input
+              type="text"
+              name="subject"
+              placeholder="Subject"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal"
+            />
+            <textarea
+              name="message"
+              rows={4}
+              placeholder="Your message"
+              className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal"
+            />
+            <button
+              type="submit"
+              aria-label="Send a message to Julian"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-teal px-6 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+            >
+              Send message →
+            </button>
+          </form>
         </section>
       </div>
     </main>

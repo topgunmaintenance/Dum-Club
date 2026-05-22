@@ -5,7 +5,7 @@
  */
 
 type EmptyStateProps = {
-  variant: "no-results" | "no-live" | "error";
+  variant: "no-results" | "no-live" | "error" | "no-listings";
   errorMessage?: string;
   onClearFilters?: () => void;
   onClearLive?: () => void;
@@ -13,6 +13,28 @@ type EmptyStateProps = {
 };
 
 export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive, onRetry }: EmptyStateProps) {
+  // Genuine zero-data state (no merchants live yet, cold start). Shown
+  // instead of a perpetual loading skeleton or a "no matches" message
+  // when the API returns zero listings and there's nothing to filter.
+  if (variant === "no-listings") {
+    return (
+      <div className="rounded-2xl border border-default bg-surface-card p-10 text-center">
+        <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
+          We&apos;re onboarding the founding 100 merchants.
+        </h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-secondary">
+          Be the first in your category.
+        </p>
+        <a
+          href="/merchant"
+          className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+        >
+          Claim a founding spot →
+        </a>
+      </div>
+    );
+  }
+
   if (variant === "error") {
     return (
       <div className="rounded-xl border border-[var(--state-live)]/30 bg-red-500/5 p-8 text-center">
