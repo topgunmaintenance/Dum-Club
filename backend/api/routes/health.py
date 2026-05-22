@@ -4,6 +4,7 @@ No DB writes. No secrets exposed.
 """
 import os
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from db.supabase import get_client
