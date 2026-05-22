@@ -269,6 +269,12 @@ export default function AboutPage() {
               Send message →
             </button>
           </form>
+          <p className="mt-6 text-[13px] text-secondary">
+            Investor?{" "}
+            <Link href="/investors" className="font-semibold text-brand-teal underline-offset-4 hover:underline">
+              See our investor page →
+            </Link>
+          </p>
         </section>
       </div>
     </main>

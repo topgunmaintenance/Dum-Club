@@ -26,7 +26,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { useAuth } from "../lib/auth/AuthContext";
 import { API_BASE } from "../lib/apiBase";
@@ -105,6 +105,49 @@ export function Navbar() {
     setUserMenuOpen(false);
   }, [path]);
 
+  // Mobile-menu accessibility: Escape closes it, Tab is trapped inside
+  // the open drawer, and focus moves into the drawer on open. Restores
+  // focus to the toggle button on close.
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const drawer = mobileMenuRef.current;
+    if (!drawer) return;
+
+    // Move focus into the drawer.
+    const focusables = () =>
+      Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null);
+    focusables()[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const els = focusables();
+      if (els.length === 0) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
   // Click-outside dismiss for the user dropdown. Anything inside an
   // element with data-user-menu is considered "inside the menu" and
   // doesn't trigger the close.
@@ -146,9 +189,12 @@ export function Navbar() {
           <BrandMark size="mobile" />
           <button
             type="button"
+            ref={menuButtonRef}
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-haspopup="dialog"
             className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-default text-secondary transition-colors hover:text-primary hover:border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
           >
             {menuOpen ? (
@@ -243,6 +289,11 @@ export function Navbar() {
       {menuOpen && (
         <div
           id="mobile-menu"
+          ref={mobileMenuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Main menu"
+          tabIndex={-1}
           className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-surface-card lg:hidden"
         >
           <div className="border-b border-default">
