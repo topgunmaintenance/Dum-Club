@@ -757,6 +757,40 @@ async def list_public_projects():
     return projects
 
 
+# ── In-memory TTL cache for the discover feed ──
+# The feed is identical for all anonymous visitors within a short window,
+# so caching the fully-computed body (projects + market loop) for 30s
+# collapses a burst of identical requests into one round of DB work. No
+# explicit invalidation: a 30s TTL bounds staleness and matches the
+# endpoint's Cache-Control max-age, so a merchant going live shows up
+# within ~30s (the frontend also polls). Process-local — fine for the
+# read-mostly discover feed; not a correctness-critical cache.
+import time as _time
+
+_DISCOVER_CACHE: dict[str, tuple[float, dict]] = {}
+_DISCOVER_TTL = 30.0
+_DISCOVER_MAX = 256
+
+
+def _discover_cache_get(key: str) -> Optional[dict]:
+    item = _DISCOVER_CACHE.get(key)
+    if not item:
+        return None
+    ts, val = item
+    if _time.time() - ts > _DISCOVER_TTL:
+        _DISCOVER_CACHE.pop(key, None)
+        return None
+    return val
+
+
+def _discover_cache_set(key: str, val: dict) -> None:
+    if len(_DISCOVER_CACHE) >= _DISCOVER_MAX and key not in _DISCOVER_CACHE:
+        # Evict the oldest entry to bound memory.
+        oldest = min(_DISCOVER_CACHE.items(), key=lambda kv: kv[1][0])[0]
+        _DISCOVER_CACHE.pop(oldest, None)
+    _DISCOVER_CACHE[key] = (_time.time(), val)
+
+
 @router.get("/discover")
 async def discover_projects(
     response: Response,
@@ -784,36 +818,70 @@ async def discover_projects(
     if limit > 100:
         raise HTTPException(status_code=400, detail="limit must be <= 100")
 
-    all_projects = await list_public_projects()
+    cache_key = f"{limit}:{offset}:{(category or '').lower()}:{int(live_only)}:{(search or '').lower()}"
+    body = _discover_cache_get(cache_key)
 
-    filtered = all_projects
-    if category:
-        c = category.strip().lower()
-        filtered = [p for p in filtered if (p.get("category") or "").strip().lower() == c]
-    if live_only:
-        filtered = [p for p in filtered if p.get("is_live")]
-    if search:
-        q = search.strip().lower()
-        filtered = [
-            p
-            for p in filtered
-            if q in (p.get("name") or p.get("title") or "").lower()
-            or q in (p.get("description") or "").lower()
-        ]
+    if body is None:
+        all_projects = await list_public_projects()
 
-    total = len(filtered)
-    page = filtered[offset : offset + limit]
+        filtered = all_projects
+        if category:
+            c = category.strip().lower()
+            filtered = [p for p in filtered if (p.get("category") or "").strip().lower() == c]
+        if live_only:
+            filtered = [p for p in filtered if p.get("is_live")]
+        if search:
+            q = search.strip().lower()
+            filtered = [
+                p
+                for p in filtered
+                if q in (p.get("name") or p.get("title") or "").lower()
+                or q in (p.get("description") or "").lower()
+            ]
 
-    # ETag from the max(updated_at|created_at) across the page so an
-    # unchanged feed returns 304. Cheap content fingerprint; no extra query.
-    stamps = [
-        str(p.get("updated_at") or p.get("created_at") or "")
-        for p in page
-    ]
+        total = len(filtered)
+        page = filtered[offset : offset + limit]
+
+        # Server-side market loop — one request from the browser, exact same
+        # math. Lazy import: market.py lazily imports this module, so a
+        # top-level import here would risk a circular import at startup.
+        from api.routes.market import compute_market_snapshot
+
+        supabase = get_client()
+        for p in page:
+            pid = p.get("id")
+            if not pid:
+                p["market_summary"] = None
+                continue
+            try:
+                snap = compute_market_snapshot(supabase, pid)
+                p["market_summary"] = {
+                    "price": snap["price"],
+                    "market_cap": snap["market_cap"],
+                    "volume_24h": snap["volume_24h"],
+                }
+            except Exception as exc:
+                print(f"[projects] discover market compute failed for {pid}: {exc!r}")
+                p["market_summary"] = None
+
+        body = {
+            "projects": page,
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+            "has_more": offset + limit < total,
+        }
+        _discover_cache_set(cache_key, body)
+
+    # ETag from the page's content stamps so an unchanged feed returns 304.
     import hashlib
 
+    stamps = [
+        str(p.get("updated_at") or p.get("created_at") or "")
+        for p in body["projects"]
+    ]
     etag = '"' + hashlib.sha1(
-        (f"{offset}:{limit}:{total}:" + "|".join(stamps)).encode("utf-8")
+        (f"{offset}:{limit}:{body['total']}:" + "|".join(stamps)).encode("utf-8")
     ).hexdigest() + '"'
 
     cache_headers = {
@@ -824,35 +892,7 @@ async def discover_projects(
     if if_none_match and if_none_match == etag:
         return Response(status_code=304, headers=cache_headers)
 
-    # Server-side market loop — one request from the browser, exact same math.
-    # Lazy import: market.py lazily imports this module, so a top-level
-    # import here would risk a circular import at startup.
-    from api.routes.market import compute_market_snapshot
-
-    supabase = get_client()
-    for p in page:
-        pid = p.get("id")
-        if not pid:
-            p["market_summary"] = None
-            continue
-        try:
-            snap = compute_market_snapshot(supabase, pid)
-            p["market_summary"] = {
-                "price": snap["price"],
-                "market_cap": snap["market_cap"],
-                "volume_24h": snap["volume_24h"],
-            }
-        except Exception as exc:
-            print(f"[projects] discover market compute failed for {pid}: {exc!r}")
-            p["market_summary"] = None
-
-    return {
-        "projects": page,
-        "limit": limit,
-        "offset": offset,
-        "total": total,
-        "has_more": offset + limit < total,
-    }
+    return body
 
 
 def _neg_iso(s: str) -> str:

@@ -147,6 +147,11 @@ const FAQS: { q: string; a: string }[] = [
   },
 ];
 
+// ISR: marketing content changes rarely. Serve a statically generated
+// page, regenerate at most once an hour. Absorbs traffic without hitting
+// the backend on every view.
+export const revalidate = 3600;
+
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-surface-page text-primary">

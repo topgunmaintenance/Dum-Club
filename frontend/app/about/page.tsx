@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   },
 };
 
+// ISR: static marketing content, regenerate at most hourly.
+export const revalidate = 3600;
+
 export default function AboutPage() {
   return (
     <main className="relative min-h-screen bg-surface-page px-4 pt-24 pb-20 text-primary sm:px-6">
