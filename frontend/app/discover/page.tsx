@@ -225,7 +225,10 @@ export default function DiscoverPage() {
         {/* Main grid */}
         <div id="grid">
           {loading ? (
-            <LoadingGrid />
+            <>
+              <p className="mb-4 text-sm text-secondary">Loading nearby businesses…</p>
+              <LoadingGrid count={projects.length || 6} />
+            </>
           ) : error ? (
             <EmptyState
               variant="error"
