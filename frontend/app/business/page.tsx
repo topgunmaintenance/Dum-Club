@@ -139,6 +139,60 @@ function BusinessPageInner() {
         {activeTab === "compare" && <CompareTab />}
       </div>
 
+      {/* ── FAQ (always visible) ──────────────────────── */}
+      <section className="border-t border-default px-4 py-16">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8 text-center">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+              FAQ
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
+              Common questions
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              {
+                q: "Do you ever take a percentage of my sales?",
+                a: "No. DUM Club charges one flat monthly fee. There's no per-sale commission, no listing fee, and no cut of what you make. Stripe's standard card-processing fee is paid by the buyer at checkout, not by you.",
+              },
+              {
+                q: "What if I don't have a website yet?",
+                a: "You don't need one. You get a shop page on DUM Club either way. If you do have a website later, you can paste one line of code to show your live shop right on it.",
+              },
+              {
+                q: "How fast can I be live?",
+                a: "A few minutes. Sign in, enter your business name, connect Stripe when you're ready to take payments, and you can go live the same day.",
+              },
+              {
+                q: "Can I cancel any time?",
+                a: "Yes. Cancel from your dashboard whenever you want, no phone call, no retention runaround. Your shop page stays up for your existing customers while you wind down.",
+              },
+              {
+                q: "Is there a free tier?",
+                a: "The first 100 founding merchants get 60 days free and then lock in founding pricing for life. After that, plans start at $29 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
+              },
+            ].map((f) => (
+              <details
+                key={f.q}
+                className="group rounded-2xl border border-default bg-surface-card p-5"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-primary">
+                  {f.q}
+                  <span
+                    className="text-secondary transition-transform group-open:rotate-45"
+                    aria-hidden="true"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-secondary">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Talk to Julian CTA (always visible) ──────── */}
       <section className="border-t border-default px-4 py-16">
         <div className="mx-auto max-w-2xl rounded-3xl border border-default bg-surface-card p-10 text-center backdrop-blur-sm">

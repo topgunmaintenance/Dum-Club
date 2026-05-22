@@ -437,6 +437,13 @@ export default function MerchantPage() {
               className="font-semibold text-brand-teal hover:text-brand-teal-hover"
             >
               Email Julian
+            </a>{" "}
+            or call{" "}
+            <a
+              href="tel:+12014521986"
+              className="font-semibold text-brand-teal hover:text-brand-teal-hover"
+            >
+              (201) 452-1986
             </a>
           </p>
         </div>

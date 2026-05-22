@@ -25,12 +25,20 @@ export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive,
         <p className="mx-auto mt-2 max-w-md text-sm text-secondary">
           Be the first in your category.
         </p>
-        <a
-          href="/merchant"
-          className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-        >
-          Claim a founding spot →
-        </a>
+        <div className="mt-6 flex flex-col items-center justify-center gap-3">
+          <a
+            href="/merchant"
+            className="inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+          >
+            Claim a founding spot →
+          </a>
+          <a
+            href="/about#contact"
+            className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
+          >
+            Talk to the founder →
+          </a>
+        </div>
       </div>
     );
   }
