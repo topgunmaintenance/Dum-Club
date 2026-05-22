@@ -117,10 +117,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           old 72/92 spacer left an 8/12px gap below the header that
           read as a layout bug after the Navbar height shrank. */}
       <div className="h-16 lg:h-20" />
-      {/* Global live activity ticker — sits directly below the navbar. */}
-      <LiveActivityTicker />
+      {/* Live activity ticker — only on /discover. Elsewhere it
+          distracts from the task (signup, pricing, reading) and the
+          empty/low-volume state reads as a sandbox. The ticker
+          already filters to real Stripe sales only. */}
+      {pathname === "/discover" && <LiveActivityTicker />}
       {children}
-      {!hideFooter && <SiteFooter />}
+      {!hideFooter && <SiteFooter pathname={pathname} />}
       <DumPill />
       <FloatingGoLive />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in

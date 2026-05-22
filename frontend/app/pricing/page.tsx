@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Pricing | DUM Club",
     description:
-      "One flat monthly fee covers live selling, loyalty, tools that help bring customers back, and local flash sales. 0% commission, ever.",
+      "One flat monthly fee covers live selling, loyalty, automatic customer win-back texts, and local flash sales. 0% commission, ever.",
     type: "website",
   },
 };
@@ -75,7 +75,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "Tools that help bring customers back (point reminders)",
+      "Automatic customer win-back texts (point reminders)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
     ],
@@ -108,7 +108,7 @@ const TIERS: Tier[] = [
       "DUM Points under your brand name",
       "Custom rewards rules + earning rates",
       "API access for your own platform",
-      "Dedicated tools that help bring customers back",
+      "Dedicated automatic customer win-back texts",
       "For mid-size businesses building loyalty",
     ],
     ctaLabel: "Talk to sales",
@@ -138,7 +138,7 @@ const FAQS: { q: string; a: string }[] = [
     a: "Yes. Stripe is the only payment processor on DUM Club, the same one Whatnot, Square, and Shopify use. Connecting takes about 60 seconds via Stripe Connect, and payouts land in your bank on Stripe's standard schedule.",
   },
   {
-    q: "What's included in the tools that help bring customers back?",
+    q: "What's included in the automatic customer win-back texts?",
     a: "Automated point-expiry reminders, deal pushes when customers haven't visited in a while, and a way for customers to find nearby deals across the network (a detailer's customer might get a pizza-shop coupon). Replaces what most businesses pay $500 to $1,000 a month for via direct mail.",
   },
   {
@@ -160,7 +160,7 @@ export default function PricingPage() {
               0% commission. Keep every sale.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
-              Live selling, loyalty, tools that help bring customers back, and
+              Live selling, loyalty, automatic customer win-back texts, and
               local flash sales. One monthly fee replaces five separate bills.
               Get 60 days free and lock in founding pricing for life.
             </p>

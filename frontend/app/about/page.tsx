@@ -29,7 +29,7 @@ export default function AboutPage() {
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
           DUM Club is the loyalty network for local commerce. Live selling,
-          DUM Points loyalty, tools that help bring customers back, and flash
+          DUM Points loyalty, automatic customer win-back texts, and flash
           sales. Every tool a local business needs to keep its own customers,
           on its own website, for one flat monthly fee. No commissions, ever.
         </p>
@@ -118,7 +118,7 @@ export default function AboutPage() {
                 body: "Customers earn points at every DUM Club merchant and redeem at any other. Built-in switching cost for your customers.",
               },
               {
-                label: "Tools that help bring customers back (Growth+)",
+                label: "Automatic customer win-back texts (Growth+)",
                 body: "Automated point-expiry reminders, plus customers can find nearby deals across the network. Replaces $500 to $1,000 a month in direct-mail spend.",
               },
               {

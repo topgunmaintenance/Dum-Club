@@ -237,7 +237,7 @@ in-app, follow-up, same-day, off-peak, mid-size.
 
 Approved phrase replacements:
 
-- "AI retention agent"        -> "tools that help bring customers back"
+- "AI retention agent"        -> "automatic customer win-back texts"
 - "cross-merchant discovery"  -> "customers can find nearby deals"
 - "technical layer"           -> "the system behind DUM Club"
 - "canonical state / source of truth" -> plain developer wording or

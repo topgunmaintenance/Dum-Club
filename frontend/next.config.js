@@ -46,6 +46,12 @@ const nextConfig = {
       // profile itself. Canonical page is /investors.
       { source: "/raise", destination: "/investors", permanent: true },
       { source: "/wefunder", destination: "/investors", permanent: true },
+      // Footer / external-link aliases so no link 404s. /contact lands
+      // on the About page's #contact anchor; /for-business and
+      // /become-a-merchant map to the canonical /business and /merchant.
+      { source: "/contact", destination: "/about#contact", permanent: false },
+      { source: "/for-business", destination: "/business", permanent: true },
+      { source: "/become-a-merchant", destination: "/merchant", permanent: true },
     ];
   },
 };

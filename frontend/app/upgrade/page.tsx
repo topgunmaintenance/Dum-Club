@@ -51,7 +51,7 @@ const TIERS = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "Tools that help bring customers back (auto point reminders)",
+      "Automatic customer win-back texts (auto point reminders)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
     ],

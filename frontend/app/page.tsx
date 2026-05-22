@@ -1647,7 +1647,7 @@ function RetentionSection() {
           <span className="text-brand-teal">Automate repeat business.</span>
         </h2>
         <p className="mb-8 max-w-xl text-sm text-secondary">
-          DUM Points bring customers back automatically. Our tools that help bring customers back send reminders, deal pushes, and expiry alerts, so you never lose a customer to a competitor again.
+          DUM Points bring customers back automatically. Our automatic customer win-back texts send reminders, deal pushes, and expiry alerts, so you never lose a customer to a competitor again.
         </p>
 
         <div className="grid gap-8 sm:grid-cols-2">
@@ -1742,7 +1742,7 @@ function PricingTiers() {
       price: "$49",
       period: "/mo",
       desc: "Retain customers automatically",
-      features: ["Everything in Starter", "Featured placement", "Tools that help bring customers back", "Google review display", "Best Deals eligibility"],
+      features: ["Everything in Starter", "Featured placement", "Automatic customer win-back texts", "Google review display", "Best Deals eligibility"],
       cta: "Most Popular",
       highlight: true,
     },
