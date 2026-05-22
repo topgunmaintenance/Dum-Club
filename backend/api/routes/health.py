@@ -505,3 +505,85 @@ async def health_reliability(_admin=Depends(require_admin)):
             "dum_points": d,
         },
     }
+
+
+# ── /api/health/ready — readiness probe (deeper than liveness) ──
+# Liveness (/api/health) answers "is the process up?". Readiness answers
+# "can it serve traffic?" by touching the database. Use this for deeper
+# uptime checks; keep the 1-minute uptime monitor on /api/health so a
+# transient DB blip doesn't page on every poll.
+
+@router.get("/ready")
+async def health_ready():
+    db_ok = False
+    detail = None
+    try:
+        sb = get_client()
+        # Cheapest possible round-trip: head count on a tiny, always-present
+        # table. Confirms the PostgREST + DB path is reachable.
+        sb.table("users").select("privy_id", count="exact", head=True).limit(1).execute()
+        db_ok = True
+    except Exception as exc:  # noqa: BLE001
+        detail = str(exc)
+
+    return {
+        "ok": db_ok,
+        "status": "ready" if db_ok else "not_ready",
+        "checked_at": _now_iso(),
+        "db": "ok" if db_ok else "error",
+        "supabase": "ok" if db_ok else "error",
+        **({"error": detail} if detail else {}),
+    }
+
+
+# ── /api/health/metrics — admin-only operational snapshot ──
+# Spot-check numbers for the operator (Julian), not public. Gated by
+# require_admin. All counts are head=True (no row payloads). failed
+# webhook count is guarded: the webhook_events table arrives in the
+# Stripe-hardening PR, so this returns null until that ships rather
+# than 500-ing.
+
+def _count(sb, table: str, build=None) -> Optional[int]:
+    try:
+        q = sb.table(table).select("*", count="exact", head=True)
+        if build:
+            q = build(q)
+        res = q.execute()
+        return res.count
+    except Exception:
+        return None
+
+
+@router.get("/metrics")
+async def health_metrics(_admin=Depends(require_admin)):
+    from datetime import timedelta
+
+    sb = get_client()
+    now = datetime.now(timezone.utc)
+    iso_24h = (now - timedelta(hours=24)).isoformat()
+    iso_7d = (now - timedelta(days=7)).isoformat()
+    iso_30d = (now - timedelta(days=30)).isoformat()
+
+    return {
+        "ok": True,
+        "checked_at": _now_iso(),
+        "merchants": {
+            "total": _count(sb, "merchants"),
+            "connected": _count(
+                sb, "merchants", lambda q: q.eq("stripe_connect_status", "connected")
+            ),
+            "new_7d": _count(sb, "merchants", lambda q: q.gte("created_at", iso_7d)),
+            "new_30d": _count(sb, "merchants", lambda q: q.gte("created_at", iso_30d)),
+        },
+        "orders_24h": _count(sb, "orders", lambda q: q.gte("created_at", iso_24h)),
+        # Guarded: webhook_events ships in the Stripe-hardening PR. Until
+        # then this is null, not an error.
+        "failed_webhooks_24h": _count(
+            sb,
+            "webhook_events",
+            lambda q: q.eq("processing_status", "failed").gte("received_at", iso_24h),
+        ),
+        # p50/p95/p99 request latency is a follow-up: it needs an in-process
+        # timing ring buffer fed by middleware. Tracked in docs/OBSERVABILITY.md.
+        "latency_ms": None,
+    }
