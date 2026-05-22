@@ -862,15 +862,44 @@ async def stripe_webhook(request: Request):
 
     supabase = get_client()
 
-    # ── Idempotency: skip already-processed events ──
+    # ── Idempotency: atomically CLAIM the event before any side effects ──
+    # Replaces the previous check-then-act (SELECT, process, then INSERT at
+    # the end), which had two gaps at volume: (1) two concurrent deliveries
+    # of the same event could both pass the SELECT before either inserted,
+    # double-processing; (2) the record was only written at the END, so a
+    # crash mid-handler left no row and Stripe's retry reprocessed. We now
+    # insert the event_id up front — the event_id PRIMARY KEY makes this an
+    # atomic claim. A unique-violation means another delivery already owns
+    # the event, so we ack 200 and skip.
+    #
+    # Accepted trade-off (per the "minimal atomic claim" scope): if
+    # processing crashes AFTER this claim, the event stays claimed and a
+    # Stripe retry is deduped rather than reprocessed. The order path is
+    # separately guarded by process_order_paid's status check, and full
+    # status-tracking (received/processing/done/failed + manual retry) is a
+    # documented follow-up.
     event_id = event["id"]
     try:
-        existing = supabase.table("processed_webhook_events").select("event_id").eq("event_id", event_id).limit(1).execute()
-        if existing.data:
-            print(f"[webhook] Event {event_id} already processed, skipping")
+        supabase.table("processed_webhook_events").insert({
+            "event_id": event_id,
+            "event_type": event["type"],
+        }).execute()
+    except Exception as claim_exc:
+        msg = f"{getattr(claim_exc, 'code', '')} {claim_exc}".lower()
+        is_duplicate = (
+            "23505" in msg
+            or "duplicate" in msg
+            or "already exists" in msg
+            or "conflict" in msg
+            or "unique" in msg
+        )
+        if is_duplicate:
+            print(f"[webhook] Event {event_id} already claimed, skipping")
             return JSONResponse(content={"received": True, "duplicate": True}, status_code=200)
-    except Exception:
-        pass  # Table may not exist yet — proceed without idempotency
+        # Non-conflict error (e.g. table missing / transient). Degrade to
+        # processing without idempotency — same posture as the prior
+        # best-effort behavior — rather than dropping the event.
+        print(f"[webhook] claim insert non-conflict error, proceeding without idempotency: {claim_exc!r}")
 
     def _find_order(session_id: str, pi_id: str, metadata: dict) -> dict | None:
         """Try multiple strategies to find the matching order."""
@@ -1230,15 +1259,8 @@ async def stripe_webhook(request: Request):
     else:
         print(f"[webhook] Unhandled event: {event['type']}")
 
-    # Record event as processed for idempotency
-    try:
-        supabase.table("processed_webhook_events").insert({
-            "event_id": event_id,
-            "event_type": event["type"],
-        }).execute()
-    except Exception:
-        pass  # Non-fatal — duplicate check on next attempt
-
+    # Idempotency record was written up front via the atomic claim at the
+    # top of this handler — nothing to record here.
     print(f"[webhook] ========== WEBHOOK DONE ==========")
     return JSONResponse(content={"received": True}, status_code=200)
 
