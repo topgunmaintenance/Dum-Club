@@ -30,10 +30,13 @@ function SkeletonCard() {
   );
 }
 
-export function LoadingGrid() {
+export function LoadingGrid({ count = 6 }: { count?: number }) {
+  // Cap at 12 so a large cached/expected count never floods the page
+  // with skeletons (the jarring 36-card flash this avoids).
+  const n = Math.min(Math.max(count, 1), 12);
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: n }).map((_, i) => (
         <SkeletonCard key={i} />
       ))}
     </div>
