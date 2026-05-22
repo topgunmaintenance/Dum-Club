@@ -182,7 +182,7 @@ export default function PricingPage() {
         <Container size="xl">
           <div className="mb-10 text-center">
             <Eyebrow tone="muted">Tiers</Eyebrow>
-            <Heading level="h1" className="mt-3">
+            <Heading level="h1" as="h2" className="mt-3">
               Pick the plan that fits.
             </Heading>
             <p className="mx-auto mt-3 max-w-xl text-secondary">
@@ -322,7 +322,7 @@ export default function PricingPage() {
         <Container size="lg">
           <div className="mb-8 text-center">
             <Eyebrow tone="navy">The math</Eyebrow>
-            <Heading level="h1" className="mt-3">
+            <Heading level="h1" as="h2" className="mt-3">
               At <span className="text-brand-teal">$10k/month in sales</span>,
               who keeps more?
             </Heading>
@@ -391,7 +391,7 @@ export default function PricingPage() {
         <Container size="md">
           <div className="mb-8 text-center">
             <Eyebrow tone="muted">FAQ</Eyebrow>
-            <Heading level="h1" className="mt-3">
+            <Heading level="h1" as="h2" className="mt-3">
               Questions worth answering up front.
             </Heading>
           </div>

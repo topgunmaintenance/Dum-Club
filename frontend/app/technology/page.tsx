@@ -45,8 +45,52 @@ export default function TechnologyPage() {
           .
         </p>
 
-        {/* ── The stack ────────────────────────────────────────────── */}
+        {/* ── Disclosures ───────────────────────────────────────────
+             Moved up to be the second section (clarity pass): the
+             legal-review / Solana-mainnet warning should be visible
+             before the stack details, not buried at the bottom. */}
         <section className="mt-12">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
+            Disclosures
+          </div>
+          <h2 className="text-2xl font-bold text-white">What we&apos;re still figuring out.</h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-zinc-400">
+            DUM Club is in early access. The cross-merchant rewards loop
+            (earn at merchant A, redeem at merchant B) is the product
+            wedge. The Solana SPL token is a complementary on-chain
+            representation, not the primary value driver.
+          </p>
+          <ul className="mt-4 space-y-2 text-[13px] leading-relaxed text-zinc-500">
+            <li>
+              <span className="text-zinc-400">·</span>{" "}
+              Purchasing DUM Points with a card is currently disabled
+              pending a written legal review of US money-transmission and
+              prepaid-card regulations. Earning through purchases is
+              unaffected.
+            </li>
+            <li>
+              <span className="text-zinc-400">·</span>{" "}
+              The on-chain SPL token operates on Solana devnet. Mainnet
+              deployment is gated on the same legal review.
+            </li>
+            <li>
+              <span className="text-zinc-400">·</span>{" "}
+              DUM Points are not an investment. There is no secondary
+              market, no buyback, no expectation of price appreciation.
+              They are a loyalty unit redeemable for discounts at
+              participating merchants. 1 DUM = $0.10 of merchant credit.
+            </li>
+            <li>
+              <span className="text-zinc-400">·</span>{" "}
+              The content on this site is for informational purposes
+              only and does not constitute financial, legal, or
+              investment advice.
+            </li>
+          </ul>
+        </section>
+
+        {/* ── The stack ────────────────────────────────────────────── */}
+        <section className="mt-16">
           <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
             The stack
           </div>
@@ -150,47 +194,6 @@ export default function TechnologyPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* ── Disclosures ───────────────────────────────────────── */}
-        <section className="mt-16">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.25em] text-zinc-500">
-            Disclosures
-          </div>
-          <h2 className="text-2xl font-bold text-white">What we&apos;re still figuring out.</h2>
-          <p className="mt-3 text-[14px] leading-relaxed text-zinc-400">
-            DUM Club is in early access. The cross-merchant rewards loop
-            (earn at merchant A, redeem at merchant B) is the product
-            wedge. The Solana SPL token is a complementary on-chain
-            representation, not the primary value driver.
-          </p>
-          <ul className="mt-4 space-y-2 text-[13px] leading-relaxed text-zinc-500">
-            <li>
-              <span className="text-zinc-400">·</span>{" "}
-              Purchasing DUM Points with a card is currently disabled
-              pending a written legal review of US money-transmission and
-              prepaid-card regulations. Earning through purchases is
-              unaffected.
-            </li>
-            <li>
-              <span className="text-zinc-400">·</span>{" "}
-              The on-chain SPL token operates on Solana devnet. Mainnet
-              deployment is gated on the same legal review.
-            </li>
-            <li>
-              <span className="text-zinc-400">·</span>{" "}
-              DUM Points are not an investment. There is no secondary
-              market, no buyback, no expectation of price appreciation.
-              They are a loyalty unit redeemable for discounts at
-              participating merchants. 1 DUM = $0.10 of merchant credit.
-            </li>
-            <li>
-              <span className="text-zinc-400">·</span>{" "}
-              The content on this site is for informational purposes
-              only and does not constitute financial, legal, or
-              investment advice.
-            </li>
-          </ul>
         </section>
 
         <div className="mt-16 border-t border-zinc-900 pt-8">

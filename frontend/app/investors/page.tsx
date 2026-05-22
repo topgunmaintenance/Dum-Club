@@ -187,7 +187,7 @@ export default function InvestorsPage() {
         <Container size="md">
           <div className="mb-6 text-center">
             <Eyebrow tone="brand">90-second walkthrough</Eyebrow>
-            <Heading level="h1" className="mt-3">
+            <Heading level="h1" as="h2" className="mt-3">
               See DUM Club in motion.
             </Heading>
             <p className="mx-auto mt-3 max-w-xl text-secondary">
@@ -221,7 +221,7 @@ export default function InvestorsPage() {
         <Container size="xl">
           <div className="mb-10 text-center">
             <Eyebrow tone="muted">Investment Highlights</Eyebrow>
-            <Heading level="h1" className="mt-3">
+            <Heading level="h1" as="h2" className="mt-3">
               A live platform, not a pitch idea.
             </Heading>
             <p className="mx-auto mt-3 max-w-2xl text-secondary">
@@ -254,7 +254,7 @@ export default function InvestorsPage() {
               <Eyebrow tone="navy" id="deck">
                 Pitch Deck · 18 slides
               </Eyebrow>
-              <Heading level="h1" className="mt-3">
+              <Heading level="h1" as="h2" className="mt-3">
                 The full investor deck.
               </Heading>
               <p className="mt-2 max-w-xl text-secondary">
@@ -378,7 +378,7 @@ export default function InvestorsPage() {
 
             <div>
               <Eyebrow tone="brand">Founder</Eyebrow>
-              <Heading level="h1" className="mt-3">
+              <Heading level="h1" as="h2" className="mt-3">
                 The platform was built by a working merchant.
               </Heading>
               <p className="mt-4 text-base leading-relaxed text-secondary sm:text-lg">
@@ -434,7 +434,7 @@ export default function InvestorsPage() {
             <Badge variant="accent" size="sm">
               WeFunder Community Round · Open Now
             </Badge>
-            <Heading level="h1" className="mt-4">
+            <Heading level="h1" as="h2" className="mt-4">
               Join the Community Round.
             </Heading>
             <p className="mx-auto mt-3 max-w-xl text-secondary">
