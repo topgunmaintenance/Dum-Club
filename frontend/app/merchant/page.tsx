@@ -349,8 +349,8 @@ export default function MerchantPage() {
     const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-card px-4 pt-24">
-        <div className="w-full max-w-md text-center">
+      <div className="min-h-screen bg-surface-card px-4 pb-20 pt-28">
+        <div className="mx-auto w-full max-w-md text-center">
           {programOpen && claimed !== null && (
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
               <span className="relative flex h-2 w-2">
@@ -378,11 +378,66 @@ export default function MerchantPage() {
             Claim Your Founding Spot →
           </button>
 
-          <p className="mx-auto mt-4 max-w-sm text-[12px] leading-relaxed text-secondary">
-            After sign-in: enter your business name (one field). Done in 60 seconds. No card, no commission.
-          </p>
           <p className="mt-2 text-[11px] text-secondary">
             Sign in with email or Google · Takes 30 seconds
+          </p>
+        </div>
+
+        {/* What happens after you sign up — 3 steps */}
+        <div className="mx-auto mt-16 w-full max-w-2xl">
+          <h2 className="text-center text-lg font-extrabold tracking-tight text-primary">
+            What happens after you sign up
+          </h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              { n: "1", title: "Sign in", body: "Use your email or Google. No password to remember." },
+              { n: "2", title: "Enter business name", body: "One field. That's the whole signup." },
+              { n: "3", title: "Connect Stripe", body: "When you're ready to take payments. Money goes straight to your bank." },
+            ].map((step) => (
+              <div key={step.n} className="rounded-2xl border border-default bg-surface-page p-5 text-center">
+                <div className="mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
+                  {step.n}
+                </div>
+                <div className="mt-3 text-sm font-bold text-primary">{step.title}</div>
+                <p className="mt-1 text-[12px] leading-relaxed text-secondary">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mini FAQ */}
+        <div className="mx-auto mt-14 w-full max-w-2xl">
+          <h2 className="text-center text-lg font-extrabold tracking-tight text-primary">
+            Quick questions
+          </h2>
+          <div className="mt-5 space-y-3">
+            {[
+              { q: "Do I need a website?", a: "No. You get a shop page on DUM Club either way. If you do have a website, you can add one line of code to show your live shop there too." },
+              { q: "Do I need to be a Stripe user already?", a: "No. We set up Stripe for you in about 60 seconds when you're ready to take payments. Money goes straight to your bank." },
+              { q: "How long does setup take?", a: "A few minutes. Sign in, enter your business name, and you're in. Connect Stripe whenever you're ready to sell." },
+              { q: "What if I get stuck?", a: "Email or call Julian, the founder. Real person, same-day reply." },
+            ].map((f) => (
+              <details key={f.q} className="group rounded-2xl border border-default bg-surface-page p-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[14px] font-semibold text-primary">
+                  {f.q}
+                  <span className="text-secondary transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="mt-2 text-[13px] leading-relaxed text-secondary">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+
+        {/* Prefer to talk first */}
+        <div className="mx-auto mt-12 w-full max-w-2xl text-center">
+          <p className="text-sm text-secondary">
+            Prefer to talk first?{" "}
+            <a
+              href="mailto:julian@topgunmaintenance.com"
+              className="font-semibold text-brand-teal hover:text-brand-teal-hover"
+            >
+              Email Julian
+            </a>
           </p>
         </div>
       </div>
