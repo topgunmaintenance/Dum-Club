@@ -108,8 +108,18 @@ def _get_market_row(supabase, project_id: str) -> dict:
 @router.get("/api/projects/{project_id}/market")
 async def get_project_market(project_id: str):
     project_id = _resolve(project_id)
-    supabase = get_client()
+    return compute_market_snapshot(get_client(), project_id)
 
+
+def compute_market_snapshot(supabase, project_id: str) -> dict:
+    """Compute a project's market snapshot (price, market cap, volume).
+
+    Extracted verbatim from the per-project GET endpoint so the batched
+    /api/projects/discover endpoint can reuse the EXACT same math by
+    looping this function server-side — no risk of divergence. Expects
+    `project_id` to already be a canonical UUID (callers that take a
+    slug-or-UUID path param must _resolve() first).
+    """
     project_res = (
         supabase.table("projects")
         .select("id, token_supply, token_mint_address")
@@ -142,6 +152,7 @@ async def get_project_market(project_id: str):
         "token_mode": token_mode(mint_address),
         "simulation_mode": is_simulated_token(mint_address),
     }
+
 
 
 @router.get("/api/projects/{project_id}/trades")

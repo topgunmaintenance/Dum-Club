@@ -1,11 +1,12 @@
 /**
- * useProjects — loads projects + batched market data.
+ * useProjects — loads projects + market data for /discover in a SINGLE
+ * request via GET /api/projects/discover.
  *
- * Calls GET /api/projects/public on mount, then polls market
- * snapshots every 60s (visibility-aware — pauses when tab hidden).
- * 60s matches the LiveActivityTicker cadence so the marketplace
- * never has two staggered refresh waves competing for the same
- * Railway endpoints.
+ * Replaces the old fan-out (GET /public + N x /{id}/market). The browser
+ * now makes one request that returns each project with an embedded
+ * market_summary, which we map into marketByProject keyed by id. One
+ * visibility-aware poll (20s) keeps is_live + price fresh; the endpoint
+ * is HTTP-cached 30s so the poll is cheap.
  */
 
 "use client";
@@ -13,15 +14,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { API_BASE } from "../apiBase";
 import type { Project, MarketSnapshot } from "./types";
-import { loadMarketSnapshotsBatch } from "./useMarketBatch";
 
-const MARKET_POLL_INTERVAL = 60_000;
-// Refresh the project list itself every 20s so a merchant
-// flipping is_live (Go Live / End Stream) propagates to all
-// open /discover tabs within a normal page-glance window. The
-// market poll loop is a separate cadence — that one refreshes
-// price/volume snapshots and runs at 60s.
-const PROJECTS_POLL_INTERVAL = 20_000;
+const POLL_INTERVAL = 20_000;
+const PAGE_SIZE = 24;
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -29,101 +24,111 @@ export function useProjects() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [marketLoaded, setMarketLoaded] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // How many items the feed currently shows. "Load more" bumps this; the
+  // poll re-fetches the whole visible window so freshness is preserved.
+  const limitRef = useRef(PAGE_SIZE);
 
-  const loadProjects = useCallback(async () => {
+  const loadDiscover = useCallback(async (opts?: { silent?: boolean }) => {
     try {
-      setError("");
-      const res = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load projects: ${res.status}`);
+      if (!opts?.silent) setError("");
+      const res = await fetch(
+        `${API_BASE}/api/projects/discover?limit=${limitRef.current}&offset=0`,
+        { cache: "no-store" },
+      );
+
+      // Deploy-safety fallback: if the consolidated endpoint isn't live
+      // yet (e.g. frontend deployed before the backend during a rollout),
+      // fall back to the still-present GET /public so /discover never
+      // hard-breaks. Cards render without price chips until the backend
+      // catches up, then the next poll self-heals.
+      if (res.status === 404 || res.status === 405) {
+        const pub = await fetch(`${API_BASE}/api/projects/public`, { cache: "no-store" });
+        if (!pub.ok) throw new Error(`Failed to load listings: ${pub.status}`);
+        const pdata = await pub.json();
+        const plist: Project[] = Array.isArray(pdata?.projects)
+          ? pdata.projects
+          : Array.isArray(pdata)
+            ? pdata
+            : [];
+        setProjects(plist);
+        setMarketByProject({});
+        setHasMore(false);
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to load listings: ${res.status}`);
       const data = await res.json();
-      const publicProjects: Project[] = Array.isArray(data?.projects)
-        ? data.projects
-        : Array.isArray(data)
-          ? data
-          : [];
-      setProjects(publicProjects);
-      return publicProjects;
+      const list: Project[] = Array.isArray(data?.projects) ? data.projects : [];
+
+      const markets: Record<string, MarketSnapshot> = {};
+      for (const p of list) {
+        const m = (p as { market_summary?: MarketSnapshot | null }).market_summary;
+        if (p.id && m) {
+          markets[p.id] = {
+            price: Number(m.price || 0),
+            market_cap: Number(m.market_cap || 0),
+            volume_24h: Number(m.volume_24h || 0),
+          } as MarketSnapshot;
+        }
+      }
+
+      setProjects(list);
+      setMarketByProject(markets);
+      setHasMore(Boolean(data?.has_more));
     } catch (err) {
       console.error("DISCOVER LOAD ERROR:", err);
-      setError("We couldn't load listings. Refresh to try again.");
-      setProjects([]);
-      return [];
-    }
-  }, []);
-
-  const loadMarkets = useCallback(async (projs: Project[]) => {
-    const ids = projs.map((p) => p.id).filter(Boolean);
-    if (!ids.length) {
-      setMarketByProject({});
-      setMarketLoaded(true);
-      return;
-    }
-    try {
-      const snapshots = await loadMarketSnapshotsBatch(ids);
-      setMarketByProject(snapshots);
-    } catch (err) {
-      console.error("DISCOVER MARKET ERROR:", err);
+      if (!opts?.silent) {
+        setError("We couldn't load listings. Refresh to try again.");
+        setProjects([]);
+      }
     } finally {
       setMarketLoaded(true);
     }
   }, []);
 
-  // Initial load: projects → then market batch
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    limitRef.current += PAGE_SIZE;
+    await loadDiscover({ silent: true });
+    setLoadingMore(false);
+  }, [loadDiscover]);
+
+  // Initial load
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const projs = await loadProjects();
-      if (cancelled) return;
-      await loadMarkets(projs);
+      await loadDiscover();
       if (cancelled) return;
       setLoading(false);
     })();
-    return () => { cancelled = true; };
-  }, [loadProjects, loadMarkets]);
-
-  // Market poll every 60s (visibility-aware)
-  useEffect(() => {
-    if (!projects.length) return;
-    if (pollRef.current) clearInterval(pollRef.current);
-
-    pollRef.current = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-      loadMarkets(projects);
-    }, MARKET_POLL_INTERVAL);
-
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      cancelled = true;
     };
-  }, [projects, loadMarkets]);
+  }, [loadDiscover]);
 
-  // Project-list refresh poll. Separate from the market poll
-  // because the field we care about (is_live + viewer_count)
-  // sits on the project row itself, not on the per-project
-  // /market snapshot. Without this, /discover stayed stuck on
-  // the initial-mount snapshot — a merchant going live mid-
-  // session never appeared as live on already-open Discover
-  // tabs (QA T3 finding).
+  // Single visibility-aware poll keeps is_live + price fresh. One request
+  // per tick now that projects + market come from the same endpoint.
   useEffect(() => {
     const iv = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-      loadProjects();
-    }, PROJECTS_POLL_INTERVAL);
+      loadDiscover({ silent: true });
+    }, POLL_INTERVAL);
     return () => clearInterval(iv);
-  }, [loadProjects]);
+  }, [loadDiscover]);
 
-  // Refresh on tab refocus too — visitors who switch tabs
-  // back to Discover after a few minutes should see the
-  // freshest live state without waiting for the next poll tick.
+  // Refresh on tab refocus so visitors returning after a few minutes see
+  // the freshest live state without waiting for the next poll tick.
   useEffect(() => {
     if (typeof document === "undefined") return;
     function onVisible() {
-      if (document.visibilityState === "visible") loadProjects();
+      if (document.visibilityState === "visible") loadDiscover({ silent: true });
     }
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [loadProjects]);
+  }, [loadDiscover]);
 
-  return { projects, marketByProject, loading, error, marketLoaded };
+  return { projects, marketByProject, loading, error, marketLoaded, hasMore, loadMore, loadingMore };
 }
