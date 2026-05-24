@@ -213,7 +213,7 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
         href={editOffersHref}
         className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
       >
-        Edit offers
+        Post an item
       </a>
 
       <a
