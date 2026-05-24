@@ -7128,7 +7128,31 @@ return (
 
           {/* Legacy Mux/camera flow. only when IVS is NOT enabled and NOT live */}
           {!IVS_REALTIME_ENABLED && !project?.is_live && (
-            cameraPreview ? (
+            goingLive ? (
+              // Optimistic-feedback panel: shown the instant Start Live is
+              // clicked, before the /go-live API + Mux stream creation
+              // resolve. The merchant gets clear reassurance during the
+              // ~1-2s wait instead of a silently-disabled button. Covers
+              // both startLiveFromCamera() and handleGoLive() — both set
+              // goingLive=true on click.
+              <div className="rounded-2xl border border-[var(--state-live)]/30 bg-state-live/5 p-8 text-center">
+                <div
+                  className="mx-auto mb-4 flex h-12 w-12 items-center justify-center"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Starting your live show"
+                >
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
+                  </span>
+                </div>
+                <div className="text-lg font-bold text-primary">Starting your live show…</div>
+                <p className="mt-2 text-sm text-secondary">
+                  Connecting your camera. This usually takes a second or two.
+                </p>
+              </div>
+            ) : cameraPreview ? (
               <div className="space-y-4">
                 <h2 className="text-xl font-bold text-primary">Camera Ready</h2>
                 <div className="overflow-hidden rounded-2xl border border-default bg-black">
