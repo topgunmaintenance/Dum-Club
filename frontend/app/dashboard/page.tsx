@@ -252,7 +252,12 @@ export default function DashboardPage() {
     }
   }
 
-  const liveCount = projects.filter((p) => p.status === "live").length;
+  // is_live = currently broadcasting (the field the host/viewer code
+  // uses everywhere else, e.g. line 684 below). The earlier
+  // `status === "live"` filter mistook the workflow column for the
+  // broadcast column and undercounted any merchant who was actually
+  // streaming. Source-of-truth alignment, not a count change.
+  const liveCount = projects.filter((p) => p.is_live === true).length;
 
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
@@ -297,17 +302,26 @@ export default function DashboardPage() {
 
         {/* Stats + Wallet + CTA row */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Total Projects */}
+          {/* Your Storefronts (renamed from "Total Projects" — clearer
+              language for non-technical merchants and matches the
+              user-facing terminology elsewhere). */}
           <div className="rounded-2xl border border-default bg-surface-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
-              Total Projects
+              Your Storefronts
             </div>
             <div className="mt-2 font-mono text-3xl font-bold text-brand-navy">
               {projects.length}
             </div>
+            {user && projects.length === 0 && (
+              <p className="mt-2 text-[11px] leading-snug text-muted">
+                Don&apos;t see your shop? It might be linked to a different account. Sign in with the same email or Google you used at signup.
+              </p>
+            )}
           </div>
 
-          {/* Live Projects */}
+          {/* Live — counts projects currently broadcasting (is_live).
+              Was filtering on the workflow column `status==='live'` which
+              missed actively-streaming projects. */}
           <div className="rounded-2xl border border-default bg-surface-card p-6">
             <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
               Live

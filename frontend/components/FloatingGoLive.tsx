@@ -31,6 +31,7 @@
  */
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth/AuthContext";
 import { API_BASE } from "../lib/apiBase";
@@ -43,6 +44,7 @@ interface ProjectSummary {
 
 export function FloatingGoLive() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [hasOffer, setHasOffer] = useState(false);
 
@@ -97,6 +99,11 @@ export function FloatingGoLive() {
   if (!project) return null;
   if (!hasOffer) return null;
 
+  // Hide the floating pill on the merchant's own project pages — the
+  // AdminBar already renders a Go Live action there, so the floating
+  // pill is redundant overlap. Keep it on /dashboard, /discover, etc.
+  if (pathname && pathname.startsWith("/project/")) return null;
+
   const target = `/project/${project.slug || project.id}#project-live-host`;
   const isLive = !!project.is_live;
 
@@ -108,7 +115,12 @@ export function FloatingGoLive() {
       className="fixed bottom-5 left-5 z-[55] inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white shadow-[0_14px_32px_rgba(239,68,68,0.35),0_0_0_4px_rgba(239,68,68,0.18)] transition hover:translate-y-[-1px] hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:bottom-6 sm:left-6"
     >
       <span className="relative inline-flex h-2.5 w-2.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
+        {/* Pulse only when actually streaming — the previous version
+            animate-pinged regardless of state, reading as
+            "you're live" even when the merchant wasn't broadcasting. */}
+        {isLive && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
+        )}
         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
       </span>
       {isLive ? "Live now" : "Go Live"}

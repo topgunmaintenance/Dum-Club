@@ -588,3 +588,156 @@ async def health_metrics(_admin=Depends(require_admin)):
         # timing ring buffer fed by middleware. Tracked in docs/OBSERVABILITY.md.
         "latency_ms": None,
     }
+
+
+# ── /api/health/orders-audit ──
+# Read-only per-merchant order distribution. Surfaces the
+# pending_payment vs paid breakdown, age of the oldest stuck order,
+# and how many rows carry Stripe IDs (traceable) vs none (likely
+# test rows from pre-launch). NO mutations — recovery is a separate,
+# deliberate operator action (POST /api/orders/recover-pending,
+# which already exists). The point of THIS endpoint is to see what's
+# actually in the table before deciding whether to recover.
+#
+# Accepts either a privy_id or a UUID owner_id. Resolves to the
+# merchant's projects, then aggregates their orders.
+
+@router.get("/orders-audit")
+async def health_orders_audit(
+    owner_id: str,
+    _admin=Depends(require_admin),
+):
+    from datetime import timedelta
+
+    sb = get_client()
+    now = datetime.now(timezone.utc)
+
+    # 1. Resolve owner_id (privy_id or wallet UUID) -> project_ids.
+    try:
+        proj_q = sb.table("projects").select("id, slug, title, name")
+        # Same resolution shape used by /api/projects/?owner_id=.
+        # If owner_id matches owner_id (UUID), pick those; else fall
+        # back to privy_id column.
+        from api.routes.projects import _UUID_RE  # type: ignore
+        if _UUID_RE.match(owner_id or ""):
+            proj_q = proj_q.eq("owner_id", owner_id)
+        else:
+            proj_q = proj_q.eq("privy_id", owner_id)
+        proj_res = proj_q.eq("is_deleted", False).execute()
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "error": f"project lookup failed: {exc!r}",
+            "checked_at": _now_iso(),
+        }
+
+    projects = proj_res.data or []
+    project_ids = [p["id"] for p in projects]
+
+    if not project_ids:
+        return {
+            "ok": True,
+            "owner_id": owner_id,
+            "projects": [],
+            "orders": {
+                "total": 0,
+                "by_status": {},
+                "stuck_pending_payment": {
+                    "count": 0,
+                    "oldest_age_hours": None,
+                    "with_stripe_session_id": 0,
+                    "with_stripe_payment_intent_id": 0,
+                    "with_no_stripe_ids": 0,
+                },
+            },
+            "checked_at": _now_iso(),
+        }
+
+    # 2. Fetch all orders for those projects. Cap at 500 — Topgun has
+    # 17; even a heavy merchant won't blow past 500 in a single audit.
+    try:
+        orders_res = (
+            sb.table("orders")
+            .select(
+                "id, status, stripe_session_id, stripe_payment_intent_id,"
+                " amount_paid_usd, created_at, project_id"
+            )
+            .in_("project_id", project_ids)
+            .order("created_at", desc=True)
+            .limit(500)
+            .execute()
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "error": f"orders lookup failed: {exc!r}",
+            "checked_at": _now_iso(),
+        }
+
+    orders = orders_res.data or []
+
+    # 3. Aggregate by status + drill into pending_payment specifics.
+    by_status: dict[str, int] = {}
+    stuck_count = 0
+    stuck_oldest_age_hours: float | None = None
+    stuck_with_session = 0
+    stuck_with_pi = 0
+    stuck_with_no_ids = 0
+
+    for o in orders:
+        s = (o.get("status") or "unknown").strip() or "unknown"
+        by_status[s] = by_status.get(s, 0) + 1
+        if s == "pending_payment":
+            stuck_count += 1
+            has_session = bool((o.get("stripe_session_id") or "").strip())
+            has_pi = bool((o.get("stripe_payment_intent_id") or "").strip())
+            if has_session:
+                stuck_with_session += 1
+            if has_pi:
+                stuck_with_pi += 1
+            if not has_session and not has_pi:
+                stuck_with_no_ids += 1
+            # Age of oldest pending_payment
+            created = o.get("created_at")
+            if created:
+                try:
+                    # Supabase returns ISO with timezone; parse defensively.
+                    ts = datetime.fromisoformat(str(created).replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    age_h = (now - ts).total_seconds() / 3600.0
+                    if stuck_oldest_age_hours is None or age_h > stuck_oldest_age_hours:
+                        stuck_oldest_age_hours = age_h
+                except Exception:
+                    pass
+
+    return {
+        "ok": True,
+        "owner_id": owner_id,
+        "projects": [
+            {"id": p["id"], "slug": p.get("slug"), "name": p.get("title") or p.get("name")}
+            for p in projects
+        ],
+        "orders": {
+            "total": len(orders),
+            "by_status": by_status,
+            "stuck_pending_payment": {
+                "count": stuck_count,
+                "oldest_age_hours": (
+                    round(stuck_oldest_age_hours, 1)
+                    if stuck_oldest_age_hours is not None
+                    else None
+                ),
+                "with_stripe_session_id": stuck_with_session,
+                "with_stripe_payment_intent_id": stuck_with_pi,
+                "with_no_stripe_ids": stuck_with_no_ids,
+            },
+        },
+        "checked_at": _now_iso(),
+        # Interpretation hints for the operator:
+        "notes": [
+            "with_no_stripe_ids likely means test/dev rows from pre-launch.",
+            "with_stripe_session_id but no PI likely means abandoned Checkout sessions.",
+            "with_stripe_payment_intent_id but status=pending_payment may indicate a missed webhook — run POST /api/orders/recover-pending after reviewing.",
+        ],
+    }
