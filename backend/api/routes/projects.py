@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Header, Query, Response
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime, timezone
+import asyncio
 import re
 import secrets
 
@@ -1682,14 +1683,39 @@ async def go_live(
     """Owner toggles stream ON with a stream URL."""
     supabase = get_client()
 
-    project_res = (
-        supabase.table("projects")
-        .select("id, owner_id, privy_id")
-        .eq("id", project_id)
-        .eq("is_deleted", False)
-        .limit(1)
-        .execute()
+    # Overlap the project row + (speculative) merchant Stripe-gate fetches.
+    # supabase-py is sync, so push each into a thread and gather. In the
+    # common case the caller IS the project owner (their own /go-live),
+    # so `user_id` already equals `project.privy_id` and the speculative
+    # merchant fetch keyed on user_id is the right one. The edge case
+    # (caller authorized via owner_id rather than privy_id) re-fetches
+    # the merchant row after the auth check. Net: ~one Supabase
+    # round-trip shaved on every Go Live in the common path, with no
+    # behavior change.
+    def _fetch_project():
+        return (
+            supabase.table("projects")
+            .select("id, owner_id, privy_id")
+            .eq("id", project_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+
+    def _fetch_merchant(privy_id: str):
+        return (
+            supabase.table("merchants")
+            .select("stripe_connect_status")
+            .eq("owner_privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
+
+    project_res, merchant_res = await asyncio.gather(
+        asyncio.to_thread(_fetch_project),
+        asyncio.to_thread(_fetch_merchant, user_id),
     )
+
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -1704,13 +1730,11 @@ async def go_live(
         raise HTTPException(status_code=403, detail="Not project owner")
 
     owner_privy = project.get("privy_id") or user_id
-    merchant_res = (
-        supabase.table("merchants")
-        .select("stripe_connect_status")
-        .eq("owner_privy_id", owner_privy)
-        .limit(1)
-        .execute()
-    )
+    # Speculative-fetch correction: if the caller was authorized via
+    # owner_id but their privy_id differs from the project's, the
+    # parallel fetch we did was keyed on the wrong privy_id — re-fetch.
+    if owner_privy != user_id:
+        merchant_res = await asyncio.to_thread(_fetch_merchant, owner_privy)
     merchant_status = (
         merchant_res.data[0].get("stripe_connect_status")
         if merchant_res.data else None
