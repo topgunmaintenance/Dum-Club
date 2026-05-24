@@ -10,9 +10,13 @@ test("/install (signed out) renders sign-in CTA without React #310", async ({
 
   // Wait for the install page heading specifically — also acts
   // as the auth-resolution gate (heading only renders after
-  // authLoading flips false; PR #189 hydration fix).
+  // authLoading flips false; PR #189 hydration fix). The H1 text
+  // was renamed in PR #230 (dashboard UX clarity pass) from
+  // "Add DUM Club to your website" -> "Embed on your site
+  // (optional)"; the test wasn't updated alongside so it broke on
+  // the next QA run after that merged.
   await expect(
-    page.getByRole("heading", { name: /Add DUM Club to your website/i }),
+    page.getByRole("heading", { name: /Embed on your site/i }),
   ).toBeVisible({ timeout: 12_000 });
 
   await page.screenshot({ path: "test-results/install.png", fullPage: false });

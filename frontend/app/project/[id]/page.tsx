@@ -3647,7 +3647,7 @@ return (
         />
       </>
     )}
-    <div className="relative z-[1] mx-auto max-w-6xl">
+    <div className="relative z-[1] mx-auto w-full max-w-6xl min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8">
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
       {pitchMode && (
@@ -7241,8 +7241,19 @@ return (
                         <div className="font-mono text-base font-bold text-primary">
                           ${Number(order.amount_paid_usd).toFixed(2)}
                         </div>
-                        <div className="text-[10px] text-muted mt-0.5">
-                          You receive: ${Number(order.seller_receives_usd).toFixed(2)}
+                        <div
+                          className="text-[10px] text-muted mt-0.5 inline-flex items-center gap-1"
+                          title="Stripe processing fee. DUM Club takes 0%."
+                        >
+                          <span>You receive: ${Number(order.seller_receives_usd).toFixed(2)}</span>
+                          <button
+                            type="button"
+                            aria-label="Stripe processing fee. DUM Club takes 0%."
+                            title="Stripe processing fee. DUM Club takes 0%."
+                            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
+                          >
+                            ?
+                          </button>
                         </div>
                       </div>
                     </div>
