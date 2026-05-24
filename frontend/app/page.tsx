@@ -14,15 +14,34 @@ import {
   Diamond,
   type LucideIcon,
 } from "lucide-react";
-import { ProofOfPurchaseModal } from "../components/ProofOfPurchaseModal";
-import { ProofOfMotion } from "../components/ProofOfMotion";
-import { FounderNote } from "../components/FounderNote";
-import { LoomExplainer } from "../components/LoomExplainer";
+import dynamic from "next/dynamic";
 import { ScrollReveal } from "../components/motion/ScrollReveal";
+
+// Below-the-fold components — code-split out of the initial homepage
+// bundle so the hero text (the LCP element on mobile) can paint without
+// waiting on their JS. All four either render below the fold
+// (LoomExplainer, ProofOfMotion, FounderNote) or are hidden until
+// triggered (ProofOfPurchaseModal). ssr:false because none of them are
+// part of the initial paint we care about for SEO.
+const ProofOfPurchaseModal = dynamic(
+  () => import("../components/ProofOfPurchaseModal").then((m) => ({ default: m.ProofOfPurchaseModal })),
+  { ssr: false, loading: () => null },
+);
+const ProofOfMotion = dynamic(
+  () => import("../components/ProofOfMotion").then((m) => ({ default: m.ProofOfMotion })),
+  { ssr: false, loading: () => null },
+);
+const FounderNote = dynamic(
+  () => import("../components/FounderNote").then((m) => ({ default: m.FounderNote })),
+  { ssr: false, loading: () => null },
+);
+const LoomExplainer = dynamic(
+  () => import("../components/LoomExplainer").then((m) => ({ default: m.LoomExplainer })),
+  { ssr: false, loading: () => null },
+);
 // FeeCalculator moved to /business page. seller content lives there now.
 import { useAuth } from "../lib/auth/AuthContext";
 import { speakText, stopSpeaking, canSpeak } from "../lib/speech";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 type Project = {
   id: string;
@@ -1932,8 +1951,15 @@ function HomeSectionNav() {
 export default function Home() {
   const router = useRouter();
   const { user, login } = useAuth();
-  const { wallets, createWallet } = useSolanaWallets();
-  const walletAddress = user?.walletAddress ?? wallets[0]?.address ?? null;
+  // The deprecated AI-builder hero (type-an-idea → wallet → launch) no
+  // longer renders any input, so the wallet-creation branches below are
+  // unreachable. Drop the @privy-io/react-auth/solana hook to keep the
+  // Solana SDK out of the homepage bundle (~tens of KB on the critical
+  // path → measurable mobile LCP/TBT win). user.walletAddress is still
+  // sourced via useAuth (live); createWallet is stubbed as a no-op so
+  // the unreachable code paths still type-check.
+  const walletAddress = user?.walletAddress ?? null;
+  const createWallet = async () => {};
 
   // Hero service-finder search bar and rotating placeholders were
   // removed in the homepage audit pass. The audience-toggle's
