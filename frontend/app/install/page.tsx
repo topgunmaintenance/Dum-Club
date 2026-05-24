@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * /install — "Add DUM Club to your website" onboarding page.
+ * /install — "Embed on your site (optional)" onboarding page.
  *
  * Plain-English landing for merchants who are stuck on the
  * embed-snippet step of the 5-step checklist. The directive
@@ -201,7 +201,7 @@ export default function InstallPage() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="mb-4 text-3xl font-bold text-primary">
-          Add DUM Club to your website
+          Embed on your site (optional)
         </h1>
         <p className="mb-6 text-secondary">
           Sign in to grab your install snippet.
@@ -221,7 +221,7 @@ export default function InstallPage() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="mb-4 text-3xl font-bold text-primary">
-          Add DUM Club to your website
+          Embed on your site (optional)
         </h1>
         <p className="mb-6 text-secondary">
           You'll need a project first. Set one up and come back here for your
@@ -243,7 +243,7 @@ export default function InstallPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-3 text-3xl font-bold text-primary">
-        Add DUM Club to your website
+        Embed on your site (optional)
       </h1>
       <p className="mb-8 text-secondary">
         Paste one line of code into your site. When you go live, a small bubble

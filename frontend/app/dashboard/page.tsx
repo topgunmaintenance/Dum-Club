@@ -269,6 +269,32 @@ export default function DashboardPage() {
           <p className="mt-2 text-sm text-secondary">Everything you sold, paid, and have left to set up.</p>
         </div>
 
+        {/* Post & Go Live — primary action card. Top-of-page so the
+            merchant's main job (post an item + start the show) is one
+            click away. Routes to /dashboard/post which holds the
+            single-screen composer. */}
+        <Link
+          href="/dashboard/post"
+          className="group mb-8 block rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-6 transition hover:border-brand-teal sm:p-8"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+                Primary action
+              </div>
+              <div className="mt-2 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
+                Post &amp; Go Live
+              </div>
+              <p className="mt-1 text-sm text-secondary">
+                Take a photo, set a price, start your show.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition group-hover:bg-brand-teal-hover group-hover:text-white">
+              Start →
+            </span>
+          </div>
+        </Link>
+
         {/* Stats + Wallet + CTA row */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Projects */}
@@ -620,7 +646,24 @@ export default function DashboardPage() {
              Mode card (migration 040). Renders for the merchant's
              primary live project. The 5-step Get Live in Minutes flow
              above gives a one-glance status. Both surfaces render for
-             every merchant — no tier gate. */}
+             every merchant — no tier gate.
+
+             Collapsed in a <details> drawer per the dashboard UX
+             simplification so the primary action ("Post & Go Live")
+             reads as the page's focus. Pop-In + Embed-Display Mode
+             content is unchanged inside the drawer — one click to
+             expand. */}
+        <details className="group mb-6 rounded-2xl border border-default bg-surface-card">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-primary hover:text-brand-teal">
+            <span>Customize your storefront widget</span>
+            <span
+              className="text-secondary transition-transform group-open:rotate-45"
+              aria-hidden="true"
+            >
+              +
+            </span>
+          </summary>
+          <div className="border-t border-default p-5">
         {(() => {
           const primary = projects.find((p) => p.status === "live")
             ?? projects[0];
@@ -722,6 +765,8 @@ export default function DashboardPage() {
             </>
           );
         })()}
+          </div>
+        </details>
 
         {bizProfile && analyticsLoading && !analytics && (
           <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6 text-center">

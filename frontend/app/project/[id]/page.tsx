@@ -6909,7 +6909,7 @@ return (
                     onClick={() => openOfferForm()}
                     className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-5 py-2.5 text-sm font-medium text-brand-teal transition hover:border-default hover:bg-brand-teal-soft"
                   >
-                    + Create your first offer
+                    + Post an item
                   </button>
                 )}
               </>
