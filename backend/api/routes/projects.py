@@ -735,9 +735,16 @@ async def list_public_projects():
             and is_heartbeat_stale(p["id"])
             and not (was_stale_cleared and was_stale_cleared(p["id"]))
         ):
+            # IVS Real-Time path: delete the AWS stage so it doesn't
+            # persist as a billable orphan (the DB UPDATE alone leaves the
+            # AWS stage alive). Best-effort + lazy import; no-op if the
+            # project wasn't on IVS.
+            _delete_orphan_ivs_stage(supabase, p["id"])
             try:
                 supabase.table("projects").update({
                     "is_live": False,
+                    "ivs_stage_arn": None,
+                    "ivs_stage_id": None,
                 }).eq("id", p["id"]).eq("is_live", True).execute()
             except Exception:
                 pass
@@ -746,6 +753,8 @@ async def list_public_projects():
             if mark_stale_cleared:
                 mark_stale_cleared(p["id"])
             p["is_live"] = False
+            p["ivs_stage_arn"] = None
+            p["ivs_stage_id"] = None
         if get_viewer_count and p.get("is_live") and p.get("id"):
             try:
                 p["viewer_count"] = int(get_viewer_count(p["id"]))
@@ -975,6 +984,45 @@ async def live_stats():
         "businesses": _count(biz_res),
         "verified_merchants": _count(verified_res),
     }
+
+
+def _delete_orphan_ivs_stage(supabase, project_id: str) -> None:
+    """When the heartbeat-staleness check flips is_live=False on a project
+    that was streaming via IVS Real-Time, also delete the AWS stage.
+    Otherwise the stage persists on AWS, billing per participant-minute
+    against a phantom session if any subscribers were still attached when
+    the host's tab crashed.
+
+    Best-effort: never blocks the DB stale-clear path. Looks up the stage
+    ARN just-in-time so the existing SELECTs at each stale-clear site
+    don't need to be modified to carry ivs_stage_arn.
+
+    Called from the three on-read auto-clear sites:
+      - list_public_projects (rendering /discover and related)
+      - GET /api/projects/{id}/embed-config (the bubble's source of truth)
+      - GET /api/projects/{id}/live-status  (the host page's live ping)
+    """
+    try:
+        res = (
+            supabase.table("projects")
+            .select("live_provider, ivs_stage_arn")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            return
+        row = res.data[0]
+        if row.get("live_provider") != "ivs_realtime":
+            return
+        arn = row.get("ivs_stage_arn")
+        if not arn:
+            return
+        from services.ivs_realtime import delete_stage
+        delete_stage(arn)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ivs] stale-clear orphan delete failed for {project_id}: {exc!r}")
+
 
 # -----------------------------
 # List Projects
@@ -1395,9 +1443,13 @@ async def get_embed_config(project_id: str, response: Response):
                 clear_stream,
             )
             if is_heartbeat_stale(row["id"]) and not was_stale_cleared(row["id"]):
+                # IVS orphan-stage cleanup (see _delete_orphan_ivs_stage).
+                _delete_orphan_ivs_stage(supabase, row["id"])
                 try:
                     supabase.table("projects").update({
                         "is_live": False,
+                        "ivs_stage_arn": None,
+                        "ivs_stage_id": None,
                     }).eq("id", row["id"]).eq("is_live", True).execute()
                 except Exception:
                     pass
@@ -1895,9 +1947,13 @@ async def get_live_status(project_id: str, response: Response):
                 clear_stream,
             )
             if is_heartbeat_stale(project["id"]) and not was_stale_cleared(project["id"]):
+                # IVS orphan-stage cleanup (see _delete_orphan_ivs_stage).
+                _delete_orphan_ivs_stage(supabase, project["id"])
                 try:
                     supabase.table("projects").update({
                         "is_live": False,
+                        "ivs_stage_arn": None,
+                        "ivs_stage_id": None,
                     }).eq("id", project["id"]).eq("is_live", True).execute()
                 except Exception:
                     pass
