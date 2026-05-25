@@ -1565,10 +1565,23 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // Surface non-OK responses to the console so a future
+        // "0 ORDERS" mystery is debuggable from devtools instead of a
+        // silent return. The previous version swallowed 403s from the
+        // narrow ownership check, which is exactly how this bug
+        // (project page showed 0 orders despite 17 in the DB) hid for
+        // so long.
+        const detail = await res.text().catch(() => "");
+        console.error(`[seller-orders] ${res.status} ${detail.slice(0, 200)}`);
+        return;
+      }
       const data = await res.json();
       setSellerOrders(Array.isArray(data) ? data : []);
-    } catch { setSellerOrders([]); }
+    } catch (err) {
+      console.error("[seller-orders] fetch failed:", err);
+      setSellerOrders([]);
+    }
   }
 
   async function updateOrderStatus(orderId: string, status: string) {
