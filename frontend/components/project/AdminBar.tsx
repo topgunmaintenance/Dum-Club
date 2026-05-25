@@ -227,7 +227,7 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
         href={settingsHref}
         className="rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
       >
-        Settings
+        Setup & Stats
       </Link>
 
       <button

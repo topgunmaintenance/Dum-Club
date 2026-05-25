@@ -7241,20 +7241,36 @@ return (
                         <div className="font-mono text-base font-bold text-primary">
                           ${Number(order.amount_paid_usd).toFixed(2)}
                         </div>
-                        <div
-                          className="text-[10px] text-muted mt-0.5 inline-flex items-center gap-1"
-                          title="Stripe processing fee. DUM Club takes 0%."
-                        >
-                          <span>You receive: ${Number(order.seller_receives_usd).toFixed(2)}</span>
-                          <button
-                            type="button"
-                            aria-label="Stripe processing fee. DUM Club takes 0%."
-                            title="Stripe processing fee. DUM Club takes 0%."
-                            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
-                          >
-                            ?
-                          </button>
-                        </div>
+                        {(() => {
+                          // Compute the real per-order Stripe fee from
+                          // the data already on the row (no extra call).
+                          // Falls back to generic text when the math
+                          // isn't sensible (NaN / negative — e.g. a
+                          // refund row or a pending order where net
+                          // hasn't been set yet).
+                          const gross = Number(order.amount_paid_usd || 0);
+                          const net = Number(order.seller_receives_usd || 0);
+                          const fee = Math.max(0, gross - net);
+                          const feeMsg = Number.isFinite(fee) && fee > 0
+                            ? `$${fee.toFixed(2)} Stripe processing fee. DUM Club takes 0%.`
+                            : "Stripe processing fee. DUM Club takes 0%.";
+                          return (
+                            <div
+                              className="text-[10px] text-muted mt-0.5 inline-flex items-center gap-1"
+                              title={feeMsg}
+                            >
+                              <span>You receive: ${Number(order.seller_receives_usd).toFixed(2)}</span>
+                              <button
+                                type="button"
+                                aria-label={feeMsg}
+                                title={feeMsg}
+                                className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
+                              >
+                                ?
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-2">
@@ -7273,7 +7289,7 @@ return (
                           : order.status === "pending_payment" ? "bg-amber-400"
                           : "bg-zinc-600"
                         }`} />
-                        {order.status === "pending_payment" ? "Awaiting Payment" : order.status}
+                        {order.status === "pending_payment" ? "Checkout not completed" : order.status}
                       </span>
                       {order.status === "paid" && (
                         <button
