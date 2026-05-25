@@ -741,3 +741,51 @@ async def health_orders_audit(
             "with_stripe_payment_intent_id but status=pending_payment may indicate a missed webhook — run POST /api/orders/recover-pending after reviewing.",
         ],
     }
+
+
+# ── POST /api/health/replay-url ──
+# Admin-only manual writer for projects.replay_url. Read-only-ish in
+# spirit — this is the scaffold for the replay foundation in PR #234.
+# When AWS IVS Real-Time recording is wired up (see docs/replay-system.md
+# + docs/IVS_ACTIVATION.md), an end-of-session handler will call this
+# (or write directly) to record a replay URL. Until then, the operator
+# can populate it manually for a completed session.
+#
+# NOT exposed to merchants in the UI — by intent. Replay URLs should
+# only land in the DB after a vetted recording lifecycle.
+
+from pydantic import BaseModel as _BaseModel
+
+
+class _ReplayUrlPayload(_BaseModel):
+    project_id: str
+    replay_url: Optional[str] = None  # None to clear
+
+
+@router.post("/replay-url")
+async def health_set_replay_url(
+    body: _ReplayUrlPayload,
+    _admin=Depends(require_admin),
+):
+    sb = get_client()
+    update: dict = {"replay_url": (body.replay_url or "").strip() or None}
+    if update["replay_url"]:
+        update["replay_recorded_at"] = _now_iso()
+    else:
+        update["replay_recorded_at"] = None
+    try:
+        res = (
+            sb.table("projects")
+            .update(update)
+            .eq("id", body.project_id)
+            .execute()
+        )
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"update failed: {exc!r}"}
+    return {
+        "ok": True,
+        "project_id": body.project_id,
+        "replay_url": update["replay_url"],
+        "replay_recorded_at": update["replay_recorded_at"],
+        "rows_affected": len(res.data or []),
+    }
