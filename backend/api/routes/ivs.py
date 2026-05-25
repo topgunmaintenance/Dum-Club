@@ -125,14 +125,27 @@ async def api_create_stage(
 ):
     """Owner creates an IVS Real-Time stage for their project."""
     _require_ivs()
-    project = _verify_owner(body.project_id, user_id)
+
+    # Overlap the project-owner verification + merchant suspension check.
+    # Both are independent SELECTs against Supabase. supabase-py is
+    # synchronous, so push each into a thread and gather. Mirrors the
+    # parallelization PR #228 shipped for the Mux /go-live handler.
+    # Saves ~100–300 ms off the perceived-latency budget for every
+    # IVS Go Live. _verify_owner raises HTTPException on miss; gather
+    # re-raises (default behavior) → same auth semantics as the prior
+    # sequential code.
+    from api.routes.merchant import is_merchant_suspended
+
+    project, suspended = await asyncio.gather(
+        asyncio.to_thread(_verify_owner, body.project_id, user_id),
+        asyncio.to_thread(is_merchant_suspended, user_id),
+    )
 
     # Suspension gate (Phase 2 grace-period rollout). Suspended merchants
     # keep dashboard access so they can update their card, but cannot
     # start new broadcasts. Plain-English 402 detail mirrors the banner
     # copy so the frontend can surface it verbatim.
-    from api.routes.merchant import is_merchant_suspended
-    if is_merchant_suspended(user_id):
+    if suspended:
         raise HTTPException(
             status_code=402,
             detail="Your shop is paused. Update your payment method to go live.",

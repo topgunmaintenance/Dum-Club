@@ -260,6 +260,66 @@
                 ? cfg.embed_display_mode.toLowerCase()
                 : "";
             render(m);
+
+            // Live-state polling. The initial fetch above is one-shot;
+            // without this loop a bubble loaded BEFORE the merchant
+            // went live would never switch to LIVE state until the
+            // buyer manually refreshed. Adaptive cadence:
+            //   - offline: 30s (catches go-live within 30s on an
+            //              already-open tab; ~2 req/min/tab while
+            //              offline — negligible at scale)
+            //   - live:    5s  (live state can change fast; matches
+            //              the host page's tick rate)
+            // Pauses on hidden tabs via the visibility API. Bubble's
+            // `.is-live` class + aria-label are toggled in place; no
+            // re-mount. Errors are silent — next tick retries.
+            function pollLiveState() {
+              if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+                scheduleNext();
+                return;
+              }
+              try {
+                window.fetch(configUrl, { method: "GET", credentials: "omit" })
+                  .then(function (r) { return r.ok ? r.json() : null; })
+                  .then(function (next) {
+                    if (next && typeof next === "object") {
+                      var prevIsLive =
+                        (embedConfig && embedConfig.is_live === true) ||
+                        (popinConfig && popinConfig.is_live === true);
+                      embedConfig = next;
+                      if (next.popin_config) popinConfig = next.popin_config;
+                      var nextIsLive =
+                        (next.is_live === true) ||
+                        (next.popin_config && next.popin_config.is_live === true);
+                      if (nextIsLive !== prevIsLive) {
+                        var bubbleEl = document.querySelector(
+                          "[data-dum-embed-bubble='" + businessId + "']"
+                        );
+                        if (bubbleEl) {
+                          if (nextIsLive) bubbleEl.classList.add("is-live");
+                          else bubbleEl.classList.remove("is-live");
+                          var newLabel = nextIsLive
+                            ? "Watch live now"
+                            : "Open live storefront";
+                          bubbleEl.setAttribute("aria-label", newLabel);
+                        }
+                      }
+                    }
+                  })
+                  .catch(function () { /* silent — next tick retries */ })
+                  .then(scheduleNext);
+              } catch (_e) {
+                scheduleNext();
+              }
+            }
+            function scheduleNext() {
+              var isLiveNow =
+                (embedConfig && embedConfig.is_live === true) ||
+                (popinConfig && popinConfig.is_live === true);
+              var ms = isLiveNow ? 5000 : 30000;
+              window.setTimeout(pollLiveState, ms);
+            }
+            scheduleNext();
           })
           .catch(function (err) {
             window.clearTimeout(timeoutId);
