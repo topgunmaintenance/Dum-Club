@@ -740,6 +740,11 @@ async def list_public_projects():
             # AWS stage alive). Best-effort + lazy import; no-op if the
             # project wasn't on IVS.
             _delete_orphan_ivs_stage(supabase, p["id"])
+            # Phase 0 telemetry — close the stream_sessions row on the
+            # stale-clear path so we capture host-disconnect lifetimes,
+            # not just clean /end-stage calls. Best-effort.
+            from services.stream_telemetry import on_stream_end
+            on_stream_end(supabase, p["id"], "stale_heartbeat")
             try:
                 supabase.table("projects").update({
                     "is_live": False,
@@ -1445,6 +1450,9 @@ async def get_embed_config(project_id: str, response: Response):
             if is_heartbeat_stale(row["id"]) and not was_stale_cleared(row["id"]):
                 # IVS orphan-stage cleanup (see _delete_orphan_ivs_stage).
                 _delete_orphan_ivs_stage(supabase, row["id"])
+                # Phase 0 telemetry — see list_public_projects above.
+                from services.stream_telemetry import on_stream_end
+                on_stream_end(supabase, row["id"], "stale_heartbeat")
                 try:
                     supabase.table("projects").update({
                         "is_live": False,
@@ -1839,6 +1847,19 @@ async def go_live(
 
     supabase.table("projects").update(update_fields).eq("id", project_id).execute()
 
+    # Phase 0 telemetry — best-effort INSERT into stream_sessions. The
+    # Mux path is the actively-running provider today (IVS flag off);
+    # capturing it here is what populates the table during the data-
+    # collection week before any Phase 1 caps are set.
+    from services.stream_telemetry import on_stream_start
+    on_stream_start(
+        supabase,
+        project_id=project_id,
+        owner_privy_id=project.get("privy_id") or user_id,
+        provider=body.provider,
+        stage_arn=None,
+    )
+
     result: dict = {"status": "success", "is_live": True, "provider": body.provider}
     if body.provider == "native_mux":
         result["stream_key"] = update_fields["live_stream_key"]
@@ -1887,6 +1908,11 @@ async def end_live(
                 asyncio.ensure_future(disable_live_stream(stream_id))
             except Exception:
                 pass
+
+    # Phase 0 telemetry — close the stream_sessions row before the
+    # clear-live update. Helper is best-effort; never blocks.
+    from services.stream_telemetry import on_stream_end
+    on_stream_end(supabase, project_id, "manual")
 
     supabase.table("projects").update({
         "is_live": False,
@@ -1949,6 +1975,9 @@ async def get_live_status(project_id: str, response: Response):
             if is_heartbeat_stale(project["id"]) and not was_stale_cleared(project["id"]):
                 # IVS orphan-stage cleanup (see _delete_orphan_ivs_stage).
                 _delete_orphan_ivs_stage(supabase, project["id"])
+                # Phase 0 telemetry — see list_public_projects above.
+                from services.stream_telemetry import on_stream_end
+                on_stream_end(supabase, project["id"], "stale_heartbeat")
                 try:
                     supabase.table("projects").update({
                         "is_live": False,

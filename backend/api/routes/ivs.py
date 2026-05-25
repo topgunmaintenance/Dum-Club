@@ -220,6 +220,17 @@ async def api_create_stage(
     else:
         print(f"[ivs] VALIDATION: fresh_arn={fresh_arn}, token_minted=False — PUBLISH TOKEN FAILED")
 
+    # Phase 0 telemetry — best-effort INSERT into stream_sessions.
+    # Failures are swallowed by the helper; never blocks the live path.
+    from services.stream_telemetry import on_stream_start
+    on_stream_start(
+        supabase,
+        project_id=project_uuid,
+        owner_privy_id=project.get("privy_id") or user_id,
+        provider="ivs_realtime",
+        stage_arn=fresh_arn,
+    )
+
     return {
         "status": "success",
         "stage_arn": stage_data["stage_arn"],
@@ -317,6 +328,12 @@ async def api_viewer_token(
     if not token_data:
         raise HTTPException(status_code=502, detail="Failed to create viewer token")
 
+    # Phase 0 telemetry — record the viewer-token mint AFTER all existing
+    # caps have passed (so we only count tokens AWS actually issued).
+    # Best-effort; never blocks.
+    from services.stream_telemetry import on_viewer_token
+    on_viewer_token(supabase, resolved_uuid, viewer_id)
+
     return {
         "status": "success",
         "token": token_data["token"],
@@ -343,6 +360,13 @@ async def api_end_stage(
     stage_arn = project.get("ivs_stage_arn")
     if stage_arn:
         delete_stage(stage_arn)
+
+    # Phase 0 telemetry — close the stream_sessions row before clearing
+    # live state. Reads from in-memory _viewer_counts (via the helper)
+    # for peak_concurrent, so call this BEFORE clear_stream() which
+    # resets that counter.
+    from services.stream_telemetry import on_stream_end
+    on_stream_end(get_client(), project_uuid, "manual")
 
     # Clear limits tracking — keyed on the same UUID register_stream_start
     # used, so the daily-limit counter actually decrements.
