@@ -20,7 +20,11 @@ interface Order {
 function statusBadge(status: string) {
   if (status === "fulfilled" || status === "delivered") return { label: "Fulfilled", cls: "border-default text-brand-teal bg-brand-teal-soft" };
   if (status === "paid") return { label: "Paid", cls: "border-sky-400/30 text-sky-400 bg-sky-400/10" };
-  if (status === "pending_payment") return { label: "Awaiting Payment", cls: "border-amber-400/40 text-amber-400 bg-amber-400/15" };
+  // "Checkout not completed" is more honest than "Awaiting Payment" —
+  // these rows are the buyer's abandoned/expired Stripe Checkout
+  // sessions, not unpaid completed orders in flight. Amber pill kept
+  // (right "neutral attention" tone). UI-only; no schema change.
+  if (status === "pending_payment") return { label: "Checkout not completed", cls: "border-amber-400/40 text-amber-400 bg-amber-400/15" };
   return { label: status, cls: "border-default text-secondary bg-surface-muted" };
 }
 

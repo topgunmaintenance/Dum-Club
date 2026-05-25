@@ -252,12 +252,26 @@ export default function DashboardPage() {
     }
   }
 
-  // is_live = currently broadcasting (the field the host/viewer code
-  // uses everywhere else, e.g. line 684 below). The earlier
-  // `status === "live"` filter mistook the workflow column for the
-  // broadcast column and undercounted any merchant who was actually
-  // streaming. Source-of-truth alignment, not a count change.
-  const liveCount = projects.filter((p) => p.is_live === true).length;
+  // LIVE counter = published storefronts (status === "live"), NOT
+  // currently-broadcasting projects (is_live === true). #231 briefly
+  // switched this to is_live and got it wrong — what merchants call
+  // "my live storefront" is the published/discoverable state, not the
+  // "camera-on, IVS session running" state. Same canonical source as
+  // the project page's storefront status badge and /discover
+  // discoverability. is_live remains the right field for the host
+  // card's broadcast indicator (e.g. line 698 below) — different
+  // concept, different consumer.
+  const liveCount = projects.filter((p) => p.status === "live").length;
+
+  // "Fully onboarded" = merchant has finished the three setup steps the
+  // dashboard's other cards prompt for. Used to hide the "Become a
+  // Merchant" quick-action card so a merchant who already completed
+  // signup doesn't see a card pushing them back to signup.
+  const isFullyOnboarded = Boolean(
+    merchant?.stripe_connect_status === "verified" &&
+    bizProfile &&
+    projects.some((p) => p.status === "live")
+  );
 
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
@@ -829,15 +843,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="mb-10 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/merchant"
-            className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-brand-teal/5 px-6 py-6 transition hover:border-default hover:bg-brand-teal-soft hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
-          >
-            <span className="text-2xl">🏪</span>
-            <span className="text-lg font-bold text-brand-teal">Become a Merchant</span>
-          </Link>
+        {/* Quick actions. The "Become a Merchant" card hides once the
+            merchant is fully onboarded (Stripe verified + business
+            profile + at least one published storefront) — pushing
+            already-onboarded merchants back to signup reads as a bug.
+            "My Orders" stays for everyone since orders are useful at
+            every stage. When the "Become a Merchant" card is hidden,
+            "My Orders" expands to span both columns so the row doesn't
+            leave a visible gap. */}
+        <div className={`mb-10 grid gap-4 ${isFullyOnboarded ? "" : "sm:grid-cols-2"}`}>
+          {!isFullyOnboarded && (
+            <Link
+              href="/merchant"
+              className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-brand-teal/5 px-6 py-6 transition hover:border-default hover:bg-brand-teal-soft hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
+            >
+              <span className="text-2xl">🏪</span>
+              <span className="text-lg font-bold text-brand-teal">Become a Merchant</span>
+            </Link>
+          )}
           <Link
             href="/orders"
             className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-surface-card px-6 py-6 transition hover:border-default hover:-translate-y-0.5"
