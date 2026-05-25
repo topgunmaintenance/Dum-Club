@@ -3123,24 +3123,37 @@ export default function ProjectPage() {
   //
   // Skips when the tab is hidden (document.visibilityState === "hidden")
   // so we're not burning requests in background tabs.
+  // Viewer-side polling loop. Runs in BOTH states (offline + live) so a
+  // viewer who landed on the page before the host went live still sees
+  // the LIVE transition without manually refreshing — the previous
+  // `if (!project?.is_live) return;` gate meant any tab opened first
+  // was permanently stale until reload. Adaptive cadence keeps the
+  // offline-state load light:
+  //   - is_live = true  -> 3s  (live state can change fast; keep tight)
+  //   - is_live = false -> 15s (catches go-live within 15s for an
+  //                              already-open tab; ~4 req/min/tab, fine
+  //                              at scale and pauses on hidden tabs)
+  // Skipped entirely for owners — they have their own state from
+  // IVSStageHost callbacks and don't need to poll.
   useEffect(() => {
     if (!id) return;
-    if (!project?.is_live) return;
     if (isOwner) return;
 
     let cancelled = false;
+    const intervalMs = project?.is_live ? 3000 : 15000;
 
     const tick = async () => {
       if (cancelled) return;
       if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       await refreshLiveStateForViewer();
       if (cancelled) return;
-      loadOffers();
+      // Offers don't change while offline — only refetch when live.
+      if (project?.is_live) loadOffers();
     };
 
     // Run once immediately so the viewer doesn't wait for the first interval.
     tick();
-    const iv = setInterval(tick, 3000);
+    const iv = setInterval(tick, intervalMs);
 
     return () => {
       cancelled = true;
