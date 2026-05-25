@@ -93,6 +93,8 @@ type Project = {
   active_auction_id?: string | null;
   live_provider?: string | null;
   ivs_stage_arn?: string | null;
+  replay_url?: string | null;
+  replay_recorded_at?: string | null;
   ivs_stage_id?: string | null;
   live_playback_id?: string | null;
   live_stream_key?: string | null;
@@ -4103,6 +4105,40 @@ return (
            broadcast lifecycle — only the visual placement
            changed. AdminBar's #project-live-host anchor still
            points at the new location. */}
+
+      {/* ── REPLAY (fallback when offline + a replay was recorded) ──
+           Renders only when the project is NOT currently broadcasting
+           AND a replay URL exists. Sibling to the LIVE block so the two
+           are mutually exclusive in practice (live wins when live).
+           See backend/db/migrations/047_replay_url.sql + docs/replay-system.md
+           — replay_url is populated externally (AWS IVS recording -> S3
+           handler, or manually via /api/health/replay-url). Until then
+           the column is NULL for every project and this block doesn't
+           render. */}
+      {!project?.is_live && project?.replay_url && (
+        <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+              Replay
+            </span>
+            <span className="text-sm text-secondary">
+              {project.replay_recorded_at
+                ? `Last live show · ${new Date(project.replay_recorded_at).toLocaleDateString()}`
+                : "Last live show"}
+            </span>
+          </div>
+          <div className="mt-4">
+            <a
+              href={project.replay_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+            >
+              Watch replay →
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
