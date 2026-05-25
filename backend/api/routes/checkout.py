@@ -1368,10 +1368,17 @@ async def seller_orders(
     supabase = get_client()
     privy_id = current_user.get("sub")
 
-    # Verify ownership
+    # Verify ownership. Use the canonical 3-strategy match (same shape
+    # as ivs._verify_owner and projects.go_live's owner check) so a
+    # project whose row has only privy_id set — but no resolved
+    # owner_id — still authorizes for its actual owner. The earlier
+    # single-strategy check (resolved != owner_id) returned 403 for
+    # any project that was created via the privy_id path, which is
+    # how the project page silently showed "0 ORDERS" for a merchant
+    # who in fact owned 17 rows.
     project_res = (
         supabase.table("projects")
-        .select("owner_id")
+        .select("owner_id, privy_id")
         .eq("id", project_id)
         .limit(1)
         .execute()
@@ -1379,9 +1386,14 @@ async def seller_orders(
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    owner_id = project_res.data[0].get("owner_id")
+    project = project_res.data[0]
     resolved = _resolve_privy_to_owner(supabase, privy_id)
-    if resolved != owner_id:
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == privy_id)
+        or (project.get("owner_id") and resolved and project["owner_id"] == resolved)
+        or (project.get("privy_id") and project["privy_id"] == privy_id)
+    )
+    if not owner_match:
         raise HTTPException(status_code=403, detail="Not the project owner")
 
     res = (

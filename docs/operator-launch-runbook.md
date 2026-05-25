@@ -24,6 +24,47 @@ Each `CREATE INDEX CONCURRENTLY` must run **outside a transaction**
 — the Supabase web SQL editor does this by default; psql may need
 each statement run separately.
 
+### 047 quick-apply (without `supabase db push`)
+
+If `supabase db push` isn't wired, paste this directly into the
+Supabase SQL editor:
+
+```sql
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS replay_url TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS replay_recorded_at TIMESTAMPTZ;
+```
+
+Verify it landed:
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name='projects'
+  AND column_name IN ('replay_url','replay_recorded_at');
+```
+
+Should return **2 rows**. If it returns 0, the migration didn't apply
+— re-run the ALTER statements above.
+
+### Deploy alignment check (do this before the smoke test)
+
+Production must be running the latest `main`. Verify both sides:
+
+**Vercel (frontend):**
+- Vercel dashboard → dum-club project → Deployments → latest
+  production deploy points at the latest `main` SHA.
+- Or hit `https://www.dum.club/_next/static/...` and check the
+  build ID matches what `git log -1 main` shows.
+
+**Railway (backend):**
+- Railway dashboard → backend service → status is **Active** (not
+  Crashed/Restarting).
+- Latest deployment commit matches `main`'s HEAD SHA.
+- Hit `https://<your-backend>/api/health` → response includes
+  `commit` matching `main`'s HEAD.
+
+If either side lags, the smoke test will hit stale code paths.
+Trigger a redeploy from the dashboard before continuing.
+
 ---
 
 ## 2. Set observability env vars
@@ -85,6 +126,30 @@ Optional second monitor at 5-minute interval against
 `<backend>/api/health/ready` for deeper signal.
 
 ---
+
+## 2b. Grant admin to the operator account (one-time)
+
+`/admin/system` redirects non-admins to `/` (correct security; gate
+is `AdminRoute.tsx` → `useAuth().isAdmin` → `users.is_admin`). To
+use the admin panel — including the orders-audit endpoint — flip
+the flag for the operator's user row.
+
+```sql
+-- Replace <julian_privy_did> with the value of `sub` from a Privy
+-- token issued for Julian's account (or look it up in the users
+-- table via email match).
+UPDATE users SET is_admin = true WHERE privy_id = '<julian_privy_did>';
+
+-- Verify:
+SELECT privy_id, email, is_admin FROM users WHERE is_admin = true;
+```
+
+After flipping, sign out + sign back in so the frontend's auth
+context picks up the new `is_admin` value, then `/admin/system`
+will load.
+
+**Do NOT broadly grant admin** — only the operator account(s) you
+trust with read access to every merchant's data.
 
 ## 3. Validate `pending_payment` backlog
 
