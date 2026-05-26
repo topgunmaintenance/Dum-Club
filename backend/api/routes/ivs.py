@@ -107,12 +107,22 @@ async def api_heartbeat(
     third party can't keep a stream artificially "alive" by
     pinging this endpoint for someone else's project.
 
-    Cheap path: in-memory dict write, no DB call, no AWS call.
-    Designed for 5-second cadence × N concurrent hosts.
+    Also persists projects.last_heartbeat_at on every poll so
+    stale-detection survives a Railway restart that wipes the
+    in-memory dict. The DB write is wrapped so a transient
+    failure cannot block heartbeat acknowledgment.
     """
     _require_ivs()
     project = _verify_owner(body.project_id, user_id)
-    record_heartbeat(project["id"])
+    project_id = project["id"]
+    record_heartbeat(project_id)
+    try:
+        from datetime import datetime, timezone
+        get_client().table("projects").update({
+            "last_heartbeat_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", project_id).execute()
+    except Exception as exc:
+        print(f"[ivs] heartbeat DB persist failed for {project_id}: {exc!r}")
     return {"status": "ok"}
 
 

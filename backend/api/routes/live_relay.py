@@ -7,10 +7,20 @@ Architecture:
     → WebSocket binary messages
       → ffmpeg -f webm -i pipe:0 -c:v copy -c:a aac -f flv rtmps://...
         → Mux ingest → HLS CDN → MuxPlayer (viewers)
+
+Cost protection (Phase 0):
+  Mux ingest is billed per minute streamed. The WebSocket used to accept
+  data indefinitely, so a misbehaving client could keep ffmpeg running
+  forever and rack up unbounded Mux bills. This module now enforces:
+    * Max relay duration  = MAX_STREAM_DURATION_MINUTES (default 60 min)
+    * Silent-client cutoff = MAX_RELAY_IDLE_SECONDS (default 30 s)
+  Both close the WebSocket and SIGTERM ffmpeg cleanly.
 """
 import asyncio
+import os
 import shutil
 import json
+import time as _time
 from typing import Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -20,6 +30,14 @@ from db.supabase import get_client
 router = APIRouter()
 
 FFMPEG_PATH = shutil.which("ffmpeg") or "ffmpeg"
+
+# Cost-protection knobs. Shared MAX_STREAM_DURATION_MINUTES with
+# services/live_limits so a single env var governs both the IVS and Mux
+# paths. Idle cutoff handles "client opened WS then went silent" cases
+# where MediaRecorder freezes or the host laptop sleeps — without it the
+# WS sits open and ffmpeg sits idle until the OS kills it.
+MAX_RELAY_DURATION_MINUTES = int(os.getenv("MAX_STREAM_DURATION_MINUTES", "60"))
+MAX_RELAY_IDLE_SECONDS = int(os.getenv("MAX_RELAY_IDLE_SECONDS", "30"))
 
 
 def _get_project_stream_key(project_id: str) -> Optional[str]:
@@ -134,11 +152,51 @@ async def live_relay(websocket: WebSocket, project_id: str):
 
         stderr_task = asyncio.create_task(log_ffmpeg_stderr())
 
-        # Main loop: receive binary chunks from browser, pipe to ffmpeg
+        # Main loop: receive binary chunks from browser, pipe to ffmpeg.
+        # Bounded by MAX_RELAY_DURATION_MINUTES (hard cap so a stuck client
+        # cannot rack up unbounded Mux ingest minutes) and
+        # MAX_RELAY_IDLE_SECONDS (silent client = drop the relay).
         chunk_count = 0
         total_bytes = 0
+        start_ts = _time.time()
+        max_duration_s = MAX_RELAY_DURATION_MINUTES * 60
         while True:
-            data = await websocket.receive_bytes()
+            # Hard duration cutoff.
+            elapsed = _time.time() - start_ts
+            if elapsed > max_duration_s:
+                print(
+                    f"[live-relay] MAX duration {MAX_RELAY_DURATION_MINUTES} min reached "
+                    f"for project {project_id} after {chunk_count} chunks "
+                    f"({total_bytes} bytes); closing relay."
+                )
+                try:
+                    await websocket.send_text(json.dumps({
+                        "error": "max_duration_exceeded",
+                        "max_minutes": MAX_RELAY_DURATION_MINUTES,
+                    }))
+                except Exception:
+                    pass
+                break
+
+            # Idle cutoff: if no chunks arrive in MAX_RELAY_IDLE_SECONDS,
+            # treat the client as disconnected and tear down. Saves Mux
+            # minutes on a frozen MediaRecorder / sleeping host laptop.
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_bytes(),
+                    timeout=float(MAX_RELAY_IDLE_SECONDS),
+                )
+            except asyncio.TimeoutError:
+                print(
+                    f"[live-relay] No chunks in {MAX_RELAY_IDLE_SECONDS}s "
+                    f"for project {project_id}; closing relay."
+                )
+                try:
+                    await websocket.send_text(json.dumps({"error": "idle_timeout"}))
+                except Exception:
+                    pass
+                break
+
             chunk_count += 1
             total_bytes += len(data)
 

@@ -95,14 +95,58 @@ def is_heartbeat_stale(
     threshold_seconds: float = float(HEARTBEAT_STALE_AFTER_SECONDS),
 ) -> bool:
     """Return True when the most recent heartbeat is older than
-    threshold_seconds. Returns False when no heartbeat is tracked
-    (Railway restart loses the dict; the host's next 5s poll
-    will reseed it, so we don't blindly clear in that window).
+    threshold_seconds.
+
+    Resolution order:
+      1. In-memory _last_heartbeat dict (fast path; 5s cadence host).
+      2. DB column projects.last_heartbeat_at (survives Railway restart).
+      3. No signal -> return False conservatively.
+
+    The DB fallback closes the post-restart gap where the in-memory
+    dict is empty but the project is still flagged is_live=true. Without
+    it, every restart leaks orphan live streams until a host returns
+    (which they often don't).
     """
     last = _last_heartbeat.get(project_id)
-    if last is None:
+    if last is not None:
+        return (time.time() - last) > threshold_seconds
+
+    # Fall back to DB. Late import to avoid an import cycle; this path
+    # is only exercised when in-memory tracking is missing (post-restart
+    # or first hit on a project the current process never saw).
+    try:
+        from db.supabase import get_client
+        from datetime import datetime
+        res = (
+            get_client()
+            .table("projects")
+            .select("last_heartbeat_at")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            return False
+        raw = res.data[0].get("last_heartbeat_at")
+        if not raw:
+            # NULL last_heartbeat_at means "no signal" — could be a
+            # pre-migration-059 orphan, or a brand-new stream that
+            # hasn't completed its first 5-second heartbeat cycle yet.
+            # Refuse to call it stale from this path; the startup sweep
+            # in main.py handles old orphans separately using updated_at
+            # as the freshness signal. This avoids clipping a live stream
+            # during the 5s window between deploy and first heartbeat
+            # write.
+            return False
+        # Postgres returns ISO 8601 with offset; fromisoformat handles
+        # the "+00:00" form. Strip any trailing 'Z' just in case.
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        db_last = datetime.fromisoformat(raw).timestamp()
+        return (time.time() - db_last) > threshold_seconds
+    except Exception as exc:
+        print(f"[live_limits] is_heartbeat_stale DB fallback failed for {project_id}: {exc!r}")
         return False
-    return (time.time() - last) > threshold_seconds
 
 
 def mark_stale_cleared(project_id: str) -> None:
