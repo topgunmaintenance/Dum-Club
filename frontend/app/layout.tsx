@@ -21,11 +21,11 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "DUM Club. Drive Ur Market. Live Selling. 1% Sales Fee.",
   description:
-    "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee from $39 to $299 a month plus a 1% sales fee. Industry-low (Whatnot takes 8%).",
+    "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat monthly subscription starting at $39/month plus a 1% sales fee. Industry-low (Whatnot takes 8%).",
   openGraph: {
     title: "DUM Club. Drive Ur Market. Live Selling. 1% Sales Fee.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every sale. Flat monthly subscription plus a 1% sales fee. The Whatnot alternative that takes 1%, not 8%.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1% sales fee. The Whatnot alternative that takes 1%, not 8%.",
     siteName: "DUM Club",
     type: "website",
   },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DUM Club. Drive Ur Market. Live Selling. 1% Sales Fee.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every sale. Flat monthly subscription plus a 1% sales fee. The Whatnot alternative that takes 1%, not 8%.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1% sales fee. The Whatnot alternative that takes 1%, not 8%.",
   },
 };
 

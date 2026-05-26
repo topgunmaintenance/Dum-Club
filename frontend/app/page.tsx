@@ -734,25 +734,25 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     emoji = "💻";
     tag = "Digital Product";
     offers = [
-      { title: "Starter Plan", price: "$9/mo" },
-      { title: "Pro Plan", price: "$29/mo" },
-      { title: "Enterprise Access", price: "$99/mo" },
+      { title: "Starter Plan", price: "$19/mo" },
+      { title: "Pro Plan", price: "$35/mo" },
+      { title: "Enterprise Access", price: "$149/mo" },
     ];
   } else if (isCreator) {
     emoji = "🎨";
     tag = "Creator Business";
     offers = [
       { title: "Single Download", price: "$5" },
-      { title: "Complete Bundle", price: "$29" },
-      { title: "Monthly Membership", price: "$9/mo" },
+      { title: "Complete Bundle", price: "$35" },
+      { title: "Monthly Membership", price: "$15/mo" },
     ];
   } else if (isService) {
     emoji = "⚡";
     tag = "Service Business";
     offers = [
-      { title: "Basic Session", price: "$29" },
+      { title: "Basic Session", price: "$35" },
       { title: "Full Package", price: "$89" },
-      { title: "Monthly Plan", price: "$49/mo" },
+      { title: "Monthly Plan", price: "$59/mo" },
     ];
   } else if (isFood) {
     emoji = "🍽️";
@@ -766,9 +766,9 @@ function generatePreview(idea: string): { name: string; offers: { title: string;
     emoji = "✨";
     tag = "Storefront";
     offers = [
-      { title: "Basic", price: "$29" },
+      { title: "Basic", price: "$35" },
       { title: "Professional", price: "$79" },
-      { title: "Unlimited", price: "$49/mo" },
+      { title: "Unlimited", price: "$59/mo" },
     ];
   }
 
@@ -960,9 +960,9 @@ function ProductDemo() {
               {buildStep >= 2 && (
                 <div className="hero-chat-msg space-y-1.5">
                   {[
-                    { name: "Basic Wash", price: "$29", show: buildStep >= 2 },
+                    { name: "Basic Wash", price: "$35", show: buildStep >= 2 },
                     { name: "Full Detail Package", price: "$89", show: buildStep >= 3 },
-                    { name: "Monthly Membership", price: "$49/mo", show: buildStep >= 4 },
+                    { name: "Monthly Membership", price: "$59/mo", show: buildStep >= 4 },
                   ].filter(o => o.show).map((offer) => (
                     <div key={offer.name} className="card-premium flex items-center justify-between rounded-lg border border-default/40 bg-gradient-to-r from-zinc-900/40 to-surface-card px-4 py-2.5">
                       <span className="text-[13px] text-primary">{offer.name}</span>
@@ -1020,9 +1020,9 @@ function ProductDemo() {
                       <div className="text-[12px] text-secondary mb-3">Premium mobile car detailing at your doorstep</div>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {[
-                          { name: "Basic Wash", price: "$29", tag: null },
+                          { name: "Basic Wash", price: "$35", tag: null },
                           { name: "Full Detail", price: "$89", tag: "Most popular" },
-                          { name: "Monthly Plan", price: "$49/mo", tag: "Subscription" },
+                          { name: "Monthly Plan", price: "$59/mo", tag: "Subscription" },
                         ].map((o) => (
                           <div key={o.name} className={`card-premium rounded-xl border bg-gradient-to-b from-zinc-900/40 to-transparent p-3 text-center ${o.tag === "Most popular" ? "border-default" : "border-default/40"}`}>
                             <div className="text-[11px] text-secondary">{o.name}</div>
@@ -1232,8 +1232,8 @@ function ComparisonTable() {
           </thead>
           <tbody>
             {[
-              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $39 to $299/mo" },
-              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
+              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
+              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1% only" },
               { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
               { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
               { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
@@ -1783,7 +1783,7 @@ function PricingTiers() {
         Flat fee. <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
-        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every sale.
+        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every dollar.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -2714,27 +2714,24 @@ export default function Home() {
                   Brand recognition is carried by the navbar
                   wordmark and the founder note directly below. */}
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
-                Sell Live. <span className="text-brand-navy">Keep More of Every Sale.</span>
+                Sell Live. <span className="text-brand-navy">Keep More of Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
                 DUM Club helps businesses sell live on their own website. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%).
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month.</span> 1% sales fee per order. Keep more of every sale.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1% sales fee.</span> Keep more of every dollar.
               </p>
 
-              {/* Founder trust row — direct line to Julian under the
-                  subhead. Non-technical owners trust a real phone +
-                  email more than any badge. */}
+              {/* Founder trust row. Personal phone + email were
+                  removed before public launch to avoid spam-bot
+                  scraping at scale; all inbound now routes through
+                  the merchant inquiry form. */}
               <p className="mx-auto mt-4 text-[13px] text-secondary">
-                Talk to the founder:{" "}
-                <a href="tel:+12014521986" className="font-medium text-brand-navy transition hover:text-brand-teal">
-                  📞 (201) 452-1986
-                </a>{" "}
-                ·{" "}
-                <a href="mailto:julian@topgunmaintenance.com" className="font-medium text-brand-navy transition hover:text-brand-teal">
-                  ✉️ julian@topgunmaintenance.com
-                </a>
+                Questions?{" "}
+                <Link href="/merchant" className="font-medium text-brand-navy transition hover:text-brand-teal">
+                  Contact us through the business inquiry form.
+                </Link>
               </p>
 
               {/* Primary CTA: brand-teal fill with brand-navy text for
@@ -2986,7 +2983,7 @@ export default function Home() {
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
               { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
               { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 1% sales fee", muted: false },
+              { name: "DUM Club", fees: "From $39", detail: "flat / month · 1% sales fee", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -3104,9 +3101,9 @@ export default function Home() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { name: "Starter", price: 29 },
-              { name: "Growth", price: 49, highlighted: true },
-              { name: "Pro", price: 99 },
+              { name: "Starter", price: 39 },
+              { name: "Growth", price: 99, highlighted: true },
+              { name: "Pro", price: 299 },
             ].map((tier) => (
               <div
                 key={tier.name}
@@ -3155,7 +3152,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $39 to $299/month plus 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
+              Starting at $39/month + 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link

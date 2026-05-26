@@ -200,25 +200,18 @@ function BusinessPageInner() {
             Questions?
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-            Talk to Julian.
+            Talk to the team.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm text-secondary">
-            I built DUM Club. I also run Topgun Maintenance LLC, the founding merchant. Email or call me directly. I&apos;ll get back same day.
+            DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC, the founding merchant. Send an inquiry and the team will get back same day.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
-            <a
-              href="mailto:julian@topgunmaintenance.com"
-              className="font-mono text-sm text-brand-teal transition hover:text-brand-teal"
+            <Link
+              href="/merchant"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-teal px-6 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
             >
-              julian@topgunmaintenance.com
-            </a>
-            <span className="hidden text-muted sm:inline">·</span>
-            <a
-              href="tel:+12014521986"
-              className="font-mono text-sm text-brand-teal transition hover:text-brand-teal"
-            >
-              +1 (201) 452-1986
-            </a>
+              Open the inquiry form
+            </Link>
           </div>
         </div>
       </section>
@@ -266,7 +259,7 @@ function OverviewTab({
             { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
             { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
             { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-            { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 1% sales fee", muted: false },
+            { name: "DUM Club", fees: "From $39", detail: "flat / month · 1% sales fee", muted: false },
           ].map((p) => (
             <div
               key={p.name}
@@ -304,7 +297,7 @@ function OverviewTab({
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "Just 1% per sale", desc: "Marketplaces take 8% per sale and delivery apps take 15 to 30%. DUM Club is flat $39 to $299 a month plus a 1% sales fee. The lowest per-sale rate in live commerce. Founding merchant pricing for the first 100." },
+              { n: "01", title: "Just 1% per sale", desc: "Marketplaces take 8% per sale and delivery apps take 15 to 30%. DUM Club starts at $39/month plus a 1% sales fee. The lowest per-sale rate in live commerce. Founding merchant pricing for the first 100." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We never hold your money." },
               { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
@@ -394,7 +387,7 @@ function PricingTab() {
           Pricing
         </div>
         <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-          Flat $39 to $299 a month. <span className="text-brand-navy">1% sales fee.</span>
+          Starting at $39/month. <span className="text-brand-navy">1% sales fee.</span>
         </h2>
         <p className="mx-auto mb-6 max-w-md text-sm text-secondary">
           Tier comparison, Whatnot vs DUM at $10k GMV, FAQ, and the Talk-to-Julian
@@ -673,7 +666,7 @@ function CompareTab() {
             </thead>
             <tbody>
               {[
-                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $39 to $299/mo" },
+                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
                 { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
                 { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
                 { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
@@ -701,7 +694,7 @@ function CompareTab() {
 
         <div className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { icon: "🚫", title: "Zero commission" },
+            { icon: "🚫", title: "Just 1% per sale" },
             { icon: "💰", title: "Flat monthly fee" },
             { icon: "🔁", title: "Loyalty built in" },
             { icon: "⚡", title: "Stripe payouts" },
