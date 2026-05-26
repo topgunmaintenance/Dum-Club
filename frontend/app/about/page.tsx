@@ -201,40 +201,13 @@ export default function AboutPage() {
             id="contact-heading"
             className="text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl"
           >
-            Talk to Julian directly
+            Talk to the team
           </h2>
           <p className="mt-3 text-base leading-relaxed text-secondary">
-            Investor, merchant, partner, or just curious. Call, text, or
-            email the founder. No gatekeepers.
+            Investor, merchant, partner, or just curious. Send an inquiry through the form and the team will get back same day.
           </p>
           <div className="mt-5 space-y-1 text-sm">
             <div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                Phone
-              </span>
-              <div>
-                <a
-                  href="tel:+12014521986"
-                  className="font-semibold text-brand-teal hover:text-brand-teal-hover"
-                >
-                  (201) 452-1986
-                </a>
-              </div>
-            </div>
-            <div className="pt-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                Email
-              </span>
-              <div>
-                <a
-                  href="mailto:julian@topgunmaintenance.com"
-                  className="font-semibold text-brand-teal hover:text-brand-teal-hover"
-                >
-                  julian@topgunmaintenance.com
-                </a>
-              </div>
-            </div>
-            <div className="pt-3">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
                 Business
               </span>
@@ -243,39 +216,18 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
-          {/* Simple mailto form. No backend — submitting opens the
-              visitor's mail client pre-addressed to Julian with their
-              subject + message. Keeps /about a static server component. */}
-          <form
-            action="mailto:julian@topgunmaintenance.com"
-            method="post"
-            encType="text/plain"
-            className="mt-6 space-y-3"
-          >
-            <input
-              type="text"
-              name="subject"
-              placeholder="Subject"
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal"
-            />
-            <textarea
-              name="message"
-              rows={4}
-              placeholder="Your message"
-              className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-brand-teal"
-            />
-            <button
-              type="submit"
-              aria-label="Send a message to Julian"
+          <div className="mt-6 flex flex-col items-start gap-3">
+            <Link
+              href="/merchant"
               className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-teal px-6 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
             >
-              Send message →
-            </button>
-          </form>
+              Open the inquiry form
+            </Link>
+          </div>
           <p className="mt-6 text-[13px] text-secondary">
             Investor?{" "}
             <Link href="/investors" className="font-semibold text-brand-teal underline-offset-4 hover:underline">
-              See our investor page →
+              See our investor page
             </Link>
           </p>
         </section>

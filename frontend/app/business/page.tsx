@@ -200,25 +200,18 @@ function BusinessPageInner() {
             Questions?
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-            Talk to Julian.
+            Talk to the team.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm text-secondary">
-            I built DUM Club. I also run Topgun Maintenance LLC, the founding merchant. Email or call me directly. I&apos;ll get back same day.
+            DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC, the founding merchant. Send an inquiry and the team will get back same day.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
-            <a
-              href="mailto:julian@topgunmaintenance.com"
-              className="font-mono text-sm text-brand-teal transition hover:text-brand-teal"
+            <Link
+              href="/merchant"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-brand-teal px-6 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
             >
-              julian@topgunmaintenance.com
-            </a>
-            <span className="hidden text-muted sm:inline">·</span>
-            <a
-              href="tel:+12014521986"
-              className="font-mono text-sm text-brand-teal transition hover:text-brand-teal"
-            >
-              +1 (201) 452-1986
-            </a>
+              Open the inquiry form
+            </Link>
           </div>
         </div>
       </section>

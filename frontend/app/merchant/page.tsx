@@ -432,20 +432,7 @@ export default function MerchantPage() {
         {/* Prefer to talk first */}
         <div className="mx-auto mt-12 w-full max-w-2xl text-center">
           <p className="text-sm text-secondary">
-            Prefer to talk first?{" "}
-            <a
-              href="mailto:julian@topgunmaintenance.com"
-              className="font-semibold text-brand-teal hover:text-brand-teal-hover"
-            >
-              Email Julian
-            </a>{" "}
-            or call{" "}
-            <a
-              href="tel:+12014521986"
-              className="font-semibold text-brand-teal hover:text-brand-teal-hover"
-            >
-              (201) 452-1986
-            </a>
+            Prefer to ask a question first? Use the inquiry form above. We respond within 24 hours.
           </p>
         </div>
       </div>
