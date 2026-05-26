@@ -170,17 +170,49 @@ async def api_create_stage(
     # then 404'd at /viewer-token's "No active live session" gate.
     project_uuid = project["id"]
 
-    # Check daily stream limit
-    limit_err = register_stream_start(project_uuid, user_id)
-    if limit_err:
-        raise HTTPException(status_code=429, detail=limit_err)
+    # Phase 1 cap enforcement: resolve the merchant's per-tier limits.
+    # Resolver fails closed on any unresolved NULL cap (Business / Enterprise
+    # without an override) — that's doctrine per migration 049. The
+    # max_concurrent_streams CHECK happens after the stale-stage cleanup
+    # below so re-go-live on the same project doesn't count itself toward
+    # the cap.
+    supabase_client = get_client()
+    owner_privy_for_limits = project.get("privy_id") or user_id
+    from services.merchant_limits import (
+        resolve_merchant_limits_by_privy_did,
+        MerchantLimitsUnresolved,
+    )
+    try:
+        limits = resolve_merchant_limits_by_privy_did(
+            owner_privy_for_limits, supabase=supabase_client,
+        )
+    except MerchantLimitsUnresolved as exc:
+        print(f"[ivs] cap-resolve refused: {exc!r}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "merchant_limits_unresolved",
+                "message": (
+                    "Your account isn't fully configured for live streaming. "
+                    "Reach out to support so we can set your stream caps before you go live."
+                ),
+                "reason": exc.reason,
+            },
+        )
 
-    # If stale stage exists, clean it up first
+    # If stale stage exists, clean it up first — including closing any
+    # active stream_sessions row so the max_concurrent_streams check
+    # below sees an accurate count. Without this on_stream_end call,
+    # re-going-live on the same project would always trip the cap.
     old_arn = project.get("ivs_stage_arn")
     if old_arn:
         print(f"[ivs] Cleaning up stale stage: {old_arn}")
         delete_stage(old_arn)
-        supabase_client = get_client()
+        try:
+            from services.stream_telemetry import on_stream_end as _on_end
+            _on_end(supabase_client, project_uuid, "stale_stage_replaced")
+        except Exception as exc:
+            print(f"[ivs] on_stream_end during stale cleanup failed: {exc!r}")
         supabase_client.table("projects").update({
             "ivs_stage_arn": None,
             "ivs_stage_id": None,
@@ -188,6 +220,52 @@ async def api_create_stage(
         }).eq("id", project_uuid).execute()
         await asyncio.sleep(1.0)  # Allow AWS to propagate deletion
         print(f"[ivs] Stale stage cleaned, creating fresh")
+
+    # max_concurrent_streams gate: COUNT(stream_sessions WHERE
+    # merchant_id = limits.merchant_id AND end_at IS NULL). Runs AFTER
+    # the stale-stage cleanup so a re-go-live on the same project
+    # doesn't count its own prior abandoned session.
+    try:
+        active_streams_res = (
+            supabase_client.table("stream_sessions")
+            .select("id", count="exact", head=True)
+            .eq("merchant_id", limits.merchant_id)
+            .is_("end_at", "null")
+            .execute()
+        )
+        active_stream_count = active_streams_res.count or 0
+    except Exception as exc:
+        # Telemetry-table read failures fail open here — refusing every
+        # go-live on a transient Supabase hiccup is worse than the
+        # over-stream risk, given the in-memory daily-stream cap and
+        # the duration cap downstream both still apply. Logged loudly
+        # so operator notices.
+        print(f"[ivs] active-stream-count read failed for merchant={limits.merchant_id}: {exc!r}")
+        active_stream_count = 0
+    if active_stream_count >= limits.max_concurrent_streams:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "concurrent_stream_cap_reached",
+                "message": (
+                    f"You already have {active_stream_count} live stream(s) running. "
+                    f"Your {limits.plan_id} plan allows up to "
+                    f"{limits.max_concurrent_streams} concurrent stream(s)."
+                ),
+                "tier": limits.plan_id,
+                "current": active_stream_count,
+                "cap": limits.max_concurrent_streams,
+                "upgrade_url": "/upgrade",
+            },
+        )
+
+    # Legacy in-memory daily-stream / global cap (live_limits.py) stays
+    # as a belt-and-suspenders. Catches the case where stream_sessions
+    # writes are silently failing AND the per-tier check above also
+    # under-counts.
+    limit_err = register_stream_start(project_uuid, user_id)
+    if limit_err:
+        raise HTTPException(status_code=429, detail=limit_err)
 
     # Create fresh stage. Use the canonical UUID prefix in the name
     # so two projects with similar slugs don't collide on stage name.
@@ -201,13 +279,18 @@ async def api_create_stage(
     create_ts = _time.time()
     print(f"[ivs] Fresh stage created: arn={fresh_arn} id={fresh_id} at={create_ts:.3f}")
 
-    # Store stage ARN on project — keyed by canonical UUID.
+    # Store stage ARN on project — keyed by canonical UUID. Bump
+    # updated_at so the startup sweep's NULL-heartbeat / old-updated_at
+    # heuristic doesn't clip this brand-new stream during the 5s window
+    # before the first /heartbeat poll persists last_heartbeat_at.
+    from datetime import datetime, timezone
     supabase = get_client()
     supabase.table("projects").update({
         "ivs_stage_arn": fresh_arn,
         "ivs_stage_id": fresh_id,
         "live_provider": "ivs_realtime",
         "is_live": True,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", project_uuid).execute()
     print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
 
@@ -309,14 +392,17 @@ async def api_viewer_token(
     if join_err:
         raise HTTPException(status_code=429, detail=join_err)
 
-    # Check viewer capacity (keyed on canonical UUID)
+    # Legacy global concurrent-viewer cap (in-memory, 50 default). Kept
+    # as a belt-and-suspenders for the case where the per-tier check
+    # below errors out — better to under-serve than to leak Mux/IVS
+    # spend on a Supabase outage.
     viewer_err = add_viewer(resolved_uuid)
     if viewer_err:
         raise HTTPException(status_code=503, detail=viewer_err)
 
     res = (
         supabase.table("projects")
-        .select("id, ivs_stage_arn, is_live")
+        .select("id, privy_id, ivs_stage_arn, is_live")
         .eq("id", resolved_uuid)
         .eq("is_deleted", False)
         .limit(1)
@@ -328,6 +414,78 @@ async def api_viewer_token(
     project = res.data[0]
     if not project.get("is_live") or not project.get("ivs_stage_arn"):
         raise HTTPException(status_code=404, detail="No active live session")
+
+    # Phase 1 per-tier viewer cap. Counts viewer-token mints against the
+    # currently-active stream_session for this project. Cumulative token
+    # mints over-restrict (no "viewer left" signal yet — that's Phase 2)
+    # but cumulative is the right cap-equivalent for IVS Real-Time
+    # billing, which is per-participant-minute. The 251st token mint on a
+    # Starter (250 cap) stream means we've already provisioned 250
+    # AWS participants for this broadcast; any further mints push us
+    # past the included viewer-hour budget for the tier.
+    #
+    # Resolver fails closed; we surface that as a 503 with operator
+    # actionable detail. Telemetry-read failure (count step) falls open
+    # to the legacy in-memory check rather than refusing every viewer.
+    from services.merchant_limits import (
+        resolve_merchant_limits_by_privy_did,
+        MerchantLimitsUnresolved,
+    )
+    owner_privy_for_limits = project.get("privy_id")
+    if owner_privy_for_limits:
+        try:
+            limits = resolve_merchant_limits_by_privy_did(
+                owner_privy_for_limits, supabase=supabase,
+            )
+        except MerchantLimitsUnresolved as exc:
+            print(f"[ivs] viewer-token cap-resolve refused: {exc!r}")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "merchant_limits_unresolved",
+                    "message": "This stream is temporarily unavailable.",
+                },
+            )
+        try:
+            session_res = (
+                supabase.table("stream_sessions")
+                .select("id")
+                .eq("project_id", resolved_uuid)
+                .is_("end_at", "null")
+                .order("start_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if session_res.data:
+                session_id = session_res.data[0]["id"]
+                count_res = (
+                    supabase.table("viewer_session_events")
+                    .select("id", count="exact", head=True)
+                    .eq("stream_session_id", session_id)
+                    .execute()
+                )
+                current_viewer_count = count_res.count or 0
+                if current_viewer_count >= limits.max_concurrent_viewers:
+                    raise HTTPException(
+                        status_code=503,
+                        detail={
+                            "code": "viewer_cap_reached",
+                            "message": (
+                                f"This stream is at its viewer cap "
+                                f"({limits.max_concurrent_viewers}). "
+                                f"Please try again in a few minutes."
+                            ),
+                            "tier": limits.plan_id,
+                            "cap": limits.max_concurrent_viewers,
+                            "current": current_viewer_count,
+                        },
+                    )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            # Telemetry-read failure: log and fall through to the legacy
+            # cap. We've already passed add_viewer (the 50-global) above.
+            print(f"[ivs] viewer cap telemetry read failed for project={resolved_uuid}: {exc!r}")
 
     viewer_id = user_id or f"anon-{resolved_uuid[:8]}"
     token_data = create_participant_token(
