@@ -5,6 +5,7 @@ and order queries.
 import os
 import time
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -14,6 +15,7 @@ from typing import Optional
 
 from db.supabase import get_client
 from auth.privy import get_current_user, get_optional_current_user, require_admin
+from services.commission import CommissionRateUnset, resolve_commission_rate
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
 from services.solana_verify import (
     LAMPORTS_PER_SOL,
@@ -86,7 +88,14 @@ def _get_stripe():
         _stripe = stripe
     return _stripe
 
-PLATFORM_FEE_RATE = 0.0  # 0% — doctrine: flat monthly fee, no per-sale cut
+# Commission rate is resolved per-merchant via services.commission at
+# session-create time. Resolution order: merchants.commission_rate_override
+# -> plan_limits.commission_rate (via merchants.plan_id) -> fail closed.
+# Today doctrine is 0% — both the per-tier seed (migration 053) and the
+# absence of any non-NULL override mean the resolver returns Decimal("0.0000")
+# for every existing merchant. The wiring stays general so a per-merchant
+# override or a future tier-rate change Just Works without touching this
+# code path.
 
 
 # ── Models ────────────────────────────────────────────────────
@@ -583,10 +592,12 @@ async def create_payment_intent(
 
     final_price = base_price
 
-    # Seller payout based on ORIGINAL price (platform subsidizes DUM discount)
+    # Seller payout based on ORIGINAL price (platform subsidizes DUM discount).
+    # Actual platform_fee / seller_receives are computed below, AFTER the
+    # merchant has been resolved and the commission rate is known. The
+    # buyer-paid amount in cents is locked here so the Stripe minimum check
+    # can run before any further work.
     seller_payout_base = original_price if token_discount_applied else final_price
-    platform_fee = round(seller_payout_base * PLATFORM_FEE_RATE, 2)
-    seller_receives = round(seller_payout_base - platform_fee, 2)
     amount_cents = int(round(final_price * 100))
 
     # Stripe minimum is $0.50 USD
@@ -686,12 +697,44 @@ async def create_payment_intent(
         )
     _assert_merchant_can_receive(s, merchant_stripe_id)
 
-    application_fee_cents = int(round(platform_fee * 100))
+    # ── Commission resolution (PR-COMM) ──────────────────────────
+    # Resolve the per-merchant commission rate, then derive the integer
+    # cents value passed to Stripe as application_fee_amount. Computed in
+    # Decimal — never float — to keep cents math exact.
+    #
+    # Fail closed: if the resolver raises, refuse the session. Better a
+    # visible 503 than silently defaulting to "free" or "1%". The
+    # resolver returns Decimal("0.0000") for the doctrine-correct path
+    # today; the omit-when-zero branch below preserves the existing
+    # Stripe-call shape for that case.
+    try:
+        commission_rate = resolve_commission_rate(seller_user_id, supabase=supabase)
+    except CommissionRateUnset as exc:
+        print(f"[checkout] Refusing session: {exc}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "commission_rate_unset",
+                "message": (
+                    "Checkout is misconfigured: this merchant has no "
+                    "commission rate set. Contact support."
+                ),
+            },
+        )
+
+    seller_payout_cents = int(round(seller_payout_base * 100))
+    application_fee_dec = (
+        Decimal(seller_payout_cents) * commission_rate
+    ).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    application_fee_cents = int(application_fee_dec)
+    platform_fee = float(application_fee_dec) / 100.0
+    seller_receives = float(Decimal(seller_payout_cents) - application_fee_dec) / 100.0
 
     print(
         f"[checkout] Creating Stripe session: offer={offer['id']}, "
         f"amount_cents={amount_cents}, buyer={buyer_user_id}, "
         f"merchant={merchant_stripe_id}, "
+        f"commission_rate={commission_rate}, "
         f"application_fee_cents={application_fee_cents}"
     )
 
@@ -755,6 +798,8 @@ async def create_payment_intent(
         "amount_paid_usd": final_price,
         "platform_fee_usd": platform_fee,
         "seller_receives_usd": seller_receives,
+        "resolved_commission_rate": float(commission_rate),
+        "application_fee_amount_cents": application_fee_cents,
         "stripe_payment_intent_id": session.payment_intent,
         "stripe_session_id": session.id,
         "status": "pending_payment",
@@ -1790,6 +1835,26 @@ async def sol_confirm(
         print(f"[sol-confirm] ✗ verify failed sig={body.tx_signature[:12]}…: {verification}")
         raise HTTPException(status_code=400, detail=verification)
 
+    # 4b. Resolve commission rate for AUDIT ONLY on the SOL path.
+    #     SOL settlement-to-merchant is out of scope for this commit
+    #     (platform_fee_usd stays 0, seller_receives_usd stays the
+    #     full usd_amount). The audit columns let future reconciliation
+    #     compute what the platform would have skimmed once SOL
+    #     settlement lands. If the resolver can't find a rate, log
+    #     and proceed without stamping rather than blocking the sale.
+    audit_commission_rate: Optional[Decimal] = None
+    audit_application_fee_cents: Optional[int] = None
+    try:
+        audit_commission_rate = resolve_commission_rate(seller_user_id, supabase=supabase)
+        sol_amount_cents = int(round(usd_amount * 100))
+        audit_application_fee_cents = int(
+            (Decimal(sol_amount_cents) * audit_commission_rate).quantize(
+                Decimal("1"), rounding=ROUND_HALF_UP
+            )
+        )
+    except CommissionRateUnset as exc:
+        print(f"[sol-confirm] audit-only resolver failed for seller={seller_user_id}: {exc}. Stamping NULL.")
+
     # 5. Insert the order in pending_payment, then process_order_paid
     #    flips it to paid and fires the same side-effects as Stripe.
     #    SOL goes to platform treasury; the merchant's USD-equivalent
@@ -1802,6 +1867,10 @@ async def sol_confirm(
         "amount_paid_usd": usd_amount,
         "platform_fee_usd": 0,
         "seller_receives_usd": usd_amount,
+        "resolved_commission_rate": (
+            float(audit_commission_rate) if audit_commission_rate is not None else None
+        ),
+        "application_fee_amount_cents": audit_application_fee_cents,
         "status": "pending_payment",
         "buyer_email": None,
         "notes": body.notes,

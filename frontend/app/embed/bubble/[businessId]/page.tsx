@@ -42,7 +42,7 @@
  *     on the merchant's site.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { API_BASE } from "../../../../lib/apiBase";
@@ -104,10 +104,41 @@ export default function BubblePreviewPage() {
   // which IVS stage to subscribe to. Soft-fail to "offline" on any
   // error — this page must never render an error visible to the
   // merchant's visitors.
+  //
+  // Polling cadence matches embed.js:pollLiveState — 3s offline /
+  // 5s live — so the host-page bubble and this iframe content
+  // discover a Go-Live transition within the same window. Pauses
+  // when the host posts `bubble-pause` (overlay open) and when the
+  // tab is hidden. The poll keeps scheduling while paused so
+  // resuming picks up immediately on the next tick. On transient
+  // failure after a successful fetch we keep the prior config so
+  // a network blip doesn't flip the bubble dark mid-stream; only
+  // the first-ever failure shows the offline shim.
+  const pausedRef = useRef(paused);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
   useEffect(() => {
     if (!businessId) return;
     let cancelled = false;
-    (async () => {
+    let timeoutId: number | null = null;
+
+    function scheduleNext(isLive: boolean) {
+      if (cancelled) return;
+      const ms = isLive ? 5000 : 3000;
+      timeoutId = window.setTimeout(fetchOnce, ms);
+    }
+
+    async function fetchOnce() {
+      if (cancelled) return;
+      const isHidden =
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden";
+      if (pausedRef.current || isHidden) {
+        scheduleNext(false);
+        return;
+      }
       try {
         const res = await fetch(
           `${API_BASE}/api/projects/${encodeURIComponent(businessId)}/embed-config`,
@@ -115,21 +146,29 @@ export default function BubblePreviewPage() {
         );
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = (await res.json()) as BubbleConfig;
-        if (!cancelled) setConfig(data);
+        if (cancelled) return;
+        setConfig(data);
+        scheduleNext(data.is_live === true);
       } catch {
-        if (!cancelled) {
-          setConfig({
+        if (cancelled) return;
+        setConfig((prev) =>
+          prev || {
             id: null,
             is_live: false,
             ivs_stage_arn: null,
             live_provider: null,
             popin_config: null,
-          });
-        }
+          },
+        );
+        scheduleNext(false);
       }
-    })();
+    }
+
+    fetchOnce();
+
     return () => {
       cancelled = true;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
     };
   }, [businessId]);
 

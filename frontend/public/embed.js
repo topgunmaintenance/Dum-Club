@@ -265,9 +265,10 @@
             // without this loop a bubble loaded BEFORE the merchant
             // went live would never switch to LIVE state until the
             // buyer manually refreshed. Adaptive cadence:
-            //   - offline: 30s (catches go-live within 30s on an
-            //              already-open tab; ~2 req/min/tab while
-            //              offline — negligible at scale)
+            //   - offline: 3s  (catches go-live within ~3-5s on an
+            //              already-open tab; the embed-config Cache-
+            //              Control is max-age=2 so most polls hit the
+            //              Vercel edge cache, not the origin)
             //   - live:    5s  (live state can change fast; matches
             //              the host page's tick rate)
             // Pauses on hidden tabs via the visibility API. Bubble's
@@ -316,7 +317,7 @@
               var isLiveNow =
                 (embedConfig && embedConfig.is_live === true) ||
                 (popinConfig && popinConfig.is_live === true);
-              var ms = isLiveNow ? 5000 : 30000;
+              var ms = isLiveNow ? 5000 : 3000;
               window.setTimeout(pollLiveState, ms);
             }
             scheduleNext();

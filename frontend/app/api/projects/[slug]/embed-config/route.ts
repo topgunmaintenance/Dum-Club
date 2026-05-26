@@ -410,11 +410,16 @@ export async function GET(
       },
       {
         status: 200,
-        // 15s cache so go-live transitions surface within
-        // seconds instead of up to a minute. Vercel CDN handles
-        // most repeat hits; first paint pays the Supabase round
-        // trip + optional Railway live-status fetch.
-        headers: corsHeaders({ "Cache-Control": "public, max-age=15" }),
+        // 2s cache so a Go-Live transition surfaces to embed-bubble
+        // viewers within ~2-3s of the backend state flip, instead of
+        // up to 15-45s previously (15s cache + 30s offline poll in
+        // embed.js). Vercel CDN still absorbs the load: with the
+        // bubble polling at 3s while offline, viewers within the same
+        // 2s window share one origin fetch and the rest are edge hits.
+        // The optional Railway live-status fetch inside this handler
+        // only fires when is_live=true, so the offline path stays
+        // cheap even at the tighter cadence.
+        headers: corsHeaders({ "Cache-Control": "public, max-age=2" }),
       },
     );
   } catch (e: unknown) {
