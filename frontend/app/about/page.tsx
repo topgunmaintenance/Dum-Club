@@ -4,11 +4,11 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About DUM Club. Built by a Local Business, for Local Businesses",
   description:
-    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business. Flat monthly fee, 0% commission, always.",
+    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business. Flat monthly subscription plus a 1% sales fee. Industry-low.",
   openGraph: {
     title: "About DUM Club. Built by a Local Business, for Local Businesses",
     description:
-      "Built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. Flat monthly fee, 0% commission, always.",
+      "Built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. Flat monthly subscription plus a 1% sales fee. Industry-low.",
     siteName: "DUM Club",
     type: "website",
   },
@@ -34,7 +34,7 @@ export default function AboutPage() {
           DUM Club is the loyalty network for local commerce. Live selling,
           DUM Points loyalty, automatic customer win-back texts, and flash
           sales. Every tool a local business needs to keep its own customers,
-          on its own website, for one flat monthly fee. No commissions, ever.
+          on its own website, for one flat monthly subscription plus a 1% sales fee.
         </p>
 
         {/* Founder Note */}
@@ -132,7 +132,7 @@ export default function AboutPage() {
             {[
               {
                 label: "Live selling on your own page",
-                body: "Add live shopping to any business website with a single script tag. No marketplace, no commission per sale.",
+                body: "Add live shopping to any business website with a single script tag. No marketplace; just 1% per sale (vs Whatnot's 8%).",
               },
               {
                 label: "DUM Points loyalty across the network",
@@ -168,7 +168,7 @@ export default function AboutPage() {
             Pricing
           </div>
           <p className="mt-3 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-            Flat $39 to $299 a month. 0% commission. Always.
+            Flat $39 to $299 a month plus a 1% sales fee. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
             Join the first 100 merchants. Get 60 days free and lock in

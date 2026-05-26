@@ -1,0 +1,63 @@
+-- 054_plan_limits_one_percent_commission.sql
+-- Activate the 1% platform sales fee. Supersedes migration 053 which had
+-- zeroed every plan_limits row to 0.0000 to match the prior doctrine
+-- ("Never charge a % of sales — flat fee only, always"). The doctrine was
+-- reversed in CLAUDE.md commit d0d190b (PR #238); this migration brings
+-- the data into line with the new doctrine: 1% sales fee on every paid
+-- order, applied seller-side via Stripe application_fee_amount, with
+-- per-merchant overrides via merchants.commission_rate_override winning
+-- over the plan default.
+--
+-- After this migration runs, PR-COMM's resolver
+-- (backend/services/commission.py:resolve_commission_rate) returns
+-- Decimal("0.0100") for any merchant whose:
+--   - plan_id is one of {starter, growth, pro, business, enterprise}, AND
+--   - commission_rate_override is NULL
+--
+-- This is a DATA migration, not a schema migration. The column shape
+-- (NUMERIC(5,4) NULL-able, bounds CHECK 0..0.5) is unchanged from 049.
+-- The 0.5 upper bound still stands so the column could record a higher
+-- rate if doctrine ever changes again — but per CLAUDE.md §12 rule #1
+-- the 1% cap is doctrine and raising it requires a doctrine update.
+--
+-- Idempotency: IS DISTINCT FROM makes this re-runnable. A second run
+-- touches zero rows. The pattern also normalizes any tier accidentally
+-- set to NULL to 0.0100, which is doctrine-correct (NULL "fails closed"
+-- but 0.0100 explicitly states "1% sales fee"; doctrine wants explicit).
+--
+-- Per-merchant overrides (merchants.commission_rate_override) are NOT
+-- touched. Resolution order in commission.py is:
+--   1. merchants.commission_rate_override (if NOT NULL)
+--   2. plan_limits.commission_rate via merchants.plan_id
+--   3. raise CommissionRateUnset (fail closed)
+-- Any merchant with an explicit override (including 0.0000 comp deals)
+-- keeps that override. Only merchants whose rate currently resolves
+-- through plan_limits will see the rate flip from 0.0000 → 0.0100.
+--
+-- Pre-migration prod state (verified at task-spec time):
+--   plan_limits rows: starter, growth, pro, business, enterprise —
+--   every row 0.0000 (set by migration 053).
+-- Post-migration state:
+--   every row 0.0100.
+--
+-- Founding merchants: 1% applies. Per CLAUDE.md §10 (updated in PR #238),
+-- the founding-tier lock covers the subscription price, NOT the sales fee
+-- or overage. Founders running through this migration will start being
+-- charged 1% on the next paid order after deploy.
+--
+-- Atomic deploy contract: this migration MUST ship in the same release
+-- as the frontend UI commission-claim flips (same PR). Any window where
+-- the migration has applied but the UI still says "0% commission" creates
+-- a real merchant trust issue (silent overcharge against advertised rate).
+-- The PR opening this migration also flips every "0% commission" / "no
+-- commission" / "no per-sale" claim across the UI to "1% sales fee" or
+-- the appropriate variant per the audit's wording recommendation.
+--
+-- Rollback (restores migration 053's terminal state verbatim):
+--   UPDATE plan_limits SET commission_rate = 0.0000;
+-- Rollback should be paired with re-flipping the UI back to 0% claims.
+
+UPDATE plan_limits
+   SET commission_rate = 0.0100,
+       updated_at      = now()
+ WHERE commission_rate IS DISTINCT FROM 0.0100;

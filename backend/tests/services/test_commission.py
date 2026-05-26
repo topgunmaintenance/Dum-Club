@@ -107,19 +107,43 @@ class ResolveCommissionRateTests(unittest.TestCase):
         self.assertEqual([c["table"] for c in sb.calls], ["merchants"])
 
     def test_override_null_uses_plan_default(self):
-        """Override NULL + plan rate 0.0000 -> resolver returns 0.0000
-        from plan_limits, not from a hardcoded default."""
+        """Override NULL + plan rate 0.0100 -> resolver returns 0.0100
+        from plan_limits, not from a hardcoded default.
+
+        After migration 054 the post-resolver plan default is 0.0100
+        (1% sales fee) on every seeded tier. Pre-054 (migration 053)
+        it was 0.0000. This test pins that the resolver delivers
+        whatever plan_limits says rather than hardcoding a value."""
         sb = _supabase_with(
             merchant_row={
                 "id": "m1",
                 "commission_rate_override": None,
                 "plan_id": "starter",
             },
-            plan_row={"plan_id": "starter", "commission_rate": 0.0000},
+            plan_row={"plan_id": "starter", "commission_rate": 0.0100},
         )
         rate = resolve_commission_rate(SELLER, supabase=sb)
-        self.assertEqual(rate, Decimal("0.0000"))
+        self.assertEqual(rate, Decimal("0.0100"))
         self.assertEqual([c["table"] for c in sb.calls], ["merchants", "plan_limits"])
+
+    def test_one_percent_plan_default_post_054(self):
+        """Phase 1 contract pin: the post-migration-054 plan default is
+        Decimal('0.0100') on every seeded tier. If migration 054 is
+        reverted (or migration 053 re-applied), this test fails first."""
+        for tier in ("starter", "growth", "pro", "business", "enterprise"):
+            sb = _supabase_with(
+                merchant_row={
+                    "id": "m1",
+                    "commission_rate_override": None,
+                    "plan_id": tier,
+                },
+                plan_row={"plan_id": tier, "commission_rate": 0.0100},
+            )
+            rate = resolve_commission_rate(SELLER, supabase=sb)
+            self.assertEqual(
+                rate, Decimal("0.0100"),
+                f"tier {tier!r} should resolve to 1% sales fee post-054",
+            )
 
     def test_override_zero_does_not_fall_through(self):
         """CRITICAL: override = 0.0000 (deliberate comp) must win over
