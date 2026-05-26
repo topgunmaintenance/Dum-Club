@@ -64,6 +64,68 @@ from db.supabase import init_supabase
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_supabase()
+    # Phase 0 livestream cost-protection: sweep orphaned is_live=true
+    # projects on startup. Two cases to handle separately to avoid
+    # clipping a stream during the 5-second window between deploy
+    # completion and the host's first heartbeat write under the new
+    # persistence code:
+    #
+    #   (a) last_heartbeat_at IS NOT NULL AND older than 5 minutes
+    #       — definitely abandoned, clear immediately.
+    #   (b) last_heartbeat_at IS NULL AND updated_at older than 10 min
+    #       — pre-migration-059 orphan or a stream whose host hung up
+    #       long ago. The 10-minute updated_at buffer protects fresh
+    #       go-lives whose first heartbeat hasn't written yet.
+    #
+    # Best-effort; never blocks app startup on a Supabase hiccup.
+    try:
+        from datetime import datetime, timezone, timedelta
+        from db.supabase import get_client
+        supabase = get_client()
+        now_iso = datetime.now(timezone.utc)
+        stale_heartbeat_cutoff = (now_iso - timedelta(minutes=5)).isoformat()
+        no_heartbeat_cutoff    = (now_iso - timedelta(minutes=10)).isoformat()
+        clear_fields = {
+            "is_live": False,
+            "ivs_stage_arn": None,
+            "ivs_stage_id": None,
+            "live_provider": None,
+            "live_stream_id": None,
+            "live_playback_id": None,
+            "live_stream_key": None,
+            "live_ingest_url": None,
+            "stream_url": None,
+        }
+        # Case (a): explicit stale heartbeat.
+        a_res = (
+            supabase.table("projects")
+            .update(clear_fields)
+            .eq("is_live", True)
+            .not_.is_("last_heartbeat_at", "null")
+            .lt("last_heartbeat_at", stale_heartbeat_cutoff)
+            .execute()
+        )
+        a_cleared = len(a_res.data or [])
+        # Case (b): NULL heartbeat + old updated_at.
+        b_res = (
+            supabase.table("projects")
+            .update(clear_fields)
+            .eq("is_live", True)
+            .is_("last_heartbeat_at", "null")
+            .lt("updated_at", no_heartbeat_cutoff)
+            .execute()
+        )
+        b_cleared = len(b_res.data or [])
+        total = a_cleared + b_cleared
+        if total:
+            print(
+                f"[startup] Cleared {total} orphaned live stream(s) "
+                f"(stale_heartbeat={a_cleared}, null_heartbeat_old_update={b_cleared})"
+            )
+        else:
+            print("[startup] No orphaned live streams found")
+    except Exception as exc:
+        print(f"[startup] Stale stream sweep failed: {exc!r}")
     yield
 
 

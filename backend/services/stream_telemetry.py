@@ -50,8 +50,12 @@ def _resolve_merchant_id(supabase, owner_privy_id: Optional[str]) -> Optional[st
         )
         if res.data:
             return res.data[0].get("id")
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001
+        # Phase 0: explicit log so a merchant-lookup outage is visible
+        # in Railway, not silently hidden. The caller treats None as
+        # "merchant unknown" -> records the session anyway, just without
+        # the merchant_id link.
+        print(f"[telemetry] _resolve_merchant_id failed for {owner_privy_id!r}: {exc!r}")
     return None
 
 
