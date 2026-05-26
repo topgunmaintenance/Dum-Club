@@ -31,7 +31,7 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Flat $39 to $299 a month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Founding merchants get preferred pricing after launch.",
+    "Starting at $39/month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Founding merchants get preferred pricing after launch.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:
@@ -161,8 +161,8 @@ export default function PricingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <Eyebrow tone="brand">Pricing · One flat fee</Eyebrow>
             <Heading level="display" className="mt-4">
-              Flat <span className="text-brand-navy">$39 to $299 a month</span>.<br />
-              1% sales fee. Keep more of every sale.
+              Starting at <span className="text-brand-navy">$39/month + 1% sales fee</span>.<br />
+              Keep more of every dollar.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
               Live selling, loyalty, automatic customer win-back texts, and
@@ -191,7 +191,7 @@ export default function PricingPage() {
               Pick the plan that fits.
             </Heading>
             <p className="mx-auto mt-3 max-w-xl text-secondary">
-              Same 0% commission on every plan. Upgrade when the next
+              Same 1% sales fee on every plan. Upgrade when the next
               capability earns its keep.
             </p>
           </div>

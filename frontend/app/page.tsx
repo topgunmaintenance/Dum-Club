@@ -1232,8 +1232,8 @@ function ComparisonTable() {
           </thead>
           <tbody>
             {[
-              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $39 to $299/mo" },
-              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
+              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
+              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1% only" },
               { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
               { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
               { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
@@ -1783,7 +1783,7 @@ function PricingTiers() {
         Flat fee. <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
-        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every sale.
+        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every dollar.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -2714,13 +2714,13 @@ export default function Home() {
                   Brand recognition is carried by the navbar
                   wordmark and the founder note directly below. */}
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
-                Sell Live. <span className="text-brand-navy">Keep More of Every Sale.</span>
+                Sell Live. <span className="text-brand-navy">Keep More of Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
                 DUM Club helps businesses sell live on their own website. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%).
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month.</span> 1% sales fee per order. Keep more of every sale.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1% sales fee.</span> Keep more of every dollar.
               </p>
 
               {/* Founder trust row — direct line to Julian under the
@@ -2986,7 +2986,7 @@ export default function Home() {
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
               { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
               { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 1% sales fee", muted: false },
+              { name: "DUM Club", fees: "From $39", detail: "flat / month · 1% sales fee", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -3155,7 +3155,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $39 to $299/month plus 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
+              Starting at $39/month + 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link

@@ -591,7 +591,7 @@ export default function MerchantPage() {
                   DUM Club
                 </div>
                 <div className="mt-1 font-mono text-base font-extrabold text-brand-teal">
-                  $39 to $299
+                  From $39
                 </div>
                 <div className="text-[10px] text-brand-teal">
                   flat / month · 1% sales fee

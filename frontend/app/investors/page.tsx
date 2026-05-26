@@ -91,7 +91,7 @@ const HIGHLIGHTS: Array<{
   {
     icon: Wallet,
     title: "Flat monthly SaaS model",
-    body: "$39 to $299 a month. Predictable recurring revenue. 78% projected gross margin by Year 2.",
+    body: "Starting at $39/month, scaling to $2,000+/month enterprise. Predictable recurring revenue. 78% projected gross margin by Year 2.",
   },
   {
     icon: ShieldCheck,
@@ -145,7 +145,7 @@ export default function InvestorsPage() {
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
               DUM Club is building a live commerce platform that helps local
-              businesses sell online, keep every sale, and grow with built-in
+              businesses sell online, keep more of every dollar, and grow with built-in
               loyalty.
             </p>
 

@@ -70,10 +70,10 @@ export default function AboutPage() {
                 to each other.
               </p>
               <p className="mt-4 text-[15px] leading-relaxed text-primary sm:text-base">
-                DUM Club is the platform I wished existed: flat fee,
-                zero commission, every tool included. Built for the
-                shop owner who already paid for the website and just
-                wants more customers walking in.
+                DUM Club is the platform I wished existed: flat monthly
+                fee plus just 1% per sale (Whatnot takes 8%), every tool
+                included. Built for the shop owner who already paid for
+                the website and just wants more customers walking in.
               </p>
               <div className="mt-5 font-caveat text-[22px] leading-none text-brand-navy">
                 Julian
@@ -118,8 +118,8 @@ export default function AboutPage() {
             ))}
           </ul>
           <p className="mt-5 text-base leading-relaxed text-secondary">
-            DUM Club replaces that whole stack with one flat bill, from $39 to
-            $299 a month, so you keep the customer, the data, and 100% of every sale.
+            DUM Club replaces that whole stack with one flat bill, starting at
+            $39/month, so you keep the customer, the data, and more of every dollar.
           </p>
         </section>
 
@@ -168,7 +168,7 @@ export default function AboutPage() {
             Pricing
           </div>
           <p className="mt-3 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-            Flat $39 to $299 a month plus a 1% sales fee. Always.
+            Starting at $39/month plus a 1% sales fee. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
             Join the first 100 merchants. Get 60 days free and lock in
