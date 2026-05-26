@@ -31,8 +31,10 @@ if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
 from services.merchant_limits import (  # noqa: E402
+    MerchantLimits,
     MerchantLimitsUnresolved,
     resolve_merchant_limits,
+    check_monthly_hard_block,
     DEFAULT_MAX_STREAM_DURATION_MIN,
 )
 
@@ -272,6 +274,94 @@ class TestFailClosed(unittest.TestCase):
         with self.assertRaises(MerchantLimitsUnresolved) as ctx:
             resolve_merchant_limits(MID, supabase=sb)
         self.assertIn("plan_limits row missing", ctx.exception.reason)
+
+
+def _starter_limits():
+    return MerchantLimits(
+        merchant_id=MID,
+        plan_id="starter",
+        max_concurrent_viewers=250,
+        max_concurrent_streams=1,
+        max_stream_duration_min=60,
+        max_monthly_viewer_hours=Decimal("250"),
+        overage_rate=Decimal("0.13"),
+        hard_block_multiplier=Decimal("3.0"),
+    )
+
+
+def _supabase_with_usage(*, viewer_seconds):
+    """FakeSupabase whose merchant_monthly_usage returns a single row
+    with the given viewer_seconds. Other tables return empty."""
+    def resolver(table, filters):
+        if table == "merchant_monthly_usage":
+            if viewer_seconds is None:
+                return _ns([])
+            return _ns([{"viewer_seconds": viewer_seconds}])
+        return _ns([])
+    return FakeSupabase(resolver)
+
+
+class TestMonthlyHardBlock(unittest.TestCase):
+
+    def test_under_cap_returns_none(self):
+        # Starter: 250 included × 3.0 multiplier = 750 hard cap = 2,700,000 seconds.
+        # 100 viewer-hours = 360,000 seconds, well under.
+        sb = _supabase_with_usage(viewer_seconds=360_000)
+        self.assertIsNone(check_monthly_hard_block(_starter_limits(), supabase=sb))
+
+    def test_no_usage_row_returns_none(self):
+        sb = _supabase_with_usage(viewer_seconds=None)
+        self.assertIsNone(check_monthly_hard_block(_starter_limits(), supabase=sb))
+
+    def test_at_hard_cap_refuses(self):
+        # Exactly at 750 viewer-hours = 2,700,000 seconds.
+        sb = _supabase_with_usage(viewer_seconds=2_700_000)
+        reason = check_monthly_hard_block(_starter_limits(), supabase=sb)
+        self.assertIsNotNone(reason)
+        self.assertIn("hard block", reason.lower())
+        self.assertIn("750", reason)  # hard cap printed
+        self.assertIn("250", reason)  # included printed
+
+    def test_over_hard_cap_refuses(self):
+        # 1000 viewer-hours, way over the 750 hard cap.
+        sb = _supabase_with_usage(viewer_seconds=3_600_000)
+        reason = check_monthly_hard_block(_starter_limits(), supabase=sb)
+        self.assertIsNotNone(reason)
+
+    def test_one_second_under_cap_passes(self):
+        # 2,699,999 = just under 750-hour hard cap.
+        sb = _supabase_with_usage(viewer_seconds=2_699_999)
+        self.assertIsNone(check_monthly_hard_block(_starter_limits(), supabase=sb))
+
+    def test_pro_higher_hard_cap(self):
+        # Pro: 1500 × 3.0 = 4500 viewer-hours = 16,200,000 seconds.
+        pro_limits = MerchantLimits(
+            merchant_id=MID, plan_id="pro",
+            max_concurrent_viewers=2000, max_concurrent_streams=3,
+            max_stream_duration_min=60,
+            max_monthly_viewer_hours=Decimal("1500"),
+            overage_rate=Decimal("0.10"), hard_block_multiplier=Decimal("3.0"),
+        )
+        # 5000 vh = 18,000,000 seconds = over the 4500 hard cap.
+        sb = _supabase_with_usage(viewer_seconds=18_000_000)
+        self.assertIsNotNone(check_monthly_hard_block(pro_limits, supabase=sb))
+        # 4499 vh, just under.
+        sb_under = _supabase_with_usage(viewer_seconds=int(4499 * 3600))
+        self.assertIsNone(check_monthly_hard_block(pro_limits, supabase=sb_under))
+
+    def test_zero_viewer_seconds_passes(self):
+        sb = _supabase_with_usage(viewer_seconds=0)
+        self.assertIsNone(check_monthly_hard_block(_starter_limits(), supabase=sb))
+
+    def test_read_failure_falls_open(self):
+        """A Supabase outage during cap-read must NOT refuse every
+        stream-start. Returns None (fall open) and logs."""
+        def resolver(table, filters):
+            raise RuntimeError("simulated Supabase outage")
+        sb = FakeSupabase(resolver)
+        # Must not raise.
+        result = check_monthly_hard_block(_starter_limits(), supabase=sb)
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":
