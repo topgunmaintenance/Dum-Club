@@ -37,10 +37,11 @@ type StripeStatus = {
 };
 
 // Standard plan price is pulled from an env var so the UI does not
-// hard-code $29 anywhere (CLAUDE.md Section 7 rule). Falls back to 29
-// only when NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD is unset at build time.
+// hard-code the Starter tier anywhere (CLAUDE.md Section 7 rule). Falls
+// back to 39 (Starter base per CLAUDE.md §3) when
+// NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD is unset at build time.
 const STANDARD_PLAN_PRICE_USD = Number(
-  process.env.NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD ?? 29
+  process.env.NEXT_PUBLIC_STANDARD_PLAN_PRICE_USD ?? 39
 );
 
 export default function MerchantPage() {
@@ -590,7 +591,7 @@ export default function MerchantPage() {
                   DUM Club
                 </div>
                 <div className="mt-1 font-mono text-base font-extrabold text-brand-teal">
-                  $29 to $99
+                  $39 to $299
                 </div>
                 <div className="text-[10px] text-brand-teal">
                   flat / month · 0% commission

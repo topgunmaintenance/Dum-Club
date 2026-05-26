@@ -31,7 +31,7 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Flat $29 to $99 a month. 0% commission. Keep every sale. Founding merchants get preferred pricing after launch.",
+    "Flat $39 to $299 a month. 0% commission. Keep every sale. Founding merchants get preferred pricing after launch.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:
@@ -54,7 +54,7 @@ type Tier = {
 const TIERS: Tier[] = [
   {
     name: "Starter",
-    price: "$29",
+    price: "$39",
     cadence: "/month",
     tagline: "Get on the marketplace and start selling.",
     features: [
@@ -69,7 +69,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Growth",
-    price: "$49",
+    price: "$99",
     cadence: "/month",
     tagline: "Bring customers back automatically.",
     features: [
@@ -85,7 +85,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Pro",
-    price: "$99",
+    price: "$299",
     cadence: "/month",
     tagline: "Replace your social agency too.",
     features: [
@@ -161,7 +161,7 @@ export default function PricingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <Eyebrow tone="brand">Pricing · One flat fee</Eyebrow>
             <Heading level="display" className="mt-4">
-              Flat <span className="text-brand-navy">$29 to $99 a month</span>.<br />
+              Flat <span className="text-brand-navy">$39 to $299 a month</span>.<br />
               0% commission. Keep every sale.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
@@ -365,7 +365,7 @@ export default function PricingPage() {
                 DUM Club · Growth tier
               </div>
               <div className="mb-4 font-mono text-4xl font-extrabold text-brand-navy">
-                $49<span className="text-base text-secondary"> /month flat</span>
+                $99<span className="text-base text-secondary"> /month flat</span>
               </div>
               <ul className="space-y-2 text-[13px] text-primary">
                 <li className="flex items-start gap-2">
@@ -378,13 +378,13 @@ export default function PricingPage() {
                 </li>
               </ul>
               <p className="mt-4 text-[12px] text-secondary">
-                $100k/month = same $49. The fee never scales with sales.
+                $100k/month = same $99. The fee never scales with sales.
               </p>
             </Card>
           </div>
 
           <p className="mt-8 text-center text-[13px] text-secondary">
-            <span className="font-semibold text-brand-navy">$1,041/month</span>{" "}
+            <span className="font-semibold text-brand-navy">$991/month</span>{" "}
             saved on Whatnot's fees alone, before the loyalty, retention,
             and AI social tooling Growth includes.
           </p>

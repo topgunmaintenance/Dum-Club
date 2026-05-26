@@ -14,7 +14,7 @@ export function MerchantStrip() {
         Own a local business?
       </p>
       <p className="mt-2 text-sm font-medium text-primary sm:text-base">
-        Flat $29/mo. 0% commission, always. Founding merchants get preferred pricing after launch.
+        Flat $39/mo. 0% commission, always. Founding merchants get preferred pricing after launch.
       </p>
       <Link
         href="/merchant"

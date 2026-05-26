@@ -21,7 +21,7 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "DUM Club. Drive Ur Market. Live Selling. Zero Commission.",
   description:
-    "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee from $29 to $99 a month and keep 100% of every sale. 0% commission, always.",
+    "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat fee from $39 to $299 a month and keep 100% of every sale. 0% commission, always.",
   openGraph: {
     title: "DUM Club. Drive Ur Market. Live Selling. Zero Commission.",
     description:
