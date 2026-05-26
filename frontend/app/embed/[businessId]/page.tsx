@@ -860,7 +860,7 @@ export default function EmbedShellPage() {
   }
 
   return (
-    <main className="min-h-screen bg-surface-page text-primary px-4 py-6 sm:px-6 sm:py-8">
+    <main className="min-h-[100dvh] bg-surface-page text-primary px-4 py-4 sm:px-6 sm:py-8">
       {/* Schema.org JSON-LD for the pinned offer. The embed page often
           loads inside a merchant's own iframe, where their site provides
           the LocalBusiness markup; we contribute Product-level data so
@@ -1023,8 +1023,15 @@ export default function EmbedShellPage() {
               <IVSStageViewer projectId={project.id} userId={viewerUserId} />
             ) : (
               <div
-                className="flex items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary"
-                style={{ minHeight: 300, aspectRatio: "16/9" }}
+                // Aspect-ratio alone now sizes this — the prior
+                // `minHeight: 300` floor created a too-tall "Stream
+                // offline" panel on portrait mobile that read as
+                // empty grey space pushing the offer card down. The
+                // natural 16:9 height (~219px on a 390px phone)
+                // tracks the live video's actual size, so the
+                // transition between offline and live feels in-place
+                // instead of layout-shifting.
+                className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary"
               >
                 {loading ? "Loading video…" : "Stream offline"}
               </div>
@@ -1069,18 +1076,22 @@ export default function EmbedShellPage() {
             {/* Pinned offer card — title / price / description / stock.
                 Adds the embed-sold-flash class for a single ~1s flash
                 when an item_updated event arrives with sold_out=true.
-                Hidden on mobile WHEN there is something pinned because
-                Step 9's sticky bottom buy bar takes over the buy
-                surface on small screens. When nothing is pinned, the
-                card stays visible on mobile so the viewer still sees
-                the empty state. */}
+                Always visible on every viewport. Previously hidden on
+                mobile when pinnedOffer was set (the sticky bottom buy
+                bar acted as the only CTA), but that broke the
+                "product card visually attached to livestream" cue —
+                visitors saw video, then a big chat block, then a
+                sticky CTA divorced from the offer it was for. The
+                card directly under the video reads as "this is what
+                you're watching"; the sticky bar stays as a scroll-
+                anywhere fallback. */}
             <section
               aria-label="Pinned offer"
               className={`rounded-2xl border bg-surface-card p-4 transition-colors ${
                 soldFlash
                   ? "embed-sold-flash border-[var(--state-live)]/30"
                   : "border-default"
-              } ${pinnedOffer ? "hidden lg:block" : ""}`}
+              }`}
             >
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                 Now showing
