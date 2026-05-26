@@ -237,6 +237,91 @@ def _coalesce_decimal(*vals) -> Optional[Decimal]:
 
 
 # ─────────────────────────────────────────────────────────────────────
+# Phase 3a: monthly hard-block enforcement.
+#
+# AWS IVS Real-Time bills per-participant-minute, ~$0.10/viewer-hour.
+# A Starter merchant ($39/mo subscription) with 250 included viewer-
+# hours has ~$25 of platform-paid AWS budget per month. The
+# hard_block_multiplier (seeded 3.0 across all tiers) lets a merchant
+# burst to 3x the included budget before we refuse new streams — i.e.
+# ~$75 of AWS exposure max before runtime enforcement kicks in.
+#
+# This function reads merchant_monthly_usage.viewer_seconds (populated
+# by services/stream_telemetry.on_stream_end since Phase 3a) and
+# returns a refusal reason if the merchant has crossed
+# hard_block_multiplier × max_monthly_viewer_hours.
+#
+# Telemetry-read failures fall OPEN (return None) rather than refuse
+# every stream-start on a Supabase hiccup. The legacy in-memory + per-
+# tier checks downstream still apply. Logged loudly so operator sees.
+# ─────────────────────────────────────────────────────────────────────
+
+def _current_yyyymm_utc() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
+
+def check_monthly_hard_block(
+    limits: MerchantLimits,
+    *,
+    supabase: Any,
+    yyyymm: Optional[str] = None,
+) -> Optional[str]:
+    """Return a refusal reason if the merchant is over the monthly
+    hard-block multiplier. Returns None when under the cap (stream
+    or viewer-mint allowed to proceed).
+
+    Args:
+        limits: resolved MerchantLimits from resolve_merchant_limits.
+        supabase: client.
+        yyyymm: override current month for tests; defaults to UTC now.
+
+    Returns:
+        None if usage is OK.
+        Refusal string if hard block is in effect; caller should raise
+        HTTPException with the operator-actionable detail attached.
+    """
+    if yyyymm is None:
+        yyyymm = _current_yyyymm_utc()
+
+    try:
+        usage_res = (
+            supabase.table("merchant_monthly_usage")
+            .select("viewer_seconds")
+            .eq("merchant_id", limits.merchant_id)
+            .eq("yyyymm", yyyymm)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        # Telemetry-read failure: fall open. Don't refuse every stream-
+        # start on a Supabase hiccup. Per-tier concurrent checks still
+        # apply downstream.
+        print(
+            f"[merchant_limits] monthly_hard_block read failed for "
+            f"merchant={limits.merchant_id} yyyymm={yyyymm}: {exc!r}"
+        )
+        return None
+
+    if not usage_res.data:
+        # No usage row yet this month -> definitely under the cap.
+        return None
+
+    seconds = int(usage_res.data[0].get("viewer_seconds") or 0)
+    hours_used = Decimal(seconds) / Decimal(3600)
+    hard_cap_hours = limits.max_monthly_viewer_hours * limits.hard_block_multiplier
+
+    if hours_used >= hard_cap_hours:
+        return (
+            f"monthly hard block: used {hours_used:.2f} viewer-hours this month, "
+            f"hard cap is {hard_cap_hours:.2f} "
+            f"({limits.max_monthly_viewer_hours} included × "
+            f"{limits.hard_block_multiplier}x multiplier)"
+        )
+    return None
+
+
+# ─────────────────────────────────────────────────────────────────────
 # Resolve-from-Privy-DID convenience wrapper.
 #
 # Most gate sites (/api/ivs/create-stage, /viewer-token, /go-live)

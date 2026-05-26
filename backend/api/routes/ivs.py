@@ -180,6 +180,7 @@ async def api_create_stage(
     owner_privy_for_limits = project.get("privy_id") or user_id
     from services.merchant_limits import (
         resolve_merchant_limits_by_privy_did,
+        check_monthly_hard_block,
         MerchantLimitsUnresolved,
     )
     try:
@@ -197,6 +198,28 @@ async def api_create_stage(
                     "Reach out to support so we can set your stream caps before you go live."
                 ),
                 "reason": exc.reason,
+            },
+        )
+
+    # Phase 3a: monthly hard-block check. Refuse new streams when this
+    # merchant has burned through hard_block_multiplier × included_vh
+    # this month. Telemetry-read failures fall OPEN (returns None) so
+    # we don't refuse every go-live on a Supabase hiccup.
+    hard_block_reason = check_monthly_hard_block(limits, supabase=supabase_client)
+    if hard_block_reason:
+        print(f"[ivs] monthly hard block triggered: {hard_block_reason}")
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "monthly_hard_block",
+                "message": (
+                    f"You've exceeded the {limits.plan_id} plan's hard-cap monthly "
+                    f"viewer-hours. Upgrade your plan or wait until next month to go live again."
+                ),
+                "tier": limits.plan_id,
+                "included_vh": float(limits.max_monthly_viewer_hours),
+                "hard_block_multiplier": float(limits.hard_block_multiplier),
+                "upgrade_url": "/upgrade",
             },
         )
 
@@ -436,6 +459,7 @@ async def api_viewer_token(
     # cap rather than refusing every viewer.
     from services.merchant_limits import (
         resolve_merchant_limits_by_privy_did,
+        check_monthly_hard_block,
         MerchantLimitsUnresolved,
     )
     owner_privy_for_limits = project.get("privy_id")
@@ -450,6 +474,21 @@ async def api_viewer_token(
                 status_code=503,
                 detail={
                     "code": "merchant_limits_unresolved",
+                    "message": "This stream is temporarily unavailable.",
+                },
+            )
+        # Phase 3a: monthly hard-block also gates viewer-token mints,
+        # not just stream-start. A merchant could have a stream already
+        # running when they cross the threshold — refuse new viewers
+        # to that stream until they upgrade. Existing viewers are not
+        # forcibly disconnected (Phase 3b will add that).
+        hard_block_reason = check_monthly_hard_block(limits, supabase=supabase)
+        if hard_block_reason:
+            print(f"[ivs] viewer-token monthly hard block: {hard_block_reason}")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "monthly_hard_block",
                     "message": "This stream is temporarily unavailable.",
                 },
             )

@@ -123,7 +123,7 @@ def on_stream_end(supabase, project_id: str, ended_reason: str) -> None:
     try:
         res = (
             supabase.table("stream_sessions")
-            .select("id, merchant_id, peak_concurrent")
+            .select("id, merchant_id, peak_concurrent, start_at")
             .eq("project_id", project_id)
             .is_("end_at", "null")
             .order("start_at", desc=True)
@@ -135,6 +135,7 @@ def on_stream_end(supabase, project_id: str, ended_reason: str) -> None:
         session = res.data[0]
         session_id = session["id"]
         merchant_id = session.get("merchant_id")
+        start_at_raw = session.get("start_at")
 
         # Peak-concurrent — read in-memory _viewer_counts as a proxy.
         # Imperfect: that counter never decrements, so it's an upper
@@ -188,11 +189,36 @@ def on_stream_end(supabase, project_id: str, ended_reason: str) -> None:
         except Exception as exc:  # noqa: BLE001
             print(f"[telemetry] on_stream_end session update failed for {project_id}: {exc!r}")
 
-        # Monthly rollup. Read-then-write is race-tolerant for Phase 0 —
-        # two streams ending in the same second on the same merchant in
-        # the same month would have one increment lost, which is fine
-        # for shape-of-consumption observation. A proper UPSERT can land
-        # in Phase 1 when this matters.
+        # Phase 3a: estimate viewer-seconds for this session.
+        # Upper-bound estimate: stream_duration × unique_viewers, i.e.
+        # assume every viewer watched the whole broadcast. This
+        # overestimates for streams where viewers come and go, which is
+        # the conservative direction for monthly cap enforcement. AWS
+        # IVS Real-Time billing is per-participant-minute; the upper-
+        # bound estimate caps the platform's exposure at the merchant's
+        # billed allowance rather than under-charging on a stream where
+        # half the viewers left after 2 minutes.
+        viewer_seconds_this_session = 0
+        if start_at_raw and unique_viewers > 0:
+            try:
+                from datetime import datetime
+                raw = start_at_raw
+                if raw.endswith("Z"):
+                    raw = raw[:-1] + "+00:00"
+                start_dt = datetime.fromisoformat(raw)
+                end_dt = datetime.fromisoformat(end_iso)
+                duration_s = max(0, int((end_dt - start_dt).total_seconds()))
+                viewer_seconds_this_session = duration_s * unique_viewers
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[telemetry] viewer_seconds compute failed for session={session_id}: {exc!r}"
+                )
+
+        # Monthly rollup. Read-then-write is race-tolerant — two streams
+        # ending in the same second on the same merchant would have one
+        # increment lost, but the monthly cap enforcement re-reads on
+        # every gate check, so a transient under-count self-corrects on
+        # the next stream end.
         if merchant_id:
             yyyymm = end_iso[:7]  # 'YYYY-MM'
             try:
@@ -209,8 +235,8 @@ def on_stream_end(supabase, project_id: str, ended_reason: str) -> None:
                     supabase.table("merchant_monthly_usage").update(
                         {
                             "stream_count": int(row.get("stream_count") or 0) + 1,
+                            "viewer_seconds": int(row.get("viewer_seconds") or 0) + viewer_seconds_this_session,
                             "updated_at": end_iso,
-                            # viewer_seconds left untouched — Phase 0 doesn't compute it.
                         }
                     ).eq("merchant_id", merchant_id).eq("yyyymm", yyyymm).execute()
                 else:
@@ -219,7 +245,7 @@ def on_stream_end(supabase, project_id: str, ended_reason: str) -> None:
                             "merchant_id": merchant_id,
                             "yyyymm": yyyymm,
                             "stream_count": 1,
-                            "viewer_seconds": 0,
+                            "viewer_seconds": viewer_seconds_this_session,
                         }
                     ).execute()
             except Exception as exc:  # noqa: BLE001

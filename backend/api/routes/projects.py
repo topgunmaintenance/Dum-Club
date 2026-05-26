@@ -1875,6 +1875,7 @@ async def go_live(
     # without a merchant_plan_limits override).
     from services.merchant_limits import (
         resolve_merchant_limits_by_privy_did,
+        check_monthly_hard_block,
         MerchantLimitsUnresolved,
     )
     try:
@@ -1892,6 +1893,24 @@ async def go_live(
                     "Reach out to support so we can set your stream caps before you go live."
                 ),
                 "reason": exc.reason,
+            },
+        )
+    # Phase 3a monthly hard-block.
+    hard_block_reason = check_monthly_hard_block(limits, supabase=supabase)
+    if hard_block_reason:
+        print(f"[projects] /go-live monthly hard block: {hard_block_reason}")
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "monthly_hard_block",
+                "message": (
+                    f"You've exceeded the {limits.plan_id} plan's hard-cap monthly "
+                    f"viewer-hours. Upgrade your plan or wait until next month to go live again."
+                ),
+                "tier": limits.plan_id,
+                "included_vh": float(limits.max_monthly_viewer_hours),
+                "hard_block_multiplier": float(limits.hard_block_multiplier),
+                "upgrade_url": "/upgrade",
             },
         )
     try:
