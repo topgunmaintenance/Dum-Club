@@ -1155,7 +1155,7 @@ export default function EmbedShellPage() {
                       sign-in all share the same trust copy. */}
                   {!soldOut && (
                     <p className="text-center text-[11px] leading-relaxed text-secondary">
-                      Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                      Stripe checkout · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                     </p>
                   )}
 

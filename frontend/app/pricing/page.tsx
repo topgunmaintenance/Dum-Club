@@ -11,7 +11,7 @@
  * truth). Doctrine compliance:
  *   §3   tier numbers verbatim
  *   §11  comparison framed as "expense replacement"
- *   §12  Rule 1: never charge a % of sales — flat fee only
+ *   §12  Rule 1: 1% sales fee + flat subscription tier; never higher
  *   §12  Rule 11: Stripe is the only payment processor
  */
 
@@ -31,11 +31,11 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Flat $39 to $299 a month. 0% commission. Keep every sale. Founding merchants get preferred pricing after launch.",
+    "Flat $39 to $299 a month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Founding merchants get preferred pricing after launch.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:
-      "One flat monthly fee covers live selling, loyalty, automatic customer win-back texts, and local flash sales. 0% commission, ever.",
+      "One flat monthly subscription covers live selling, loyalty, automatic customer win-back texts, and local flash sales. Plus a 1% sales fee per order. Industry-low.",
     type: "website",
   },
 };
@@ -118,8 +118,8 @@ const TIERS: Tier[] = [
 
 const FAQS: { q: string; a: string }[] = [
   {
-    q: "Do you ever take a percentage of my sales?",
-    a: "No. DUM Club charges a flat monthly fee. We never take a per-transaction commission, and we never have. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout. DUM Club does not sit between you and your money.",
+    q: "Do you take a percentage of my sales?",
+    a: "Yes. 1% per paid order, deducted from your Stripe payout. That's industry-low: Whatnot takes 8%, DoorDash takes 15-30%, Etsy takes 6.5%. The 1% is your only per-sale fee on DUM Club. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout, not by you.",
   },
   {
     q: "What does 'founding merchant' actually get me?",
@@ -162,7 +162,7 @@ export default function PricingPage() {
             <Eyebrow tone="brand">Pricing · One flat fee</Eyebrow>
             <Heading level="display" className="mt-4">
               Flat <span className="text-brand-navy">$39 to $299 a month</span>.<br />
-              0% commission. Keep every sale.
+              1% sales fee. Keep more of every sale.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
               Live selling, loyalty, automatic customer win-back texts, and
@@ -370,7 +370,7 @@ export default function PricingPage() {
               <ul className="space-y-2 text-[13px] text-primary">
                 <li className="flex items-start gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />
-                  <span>0% commission on $10,000</span>
+                  <span>1% sales fee on $10,000 = $100 (Whatnot would take $800)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />

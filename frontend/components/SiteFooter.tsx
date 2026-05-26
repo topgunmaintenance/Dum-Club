@@ -34,7 +34,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               Drive Ur Market
             </p>
             <p className="max-w-xs text-sm leading-relaxed text-secondary">
-              The loyalty network for local business. Sell live, keep every dollar, and bring customers back with rewards that work at every shop on the network.
+              The loyalty network for local business. Sell live, keep more of every sale (just 1% per order), and bring customers back with rewards that work at every shop on the network.
             </p>
             <div className="mt-6 flex items-center gap-3">
               <span className="relative flex h-2 w-2">

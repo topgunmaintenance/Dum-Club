@@ -95,8 +95,8 @@ const HIGHLIGHTS: Array<{
   },
   {
     icon: ShieldCheck,
-    title: "0% platform commission",
-    body: "Merchants keep every sale. Stripe processing fees are paid by the buyer at checkout, not by the seller.",
+    title: "1% platform sales fee",
+    body: "Industry-low per-sale fee (vs Whatnot's 8%, DoorDash's 15-30%). Deducted from seller payouts via Stripe application_fee_amount. Stripe processing fees are paid by the buyer at checkout, not the seller.",
   },
   {
     icon: Radio,

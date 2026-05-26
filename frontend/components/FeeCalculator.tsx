@@ -12,7 +12,7 @@
  *   Whatnot:    8% of GMV + 2.9% of GMV + $0.30 per txn
  *               Assumes average transaction value of $50 to compute txn count.
  *   Commonsold: 5% of GMV + $49/mo base
- *   DUM Club:   $99/mo flat, Growth tier. No per-sale cut ever.
+ *   DUM Club:   $99/mo Growth tier flat + 1% sales fee on GMV.
  */
 
 import { useMemo, useState } from "react";
@@ -24,7 +24,8 @@ const WHATNOT_STRIPE_PCT = 0.029;  // 2.9%
 const WHATNOT_STRIPE_FIXED = 0.30; // $0.30
 const COMMONSOLD_COMMISSION = 0.05; // 5%
 const COMMONSOLD_BASE = 49;
-const DUM_CLUB_FLAT = 99;          // Growth tier
+const DUM_CLUB_FLAT = 99;          // Growth tier subscription
+const DUM_CLUB_SALES_FEE = 0.01;   // 1% platform sales fee per order
 
 function formatMoney(n: number): string {
   if (n >= 10000) return `$${Math.round(n / 1000)}k`;
@@ -64,7 +65,7 @@ export function FeeCalculator() {
 
     const commonsold = monthlyGmv * COMMONSOLD_COMMISSION + COMMONSOLD_BASE;
 
-    const dumClub = DUM_CLUB_FLAT;
+    const dumClub = DUM_CLUB_FLAT + monthlyGmv * DUM_CLUB_SALES_FEE;
 
     // Compare against the cheaper competitor to be conservative on savings.
     const worstCompetitor = Math.max(whatnot, commonsold);
@@ -92,10 +93,10 @@ export function FeeCalculator() {
             Fee calculator
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-            See what you&apos;d save on commission alone.
+            See what you&apos;d save vs Whatnot&apos;s 8% commission.
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            Drag the slider. This is just the live-selling line on your bill. DUM Club replaces loyalty, retention, and deal-platform tools too, all in the same flat fee.
+            Drag the slider. DUM Club: $99/mo Growth tier plus a 1% sales fee per order. Whatnot: 8% + 2.9% Stripe on every sale. DUM Club also replaces loyalty, retention, and deal-platform tools, all in the same subscription.
           </p>
         </div>
 
@@ -168,9 +169,9 @@ export function FeeCalculator() {
             <div className="neon-emerald font-mono text-3xl font-extrabold text-emerald-400">
               {formatMoneyPrecise(fees.dumClub)}
             </div>
-            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">flat / month</div>
+            <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">total / month</div>
             <div className="mt-3 text-[11px] text-zinc-300">
-              Growth tier · 0% per sale
+              $99 Growth tier + 1% per sale
             </div>
           </div>
         </div>

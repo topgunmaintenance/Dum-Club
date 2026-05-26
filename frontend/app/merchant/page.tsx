@@ -369,7 +369,7 @@ export default function MerchantPage() {
             <span className="text-brand-teal">Lock in founding pricing for life.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
-            Get 60 days free, then keep founding pricing for life. Flat monthly fee. 0% commission. Keep every sale. No credit card.
+            Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%). No credit card.
           </p>
 
           <button
@@ -491,8 +491,8 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
-                ? "Get 60 days free, then keep founding pricing for life. Flat monthly fee. 0% commission. Keep every sale. No credit card."
-                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month. 0% commission, loyalty rewards built in. No card today.`}
+                ? "Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%). No credit card."
+                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month plus a 1% sales fee per order. Loyalty rewards built in. No card today.`}
             </p>
           </div>
 
@@ -594,7 +594,7 @@ export default function MerchantPage() {
                   $39 to $299
                 </div>
                 <div className="text-[10px] text-brand-teal">
-                  flat / month · 0% commission
+                  flat / month · 1% sales fee
                 </div>
               </div>
             </div>
@@ -607,7 +607,7 @@ export default function MerchantPage() {
           <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <ul className="space-y-3">
               {[
-                "Keep 100% of every sale. 0% commission, always",
+                "Just a 1% sales fee per order (Whatnot takes 8%, DoorDash takes 15-30%)",
                 "Customers earn DUM Points on every purchase. They can redeem these loyalty rewards at any DUM Club business, so customers come back without you paying for ads",
                 "Get 60 days free and lock in founding pricing for life when you join the first 100 merchants",
               ].map((line) => (
@@ -634,7 +634,7 @@ export default function MerchantPage() {
               />
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-relaxed text-primary">
-                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that doesn&apos;t take a cut of every job. Flat fee, 0% commission. it just works.&rdquo;
+                  &ldquo;I&apos;ve run my maintenance business for years. DUM Club is the first platform that does not charge Whatnot-scale commission. Flat monthly fee plus just 1% per sale. It just works.&rdquo;
                 </p>
                 <div className="mt-3 text-[11px] text-secondary">
                   <span className="font-bold text-primary">Julian Mero</span> · Founder · Topgun Maintenance LLC · Founding Merchant #1
@@ -834,7 +834,7 @@ export default function MerchantPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
                 <div className="text-sm font-bold text-brand-teal">Founding Merchant</div>
-                <div className="text-xs text-brand-teal/60">60 days free · Lock in founding pricing for life · 0% commission</div>
+                <div className="text-xs text-brand-teal/60">60 days free · Lock in founding pricing for life · 1% sales fee</div>
               </div>
             </div>
           </div>
@@ -894,7 +894,7 @@ export default function MerchantPage() {
                   </div>
                   <div className="text-xs text-secondary">
                     {stepStripe
-                      ? "You will get paid directly on every sale. 0% commission."
+                      ? "You will get paid directly on every sale, minus the 1% sales fee."
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
@@ -1315,7 +1315,7 @@ export default function MerchantPage() {
             <div className="rounded-2xl border border-default bg-surface-muted p-5">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Revenue</div>
               <div className="mt-2 text-2xl font-bold text-brand-teal">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
-              <div className="text-xs text-secondary">you keep 100% · 0% commission</div>
+              <div className="text-xs text-secondary">you keep 99% · 1% sales fee</div>
             </div>
             <div className="rounded-2xl border border-default bg-surface-muted p-5">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">DUM Issued</div>

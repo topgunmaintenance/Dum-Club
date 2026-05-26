@@ -91,7 +91,7 @@ function BusinessPageInner() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
-            Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. Flat monthly fee. 0% commission. Keep every sale.
+            Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%).
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -153,8 +153,8 @@ function BusinessPageInner() {
           <div className="space-y-3">
             {[
               {
-                q: "Do you ever take a percentage of my sales?",
-                a: "No. DUM Club charges one flat monthly fee. There's no per-sale commission, no listing fee, and no cut of what you make. Stripe's standard card-processing fee is paid by the buyer at checkout, not by you.",
+                q: "Do you take a percentage of my sales?",
+                a: "Yes. 1% per paid order, deducted from your Stripe payout. That is the only per-sale fee on DUM Club. There is no listing fee, no extra cut. Whatnot takes 8% per sale; DUM Club takes 1%. Stripe's standard card-processing fee is paid by the buyer at checkout, not by you.",
               },
               {
                 q: "What if I don't have a website yet?",
@@ -225,7 +225,7 @@ function BusinessPageInner() {
 
       <div className="border-t border-default px-4 py-10 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted">
-          Stripe-powered payments · 0% commission · Founding 100 · DUM Club v5.0
+          Stripe-powered payments · 1% sales fee · Founding 100 · DUM Club v5.0
         </p>
       </div>
     </main>
@@ -266,7 +266,7 @@ function OverviewTab({
             { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
             { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
             { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-            { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 0% commission", muted: false },
+            { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 1% sales fee", muted: false },
           ].map((p) => (
             <div
               key={p.name}
@@ -287,8 +287,8 @@ function OverviewTab({
           ))}
         </div>
         <p className="mt-8 text-center text-sm text-primary">
-          One bill, no commissions.{" "}
-          <span className="font-bold text-brand-teal">Keep everything you earn.</span>
+          One subscription bill plus just 1% per sale.{" "}
+          <span className="font-bold text-brand-teal">Keep more of every dollar.</span>
         </p>
       </section>
 
@@ -300,11 +300,11 @@ function OverviewTab({
             Why local businesses choose DUM Club.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-primary sm:text-lg">
-            One flat fee. Zero commission. Customers who come back.
+            Flat subscription. 1% sales fee. Industry-low. Customers who come back.
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8 to 30% of every order. We charge $39 to $299 a month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
+              { n: "01", title: "Just 1% per sale", desc: "Marketplaces take 8% per sale and delivery apps take 15 to 30%. DUM Club is flat $39 to $299 a month plus a 1% sales fee. The lowest per-sale rate in live commerce. Founding merchant pricing for the first 100." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We never hold your money." },
               { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
@@ -394,7 +394,7 @@ function PricingTab() {
           Pricing
         </div>
         <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-          Flat $39 to $299 a month. <span className="text-brand-navy">0% commission.</span>
+          Flat $39 to $299 a month. <span className="text-brand-navy">1% sales fee.</span>
         </h2>
         <p className="mx-auto mb-6 max-w-md text-sm text-secondary">
           Tier comparison, Whatnot vs DUM at $10k GMV, FAQ, and the Talk-to-Julian
@@ -656,7 +656,7 @@ function CompareTab() {
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-brand-teal">The real difference</div>
           <h2 className="mx-auto max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-primary sm:text-3xl">
             Whatnot takes 8%.{" "}
-            <span className="text-brand-teal">DUM Club takes $0 per sale.</span>
+            <span className="text-brand-teal">DUM Club takes 1%.</span>
           </h2>
         </div>
 

@@ -1780,10 +1780,10 @@ function PricingTiers() {
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Pricing</div>
       <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-        Flat fee. <span className="text-brand-teal">0% commission. Ever.</span>
+        Flat fee. <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
-        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 0% commission. Keep every sale.
+        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every sale.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -2714,13 +2714,13 @@ export default function Home() {
                   Brand recognition is carried by the navbar
                   wordmark and the founder note directly below. */}
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
-                Sell Live. <span className="text-brand-navy">Keep Every Dollar.</span>
+                Sell Live. <span className="text-brand-navy">Keep More of Every Sale.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                DUM Club helps businesses sell live on their own website and keep every sale. Flat monthly fee. No commission. Ever.
+                DUM Club helps businesses sell live on their own website. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%).
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month.</span> No commission. Keep every sale.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month.</span> 1% sales fee per order. Keep more of every sale.
               </p>
 
               {/* Founder trust row — direct line to Julian under the
@@ -2871,7 +2871,7 @@ export default function Home() {
                   Buy Now
                 </button>
                 <p className="mt-2 text-center text-[10px] uppercase tracking-[0.15em] text-secondary">
-                  Stripe checkout · No commission
+                  Stripe checkout · 1% sales fee
                 </p>
               </div>
             </div>
@@ -2986,7 +2986,7 @@ export default function Home() {
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
               { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
               { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 0% commission", muted: false },
+              { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 1% sales fee", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -3155,7 +3155,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $39 to $299/month. 0% commission. Join the first 100 merchants and lock in founding pricing for life.
+              Flat $39 to $299/month plus 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link

@@ -4500,7 +4500,7 @@ return (
                             buyer sees the same payment trust signal. */}
                         {!isOwner && (
                           <p className="mt-3 text-[11px] leading-relaxed text-secondary">
-                            <span className="text-secondary">Stripe checkout</span> · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                            <span className="text-secondary">Stripe checkout</span> · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                           </p>
                         )}
                       </div>
@@ -4664,7 +4664,7 @@ return (
                   </div>
                 </div>
                 <p className="mt-1.5 text-[10px] leading-snug text-secondary">
-                  Stripe checkout · 0% commission · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                  Stripe checkout · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
                 </p>
                 </div>
               ) : null}
@@ -5999,7 +5999,7 @@ return (
                                     reassurance they had when connecting
                                     Stripe. */}
                                 <p className="text-center text-[11px] leading-relaxed text-secondary">
-                                  0% commission · No per-sale fee · Your bank info goes to Stripe, never to DUM Club.
+                                  1% sales fee per order · Your bank info goes to Stripe, never to DUM Club.
                                 </p>
 
                                 <a
