@@ -1869,7 +1869,69 @@ async def go_live(
             },
         )
 
-    update_fields: dict = {"is_live": True, "live_provider": body.provider}
+    # Phase 1 cap enforcement — same check as /api/ivs/create-stage.
+    # Refuse the Mux go-live if the merchant is at max_concurrent_streams,
+    # or if the resolver fails closed on an unset cap (Business / Enterprise
+    # without a merchant_plan_limits override).
+    from services.merchant_limits import (
+        resolve_merchant_limits_by_privy_did,
+        MerchantLimitsUnresolved,
+    )
+    try:
+        limits = resolve_merchant_limits_by_privy_did(
+            owner_privy, supabase=supabase,
+        )
+    except MerchantLimitsUnresolved as exc:
+        print(f"[projects] /go-live cap-resolve refused: {exc!r}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "merchant_limits_unresolved",
+                "message": (
+                    "Your account isn't fully configured for live streaming. "
+                    "Reach out to support so we can set your stream caps before you go live."
+                ),
+                "reason": exc.reason,
+            },
+        )
+    try:
+        active_streams_res = (
+            supabase.table("stream_sessions")
+            .select("id", count="exact", head=True)
+            .eq("merchant_id", limits.merchant_id)
+            .is_("end_at", "null")
+            .execute()
+        )
+        active_stream_count = active_streams_res.count or 0
+    except Exception as exc:
+        print(f"[projects] /go-live active-stream-count read failed: {exc!r}")
+        active_stream_count = 0
+    if active_stream_count >= limits.max_concurrent_streams:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "concurrent_stream_cap_reached",
+                "message": (
+                    f"You already have {active_stream_count} live stream(s) running. "
+                    f"Your {limits.plan_id} plan allows up to "
+                    f"{limits.max_concurrent_streams} concurrent stream(s)."
+                ),
+                "tier": limits.plan_id,
+                "current": active_stream_count,
+                "cap": limits.max_concurrent_streams,
+                "upgrade_url": "/upgrade",
+            },
+        )
+
+    from datetime import datetime, timezone
+    update_fields: dict = {
+        "is_live": True,
+        "live_provider": body.provider,
+        # Bump updated_at so the Phase 0 startup sweep's NULL-heartbeat /
+        # old-updated_at heuristic doesn't clip this brand-new stream
+        # before the first /api/ivs/heartbeat poll writes last_heartbeat_at.
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     if body.provider == "native_mux":
         from services.mux_live import is_mux_configured, create_live_stream
