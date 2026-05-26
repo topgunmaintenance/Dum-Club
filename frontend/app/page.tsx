@@ -3101,9 +3101,9 @@ export default function Home() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { name: "Starter", price: 29 },
-              { name: "Growth", price: 49, highlighted: true },
-              { name: "Pro", price: 99 },
+              { name: "Starter", price: 39 },
+              { name: "Growth", price: 99, highlighted: true },
+              { name: "Pro", price: 299 },
             ].map((tier) => (
               <div
                 key={tier.name}
