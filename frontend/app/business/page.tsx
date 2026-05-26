@@ -170,7 +170,7 @@ function BusinessPageInner() {
               },
               {
                 q: "Is there a free tier?",
-                a: "The first 100 founding merchants get 60 days free and then lock in founding pricing for life. After that, plans start at $29 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
+                a: "The first 100 founding merchants get 60 days free and then lock in founding pricing for life. After that, plans start at $39 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
               },
             ].map((f) => (
               <details
@@ -266,7 +266,7 @@ function OverviewTab({
             { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
             { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
             { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-            { name: "DUM Club", fees: "$29 to $99", detail: "flat / month · 0% commission", muted: false },
+            { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 0% commission", muted: false },
           ].map((p) => (
             <div
               key={p.name}
@@ -304,7 +304,7 @@ function OverviewTab({
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8 to 30% of every order. We charge $29 to $99 a month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
+              { n: "01", title: "No commission on any sale", desc: "Marketplaces and delivery apps take 8 to 30% of every order. We charge $39 to $299 a month. Flat fee. 0% commission, always. Founding merchant pricing for the first 100." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We never hold your money." },
               { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
@@ -394,7 +394,7 @@ function PricingTab() {
           Pricing
         </div>
         <h2 className="mb-3 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-          Flat $29 to $99 a month. <span className="text-brand-navy">0% commission.</span>
+          Flat $39 to $299 a month. <span className="text-brand-navy">0% commission.</span>
         </h2>
         <p className="mx-auto mb-6 max-w-md text-sm text-secondary">
           Tier comparison, Whatnot vs DUM at $10k GMV, FAQ, and the Talk-to-Julian
@@ -566,7 +566,7 @@ function CalculatorTab() {
                   <div className="font-mono text-lg font-bold text-state-live">${mailCost.toLocaleString()}</div>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft p-3">
-                  <div><div className="text-[10px] text-brand-teal">DUM Club Growth tier</div><div className="text-[10px] text-brand-teal/50">$49/mo flat</div></div>
+                  <div><div className="text-[10px] text-brand-teal">DUM Club Growth tier</div><div className="text-[10px] text-brand-teal/50">$99/mo flat</div></div>
                   <div className="font-mono text-lg font-bold text-brand-teal">${dumCost.toLocaleString()}</div>
                 </div>
               </div>
@@ -622,12 +622,12 @@ function CompareTab() {
               <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">The DUM Club way</div>
               <h3 className="mb-4 text-xl font-extrabold text-primary sm:text-2xl">
                 Same $10,000/mo.<br />
-                <span className="text-brand-teal">You keep $9,951.</span>
+                <span className="text-brand-teal">You keep $9,901.</span>
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
                   <span className="text-[12px] text-secondary">Flat monthly fee</span>
-                  <span className="font-mono text-[13px] font-bold text-brand-teal">−$49</span>
+                  <span className="font-mono text-[13px] font-bold text-brand-teal">−$99</span>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-default bg-surface-muted px-4 py-2">
                   <span className="text-[12px] text-secondary">Commission on sales</span>
@@ -635,11 +635,11 @@ function CompareTab() {
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
                   <span className="text-[12px] font-bold text-brand-teal">You keep</span>
-                  <span className="font-mono text-[14px] font-bold text-brand-teal">$9,951</span>
+                  <span className="font-mono text-[14px] font-bold text-brand-teal">$9,901</span>
                 </div>
               </div>
               <div className="mt-5 rounded-xl bg-brand-teal-soft border border-default p-3 text-center">
-                <span className="font-mono text-2xl font-black text-brand-teal">+$1,101</span>
+                <span className="font-mono text-2xl font-black text-brand-teal">+$1,051</span>
                 <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
               </div>
               <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover">
@@ -673,7 +673,7 @@ function CompareTab() {
             </thead>
             <tbody>
               {[
-                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29 to $99/mo" },
+                { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $39 to $299/mo" },
                 { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
                 { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
                 { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },

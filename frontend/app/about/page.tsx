@@ -118,8 +118,8 @@ export default function AboutPage() {
             ))}
           </ul>
           <p className="mt-5 text-base leading-relaxed text-secondary">
-            DUM Club replaces that whole stack with one flat bill, from $29 to
-            $99 a month, so you keep the customer, the data, and 100% of every sale.
+            DUM Club replaces that whole stack with one flat bill, from $39 to
+            $299 a month, so you keep the customer, the data, and 100% of every sale.
           </p>
         </section>
 
@@ -168,7 +168,7 @@ export default function AboutPage() {
             Pricing
           </div>
           <p className="mt-3 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-            Flat $29 to $99 a month. 0% commission. Always.
+            Flat $39 to $299 a month. 0% commission. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
             Join the first 100 merchants. Get 60 days free and lock in

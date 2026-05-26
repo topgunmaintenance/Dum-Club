@@ -24,7 +24,7 @@ const TIERS = [
   },
   {
     name: "Starter",
-    price: "$29",
+    price: "$39",
     period: "/month",
     afterNote: null,
     color: "text-primary",
@@ -42,7 +42,7 @@ const TIERS = [
   },
   {
     name: "Growth",
-    price: "$49",
+    price: "$99",
     period: "/month",
     afterNote: null,
     color: "text-brand-teal",
@@ -60,7 +60,7 @@ const TIERS = [
   },
   {
     name: "Pro",
-    price: "$99",
+    price: "$299",
     period: "/month",
     afterNote: null,
     color: "text-violet-400",
@@ -111,7 +111,7 @@ export default function PricingPage() {
         <div className="mx-auto mt-8 max-w-xl rounded-xl border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-5 py-3 text-center text-sm text-secondary">
           <span className="text-red-400 font-semibold">Whatnot charges 8% + 2.9% per sale.</span>{" "}
           Sell $10k/month and you lose $1,090.
-          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $29 to $99 flat.</span>
+          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $39 to $299 flat.</span>
         </div>
 
         {/* Tier cards */}
@@ -180,7 +180,7 @@ export default function PricingPage() {
             { icon: "💸", title: "Whatnot", desc: "8% + 2.9% per sale", bad: true },
             { icon: "💰", title: "Commonsold", desc: "% per sale + monthly", bad: true },
             { icon: "📍", title: "Google Maps", desc: "Pay to rank in ads", bad: true },
-            { icon: "◆", title: "DUM Club", desc: "$29 to $99/mo flat", bad: false },
+            { icon: "◆", title: "DUM Club", desc: "$39 to $299/mo flat", bad: false },
           ].map((comp) => (
             <div key={comp.title} className={`rounded-xl border p-4 text-center ${comp.bad ? "border-default bg-surface-muted" : "border-default bg-brand-teal-soft"}`}>
               <div className="text-xl">{comp.icon}</div>

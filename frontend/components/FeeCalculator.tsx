@@ -4,7 +4,7 @@
  * FeeCalculator. interactive fee savings calculator for the homepage.
  *
  * A slider between $1k and $100k monthly GMV, showing what Whatnot and
- * Commonsold would take vs DUM Club's flat Growth-tier fee ($49/mo).
+ * Commonsold would take vs DUM Club's flat Growth-tier fee ($99/mo).
  * The savings number is the headline; a contextual "that's enough to..."
  * line anchors it emotionally. CTA drops into /merchant.
  *
@@ -12,7 +12,7 @@
  *   Whatnot:    8% of GMV + 2.9% of GMV + $0.30 per txn
  *               Assumes average transaction value of $50 to compute txn count.
  *   Commonsold: 5% of GMV + $49/mo base
- *   DUM Club:   $49/mo flat, Growth tier. No per-sale cut ever.
+ *   DUM Club:   $99/mo flat, Growth tier. No per-sale cut ever.
  */
 
 import { useMemo, useState } from "react";
@@ -24,7 +24,7 @@ const WHATNOT_STRIPE_PCT = 0.029;  // 2.9%
 const WHATNOT_STRIPE_FIXED = 0.30; // $0.30
 const COMMONSOLD_COMMISSION = 0.05; // 5%
 const COMMONSOLD_BASE = 49;
-const DUM_CLUB_FLAT = 49;          // Growth tier
+const DUM_CLUB_FLAT = 99;          // Growth tier
 
 function formatMoney(n: number): string {
   if (n >= 10000) return `$${Math.round(n / 1000)}k`;

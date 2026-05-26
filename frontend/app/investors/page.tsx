@@ -91,7 +91,7 @@ const HIGHLIGHTS: Array<{
   {
     icon: Wallet,
     title: "Flat monthly SaaS model",
-    body: "$29 to $99 a month. Predictable recurring revenue. 78% projected gross margin by Year 2.",
+    body: "$39 to $299 a month. Predictable recurring revenue. 78% projected gross margin by Year 2.",
   },
   {
     icon: ShieldCheck,

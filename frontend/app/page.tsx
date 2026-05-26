@@ -1232,7 +1232,7 @@ function ComparisonTable() {
           </thead>
           <tbody>
             {[
-              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $29 to $99/mo" },
+              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Flat $39 to $299/mo" },
               { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "0% ever" },
               { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
               { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
@@ -1651,7 +1651,7 @@ function DealsSection({ projects }: { projects: Project[] }) {
 function RetentionSection() {
   const [month, setMonth] = useState(3);
   // Simulate retention math: $49/mo DUM Club vs $500+/mo direct mail
-  const dumCost = 49 * month;
+  const dumCost = 99 * month;
   const mailCost = 750 * month;
   const saved = mailCost - dumCost;
   const retainedCustomers = Math.round(month * 22);
@@ -1720,7 +1720,7 @@ function RetentionSection() {
               <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft p-3">
                 <div>
                   <div className="text-[10px] text-brand-teal">DUM Club Growth tier</div>
-                  <div className="text-[10px] text-brand-teal/50">$49/mo flat</div>
+                  <div className="text-[10px] text-brand-teal/50">$99/mo flat</div>
                 </div>
                 <div className="font-mono text-lg font-bold text-brand-teal">${dumCost.toLocaleString()}</div>
               </div>
@@ -1749,7 +1749,7 @@ function PricingTiers() {
   const tiers = [
     {
       name: "Starter",
-      price: "$29",
+      price: "$39",
       period: "/mo",
       desc: "Everything you need to sell online",
       features: ["Storefront on marketplace", "DUM Points built in", "Basic analytics", "Stripe direct payouts", "Listed on Discover"],
@@ -1758,7 +1758,7 @@ function PricingTiers() {
     },
     {
       name: "Growth",
-      price: "$49",
+      price: "$99",
       period: "/mo",
       desc: "Retain customers automatically",
       features: ["Everything in Starter", "Featured placement", "Automatic customer win-back texts", "Google review display", "Best Deals eligibility"],
@@ -1767,7 +1767,7 @@ function PricingTiers() {
     },
     {
       name: "Pro",
-      price: "$99",
+      price: "$299",
       period: "/mo",
       desc: "Full automation + social media",
       features: ["Everything in Growth", "AI social media management", "Homepage featured slot", "Cross-business promos", "Full analytics dashboard"],
@@ -1870,12 +1870,12 @@ function WhatnotPitch() {
             <h3 className="mb-4 text-xl font-extrabold text-brand-navy sm:text-2xl">
               Same $10,000/mo.
               <br />
-              <span className="text-brand-teal">You keep $9,951.</span>
+              <span className="text-brand-teal">You keep $9,901.</span>
             </h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
                 <span className="text-[12px] text-secondary">Flat monthly fee</span>
-                <span className="font-mono text-[13px] font-bold text-brand-teal">−$49</span>
+                <span className="font-mono text-[13px] font-bold text-brand-teal">−$99</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-default/40 bg-surface-muted px-4 py-2">
                 <span className="text-[12px] text-secondary">Commission on sales</span>
@@ -1883,11 +1883,11 @@ function WhatnotPitch() {
               </div>
               <div className="flex items-center justify-between rounded-lg border border-default bg-brand-teal-soft px-4 py-2">
                 <span className="text-[12px] font-bold text-brand-teal">You keep</span>
-                <span className="font-mono text-[14px] font-bold text-brand-teal">$9,951</span>
+                <span className="font-mono text-[14px] font-bold text-brand-teal">$9,901</span>
               </div>
             </div>
             <div className="mt-5 rounded-xl bg-brand-teal-soft border border-default p-3 text-center">
-              <span className="font-mono text-2xl font-black text-brand-teal">+$1,101</span>
+              <span className="font-mono text-2xl font-black text-brand-teal">+$1,051</span>
               <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
             </div>
             <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:text-white">
@@ -2720,7 +2720,7 @@ export default function Home() {
                 DUM Club helps businesses sell live on their own website and keep every sale. Flat monthly fee. No commission. Ever.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $29/month.</span> No commission. Keep every sale.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month.</span> No commission. Keep every sale.
               </p>
 
               {/* Founder trust row — direct line to Julian under the
@@ -2986,7 +2986,7 @@ export default function Home() {
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
               { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
               { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "$29 to $99", detail: "flat / month · 0% commission", muted: false },
+              { name: "DUM Club", fees: "$39 to $299", detail: "flat / month · 0% commission", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -3155,7 +3155,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Flat $29 to $99/month. 0% commission. Join the first 100 merchants and lock in founding pricing for life.
+              Flat $39 to $299/month. 0% commission. Join the first 100 merchants and lock in founding pricing for life.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link
