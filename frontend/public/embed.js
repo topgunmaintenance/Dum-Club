@@ -912,6 +912,33 @@
         "  font-size: 18px; font-weight: 700; cursor: pointer;",
         "  z-index: 2;",
         "}",
+        // ── Mobile overlay tuning (<= 480px) ─────────────────
+        // On phones the visitor wants the livestream to feel native —
+        // edge-to-edge, with the close button respecting the notch /
+        // dynamic-island safe area. Defaults above are sized for
+        // desktop / tablet where 24px gutters and a 720px-max card
+        // read as a polite modal; on a 390px phone those gutters cost
+        // 12% of the available width and the 86vh card leaves an
+        // empty bottom band on Safari with the URL bar hidden.
+        "@media (max-width: 480px) {",
+        "  [data-dum-embed-overlay] {",
+        "    padding: 8px;",
+        "  }",
+        "  [data-dum-embed-overlay-card] {",
+        // vh first (legacy), dvh second (modern). Browsers that
+        // don't recognise dvh ignore the second rule.
+        "    height: 96vh;",
+        "    height: 96dvh;",
+        "    border-radius: 14px;",
+        "  }",
+        "  [data-dum-embed-overlay-close] {",
+        // Push below iPhone notch / Android cutouts. env() returns 0
+        // when no safe area is reported (older Android), so the
+        // fallback math keeps the button at 8px minimum.
+        "    top: calc(env(safe-area-inset-top, 0px) + 8px);",
+        "    right: calc(env(safe-area-inset-right, 0px) + 8px);",
+        "  }",
+        "}",
         // ── Animations ────────────────────────────────────────
         // dum-embed-live-ring is the breathing gold halo painted
         // around the avatar when .is-live is on; the inner solid

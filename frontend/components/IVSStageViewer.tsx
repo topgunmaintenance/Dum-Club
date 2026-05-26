@@ -253,13 +253,22 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   }, [projectId, userId]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black" style={{ minHeight: 200 }}>
+    <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black">
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        style={{ width: "100%", minHeight: 300, aspectRatio: "16/9", objectFit: "cover", background: "#111" }}
+        // Aspect-ratio alone now defines the height — letting it auto-
+        // size against the container width. The prior `minHeight: 300`
+        // override forced a 16:9 source into a ~1.3:1 box on portrait
+        // mobile, which `object-fit: cover` then resolved by cropping
+        // ~70px off each side. Removing the floor lets the natural 16:9
+        // height take over (~219px on a 390px phone) so the host's
+        // face stays centred and uncropped. The wrapper supplies the
+        // black bg for any sub-pixel rounding gap.
+        className="block w-full bg-zinc-900"
+        style={{ aspectRatio: "16/9", objectFit: "cover" }}
       />
 
       {!hasVideo && (status === "loading" || status === "connecting" || status === "watching") && (
