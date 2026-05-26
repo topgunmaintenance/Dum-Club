@@ -10,7 +10,7 @@ Endpoints:
 import asyncio
 import time as _time
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Request
 from pydantic import BaseModel
 from typing import Optional
 
@@ -368,6 +368,7 @@ async def api_host_token(
 @router.post("/viewer-token")
 async def api_viewer_token(
     body: TokenRequest,
+    request: Request,
     user_id: str = Header(default="", convert_underscores=False),
 ):
     """Viewer gets a SUBSCRIBE participant token for a project's stage.
@@ -386,8 +387,17 @@ async def api_viewer_token(
     if not resolved_uuid:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Rate limit joins
-    viewer_id = user_id or f"anon-{resolved_uuid[:8]}"
+    # Phase 2 — stable per-viewer identity for cap / rate-limit / dedup.
+    # Replaces the old `anon-<projectId>` shared bucket that conflated
+    # every anonymous viewer of a project into one ID.
+    from services.viewer_identity import derive_viewer_id_from_request
+    viewer_id = derive_viewer_id_from_request(
+        user_id=user_id or None,
+        project_id=resolved_uuid,
+        request=request,
+    )
+
+    # Rate limit joins (now per-actual-viewer with stable IDs).
     join_err = check_join_rate(viewer_id)
     if join_err:
         raise HTTPException(status_code=429, detail=join_err)
@@ -415,18 +425,15 @@ async def api_viewer_token(
     if not project.get("is_live") or not project.get("ivs_stage_arn"):
         raise HTTPException(status_code=404, detail="No active live session")
 
-    # Phase 1 per-tier viewer cap. Counts viewer-token mints against the
-    # currently-active stream_session for this project. Cumulative token
-    # mints over-restrict (no "viewer left" signal yet — that's Phase 2)
-    # but cumulative is the right cap-equivalent for IVS Real-Time
-    # billing, which is per-participant-minute. The 251st token mint on a
-    # Starter (250 cap) stream means we've already provisioned 250
-    # AWS participants for this broadcast; any further mints push us
-    # past the included viewer-hour budget for the tier.
+    # Phase 1 per-tier viewer cap, refined in Phase 2 to count DISTINCT
+    # viewer_ids rather than total token mints. With stable viewer_ids
+    # from derive_viewer_id_from_request above, the count now reflects
+    # unique viewers (closer to true concurrent) instead of multi-tab
+    # token churn.
     #
-    # Resolver fails closed; we surface that as a 503 with operator
-    # actionable detail. Telemetry-read failure (count step) falls open
-    # to the legacy in-memory check rather than refusing every viewer.
+    # Resolver fails closed; surface as 503 with operator-actionable
+    # detail. Telemetry-read failures fall open to the legacy in-memory
+    # cap rather than refusing every viewer.
     from services.merchant_limits import (
         resolve_merchant_limits_by_privy_did,
         MerchantLimitsUnresolved,
@@ -458,14 +465,67 @@ async def api_viewer_token(
             )
             if session_res.data:
                 session_id = session_res.data[0]["id"]
-                count_res = (
+                # Phase 2 anti-abuse: refuse if this specific viewer has
+                # already minted MAX_TOKENS_PER_VIEWER tokens against
+                # this stream session. Covers multi-tab (~3-4 expected),
+                # refresh churn, and the simplest bot pattern. 5 is the
+                # conservative ceiling — legitimate multi-tab almost
+                # never exceeds this for one viewer on one stream.
+                MAX_TOKENS_PER_VIEWER_PER_SESSION = 5
+                viewer_mint_res = (
                     supabase.table("viewer_session_events")
                     .select("id", count="exact", head=True)
                     .eq("stream_session_id", session_id)
+                    .eq("viewer_id", viewer_id)
                     .execute()
                 )
-                current_viewer_count = count_res.count or 0
-                if current_viewer_count >= limits.max_concurrent_viewers:
+                this_viewer_mints = viewer_mint_res.count or 0
+                if this_viewer_mints >= MAX_TOKENS_PER_VIEWER_PER_SESSION:
+                    # Loud log so operator sees abuse-shaped traffic.
+                    # Note this is intentionally a 'warning' marker —
+                    # Sentry / Railway log filters can grep on it later.
+                    print(
+                        f"[ivs] WARNING viewer_refresh_limit viewer={viewer_id!r} "
+                        f"session={session_id} mints={this_viewer_mints} "
+                        f"project={resolved_uuid}"
+                    )
+                    raise HTTPException(
+                        status_code=429,
+                        detail={
+                            "code": "viewer_refresh_limit",
+                            "message": (
+                                "Too many connection attempts to this stream from "
+                                "your browser. Close any extra tabs and try again."
+                            ),
+                            "max_per_session": MAX_TOKENS_PER_VIEWER_PER_SESSION,
+                        },
+                    )
+
+                # Cap check: DISTINCT viewer_ids. supabase-py's builder
+                # doesn't expose DISTINCT directly, so we fetch the id
+                # set and count in Python. Cap at 10x the merchant's
+                # max_concurrent_viewers as a safety read-bound — if
+                # the count exceeds that, we're already deep in abuse
+                # territory and the rate-limiter / hard cap downstream
+                # will refuse anyway.
+                fetch_limit = max(1, limits.max_concurrent_viewers * 10)
+                unique_res = (
+                    supabase.table("viewer_session_events")
+                    .select("viewer_id")
+                    .eq("stream_session_id", session_id)
+                    .limit(fetch_limit)
+                    .execute()
+                )
+                unique_count = len({
+                    r["viewer_id"] for r in (unique_res.data or [])
+                })
+                # If THIS viewer is already counted (a refresh case),
+                # the new mint won't grow the set — allow it.
+                already_counted = any(
+                    r["viewer_id"] == viewer_id for r in (unique_res.data or [])
+                )
+                projected_count = unique_count if already_counted else unique_count + 1
+                if projected_count > limits.max_concurrent_viewers:
                     raise HTTPException(
                         status_code=503,
                         detail={
@@ -477,7 +537,7 @@ async def api_viewer_token(
                             ),
                             "tier": limits.plan_id,
                             "cap": limits.max_concurrent_viewers,
-                            "current": current_viewer_count,
+                            "current": unique_count,
                         },
                     )
         except HTTPException:
@@ -487,7 +547,7 @@ async def api_viewer_token(
             # cap. We've already passed add_viewer (the 50-global) above.
             print(f"[ivs] viewer cap telemetry read failed for project={resolved_uuid}: {exc!r}")
 
-    viewer_id = user_id or f"anon-{resolved_uuid[:8]}"
+    # viewer_id is already computed above by derive_viewer_id_from_request.
     token_data = create_participant_token(
         stage_arn=project["ivs_stage_arn"],
         user_id=viewer_id,
