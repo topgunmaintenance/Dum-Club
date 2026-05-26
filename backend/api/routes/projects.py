@@ -133,6 +133,44 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
         print(f"[projects] _resolve_owner_uuid profile upsert failed: {exc!r}")
         return None
 
+
+def _resolve_account_id(supabase, owner_id: Optional[str]) -> Optional[str]:
+    """Resolve a Privy DID to the canonical accounts.id UUID.
+
+    Lookup path:
+        Privy DID  ->  account_logins.privy_did  ->  accounts.id
+
+    Returns None when:
+      - owner_id is empty
+      - owner_id is already a UUID (treated as an accounts.id; returned as-is)
+      - the DID has no account_logins row yet (caller falls back to legacy
+        _resolve_owner_uuid path so pre-canonical projects keep working)
+
+    Introduced by the canonical-accounts migration (055-058). Lives
+    alongside _resolve_owner_uuid; does not replace it. Only list_projects
+    consumes it today — other call sites stay on the legacy resolver
+    until a future targeted migration moves them over.
+    """
+    if not owner_id:
+        return None
+    if _UUID_RE.match(owner_id):
+        return owner_id
+    try:
+        res = (
+            supabase.table("account_logins")
+            .select("account_id")
+            .eq("privy_did", owner_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[projects] _resolve_account_id lookup failed: {exc!r}")
+        return None
+    if not res.data:
+        return None
+    return res.data[0]["account_id"]
+
+
 router = APIRouter()
 
 # Projects table semantics (avoid mixing these in routes or UI):
@@ -1035,21 +1073,36 @@ def _delete_orphan_ivs_stage(supabase, project_id: str) -> None:
 
 @router.get("/")
 async def list_projects(owner_id: Optional[str] = Query(default=None)):
+    """List projects owned by the caller.
+
+    Resolution order (since canonical-accounts migration 055-058):
+      1. owner_id -> account_logins.account_id -> projects.account_id (NEW)
+      2. Legacy: owner_id -> profiles.id via wallet bridge
+      3. Last-resort: projects.privy_id direct match
+
+    Step 1 returns every storefront under the canonical account regardless
+    of which Privy DID the caller logged in with. Steps 2-3 cover rows
+    that have not yet been backfilled with an account_id (the ~58 demo /
+    Phase-0A artifacts left untouched by the 055-058 migration).
+    """
     supabase = get_client()
 
     query = supabase.table("projects").select("*").eq("is_deleted", False).order("created_at", desc=True)
 
     if owner_id:
-        resolved = _resolve_owner_uuid(supabase, owner_id)
-        is_privy_did = owner_id and not _UUID_RE.match(owner_id)
-        if resolved:
-            # Wallet linked: match by owner_id OR privy_id (catches both old and new rows)
-            query = query.or_(f"owner_id.eq.{resolved},privy_id.eq.{owner_id}") if is_privy_did else query.eq("owner_id", resolved)
-        elif is_privy_did:
-            # No wallet yet: fall back to privy_id column
-            query = query.eq("privy_id", owner_id)
+        account_id = _resolve_account_id(supabase, owner_id)
+        if account_id:
+            query = query.eq("account_id", account_id)
         else:
-            return []
+            # Legacy fallback (pre-canonical-accounts behavior, preserved).
+            resolved = _resolve_owner_uuid(supabase, owner_id)
+            is_privy_did = owner_id and not _UUID_RE.match(owner_id)
+            if resolved:
+                query = query.or_(f"owner_id.eq.{resolved},privy_id.eq.{owner_id}") if is_privy_did else query.eq("owner_id", resolved)
+            elif is_privy_did:
+                query = query.eq("privy_id", owner_id)
+            else:
+                return []
 
     res = query.limit(50).execute()
 
