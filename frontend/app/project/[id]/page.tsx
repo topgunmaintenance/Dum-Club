@@ -3552,9 +3552,7 @@ const heroUtility =
 
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
-  const statusBanner = false
-    ? "Approved / Live"
-    : isApprovedProject
+  const statusBanner = isApprovedProject
     ? "Approved. Business is live."
     : isRejected
     ? "Needs changes before resubmission"
@@ -3616,12 +3614,6 @@ const heroUtility =
   const displaySymbol = (project?.token_symbol || tokenSymbol || tokenMeta.symbol || "TOKEN").toUpperCase();
   const displayStatusLabel = formatTokenStatus(tokenStatus);
 
-  const hasMarketSnapshot = Boolean(
-    false && market != null && Number(market.price ?? 0) > 0
-  );
-  const heroPrice = Number(market?.price || 0);
-  const heroPriceChangePct = rangeChangePct;
-  const heroPriceUp = heroPriceChangePct >= 0;
 
   const utilityBullets: string[] = useMemo(() => {
     const raw = (project?.utility_value || "").trim();
@@ -3651,11 +3643,7 @@ const heroUtility =
       : "—";
 
 return (
-  <div
-    className={`relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8 ${
-      false && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
-    }`}
-  >
+  <div className="relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8">
     {/* Schema.org JSON-LD. invisible to humans, primary signal for
         Google rich results and AI crawlers (Claude, GPT, Perplexity,
         Gemini). Emits LocalBusiness with embedded Offers, plus a
@@ -3778,33 +3766,8 @@ return (
             <div className="rounded-2xl border border-default bg-surface-card p-6">
               <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-brand-teal/60">
                 <span>Key Metrics</span>
-                {isSimulated && hasMarketSnapshot && (
-                  <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold tracking-[0.15em] text-amber-300">
-                    Demo
-                  </span>
-                )}
               </div>
               <div className="space-y-3">
-                {hasMarketSnapshot && (
-                  <>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-secondary">{isSimulated ? "Price (demo)" : "Price"}</span>
-                      <span className="font-mono font-semibold text-primary">${heroPrice.toFixed(6)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-secondary">{isSimulated ? "Market Cap (demo)" : "Market Cap"}</span>
-                      <span className="font-mono font-semibold text-primary">
-                        ${formatNumber(Number(market?.market_cap || 0), 0)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-secondary">{isSimulated ? "24h Volume (demo)" : "24h Volume"}</span>
-                      <span className="font-mono font-semibold text-primary">
-                        ${formatNumber(Number(market?.volume_24h || 0), 2)}
-                      </span>
-                    </div>
-                  </>
-                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-secondary">Supply</span>
                   <span className="font-mono font-semibold text-primary">{supplyDisplay}</span>
@@ -3955,14 +3918,6 @@ return (
           {/* CTA */}
           <div className="mb-10 text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">
-              {false && (
-                <button
-                  onClick={() => { setPitchMode(false); setTimeout(scrollToBuyPanel, 100); }}
-                  className="rounded-xl bg-brand-teal px-8 py-3 text-sm font-bold text-black transition hover:bg-brand-teal"
-                >
-                  Back this project
-                </button>
-              )}
               <button
                 onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
                 // Mobile: hidden — AI is the floating bubble only.
@@ -4792,15 +4747,6 @@ return (
           </div>
 
           <div className="w-full space-y-3 lg:w-80">
-            {projectView === "analytics" && false && (
-              <div className="flex items-center justify-end gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-                </span>
-                <span className="text-xs font-medium text-brand-teal">LIVE MARKET</span>
-              </div>
-            )}
 
             {projectView === "storefront" && (
               <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
@@ -4940,123 +4886,7 @@ return (
               </div>
             )}
 
-            {projectView === "analytics" && hasMarketSnapshot ? (
-              <div className="rounded-2xl border border-default bg-surface-muted p-5">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs text-secondary">
-                    {isSimulated ? "Demo price (simulated)" : "Current Price"}
-                  </span>
-                  {isSimulated ? (
-                    <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] text-amber-300">
-                      Demo
-                    </span>
-                  ) : (
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-teal" />
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-end gap-3">
-                  <span className="font-mono text-3xl font-black text-primary">
-                    ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
-                  </span>
-                  <span
-                    className={`mb-1 font-mono text-sm font-semibold ${
-                      heroPriceUp ? "text-brand-teal" : "text-state-live"
-                    }`}
-                  >
-                    {heroPriceUp ? "+" : ""}
-                    {heroPriceChangePct.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-default pt-3">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-secondary">
-                      {isSimulated ? "Market Cap (demo)" : "Market Cap"}
-                    </div>
-                    <div className="mt-0.5 font-mono text-sm font-semibold text-primary">
-                      {market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-secondary">
-                      {isSimulated ? "Volume 24h (demo)" : "Volume 24h"}
-                    </div>
-                    <div className="mt-0.5 font-mono text-sm font-semibold text-primary">
-                      {market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—"}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft p-3">
-                  <p className="text-xs font-medium text-brand-teal">Supporter perks</p>
-                  <p className="mt-1 text-sm text-primary">
-                    {chatMeta.holder_unlimited
-                      ? "Supporters get unlimited AI access and exclusive project perks."
-                      : "Purchase an offer to unlock perks and exclusive access."}
-                  </p>
-                </div>
-              </div>
-            ) : projectView === "analytics" ? (
-              <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
-                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal/60">DUM Hub</div>
-                <div className="text-lg font-black text-brand-navy">Rewards &amp; Perks</div>
-                <div className="mt-3 space-y-2.5 border-t border-default pt-3">
-                  <div className="flex items-center gap-2.5 text-sm text-secondary">
-                    <span className="text-brand-teal">💳</span> Stripe checkout active
-                  </div>
-                  <div className="flex items-center gap-2.5 text-sm text-secondary">
-                    <span className="text-brand-teal">◆</span> DUM Points accepted
-                  </div>
-                  <div className="flex items-center gap-2.5 text-sm text-secondary">
-                    <span className="text-brand-teal">%</span> 10% off with points
-                  </div>
-                </div>
-                <div className="mt-3 rounded-lg bg-surface-muted/50 px-3 py-2 text-xs text-secondary">
-                  Powered by Stripe payments
-                </div>
-              </div>
-            ) : null}
 
-            {projectView === "analytics" && false ? (
-              <>
-                <button
-                  type="button"
-                  onClick={scrollToBuyPanel}
-                  className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal active:scale-[0.98]"
-                >
-                  {isSimulated ? `Record demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
-                </button>
-                <button
-                  type="button"
-                  onClick={scrollToAiWorkspace}
-                  // Mobile: hidden — floating AiSalesChat bubble is the
-                  // sole AI entry. Desktop: visible in the storefront
-                  // sidebar as before.
-                  className="hidden w-full rounded-xl border border-default bg-surface-muted px-5 py-3 text-sm font-semibold text-primary transition hover:border-strong hover:bg-surface-muted sm:block"
-                >
-                  Ask AI →
-                </button>
-                {Boolean(serviceProfile?.is_active) && (
-                  <div className="rounded-xl border border-default bg-surface-muted px-4 py-3 text-center">
-                    <div className="text-sm font-medium text-primary">
-                      Interested? Send an inquiry.
-                    </div>
-                    <div className="mt-1 text-[11px] text-muted">
-                      The business will follow up. Use the chat at the bottom of the page.
-                    </div>
-                  </div>
-                )}
-                {isOwner && serviceProfile && (
-                  <Link
-                    href={`/project/${id}/manage`}
-                    className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
-                  >
-                    Manage existing bookings →
-                  </Link>
-                )}
-              </>
-            ) : (
               <>
                 {/* Storefront view already renders its own "Ask AI" inside
                     the storefront card above, so we skip the duplicate
@@ -5093,7 +4923,6 @@ return (
                   </Link>
                 )}
               </>
-            )}
           </div>
         </div>
       </div>
@@ -5144,67 +4973,6 @@ return (
         </div>
       )}
 
-      {projectView === "analytics" && false && hasMarketSnapshot && (
-        <div className="mb-8 border-b border-t border-default bg-surface-page">
-          {isSimulated && (
-            <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
-              Preview only. Trading is a future-phase feature.
-            </div>
-          )}
-          <div className="mx-auto max-w-6xl px-2">
-            <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto">
-              {[
-                {
-                  label: isSimulated ? "Price (demo)" : "Price",
-                  value: `$${formatPrice(market?.price)}`,
-                },
-                {
-                  label: isSimulated ? "24h Change (demo)" : "24h Change",
-                  value: `${heroPriceUp ? "+" : ""}${heroPriceChangePct.toFixed(2)}%`,
-                  positive: heroPriceUp,
-                },
-                {
-                  label: isSimulated ? "Market Cap (demo)" : "Market Cap",
-                  value:
-                    market?.market_cap != null ? `$${formatNumber(market.market_cap, 2)}` : "—",
-                },
-                {
-                  label: isSimulated ? "Volume 24h (demo)" : "Volume 24h",
-                  value:
-                    market?.volume_24h != null ? `$${formatNumber(market.volume_24h, 2)}` : "—",
-                },
-                {
-                  label: "Last Trade",
-                  value: market?.last_trade_at ? formatDateTime(market.last_trade_at) : "—",
-                },
-                ...(supplyDisplay !== "—"
-                  ? [
-                      {
-                        label: "Supply",
-                        value: supplyDisplay,
-                      },
-                    ]
-                  : []),
-              ].map((stat: { label: string; value: string; positive?: boolean }) => (
-                <div key={stat.label} className="min-w-0 flex-shrink-0 px-4 py-3 sm:px-5">
-                  <div className="text-xs text-secondary">{stat.label}</div>
-                  <div
-                    className={`text-sm font-semibold ${
-                      stat.positive === true
-                        ? "text-brand-teal"
-                        : stat.positive === false
-                        ? "text-state-live"
-                        : "text-primary"
-                    }`}
-                  >
-                    {stat.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* ── Embedded Interactive Content ── */}
@@ -7053,15 +6821,6 @@ return (
         {chatMeta.locked && (
           <div className="mt-5 rounded-2xl border border-default bg-surface-card p-5">
             <p className="text-sm text-secondary">{chatMeta.lock_message}</p>
-            {false && (
-              <button
-                type="button"
-                onClick={scrollToBuyPanel}
-                className="mt-3 w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal active:scale-[0.98]"
-              >
-                Browse offers to unlock →
-              </button>
-            )}
           </div>
         )}
 
@@ -7826,101 +7585,9 @@ return (
         )}
 
 
-        {false && (
-        <div id="section-memory" className="rounded-3xl border border-default bg-surface-card p-6">
-            <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">Project Memory</div>
-
-            <h2 className="text-3xl font-bold text-primary">Add Memory</h2>
-
-            <p className="mt-3 max-w-2xl text-secondary">
-              Paste a memory, note, social post, transcript, or product insight so your AI can use it
-              later.
-            </p>
-
-            {authUser ? (
-            <form onSubmit={saveMemory} className="mt-6 space-y-4">
-              <textarea
-                value={memoryText}
-                onChange={(e) => setMemoryText(e.target.value)}
-                placeholder="Paste a memory, story, social post, transcript, or note..."
-                rows={7}
-                className="w-full rounded-2xl border border-default bg-surface-card px-4 py-3 text-primary outline-none transition focus:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-              />
-
-              <button
-                type="submit"
-                disabled={loadingMemory}
-                className="w-full rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                style={{ background: accent }}
-              >
-                {loadingMemory ? "Saving..." : "Save Memory"}
-              </button>
-            </form>
-             ) : (
-             <div className="mt-6 rounded-2xl border border-default bg-surface-page/40 p-5 text-sm text-secondary">
-             Sign in to add a project memory.
-             </div>
-             )}
-
-            <div className="mt-10">
-              <h3 className="text-2xl font-bold text-primary">Saved Memories ({memories.length})</h3>
-
-              {memories.length === 0 ? (
-                <p className="mt-4 text-secondary">No memories saved yet.</p>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {memories.map((memory) => (
-                    <div key={memory.id} className="rounded-2xl border border-default bg-surface-page p-4 text-primary">
-                      {memory.content_text || memory.content || "Empty memory"}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
     </>)}
 
-    {projectView === "analytics" && false && hasMarketSnapshot && (
-      <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-default bg-surface-page/90 backdrop-blur-md lg:block">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
-            <span className="truncate font-black text-primary">{heroTitle}</span>
-            <span className="font-mono text-sm text-secondary">${displaySymbol}</span>
-            {isSimulated && (
-              <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-300">
-                Demo
-              </span>
-            )}
-            <span className="text-lg font-bold text-primary">
-              ${heroPrice ? formatPrice(heroPrice) : "0.000000"}
-            </span>
-            <span
-              className={`text-sm font-semibold ${
-                heroPriceUp ? "text-brand-teal" : "text-state-live"
-              }`}
-            >
-              {heroPriceUp ? "+" : ""}
-              {heroPriceChangePct.toFixed(2)}%
-            </span>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-3">
-            <span className="hidden text-xs text-secondary xl:inline">
-              {isSimulated ? "Demo token · in-app ledger only" : "Customers get unlimited AI access"}
-            </span>
-            <button
-              type="button"
-              onClick={scrollToBuyPanel}
-              className="rounded-lg bg-brand-teal px-5 py-2 text-sm font-bold text-black transition hover:bg-brand-teal"
-            >
-              {isSimulated ? `Demo buy · $${displaySymbol}` : `Buy $${displaySymbol}`}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
   </div>
 
   {/* ── Image Lightbox Modal ── */}
