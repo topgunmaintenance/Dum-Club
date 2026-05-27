@@ -352,17 +352,10 @@ export default function MerchantPage() {
     return (
       <div className="min-h-screen bg-surface-card px-4 pb-20 pt-28">
         <div className="mx-auto w-full max-w-md text-center">
-          {programOpen && claimed !== null && (
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-                {claimed} of {totalCap} founding spots claimed · 60 days free · Lock in founding pricing for life
-              </span>
-            </div>
-          )}
+          {/* Founding-100 scarcity pill removed — we no longer surface
+              public merchant-count metrics. The H1 + description below
+              still carry the "60 days free / lock in founding pricing"
+              copy, so the value prop is intact. */}
 
           <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
             Join the first 100 merchants.{" "}
@@ -452,21 +445,10 @@ export default function MerchantPage() {
 
           {/* ── HERO ──
                Continues the homepage pitch instead of dropping a form
-               in a void. Scarcity pill matches homepage framing
-               ("claimed" not "remaining". progress/social-proof). */}
-          {programOpen && claimed !== null && (
-            <div className="mb-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-                </span>
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-                  {claimed} of {totalCap} founding spots claimed · 60 days free · Lock in founding pricing for life
-                </span>
-              </div>
-            </div>
-          )}
+               in a void. Founding-100 scarcity pill removed — we no
+               longer surface public merchant-count metrics; the H1 +
+               paragraph below still carry "60 days free / lock in
+               founding pricing for life" so the messaging is intact. */}
 
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-primary sm:text-5xl">
