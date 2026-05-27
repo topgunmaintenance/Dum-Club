@@ -3436,7 +3436,11 @@ export default function ProjectPage() {
   const isPending = reviewStatus === "pending";
   const isApprovedProject = reviewStatus === "approved";
   const isTradingLive = tokenStatus === "trading_live";
-  const canShowMarketUi = false; // DUM Hub replaces per-project trading UI
+  // false used to gate the per-project trading UI; DUM Hub
+  // replaced it months ago and the const has been a hard `false` ever
+  // since. Step B of the ghost-architecture cleanup deletes the const
+  // and inlines `false` at every reader site so the dead branches are
+  // self-documenting at the call site. Step C deletes the dead JSX.
 
   const emoji = useMemo(() => getProjectEmoji(project), [project]);
   const category = useMemo(() => getCategory(project), [project]);
@@ -3539,7 +3543,7 @@ const heroUtility =
 
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
-  const statusBanner = canShowMarketUi
+  const statusBanner = false
     ? "Approved / Live"
     : isApprovedProject
     ? "Approved. Business is live."
@@ -3604,7 +3608,7 @@ const heroUtility =
   const displayStatusLabel = formatTokenStatus(tokenStatus);
 
   const hasMarketSnapshot = Boolean(
-    canShowMarketUi && market != null && Number(market.price ?? 0) > 0
+    false && market != null && Number(market.price ?? 0) > 0
   );
   const heroPrice = Number(market?.price || 0);
   const heroPriceChangePct = rangeChangePct;
@@ -3640,7 +3644,7 @@ const heroUtility =
 return (
   <div
     className={`relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8 ${
-      canShowMarketUi && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
+      false && hasMarketSnapshot ? "pb-28 lg:pb-24" : ""
     }`}
   >
     {/* Schema.org JSON-LD. invisible to humans, primary signal for
@@ -3942,7 +3946,7 @@ return (
           {/* CTA */}
           <div className="mb-10 text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">
-              {canShowMarketUi && (
+              {false && (
                 <button
                   onClick={() => { setPitchMode(false); setTimeout(scrollToBuyPanel, 100); }}
                   className="rounded-xl bg-brand-teal px-8 py-3 text-sm font-bold text-black transition hover:bg-brand-teal"
@@ -4779,7 +4783,7 @@ return (
           </div>
 
           <div className="w-full space-y-3 lg:w-80">
-            {projectView === "analytics" && canShowMarketUi && (
+            {projectView === "analytics" && false && (
               <div className="flex items-center justify-end gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
@@ -5005,7 +5009,7 @@ return (
               </div>
             ) : null}
 
-            {projectView === "analytics" && canShowMarketUi ? (
+            {projectView === "analytics" && false ? (
               <>
                 <button
                   type="button"
@@ -5131,7 +5135,7 @@ return (
         </div>
       )}
 
-      {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
+      {projectView === "analytics" && false && hasMarketSnapshot && (
         <div className="mb-8 border-b border-t border-default bg-surface-page">
           {isSimulated && (
             <div className="border-b border-amber-400/20 bg-amber-400/[0.05] py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-amber-300">
@@ -7040,7 +7044,7 @@ return (
         {chatMeta.locked && (
           <div className="mt-5 rounded-2xl border border-default bg-surface-card p-5">
             <p className="text-sm text-secondary">{chatMeta.lock_message}</p>
-            {canShowMarketUi && (
+            {false && (
               <button
                 type="button"
                 onClick={scrollToBuyPanel}
@@ -7685,7 +7689,7 @@ return (
       )}
 
 
-      {projectView === "analytics" && canShowMarketUi ? (
+      {projectView === "analytics" && false ? (
       /* Token Activity. only in analytics view */
       <div id="section-tokens" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
         {isSimulated && <SimulatedTokenBanner />}
@@ -8567,7 +8571,7 @@ return (
 
     </>)}
 
-    {projectView === "analytics" && canShowMarketUi && hasMarketSnapshot && (
+    {projectView === "analytics" && false && hasMarketSnapshot && (
       <div className="fixed bottom-0 left-0 right-0 z-50 hidden border-t border-default bg-surface-page/90 backdrop-blur-md lg:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-4 lg:gap-6">
