@@ -3502,6 +3502,25 @@ const heroUtility =
 
 return (
   <div className="relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8">
+    {/* Instant checkout-success acknowledgment — fixed-position pill
+        anchored to the top of the viewport so the customer sees
+        confirmation the moment ?checkout=success lands, before the
+        rest of the storefront finishes hydrating. The mid-page banner
+        further down (search for `checkoutResult === "success"`) stays
+        for the detailed copy + DUM Points earned card; this is just
+        the instant "your payment went through" signal. */}
+    {checkoutResult === "success" && (
+      <div className="fixed inset-x-0 top-0 z-[60] flex justify-center px-4 pt-3 pb-[env(safe-area-inset-top)]">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-full bg-brand-teal px-4 py-2 text-sm font-bold text-brand-navy shadow-lg"
+        >
+          <span aria-hidden="true">✓</span>
+          <span>Payment received. You&apos;re all set.</span>
+        </div>
+      </div>
+    )}
     {/* Schema.org JSON-LD. invisible to humans, primary signal for
         Google rich results and AI crawlers (Claude, GPT, Perplexity,
         Gemini). Emits LocalBusiness with embedded Offers, plus a
