@@ -559,17 +559,15 @@
         "[data-dum-embed-bubble] .dum-tap-hint {",
         "  position: absolute;",
         "  left: 50%; top: 100%;",
-        "  transform: translate(-50%, 14px);",
+        "  transform: translate(-50%, 12px);",
         "  display: none;",
-        "  padding: 4px 10px;",
+        "  padding: 5px 11px;",
         "  border-radius: 9999px;",
-        "  background: rgba(11,18,32,0.9);",
+        "  background: rgba(11,18,32,0.92);",
         "  color: #ffffff;",
-        "  font: 700 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
-        "  letter-spacing: 0.1em;",
-        "  text-transform: uppercase;",
+        "  font: 700 11px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
         "  white-space: nowrap;",
-        "  box-shadow: 0 4px 10px rgba(11,18,32,0.25);",
+        "  box-shadow: 0 4px 12px rgba(11,18,32,0.3);",
         "  pointer-events: none;",
         "}",
         "[data-dum-embed-bubble].is-live .dum-tap-hint { display: inline-flex; }",
@@ -1243,7 +1241,7 @@
     var tapHint = document.createElement("span");
     tapHint.className = "dum-tap-hint";
     tapHint.setAttribute("aria-hidden", "true");
-    tapHint.textContent = "Tap to watch";
+    tapHint.textContent = "Watch live →";
 
     var close = document.createElement("button");
     close.type = "button";
