@@ -12,6 +12,7 @@ import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
 import { GetLiveSteps } from "../../components/GetLiveSteps";
 import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
+import { ScheduleNextLiveCard } from "../../components/ScheduleNextLiveCard";
 
 type Project = {
   id: number | string;
@@ -32,6 +33,10 @@ type Project = {
   // the featured item. Surfaced in GetLiveSteps so the merchant
   // sees pinning as its own checklist step before Go Live.
   pinned_offer_id?: string | null;
+  // Next scheduled go-live (ISO 8601, TIMESTAMPTZ in DB). Drives
+  // the storefront "Going live..." banner + the dashboard schedule
+  // input. Migration 064.
+  scheduled_live_at?: string | null;
   // DUM Pop-In Seller merchant settings (migration 038, PR #135).
   // Recorded-video mode added via PR for Mode B (migration 039 +
   // popin_config.video_url).
@@ -755,6 +760,14 @@ export default function DashboardPage() {
             isLive;
           const settingsCards = (
             <>
+              <ScheduleNextLiveCard
+                project={{
+                  id: String(primary.id),
+                  scheduled_live_at: primary.scheduled_live_at ?? null,
+                }}
+                getToken={getToken}
+                onSaved={() => loadProjects()}
+              />
               <EmbedDisplayModeCard
                 project={{
                   id: String(primary.id),
