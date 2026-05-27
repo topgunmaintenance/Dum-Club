@@ -17,8 +17,7 @@
 - _None._ The "Untitled Project" fallback on `/project/topgun-maintenance` is resolved in production; `loadProject()` is reaching Railway and the seeded row is hydrating. Visual QA spec `frontend/tests/visual/project-page.spec.ts` now hard-fails if the placeholder reappears.
 
 ### Known issues — non-blocking
-- `_resolve_owner_uuid` in `backend/api/routes/projects.py` raises `AttributeError("'SyncQueryRequestBuilder' object has no attribute 'select'")` on profile upsert (visible in Railway logs at the `/api/projects/?owner_id=...` endpoint). Supabase SDK version mismatch — the endpoint still returns 200, only pollutes logs. Fix when next touching that file.
-- `frontend/lib/apiBase.ts:8` falls back to `http://localhost:8000` when `NEXT_PUBLIC_API_URL` is unset. The HTTPS auto-upgrade on line 14 explicitly skips localhost, so a missing env var in a Vercel build silently ships a broken production frontend. Should hard-fail in production builds instead. Currently masked because the env var IS set — but a teammate redeploying without it would re-break the world.
+- _None known._ The previously listed `_resolve_owner_uuid` AttributeError and `apiBase.ts` localhost-in-prod silent fallback have both been resolved: the upsert chain no longer calls `.select()` (postgrest-py 0.16 dropped that method on the upsert builder), and `apiBase.ts` now throws at module load when `NEXT_PUBLIC_API_URL` is missing in a production build.
 
 ---
 
@@ -178,6 +177,43 @@ Things that aren't Claude-solvable and need a human decision or action.
 ## Recently shipped
 
 Last 15 commits on `main`, newest first. Regenerate via `git log main --oneline -15`.
+
+```
+c3c700e  feat(retention): recurring weekly auto-roll for scheduled_live_at (#292)
+f07274a  feat(admin): operations overview dashboard for live ops visibility (#291)
+73b3fd0  fix(live): tap-to-retry recovery on the customer-side ended state (#290)
+428ab81  feat(retention): replay-share affordance + OG enrichment (#289)
+6a566e5  feat(retention): customer "remind me when live" loop, complete (#288)
+3a15644  feat(retention): scheduled_live_at — weekly merchant retention keystone (#287)
+116df9d  fix(mobile): safe-area-inset-bottom on two unhandled sticky bottom bars (#286)
+56b3194  fix(embed): cache last-known bubble live state in sessionStorage (#285)
+52e4183  fix(storefront): sticky pinned-offer strip during mobile livestream (#284)
+b18b843  fix(storefront): instant top-of-viewport toast on ?checkout=success (#283)
+b75440f  fix(embed): clearer "Watch live →" affordance on the live bubble (#282)
+b945706  fix(live): hide FloatingGoLive when Stripe is not verified (#281)
+3afa8ea  fix(dashboard): "Preview as customer" link on each project card (#280)
+9a95d9e  fix(onboarding): add "Pin a featured item" row to GetLiveSteps (#279)
+343fec0  fix(merchant): set Stripe expectations before the Connect Stripe click (#278)
+```
+
+### In flight on `claude/adoring-fermat-uEfs0` (pending merge)
+
+```
+fix(onboarding): drop .select() chain on profile upsert (supabase-py 2.5.1)
+fix(admin): correct Stripe fees column names on operations overview
+feat(retention): weekly merchant recap email (cron + log)
+feat(acquisition): /why-dum-club comparison surface for outreach
+docs(smoke): pre-outreach operator checklist (browser end-to-end)
+docs(email): RESEND_API_KEY pipeline audit + safe test recipe
+docs(cron): production setup for live_reminders + schedule_rollforward
+```
+
+These ship together as the pre-outreach readiness bundle: three
+operator docs (cron / email / smoke), one merchant-acquisition
+surface, one retention cron, and two production bug fixes
+surfaced while writing the docs.
+
+### Older shipped (kept for diff context)
 
 ```
 98db0e1  style: brightness pass — lift the dark theme, add emerald glow
