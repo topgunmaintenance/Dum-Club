@@ -45,7 +45,7 @@ function viewAsCustomerKey(projectSlug: string): string {
   return `dum-view-as-customer:${projectSlug}`;
 }
 
-function writeViewAsCustomer(projectSlug: string, value: boolean) {
+export function writeViewAsCustomer(projectSlug: string, value: boolean) {
   if (typeof window === "undefined") return;
   try {
     if (value) {
