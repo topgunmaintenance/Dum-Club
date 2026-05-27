@@ -1,63 +1,91 @@
--- 062_rollback.sql — reverses 062_enable_rls_deny_all_backfill.
+-- 062_rollback.sql — restores the pre-062 deny_all policy state on
+-- the 20 tables touched by 062.
 --
--- Drops every deny_all policy created by 062 and disables RLS on
--- all 21 tables it touched.
+-- IMPORTANT: this rollback does NOT disable RLS. Every table touched
+-- by 062 already had RLS enabled BEFORE 062 ran (the migration was a
+-- drift-codification, not new protection). Disabling RLS here would
+-- regress production to a less-safe state than what existed
+-- pre-migration.
 --
--- Note: 061's original deny_all policy on merchant_analytics_events
--- is also dropped here. That policy was inert before 062 (RLS was
--- not enabled on that table until 062), so dropping it returns the
--- table to its pre-061 effective state.
+-- What this DOES restore: the pre-062 policy role list. 062
+-- normalized all 20 deny_all policies to `{anon, authenticated}`;
+-- this rollback restores the original `{public}` role list for the
+-- 19 tables that had it (i.e. every table except
+-- merchant_analytics_events), and re-asserts
+-- `{anon, authenticated}` on merchant_analytics_events (which 061
+-- had already set that way).
 --
 -- WHEN TO USE
 -- -----------
--- Run if 062 breaks an unexpected read path. Backend uses the
--- service_role key everywhere (which bypasses RLS), so breakage
--- is unlikely; document any reproducer before applying.
+-- Run only if the role-list normalization causes an unexpected
+-- regression. The semantic behavior of `{public}` vs
+-- `{anon, authenticated}` is identical for our access model (service_role
+-- bypasses RLS via BYPASSRLS regardless), so regression is unlikely;
+-- document any reproducer before applying.
 
 BEGIN;
 
+-- Restore {public} role list on the 19 tables that had it pre-062.
 DROP POLICY IF EXISTS deny_all ON public.service_profiles;
-DROP POLICY IF EXISTS deny_all ON public.availability_slots;
-DROP POLICY IF EXISTS deny_all ON public.bookings;
-DROP POLICY IF EXISTS deny_all ON public.orders;
-DROP POLICY IF EXISTS deny_all ON public.business_profiles;
-DROP POLICY IF EXISTS deny_all ON public.dum_transactions;
-DROP POLICY IF EXISTS deny_all ON public.favorites;
-DROP POLICY IF EXISTS deny_all ON public.reviews;
-DROP POLICY IF EXISTS deny_all ON public.referrals;
-DROP POLICY IF EXISTS deny_all ON public.external_businesses;
-DROP POLICY IF EXISTS deny_all ON public.external_business_demand_events;
-DROP POLICY IF EXISTS deny_all ON public.purchase_proofs;
-DROP POLICY IF EXISTS deny_all ON public.merchant_outreach_queue;
-DROP POLICY IF EXISTS deny_all ON public.auctions;
-DROP POLICY IF EXISTS deny_all ON public.auction_bids;
-DROP POLICY IF EXISTS deny_all ON public.processed_webhook_events;
-DROP POLICY IF EXISTS deny_all ON public.merchants;
-DROP POLICY IF EXISTS deny_all ON public.outreach_leads;
-DROP POLICY IF EXISTS deny_all ON public.outreach_messages;
-DROP POLICY IF EXISTS deny_all ON public.merchant_analytics_events;
-DROP POLICY IF EXISTS deny_all ON public.seed_claim_audit;
+CREATE POLICY deny_all ON public.service_profiles                FOR ALL TO public USING (false) WITH CHECK (false);
 
-ALTER TABLE public.service_profiles                DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.availability_slots              DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.bookings                        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders                          DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.business_profiles               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.dum_transactions                DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.favorites                       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews                         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.referrals                       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.external_businesses             DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.external_business_demand_events DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.purchase_proofs                 DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.merchant_outreach_queue         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.auctions                        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.auction_bids                    DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.processed_webhook_events        DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.merchants                       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.outreach_leads                  DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.outreach_messages               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.merchant_analytics_events       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.seed_claim_audit                DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS deny_all ON public.availability_slots;
+CREATE POLICY deny_all ON public.availability_slots              FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.bookings;
+CREATE POLICY deny_all ON public.bookings                        FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.orders;
+CREATE POLICY deny_all ON public.orders                          FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.business_profiles;
+CREATE POLICY deny_all ON public.business_profiles               FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.dum_transactions;
+CREATE POLICY deny_all ON public.dum_transactions                FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.favorites;
+CREATE POLICY deny_all ON public.favorites                       FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.reviews;
+CREATE POLICY deny_all ON public.reviews                         FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.referrals;
+CREATE POLICY deny_all ON public.referrals                       FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.external_businesses;
+CREATE POLICY deny_all ON public.external_businesses             FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.external_business_demand_events;
+CREATE POLICY deny_all ON public.external_business_demand_events FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.purchase_proofs;
+CREATE POLICY deny_all ON public.purchase_proofs                 FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.merchant_outreach_queue;
+CREATE POLICY deny_all ON public.merchant_outreach_queue         FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.auctions;
+CREATE POLICY deny_all ON public.auctions                        FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.auction_bids;
+CREATE POLICY deny_all ON public.auction_bids                    FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.processed_webhook_events;
+CREATE POLICY deny_all ON public.processed_webhook_events        FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.merchants;
+CREATE POLICY deny_all ON public.merchants                       FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.outreach_leads;
+CREATE POLICY deny_all ON public.outreach_leads                  FOR ALL TO public USING (false) WITH CHECK (false);
+
+DROP POLICY IF EXISTS deny_all ON public.outreach_messages;
+CREATE POLICY deny_all ON public.outreach_messages               FOR ALL TO public USING (false) WITH CHECK (false);
+
+-- merchant_analytics_events had {anon, authenticated} pre-062 (set
+-- by migration 061). Restore that exact role list.
+DROP POLICY IF EXISTS deny_all ON public.merchant_analytics_events;
+CREATE POLICY deny_all ON public.merchant_analytics_events       FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
 
 COMMIT;

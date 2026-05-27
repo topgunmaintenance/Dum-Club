@@ -1,74 +1,94 @@
 -- 062_enable_rls_deny_all_backfill.sql
--- Backfills RLS + deny_all policies on every public-schema table
--- that predates the RLS-by-default posture established by migration
--- 061. Extends 061's pattern from 11 tables to 32.
+-- Codifies the existing production `deny_all` policy posture on 20
+-- public-schema tables into tracked migration history, and normalizes
+-- the policy role list from `{public}` to `{anon, authenticated}` for
+-- consistency with migration 061's pattern.
+--
+-- THIS MIGRATION IS A NEAR-NO-OP. It does NOT introduce new protection
+-- — every table touched here already has RLS enabled and a `deny_all`
+-- policy in production today (verified via `pg_policies` against
+-- project `snzodohibhxenqwdklxs` on 2026-05-27). What it DOES is:
+--
+--   1. Codify those policies into the migration record so future
+--      state stays in sync with `backend/db/migrations/`. Today they
+--      exist in prod but not in any tracked migration — likely
+--      applied via the Supabase Studio dashboard between when
+--      migration 061 shipped and today.
+--
+--   2. Re-assert ENABLE ROW LEVEL SECURITY (no-op on already-enabled
+--      tables; defensive against future state where RLS could get
+--      disabled).
+--
+--   3. Normalize the role list: existing prod policies target
+--      `{public}` (PG pseudo-role); 061's pattern uses
+--      `{anon, authenticated}`. Functionally equivalent for our use
+--      case (service_role bypasses RLS regardless via BYPASSRLS), but
+--      cosmetically consistent makes the intent clearer to readers.
 --
 -- BACKGROUND
 -- ----------
--- Migration 061 hardened the four ERROR-level tables flagged by
--- Supabase Advisor (accounts, account_logins, investor_leads,
--- trial_reminder_log) plus seven INFO-level tables that already had
--- RLS enabled but no policy. The 21 tables touched here all share
--- the same risk profile as 061's Group A: created before RLS-by-
--- default (migrations 003 to 042), still have RLS disabled, and
--- relied implicitly on FastAPI being the only writer.
+-- The original audit (docs/rls-deny-all-followup-audit.md) inspected
+-- migration files only and concluded these 20 tables had RLS disabled
+-- with no policy — true historically, false in current production.
+-- See PR #261 description for the full pre-state query results and
+-- the drift discussion.
 --
--- The full audit is in docs/rls-deny-all-followup-audit.md.
+-- INTENTIONAL EXCLUSIONS (changed from PR's initial draft)
+-- --------------------------------------------------------
+-- `seed_claim_audit` — table does not exist in production at all
+-- (migration `042_seed_claim_audit.sql` was never applied). Dropping
+-- it from this migration; if/when 042 ships to prod, add a one-line
+-- follow-up migration to lock down that table.
 --
--- WHY THIS IS SAFE TO APPLY
--- -------------------------
--- Same precondition as 061: every table here is accessed only via
--- the service_role key, either from FastAPI (backend/db/supabase.py)
--- or from Next.js API routes (frontend/lib/ai/supabase-service.ts).
--- Service role bypasses RLS, so backend reads and writes keep
--- working without code change.
+-- `offers` — operator carve-out. Already has RLS + `deny_all` plus
+-- positive policies for public storefront reads. Untouched.
 --
--- Verified by:
---   grep -rn '\.from(["\047][a-z_]' frontend/ --include=*.ts \
---     --include=*.tsx | grep -v node_modules
--- Only two browser-side table .from() calls exist:
---   lib/linkWalletToProfile.ts → profiles  (already RLS-enabled, 001)
---   app/project/[id]/manage/layout.tsx → projects  (out of scope —
---     needs a positive read policy, not deny_all)
--- The two .from("offers") browser hits are supabase.storage.from()
--- against the Storage bucket of the same name, not the offers table.
+-- `projects`, `profiles` — browser/SSR exposed. Already have RLS +
+-- positive policies for legitimate reads. Untouched.
 --
--- INTENTIONAL EXCLUSIONS
--- ----------------------
--- offers (010) — excluded by operator request out of caution because
--- the Storage bucket shares the name with the public table. Audit
--- found zero browser table access on the table itself; if cleared,
--- a follow-up can deny_all it in a one-line migration.
--- projects — excluded; needs a positive owner-read policy, not
--- deny_all (SSR /manage layout reads it for the owner gate).
--- profiles, posts, categories, vaults, transcripts,
--- content_embeddings, ai_agent_* — already RLS-enabled upstream.
--- accounts, account_logins, investor_leads, trial_reminder_log,
--- stream_sessions, viewer_session_events, merchant_plan_limits,
--- merchant_monthly_usage, plan_limits, merchant_overage_invoices —
--- already covered by 061.
+-- TABLES IN SCOPE (20)
+-- --------------------
+-- 003: service_profiles, availability_slots, bookings
+-- 010: orders
+-- 014: business_profiles
+-- 016: dum_transactions
+-- 017: favorites, reviews, referrals
+-- 018: external_businesses, external_business_demand_events,
+--      purchase_proofs, merchant_outreach_queue
+-- 022: auctions, auction_bids
+-- 025: processed_webhook_events
+-- 026: merchants
+-- 028: outreach_leads, outreach_messages
+-- 036: merchant_analytics_events (already at {anon, authenticated}
+--      via 061 — re-asserts identical state)
 --
--- SPECIAL CASE: merchant_analytics_events
--- ---------------------------------------
--- Migration 061 created a deny_all policy on this table but never
--- ran ENABLE ROW LEVEL SECURITY on it (061's header described it
--- as "RLS enabled but no policy" — that was true for 6 of 7 tables
--- in 061's Group B, but merchant_analytics_events from 036 was the
--- one exception). The policy is currently inert. This migration
--- enables RLS on it (activating 061's policy) and re-asserts the
--- policy via DROP IF EXISTS + CREATE so the end state is identical
--- to every other table in this file.
+-- KNOWN AT TIME OF MIGRATION (do not regress)
+-- -------------------------------------------
+-- Five tables (availability_slots, bookings, business_profiles,
+-- service_profiles, orders) have OTHER positive permissive policies
+-- in production that grant access (e.g. `Public read service profiles
+-- USING (true)`). Permissive policies combine with OR, so `deny_all`
+-- on those tables is currently cosmetic, not effective. This
+-- migration deliberately does NOT touch those positive policies —
+-- they exist intentionally for storefront / booking flows. Hardening
+-- those is a separate audit; this PR only codifies the deny_all
+-- policy state.
 --
 -- ROLLBACK
 -- --------
--- rollback/062_rollback.sql — drops every deny_all policy created
--- here and disables RLS on the 21 tables. Mirrors 061's rollback
--- shape.
+-- rollback/062_rollback.sql — restores each policy to its pre-062
+-- role list (`{public}` for the 19, `{anon, authenticated}` for
+-- merchant_analytics_events which 061 already set that way). Does
+-- NOT disable RLS, because RLS was already enabled before this
+-- migration on every table touched — disabling it on rollback would
+-- regress prod from a safer state to a less-safe one.
 
 BEGIN;
 
 -- ============================================================
--- ENABLE ROW LEVEL SECURITY on 21 tables.
+-- ENABLE ROW LEVEL SECURITY on all 20 tables.
+-- All are already RLS-enabled in production; these are no-ops but
+-- defend against any future state where RLS gets toggled off.
 -- ============================================================
 
 ALTER TABLE public.service_profiles                ENABLE ROW LEVEL SECURITY;
@@ -91,16 +111,17 @@ ALTER TABLE public.merchants                       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outreach_leads                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.outreach_messages               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.merchant_analytics_events       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.seed_claim_audit                ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- deny_all policy on each of the 21 tables.
--- FOR ALL USING (false) blocks SELECT/INSERT/UPDATE/DELETE for
--- anon + authenticated. Service role still bypasses entirely.
+-- DROP + CREATE deny_all on each of the 20 tables.
+-- Production has these targeting `{public}` (or `{anon, authenticated}`
+-- for merchant_analytics_events from 061). This step normalizes all
+-- 20 to `{anon, authenticated}` for consistency.
 --
--- DROP POLICY IF EXISTS keeps this migration re-runnable, including
--- against any state left over from 061 (which created a deny_all
--- on merchant_analytics_events).
+-- Semantically: USING (false) WITH CHECK (false) FOR ALL blocks
+-- every operation. Targeting anon + authenticated is what we want
+-- (service_role bypasses RLS via BYPASSRLS regardless of policy
+-- role list).
 -- ============================================================
 
 DROP POLICY IF EXISTS deny_all ON public.service_profiles;
@@ -163,18 +184,17 @@ CREATE POLICY deny_all ON public.outreach_messages               FOR ALL TO anon
 DROP POLICY IF EXISTS deny_all ON public.merchant_analytics_events;
 CREATE POLICY deny_all ON public.merchant_analytics_events       FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
 
-DROP POLICY IF EXISTS deny_all ON public.seed_claim_audit;
-CREATE POLICY deny_all ON public.seed_claim_audit                FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
-
 -- ============================================================
--- Sanity check — assert all 21 tables now have RLS enabled.
--- RAISE EXCEPTION rolls the migration back if any assertion fails.
+-- Sanity check — assert all 20 tables have RLS enabled AND a
+-- deny_all policy present. RAISE EXCEPTION rolls back the
+-- migration if either assertion fails.
 -- ============================================================
 DO $$
 DECLARE
-  missing text;
+  missing_rls text;
+  missing_policy text;
 BEGIN
-  SELECT string_agg(t, ', ' ORDER BY t) INTO missing
+  SELECT string_agg(t, ', ' ORDER BY t) INTO missing_rls
   FROM (
     SELECT unnest(ARRAY[
       'service_profiles', 'availability_slots', 'bookings',
@@ -184,7 +204,7 @@ BEGIN
       'purchase_proofs', 'merchant_outreach_queue',
       'auctions', 'auction_bids', 'processed_webhook_events',
       'merchants', 'outreach_leads', 'outreach_messages',
-      'merchant_analytics_events', 'seed_claim_audit'
+      'merchant_analytics_events'
     ]) AS t
   ) expected
   WHERE NOT EXISTS (
@@ -196,8 +216,32 @@ BEGIN
       AND c.relrowsecurity = true
   );
 
-  IF missing IS NOT NULL THEN
-    RAISE EXCEPTION '062 assertion failed: RLS not enabled on: %', missing;
+  IF missing_rls IS NOT NULL THEN
+    RAISE EXCEPTION '062 assertion failed: RLS not enabled on: %', missing_rls;
+  END IF;
+
+  SELECT string_agg(t, ', ' ORDER BY t) INTO missing_policy
+  FROM (
+    SELECT unnest(ARRAY[
+      'service_profiles', 'availability_slots', 'bookings',
+      'orders', 'business_profiles', 'dum_transactions',
+      'favorites', 'reviews', 'referrals',
+      'external_businesses', 'external_business_demand_events',
+      'purchase_proofs', 'merchant_outreach_queue',
+      'auctions', 'auction_bids', 'processed_webhook_events',
+      'merchants', 'outreach_leads', 'outreach_messages',
+      'merchant_analytics_events'
+    ]) AS t
+  ) expected
+  WHERE NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = expected.t
+      AND policyname = 'deny_all'
+  );
+
+  IF missing_policy IS NOT NULL THEN
+    RAISE EXCEPTION '062 assertion failed: deny_all policy missing on: %', missing_policy;
   END IF;
 END $$;
 
