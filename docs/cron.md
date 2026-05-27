@@ -1,7 +1,22 @@
 # Cron jobs
 
-DUM Club's background jobs run on Railway's cron scheduler. One job today:
-the daily trial-reminder sweep.
+DUM Club's background jobs run on Railway's cron scheduler. Three jobs
+today; each one runs as its own Railway cron service that shares env
+with the API service so `from db.supabase` and `from services.email`
+resolve identically.
+
+| Job | Cadence | Module | Purpose |
+|---|---|---|---|
+| Trial reminders + suspension sweep | daily 09:00 ET | `services.agents.trial_reminders` | T-14 / T-7 / T-1 trial emails, past_due → suspended sweep |
+| Live reminders | every 5 minutes | `services.agents.live_reminders` | Send "they're going live now" emails to customers who tapped Remind me |
+| Schedule rollforward | hourly | `services.agents.schedule_rollforward` | Advance `projects.scheduled_live_at` by +7 days for merchants with `recurring_weekly=true` |
+
+All three live in `backend/services/agents/`. Each module is safe to
+run repeatedly: each one uses an atomic claim (live_reminders) or a
+self-deduplicating WHERE clause (schedule_rollforward, trial_reminders)
+to make double-runs harmless.
+
+---
 
 ## Trial reminder cron (daily 09:00 America/New_York)
 
@@ -90,3 +105,281 @@ WHERE founding_merchant = true AND grandfathered = false;
 
 If that returns > 0, do **not** ship reminders before re-running the
 backfill from 043.
+
+---
+
+## Live reminders cron (every 5 minutes)
+
+Sends a "they're going live now" email to every customer who tapped the
+"Remind me when live" button on a storefront whose merchant scheduled
+the next live slot. Drives the customer retention loop introduced in
+PR #288 (`live_reminders` table) + PR #287 (`projects.scheduled_live_at`).
+
+The worker scans a small partial index (`live_reminders` rows with
+`sent_at IS NULL`) so the 5-minute cadence is cheap. Each row is claimed
+atomically via `UPDATE ... WHERE sent_at IS NULL` so two concurrent runs
+never produce a duplicate send: the second worker sees 0 rows affected
+and skips.
+
+### Railway configuration
+
+1. New service → "Cron Job"
+2. Source: same repo, `backend/` build context
+3. Build / start command: same as the API service
+4. Cron schedule (5-field): `*/5 * * * *`
+5. Timezone: UTC (the worker reasons in UTC; cadence does not need a TZ)
+6. Run command:
+
+   ```
+   python -m services.agents.live_reminders
+   ```
+
+   (Alternative for repo-root execution:
+   `python -m backend.services.agents.live_reminders`.)
+
+### Env vars
+
+Same as the API service. The bare minimum:
+
+| Var | Why |
+|---|---|
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `live_reminders` + read `projects` + atomic claim |
+| `RESEND_API_KEY` | email send via Resend |
+| `EMAIL_FROM` | sender address shown to customer |
+| `NEXT_PUBLIC_SITE_URL` | builds the "Watch now" link in the email body (`{SITE_URL}/project/{slug}`) |
+
+Without `RESEND_API_KEY` the worker logs
+
+```
+[live-reminders] EMAIL disabled (no RESEND_API_KEY). Worker will scan and claim but won't actually send. Set RESEND_API_KEY in Railway env to enable.
+```
+
+at startup, then runs the scan + claim loop with no real send (rows
+still get their `sent_at` stamped because the claim is the gate, not
+the send result — see "Failure behavior" below).
+
+### Window math
+
+- `WINDOW_AHEAD = 6 min` — the next-tick safety buffer. With a 5-min
+  cadence every signup enters the send window within one tick of its
+  `scheduled_for`.
+- `GRACE_BEHIND = 15 min` — rows that missed their tick are still
+  picked up for up to 15 minutes after `scheduled_for`. Anything older
+  than that is dropped silently (a "they went live 30 min ago" email
+  is worse than no email).
+
+### Duplicate-send protection
+
+Three layers:
+
+1. Partial index `live_reminders_pending_idx` on `(scheduled_for) WHERE
+   sent_at IS NULL` — the scan only sees un-sent rows.
+2. Atomic claim:
+
+   ```sql
+   UPDATE live_reminders SET sent_at = now()
+   WHERE id = $1 AND sent_at IS NULL
+   RETURNING *;
+   ```
+
+   Whoever wins the `RETURNING` owns the send. The loser sees 0 rows
+   and skips silently.
+3. The claim happens **before** the email send call. If Resend errors
+   we deliberately do NOT clear `sent_at` — see "Failure behavior".
+
+So even if you accidentally provision two `live_reminders` cron
+services pointing at the same database, each customer gets exactly
+one email.
+
+### Failure behavior
+
+The worker exits 0 on every run (per-row errors are logged, not
+re-raised) so the cron does not retry the whole batch. Three failure
+modes worth knowing:
+
+| Failure | What happens | Recovery |
+|---|---|---|
+| Supabase scan fails | Prints `[live-reminders] scan failed: <repr>`, returns empty counts | Next tick retries — the scan is read-only |
+| Atomic claim fails (race) | Loser sees 0 rows affected, skips silently | Winner has already sent — correct |
+| Resend send raises | Row stays stamped with `sent_at`. We **do not** clear it. | Customer misses this reminder. At-most-once delivery — the alternative (rollback `sent_at` on failure) would risk duplicate sends if a later run partially succeeds for the same row. Reminder is one-shot; we err on the side of "miss one" rather than "send twice". |
+
+The cron never runs SQL that could damage another subsystem. It does
+not touch `projects`, `orders`, `merchants`, or any auth/billing table
+beyond reading `projects.{id,slug,name,title}` to render the email
+body.
+
+### Logs to expect
+
+Healthy run with nothing due:
+
+```
+[email] startup: Resend enabled, from=DUM Club <orders@dum.club>
+[live-reminders] window=[2026-05-27T18:05:00+00:00,2026-05-27T18:11:00+00:00) — 0 due
+```
+
+Healthy run with sends:
+
+```
+[email] startup: Resend enabled, from=DUM Club <orders@dum.club>
+[email] sent to=customer@example.com subject='Topgun Maintenance LLC is going live now' id=re_xyz
+[live-reminders] window=[...,...) scanned=1 claimed=1 sent=1 errored=0
+```
+
+Email disabled (RESEND_API_KEY missing):
+
+```
+[email] startup: RESEND_API_KEY is not set — email delivery DISABLED until it is
+[live-reminders] EMAIL disabled (no RESEND_API_KEY). Worker will scan and claim but won't actually send. Set RESEND_API_KEY in Railway env to enable.
+[email] skipped (disabled: no RESEND_API_KEY) to=customer@example.com subject='...'
+[live-reminders] window=[...,...) scanned=1 claimed=1 sent=0 errored=0
+```
+
+### Manual run for testing
+
+```
+cd backend
+python -m services.agents.live_reminders
+```
+
+Seed a test row first (replace project_id with a real one):
+
+```sql
+INSERT INTO live_reminders (project_id, customer_email, scheduled_for)
+VALUES (
+  '<your-project-uuid>',
+  'you@example.com',
+  now() + interval '2 minutes'
+);
+```
+
+Then run the cron module twice with a 3-minute gap. First run: row not
+yet in window, `scanned=0`. Second run: row in window, `sent=1`. Third
+run (any time later): the partial index excludes the now-stamped row,
+`scanned=0` — proves duplicate protection.
+
+---
+
+## Schedule rollforward cron (hourly)
+
+For merchants who opted into weekly recurring lives via
+`projects.recurring_weekly = true`, this worker advances
+`scheduled_live_at` by +7 days after each scheduled slot passes so the
+storefront's "Going live..." banner keeps surfacing the next upcoming
+slot without merchant intervention.
+
+The worker handles paused-cron recovery: if it hasn't run in 3 weeks,
+the first run jumps the schedule the smallest N weeks that lands
+strictly in the future (no tight +7 loop).
+
+### Railway configuration
+
+1. New service → "Cron Job"
+2. Source: same repo, `backend/` build context
+3. Build / start command: same as the API service
+4. Cron schedule (5-field): `0 * * * *`
+5. Timezone: UTC
+6. Run command:
+
+   ```
+   python -m services.agents.schedule_rollforward
+   ```
+
+   (Alternative for repo-root execution:
+   `python -m backend.services.agents.schedule_rollforward`.)
+
+### Env vars
+
+| Var | Why |
+|---|---|
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `projects` + update `scheduled_live_at` |
+
+**No** `RESEND_API_KEY` needed — this cron does not send email.
+
+### Safety properties
+
+- One `UPDATE` per row, touching only `scheduled_live_at`. No DELETE,
+  no DROP, no other column writes.
+- `recurring_weekly` stays `true`. The merchant explicitly opted in;
+  the worker never unsets the flag.
+- Concurrent workers are safe: the WHERE clause filters
+  `scheduled_live_at < now()`, so once one worker rolls a row forward
+  the row no longer matches the query for the second worker.
+- Exits 0 always. Per-row errors are logged and the batch continues.
+
+### Logs to expect
+
+Healthy run with nothing due:
+
+```
+[schedule-rollforward] now=2026-05-27T18:00:00+00:00 — 0 due
+```
+
+Healthy run with rollforwards:
+
+```
+[schedule-rollforward] now=2026-05-27T18:00:00+00:00 scanned=3 rolled=3 errored=0
+```
+
+Scan failure (rare; next tick retries):
+
+```
+[schedule-rollforward] scan failed: PostgrestAPIError(...)
+```
+
+### Manual run for testing
+
+```
+cd backend
+python -m services.agents.schedule_rollforward
+```
+
+Seed a row that should roll forward:
+
+```sql
+UPDATE projects
+SET scheduled_live_at = now() - interval '8 days',
+    recurring_weekly = true
+WHERE slug = 'topgun-maintenance';
+```
+
+Then run the module. Expected: `scanned=1 rolled=1`, and a follow-up
+`SELECT scheduled_live_at FROM projects WHERE slug='topgun-maintenance'`
+shows a value strictly in the future (~6 days out).
+
+---
+
+## Why three separate cron services?
+
+Each Railway cron service is a single one-shot execution at a single
+cadence. The platform doesn't have a "run multiple jobs at different
+cadences from one service" mode. Splitting the three jobs gives:
+
+- Independent failure surfaces — `live_reminders` crashing does not
+  delay `schedule_rollforward`.
+- Independent logs — easier to grep "[live-reminders]" without sifting
+  through trial-reminder noise.
+- Independent restart cadence — Railway treats the API service and
+  each cron service as its own deploy.
+
+The web service is not affected by any cron. Each cron service runs
+as a separate container process. The cron container exits 0 after a
+single pass and Railway tears it down; the API service container is
+long-running and untouched.
+
+### Sanity check before relying on the crons
+
+After deploying all three cron services, verify each one ran at least
+once by tailing logs in the Railway dashboard:
+
+```
+Service: trial_reminders     → expect a 09:00 ET line within 24h
+Service: live_reminders      → expect a window line within 5 min
+Service: schedule_rollforward → expect a "now=..." line within 1 hour
+```
+
+If a service shows no log lines after its first scheduled tick:
+1. Check the service's "Crashed" / "Restarting" status in the dashboard
+2. Confirm env vars match the API service (same `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY`, in particular)
+3. Confirm the run command is exactly the string above — typos in the
+   module path produce a `ModuleNotFoundError` at startup
