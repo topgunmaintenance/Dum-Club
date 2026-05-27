@@ -7457,6 +7457,15 @@ return (
       )}
 
 
+      {/* The Business Status card lives here as the owner's launch
+          readiness signal — Edit Project + Submit for Review buttons
+          and draft/publication pills. Without this gate the surface
+          renders to every anonymous storefront visitor (the customer/
+          owner separation audit's headline leak). showOwnerInlineUi
+          is `isOwner && !viewAsCustomer`, matching the gate the other
+          adjacent owner sections (Business Blueprint, Seller Sales,
+          Manage) already use. */}
+      {showOwnerInlineUi && (
         <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-default" : "border-default"} border bg-surface-card p-6`}>
           <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-brand-teal/60" : "text-muted"}`}>
             Business Status
@@ -7534,6 +7543,7 @@ return (
             </>
           )}
         </div>
+      )}
 
 
         {showOwnerInlineUi && (
