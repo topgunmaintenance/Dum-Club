@@ -117,3 +117,149 @@ async def list_overage_history(
         .execute()
     )
     return {"rows": res.data or []}
+
+
+@router.get("/operations/overview")
+async def operations_overview(_admin=Depends(require_admin)):
+    """One-call operational visibility bundle for the admin operations
+    page. Returns small aggregates so the page renders without N
+    follow-up calls.
+
+    Sections:
+      active_streams       — currently broadcasting projects (end_at IS NULL)
+      this_month_usage     — viewer-hours + stream counts for the current
+                             YYYY-MM (UTC). Per-merchant rows for cap math.
+      cap_warnings         — merchants whose viewer_seconds is >= 70% of
+                             their max_monthly_viewer_hours. NULL caps
+                             (Business / Enterprise without an override)
+                             are skipped — no math to do.
+      stripe_fees_30d      — sum of platform_fee_amount over the last 30
+                             days of paid orders. Indicates platform
+                             take-rate revenue.
+      recent_streams_7d    — count of streams that started in the last
+                             7 days + count of distinct merchants.
+
+    All queries are read-only against existing tables. Admin-gated; no
+    public exposure. Safe to call every few seconds — the heaviest
+    aggregate scans an INTEGER column and a sum().
+    """
+    from datetime import datetime, timezone, timedelta
+    supabase = get_client()
+    now = datetime.now(timezone.utc)
+    yyyymm = now.strftime("%Y-%m")
+
+    # 1. Active streams — partial index makes this fast.
+    active_res = (
+        supabase.table("stream_sessions")
+        .select("id, project_id, merchant_id, provider, start_at, peak_concurrent")
+        .is_("end_at", "null")
+        .order("start_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    active_streams = active_res.data or []
+
+    # Best-effort project name enrichment (one batch lookup, no N+1).
+    proj_ids = sorted({s["project_id"] for s in active_streams if s.get("project_id")})
+    proj_lookup: dict = {}
+    if proj_ids:
+        proj_res = (
+            supabase.table("projects")
+            .select("id, slug, name, title")
+            .in_("id", proj_ids)
+            .execute()
+        )
+        for p in proj_res.data or []:
+            proj_lookup[p["id"]] = p
+    for s in active_streams:
+        proj = proj_lookup.get(s.get("project_id")) or {}
+        s["project_name"] = (proj.get("title") or proj.get("name") or "").strip() or None
+        s["project_slug"] = proj.get("slug")
+
+    # 2. Current-month usage. Per-merchant rows for cap warnings below.
+    usage_res = (
+        supabase.table("merchant_monthly_usage")
+        .select("merchant_id, viewer_seconds, stream_count")
+        .eq("yyyymm", yyyymm)
+        .execute()
+    )
+    usage_rows = usage_res.data or []
+    total_viewer_seconds_this_month = sum(int(r.get("viewer_seconds") or 0) for r in usage_rows)
+    total_streams_this_month = sum(int(r.get("stream_count") or 0) for r in usage_rows)
+
+    # 3. Cap warnings. Join merchant_plan_limits to flag rows where
+    # usage is approaching the monthly cap. Skip rows with NULL caps.
+    limits_res = (
+        supabase.table("merchant_plan_limits")
+        .select("merchant_id, max_monthly_viewer_hours")
+        .execute()
+    )
+    limits_lookup = {r["merchant_id"]: r for r in limits_res.data or []}
+    cap_warnings = []
+    for r in usage_rows:
+        mid = r["merchant_id"]
+        lim = limits_lookup.get(mid) or {}
+        max_vh = lim.get("max_monthly_viewer_hours")
+        if not max_vh or max_vh <= 0:
+            continue
+        used_hours = int(r.get("viewer_seconds") or 0) / 3600.0
+        pct = (used_hours / float(max_vh)) * 100.0
+        if pct >= 70.0:
+            cap_warnings.append({
+                "merchant_id": mid,
+                "used_hours": round(used_hours, 1),
+                "cap_hours": int(max_vh),
+                "pct_of_cap": round(pct, 1),
+            })
+    cap_warnings.sort(key=lambda x: x["pct_of_cap"], reverse=True)
+
+    # 4. Stripe fees last 30 days. application_fee_amount is in cents
+    # on orders; sum to dollars for the dashboard.
+    thirty_days_ago = (now - timedelta(days=30)).isoformat()
+    orders_res = (
+        supabase.table("orders")
+        .select("platform_fee_amount, amount_usd, status, created_at")
+        .eq("status", "paid")
+        .gte("created_at", thirty_days_ago)
+        .limit(5000)
+        .execute()
+    )
+    orders_rows = orders_res.data or []
+    platform_fee_cents = sum(int(o.get("platform_fee_amount") or 0) for o in orders_rows)
+    gmv_cents = sum(int(float(o.get("amount_usd") or 0) * 100) for o in orders_rows)
+
+    # 5. Recent stream activity (last 7 days).
+    seven_days_ago = (now - timedelta(days=7)).isoformat()
+    recent_res = (
+        supabase.table("stream_sessions")
+        .select("merchant_id, start_at")
+        .gte("start_at", seven_days_ago)
+        .limit(5000)
+        .execute()
+    )
+    recent_rows = recent_res.data or []
+    recent_distinct_merchants = len({r.get("merchant_id") for r in recent_rows if r.get("merchant_id")})
+
+    return {
+        "as_of": now.isoformat(),
+        "yyyymm": yyyymm,
+        "active_streams": {
+            "count": len(active_streams),
+            "rows": active_streams,
+        },
+        "this_month_usage": {
+            "viewer_hours": round(total_viewer_seconds_this_month / 3600.0, 1),
+            "stream_count": total_streams_this_month,
+            "merchant_count": len(usage_rows),
+        },
+        "cap_warnings": cap_warnings,
+        "stripe_fees_30d": {
+            "platform_fee_usd": round(platform_fee_cents / 100.0, 2),
+            "gmv_usd": round(gmv_cents / 100.0, 2),
+            "order_count": len(orders_rows),
+        },
+        "recent_streams_7d": {
+            "total_streams": len(recent_rows),
+            "distinct_merchants": recent_distinct_merchants,
+        },
+    }
