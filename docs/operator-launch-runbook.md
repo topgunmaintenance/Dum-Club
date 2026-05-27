@@ -1,10 +1,17 @@
 # Operator launch runbook
 
-Step-by-step for everything in `docs/final-launch-readiness.md` that
-needs a real browser, real env vars, or real AWS/Stripe credentials
-— the bits an autonomous agent can't do from a code sandbox.
+> **First-time pre-outreach launch?** Use **`docs/LAUNCH.md`** — single-page
+> ordered checklist with copy-paste commands. Migration list there is current.
+>
+> This file is the deeper reference for follow-on launches (Sentry, IVS,
+> Clover) that aren't on the critical-path for active merchant outreach.
 
-Order matters. Do them top to bottom on first launch.
+Step-by-step for everything that needs a real browser, real env vars, or
+real AWS/Stripe credentials — the bits an autonomous agent can't do
+from a code sandbox.
+
+Order matters for the items below — do them top to bottom on first
+launch IF you haven't already completed `docs/LAUNCH.md`.
 
 ---
 

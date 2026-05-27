@@ -841,12 +841,12 @@ export default function MerchantPage() {
                       ? "Connect Stripe to start getting paid"
                       : !hasOffer
                         ? "Add your first offer"
-                        : !stepSnippet
-                          ? "Paste the snippet on your site"
-                          : !qrPrinted
-                            ? "Print your QR"
-                            : !stepLiveEver
-                              ? "Go live for the first time"
+                        : !stepLiveEver
+                          ? "Go live for the first time"
+                          : !stepSnippet
+                            ? "Paste the snippet on your site (optional)"
+                            : !qrPrinted
+                              ? "Print your QR"
                               : "You are set. Go live and start selling."}
                   </span>
                 </div>
@@ -947,12 +947,12 @@ export default function MerchantPage() {
                 )}
                 <div className="flex-1">
                   <div className={`text-sm font-semibold ${stepSnippet ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
-                    Paste the snippet on your site
+                    Paste the snippet on your site <span className="text-[11px] font-normal text-secondary">(optional)</span>
                   </div>
                   <div className="text-xs text-secondary">
                     {stepSnippet
                       ? "Your storefront is wired to your website."
-                      : "One line of code. We walk you through it for Wix, Squarespace, Shopify, and WordPress."}
+                      : "One line of code. We walk you through it for Wix, Squarespace, Shopify, and WordPress. No website? Skip ahead, customers can still find your storefront on DUM Club."}
                   </div>
                   {!stepSnippet && (
                     <Link

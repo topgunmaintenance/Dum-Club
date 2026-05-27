@@ -133,8 +133,8 @@ export function GetLiveSteps({
     },
     {
       n: 5,
-      title: "Add DUM Club to Your Website",
-      body: "Paste one line of code. Bubble appears in the corner.",
+      title: "Add DUM Club to Your Website (optional)",
+      body: "Paste one line of code so the bubble shows on your site. No website? Skip ahead. Customers can still find your storefront.",
       icon: Code,
       done: installDone,
       ctaLabel: installDone ? "View snippet" : "Add to My Website",
