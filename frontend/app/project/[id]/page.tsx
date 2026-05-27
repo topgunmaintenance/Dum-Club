@@ -182,9 +182,6 @@ import { AdminBar, ExitCustomerViewChip, useViewAsCustomer } from "../../../comp
 import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PROJECT_FEE_RATE = 0.015;
-const DUM_FEE_RATE = 0.005;
-const TOTAL_FEE_RATE = PROJECT_FEE_RATE + DUM_FEE_RATE;
 
 function getProjectEmoji(project: Project | null) {
   const source = `${project?.title || project?.name || ""} ${project?.template_type || ""}`.toLowerCase();
@@ -290,8 +287,6 @@ const NAV_SECTIONS = [
   { id: "offers-section", label: "Offers", mode: "storefront" as const },
   { id: "section-orders", label: "Orders", mode: "storefront" as const },
   { id: "ai-workspace", label: "AI", mode: "storefront" as const },
-  { id: "section-tokens", label: "DUM Hub", mode: "analytics" as const },
-  { id: "section-memory", label: "Memory", mode: "analytics" as const },
 ];
 
 function SectionNav({ refreshKey = "", mode = "storefront" }: { refreshKey?: string; mode?: string }) {
@@ -613,12 +608,6 @@ export default function ProjectPage() {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [userWallet, setUserWallet] = useState<string | null>(null);
-  const [tradeAmount, setTradeAmount] = useState("");
-  const [tradeTab, setTradeTab] = useState<"buy" | "sell">("buy");
-  const [loadingTrade, setLoadingTrade] = useState(false);
-  const [tradeMessage, setTradeMessage] = useState("");
-  const [tradeWinFlash, setTradeWinFlash] = useState(false);
-  const [tradeIsError, setTradeIsError] = useState(false);
   const [copyFlash, setCopyFlash] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
@@ -642,16 +631,6 @@ export default function ProjectPage() {
 
   const [loadingProject, setLoadingProject] = useState(true);
   const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
-  // projectView used to be a useState that could flip to "analytics",
-  // but canShowMarketUi has been a hard false for a while and nothing
-  // in the codebase calls setProjectView (grep confirms zero call
-  // sites outside the destructure itself). The state was a no-op:
-  // every render landed on "storefront". Keeping the same typed union
-  // so the dead "analytics" branches stay type-checkable until step B
-  // of the ghost-architecture cleanup removes them outright. This is
-  // step A — pure no-op behavior change, just collapses the unused
-  // React state slot to a const.
-  const projectView = "storefront" as "storefront" | "analytics";
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
   const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
@@ -1717,103 +1696,6 @@ export default function ProjectPage() {
     }
   }
 
-  async function executeTrade(side: "buy" | "sell") {
-    if (!id) return;
-
-    if (!tradeAmount.trim() || Number(tradeAmount) <= 0) {
-      setTradeMessage("Enter an amount to continue.");
-      setTradeIsError(true);
-      return;
-    }
-
-    const numericAmount = Number(tradeAmount);
-
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setTradeMessage("Enter a valid amount.");
-      setTradeIsError(true);
-      return;
-    }
-
-    if (side === "sell" && numericAmount > walletBalance) {
-      setTradeMessage(
-        `Insufficient balance. You only have ${formatNumber(walletBalance, 2)} ${
-          project?.token_symbol || tokenMeta.symbol || "TOKENS"
-        }.`
-      );
-      setTradeIsError(true);
-      return;
-    }
-
-    const wallet = userWallet?.trim();
-    if (!wallet || wallet.length < 8) {
-      setTradeMessage("Tokenized trading is a future-phase feature and not yet live on DUM Club. DUM Points power discounts from Stripe purchases today.");
-      setTradeIsError(true);
-      return;
-    }
-
-    try {
-      setLoadingTrade(true);
-      setTradeIsError(false);
-      setTradeMessage("");
-
-      const res = await fetch(`${API_BASE}/api/projects/${id}/trade`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          side,
-          amount: numericAmount,
-          wallet,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        const detail =
-          typeof data?.detail === "string"
-            ? data.detail
-            : Array.isArray(data?.detail)
-            ? data.detail.map((d: any) => d?.msg || JSON.stringify(d)).join(", ")
-            : JSON.stringify(data);
-
-        throw new Error(detail || `Failed to ${side}`);
-      }
-
-      const sym = project?.token_symbol || tokenMeta.symbol || "TOKENS";
-      const supply = Number(
-        market?.max_supply ?? project?.token_supply ?? 21_000_000
-      );
-      const nextBal =
-        side === "buy"
-          ? walletBalance + numericAmount
-          : Math.max(0, walletBalance - numericAmount);
-      const ownershipPct =
-        supply > 0 && Number.isFinite(nextBal)
-          ? (nextBal / supply) * 100
-          : 0;
-
-      setTradeMessage(
-        `${side === "buy" ? "Buy" : "Sell"} executed: ${formatNumber(
-          numericAmount,
-          2
-        )} ${sym} · est. ${formatNumber(ownershipPct, 4)}% of supply`
-      );
-      setTradeWinFlash(true);
-      window.setTimeout(() => setTradeWinFlash(false), 900);
-
-      setTradeAmount("");
-      await refreshMarketData();
-      await loadWalletBalance();
-    } catch (err: any) {
-      console.error("[executeTrade] ERROR:", err);
-      setTradeIsError(true);
-      setTradeMessage(err?.message || `Failed to ${side}`);
-    } finally {
-      setLoadingTrade(false);
-    }
-  }
 
   async function handleRedeem() {
     if (!id) return;
@@ -3502,40 +3384,6 @@ export default function ProjectPage() {
     return ((last - first) / first) * 100;
   }, [filteredCandles]);
 
-  const positionValue = walletBalance * Number(market?.price || 0);
-  const numericTradeAmount = Number(tradeAmount || 0);
-  const tradeInputValid = numericTradeAmount > 0 && Number.isFinite(numericTradeAmount);
-  const tradeHint = !userWallet
-    ? "Connect a wallet to trade"
-    : tradeAmount !== "" && !tradeInputValid
-    ? "Enter a valid amount"
-    : null;
-  const tradeGrossValue = numericTradeAmount * Number(market?.price || 0);
-  const estimatedProjectFee = tradeGrossValue * PROJECT_FEE_RATE;
-  const estimatedDumFee = tradeGrossValue * DUM_FEE_RATE;
-  const estimatedTotalFees = estimatedProjectFee + estimatedDumFee;
-  const estimatedBuyCost = tradeGrossValue + estimatedTotalFees;
-  const estimatedSellProceeds = Math.max(0, tradeGrossValue - estimatedTotalFees);
-
-  const referenceDepthTokens = useMemo(() => {
-    const price = Number(market?.price || 0);
-    const implied24hTokens = price > 0 ? Number(market?.volume_24h || 0) / price : 0;
-    const supplyDepth = Number(market?.circulating_supply || market?.max_supply || project?.token_supply || 0) * 0.005;
-    return Math.max(implied24hTokens * 0.35, supplyDepth, 1000);
-  }, [market, project?.token_supply]);
-
-  const estimatedPriceImpactPct = useMemo(() => {
-    if (!numericTradeAmount || numericTradeAmount <= 0) return 0;
-    return (numericTradeAmount / referenceDepthTokens) * 100;
-  }, [numericTradeAmount, referenceDepthTokens]);
-
-  const impactTone =
-    estimatedPriceImpactPct >= 5
-      ? "text-state-live border-red-400/30 bg-red-950/20"
-      : estimatedPriceImpactPct >= 2
-      ? "text-yellow-300 border-yellow-400/30 bg-yellow-950/20"
-      : "text-brand-teal border-default bg-brand-teal-soft";
-
 const heroUtility =
   parsedAiOutput?.token_utility ||
   project?.token_utility ||
@@ -3657,7 +3505,7 @@ return (
         ]}
       />
     )}
-    <SectionNav refreshKey={projectView} mode={projectView} />
+    <SectionNav />
     {statusToast}
     {isOwner && (
       <>
@@ -3999,7 +3847,7 @@ return (
            phones. Desktop continues to render the chip grid inline as a
            merchant-facing nudge — there's no floating bubble equivalent
            visual real-estate cost on a 1280px+ screen. */}
-      {showOwnerInlineUi && projectView === "storefront" && (
+      {showOwnerInlineUi && (
         <div className="mb-6 hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5 sm:block">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -4722,33 +4570,11 @@ return (
                 </button>
               </div>
 
-              {projectView === "analytics" && (
-              <div className="mt-5 rounded-2xl border border-default bg-surface-page/40 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-secondary">
-                  DUM Hub benefits
-                </p>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-primary">
-                    <span className="mt-0.5 text-brand-teal">✦</span>
-                    <span>Earn DUM Points with every purchase</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-primary">
-                    <span className="mt-0.5 text-brand-teal">✦</span>
-                    <span>Use points for discounts at any business</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-primary">
-                    <span className="mt-0.5 text-brand-teal">✦</span>
-                    <span>Supporters get unlimited AI access</span>
-                  </li>
-                </ul>
-              </div>
-              )}
             </div>
           </div>
 
           <div className="w-full space-y-3 lg:w-80">
 
-            {projectView === "storefront" && (
               <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
                 <div className="mb-3 flex items-center gap-2 flex-wrap">
                   {/* Live-state dot. Animated ping only when the
@@ -4884,7 +4710,6 @@ return (
                   </div>
                 </div>
               </div>
-            )}
 
 
               <>
@@ -4892,18 +4717,6 @@ return (
                     the storefront card above, so we skip the duplicate
                     sidebar button on storefront pages. Other views
                     (analytics-disabled fallback, etc.) keep it. */}
-                {projectView !== "storefront" && (
-                  <button
-                    type="button"
-                    onClick={scrollToAiWorkspace}
-                    // Mobile: hidden — floating AiSalesChat bubble is
-                    // the sole AI entry. Desktop: visible in the
-                    // analytics-disabled fallback sidebar.
-                    className="hidden w-full rounded-xl border border-default bg-surface-muted px-5 py-3 text-sm font-semibold text-primary transition hover:border-strong hover:bg-surface-muted sm:block"
-                  >
-                    Ask AI →
-                  </button>
-                )}
                 {Boolean(serviceProfile?.is_active) && (
                   <div className="rounded-xl border border-default bg-surface-muted px-4 py-3 text-center">
                     <div className="text-sm font-medium text-primary">
@@ -7175,308 +6988,6 @@ return (
 
 
       {/* ── AI Tools (Score + Builder. Analytics view) ────────────── */}
-      {showOwnerInlineUi && projectView === "analytics" && (
-        <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
-          <summary className="flex cursor-pointer items-center justify-between hover:text-primary">
-            <div>
-              <div className="mb-1 text-xs uppercase tracking-[0.3em] text-brand-teal/60">Owner Tools</div>
-              <h2 className="text-xl font-bold text-primary tracking-tight">AI Tools</h2>
-              <p className="mt-1 text-sm text-secondary">Score, improve, and build your project with AI</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => { e.preventDefault(); togglePitchMode(); }}
-                className="rounded-full border border-default px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal"
-              >
-                Presentation Mode
-              </button>
-              <span className="text-[10px] text-muted">Click to expand</span>
-            </div>
-          </summary>
-
-          {/* ── Project Score ── */}
-          <div className="mt-6 rounded-2xl border border-default bg-surface-muted p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-[0.3em] text-secondary">Project Score</span>
-              <button
-                onClick={evaluateProjectScore}
-                disabled={scoreLoading}
-                className="rounded-full border border-default px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal disabled:opacity-40"
-              >
-                {scoreLoading ? "Evaluating..." : projectScore ? "Re-evaluate" : "Score My Project"}
-              </button>
-            </div>
-
-            {scoreLoading && (
-              <div className="rounded-2xl border border-default bg-surface-muted p-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-brand-teal" />
-                  <span className="text-sm text-secondary">Evaluating your project...</span>
-                </div>
-              </div>
-            )}
-
-            {!scoreLoading && !projectScore && (
-              <div className="rounded-2xl border border-dashed border-default p-6 text-center">
-                <p className="text-sm text-muted">Click &ldquo;Score My Project&rdquo; to get an AI evaluation</p>
-              </div>
-            )}
-
-            {!scoreLoading && projectScore && (
-              <div className="space-y-3">
-                {(["virality", "trust", "utility"] as const).map((dim) => {
-                  const entry = projectScore[dim];
-                  const label = dim.charAt(0).toUpperCase() + dim.slice(1);
-                  return (
-                    <div key={dim} className="rounded-2xl border border-default bg-surface-page p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-primary">{label}</span>
-                        <span className={`font-mono text-lg font-bold ${scoreColor(entry.score)}`}>
-                          {entry.score}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-surface-muted overflow-hidden mb-2">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ease-out ${barColor(entry.score)}`}
-                          style={{ width: `${entry.score}%` }}
-                        />
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-xs text-secondary leading-relaxed">{entry.reason}</p>
-                        <button
-                          onClick={() => {
-                            const tips: Record<string, string> = {
-                              virality: "How can I make my project more shareable and attention-grabbing? Be specific with 3 actionable suggestions.",
-                              trust: "How can I make my project appear more credible and professional? Give me 3 specific improvements.",
-                              utility: "How can I improve my rewards and customer value? Give me 3 concrete suggestions.",
-                            };
-                            const action = builderActions.find((a) => a.key === "roast")!;
-                            const improveAction: BuilderActionDef = {
-                              ...action,
-                              key: `improve_${dim}`,
-                              label: `Improve ${label}`,
-                              prompt: (p) =>
-                                `You are a local business advisor. The user's business scored ${entry.score}/100 on ${label} with this feedback: "${entry.reason}"\n\nBusiness: "${p.title || p.name || "Untitled"}"\nDescription: "${p.description || "N/A"}"\nRewards: "${p.token_utility || "N/A"}"${storeItems.length ? `\nStore: ${storeItems.map((i) => i.name).join(", ")}` : ""}\n\n${tips[dim]}\n\nKeep it actionable and concise.`,
-                            };
-                            runBuilderAction(improveAction, null);
-                          }}
-                          className="shrink-0 text-[10px] font-medium text-muted transition hover:text-brand-teal"
-                        >
-                          Improve →
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                <div className="rounded-2xl border border-default bg-surface-muted p-4 text-center">
-                  <span className="font-mono text-2xl font-bold text-primary">
-                    {Math.round((projectScore.virality.score + projectScore.trust.score + projectScore.utility.score) / 3)}
-                  </span>
-                  <span className="ml-2 text-sm text-secondary">/ 100 overall</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Business Builder ── */}
-          <div className="mt-6">
-            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-secondary">Business Builder</div>
-
-            {/* Action buttons */}
-            {!builderAction && !storePickerFor && (
-              <div className="space-y-4">
-                <div>
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Project Copy</div>
-                  <div className="flex flex-wrap gap-2">
-                    {builderActions.filter((a) => a.group === "project").map((a) => (
-                      <button
-                        key={a.key}
-                        onClick={() => initiateBuilderAction(a)}
-                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm font-medium text-primary transition-all hover:border-default hover:text-brand-teal"
-                      >
-                        {a.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-muted">Store Intelligence</div>
-                  <div className="flex flex-wrap gap-2">
-                    {builderActions.filter((a) => a.group === "store").map((a) => (
-                      <button
-                        key={a.key}
-                        onClick={() => initiateBuilderAction(a)}
-                        className="rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm font-medium text-primary transition-all hover:border-default hover:text-brand-teal"
-                      >
-                        {a.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Item picker for store actions */}
-            {storePickerFor && (
-              <div className="rounded-2xl border border-default bg-surface-muted p-5">
-                <div className="mb-3 text-[11px] uppercase tracking-[0.2em] text-secondary">
-                  Select an item
-                </div>
-                <div className="space-y-2">
-                  {storeItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        const action = builderActions.find((a) => a.key === storePickerFor);
-                        if (action) runBuilderAction(action, item);
-                      }}
-                      className="w-full rounded-xl border border-default bg-surface-page px-4 py-3 text-left transition hover:border-default"
-                    >
-                      <div className="text-sm font-medium text-primary">{item.name}</div>
-                      <div className="text-xs text-secondary">{item.type} · {item.price || "No price"}</div>
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setStorePickerFor(null)}
-                  className="mt-3 rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            {/* Loading state */}
-            {builderLoading && (
-              <div className="rounded-2xl border border-default bg-surface-muted p-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-brand-teal" />
-                  <span className="text-sm text-secondary">
-                    DUM AI is analyzing your project...
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Preview panel */}
-            {builderResult && !builderLoading && (
-              <div className="mt-4 space-y-4">
-                {builderField && builderResult.current && (
-                  <div className="rounded-2xl border border-default bg-surface-muted p-4">
-                    <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-secondary">
-                      Current
-                    </div>
-                    <div className="text-sm leading-relaxed text-secondary">
-                      {builderResult.current}
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-2xl border border-default bg-brand-teal-soft p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
-                      {builderAction === "roast" ? "Roast"
-                        : builderAction === "promo" ? "Promo Copy"
-                        : builderAction === "store_ideas" ? "Product Ideas"
-                        : builderAction === "store_subscription" ? "Subscription Offer"
-                        : builderAction === "store_improve_desc" ? "Improved Description"
-                        : builderAction === "store_pricing" ? "Suggested Price"
-                        : "Suggested"}
-                    </span>
-                    {(builderAction === "promo" || builderAction === "roast") && (
-                      <button
-                        onClick={() => copyToClipboard(builderResult.suggested, "text")}
-                        className="text-[11px] font-medium text-secondary transition-colors hover:text-brand-teal"
-                      >
-                        Copy
-                      </button>
-                    )}
-                  </div>
-                  <div className="text-sm leading-relaxed text-primary whitespace-pre-wrap">
-                    {builderResult.suggested}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  {builderAction !== "roast" && (
-                    <button
-                      onClick={applyBuilderResult}
-                      className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-brand-teal"
-                    >
-                      Apply
-                    </button>
-                  )}
-                  {builderAction !== "roast" && (
-                    <button
-                      onClick={() => {
-                        const action = builderActions.find((a) => a.key === builderAction);
-                        if (action) runBuilderAction(action, storeTargetItem);
-                      }}
-                      className="rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition-all hover:border-strong hover:text-primary"
-                    >
-                      Regenerate
-                    </button>
-                  )}
-                  <button
-                    onClick={dismissBuilder}
-                    className="rounded-xl border border-default px-4 py-2 text-sm font-medium text-secondary transition-all hover:border-strong hover:text-primary"
-                  >
-                    {builderAction === "roast" ? "Dismiss" : "Cancel"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Saved promo copy display */}
-            {!builderAction && promoCopy && (
-              <div className="mt-4 rounded-2xl border border-default bg-surface-muted p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-secondary">
-                    Saved Promo Copy
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(promoCopy, "promo copy")}
-                    className="text-[11px] font-medium text-secondary transition-colors hover:text-brand-teal"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <div className="text-sm leading-relaxed text-primary whitespace-pre-wrap">
-                  {promoCopy}
-                </div>
-              </div>
-            )}
-
-            {/* Share project */}
-            {!builderAction && (
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={() => copyToClipboard(window.location.href, "project link")}
-                  className="rounded-xl border border-default px-4 py-2 text-xs font-medium text-secondary transition-all hover:border-strong hover:text-primary"
-                >
-                  Share Project Link
-                </button>
-                {promoCopy && (
-                  <button
-                    onClick={() => copyToClipboard(`${promoCopy}\n\n${window.location.href}`, "promo + link")}
-                    className="rounded-xl border border-default px-4 py-2 text-xs font-medium text-secondary transition-all hover:border-default hover:text-brand-teal"
-                  >
-                    Share Promo + Link
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Success toast */}
-            {builderToast && (
-              <div className="mt-4 animate-fade-slide-down rounded-xl border border-default bg-brand-teal-soft px-4 py-2.5">
-                <span className="text-sm font-medium text-brand-teal">{builderToast}</span>
-              </div>
-            )}
-          </div>
-        </details>
-      )}
 
 
       {/* The Business Status card lives here as the owner's launch
