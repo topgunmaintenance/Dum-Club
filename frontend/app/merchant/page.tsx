@@ -882,12 +882,27 @@ export default function MerchantPage() {
                       : "Required to accept payments. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
-                    <button
-                      onClick={connectStripe}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
-                    >
-                      Connect Stripe →
-                    </button>
+                    <>
+                      <div className="mt-3 rounded-xl border border-default bg-surface-muted/40 p-4">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+                          What you&apos;ll need before you click
+                        </div>
+                        <ul className="mt-2 space-y-1.5 text-xs text-primary">
+                          <li>• Your business name and address</li>
+                          <li>• Your bank account number and routing number (this is where payouts land)</li>
+                          <li>• Your SSN or EIN (Stripe verifies the business owner the same way a bank does when you open an account)</li>
+                        </ul>
+                        <div className="mt-3 text-[11px] text-muted">
+                          Stripe is the standard payment processor used by most local-business apps and marketplaces. We never see or store your bank details. Stripe handles the money and pays you directly after every sale.
+                        </div>
+                      </div>
+                      <button
+                        onClick={connectStripe}
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                      >
+                        Connect Stripe →
+                      </button>
+                    </>
                   )}
                 </div>
               </li>
