@@ -355,8 +355,7 @@ account.
 > (Whatnot takes 8%). Keep more of every sale."
 
 **Short form / scarcity pill / banner**:
-> "X of 100 founding spots claimed · 60 days free · Lock in
-> founding pricing for life"
+> "60 days free · Lock in founding pricing for life"
 
 **CTA button labels (pick the one that fits the surface)**:
 - "Claim Your Founding Spot"
@@ -376,12 +375,22 @@ Forbidden phrasing (sweep on sight):
   founding period" — replaced by "60 days free"
 - Hard "First 100 merchants get in free" / "first 100 free"
   energy outside of the canonical phrasing above
+- "X of 100 founding spots claimed" / "<N> of 100" / any live
+  merchant-count display — we do NOT surface live traction
+  metrics to public visitors or competitors during the
+  founding ramp. The /api/merchant/founding-status endpoint
+  returns only `founding_program_open` (boolean) as of the
+  PR that locked it down; do not re-add `slots_remaining` /
+  `total_cap` to the public response or to any visitor-facing
+  UI. Internal admin dashboards may surface the count by
+  querying merchants directly via service-role Supabase.
 - DUM Points framed as investments / tradable assets / yield-
   bearing instruments
 
-The founding-spots scarcity pill stays real-data driven (count
-fetched from /api/merchant/founding-status). Never hard-code
-"X spots remaining."
+Scarcity / urgency is now carried by static copy ("Limited ·
+Founding 100" eyebrow, "Join the first 100 merchants" H2,
+"60 days free · Lock in founding pricing for life" pill copy)
+— never by a live counter.
 
 ### Standard Tiers (seller 101+)
 
