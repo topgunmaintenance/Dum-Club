@@ -214,11 +214,14 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
     wallet = user_res.data[0]["wallet_address"]
 
     # Step 2: get or create profile by wallet_address → return profiles.id
+    # postgrest-py 0.16 (supabase-py 2.5.1) returns a SyncQueryRequestBuilder
+    # from .upsert(); chaining .select() raises AttributeError. The default
+    # Prefer: return=representation header gives us the affected rows on
+    # the upsert's .execute() result already.
     try:
         upsert_res = (
             supabase.table("profiles")
             .upsert({"wallet_address": wallet}, on_conflict="wallet_address")
-            .select("id")
             .execute()
         )
         return upsert_res.data[0]["id"] if upsert_res.data else None

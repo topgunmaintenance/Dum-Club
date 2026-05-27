@@ -213,20 +213,31 @@ async def operations_overview(_admin=Depends(require_admin)):
             })
     cap_warnings.sort(key=lambda x: x["pct_of_cap"], reverse=True)
 
-    # 4. Stripe fees last 30 days. application_fee_amount is in cents
-    # on orders; sum to dollars for the dashboard.
+    # 4. Stripe fees last 30 days. The canonical columns are
+    # platform_fee_usd (NUMERIC, dollars — from 010_offers_orders.sql)
+    # and amount_paid_usd (NUMERIC, dollars — same migration). An
+    # earlier draft of this block selected non-existent columns
+    # (platform_fee_amount, amount_usd) and PostgREST returned a 400
+    # that surfaced as a 500 on /api/admin/operations/overview, which
+    # broke the ops dashboard's Stripe fees card in production.
     thirty_days_ago = (now - timedelta(days=30)).isoformat()
     orders_res = (
         supabase.table("orders")
-        .select("platform_fee_amount, amount_usd, status, created_at")
+        .select("platform_fee_usd, amount_paid_usd, status, created_at")
         .eq("status", "paid")
         .gte("created_at", thirty_days_ago)
         .limit(5000)
         .execute()
     )
     orders_rows = orders_res.data or []
-    platform_fee_cents = sum(int(o.get("platform_fee_amount") or 0) for o in orders_rows)
-    gmv_cents = sum(int(float(o.get("amount_usd") or 0) * 100) for o in orders_rows)
+    platform_fee_cents = sum(
+        int(round(float(o.get("platform_fee_usd") or 0) * 100))
+        for o in orders_rows
+    )
+    gmv_cents = sum(
+        int(round(float(o.get("amount_paid_usd") or 0) * 100))
+        for o in orders_rows
+    )
 
     # 5. Recent stream activity (last 7 days).
     seven_days_ago = (now - timedelta(days=7)).isoformat()
