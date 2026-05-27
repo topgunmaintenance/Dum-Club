@@ -5109,7 +5109,7 @@ return (
         </div>
       </div>
 
-      <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+      <div id="section-about" className="mb-6 rounded-2xl border border-default/60 bg-surface-card p-5 sm:mb-8 sm:rounded-3xl sm:border-default sm:p-6 sm:backdrop-blur-sm">
         <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
         {loadingProject ? (
           <div className="space-y-2">
@@ -5131,7 +5131,7 @@ return (
 
       {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (
-        <div className="mb-8 rounded-3xl border border-default border-l-2 border-l-brand-teal bg-surface-card p-6 backdrop-blur-sm">
+        <div className="mb-6 rounded-2xl border border-default/60 border-l-2 border-l-brand-teal bg-surface-card p-5 sm:mb-8 sm:rounded-3xl sm:border-default sm:p-6 sm:backdrop-blur-sm">
           <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">Founding Merchant</div>
           <div className="flex items-start gap-5">
             <img
@@ -5410,13 +5410,13 @@ return (
       {/* ── Offers (Public Storefront + Owner Tools) ──
            Side-by-side with the host block above for owners;
            single column otherwise. */}
-      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`scroll-mt-28 rounded-2xl border border-default/60 bg-surface-card p-4 sm:rounded-3xl sm:border-default sm:p-8 sm:backdrop-blur-sm ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.3em] text-brand-teal/50">
+            <span className={`text-xs uppercase tracking-[0.3em] text-brand-teal/50 ${showOwnerInlineUi ? "" : "hidden sm:inline-block"}`}>
               Offers
             </span>
-            {isDemo && (
+            {isDemo && showOwnerInlineUi && (
               <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase text-brand-teal/60">
                 Live Preview
               </span>
@@ -5443,14 +5443,16 @@ return (
               );
             })()}
           </div>
-          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-secondary">
+          <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-secondary ${showOwnerInlineUi ? "" : "hidden sm:inline-flex"}`}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/60"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Secure
           </span>
         </div>
-        <p className="mt-2 text-sm text-secondary">
-          {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
-        </p>
+        {showOwnerInlineUi && (
+          <p className="mt-2 text-sm text-secondary">
+            Products, services, and subscriptions for your customers
+          </p>
+        )}
 
         {/* Owner-only: pin the offer that appears as "Now showing" in the
             embed and on the live storefront. Mirrors the existing in-stream
@@ -5460,7 +5462,7 @@ return (
             this surface is mobile-first and the in-stream version's
             10%-opacity emerald was too subtle to read on a phone screen
             in daylight. */}
-        {isOwner && offers.filter((o) => o.is_active).length > 0 && (
+        {showOwnerInlineUi && offers.filter((o) => o.is_active).length > 0 && (
           <div className="mt-4 space-y-3 rounded-2xl border border-default bg-surface-card p-4">
             <div className="flex items-center justify-between">
               <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product (Live)</div>
@@ -6747,7 +6749,7 @@ return (
                           Best Value
                         </span>
                       )}
-                      {isOwner && (
+                      {showOwnerInlineUi && (
                         <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${typeBadge.color}`}>
                           {typeBadge.label}
                         </span>
@@ -6944,7 +6946,7 @@ return (
         )}
 
         {/* Legacy store items (owner-only. not checkout-enabled) */}
-        {isOwner && storeItems.length > 0 && (
+        {showOwnerInlineUi && storeItems.length > 0 && (
           <div className="mt-6">
             <div className="mb-3 flex items-center gap-2">
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted">Legacy Items</span>
@@ -8405,7 +8407,7 @@ return (
             </div>
           </div>
         </div>
-      ) : (
+      ) : showOwnerInlineUi ? (
         <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-default" : "border-default"} border bg-surface-card p-6`}>
           <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-brand-teal/60" : "text-muted"}`}>
             Business Status
@@ -8483,7 +8485,7 @@ return (
             </>
           )}
         </div>
-      )}
+      ) : null}
 
 
         {showOwnerInlineUi && (
