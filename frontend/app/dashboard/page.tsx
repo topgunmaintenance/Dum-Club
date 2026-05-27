@@ -951,10 +951,16 @@ export default function DashboardPage() {
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-default bg-surface-card p-10 text-center">
-              <p className="text-base font-semibold text-primary">No businesses yet. Create your first one below.</p>
-              <p className="mt-2 text-sm text-muted">
-                Generate your first project to get started.
+              <p className="text-base font-semibold text-primary">No businesses yet.</p>
+              <p className="mt-2 text-sm text-secondary">
+                Post your first offer and you&apos;re ready to go live.
               </p>
+              <Link
+                href="/dashboard/post"
+                className="mt-5 inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:text-white"
+              >
+                Post your first offer →
+              </Link>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
