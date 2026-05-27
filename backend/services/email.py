@@ -519,6 +519,120 @@ def send_payment_failed_notice(merchant_email: str, business_name: str, grace_en
     return _send(merchant_email, subject, html)
 
 
+def send_weekly_merchant_recap(
+    merchant_email: str,
+    business_name: str,
+    week_label: str,
+    lives_count: int,
+    viewer_hours: float,
+    sales_count: int,
+    gmv_usd: float,
+    top_offer_title: str | None,
+    next_live_label: str | None,
+) -> bool:
+    """Friendly, plain-English weekly recap fired every Monday morning
+    by the merchant_recap cron. Copy is short and encouraging — no
+    SaaS jargon, no enterprise language. Skips when the merchant
+    had zero activity AND nothing scheduled (the cron filters this
+    case out, but the helper stays defensive).
+
+    business_name      — human-readable merchant name for the subject + body
+    week_label         — pre-formatted "May 19-25" range string
+    lives_count        — number of streams started last week
+    viewer_hours       — total viewer-hours last week, rounded to .1
+    sales_count        — number of paid orders last week
+    gmv_usd            — sum of paid order amounts last week
+    top_offer_title    — best-selling offer title, or None if no sales
+    next_live_label    — pre-formatted "Tuesday at 5:00 PM UTC" string
+                          for the next scheduled_live_at, or None
+    """
+    if not merchant_email:
+        return False
+    name = (business_name or "there").strip() or "there"
+    subject = f"Your week on DUM Club ({week_label})"
+
+    # Build the bullet list of last week's numbers. Each row is opt-in
+    # depending on whether it has data — we never render "$0.00 in sales"
+    # which feels punishing for a slow week.
+    lines: list[str] = []
+    if lives_count > 0:
+        plural = "live" if lives_count == 1 else "lives"
+        lines.append(f"<strong>{lives_count}</strong> {plural} last week")
+    if viewer_hours > 0:
+        lines.append(
+            f"<strong>{viewer_hours:.1f}</strong> viewer-hour"
+            f"{'s' if viewer_hours != 1 else ''} of attention"
+        )
+    if sales_count > 0:
+        plural = "sale" if sales_count == 1 else "sales"
+        lines.append(
+            f"<strong>{sales_count}</strong> {plural} totalling "
+            f"<strong>${gmv_usd:,.2f}</strong>"
+        )
+    if top_offer_title:
+        lines.append(
+            f"Top offer: <strong>{top_offer_title}</strong>"
+        )
+    if next_live_label:
+        lines.append(
+            f"Next live: <strong>{next_live_label}</strong>"
+        )
+
+    if not lines:
+        # Defensive — cron should have filtered, but if a caller
+        # invokes this with nothing to say we still return cleanly.
+        return False
+
+    bullet_html = "".join(
+        f'<li style="margin:8px 0;color:#333;font-size:15px;line-height:1.55;">{line}</li>'
+        for line in lines
+    )
+
+    # Encouraging close — different copy for "had a great week" vs
+    # "had a slow week" so the email never feels tone-deaf.
+    if sales_count > 0:
+        close = (
+            "Nice work. Keep the weekly rhythm going — customers who "
+            "tap Remind me come back on their own."
+        )
+    elif lives_count > 0:
+        close = (
+            "Lives are how customers find you. Pin an offer and "
+            "schedule next week's slot in one tap."
+        )
+    elif next_live_label:
+        close = (
+            "Your next live is on the books. Share the link with "
+            "your regulars to fill the room."
+        )
+    else:
+        close = (
+            "Pick a slot for next week. We'll email the customers "
+            "who asked to be reminded."
+        )
+
+    html = f"""
+    <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#fff;color:#111;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#00A36F;margin-bottom:14px;">DUM Club · Weekly Recap</div>
+      <h2 style="color:#111;margin:0 0 6px;font-size:22px;line-height:1.25;">{name}</h2>
+      <p style="color:#666;font-size:13px;margin:0 0 18px;">Your week on DUM Club ({week_label})</p>
+      <ul style="list-style:disc;padding-left:20px;margin:0 0 22px;">
+        {bullet_html}
+      </ul>
+      <p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 20px;">{close}</p>
+      <a href="{_PLATFORM_URL}/dashboard"
+         style="display:inline-block;padding:12px 22px;background:#00FFA3;color:#000;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;">
+        Open your dashboard
+      </a>
+      <p style="color:#888;font-size:12px;line-height:1.5;margin-top:28px;">
+        Flat monthly subscription plus a 1% sales fee. Industry-low.
+        DUM Club helps local businesses sell direct and keep every customer.
+      </p>
+    </div>
+    """
+    return _send(merchant_email, subject, html)
+
+
 def send_live_reminder(
     customer_email: str,
     business_name: str,

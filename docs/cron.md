@@ -1,6 +1,6 @@
 # Cron jobs
 
-DUM Club's background jobs run on Railway's cron scheduler. Three jobs
+DUM Club's background jobs run on Railway's cron scheduler. Four jobs
 today; each one runs as its own Railway cron service that shares env
 with the API service so `from db.supabase` and `from services.email`
 resolve identically.
@@ -10,6 +10,7 @@ resolve identically.
 | Trial reminders + suspension sweep | daily 09:00 ET | `services.agents.trial_reminders` | T-14 / T-7 / T-1 trial emails, past_due → suspended sweep |
 | Live reminders | every 5 minutes | `services.agents.live_reminders` | Send "they're going live now" emails to customers who tapped Remind me |
 | Schedule rollforward | hourly | `services.agents.schedule_rollforward` | Advance `projects.scheduled_live_at` by +7 days for merchants with `recurring_weekly=true` |
+| Weekly merchant recap | weekly Mon 09:00 ET | `services.agents.merchant_recap` | Send each active merchant a one-paragraph recap of last week's lives / viewer-hours / sales / next live |
 
 All three live in `backend/services/agents/`. Each module is safe to
 run repeatedly: each one uses an atomic claim (live_reminders) or a
@@ -348,7 +349,135 @@ shows a value strictly in the future (~6 days out).
 
 ---
 
-## Why three separate cron services?
+## Weekly merchant recap cron (Monday 09:00 ET)
+
+Sends each active merchant a friendly one-paragraph recap of last
+week's activity: number of lives, viewer-hours, sales count + GMV,
+top offer, next scheduled live. Skips merchants who had zero
+activity AND nothing scheduled (the email never reads "you did
+nothing"). Idempotent via `merchant_recap_log` with a UNIQUE
+constraint on `(merchant_id, recap_week)`.
+
+### Railway configuration
+
+1. New service → "Cron Job"
+2. Source: same repo, `backend/` build context
+3. Build / start command: same as the API service
+4. Cron schedule (5-field with TZ): `0 9 * * 1`
+5. Timezone: `America/New_York`
+6. Run command:
+
+   ```
+   python -m services.agents.merchant_recap
+   ```
+
+   (Alternative for repo-root execution:
+   `python -m backend.services.agents.merchant_recap`.)
+
+### Env vars
+
+Same as the API service. The bare minimum:
+
+| Var | Why |
+|---|---|
+| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `merchants` + `users` + `projects` + `stream_sessions` + `orders` + write `merchant_recap_log` |
+| `RESEND_API_KEY` | email send via Resend |
+| `EMAIL_FROM` | sender address shown to merchant |
+| `NEXT_PUBLIC_SITE_URL` | builds the "Open your dashboard" link |
+
+Without `RESEND_API_KEY` the worker scans + claims rows in
+`merchant_recap_log` but skips the actual send and logs
+`[email] skipped (disabled: no RESEND_API_KEY)`.
+
+### Week math
+
+- `window_start` = previous Monday 00:00 UTC
+- `window_end`   = this Monday 00:00 UTC (exclusive)
+- `recap_week`   = ISO 8601 week label of last week (e.g. `2026-W21`)
+
+The cron is intentionally scheduled at 09:00 ET on Monday so the
+email lands first thing in the merchant's inbox after the weekend.
+"Last week" is treated as Mon-Sun UTC; this approximates each
+merchant's local week well enough for a recap (precision per
+timezone isn't worth the complexity).
+
+### Idempotency
+
+Pre-send: every send INSERTs one row into `merchant_recap_log` with
+UNIQUE `(merchant_id, recap_week)`. The cron's insert-then-send
+pattern means a duplicate run for the same week skips silently:
+the unique violation IS the dedup signal.
+
+### Failure behavior
+
+| Failure | What happens | Recovery |
+|---|---|---|
+| Supabase scan fails | Logs `[merchant-recap] merchant scan failed: <repr>` and returns empty counts | Next week's tick retries; one missed week is recoverable by manually re-running the module after fixing the cause |
+| Per-merchant aggregation fails | Logs `[merchant-recap] merchant <id> failed: <repr>` and continues to the next merchant | Batch is not retried — the merchant misses one recap |
+| Email send fails | Log row was already written before the send; row stays as the dedup record | Same week, same merchant: no retry. At-most-once delivery. |
+
+The cron never deletes data, never updates merchant rows, and
+never changes order/payment state. It is strictly a read-aggregate-
+write-log-send loop.
+
+### Skip rules
+
+A merchant is skipped (and gets NO email) when:
+
+- `users.email` is empty for the merchant's `owner_privy_id` — we
+  have nowhere to send. (`skipped_no_email` counter.)
+- The merchant had 0 streams, 0 paid orders, AND no upcoming
+  `scheduled_live_at`. (`skipped_no_activity` counter.)
+- The same `(merchant_id, recap_week)` row already exists in
+  `merchant_recap_log` — handled by the unique violation.
+
+### Logs to expect
+
+Healthy run with sends:
+
+```
+[merchant-recap] start now=2026-06-01T13:00:00+00:00 window=[2026-05-25T00:00:00+00:00,2026-06-01T00:00:00+00:00) recap_week=2026-W22
+[merchant-recap] sent merchant=<uuid> lives=3 sales=12 gmv=$240.00 week=2026-W22
+[email] sent to=julian@topgunmaintenance.com subject='Your week on DUM Club (May 25-31)' id=re_...
+[merchant-recap] done scanned=27 skipped_no_email=2 skipped_no_activity=14 claimed=11 sent=11 errored=0
+```
+
+### Manual run for testing
+
+```
+cd backend
+python -m services.agents.merchant_recap
+```
+
+To replay one specific merchant for last week (useful for testing
+copy without spamming everyone), insert a one-row log to claim the
+slot for every OTHER merchant then run the cron:
+
+```sql
+-- Pre-claim everyone except your target so the cron only emails
+-- the target merchant.
+INSERT INTO merchant_recap_log (merchant_id, recap_week)
+SELECT id, '2026-W22' FROM merchants
+WHERE id <> '<your-target-merchant-uuid>'
+  AND stripe_connect_status = 'connected'
+ON CONFLICT DO NOTHING;
+```
+
+Then run the cron module — only your target merchant has an open
+slot, so they're the only send.
+
+To completely reset a week so the next run re-sends to everyone:
+
+```sql
+DELETE FROM merchant_recap_log WHERE recap_week = '2026-W22';
+```
+
+(Destructive — only use in test / staging or in a recovery where
+you have proof the prior sends never landed.)
+
+---
+
+## Why four separate cron services?
 
 Each Railway cron service is a single one-shot execution at a single
 cadence. The platform doesn't have a "run multiple jobs at different
@@ -372,9 +501,10 @@ After deploying all three cron services, verify each one ran at least
 once by tailing logs in the Railway dashboard:
 
 ```
-Service: trial_reminders     → expect a 09:00 ET line within 24h
-Service: live_reminders      → expect a window line within 5 min
+Service: trial_reminders      → expect a 09:00 ET line within 24h
+Service: live_reminders       → expect a window line within 5 min
 Service: schedule_rollforward → expect a "now=..." line within 1 hour
+Service: merchant_recap       → expect a "start now=..." line within 7 days
 ```
 
 If a service shows no log lines after its first scheduled tick:
