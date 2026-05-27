@@ -596,6 +596,12 @@ export default function ProjectPage() {
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState("");
 
+  // Mobile-only: collapses the "Grow your business with AI" chip
+  // cluster into a single "Open AI Tools" card; this drawer opens
+  // a bottom sheet with the chips when the merchant taps Open.
+  // Desktop renders the chips inline directly (no drawer).
+  const [showAiToolsDrawer, setShowAiToolsDrawer] = useState<boolean>(false);
+
   const [tokenName, setTokenName] = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenSupply, setTokenSupply] = useState("1000000");
@@ -4016,14 +4022,46 @@ return (
         </div>
       )}
 
-      {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ── */}
+      {/* ── AI Co-pilot Prompts (always visible for owners in storefront) ──
+           Mobile: compact card with ✨ icon + subtitle + "Open AI Tools"
+                   button → opens bottom-sheet drawer with the chips.
+                   Reduces visual dominance on phones where the page is
+                   primarily a livestream/storefront surface.
+           Desktop: chips render inline as before — no drawer, no
+                    extra tap. The desktop dashboard pattern is
+                    unchanged. */}
       {showOwnerInlineUi && projectView === "storefront" && (
-        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5">
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
-            <span className="text-sm font-bold text-primary">Grow your business with AI</span>
+        <div className="mb-6 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-4 sm:p-5">
+          {/* Header row — compact on mobile (icon + label + Open
+              button on same line), expanded on desktop (icon +
+              label, chips below). */}
+          <div className="flex items-center gap-2 sm:mb-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[10px] font-extrabold text-black sm:h-6 sm:w-6 sm:text-[9px]">
+              <span className="sm:hidden" aria-hidden="true">✨</span>
+              <span className="hidden sm:inline" aria-hidden="true">D</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-primary">
+                <span className="sm:hidden">AI Assistant</span>
+                <span className="hidden sm:inline">Grow your business with AI</span>
+              </div>
+              <p className="mt-0.5 text-xs leading-snug text-secondary sm:hidden">
+                Get help improving your offers, pricing, and marketing.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAiToolsDrawer(true)}
+              aria-label="Open AI Tools"
+              aria-expanded={showAiToolsDrawer}
+              className="inline-flex h-10 shrink-0 items-center rounded-lg bg-violet-500 px-3.5 text-xs font-bold uppercase tracking-[0.06em] text-white transition hover:bg-violet-600 sm:hidden"
+            >
+              Open
+            </button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Chips: visible on desktop only. Hidden on mobile because
+              the Open button + drawer above own this surface there. */}
+          <div className="hidden flex-wrap gap-2 sm:flex">
             {[
               "Improve my offers",
               "Pricing strategy",
@@ -4053,6 +4091,76 @@ return (
                 {label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile AI Tools bottom-sheet drawer ──
+           Renders only when open and only at <sm breakpoint. The
+           drawer carries the same chip list as the desktop inline
+           grid; tapping a chip sets the question + closes the
+           sheet + scrolls to the existing ai-workspace anchor. */}
+      {showAiToolsDrawer && (
+        <div className="fixed inset-0 z-[70] sm:hidden" role="dialog" aria-label="AI Tools" aria-modal="true">
+          <button
+            type="button"
+            aria-label="Close AI Tools"
+            onClick={() => setShowAiToolsDrawer(false)}
+            className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-sm"
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-surface-card p-5 shadow-[0_-18px_48px_rgba(0,0,0,0.32)]"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[10px] font-extrabold text-black">
+                  ✨
+                </div>
+                <span className="text-base font-bold text-primary">AI Assistant</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAiToolsDrawer(false)}
+                aria-label="Close"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-secondary transition hover:bg-surface-muted hover:text-primary"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mb-4 text-xs text-secondary">Tap a topic to open the AI workspace with the prompt pre-filled.</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "Improve my offers",
+                "Pricing strategy",
+                "Marketing ideas",
+                "Write better descriptions",
+                "Generate ad copy",
+                "Customer acquisition",
+              ].map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    setQuestion(label);
+                    setShowAiToolsDrawer(false);
+                    const el = typeof document !== "undefined"
+                      ? document.getElementById("ai-workspace")
+                      : null;
+                    if (el) {
+                      try {
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      } catch {
+                        el.scrollIntoView();
+                      }
+                    }
+                  }}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-violet-500/15"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
