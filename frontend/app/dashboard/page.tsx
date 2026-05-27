@@ -37,6 +37,10 @@ type Project = {
   // the storefront "Going live..." banner + the dashboard schedule
   // input. Migration 064.
   scheduled_live_at?: string | null;
+  // Merchant opt-in: schedule_rollforward cron auto-advances
+  // scheduled_live_at by +7 days after each slot passes.
+  // Migration 066.
+  recurring_weekly?: boolean | null;
   // DUM Pop-In Seller merchant settings (migration 038, PR #135).
   // Recorded-video mode added via PR for Mode B (migration 039 +
   // popin_config.video_url).
@@ -764,6 +768,7 @@ export default function DashboardPage() {
                 project={{
                   id: String(primary.id),
                   scheduled_live_at: primary.scheduled_live_at ?? null,
+                  recurring_weekly: primary.recurring_weekly ?? false,
                 }}
                 getToken={getToken}
                 onSaved={() => loadProjects()}
