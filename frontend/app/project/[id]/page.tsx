@@ -5025,34 +5025,22 @@ return (
                   Ask AI →
                 </button>
                 {Boolean(serviceProfile?.is_active) && (
-                  <Link
-                    href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
-                  >
-                    Book service →
-                  </Link>
-                )}
-                {isOwner && (
-                  Boolean(serviceProfile?.is_active) ? (
-                    <Link
-                      href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
-                    >
-                      Manage bookings →
-                    </Link>
-                  ) : serviceProfile ? (
-                    <div className="rounded-xl border border-dashed border-default px-5 py-3 text-center">
-                      <Link
-                        href={`/project/${id}/manage`}
-                        className="block text-xs text-brand-teal transition hover:text-brand-teal"
-                      >
-                        Set up your service →
-                      </Link>
-                      <p className="mt-1 text-[10px] text-muted">
-                        Turn this project into a bookable offer
-                      </p>
+                  <div className="rounded-xl border border-default bg-surface-muted px-4 py-3 text-center">
+                    <div className="text-sm font-medium text-primary">
+                      Interested? Send an inquiry.
                     </div>
-                  ) : null
+                    <div className="mt-1 text-[11px] text-muted">
+                      The business will follow up. Use the chat at the bottom of the page.
+                    </div>
+                  </div>
+                )}
+                {isOwner && serviceProfile && (
+                  <Link
+                    href={`/project/${id}/manage`}
+                    className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
+                  >
+                    Manage existing bookings →
+                  </Link>
                 )}
               </>
             ) : (
@@ -5074,34 +5062,22 @@ return (
                   </button>
                 )}
                 {Boolean(serviceProfile?.is_active) && (
-                  <Link
-                    href={`/project/${id}/book`}
-                    className="block w-full px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
-                  >
-                    Book service →
-                  </Link>
-                )}
-                {isOwner && (
-                  Boolean(serviceProfile?.is_active) ? (
-                    <Link
-                      href={`/project/${id}/manage`}
-                      className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
-                    >
-                      Manage bookings →
-                    </Link>
-                  ) : serviceProfile ? (
-                    <div className="rounded-xl border border-dashed border-default px-5 py-3 text-center">
-                      <Link
-                        href={`/project/${id}/manage`}
-                        className="block text-xs text-brand-teal transition hover:text-brand-teal"
-                      >
-                        Set up your service →
-                      </Link>
-                      <p className="mt-1 text-[10px] text-muted">
-                        Turn this project into a bookable offer
-                      </p>
+                  <div className="rounded-xl border border-default bg-surface-muted px-4 py-3 text-center">
+                    <div className="text-sm font-medium text-primary">
+                      Interested? Send an inquiry.
                     </div>
-                  ) : null
+                    <div className="mt-1 text-[11px] text-muted">
+                      The business will follow up. Use the chat at the bottom of the page.
+                    </div>
+                  </div>
+                )}
+                {isOwner && serviceProfile && (
+                  <Link
+                    href={`/project/${id}/manage`}
+                    className="block w-full rounded-xl border border-default px-5 py-2 text-center text-xs text-muted transition hover:text-primary"
+                  >
+                    Manage existing bookings →
+                  </Link>
                 )}
               </>
             )}

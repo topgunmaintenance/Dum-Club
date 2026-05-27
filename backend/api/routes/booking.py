@@ -3,9 +3,6 @@ Service booking: profiles, availability slots, bookings, verification codes.
 """
 from __future__ import annotations
 
-import secrets
-import string
-import os
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -24,22 +21,6 @@ def now_iso() -> str:
 
 def sb():
     return get_client()
-
-
-def generate_redemption_code(symbol: str) -> str:
-    chars = string.ascii_uppercase + string.digits
-    suffix = "".join(secrets.choice(chars) for _ in range(6))
-    clean = (symbol or "DUM").replace("$", "").upper()[:4]
-    return f"{clean}-{suffix}"
-
-
-def get_verify_base_url() -> str:
-    # Prefer explicit frontend URL; fallback keeps local dev working.
-    return (
-        os.getenv("FRONTEND_URL")
-        or os.getenv("APP_BASE_URL")
-        or "http://localhost:3000"
-    ).rstrip("/")
 
 
 # ── Service Profile ──────────────────────────────────────────────
@@ -223,59 +204,21 @@ class BookingRequest(BaseModel):
 
 @router.post("/api/projects/{project_id}/book")
 async def create_booking(project_id: str, body: BookingRequest):
-    supabase = sb()
-
-    slot_res = (
-        supabase.table("availability_slots")
-        .select("*")
-        .eq("id", body.slot_id)
-        .eq("project_id", project_id)
-        .eq("is_booked", False)
-        .limit(1)
-        .execute()
+    # Customer-facing online booking is disabled for the MVP. Closing the
+    # anonymous-INSERT surface that previously exposed the bookings table.
+    # The handler is preserved so existing clients (cached pages, QR codes,
+    # external tooling) get a clean 410 instead of a 404 or a write that
+    # bypasses RLS — backend service-role writes still bypass RLS at the
+    # database level, but this route is no longer a customer entry point.
+    # Service-profile / availability GETs and the owner-only management
+    # routes continue to work; redemption (/api/verify/*) is unaffected.
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Online booking is currently unavailable. "
+            "Please contact the business directly to schedule."
+        ),
     )
-
-    if not slot_res.data:
-        raise HTTPException(status_code=400, detail="Slot not available")
-
-    proj_res = (
-        supabase.table("projects")
-        .select("token_symbol")
-        .eq("id", project_id)
-        .single()
-        .execute()
-    )
-    symbol = (proj_res.data or {}).get("token_symbol") or "DUM"
-
-    code = generate_redemption_code(symbol)
-    base_url = get_verify_base_url()
-    qr_data = f"{base_url}/verify/{code}"
-
-    try:
-        booking_res = supabase.rpc(
-            "book_slot",
-            {
-                "p_project_id": project_id,
-                "p_slot_id": body.slot_id,
-                "p_customer_wallet": body.customer_wallet.strip(),
-                "p_customer_email": body.customer_email,
-                "p_customer_name": body.customer_name,
-                "p_token_amount": body.token_amount,
-                "p_redemption_code": code,
-                "p_qr_data": qr_data,
-                "p_notes": body.notes,
-            },
-        ).execute()
-    except Exception as e:
-        if "SLOT_NOT_AVAILABLE" in str(e):
-            raise HTTPException(status_code=409, detail="Slot just booked. Choose another time.")
-        raise HTTPException(status_code=500, detail="Booking failed")
-
-    return {
-        "booking": booking_res.data,
-        "redemption_code": code,
-        "qr_data": qr_data,
-    }
 
 
 @router.get("/api/projects/{project_id}/bookings")
