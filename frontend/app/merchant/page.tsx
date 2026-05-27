@@ -833,7 +833,7 @@ export default function MerchantPage() {
           <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Get Set Up</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Your Launch Checklist</div>
                 <div className="mt-1 text-sm font-semibold text-primary">
                   {completedSteps} of {totalSteps} complete.{" "}
                   <span className="text-brand-teal">
@@ -878,27 +878,27 @@ export default function MerchantPage() {
                   </div>
                   <div className="text-xs text-secondary">
                     {stepStripe
-                      ? "You will get paid directly on every sale, minus the 1% sales fee."
-                      : "Required to accept payments. Takes about 2 minutes."}
+                      ? "Your bank account is connected. You get paid directly on every sale."
+                      : "Safe payout setup. Money goes straight to your bank. Takes about 2 minutes."}
                   </div>
                   {!stepStripe && (
                     <>
                       <div className="mt-3 rounded-xl border border-default bg-surface-muted/40 p-4">
                         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-                          What you&apos;ll need before you click
+                          Have these handy before you start
                         </div>
                         <ul className="mt-2 space-y-1.5 text-xs text-primary">
-                          <li>• Your business name and address</li>
-                          <li>• Your bank account number and routing number (this is where payouts land)</li>
-                          <li>• Your SSN or EIN (Stripe verifies the business owner the same way a bank does when you open an account)</li>
+                          <li>• Business name and address</li>
+                          <li>• Bank account and routing numbers (so we know where to send your money)</li>
+                          <li>• Your SSN or EIN (same ID a bank asks for when you open an account)</li>
                         </ul>
                         <div className="mt-3 text-[11px] text-muted">
-                          Stripe is the standard payment processor used by most local-business apps and marketplaces. We never see or store your bank details. Stripe handles the money and pays you directly after every sale.
+                          This is safe payout setup. Stripe is the same payment service Whatnot, Shopify, and Uber Eats use to pay their sellers. DUM Club never sees or stores your bank info. Stripe handles every sale and pays you directly.
                         </div>
                       </div>
                       <button
                         onClick={connectStripe}
-                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-bold text-black transition hover:bg-brand-teal-hover sm:w-auto"
                       >
                         Connect Stripe →
                       </button>

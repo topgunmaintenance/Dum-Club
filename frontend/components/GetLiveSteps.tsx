@@ -97,17 +97,17 @@ export function GetLiveSteps({
   const steps: Step[] = [
     {
       n: 1,
-      title: "Business name set",
-      body: "Pick a clear name customers will recognise.",
+      title: "Add your business info",
+      body: "A clear name so customers recognise you.",
       icon: User,
       done: hasBusinessName,
-      ctaLabel: hasBusinessName ? "Edit" : "Set name",
+      ctaLabel: hasBusinessName ? "Edit" : "Add info",
       ctaHref: `${projectHref}/manage#settings`,
     },
     {
       n: 2,
       title: "Connect Stripe",
-      body: "Money goes straight to your bank. DUM Club never holds it.",
+      body: "Safe payout setup. Money goes straight to your bank. DUM Club never holds it.",
       icon: CircleDollarSign,
       done: stripeVerified,
       ctaLabel: stripeVerified ? "Manage" : "Connect Stripe",
@@ -115,34 +115,34 @@ export function GetLiveSteps({
     },
     {
       n: 3,
-      title: "Create a Deal",
-      body: "Pick what you sell. Set a price.",
+      title: "Add what you sell",
+      body: "Pick one thing. Set a price.",
       icon: Tag,
       done: hasOffer,
-      ctaLabel: hasOffer ? "Add another" : "Create a Deal",
+      ctaLabel: hasOffer ? "Add another" : "Add an offer",
       ctaHref: `${projectHref}/manage#offers`,
     },
     {
       n: 4,
-      title: "Pin a featured item",
-      body: "Mark one offer as featured. Viewers see it the moment your stream starts.",
+      title: "Choose your featured item",
+      body: "Mark one offer as the headliner. Viewers see it the moment you go live.",
       icon: Pin,
       done: hasPinnedOffer,
-      ctaLabel: hasPinnedOffer ? "Change pinned item" : "Pin an item",
+      ctaLabel: hasPinnedOffer ? "Change featured" : "Pick featured",
       ctaHref: `${projectHref}/manage#offers`,
     },
     {
       n: 5,
-      title: "Add DUM Club to Your Website (optional)",
-      body: "Paste one line of code so the bubble shows on your site. No website? Skip ahead. Customers can still find your storefront.",
+      title: "Add to your website (optional)",
+      body: "One line of code shows the live shop on your own site. No website? Skip this. Customers still find you on DUM Club.",
       icon: Code,
       done: installDone,
-      ctaLabel: installDone ? "View snippet" : "Add to My Website",
+      ctaLabel: installDone ? "View options" : "See options",
       ctaHref: "/install",
     },
     {
       n: 6,
-      title: "Press Go Live",
+      title: "Go live",
       body: "Camera and mic on. Customers see you in real time.",
       icon: Radio,
       done: isLive,
@@ -164,7 +164,7 @@ export function GetLiveSteps({
     >
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-teal">
-          Get Live in Minutes
+          Your Launch Checklist
         </div>
         <div className="font-mono text-[11px] text-secondary">
           {completedCount} of {steps.length} done
@@ -174,10 +174,10 @@ export function GetLiveSteps({
         id="get-live-heading"
         className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl"
       >
-        Six steps to your first live sale.
+        From signup to your first live sale.
       </h2>
       <p className="mt-1 text-sm text-secondary">
-        Click below to set up each step. You can go live the same day.
+        Click each step to set it up. You can go live the same day.
       </p>
 
       {/* Progress bar — quick visual gauge so the merchant can
