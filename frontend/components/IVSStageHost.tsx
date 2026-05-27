@@ -118,22 +118,21 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     heartbeatTimerRef.current = setInterval(send, 5000);
   }
 
+  const hasPinnedOffer = Boolean(
+    pinnedOfferId && pinnedOfferId.trim() !== "",
+  );
+
   const startPreview = useCallback(async () => {
-    // Audit #4 Phase 3 (Q6) — pre-stream guard. If the merchant
-    // is about to go live without a pinned offer, the buyers
-    // who land during the show will see a stream with nothing
-    // to buy. Surface a confirm dialog before we even request
-    // camera access; OK = "go live anyway", Cancel = "let me
-    // pin first." Cancel is the safer default — the merchant
-    // has to actively press OK to override.
-    if (
-      typeof window !== "undefined" &&
-      (!pinnedOfferId || pinnedOfferId.trim() === "")
-    ) {
-      const ok = window.confirm(
-        "You haven't pinned a product yet. Viewers won't see anything to buy.\n\nGo live anyway? Click Cancel to pin first.",
-      );
-      if (!ok) return;
+    // Pinned-offer gate is now upstream of this call — the idle-state
+    // UI swaps the "Start camera" button for a "Pin a featured item"
+    // link when no offer is pinned, so the merchant never gets a
+    // mid-flow window.confirm() dialog after they've already committed
+    // to going live. If someone hits this path with no pin (e.g. an
+    // autoStart caller), drop straight back to idle silently rather
+    // than firing a permission prompt for a stream that won't be useful.
+    if (typeof window !== "undefined" && !hasPinnedOffer) {
+      setStatus("idle");
+      return;
     }
 
     setStatus("requesting_camera");
@@ -187,7 +186,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       setStatus("error");
       onError(rawMsg);
     }
-  }, [onError, pinnedOfferId]);
+  }, [onError, hasPinnedOffer]);
 
   useEffect(() => {
     if (autoStart && status === "idle") startPreview();
@@ -371,7 +370,34 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           </a>
         </div>
       )}
-      {status === "idle" && !isSuspended && (
+      {status === "idle" && !isSuspended && !hasPinnedOffer && (
+        // No pinned offer yet — surface the requirement before the
+        // merchant taps Start camera, instead of catching them with a
+        // confirm() dialog after they've already committed. The link
+        // points at the offers section on the same page (the page-
+        // level layout includes #offers-section), so the merchant
+        // pins one item and lands right back here ready to go live.
+        <div className="text-center py-4">
+          <div className="mx-auto mb-5 max-w-md rounded-xl border border-default bg-surface-card px-4 py-3 text-left">
+            <div className="text-sm font-semibold text-primary">
+              Pick what you&apos;re selling first.
+            </div>
+            <div className="mt-1 text-xs text-secondary">
+              Pin one featured item so viewers see something to buy
+              the moment they join.
+            </div>
+          </div>
+          <a
+            href="#offers-section"
+            className="inline-flex items-center justify-center rounded-2xl bg-brand-teal px-10 py-4 text-lg font-bold text-brand-navy shadow-lg transition hover:bg-brand-teal-hover hover:text-white active:scale-[0.98]"
+          >
+            Pin a featured item →
+          </a>
+          <p className="mt-3 text-sm text-zinc-500">Then you&apos;re one tap from live.</p>
+        </div>
+      )}
+
+      {status === "idle" && !isSuspended && hasPinnedOffer && (
         <div className="text-center py-4">
           <ol className="mx-auto mb-5 max-w-md space-y-1 text-left text-sm text-zinc-400">
             <li><span className="font-bold text-zinc-200">1.</span> Tap Start camera.</li>
