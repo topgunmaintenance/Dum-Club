@@ -642,7 +642,16 @@ export default function ProjectPage() {
 
   const [loadingProject, setLoadingProject] = useState(true);
   const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
-  const [projectView, setProjectView] = useState<"storefront" | "analytics">("storefront");
+  // projectView used to be a useState that could flip to "analytics",
+  // but canShowMarketUi has been a hard false for a while and nothing
+  // in the codebase calls setProjectView (grep confirms zero call
+  // sites outside the destructure itself). The state was a no-op:
+  // every render landed on "storefront". Keeping the same typed union
+  // so the dead "analytics" branches stay type-checkable until step B
+  // of the ghost-architecture cleanup removes them outright. This is
+  // step A — pure no-op behavior change, just collapses the unused
+  // React state slot to a const.
+  const projectView = "storefront" as "storefront" | "analytics";
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
   const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
