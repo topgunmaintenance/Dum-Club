@@ -3675,7 +3675,13 @@ return (
         />
       </>
     )}
-    <div className="relative z-[1] mx-auto w-full max-w-6xl min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8">
+    {/* showOwnerInlineUi reserves vertical space under the AdminBar
+        (h-12 mobile / h-11 desktop) so the first content row — "Back
+        to Feed / Storefront" — clears the sticky owner toolbar
+        instead of hiding behind it. No effect for visitors / for
+        owners in view-as-customer mode (AdminBar is hidden in those
+        cases, so we don't reserve space). */}
+    <div className={`relative z-[1] mx-auto w-full max-w-6xl min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8${showOwnerInlineUi ? " pt-12 sm:pt-11" : ""}`}>
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
       {pitchMode && (
@@ -4066,7 +4072,11 @@ return (
       )}
 
       {/* ── Top Navigation Bar ── */}
-      <div className="mb-8 flex items-center justify-between gap-3">
+      {/* mb-4 on mobile (tighter), mb-8 on desktop (unchanged). The
+          AdminBar pt above already lifts this row clear of the sticky
+          owner toolbar; the previous mb-8 was producing too much air
+          between the Back-to-Feed chip and the next mobile section. */}
+      <div className="mb-4 flex items-center justify-between gap-3 sm:mb-8">
         <Link
           href="/discover"
           className="inline-flex rounded-full border border-default bg-surface-card px-4 py-2 text-xs uppercase tracking-[0.25em] text-secondary transition hover:bg-surface-muted hover:text-primary"

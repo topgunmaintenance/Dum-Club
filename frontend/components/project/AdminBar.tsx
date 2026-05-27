@@ -203,11 +203,20 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
     <div
       role="toolbar"
       aria-label="Owner admin bar"
-      // Mobile: h-14 (56px) with px-3, taller bar that comfortably
-      // fits 44px touch targets. Desktop: h-11 (44px) px-4 as before.
-      // safe-area-inset on the LEFT/RIGHT keeps content clear of
-      // notched-iPhone landscape sensor housing.
-      className="fixed left-0 right-0 top-14 z-40 flex h-14 items-center gap-2 border-b border-default bg-surface-card/95 px-3 text-sm backdrop-blur supports-[backdrop-filter]:bg-surface-card/80 sm:h-11 sm:px-4"
+      // Mobile: h-12 (48px) — slim enough to feel like a native
+      // mobile action strip but still gives 4px breathing room above
+      // and below the 40px (h-10) primary buttons. Down from PR #257's
+      // h-14 (56px) which read as a dashboard chrome.
+      // Desktop: h-11 (44px) unchanged.
+      // Blur: `backdrop-blur-sm` (4px) instead of default `backdrop-blur`
+      // (8px) — Android Chrome's filter implementation is heavier than
+      // iOS Safari, the 8px variant rendered as a muddy smear behind
+      // the bar. The 4px variant reads as a clean ~iOS-style frosted
+      // surface on both platforms.
+      // Background: /92 instead of /95 — a hair more transparent so
+      // the content below shows through subtly, reinforcing the
+      // "floating chrome" feel.
+      className="fixed left-0 right-0 top-14 z-40 flex h-12 items-center gap-2 border-b border-default bg-surface-card/92 px-3 text-sm backdrop-blur-sm supports-[backdrop-filter]:bg-surface-card/80 sm:h-11 sm:px-4"
       style={{
         paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
         paddingRight: "max(0.75rem, env(safe-area-inset-right))",

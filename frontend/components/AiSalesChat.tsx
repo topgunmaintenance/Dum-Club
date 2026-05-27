@@ -135,22 +135,47 @@ export function AiSalesChat({
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — "Chat with {biz}" pill, customer-support-
+          forward branding instead of "Ask {biz}" which read as an AI
+          query box. Backend is unchanged (still calls
+          /api/ai/project-chat); this is purely visual + label.
+          Sized ~15% smaller than prior (px-3.5 py-2.5 + h-7 avatar +
+          gap-2, vs. px-4 py-3 + h-8 avatar + gap-2.5) so it stops
+          competing with the mobile sticky Buy / Browse CTAs for
+          attention. Lifted to bottom-28 (112px) on mobile + safe-area
+          inset so it clears the sticky CTA bar at the page bottom
+          (which sits at bottom-0 + safe-area + py-3, roughly 88-100px
+          tall on notched phones). md: position unchanged from prior. */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className={`fixed bottom-20 right-4 z-[80] flex items-center gap-2.5 rounded-full border md:bottom-6 md:right-6 ${accent.border} bg-zinc-950/95 px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)]`}
+          aria-label={`Chat with ${businessName}`}
+          className={`fixed right-4 z-[80] flex items-center gap-2 rounded-full border md:right-6 ${accent.border} bg-zinc-950/95 px-3.5 py-2.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-md transition-all duration-200 hover:scale-105 hover:shadow-[0_8px_36px_rgba(0,0,0,0.55)] md:bottom-6`}
+          style={{
+            // Mobile-only: env(safe-area-inset-bottom) + 7rem clears
+            // the sticky CTA bar on iPhone notched devices. md: rule
+            // above wins on desktop.
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 7rem)",
+          }}
         >
-          <span className={`flex h-8 w-8 items-center justify-center rounded-full ${accent.bg} text-[11px] font-black ${accent.text} border ${accent.border}`}>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full ${accent.bg} text-[10px] font-black ${accent.text} border ${accent.border}`}>
             {monogram}
           </span>
-          <span className="text-[12px] font-semibold text-zinc-300">Ask {businessName.split(" ")[0]}</span>
+          <span className="text-[12px] font-semibold text-zinc-300">Chat with {businessName.split(" ")[0]}</span>
         </button>
       )}
 
-      {/* Chat panel */}
+      {/* Chat panel — same bottom-clear logic as the closed bubble so
+          opening from a low-resting pill doesn't visually jump
+          upward. Header subtitle changed from "AI Assistant" to
+          "Customer support" to match the rebrand on the pill: the
+          chat IS AI-backed but the visitor experience is framed as
+          messaging the business, not querying a model. */}
       {open && (
-        <div className="fixed bottom-20 right-4 z-[80] flex w-[calc(100vw-2rem)] max-w-[380px] flex-col rounded-2xl border border-zinc-800 bg-zinc-950/98 shadow-[0_16px_64px_rgba(0,0,0,0.6)] backdrop-blur-md md:bottom-6 md:right-6">
+        <div
+          className="fixed right-4 z-[80] flex w-[calc(100vw-2rem)] max-w-[380px] flex-col rounded-2xl border border-zinc-800 bg-zinc-950/98 shadow-[0_16px_56px_rgba(0,0,0,0.55)] backdrop-blur-md md:right-6 md:bottom-6"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 7rem)" }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
             <div className="flex items-center gap-2.5">
@@ -159,7 +184,7 @@ export function AiSalesChat({
               </span>
               <div>
                 <div className="text-[12px] font-bold text-white">{businessName}</div>
-                <div className="text-[9px] text-zinc-500">AI Assistant</div>
+                <div className="text-[9px] text-zinc-500">Customer support</div>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="text-zinc-500 transition hover:text-zinc-300">
@@ -232,7 +257,7 @@ export function AiSalesChat({
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask a question..."
+                placeholder="Type a message..."
                 disabled={loading}
                 className="flex-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2.5 text-[13px] text-white placeholder-zinc-600 outline-none transition focus:border-zinc-600 disabled:opacity-50"
               />
