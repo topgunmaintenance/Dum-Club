@@ -43,15 +43,23 @@ interface ProjectSummary {
 }
 
 export function FloatingGoLive() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const pathname = usePathname();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [hasOffer, setHasOffer] = useState(false);
+  // Stripe verification gate. The backend /api/ivs/create-stage
+  // returns 402 for unverified merchants, so advertising a Go Live
+  // shortcut for them just routes the merchant into a cryptic
+  // error a few seconds later. Hide the button instead — the
+  // dashboard's StripeResumeBanner already tells them what's
+  // missing, no need to surface a dead-end Go Live entry point.
+  const [stripeVerified, setStripeVerified] = useState(false);
 
   useEffect(() => {
     if (!user?.privyId) {
       setProject(null);
       setHasOffer(false);
+      setStripeVerified(false);
       return;
     }
     let cancelled = false;
@@ -85,6 +93,21 @@ export function FloatingGoLive() {
             (o: { is_active?: boolean }) => o && o.is_active !== false,
           );
         if (anyActive) setHasOffer(true);
+
+        // Stripe-verified check. /api/merchant/me requires a Privy
+        // bearer token. If the token isn't available (very rare
+        // post-rehydrate) treat as not-verified and keep the
+        // button hidden.
+        const token = await getToken().catch(() => null);
+        if (!token) return;
+        const merchRes = await fetch(`${API_BASE}/api/merchant/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!merchRes.ok) return;
+        const merchJson = await merchRes.json();
+        if (cancelled) return;
+        const status = merchJson?.merchant?.stripe_connect_status;
+        if (status === "verified") setStripeVerified(true);
       } catch {
         // Network error → don't render the button; safer to be
         // absent than to advertise an action we can't fulfil.
@@ -93,11 +116,12 @@ export function FloatingGoLive() {
     return () => {
       cancelled = true;
     };
-  }, [user?.privyId]);
+  }, [user?.privyId, getToken]);
 
   if (!user?.privyId) return null;
   if (!project) return null;
   if (!hasOffer) return null;
+  if (!stripeVerified) return null;
 
   // Hide the floating pill on the merchant's own project pages — the
   // AdminBar already renders a Go Live action there, so the floating
