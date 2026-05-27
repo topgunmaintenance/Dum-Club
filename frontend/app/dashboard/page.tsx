@@ -26,8 +26,12 @@ type Project = {
   // appears on the merchant's own website. One of bubble / full /
   // automatic. Default automatic.
   embed_display_mode?: "bubble" | "full" | "automatic" | null;
-  // Live state (used by the 5-step progress flow).
+  // Live state (used by the progress flow).
   is_live?: boolean | null;
+  // Pinned-offer signal — non-null id means an offer is pinned as
+  // the featured item. Surfaced in GetLiveSteps so the merchant
+  // sees pinning as its own checklist step before Go Live.
+  pinned_offer_id?: string | null;
   // DUM Pop-In Seller merchant settings (migration 038, PR #135).
   // Recorded-video mode added via PR for Mode B (migration 039 +
   // popin_config.video_url).
@@ -780,6 +784,7 @@ export default function DashboardPage() {
                 hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
                 stripeVerified={stripeVerified}
                 hasOffer={hasOffer}
+                hasPinnedOffer={Boolean(primary.pinned_offer_id)}
                 isLive={isLive}
                 projectSlug={(primary.slug || primary.id || "").toString()}
               />

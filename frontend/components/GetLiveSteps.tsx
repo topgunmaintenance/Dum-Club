@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * GetLiveSteps — 5-step visual progress checklist matched to the
+ * GetLiveSteps — 6-step visual progress checklist matched to the
  * UX Simplification sprint directive's onboarding plan:
  *
  *   1. Business name set
  *   2. Connect Stripe
  *   3. Create your first offer
- *   4. Add DUM Live to your website
- *   5. Press Go Live
+ *   4. Pin a featured item
+ *   5. Add DUM Live to your website
+ *   6. Press Go Live
  *
  * Each step has a clear pass signal we can derive from data the
  * dashboard already loads, plus a CTA so the merchant can finish
@@ -34,6 +35,7 @@ import {
   Check,
   CircleDollarSign,
   Code,
+  Pin,
   User,
   Radio,
   Tag,
@@ -45,13 +47,17 @@ type Props = {
   hasBusinessName: boolean;
   stripeVerified: boolean;
   hasOffer: boolean;
+  /** Project has a non-null pinned_offer_id — the featured item the
+   *  live host surfaces to viewers the moment a stream goes live.
+   *  Required by IVSStageHost.startPreview() since PR #269. */
+  hasPinnedOffer: boolean;
   isLive: boolean;
-  /** Project slug for the step-3 + step-4 + step-5 CTA targets. */
+  /** Project slug for the step-3 + step-4 + step-5 + step-6 CTA targets. */
   projectSlug?: string;
 };
 
 type Step = {
-  n: 1 | 2 | 3 | 4 | 5;
+  n: 1 | 2 | 3 | 4 | 5 | 6;
   title: string;
   body: string;
   icon: typeof User;
@@ -64,6 +70,7 @@ export function GetLiveSteps({
   hasBusinessName,
   stripeVerified,
   hasOffer,
+  hasPinnedOffer,
   isLive,
   projectSlug,
 }: Props) {
@@ -109,7 +116,7 @@ export function GetLiveSteps({
     {
       n: 3,
       title: "Create a Deal",
-      body: "Pick what you sell. Set a price. Pin it as featured.",
+      body: "Pick what you sell. Set a price.",
       icon: Tag,
       done: hasOffer,
       ctaLabel: hasOffer ? "Add another" : "Create a Deal",
@@ -117,6 +124,15 @@ export function GetLiveSteps({
     },
     {
       n: 4,
+      title: "Pin a featured item",
+      body: "Mark one offer as featured. Viewers see it the moment your stream starts.",
+      icon: Pin,
+      done: hasPinnedOffer,
+      ctaLabel: hasPinnedOffer ? "Change pinned item" : "Pin an item",
+      ctaHref: `${projectHref}/manage#offers`,
+    },
+    {
+      n: 5,
       title: "Add DUM Club to Your Website",
       body: "Paste one line of code. Bubble appears in the corner.",
       icon: Code,
@@ -125,7 +141,7 @@ export function GetLiveSteps({
       ctaHref: "/install",
     },
     {
-      n: 5,
+      n: 6,
       title: "Press Go Live",
       body: "Camera and mic on. Customers see you in real time.",
       icon: Radio,
@@ -158,7 +174,7 @@ export function GetLiveSteps({
         id="get-live-heading"
         className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl"
       >
-        Five steps to your first live sale.
+        Six steps to your first live sale.
       </h2>
       <p className="mt-1 text-sm text-secondary">
         Click below to set up each step. You can go live the same day.
@@ -180,7 +196,7 @@ export function GetLiveSteps({
         />
       </div>
 
-      <ol className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <ol className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {steps.map((s, i) => {
           const isNext = i === nextIdx;
           const isDone = s.done;
