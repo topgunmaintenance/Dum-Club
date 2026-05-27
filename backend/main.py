@@ -35,6 +35,7 @@ from api.routes import (
     project_tokens,
     market,
     booking,
+    live_reminders,
     launch,
     offers,
     checkout,
@@ -296,6 +297,7 @@ app.include_router(investor_leads.router, prefix="/api/investor-leads", tags=["I
 app.include_router(project_tokens.router, prefix="/api", tags=["Project Tokens"])
 app.include_router(market.router, tags=["Market"])
 app.include_router(booking.router, tags=["Booking"])
+app.include_router(live_reminders.router, prefix="/api", tags=["Live Reminders"])
 app.include_router(auth.router)
 app.include_router(admin.router)
 

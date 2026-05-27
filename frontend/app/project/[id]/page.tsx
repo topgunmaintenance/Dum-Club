@@ -25,6 +25,7 @@ import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
+import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
@@ -4045,42 +4046,21 @@ return (
            handler, or manually via /api/health/replay-url). Until then
            the column is NULL for every project and this block doesn't
            render. */}
-      {/* "Going live <day> at <time>" banner. Renders when the
-          merchant set a scheduled_live_at in the future and isn't
-          currently broadcasting. Drives the weekly retention loop
-          identified in the operator-sprint retention audit: a
-          returning customer sees the next live time even when the
-          storefront is offline, giving them a reason to come back.
-          Hidden during a live broadcast (the LIVE banner above
-          carries that signal). Hidden when the schedule is in the
-          past (we don't auto-clear stale values backend-side; the
-          banner just stops showing). */}
-      {!project?.is_live && project?.scheduled_live_at && (() => {
-        const ts = new Date(project.scheduled_live_at);
-        if (Number.isNaN(ts.getTime()) || ts.getTime() <= Date.now()) return null;
-        const label = ts.toLocaleString(undefined, {
-          weekday: "long",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        });
-        return (
-          <div className="mb-6 rounded-2xl border border-brand-teal/30 bg-brand-teal-soft px-5 py-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xl" aria-hidden="true">📅</span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-teal">
-                  Going live
-                </div>
-                <div className="mt-0.5 text-base font-bold text-primary">
-                  {label}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* "Going live <day> at <time>" banner + customer reminder
+          signup. Renders when the merchant set a scheduled_live_at
+          in the future and isn't currently broadcasting. Drives the
+          weekly retention loop: returning customer sees the next
+          live time AND can opt-in to a one-shot email when it
+          starts. Hidden during a live broadcast (the LIVE banner
+          above carries that signal). Hidden when the schedule is in
+          the past (we don't auto-clear stale values; the banner
+          just stops showing). */}
+      {!project?.is_live && project?.scheduled_live_at && (
+        <ScheduledLiveBanner
+          scheduledIso={project.scheduled_live_at}
+          projectId={id as string}
+        />
+      )}
       {!project?.is_live && project?.replay_url && (
         <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
           <div className="flex flex-wrap items-center gap-3">

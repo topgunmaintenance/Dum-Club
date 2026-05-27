@@ -517,3 +517,42 @@ def send_payment_failed_notice(merchant_email: str, business_name: str, grace_en
         cta_href=f"{_PLATFORM_URL}/dashboard",
     )
     return _send(merchant_email, subject, html)
+
+
+def send_live_reminder(
+    customer_email: str,
+    business_name: str,
+    project_slug_or_id: str,
+    scheduled_for_label: str,
+) -> bool:
+    """Sent to a customer who subscribed to the storefront's "Remind me
+    when live" form. Fires from the live_reminders cron worker.
+
+    business_name      — human-readable merchant name for the subject.
+    project_slug_or_id — used for the storefront link.
+    scheduled_for_label— pre-formatted local-friendly time string
+                          ("Tuesday at 5:00 PM"), supplied by the worker.
+    """
+    if not customer_email:
+        return False
+    subject = f"{business_name} is going live now"
+    storefront_url = f"{_PLATFORM_URL}/project/{project_slug_or_id}"
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
+      <h2 style="color:#fff;margin:0 0 8px;">{business_name} is going live</h2>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;">
+        You asked us to remind you when <strong style="color:#fff;">{business_name}</strong> went live. The show is starting around <strong style="color:#fff;">{scheduled_for_label}</strong>.
+      </p>
+      <div style="margin:24px 0;text-align:center;">
+        <a href="{storefront_url}"
+           style="display:inline-block;padding:14px 28px;background:#4ade80;color:#052e16;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px;">
+          Watch now &rarr;
+        </a>
+      </div>
+      <p style="color:#71717a;font-size:12px;line-height:1.5;margin-top:24px;">
+        You're only on this reminder list for this one show. We won't send anything else from this signup.
+      </p>
+    </div>
+    """
+    return _send(customer_email, subject, html)
