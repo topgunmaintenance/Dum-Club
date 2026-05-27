@@ -253,21 +253,72 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   }, [projectId, userId]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+    // P0 Android-viewer fix: restore a small min-height floor on the
+    // wrapper. PR #249 removed both the wrapper's min-height: 200 and
+    // the video's min-height: 300 in pursuit of an iPhone crop fix
+    // (300px floor on a 219px natural-16:9 mobile box was forcing
+    // object-fit: cover to crop ~70px off each side). Removing the
+    // 300px crop trigger was correct; removing the wrapper's 200px
+    // safety net was the regression. On Android Chrome / Samsung
+    // Internet, a <video> with aspect-ratio: 16/9 + srcObject from
+    // a freshly-attached WebRTC MediaStream can render at 0px height
+    // for the first ~frame, and some Android browsers then refuse to
+    // engage playback into the now-zero-size element. The 180px floor
+    // here is below the natural-16:9 height at every standard mobile
+    // width (390 × 9/16 = 219, 360 × 9/16 = 202) so it never engages
+    // on the layout — it's purely the pre-frame safety floor that
+    // keeps the element non-collapsed long enough for WebRTC to bind.
+    <div className="relative min-h-[180px] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        // Aspect-ratio alone now defines the height — letting it auto-
-        // size against the container width. The prior `minHeight: 300`
-        // override forced a 16:9 source into a ~1.3:1 box on portrait
-        // mobile, which `object-fit: cover` then resolved by cropping
-        // ~70px off each side. Removing the floor lets the natural 16:9
-        // height take over (~219px on a 390px phone) so the host's
-        // face stays centred and uncropped. The wrapper supplies the
-        // black bg for any sub-pixel rounding gap.
-        className="block w-full bg-zinc-900"
+        // P0 Android fix: belt-and-suspenders signals for hasVideo.
+        // 1. onCanPlay — fires the moment the element has enough
+        //    decoded data to start playback. On Android, this is
+        //    a more reliable signal than the play() promise
+        //    resolution we already use in STREAMS_ADDED, which can
+        //    silently never resolve on some Chromium-based mobile
+        //    browsers when WebRTC attaches into a freshly-rendered
+        //    video element.
+        // 2. onLoadedMetadata — fires when intrinsic dimensions
+        //    (videoWidth/videoHeight) are known. Catches the case
+        //    where WebRTC successfully decoded a frame but the
+        //    canplay event was throttled / batched away.
+        // 3. onError — surfaces decode / source errors so they're
+        //    visible in the UI (the "Waiting for host video..."
+        //    overlay swaps to an error message via errorMsg state).
+        // Existing play().then() path in STREAMS_ADDED is preserved
+        // as the primary signal; these are additive safety nets.
+        onCanPlay={() => {
+          if (videoRef.current?.srcObject) {
+            console.log("[ivs-viewer] onCanPlay fired — marking hasVideo");
+            if (mountedRef.current) setHasVideo(true);
+          }
+        }}
+        onLoadedMetadata={() => {
+          const v = videoRef.current;
+          if (v?.srcObject) {
+            console.log("[ivs-viewer] onLoadedMetadata", v.videoWidth, "x", v.videoHeight);
+            if (mountedRef.current && v.videoWidth > 0) setHasVideo(true);
+          }
+        }}
+        onError={(e) => {
+          const el = e.currentTarget;
+          const code = el.error?.code;
+          const msg = el.error?.message || "Video element error";
+          console.error("[ivs-viewer] video onError code:", code, "msg:", msg);
+          if (mountedRef.current) setErrorMsg(`Playback error (${code}): ${msg}`);
+        }}
+        // Aspect-ratio drives the natural height; the 180px floor on
+        // BOTH the wrapper and this element is the WebRTC-attachment
+        // safety floor described above, not a layout choice. On a
+        // 390px portrait phone the natural box is 219px (above the
+        // floor); on a 360px the natural box is 202px (still above);
+        // the floor only engages pre-first-frame to prevent 0px
+        // collapse.
+        className="block min-h-[180px] w-full bg-zinc-900"
         style={{ aspectRatio: "16/9", objectFit: "cover" }}
       />
 
