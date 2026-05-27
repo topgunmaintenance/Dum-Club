@@ -73,11 +73,52 @@ type BubbleConfig = {
   } | null;
 };
 
+// sessionStorage key for the last-known embed-config payload. Used to
+// paint the previous live state during the 3-5s window between iframe
+// mount and the first fresh /embed-config fetch. Per-business so
+// switching between merchants in the same session doesn't bleed state.
+function bubbleConfigCacheKey(businessId: string) {
+  return `dum-bubble-config:${businessId}`;
+}
+
+function readCachedBubbleConfig(businessId: string): BubbleConfig | null {
+  if (typeof window === "undefined" || !businessId) return null;
+  try {
+    const raw = window.sessionStorage.getItem(bubbleConfigCacheKey(businessId));
+    if (!raw) return null;
+    return JSON.parse(raw) as BubbleConfig;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedBubbleConfig(businessId: string, config: BubbleConfig) {
+  if (typeof window === "undefined" || !businessId) return;
+  try {
+    window.sessionStorage.setItem(
+      bubbleConfigCacheKey(businessId),
+      JSON.stringify(config),
+    );
+  } catch {
+    // Quota / private mode — non-blocking; next fetch repopulates state.
+  }
+}
+
 export default function BubblePreviewPage() {
   const params = useParams<{ businessId: string }>();
   const businessId = params?.businessId || "";
 
-  const [config, setConfig] = useState<BubbleConfig | null>(null);
+  // Hydrate from sessionStorage so a returning visitor sees the last-known
+  // live state instantly, rather than waiting up to 5s for the first
+  // /embed-config fetch to resolve. Stale-but-fast beats blank-and-fresh
+  // on the bubble surface (the worst case is showing "live" for 5s when
+  // the host just ended, which the fresh fetch will correct).
+  const [config, setConfig] = useState<BubbleConfig | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = window.location.pathname.split("/");
+    const id = params[params.length - 1] || "";
+    return readCachedBubbleConfig(id);
+  });
   const [paused, setPaused] = useState<boolean>(false);
 
   // Anonymous viewer id — same shape as the full embed page so the
@@ -169,6 +210,7 @@ export default function BubblePreviewPage() {
         const data = (await res.json()) as BubbleConfig;
         if (cancelled) return;
         setConfig(data);
+        writeCachedBubbleConfig(businessId, data);
         scheduleNext(data.is_live === true);
       } catch {
         if (cancelled) return;
