@@ -240,18 +240,89 @@ export default function InstallPage() {
   const activeSteps =
     PLATFORMS.find((p) => p.key === activePlatform)?.steps || [];
 
+  // "Install it for me" mailto. Routes to Julian with the snippet
+  // pre-filled so the founder can either paste it for the merchant
+  // or coach them through it. Cold-start support path for the
+  // non-technical owner who doesn't have a web person OR doesn't
+  // want to copy/paste code themselves.
+  const installForMeBody = encodeURIComponent(
+    `Hi Julian,\n\nI'd like help adding DUM Club to my website. Here's my install snippet:\n\n${snippet}\n\nMy storefront link: ${origin}/project/${slug}\n\nThanks!`,
+  );
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-3 text-3xl font-bold text-primary">
-        Embed on your site (optional)
+        Add to your website (optional)
       </h1>
       <p className="mb-8 text-secondary">
-        Paste one line of code into your site. When you go live, a small bubble
-        appears in the corner. Customers tap it to watch and buy.
+        Show your live shop on your own website too. Pick the option that fits
+        you best. No website? Skip this. Customers can still find you on DUM Club.
       </p>
 
-      {/* Step 1 — Copy snippet */}
-      <section className="mb-8 rounded-2xl border border-default bg-surface-card p-5">
+      {/* Three-option chooser — first thing the merchant sees. Each card
+          is a self-contained path so a non-technical owner picks the one
+          that matches their situation without reading a wall of code. */}
+      <section className="mb-10 grid gap-3 sm:grid-cols-3">
+        {/* Option A — Install it for me */}
+        <a
+          href={`mailto:julian@dum.club?subject=${encodeURIComponent("Install help for my DUM Club site")}&body=${installForMeBody}`}
+          className="flex flex-col rounded-2xl border-2 border-brand-teal bg-brand-teal-soft p-5 text-left transition hover:bg-brand-teal-soft/80"
+        >
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+            Easiest
+          </div>
+          <div className="text-base font-bold text-brand-navy">
+            Install it for me
+          </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-secondary">
+            We'll add it to your site. Send Julian a message and he'll get back same day.
+          </p>
+          <span className="mt-4 inline-flex items-center text-[12px] font-bold text-brand-teal">
+            Email Julian →
+          </span>
+        </a>
+
+        {/* Option B — Send to my web person */}
+        <a
+          href={`mailto:?subject=${encodeURIComponent("Please add DUM Club to our website")}&body=${mailtoBody}`}
+          className="flex flex-col rounded-2xl border border-default bg-surface-card p-5 text-left transition hover:border-strong"
+        >
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">
+            Have a web person?
+          </div>
+          <div className="text-base font-bold text-primary">
+            Send to my web person
+          </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-secondary">
+            Opens an email with the snippet and step-by-step instructions. They paste it once.
+          </p>
+          <span className="mt-4 inline-flex items-center text-[12px] font-bold text-brand-teal">
+            Open email →
+          </span>
+        </a>
+
+        {/* Option C — Copy the code */}
+        <a
+          href="#copy-snippet"
+          className="flex flex-col rounded-2xl border border-default bg-surface-card p-5 text-left transition hover:border-strong"
+        >
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">
+            Tech-savvy?
+          </div>
+          <div className="text-base font-bold text-primary">
+            Copy the code myself
+          </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-secondary">
+            Grab the snippet below and follow the steps for Wix, Squarespace, Shopify, or WordPress.
+          </p>
+          <span className="mt-4 inline-flex items-center text-[12px] font-bold text-brand-teal">
+            See the snippet ↓
+          </span>
+        </a>
+      </section>
+
+      {/* Step 1 — Copy snippet (anchored for Option C above) */}
+      <section id="copy-snippet" className="mb-8 rounded-2xl border border-default bg-surface-card p-5 scroll-mt-24">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
           Step 1 · Copy this snippet
         </div>
