@@ -3521,6 +3521,57 @@ return (
         </div>
       </div>
     )}
+    {/* Mobile-only sticky pinned-offer strip during a live broadcast.
+        Desktop already shows the pinned offer in the right-column
+        product card (lg:hidden here keeps the two from competing).
+        Renders only when the merchant is live, a pin exists, and
+        the viewer is a customer (owners see the desktop card / host
+        controls separately). The Buy Now button calls the same
+        buyOffer handler the inline card uses, so checkout behavior
+        is unchanged. */}
+    {project?.is_live && pinnedOffer && !isOwner && (() => {
+      const isSoldOut = !pinnedOffer.unlimited_inventory
+        && (pinnedOffer.quantity_available || 0) > 0
+        && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+      return (
+        <div
+          className="fixed inset-x-0 bottom-0 z-[55] border-t border-default bg-surface-card/95 backdrop-blur-md px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:hidden"
+          aria-label="Featured item. Buy while the live show is on."
+        >
+          <div className="mx-auto flex max-w-md items-center gap-3">
+            {pinnedOffer.primary_image_url && (
+              <img
+                src={pinnedOffer.primary_image_url}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-lg object-cover"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-primary">
+                {pinnedOffer.title}
+              </div>
+              <div className="font-mono text-sm font-bold text-brand-teal">
+                ${Number(pinnedOffer.price_usd).toFixed(2)}
+              </div>
+            </div>
+            {isSoldOut ? (
+              <span className="shrink-0 rounded-xl border border-default px-4 py-2.5 text-sm font-bold text-secondary">
+                Sold Out
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => buyOffer(pinnedOffer)}
+                disabled={!!buyingOfferId}
+                className="shrink-0 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white disabled:opacity-40"
+              >
+                {buyingOfferId === pinnedOffer.id ? "Opening…" : "Buy Now"}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    })()}
     {/* Schema.org JSON-LD. invisible to humans, primary signal for
         Google rich results and AI crawlers (Claude, GPT, Perplexity,
         Gemini). Emits LocalBusiness with embedded Offers, plus a
