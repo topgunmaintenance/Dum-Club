@@ -178,7 +178,7 @@ import {
   sanitizeBearerToken,
   updateOffer,
 } from "../../../lib/offers";
-import { AdminBar, ExitCustomerViewChip, useViewAsCustomer } from "../../../components/project/AdminBar";
+import { AdminBar, ExitCustomerViewChip, useViewAsCustomer, writeViewAsCustomer } from "../../../components/project/AdminBar";
 import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -3181,6 +3181,16 @@ export default function ProjectPage() {
       setCheckoutResult("cancelled");
       const cleanUrl = new URL(window.location.href);
       cleanUrl.searchParams.delete("checkout");
+      window.history.replaceState({}, "", cleanUrl.toString());
+    }
+    // viewAsCustomer=1 — entry point for the dashboard "Preview as
+    // customer" link. Writes the per-slug sessionStorage flag the
+    // AdminBar already reads, then strips the param so a refresh
+    // doesn't re-toggle. Owner can exit via ExitCustomerViewChip.
+    if (params.get("viewAsCustomer") === "1" && id) {
+      writeViewAsCustomer(id, true);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("viewAsCustomer");
       window.history.replaceState({}, "", cleanUrl.toString());
     }
     if (params.get("golive") === "1") {

@@ -1017,13 +1017,23 @@ export default function DashboardPage() {
 
                     <Link
                       href={`/project/${project.id}?golive=1`}
-                      className="mx-4 mb-4 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-red-400"
+                      className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-red-400"
                     >
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
                       </span>
                       Go Live
+                    </Link>
+                    {/* Preview-as-customer — flips the project page's
+                        sessionStorage flag so the merchant sees the
+                        storefront the way a buyer would, without the
+                        AdminBar / Business Status / Manage controls. */}
+                    <Link
+                      href={`/project/${project.id}?viewAsCustomer=1`}
+                      className="mx-4 mb-4 block text-center text-xs text-muted transition hover:text-primary"
+                    >
+                      Preview as customer →
                     </Link>
 
                     <button
