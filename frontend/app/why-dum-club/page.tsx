@@ -441,8 +441,8 @@ export default function WhyDumClubPage() {
               className="text-brand-teal underline-offset-2 hover:underline"
             >
               julian@dum.club
-            </a>{" "}
-            or call (201) 452-1986. Julian gets back same day.
+            </a>
+            . Julian gets back same day.
           </p>
         </Container>
       </Section>
