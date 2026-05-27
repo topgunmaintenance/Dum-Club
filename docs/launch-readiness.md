@@ -1,5 +1,10 @@
 # Launch readiness — DUM Club
 
+> **For pre-outreach launch today, use `docs/LAUNCH.md`** — single-page
+> ordered checklist with copy-paste commands. This doc is the historical
+> audit from 2026-05-16 (PR #234 era) and is retained for context, not
+> as the current go-live path.
+
 Final audit + merchant launch checklist. Updated `2026-05-16` after the
 Phase 4 SIMPLIFIED_DASHBOARD merge. Once your manual Stripe + Railway
 setup from `docs/stripe-setup.md` is done, this doc is the

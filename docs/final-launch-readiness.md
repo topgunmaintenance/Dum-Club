@@ -1,5 +1,9 @@
 # DUM Club — launch readiness assessment
 
+> **For pre-outreach launch today, use `docs/LAUNCH.md`** — single-page
+> ordered checklist. This doc is the PR #234 era audit and is retained
+> for context, not as the current go-live path.
+
 **Honest synthesis** of what's shipped, what's at risk, and what's
 needed before going broad to merchants. Based on the actual code
 state in `main` as of PR #234, **not** on simulated audit runs. No
