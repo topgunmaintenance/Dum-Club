@@ -346,8 +346,25 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       )}
 
       {status === "ended" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
-          <p className="text-sm text-zinc-500">Stream has ended</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900/90 px-6 text-center">
+          <p className="text-sm text-zinc-400">Looks like the stream ended.</p>
+          {/* Tap-to-retry: a real "stream ended" looks identical to a
+              mobile-network blip from the customer's side. A retry
+              that succeeds catches the false-positive; a retry that
+              fails returns the same ended view + the same button.
+              Mirrors the existing error-state Retry behavior:
+              reset the active-stage marker + status to "loading"
+              so the connect path re-runs from scratch. */}
+          <button
+            type="button"
+            onClick={() => {
+              _activeStageProjectId = null;
+              setStatus("loading");
+            }}
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white"
+          >
+            Tap to check again
+          </button>
         </div>
       )}
 
