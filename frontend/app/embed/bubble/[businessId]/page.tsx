@@ -124,9 +124,17 @@ export default function BubblePreviewPage() {
     let cancelled = false;
     let timeoutId: number | null = null;
 
+    function clearPending() {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
     function scheduleNext(isLive: boolean) {
       if (cancelled) return;
       const ms = isLive ? 5000 : 3000;
+      clearPending();
       timeoutId = window.setTimeout(fetchOnce, ms);
     }
 
@@ -135,7 +143,20 @@ export default function BubblePreviewPage() {
       const isHidden =
         typeof document !== "undefined" &&
         document.visibilityState === "hidden";
-      if (pausedRef.current || isHidden) {
+      // Tab hidden: stop the polling loop entirely instead of
+      // burning a timer + skipped-fetch tick every 3s. The
+      // visibilitychange listener below re-fires fetchOnce the
+      // moment the tab is visible again so the live state catches
+      // up without waiting on the old cadence.
+      if (isHidden) {
+        clearPending();
+        return;
+      }
+      // Host paused us (overlay opened, etc.) but the tab is
+      // still in the foreground. Keep scheduling at the offline
+      // cadence so we resume immediately when the overlay closes
+      // — there's no DOM event we can listen for there.
+      if (pausedRef.current) {
         scheduleNext(false);
         return;
       }
@@ -166,9 +187,21 @@ export default function BubblePreviewPage() {
 
     fetchOnce();
 
+    // Resume polling the moment the tab becomes visible again so
+    // a returning viewer doesn't have to wait up to 5s for the
+    // next scheduled tick to discover that the host went live.
+    function onVisibilityChange() {
+      if (cancelled) return;
+      if (document.visibilityState === "visible" && !pausedRef.current) {
+        fetchOnce();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       cancelled = true;
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      clearPending();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [businessId]);
 
