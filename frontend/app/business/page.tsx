@@ -15,8 +15,11 @@ import Link from "next/link";
 import { API_BASE } from "../../lib/apiBase";
 
 type FoundingStatus = {
-  founding_slots_remaining: number;
-  total_cap: number;
+  // /api/merchant/founding-status returns only this boolean now —
+  // the count fields (founding_slots_remaining, total_cap) were
+  // stripped from the public response in the founding-counter
+  // hide-from-competitors PR. Re-adding them here would just
+  // type a field that doesn't exist on the wire.
   founding_program_open: boolean;
 };
 
@@ -58,10 +61,7 @@ function BusinessPageInner() {
     };
   }, []);
 
-  const slotsRemaining = founding?.founding_slots_remaining ?? null;
-  const totalCap = founding?.total_cap ?? 100;
   const programOpen = founding?.founding_program_open ?? true;
-  const claimed = slotsRemaining != null ? totalCap - slotsRemaining : null;
 
   return (
     <main className="min-h-screen bg-surface-page text-primary">
@@ -128,7 +128,7 @@ function BusinessPageInner() {
 
       {/* ── Tab content ──────────────────────────────── */}
       <div className="mx-auto max-w-6xl px-4 py-12">
-        {activeTab === "overview" && <OverviewTab claimed={claimed} totalCap={totalCap} programOpen={programOpen} />}
+        {activeTab === "overview" && <OverviewTab programOpen={programOpen} />}
         {activeTab === "pricing" && <PricingTab />}
         {activeTab === "calculator" && <CalculatorTab />}
         {activeTab === "compare" && <CompareTab />}
@@ -224,12 +224,8 @@ function BusinessPageInner() {
    OVERVIEW TAB — fee cards, what's included, founding 100
    ═══════════════════════════════════════════════════════════ */
 function OverviewTab({
-  claimed,
-  totalCap,
   programOpen,
 }: {
-  claimed: number | null;
-  totalCap: number;
   programOpen: boolean;
 }) {
   return (
