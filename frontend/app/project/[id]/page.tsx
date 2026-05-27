@@ -6784,7 +6784,28 @@ return (
           buttons on mobile dead links; those have been individually
           gated with `hidden sm:inline-flex` / `hidden sm:flex` to
           stop them rendering on mobile. */}
-      <div id="ai-workspace" className="mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block">
+      {/* Desktop AI workspace. Collapsed-by-default so the storefront
+          flow (offers → buy → live) leads the visual hierarchy on a
+          fresh project visit. The floating AiSalesChat bubble that
+          sits in the bottom-right of every page is still the always-on
+          entry point for asking questions, so closing this card by
+          default removes a large mid-page chrome block without losing
+          the feature. Mobile already hid the workspace entirely (the
+          floating bubble is the only AI surface on small screens).
+          The "Ask AI" anchor buttons elsewhere on the page still
+          target #ai-workspace; modern browsers open the matching
+          <details> when scrollIntoView lands on a child node, so
+          those affordances continue to work without changes. */}
+      <details
+        id="ai-workspace"
+        className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between text-base font-bold text-primary hover:text-brand-teal">
+          <span>Ask AI about this business</span>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted group-open:hidden">Open</span>
+          <span className="hidden text-[10px] uppercase tracking-[0.18em] text-muted group-open:inline">Close</span>
+        </summary>
+        <div className="mt-6">
         {showOwnerInlineUi && (
           <>
             <div className="mb-6 text-xs uppercase tracking-[0.3em] text-muted">AI Assistant</div>
@@ -6854,7 +6875,8 @@ return (
             )}
           </div>
         </div>
-      </div>
+        </div>
+      </details>
 
 
       {/* ── OWNER TOOLS ──────────────────────────── */}
