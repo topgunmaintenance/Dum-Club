@@ -456,36 +456,39 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
 
 @router.get("/founding-status")
 async def get_founding_status():
-    """Public endpoint: how many founding slots are left.
+    """Public endpoint: is the founding-100 program still open?
 
     Returns:
-      {
-        "founding_slots_remaining": int,   # max(0, FOUNDING_CAP - current count)
-        "total_cap": int,                  # FOUNDING_CAP
-        "founding_program_open": bool,     # true if slots_remaining > 0
-      }
+      { "founding_program_open": bool }
 
-    No auth required — this drives the "X of 100 spots remaining" counter
-    on the /merchant signup page, which non-authenticated visitors see.
+    No auth required — drives CTA-copy toggles on /merchant and /business
+    (e.g. "Claim a Founding Spot" vs "Join the Waitlist") for visitors
+    who aren't signed in yet.
+
+    HISTORY: previously also returned `founding_slots_remaining` and
+    `total_cap` to drive a "X of 100 spots claimed" scarcity pill on the
+    public pages. Founder direction (PR removing public founding-counter
+    surfaces) is to NOT surface live merchant-count traction to
+    visitors / competitors during the founding ramp. The count fields
+    were dropped from the response so a determined competitor cannot
+    curl the endpoint to derive the same number we hid from the UI.
+
+    For internal use (admin dashboard, founder reports), query
+    merchants directly via the service-role Supabase client or add a
+    separate admin-gated endpoint — DO NOT re-add the count to this
+    public response.
     """
     try:
         supabase = get_client()
         taken = _count_active_founding(supabase)
     except Exception as exc:
         print(f"[merchant] founding-status error: {exc!r}")
-        # Graceful fallback — surface the cap without failing the page.
-        return {
-            "founding_slots_remaining": FOUNDING_CAP,
-            "total_cap": FOUNDING_CAP,
-            "founding_program_open": True,
-        }
+        # Graceful fallback — assume open so the public CTA doesn't
+        # flip to "Join the Waitlist" during a transient Supabase blip.
+        return {"founding_program_open": True}
 
     remaining = max(0, FOUNDING_CAP - taken)
-    return {
-        "founding_slots_remaining": remaining,
-        "total_cap": FOUNDING_CAP,
-        "founding_program_open": remaining > 0,
-    }
+    return {"founding_program_open": remaining > 0}
 
 
 # ── Get my merchant record ──
