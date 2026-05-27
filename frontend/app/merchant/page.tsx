@@ -20,8 +20,11 @@ type Merchant = {
 };
 
 type FoundingStatus = {
-  founding_slots_remaining: number;
-  total_cap: number;
+  // /api/merchant/founding-status returns only this boolean now —
+  // the count fields were stripped from the public response so
+  // competitors can't curl the endpoint to derive live merchant
+  // counts. Re-adding them here would just type a wire field
+  // that no longer exists.
   founding_program_open: boolean;
 };
 
@@ -342,12 +345,9 @@ export default function MerchantPage() {
     // CRITICAL FIX: pre-fix this screen had no sign-in button at all —
     // every "Claim Your Free Spot" homepage click from a logged-out
     // visitor hit a dead end. Now renders a proper sign-in CTA that
-    // kicks the Privy login flow, plus the founding-100 scarcity hook
-    // so we continue selling while they authenticate.
+    // kicks the Privy login flow, plus the founding-100 program-open
+    // signal so we can flip CTA copy when slots close.
     const programOpen = foundingStatus?.founding_program_open ?? true;
-    const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
-    const totalCap = foundingStatus?.total_cap ?? 100;
-    const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
       <div className="min-h-screen bg-surface-card px-4 pb-20 pt-28">
@@ -435,9 +435,6 @@ export default function MerchantPage() {
   // ── Signup form ──
   if (showSignup) {
     const programOpen = foundingStatus?.founding_program_open ?? true;
-    const slotsRemaining = foundingStatus?.founding_slots_remaining ?? null;
-    const totalCap = foundingStatus?.total_cap ?? 100;
-    const claimed = slotsRemaining !== null ? totalCap - slotsRemaining : null;
 
     return (
       <div className="min-h-screen bg-surface-card pt-24 px-4 pb-16">
