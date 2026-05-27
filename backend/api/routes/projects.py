@@ -120,12 +120,17 @@ def _resolve_owner_uuid(supabase, owner_id: Optional[str]) -> Optional[str]:
 
     wallet = user_res.data[0]["wallet_address"]
 
-    # Step 2: get or create profile by wallet_address → return profiles.id
+    # Step 2: get or create profile by wallet_address → return profiles.id.
+    # postgrest-py 0.16 (shipped with supabase-py 2.5.1) returns a
+    # SyncQueryRequestBuilder from .upsert(), and that builder no
+    # longer exposes .select() — the previous chain raised
+    # AttributeError on every onboarding upsert. PostgREST sets
+    # Prefer: return=representation by default, so upsert_res.data
+    # already contains the affected rows with all columns including id.
     try:
         upsert_res = (
             supabase.table("profiles")
             .upsert({"wallet_address": wallet}, on_conflict="wallet_address")
-            .select("id")
             .execute()
         )
         return upsert_res.data[0]["id"] if upsert_res.data else None
