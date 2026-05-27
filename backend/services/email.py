@@ -89,11 +89,14 @@ def _send(to: str, subject: str, html: str) -> bool:
 
 
 def send_buyer_payment_confirmed(buyer_email: str, offer_title: str, amount_usd: float, project_name: str = ""):
-    """Email buyer after successful payment — includes DUM reward messaging."""
+    """Email buyer after successful payment. Doctrine-compliant copy:
+    DUM Points framed as discount-redeemable loyalty rewards only, no
+    investment / token / on-chain language (CLAUDE.md §5, §12 Rule 3).
+    """
     if not buyer_email:
         print("[email] No buyer email, skipping buyer confirmation")
         return
-    subject = f"You bought on Dum Club 🚀 + You earned DUM"
+    subject = f"Purchase confirmed + you earned DUM Points"
     html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
@@ -104,16 +107,13 @@ def send_buyer_payment_confirmed(buyer_email: str, offer_title: str, amount_usd:
       </p>
       {f'<p style="color:#71717a;font-size:13px;">From: {project_name}</p>' if project_name else ''}
       <div style="margin:16px 0;padding:16px;background:#052e16;border:1px solid #166534;border-radius:8px;">
-        <p style="color:#4ade80;font-size:16px;font-weight:700;margin:0 0 4px;">You earned DUM rewards!</p>
+        <p style="color:#4ade80;font-size:16px;font-weight:700;margin:0 0 4px;">You earned DUM Points</p>
         <p style="color:#86efac;font-size:13px;margin:0;">
-          Every purchase on DUM Club earns you DUM. As DUM Club grows, these rewards become more valuable.
+          Loyalty rewards you can redeem for discounts at any DUM Club business. Earn at one shop, spend at another.
         </p>
       </div>
-      <p style="color:#52525b;font-size:12px;line-height:1.5;margin-top:12px;">
-        DUM will power discounts, boosts, and future on-chain utility on Solana. Keep earning.
-      </p>
       <a href="{_PLATFORM_URL}/orders" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#4ade80;color:#000;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">
-        View Your Orders
+        View your orders
       </a>
     </div>
     """
@@ -145,28 +145,33 @@ def send_seller_new_order(seller_email: str, offer_title: str, amount_usd: float
 
 
 def send_dum_reward_email(buyer_email: str, dum_earned: int, total_balance: int, offer_title: str):
-    """Email buyer about DUM rewards earned from purchase."""
+    """Email buyer about DUM Points earned from a purchase. Doctrine-
+    compliant copy: discount-redeemable loyalty rewards only, no
+    token / on-chain / investment framing (CLAUDE.md §5, §12 Rule 3).
+    1 DUM Point = $0.10 in discount value (CLAUDE.md §5)."""
     if not buyer_email:
         return
-    subject = f"You earned {dum_earned} DUM 🎉"
+    subject = f"You earned {dum_earned} DUM Points"
+    # 1 DUM Point = $0.10 (CLAUDE.md §5). Render the redeemable
+    # dollar value so the buyer sees the discount they actually get.
+    balance_value_usd = total_balance * 0.10
     html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club Rewards</div>
-      <h2 style="color:#fff;margin:0 0 8px;">+{dum_earned} DUM Earned! 🎉</h2>
+      <h2 style="color:#fff;margin:0 0 8px;">+{dum_earned} DUM Points earned</h2>
       <p style="color:#a1a1aa;font-size:14px;line-height:1.6;">
         Your purchase of <strong style="color:#fff;">{offer_title}</strong> earned you
-        <strong style="color:#4ade80;">{dum_earned} DUM</strong>.
+        <strong style="color:#4ade80;">{dum_earned} DUM Points</strong>.
       </p>
       <div style="margin:16px 0;padding:16px;background:#052e16;border:1px solid #166534;border-radius:8px;text-align:center;">
-        <p style="color:#4ade80;font-size:28px;font-weight:800;margin:0;">{total_balance} DUM</p>
-        <p style="color:#86efac;font-size:12px;margin:4px 0 0;">Your total balance</p>
+        <p style="color:#4ade80;font-size:28px;font-weight:800;margin:0;">{total_balance} Points</p>
+        <p style="color:#86efac;font-size:12px;margin:4px 0 0;">Worth ${balance_value_usd:.2f} in discounts at participating merchants</p>
       </div>
       <p style="color:#52525b;font-size:12px;line-height:1.5;">
-        DUM will evolve into a Solana-based token powering discounts, rewards, and commerce on DUM Club.
-        Every purchase grows your stake in the platform.
+        DUM Points are loyalty rewards. Redeem them for discounts at any DUM Club business. Earn at one shop, spend at another.
       </p>
       <a href="{_PLATFORM_URL}/hub" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#4ade80;color:#000;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">
-        View Your DUM
+        View your Points
       </a>
     </div>
     """
