@@ -2018,27 +2018,11 @@ export default function Home() {
   // there is no longer a buyer-side search surface on the homepage
   // to scroll into view or mode-switch between.
 
-  // ── Founding-100 scarcity counter (public endpoint, no auth) ──
-  // Drives the "X of 100 founding spots claimed" pill above the hero H1.
-  // Graceful fail: if the endpoint errors, we just don't render the pill
-  // rather than showing a bogus/stale number.
-  const [foundingStatus, setFoundingStatus] = useState<{
-    founding_slots_remaining: number;
-    total_cap: number;
-    founding_program_open: boolean;
-  } | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_BASE}/api/merchant/founding-status`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setFoundingStatus(data);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Founding-100 scarcity counter removed from the public hero —
+  // we no longer surface live merchant-count metrics to visitors
+  // / competitors. The /api/merchant/founding-status endpoint
+  // still exists for internal use; nothing on this page fetches
+  // it anymore.
 
   // runHomepageSearch was removed in the homepage audit pass. It
   // had no callers after the audience-toggle "I'm shopping" branch
@@ -2689,22 +2673,11 @@ export default function Home() {
           />
           <div className="relative z-[1] px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14">
             <div className="mx-auto mb-10 max-w-4xl text-center">
-              {/* ── Founding-100 scarcity pill ──
-                   Recoloured to brand-teal palette with a navy text
-                   anchor for AA contrast. The animate-ping dot stays —
-                   it signals live program activity, not crypto. */}
-              {foundingStatus && foundingStatus.founding_program_open && (
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-                  </span>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-navy">
-                    {foundingStatus.total_cap - foundingStatus.founding_slots_remaining} of {foundingStatus.total_cap} founding spots claimed
-                    <span className="ml-2 text-brand-teal">· 60 days free · Lock in founding pricing for life</span>
-                  </span>
-                </div>
-              )}
+              {/* Founding-100 scarcity pill removed (PR: hide public
+                  merchant-count metrics). The "60 days free" /
+                  "Lock in founding pricing for life" copy still
+                  appears in the H1 + the two paragraphs below;
+                  what we stopped exposing is the live count. */}
               {/* Phase 5 hero. Outcome-led headline with a single
                   plain-English subhead that a non-technical small-
                   business owner reads in five seconds. The brand-

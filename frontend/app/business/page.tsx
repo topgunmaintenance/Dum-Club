@@ -72,16 +72,11 @@ function BusinessPageInner() {
         </div>
 
         <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-default bg-brand-teal-soft px-4 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-              {claimed != null ? `${claimed} of ${totalCap} founding spots claimed` : "Founding 100 · spots limited"}
-              <span className="ml-2 text-brand-teal">· 60 days free · Lock in founding pricing for life</span>
-            </span>
-          </div>
+          {/* Founding-100 scarcity pill removed (PR: hide public
+              merchant-count metrics). The "60 days free / lock in
+              founding pricing for life" copy still appears in the
+              hero paragraph below, so no message is lost — only the
+              live count is suppressed. */}
 
           <h1 className="text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             Keep Everything{" "}
@@ -349,12 +344,11 @@ function OverviewTab({
           <p className="mx-auto mt-4 max-w-xl text-sm text-secondary">
             Get 60 days free and lock in founding pricing for life. Founding merchant badge permanent on your profile.
           </p>
-          <div className="mt-8 inline-flex items-baseline gap-3 rounded-2xl border border-default bg-surface-card px-6 py-4 backdrop-blur-sm">
-            <span className="font-mono text-4xl font-extrabold text-brand-teal">
-              {claimed != null ? claimed : "0"}
-            </span>
-            <span className="text-xs uppercase tracking-[0.2em] text-secondary">of {totalCap} founding spots claimed</span>
-          </div>
+          {/* Live "X of 100 founding spots claimed" counter removed —
+              we no longer surface live merchant-count metrics in
+              public surfaces. The card's heading + description and
+              the "Limited · Founding 100" eyebrow still communicate
+              scarcity without revealing the running total. */}
           <div className="mt-8">
             <Link
               href="/merchant"
