@@ -1613,6 +1613,10 @@ class ProjectUpdate(BaseModel):
     # How DUM Club appears on the merchant's own website. One of
     # bubble / full / automatic. Gated by _EMBED_DISPLAY_MODES below.
     embed_display_mode: Optional[str] = None
+    # Next scheduled go-live timestamp (ISO 8601, TIMESTAMPTZ in DB).
+    # Drives the "Going live..." storefront banner. NULL clears the
+    # schedule. Migration 064.
+    scheduled_live_at: Optional[str] = None
 
 
 # Allow-list of fields the popin_config payload may contain. Unknown
