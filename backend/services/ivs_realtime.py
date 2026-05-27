@@ -41,15 +41,37 @@ def _get_client():
 
 
 def create_stage(name: str) -> Optional[dict]:
-    """Create an IVS Real-Time stage. Returns stage ARN and ID."""
+    """Create an IVS Real-Time stage. Returns stage ARN and ID.
+
+    Cost contract — DO NOT pass autoParticipantRecordingConfiguration
+    or any other recording kwarg here. IVS Real-Time auto-recording
+    writes each participant's tracks to S3 at AWS's standard ingest
+    pricing; on a 600-viewer Growth-tier stream that's an unbounded
+    $/min line item we have not opted into and do not have an S3
+    lifecycle/retention rule to clean up. The kwargs the call builds
+    are asserted below so a future patch that turns recording on
+    without also wiring the retention plumbing trips the assertion
+    on the first stage creation. If recording is genuinely needed,
+    update the assertion together with the S3 bucket, IAM role, and
+    per-merchant cap — never as a one-liner here.
+    """
     client = _get_client()
     if not client:
         return None
 
+    stage_kwargs = {"name": name}
+    # Belt-and-suspenders guard for the cost contract above. Cheap,
+    # runs once per stream start, and produces a loud failure mode
+    # if someone adds recording without realising the retention
+    # tail is not in place.
+    assert "autoParticipantRecordingConfiguration" not in stage_kwargs, (
+        "IVS recording cost guardrail tripped — see create_stage docstring."
+    )
+
     try:
-        response = client.create_stage(name=name)
+        response = client.create_stage(**stage_kwargs)
         stage = response.get("stage", {})
-        print(f"[ivs] Stage created: {stage.get('arn')}")
+        print(f"[ivs] Stage created: {stage.get('arn')} (no recording config)")
         return {
             "stage_arn": stage.get("arn", ""),
             "stage_id": stage.get("arn", "").split("/")[-1] if stage.get("arn") else "",
