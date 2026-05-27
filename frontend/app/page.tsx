@@ -1735,7 +1735,7 @@ function RetentionSection() {
             </div>
 
             <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover">
-              Start Retaining Customers →
+              Start free for 60 days →
             </Link>
           </div>
         </div>
@@ -1783,7 +1783,7 @@ function PricingTiers() {
         Flat fee. <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
-        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1% sales fee (Whatnot takes 8%). Keep more of every dollar.
+        Join the first 100 merchants. Get 60 days free and lock in founding pricing for life.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -1891,7 +1891,7 @@ function WhatnotPitch() {
               <span className="ml-2 text-[12px] text-brand-teal">more in your pocket every month</span>
             </div>
             <Link href="/merchant" className="mt-4 block w-full rounded-xl bg-brand-teal py-3 text-center text-[13px] font-bold text-black transition hover:bg-brand-teal-hover hover:text-white">
-              Switch from Whatnot. Free →
+              Start free for 60 days →
             </Link>
           </div>
         </div>
@@ -2690,7 +2690,7 @@ export default function Home() {
                 Sell Live. <span className="text-brand-navy">Keep More of Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                DUM Club helps businesses sell live on their own website. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%).
+                Live selling on your own website. Flat monthly subscription plus a 1% sales fee. Industry-low.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
                 <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1% sales fee.</span> Keep more of every dollar.
