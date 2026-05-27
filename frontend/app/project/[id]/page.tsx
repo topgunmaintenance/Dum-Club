@@ -26,6 +26,7 @@ import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
+import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
@@ -4062,28 +4063,12 @@ return (
         />
       )}
       {!project?.is_live && project?.replay_url && (
-        <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">
-              Replay
-            </span>
-            <span className="text-sm text-secondary">
-              {project.replay_recorded_at
-                ? `Last live show · ${new Date(project.replay_recorded_at).toLocaleDateString()}`
-                : "Last live show"}
-            </span>
-          </div>
-          <div className="mt-4">
-            <a
-              href={project.replay_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-            >
-              Watch replay →
-            </a>
-          </div>
-        </div>
+        <ReplayCard
+          replayUrl={project.replay_url}
+          recordedAt={project.replay_recorded_at ?? null}
+          businessName={projectName}
+          storefrontPath={`/project/${project.slug || project.id}`}
+        />
       )}
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
