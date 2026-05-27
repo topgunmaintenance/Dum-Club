@@ -767,12 +767,30 @@ export default function MerchantPage() {
                 <div className="mt-1 break-words text-xs text-state-live/80">
                   {stripeErrorCopy(stripeBanner.reason, stripeBanner.detail)}
                 </div>
+                {/* Inline retry. Every error reason here is retriable —
+                    expired tokens, lost state, network blips, even a
+                    Stripe-side cancel — and the only path forward is
+                    to start a fresh authorize call. Before this button
+                    the merchant had to scroll past the banner, find
+                    the Stripe step card, and click "Connect Stripe"
+                    there. Now the recovery action lives next to the
+                    error explaining why they need it. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStripeBanner(null);
+                    connectStripe();
+                  }}
+                  className="mt-3 inline-flex items-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover hover:text-white"
+                >
+                  Try connecting again →
+                </button>
                 {/* Diagnostic identifier hidden behind a disclosure so
                     the merchant sees calm copy by default; support
                     can still ask "click Show technical details and
                     paste it back" without confusing the merchant
                     with raw reason / detail strings up front. */}
-                <details className="mt-2">
+                <details className="mt-3">
                   <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.12em] text-state-live/50 hover:text-state-live/80">
                     Show technical details
                   </summary>
