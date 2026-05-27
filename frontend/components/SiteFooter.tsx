@@ -83,6 +83,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
             <ul className="space-y-3">
               {[
                 { label: "For Business", href: "/business" },
+                { label: "Why DUM Club", href: "/why-dum-club" },
                 { label: "Pricing", href: "/pricing" },
                 { label: "About", href: "/about" },
                 { label: "Technology", href: "/technology" },
