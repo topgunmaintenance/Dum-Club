@@ -45,6 +45,17 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     return _stageInstance ? "live" : "idle";
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // When getUserMedia fails, the browser's err.name tells us why
+  // (NotAllowedError when the OS or browser blocks the permission,
+  // NotFoundError when no camera/mic is attached, NotReadableError
+  // when another app holds the device). The "Try Again" button alone
+  // can't recover from a denied permission — the user has to flip
+  // the setting in browser/OS first. errorKind drives the recovery
+  // copy below the error banner so the merchant knows what to do
+  // instead of staring at a raw "Permission denied" string.
+  const [errorKind, setErrorKind] = useState<
+    "permission_denied" | "no_device" | "device_busy" | "generic" | null
+  >(null);
   // Suspension flag — Phase 2 grace-period rollout. When the merchant's
   // plan is suspended (3-day payment-failure grace elapsed without a
   // recovery), Go Live is replaced with a plain-English notice. The
@@ -127,10 +138,14 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
     setStatus("requesting_camera");
     setErrorMsg(null);
+    setErrorKind(null);
     __debug && console.log("[ivs-host] Requesting camera/mic");
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setErrorMsg("Camera not supported"); setStatus("error"); onError("Camera not supported");
+      setErrorMsg("This browser can't access your camera.");
+      setErrorKind("generic");
+      setStatus("error");
+      onError("Camera not supported");
       return;
     }
 
@@ -148,9 +163,29 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       }
       setStatus("previewing");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Camera failed";
-      console.error("[ivs-host] getUserMedia failed:", msg);
-      setErrorMsg(msg); setStatus("error"); onError(msg);
+      // err.name is a DOMException identifier; cross-browser stable.
+      // Map the three failure modes a real merchant actually hits to
+      // friendly copy + an errorKind so the UI can show the right
+      // recovery path. Anything else falls through to "generic".
+      const name = err instanceof Error ? err.name : "";
+      const rawMsg = err instanceof Error ? err.message : "Camera failed";
+      let friendly = "Camera or microphone couldn't start.";
+      let kind: typeof errorKind = "generic";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        friendly = "Camera and microphone access was blocked.";
+        kind = "permission_denied";
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        friendly = "No camera or microphone was found on this device.";
+        kind = "no_device";
+      } else if (name === "NotReadableError" || name === "AbortError") {
+        friendly = "Your camera or microphone is being used by another app.";
+        kind = "device_busy";
+      }
+      console.error("[ivs-host] getUserMedia failed:", name, rawMsg);
+      setErrorMsg(friendly);
+      setErrorKind(kind);
+      setStatus("error");
+      onError(rawMsg);
     }
   }, [onError, pinnedOfferId]);
 
@@ -386,8 +421,31 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
       {status === "error" && (
         <div className="space-y-3">
-          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">{errorMsg}</div>
-          <button onClick={() => { setStatus("idle"); setErrorMsg(null); }} className="rounded-xl border border-zinc-800 px-4 py-2 text-sm text-zinc-400 hover:text-white">Try Again</button>
+          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+            <div className="font-semibold">{errorMsg}</div>
+            {errorKind === "permission_denied" && (
+              <div className="mt-2 text-xs leading-relaxed text-red-400/80">
+                Tap the camera or lock icon in your browser&apos;s address bar
+                and allow camera and microphone for this site, then tap
+                Try Again. On iPhone or Android, you may need to open
+                Settings and turn camera and microphone on for your
+                browser.
+              </div>
+            )}
+            {errorKind === "no_device" && (
+              <div className="mt-2 text-xs leading-relaxed text-red-400/80">
+                Plug in a camera and microphone (or use a phone with
+                them built in), then tap Try Again.
+              </div>
+            )}
+            {errorKind === "device_busy" && (
+              <div className="mt-2 text-xs leading-relaxed text-red-400/80">
+                Close any other app using your camera (Zoom, FaceTime,
+                another browser tab), then tap Try Again.
+              </div>
+            )}
+          </div>
+          <button onClick={() => { setStatus("idle"); setErrorMsg(null); setErrorKind(null); }} className="rounded-xl border border-zinc-800 px-4 py-2 text-sm text-zinc-400 hover:text-white">Try Again</button>
         </div>
       )}
 
