@@ -356,8 +356,10 @@ export function PostAndGoLive({ project, stripeVerified, getToken }: Props) {
         </div>
       )}
 
-      {/* Sticky CTA on mobile; inline on desktop */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-default bg-surface-card p-4 sm:relative sm:inset-auto sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0">
+      {/* Sticky CTA on mobile; inline on desktop. pb-[max(...)] keeps
+          the button clear of the iPhone home indicator without leaving
+          an awkward gap on Android. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-default bg-surface-card px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:relative sm:inset-auto sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0">
         <button
           type="button"
           onClick={handleSubmit}
