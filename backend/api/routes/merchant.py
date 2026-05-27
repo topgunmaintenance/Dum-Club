@@ -23,6 +23,7 @@ from services.subscriptions import (
     create_trial_subscription,
     cancel_subscription,
 )
+from services.live_limits import check_rate_limit
 
 router = APIRouter()
 
@@ -455,7 +456,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
 # ── Founding status (public) ──
 
 @router.get("/founding-status")
-async def get_founding_status():
+async def get_founding_status(request: Request):
     """Public endpoint: is the founding-100 program still open?
 
     Returns:
@@ -464,6 +465,15 @@ async def get_founding_status():
     No auth required — drives CTA-copy toggles on /merchant and /business
     (e.g. "Claim a Founding Spot" vs "Join the Waitlist") for visitors
     who aren't signed in yet.
+
+    Rate-limited at 30 requests / minute / client-IP via the in-memory
+    sliding-window in services/live_limits. Polling-based scrapers
+    trying to time the program-open transition get a 429 well before
+    they can build a useful signal; legitimate page loads (1 hit
+    per visitor per page render) never come near the cap. The
+    in-memory bucket resets on Railway restart, which is the
+    acceptable trade-off for an anti-scrape posture without
+    introducing Redis or a new rate-limit dep.
 
     HISTORY: previously also returned `founding_slots_remaining` and
     `total_cap` to drive a "X of 100 spots claimed" scarcity pill on the
@@ -478,6 +488,31 @@ async def get_founding_status():
     separate admin-gated endpoint — DO NOT re-add the count to this
     public response.
     """
+    # Soft rate limit by client IP. X-Forwarded-For first hop is the
+    # real client behind Vercel / Railway proxies; fall back to
+    # X-Real-IP, then request.client.host, then a literal "unknown"
+    # bucket for the pathological no-headers case (all such requests
+    # share one bucket, which is fine for anti-scrape posture).
+    try:
+        xff = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        real_ip = request.headers.get("x-real-ip", "").strip()
+        client_ip = (
+            xff
+            or real_ip
+            or (request.client.host if request.client else "")
+            or "unknown"
+        )
+        err = check_rate_limit(client_ip, "founding-status", 30)
+        if err:
+            raise HTTPException(status_code=429, detail=err)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        # Rate-limit check itself failed (in-memory dict corruption,
+        # late-import error, etc). Fail open so the public CTA path
+        # doesn't break on a defensive-layer bug.
+        print(f"[merchant] founding-status rate-limit check failed: {exc!r}")
+
     try:
         supabase = get_client()
         taken = _count_active_founding(supabase)
