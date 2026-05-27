@@ -273,6 +273,19 @@ export default function DashboardPage() {
     projects.some((p) => p.status === "live")
   );
 
+  // "needsFirstOffer" — Stripe is verified and a project exists, but the
+  // analytics roll-up shows zero offers. This is the moment where the
+  // dashboard should collapse competing prompts and elevate ONE
+  // dominant CTA: post the first offer. analytics may be null on first
+  // render; when it is, needsFirstOffer stays false so we don't hide
+  // surfaces prematurely.
+  const needsFirstOffer = Boolean(
+    merchant?.stripe_connect_status === "verified" &&
+    projects.length > 0 &&
+    analytics &&
+    (!Array.isArray(analytics.top_offers) || analytics.top_offers.length === 0)
+  );
+
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
       <div className="relative z-[1] mx-auto max-w-5xl">
@@ -299,13 +312,15 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
-                Primary action
+                {needsFirstOffer ? "Next step" : "Primary action"}
               </div>
               <div className="mt-2 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
-                Post &amp; Go Live
+                {needsFirstOffer ? "Post your first offer" : "Post & Go Live"}
               </div>
               <p className="mt-1 text-sm text-secondary">
-                Take a photo, set a price, start your show.
+                {needsFirstOffer
+                  ? "One item, one photo, one price. You're set up. This is the last step before you can sell."
+                  : "Take a photo, set a price, start your show."}
               </p>
             </div>
             <span className="shrink-0 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition group-hover:bg-brand-teal-hover group-hover:text-white">
@@ -802,7 +817,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Next best action */}
+        {/* Next best action — hidden when needsFirstOffer is true so the
+            primary "Post your first offer" card above is the only thing
+            asking for the merchant's attention. */}
+        {!needsFirstOffer && (
         <div className="mb-6 rounded-2xl border border-default bg-surface-muted/20 p-5">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">What to do next</div>
           <div className="space-y-2">
@@ -842,6 +860,7 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+        )}
 
         {/* Quick actions. The "Become a Merchant" card hides once the
             merchant is fully onboarded (Stripe verified + business
@@ -870,8 +889,11 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* ── Action Prompts ── */}
-        {user && (
+        {/* ── Action Prompts ── Hidden when needsFirstOffer is true;
+            those Share/Manage/View-orders cards all assume offers
+            already exist, and we want the primary "Post your first
+            offer" card to be the only ask on screen for that state. */}
+        {user && !needsFirstOffer && (
           <div className="mb-10">
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
