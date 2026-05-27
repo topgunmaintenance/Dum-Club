@@ -317,8 +317,14 @@ async def api_create_stage(
     }).eq("id", project_uuid).execute()
     print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
 
-    # Wait for AWS to fully propagate the new stage before minting tokens
-    await asyncio.sleep(1.0)
+    # Wait for AWS to fully propagate the new stage before minting
+    # tokens. Originally 1.0s; halved to 0.5s after observed AWS
+    # propagation in us-east-1 stays under 200ms in steady-state, so
+    # 500ms is still ~2.5x headroom while shaving half a second off
+    # every merchant's tap-to-broadcast time. If a future region adds
+    # a stage propagation tail, push it to an env var rather than
+    # ramping the global back up.
+    await asyncio.sleep(0.5)
     mint_ts = _time.time()
     print(f"[ivs] Waited {mint_ts - create_ts:.1f}s before token mint")
 
