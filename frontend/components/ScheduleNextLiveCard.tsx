@@ -20,6 +20,7 @@ type Props = {
   project: {
     id: string;
     scheduled_live_at: string | null | undefined;
+    recurring_weekly?: boolean | null | undefined;
   };
   getToken: () => Promise<string | null | undefined>;
   onSaved: () => void;
@@ -69,13 +70,17 @@ function formatScheduledLabel(iso: string | null | undefined): string {
 
 export function ScheduleNextLiveCard({ project, getToken, onSaved }: Props) {
   const [value, setValue] = useState<string>(toDatetimeLocal(project.scheduled_live_at));
+  const [recurring, setRecurring] = useState<boolean>(Boolean(project.recurring_weekly));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<"ok" | "err" | null>(null);
 
-  // Re-sync the input when the prop refreshes after a save round-trip.
+  // Re-sync inputs when the prop refreshes after a save round-trip.
   useEffect(() => {
     setValue(toDatetimeLocal(project.scheduled_live_at));
   }, [project.scheduled_live_at]);
+  useEffect(() => {
+    setRecurring(Boolean(project.recurring_weekly));
+  }, [project.recurring_weekly]);
 
   const currentLabel = formatScheduledLabel(project.scheduled_live_at);
 
@@ -94,7 +99,7 @@ export function ScheduleNextLiveCard({ project, getToken, onSaved }: Props) {
       const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(project.id)}`, {
         method: "PATCH",
         headers,
-        body: JSON.stringify({ scheduled_live_at: iso }),
+        body: JSON.stringify({ scheduled_live_at: iso, recurring_weekly: recurring }),
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
       setSaved("ok");
@@ -149,6 +154,18 @@ export function ScheduleNextLiveCard({ project, getToken, onSaved }: Props) {
           {saving ? "Saving..." : currentLabel ? "Update" : "Save"}
         </button>
       </div>
+      <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-secondary">
+        <input
+          type="checkbox"
+          checked={recurring}
+          onChange={(e) => setRecurring(e.target.checked)}
+          className="mt-0.5 h-4 w-4 cursor-pointer rounded border-default text-brand-teal focus:ring-brand-teal"
+        />
+        <span>
+          <span className="font-semibold text-primary">Repeat weekly.</span>{" "}
+          After this slot passes, automatically move the schedule forward by 7 days so customers always see the next show.
+        </span>
+      </label>
       {saved === "ok" && (
         <div className="mt-2 text-[11px] text-brand-teal">Saved. Storefront banner will update on next page load.</div>
       )}

@@ -1617,6 +1617,10 @@ class ProjectUpdate(BaseModel):
     # Drives the "Going live..." storefront banner. NULL clears the
     # schedule. Migration 064.
     scheduled_live_at: Optional[str] = None
+    # Merchant opt-in: after scheduled_live_at passes, the
+    # schedule_rollforward cron auto-advances by +7 days.
+    # Migration 066.
+    recurring_weekly: Optional[bool] = None
 
 
 # Allow-list of fields the popin_config payload may contain. Unknown
