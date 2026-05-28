@@ -560,11 +560,12 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
 
 # Plan price labels keyed off the cached subscription_price_id. Read-side
 # only — Stripe is authoritative for the actual charge amount; this map is
-# for the dashboard banner copy ("$49/month plan starts on...").
+# for the dashboard banner copy ("$99/month plan starts on..."). Source of
+# truth for tier prices: CLAUDE.md v5 §3.
 _PRICE_LABEL_FROM_ENV = {
-    os.getenv("STRIPE_PRICE_ID_STARTER"): ("Starter", 29),
-    os.getenv("STRIPE_PRICE_ID_GROWTH"): ("Growth", 49),
-    os.getenv("STRIPE_PRICE_ID_PRO"): ("Pro", 99),
+    os.getenv("STRIPE_PRICE_ID_STARTER"): ("Starter", 39),
+    os.getenv("STRIPE_PRICE_ID_GROWTH"): ("Growth", 99),
+    os.getenv("STRIPE_PRICE_ID_PRO"): ("Pro", 299),
 }
 
 
@@ -599,7 +600,7 @@ async def get_trial_status(current_user: dict = Depends(get_current_user)):
         "days_remaining": int | None, # negative when trial has ended
         "next_billing_at": str | None,
         "plan_label": str | None,     # "Starter" | "Growth" | "Pro"
-        "plan_price_usd": int | None, # 29 | 49 | 99
+        "plan_price_usd": int | None, # 39 | 99 | 299
       }
     """
     privy_id = current_user.get("sub")

@@ -74,21 +74,22 @@ WINDOW_HOURS = 12
 
 # Plan-label lookup so the email subject lines + bodies read in dollars
 # not Stripe ids. Mirrors backend/api/routes/merchant.py:_PRICE_LABEL_FROM_ENV.
+# Source of truth for tier prices: CLAUDE.md v5 §3.
 _PRICE_USD_FROM_ENV = {
-    os.getenv("STRIPE_PRICE_ID_STARTER"): 29,
-    os.getenv("STRIPE_PRICE_ID_GROWTH"): 49,
-    os.getenv("STRIPE_PRICE_ID_PRO"): 99,
+    os.getenv("STRIPE_PRICE_ID_STARTER"): 39,
+    os.getenv("STRIPE_PRICE_ID_GROWTH"): 99,
+    os.getenv("STRIPE_PRICE_ID_PRO"): 299,
 }
 
 
 def _plan_price_for(price_id: Optional[str]) -> int:
     """Map a stored Stripe Price id to the plain dollar amount we show
-    in the email body. Falls back to the Growth-tier default ($49) if
+    in the email body. Falls back to the Growth-tier default ($99) if
     the id isn't recognised — better than rendering "$0/month" or
     silently failing the send."""
     if price_id and price_id in _PRICE_USD_FROM_ENV:
         return _PRICE_USD_FROM_ENV[price_id]
-    return 49
+    return 99
 
 
 def _format_date(iso_ts: str) -> str:
@@ -262,9 +263,14 @@ def _sweep_expired_grace_periods() -> int:
         return 0
     ids = [r["id"] for r in rows]
     try:
+        # Re-check subscription_status='past_due' in the UPDATE so a
+        # Stripe webhook that recovers a merchant to 'active' between
+        # the SELECT above and this UPDATE doesn't get clobbered back
+        # to suspended. Without this filter, a payment that lands a
+        # few hundred ms before the cron runs would still be punished.
         sb.table("merchants").update({
             "subscription_status": "suspended",
-        }).in_("id", ids).execute()
+        }).eq("subscription_status", "past_due").in_("id", ids).execute()
     except Exception as exc:
         print(f"[trial-reminders] suspend sweep update failed: {exc!r}")
         return 0
