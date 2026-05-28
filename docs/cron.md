@@ -61,7 +61,7 @@ The cron service must inherit the same env as the API service. Critical:
 
 | Var | Why |
 |---|---|
-| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | DB read/write |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` | DB read/write |
 | `RESEND_API_KEY` | email send |
 | `EMAIL_FROM` | sender address |
 | `NEXT_PUBLIC_SITE_URL` | CTA links in email bodies |
@@ -144,7 +144,7 @@ Same as the API service. The bare minimum:
 
 | Var | Why |
 |---|---|
-| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `live_reminders` + read `projects` + atomic claim |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` | scan `live_reminders` + read `projects` + atomic claim |
 | `RESEND_API_KEY` | email send via Resend |
 | `EMAIL_FROM` | sender address shown to customer |
 | `NEXT_PUBLIC_SITE_URL` | builds the "Watch now" link in the email body (`{SITE_URL}/project/{slug}`) |
@@ -292,7 +292,7 @@ strictly in the future (no tight +7 loop).
 
 | Var | Why |
 |---|---|
-| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `projects` + update `scheduled_live_at` |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` | scan `projects` + update `scheduled_live_at` |
 
 **No** `RESEND_API_KEY` needed — this cron does not send email.
 
@@ -380,7 +380,7 @@ Same as the API service. The bare minimum:
 
 | Var | Why |
 |---|---|
-| `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | scan `merchants` + `users` + `projects` + `stream_sessions` + `orders` + write `merchant_recap_log` |
+| `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` | scan `merchants` + `users` + `projects` + `stream_sessions` + `orders` + write `merchant_recap_log` |
 | `RESEND_API_KEY` | email send via Resend |
 | `EMAIL_FROM` | sender address shown to merchant |
 | `NEXT_PUBLIC_SITE_URL` | builds the "Open your dashboard" link |
@@ -510,6 +510,6 @@ Service: merchant_recap       → expect a "start now=..." line within 7 days
 If a service shows no log lines after its first scheduled tick:
 1. Check the service's "Crashed" / "Restarting" status in the dashboard
 2. Confirm env vars match the API service (same `SUPABASE_URL` and
-   `SUPABASE_SERVICE_ROLE_KEY`, in particular)
+   `SUPABASE_SERVICE_KEY`, in particular)
 3. Confirm the run command is exactly the string above — typos in the
    module path produce a `ModuleNotFoundError` at startup
