@@ -192,6 +192,48 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     if (autoStart && status === "idle") startPreview();
   }, [autoStart, status, startPreview]);
 
+  // Permission-denied auto-recovery. When the merchant lands on the
+  // permission_denied error state, the recovery copy tells them to
+  // flip camera + mic on in the browser's address-bar prompt. The
+  // moment that toggle lands, the Permissions API fires a change
+  // event — we re-call startPreview() so the camera comes up without
+  // them having to tap Try Again. Browsers that don't expose the
+  // Permissions API (older Safari) just fall through to the manual
+  // Try Again button below; nothing breaks.
+  useEffect(() => {
+    if (status !== "error" || errorKind !== "permission_denied") return;
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) return;
+
+    let cancelled = false;
+    const cleanups: Array<() => void> = [];
+
+    const watch = async (name: PermissionName) => {
+      try {
+        const perm = await navigator.permissions.query({ name });
+        if (cancelled) return;
+        const handler = () => {
+          if (cancelled) return;
+          if (perm.state === "granted" || perm.state === "prompt") {
+            startPreview();
+          }
+        };
+        handler();
+        perm.addEventListener("change", handler);
+        cleanups.push(() => perm.removeEventListener("change", handler));
+      } catch {
+        // Unknown permission name on this browser — skip silently.
+      }
+    };
+
+    watch("camera" as PermissionName);
+    watch("microphone" as PermissionName);
+
+    return () => {
+      cancelled = true;
+      cleanups.forEach(fn => fn());
+    };
+  }, [status, errorKind, startPreview]);
+
   const goLive = useCallback(async () => {
     // Guard: don't rejoin if already connected
     if (_stageInstance) {
@@ -471,7 +513,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
               </div>
             )}
           </div>
-          <button onClick={() => { setStatus("idle"); setErrorMsg(null); setErrorKind(null); }} className="rounded-xl border border-zinc-800 px-4 py-2 text-sm text-zinc-400 hover:text-white">Try Again</button>
+          <button onClick={startPreview} className="rounded-xl border border-zinc-800 px-4 py-2 text-sm text-zinc-400 hover:text-white">Try Again</button>
         </div>
       )}
 
