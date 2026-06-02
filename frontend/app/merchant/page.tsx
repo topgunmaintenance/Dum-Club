@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { MerchantNextStep } from "../../components/MerchantNextStep";
 import { API_BASE } from "../../lib/apiBase";
 
 type Merchant = {
@@ -842,6 +843,27 @@ export default function MerchantPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Next Step — shared component, single source of truth. The
+            detailed Launch Checklist below it covers the same ground
+            with finer-grained per-step actions; this card is the
+            dominant "what should I do RIGHT NOW" prompt. */}
+        {merchant && (
+          <MerchantNextStep
+            inputs={{
+              isAuthenticated: true,
+              hasMerchant: true,
+              stripeStatus: merchant.stripe_connect_status ?? null,
+              hasBusinessProfile: Boolean(merchant.business_name),
+              hasProject: Boolean(firstProject),
+              offerCount: hasOffer ? 1 : 0,
+              salesCount: 0,
+              gmvUsd: 0,
+              primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
+            }}
+            variant="card"
+          />
         )}
 
         {/* ── Onboarding checklist ──

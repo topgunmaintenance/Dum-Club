@@ -13,6 +13,7 @@ import { GetLiveSteps } from "../../components/GetLiveSteps";
 import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
 import { SubscriptionStatusBar } from "../../components/SubscriptionStatusBar";
+import { MerchantNextStep } from "../../components/MerchantNextStep";
 import { ScheduleNextLiveCard } from "../../components/ScheduleNextLiveCard";
 
 type Project = {
@@ -328,39 +329,36 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Primary action card. Top-of-page so the merchant's main
-            job is one click away. Routes to /dashboard/post which
-            holds the single-screen composer.
-            Pre-first-offer: the headline reads "Create Your First Offer"
-            and the copy stays focused on selling, not on live streaming
-            — going live is a downstream step that's only useful AFTER
-            the merchant has something to sell. Mentioning it up front
-            taught the wrong order and reads as alarming.
-            After first offer: the merchant has graduated to "Post & Go
-            Live" — they have inventory; live streaming is now relevant. */}
-        <Link
-          href="/dashboard/post"
-          className="group mb-8 block rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-6 transition hover:border-brand-teal sm:p-8"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
-                {needsFirstOffer ? "Next step" : "Primary action"}
-              </div>
-              <div className="mt-2 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
-                {needsFirstOffer ? "Create Your First Offer" : "Post & Go Live"}
-              </div>
-              <p className="mt-1 text-sm text-secondary">
-                {needsFirstOffer
-                  ? "Pick one thing you sell and set a price. That's all you need to start selling."
-                  : "Take a photo, set a price, start your show."}
-              </p>
-            </div>
-            <span className="shrink-0 rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition group-hover:bg-brand-teal-hover group-hover:text-white">
-              Start →
-            </span>
-          </div>
-        </Link>
+        {/* Next Step card — state-driven primary action. Replaces the
+            previous Post-&-Go-Live card. The headline, subhead, primary
+            CTA, and (optional) secondary CTA all derive from the
+            merchant's lifecycle state via deriveMerchantState. Single
+            source of truth shared with /merchant and /project/[id]
+            owner-view. */}
+        {user && (() => {
+          const primary = projects.find((p) => p.status === "live") ?? projects[0] ?? null;
+          const offerCount = Array.isArray(analytics?.top_offers)
+            ? analytics.top_offers.length
+            : 0;
+          const salesCount = typeof analytics?.orders_count === "number" ? analytics.orders_count : 0;
+          const gmvUsd = typeof analytics?.gmv_usd === "number" ? analytics.gmv_usd : 0;
+          return (
+            <MerchantNextStep
+              inputs={{
+                isAuthenticated: true,
+                hasMerchant: Boolean(merchant),
+                stripeStatus: merchant?.stripe_connect_status ?? null,
+                hasBusinessProfile: Boolean(bizProfile),
+                hasProject: projects.length > 0,
+                offerCount,
+                salesCount,
+                gmvUsd,
+                primaryProjectSlug: primary ? (primary.slug || primary.id?.toString() || null) : null,
+              }}
+              variant="card"
+            />
+          );
+        })()}
 
         {/* Stats + Wallet + CTA row */}
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
