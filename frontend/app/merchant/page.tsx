@@ -326,6 +326,10 @@ export default function MerchantPage() {
         const data = await res.json();
         setMerchant(data.merchant);
         setShowSignup(false);
+        // Backend auto-creates a storefront project on signup; reload
+        // the project so step 2 ("Add your first offer") renders its
+        // CTA pointing at the freshly-created /project/<slug>/manage.
+        loadFirstProject();
       } else {
         const err = await res.json().catch(() => ({}));
         setError(err.detail || "Signup failed");
@@ -941,9 +945,13 @@ export default function MerchantPage() {
                       ? "You have a live product or service customers can buy."
                       : "Pick one thing you sell and set a price."}
                   </div>
-                  {!hasOffer && firstProject && (
+                  {!hasOffer && (
                     <Link
-                      href={`/project/${firstProject.slug || firstProject.id}/manage#offers`}
+                      href={
+                        firstProject
+                          ? `/project/${firstProject.slug || firstProject.id}/manage#offers`
+                          : "/dashboard/post"
+                      }
                       className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                     >
                       Add offer →
