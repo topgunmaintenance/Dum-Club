@@ -226,6 +226,18 @@ class MerchantSignup(BaseModel):
     business_type: Optional[str] = None
     location_city: Optional[str] = None
     location_state: Optional[str] = None
+    # Tier selected on /pricing or /upgrade. Optional; defaults to "growth"
+    # when absent or unrecognised. Validated against the allowed set at
+    # signup time (any value outside {starter, growth, pro} falls back to
+    # growth rather than failing the signup — UI typos shouldn't lock a
+    # real merchant out of getting set up).
+    tier: Optional[str] = None
+
+
+# Allowed self-serve tiers. Business / Enterprise are quote-only and never
+# reachable from the signup flow — they're set up manually in the Stripe
+# Dashboard after a contract is signed.
+_ALLOWED_SIGNUP_TIERS = {"starter", "growth", "pro"}
 
 
 # ── Helpers ──
@@ -411,11 +423,24 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         except Exception as exc:
             print(f"[merchant/signup] email lookup failed: {exc!r}")
 
+        # Resolve the tier the merchant actually picked on /pricing or
+        # /upgrade. Validate against the allowed self-serve set; anything
+        # missing or unrecognised falls back to growth (the historical
+        # default). Validation here is generous on purpose — a UI typo
+        # shouldn't fail signup, it should just land on growth.
+        requested_tier = (body.tier or "").strip().lower()
+        resolved_tier = requested_tier if requested_tier in _ALLOWED_SIGNUP_TIERS else "growth"
+        if requested_tier and requested_tier != resolved_tier:
+            print(
+                f"[merchant/signup] ignoring unrecognised tier={requested_tier!r}, "
+                f"falling back to {resolved_tier}"
+            )
+
         trial = create_trial_subscription(
             privy_id=privy_id,
             email=user_email,
             business_name=body.business_name,
-            tier="growth",
+            tier=resolved_tier,
         )
         if not trial.get("error"):
             try:
