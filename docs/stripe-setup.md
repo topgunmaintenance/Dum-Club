@@ -56,8 +56,9 @@ Stripe → Developers → Webhooks → **Add endpoint**.
 | API version | latest |
 | Events to send | see list below |
 
-**Events to subscribe to** (six total):
+**Events to subscribe to** (nine total — six subscription events plus three marketplace-order refund/dispute events):
 
+Subscription / billing:
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
@@ -65,9 +66,14 @@ Stripe → Developers → Webhooks → **Add endpoint**.
 - `invoice.payment_succeeded` *(alias for the `invoice.paid` handler in code)*
 - `invoice.payment_failed`
 
+Marketplace-order refund / dispute (added in PR B):
+- `charge.refunded` — buyer refund (full or partial). Mirrors order status to `refunded` / `partially_refunded`.
+- `charge.dispute.created` — buyer files a chargeback. Mirrors order status to `disputed`.
+- `charge.dispute.closed` — chargeback resolved. Sets status to `paid` (won / warning_closed), `chargeback` (lost), or leaves it as `disputed` for any other outcome.
+
 After creating the endpoint, click **Reveal signing secret** and copy `whsec_…`. This goes into `STRIPE_WEBHOOK_SECRET` in step 3.
 
-Note: the same webhook endpoint already handles Connect events (`checkout.session.completed`, `payment_intent.succeeded`, `account.updated`) for merchant payouts. Add the six subscription events to the existing endpoint — do not create a second one.
+Note: the same webhook endpoint already handles Connect events (`checkout.session.completed`, `payment_intent.succeeded`, `account.updated`) for merchant payouts. Add the nine events to the existing endpoint — do not create a second one.
 
 ## 3. Set Railway env vars
 
