@@ -16,6 +16,9 @@
 ### Active diagnostics
 - _None._ The "Untitled Project" fallback on `/project/topgun-maintenance` is resolved in production; `loadProject()` is reaching Railway and the seeded row is hydrating. Visual QA spec `frontend/tests/visual/project-page.spec.ts` now hard-fails if the placeholder reappears.
 
+### Production-ready subsystems
+- **Email + reminder loop** (verified 2026-06-01). `dum.club` Resend domain verified, `RESEND_API_KEY` + `EMAIL_FROM` set on Railway. Four Railway cron services live: `live_reminders` (every 5 min), `schedule_rollforward` (hourly), `trial_reminders` (daily 13:00 UTC), `merchant_recap` (Mondays 13:00 UTC) — all referencing the backend service's variables, all running commit `52903f6` or later. End-to-end smoke confirmed: seed → cron pick-up → Resend POST 200 → Gmail delivery.
+
 ### Known issues — non-blocking
 - _None known._ The previously listed `_resolve_owner_uuid` AttributeError and `apiBase.ts` localhost-in-prod silent fallback have both been resolved: the upsert chain no longer calls `.select()` (postgrest-py 0.16 dropped that method on the upsert builder), and `apiBase.ts` now throws at module load when `NEXT_PUBLIC_API_URL` is missing in a production build.
 
