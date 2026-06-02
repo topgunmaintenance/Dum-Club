@@ -314,10 +314,16 @@ export default function DashboardPage() {
           <p className="mt-2 text-sm text-secondary">Everything you sold, paid, and have left to set up.</p>
         </div>
 
-        {/* Post & Go Live — primary action card. Top-of-page so the
-            merchant's main job (post an item + start the show) is one
-            click away. Routes to /dashboard/post which holds the
-            single-screen composer. */}
+        {/* Primary action card. Top-of-page so the merchant's main
+            job is one click away. Routes to /dashboard/post which
+            holds the single-screen composer.
+            Pre-first-offer: the headline reads "Create Your First Offer"
+            and the copy stays focused on selling, not on live streaming
+            — going live is a downstream step that's only useful AFTER
+            the merchant has something to sell. Mentioning it up front
+            taught the wrong order and reads as alarming.
+            After first offer: the merchant has graduated to "Post & Go
+            Live" — they have inventory; live streaming is now relevant. */}
         <Link
           href="/dashboard/post"
           className="group mb-8 block rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-6 transition hover:border-brand-teal sm:p-8"
@@ -328,11 +334,11 @@ export default function DashboardPage() {
                 {needsFirstOffer ? "Next step" : "Primary action"}
               </div>
               <div className="mt-2 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
-                {needsFirstOffer ? "Post your first offer" : "Post & Go Live"}
+                {needsFirstOffer ? "Create Your First Offer" : "Post & Go Live"}
               </div>
               <p className="mt-1 text-sm text-secondary">
                 {needsFirstOffer
-                  ? "One item, one photo, one price. You're set up. This is the last step before you can sell."
+                  ? "Pick one thing you sell and set a price. That's all you need to start selling."
                   : "Take a photo, set a price, start your show."}
               </p>
             </div>
@@ -361,17 +367,22 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Live — counts projects currently broadcasting (is_live).
-              Was filtering on the workflow column `status==='live'` which
-              missed actively-streaming projects. */}
-          <div className="rounded-2xl border border-default bg-surface-card p-6">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
-              Live
+          {/* Live count — only shown once the merchant has at least
+              one project AND there's something to count (live now OR
+              has gone live before). Teaching "Live" as a primary
+              concept to a brand-new merchant who hasn't created an
+              offer is backwards: selling comes first, going live
+              comes after. The Live stat surfaces only when relevant. */}
+          {projects.length > 0 && (liveCount > 0 || projects.some(p => p.status === "live")) && (
+            <div className="rounded-2xl border border-default bg-surface-card p-6">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
+                Live
+              </div>
+              <div className="mt-2 font-mono text-3xl font-bold text-brand-teal">
+                {liveCount}
+              </div>
             </div>
-            <div className="mt-2 font-mono text-3xl font-bold text-brand-teal">
-              {liveCount}
-            </div>
-          </div>
+          )}
 
           {/* Account — spans the remaining row width on both breakpoints
               (sm: 2 cols, lg: 4 cols) so the dashboard never shows an empty
@@ -396,48 +407,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* DUM Points — compact card (full details in Hub) */}
-        {(() => {
-          const tier = getTier(dumBalance);
-          return (
-            <Link href="/hub" className="mb-6 flex items-center justify-between rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5 transition hover:border-default">
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-brand-teal/60">DUM Points</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-2xl font-extrabold text-brand-teal">{dumBalance}</span>
-                    <span className="rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest" style={{ borderColor: tier.color, color: tier.color }}>
-                      {tier.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <span className="shrink-0 text-xs font-bold text-brand-teal">Manage →</span>
-            </Link>
-          );
-        })()}
-
-        {/* DUM Received from customers */}
-        {projects.length > 0 && !analytics && (() => {
-          const received = projects.reduce((sum, p) => sum + Number(localStorage.getItem(`dum_received_${p.id}`) || "0"), 0);
-          return (
-            <div className="mb-6 rounded-2xl border border-violet-500/15 bg-gradient-to-r from-violet-500/[0.03] to-surface-card p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60">DUM from Customers</div>
-                  {received > 0 ? (
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="text-xl font-extrabold text-violet-400">{received}</span>
-                      <span className="text-sm text-secondary">earned from purchases</span>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-secondary">Earn DUM when customers purchase your offers</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        {/* DUM Points — HIDDEN per CLAUDE.md §12 rule 4: "Never show
+            DUM Points in navbar until Phase 2." Same rule applies to
+            merchant dashboard surfaces. Phase 2 unlock conditions
+            (10+ verified sellers AND $1k+ GMV AND legal review of
+            purchase flow) are NOT met. The /hub page still exists at
+            its direct URL; this is only hiding the dashboard surface.
+            Re-enable when Phase 2 unlocks. */}
 
         {/* Business Profile */}
         {user && (
@@ -885,16 +861,18 @@ export default function DashboardPage() {
         </div>
         )}
 
-        {/* Quick actions. The "Become a Merchant" card hides once the
-            merchant is fully onboarded (Stripe verified + business
-            profile + at least one published storefront) — pushing
-            already-onboarded merchants back to signup reads as a bug.
+        {/* Quick actions. The "Become a Merchant" card hides as soon as
+            the merchant has any merchants row — previously the gate
+            required a live storefront, which left already-onboarded
+            merchants seeing a confusing "Become a Merchant" CTA inside
+            the merchant dashboard. The simpler gate matches the actual
+            user identity: if `merchant` exists, this person IS a
+            merchant — never push them back to signup.
             "My Orders" stays for everyone since orders are useful at
-            every stage. When the "Become a Merchant" card is hidden,
-            "My Orders" expands to span both columns so the row doesn't
-            leave a visible gap. */}
-        <div className={`mb-10 grid gap-4 ${isFullyOnboarded ? "" : "sm:grid-cols-2"}`}>
-          {!isFullyOnboarded && (
+            every stage. When "Become a Merchant" is hidden, "My Orders"
+            spans the row so the layout doesn't leave a gap. */}
+        <div className={`mb-10 grid gap-4 ${merchant ? "" : "sm:grid-cols-2"}`}>
+          {!merchant && (
             <Link
               href="/merchant"
               className="group flex items-center justify-center gap-3 rounded-2xl border border-default bg-brand-teal/5 px-6 py-6 transition hover:border-default hover:bg-brand-teal-soft hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,255,163,0.08)]"
@@ -1011,6 +989,16 @@ export default function DashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               {projects.map((project) => {
                 const st = statusLabel(project);
+                // Storefront is "shareable" once the merchant has
+                // published — pre-live, the link points at a draft
+                // page and would confuse a real customer. Use the
+                // slug when available (cleaner URL) and fall back to
+                // the project id.
+                const storefrontPath = `/project/${project.slug || project.id}`;
+                const storefrontUrl = typeof window !== "undefined"
+                  ? `${window.location.origin}${storefrontPath}`
+                  : storefrontPath;
+                const isShareable = project.status === "live";
                 return (
                   <div
                     key={project.id}
@@ -1033,16 +1021,50 @@ export default function DashboardPage() {
                       </div>
                     </Link>
 
-                    <Link
-                      href={`/project/${project.id}?golive=1`}
-                      className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-red-400"
-                    >
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
-                      </span>
-                      Go Live
-                    </Link>
+                    {/* Copy storefront link — primary post-publish action.
+                        Disabled until status='live' so a brand-new
+                        merchant can't accidentally share a draft URL
+                        with a customer. The disabled state explains
+                        what unlocks it instead of pretending the link
+                        is dead. */}
+                    {isShareable ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (typeof navigator !== "undefined" && navigator.clipboard) {
+                            navigator.clipboard.writeText(storefrontUrl).catch(() => {});
+                          }
+                        }}
+                        className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-brand-teal-soft hover:text-brand-teal"
+                      >
+                        📋 Copy storefront link
+                      </button>
+                    ) : (
+                      <div className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-default bg-surface-muted px-4 py-2.5 text-xs text-muted">
+                        Publish your first offer to unlock sharing
+                      </div>
+                    )}
+
+                    {/* Go Live — only useful once the merchant has at
+                        least one offer to actually sell during the
+                        stream. Hidden on draft projects so the dashboard
+                        doesn't push "Live" before there's something to
+                        sell. Once the project is live, the button is
+                        available on the storefront page itself. */}
+                    {isShareable && (
+                      <Link
+                        href={`/project/${project.id}?golive=1`}
+                        className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+                      >
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-navy opacity-75" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-navy" />
+                        </span>
+                        Go Live
+                      </Link>
+                    )}
                     {/* Preview-as-customer — flips the project page's
                         sessionStorage flag so the merchant sees the
                         storefront the way a buyer would, without the
