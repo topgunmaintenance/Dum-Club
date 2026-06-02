@@ -790,6 +790,136 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
     return {"merchant": merchant_row}
 
 
+# ── Storefront ensure (explicit, idempotent, loud failures) ──
+
+@router.post("/storefront/ensure")
+async def ensure_merchant_storefront(current_user: dict = Depends(get_current_user)):
+    """Idempotent endpoint that GUARANTEES the authed merchant has a
+    projects row, OR returns a structured error explaining why one
+    can't be created.
+
+    Replaces the silent-fail pattern of auto-create-in-signup: every
+    column constraint failure on the projects insert (which used to
+    leave the merchant in a dead-end loop with no surfaced error) now
+    bubbles up as a JSON response the frontend can render verbatim.
+
+    Returns:
+      200 {"ok": true,  "project": {...}, "created": bool}
+      200 {"ok": false, "error": "<exact message>",
+                        "code": "<short tag>",
+                        "missing_column": "<col name>"  # when parseable
+          }
+
+    Always 200 — the caller treats `ok` as the success signal so the
+    UI can show the error inline rather than fighting an HTTP-status
+    error handler.
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    supabase = get_client()
+
+    # 1. Resolve the merchant row. Without it, we can't proceed —
+    #    storefront is keyed off business_name + business_profile_id.
+    merchant_res = (
+        supabase.table("merchants")
+        .select("id, business_name, business_profile_id")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not merchant_res.data:
+        return {
+            "ok": False,
+            "code": "merchant_not_found",
+            "error": "No merchant account on file. Finish merchant signup first.",
+        }
+    m = merchant_res.data[0]
+
+    # 2. Already exists? Return it. Idempotent.
+    existing = (
+        supabase.table("projects")
+        .select("id, slug, status, name, title, account_id")
+        .eq("privy_id", privy_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        proj = existing.data[0]
+        # Stamp account_id if it's somehow NULL (legacy orphan from
+        # PR #305 / pre-#306 window).
+        if proj.get("account_id") is None:
+            try:
+                al = (
+                    supabase.table("account_logins")
+                    .select("account_id")
+                    .eq("privy_did", privy_id)
+                    .limit(1)
+                    .execute()
+                )
+                if al.data and al.data[0].get("account_id"):
+                    supabase.table("projects").update({
+                        "account_id": al.data[0]["account_id"],
+                    }).eq("id", proj["id"]).execute()
+                    proj["account_id"] = al.data[0]["account_id"]
+            except Exception as exc:
+                print(f"[storefront/ensure] account_id stamp failed for privy={privy_id[-6:]}: {exc!r}")
+        return {"ok": True, "project": proj, "created": False}
+
+    # 3. No project — create one. _create_storefront_project handles
+    #    the column defaults + slug/symbol collision retries + verbose
+    #    failure logging (`[merchant/signup] project insert failed
+    #    slug=... token_symbol=...: <Type>: <message>`).
+    #
+    #    If it returns None, the insert hit a constraint we haven't
+    #    accounted for. Surface the most recent log line's parsed
+    #    column hint in the response so the dashboard can display it
+    #    rather than a useless dead-end.
+    import io as _io
+    import contextlib as _ctx
+    buf = _io.StringIO()
+    with _ctx.redirect_stdout(buf):
+        proj = _create_storefront_project(
+            supabase,
+            privy_id=privy_id,
+            business_name=m.get("business_name") or "",
+            business_profile_id=m.get("business_profile_id"),
+        )
+    captured = buf.getvalue()
+    # Replay captured stdout so the operator still sees the log lines
+    # in Railway.
+    print(captured, end="")
+
+    if proj:
+        return {"ok": True, "project": proj, "created": True}
+
+    # Parse the most useful hint out of the failure log if present.
+    # The line shape from _create_storefront_project is:
+    #   [merchant/signup] project insert failed slug=<...> token_symbol=<...>: <Type>: <message>
+    # which lets us pull out the Postgres column-name when the
+    # underlying error is a NOT NULL or FK violation.
+    error_msg = "We could not create your storefront. Please reach support."
+    missing_col: Optional[str] = None
+    for line in captured.splitlines():
+        if "project insert failed" in line:
+            error_msg = line.split("project insert failed", 1)[1].strip()
+            # Try to extract a column name from the Postgres message.
+            import re as _re
+            col_match = _re.search(r'column "([^"]+)"', line)
+            if col_match:
+                missing_col = col_match.group(1)
+            break
+
+    return {
+        "ok": False,
+        "code": "project_insert_failed",
+        "error": error_msg,
+        "missing_column": missing_col,
+    }
+
+
 # ── 60-day trial status (dashboard countdown) ──
 
 # Plan price labels keyed off the cached subscription_price_id. Read-side
