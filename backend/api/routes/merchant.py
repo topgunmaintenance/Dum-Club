@@ -240,6 +240,81 @@ class MerchantSignup(BaseModel):
 _ALLOWED_SIGNUP_TIERS = {"starter", "growth", "pro"}
 
 
+def _slugify_business_name(name: str) -> str:
+    """Lowercase, alphanumeric+hyphens only, collapsed, max 50 chars.
+    Empty string if the input has no alphanumeric chars."""
+    if not name:
+        return ""
+    import re as _re
+    s = _re.sub(r"[^a-z0-9]+", "-", name.lower())
+    s = _re.sub(r"-+", "-", s).strip("-")
+    return s[:50]
+
+
+def _create_storefront_project(
+    supabase, *, privy_id: str, business_name: str, business_profile_id: Optional[str],
+) -> Optional[dict]:
+    """Insert a `projects` row tied to this merchant so the rest of the
+    dashboard ("Add your first offer", install snippet, Go Live) has
+    something to attach to.
+
+    Slug collision strategy: try the slugified business name, then
+    `slug-2` ... `slug-5`, then fall back to `slug-<last-8-chars-of-privy_id>`.
+    Returns the inserted row, or None on total failure (caller treats as
+    non-fatal — merchant can still complete signup, the project gets
+    backfilled on next /api/merchant/me hit).
+
+    Defaults match CLAUDE.md doctrine: status='draft' so it doesn't show
+    on Discover until the merchant actually goes live; review_status
+    'pending' until the operator approves; no token (token_status='inactive').
+    """
+    base_slug = _slugify_business_name(business_name) or "merchant"
+    candidates = [base_slug] + [f"{base_slug}-{n}" for n in range(2, 6)]
+    candidates.append(f"{base_slug}-{(privy_id or '')[-8:].lower()}")
+
+    title = (business_name or "").strip() or "My Storefront"
+    base_row = {
+        "name": title,
+        "title": title,
+        "description": "",
+        "category": "service",
+        "template_type": "local_service",
+        "status": "draft",
+        "review_status": "pending",
+        "visibility": "public",
+        "is_deleted": False,
+        "verified": False,
+        "is_verified": False,
+        "profile_strength": 10,
+        "privy_id": privy_id,
+        "business_profile_id": business_profile_id,
+        "token_status": "inactive",
+    }
+
+    for slug in candidates:
+        try:
+            res = (
+                supabase.table("projects")
+                .insert({**base_row, "slug": slug})
+                .execute()
+            )
+            if res.data:
+                print(f"[merchant/signup] created storefront project slug={slug} for privy={privy_id[-6:]}")
+                return res.data[0]
+        except Exception as exc:
+            # Unique-key violation on slug → try the next candidate.
+            msg = repr(exc).lower()
+            is_dup = "23505" in msg or "duplicate" in msg or "unique" in msg
+            if is_dup:
+                continue
+            # Non-duplicate failure (e.g. constraint we haven't anticipated)
+            # — log and bail. The merchant signup itself still succeeds.
+            print(f"[merchant/signup] project insert failed slug={slug}: {exc!r}")
+            return None
+    print(f"[merchant/signup] all slug candidates collided for privy={privy_id[-6:]} — skipped project create")
+    return None
+
+
 # ── Helpers ──
 
 def _get_merchant_or_404(privy_id: str):
@@ -395,6 +470,27 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         if last_error is not None:
             detail = f"{detail}: {last_error!r}"
         raise HTTPException(status_code=500, detail=detail)
+
+    # ── Storefront project auto-create ────────────────────────────
+    # The /merchant launch checklist ("Add your first offer", "Paste the
+    # snippet", "Go Live") all need a project row to attach to. Without
+    # this auto-create, brand-new merchants land in a dead end where the
+    # "Add offer" button can't render because firstProject is null and
+    # no UI exists to create the project explicitly. Best-effort: if the
+    # insert fails we still return the merchant row; the project gets
+    # backfilled on the next GET /api/merchant/me hit.
+    try:
+        project_row = _create_storefront_project(
+            supabase,
+            privy_id=privy_id,
+            business_name=body.business_name,
+            business_profile_id=bp_id,
+        )
+        if project_row:
+            inserted["_storefront_project_id"] = project_row.get("id")
+            inserted["_storefront_project_slug"] = project_row.get("slug")
+    except Exception as exc:
+        print(f"[merchant/signup] storefront project create raised: {exc!r}")
 
     # ── 60-day trial provisioning ─────────────────────────────────
     # Founding-100 merchants are grandfathered into $0-forever pricing per
@@ -578,7 +674,34 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
     )
     if not res.data:
         return {"merchant": None}
-    return {"merchant": res.data[0]}
+
+    merchant_row = res.data[0]
+
+    # Backfill: legacy merchants signed up before auto-create-storefront
+    # have a merchants row but no projects row, so the dashboard checklist
+    # dead-ends at "Add your first offer". Create the project on the fly.
+    # Best-effort; failures are silent because the merchant fetch itself
+    # is the primary purpose of this endpoint.
+    try:
+        existing_proj = (
+            supabase.table("projects")
+            .select("id")
+            .eq("privy_id", privy_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+        if not existing_proj.data:
+            _create_storefront_project(
+                supabase,
+                privy_id=privy_id,
+                business_name=merchant_row.get("business_name") or "",
+                business_profile_id=merchant_row.get("business_profile_id"),
+            )
+    except Exception as exc:
+        print(f"[merchant/me] storefront backfill check failed: {exc!r}")
+
+    return {"merchant": merchant_row}
 
 
 # ── 60-day trial status (dashboard countdown) ──
