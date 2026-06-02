@@ -758,12 +758,23 @@ async def create_payment_intent(
                 },
                 "quantity": 1,
             }],
+            # Stripe-visible metadata. The fee fields below carry the
+            # product-side name "Marketplace Fee" so the Stripe Dashboard
+            # readers (operator, merchant viewing their connected account)
+            # see the same vocabulary the merchant UI uses. The Stripe
+            # API still treats the deduction as `application_fee_amount`
+            # at the PaymentIntent level — Stripe's label is fixed.
             "metadata": {
                 "offer_id": offer["id"],
                 "buyer_user_id": buyer_user_id,
                 "seller_user_id": seller_user_id,
                 "project_id": project_id,
                 "stripe_connect_account_id": merchant_stripe_id,
+                "gross_sale_cents": str(amount_cents),
+                "marketplace_fee_cents": str(application_fee_cents),
+                "marketplace_fee_percent": f"{float(commission_rate) * 100:.2f}",
+                "seller_receives_cents": str(seller_payout_cents - application_fee_cents),
+                "fee_label": "DUM Club Marketplace Fee",
             },
             "success_url": _append_query_param(success_url, "checkout", "success"),
             "cancel_url": _append_query_param(cancel_url, "checkout", "cancelled"),
@@ -832,6 +843,11 @@ async def create_payment_intent(
                 "project_id": project_id,
                 "order_id": order["id"],
                 "stripe_connect_account_id": merchant_stripe_id,
+                "gross_sale_cents": str(amount_cents),
+                "marketplace_fee_cents": str(application_fee_cents),
+                "marketplace_fee_percent": f"{float(commission_rate) * 100:.2f}",
+                "seller_receives_cents": str(seller_payout_cents - application_fee_cents),
+                "fee_label": "DUM Club Marketplace Fee",
             },
             stripe_account=merchant_stripe_id,
         )

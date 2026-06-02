@@ -5,7 +5,7 @@
  *
  * One-call snapshot of platform operational health: active livestreams,
  * monthly viewer-hour consumption, cap-warning merchants, last-30-day
- * Stripe platform fees, last-7-day stream activity.
+ * Marketplace Fees collected, last-7-day stream activity.
  *
  * Backed by GET /api/admin/operations/overview (admin-gated). The page
  * polls every 30s so an admin watching during outreach hours sees
@@ -125,11 +125,11 @@ function OpsPage() {
             }
           />
           <Stat
-            label="Stripe fees · 30d"
+            label="Marketplace fees · 30d"
             value={data ? `$${data.stripe_fees_30d.platform_fee_usd.toLocaleString()}` : "—"}
             sub={
               data
-                ? `from $${data.stripe_fees_30d.gmv_usd.toLocaleString()} GMV · ${data.stripe_fees_30d.order_count} orders`
+                ? `collected on $${data.stripe_fees_30d.gmv_usd.toLocaleString()} GMV · ${data.stripe_fees_30d.order_count} orders`
                 : ""
             }
           />

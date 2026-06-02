@@ -7004,32 +7004,55 @@ return (
                           ${Number(order.amount_paid_usd).toFixed(2)}
                         </div>
                         {(() => {
-                          // Compute the real per-order Stripe fee from
-                          // the data already on the row (no extra call).
-                          // Falls back to generic text when the math
-                          // isn't sensible (NaN / negative — e.g. a
-                          // refund row or a pending order where net
-                          // hasn't been set yet).
+                          // Per-order Marketplace Fee breakdown, computed
+                          // from data already on the row (no extra call).
+                          // `seller_receives_usd` is the merchant's payout
+                          // AFTER our 1% Marketplace Fee but BEFORE Stripe's
+                          // own processing fee, which Stripe deducts on
+                          // payout. gross - net here equals the Marketplace
+                          // Fee, not the Stripe processing fee. Falls back
+                          // to a plain copy line when the math isn't sensible
+                          // (e.g. refund / pending row).
                           const gross = Number(order.amount_paid_usd || 0);
                           const net = Number(order.seller_receives_usd || 0);
                           const fee = Math.max(0, gross - net);
-                          const feeMsg = Number.isFinite(fee) && fee > 0
-                            ? `$${fee.toFixed(2)} Stripe processing fee. DUM Club takes 0%.`
-                            : "Stripe processing fee. DUM Club takes 0%.";
+                          const breakdownOk = Number.isFinite(fee) && fee > 0 && Number.isFinite(net) && net > 0;
+                          const tipMsg = breakdownOk
+                            ? `Gross Sale $${gross.toFixed(2)} − Marketplace Fee $${fee.toFixed(2)} (1%) = Net Received $${net.toFixed(2)}. Marketplace Fee is deducted from your payout; the customer is not charged extra. Stripe's own processing fee is applied separately on payout.`
+                            : "Net of Marketplace Fee. Stripe's processing fee is applied separately on payout.";
                           return (
                             <div
-                              className="text-[10px] text-muted mt-0.5 inline-flex items-center gap-1"
-                              title={feeMsg}
+                              className="text-[10px] text-muted mt-0.5 inline-flex flex-col items-end gap-0.5"
+                              title={tipMsg}
                             >
-                              <span>You receive: ${Number(order.seller_receives_usd).toFixed(2)}</span>
-                              <button
-                                type="button"
-                                aria-label={feeMsg}
-                                title={feeMsg}
-                                className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
-                              >
-                                ?
-                              </button>
+                              {breakdownOk ? (
+                                <>
+                                  <span>Marketplace Fee: −${fee.toFixed(2)}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <span>Net Received: ${net.toFixed(2)}</span>
+                                    <button
+                                      type="button"
+                                      aria-label={tipMsg}
+                                      title={tipMsg}
+                                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
+                                    >
+                                      ?
+                                    </button>
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="inline-flex items-center gap-1">
+                                  <span>Net Received: ${Number(order.seller_receives_usd || 0).toFixed(2)}</span>
+                                  <button
+                                    type="button"
+                                    aria-label={tipMsg}
+                                    title={tipMsg}
+                                    className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-default text-[9px] font-semibold text-muted hover:text-primary"
+                                  >
+                                    ?
+                                  </button>
+                                </span>
+                              )}
                             </div>
                           );
                         })()}
