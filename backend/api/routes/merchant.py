@@ -312,6 +312,38 @@ def _create_storefront_project(
     except Exception as exc:
         print(f"[merchant/signup] account_id resolve failed privy={privy_id[-6:]}: {exc!r}")
 
+    # Resolve wallet_address from the canonical source. projects.wallet_address
+    # has a NOT NULL constraint in production (Postgres rejects the insert
+    # otherwise). users.wallet_address is the system-wide source of truth —
+    # populated by /api/auth/sync on every Privy login; every other project-
+    # insert path (POST /api/projects/, /api/launch, /api/generate-app) reads
+    # the same column via _resolve_owner_uuid. The merchant signup form
+    # doesn't expose this field to the user, so we look it up server-side.
+    #
+    # Fallback: if users.wallet_address is NULL (Privy sync hasn't populated
+    # it yet, OR the auth/sync code path that writes the wallet is broken
+    # for this DID — separate investigation), use a deterministic sentinel
+    # keyed on the privy_id. The sentinel is explicitly prefixed so it
+    # never collides with a real Solana base58 address, and re-tries for
+    # the same merchant collapse to the same value instead of leaking
+    # placeholder rows.
+    wallet_address: str = ""
+    try:
+        u = (
+            supabase.table("users")
+            .select("wallet_address")
+            .eq("privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
+        if u.data and u.data[0].get("wallet_address"):
+            wallet_address = u.data[0]["wallet_address"]
+    except Exception as exc:
+        print(f"[merchant/signup] users.wallet_address lookup failed privy={privy_id[-6:]}: {exc!r}")
+    if not wallet_address:
+        wallet_address = f"non-wallet:{privy_id}"
+        print(f"[merchant/signup] no users.wallet_address for privy={privy_id[-6:]}, using sentinel")
+
     title = (business_name or "").strip() or "My Storefront"
     # Defensive column set: mirrors every column the Topgun storefront seed
     # (migration 031_topgun_storefront_seed.sql) writes. Some of these
@@ -336,6 +368,7 @@ def _create_storefront_project(
         "privy_id": privy_id,
         "business_profile_id": business_profile_id,
         "account_id": account_id,
+        "wallet_address": wallet_address,
         "token_name": title,
         "token_supply": 0,
         "token_decimals": 0,
