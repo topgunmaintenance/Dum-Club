@@ -12,6 +12,7 @@ import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
 import { GetLiveSteps } from "../../components/GetLiveSteps";
 import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
+import { SubscriptionStatusBar } from "../../components/SubscriptionStatusBar";
 import { ScheduleNextLiveCard } from "../../components/ScheduleNextLiveCard";
 
 type Project = {
@@ -304,7 +305,7 @@ export default function DashboardPage() {
       <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-6">
           <div className="text-[10px] uppercase tracking-[0.35em] text-muted">
             Dashboard
           </div>
@@ -313,6 +314,19 @@ export default function DashboardPage() {
           </h1>
           <p className="mt-2 text-sm text-secondary">Everything you sold, paid, and have left to set up.</p>
         </div>
+
+        {/* Subscription status bar. Top of dashboard, above the primary
+            action card, because plan / pricing / fee / Stripe state are
+            trust signals — the merchant should see them before taking
+            any action. Renders one of four variants (founder / trial /
+            paid / fallback) based on /api/merchant/trial-status. Never
+            blocks the dashboard render. */}
+        {user && (
+          <SubscriptionStatusBar
+            getToken={getToken}
+            stripeConnectStatus={merchant?.stripe_connect_status}
+          />
+        )}
 
         {/* Primary action card. Top-of-page so the merchant's main
             job is one click away. Routes to /dashboard/post which
