@@ -251,6 +251,23 @@ def _slugify_business_name(name: str) -> str:
     return s[:50]
 
 
+def _token_symbol_from_slug(slug: str) -> str:
+    """Derive a 2-10 char [A-Z0-9] token symbol from the slug.
+
+    Most merchant storefronts don't have a real on-chain token (token_status
+    stays 'inactive'), but the projects schema appears to require a non-NULL
+    UNIQUE token_symbol — every existing project including the Topgun seed
+    sets one. This generator gives each storefront a unique symbol derived
+    from its slug so the insert satisfies whatever NOT NULL / UNIQUE
+    constraint exists, without coupling the value to any consumer surface.
+    """
+    base = "".join(ch for ch in (slug or "").upper() if ch.isalnum())
+    if not base:
+        base = "STORE"
+    # Stripe / token symbol semantics: 2-10 chars, alphanumeric.
+    return base[:10] if len(base) >= 2 else (base + "X" * (2 - len(base)))
+
+
 def _create_storefront_project(
     supabase, *, privy_id: str, business_name: str, business_profile_id: Optional[str],
 ) -> Optional[dict]:
@@ -260,9 +277,11 @@ def _create_storefront_project(
 
     Slug collision strategy: try the slugified business name, then
     `slug-2` ... `slug-5`, then fall back to `slug-<last-8-chars-of-privy_id>`.
-    Returns the inserted row, or None on total failure (caller treats as
-    non-fatal — merchant can still complete signup, the project gets
-    backfilled on next /api/merchant/me hit).
+    Token-symbol collision is bumped per-attempt with a numeric suffix so
+    a slug collision doesn't reuse the same symbol on retry. Returns the
+    inserted row, or None on total failure (caller treats as non-fatal —
+    merchant can still complete signup, the project gets backfilled on
+    next /api/merchant/me hit).
 
     Defaults match CLAUDE.md doctrine: status='draft' so it doesn't show
     on Discover until the merchant actually goes live; review_status
@@ -294,6 +313,12 @@ def _create_storefront_project(
         print(f"[merchant/signup] account_id resolve failed privy={privy_id[-6:]}: {exc!r}")
 
     title = (business_name or "").strip() or "My Storefront"
+    # Defensive column set: mirrors every column the Topgun storefront seed
+    # (migration 031_topgun_storefront_seed.sql) writes. Some of these
+    # (token_symbol, token_supply, token_decimals, token_status) appear to
+    # be NOT NULL in production — the project insert silently fails when
+    # they're omitted, even though they're not exercised on the merchant
+    # dashboard. Defaults below mirror Topgun's "no on-chain token" pattern.
     base_row = {
         "name": title,
         "title": title,
@@ -304,36 +329,57 @@ def _create_storefront_project(
         "review_status": "pending",
         "visibility": "public",
         "is_deleted": False,
+        "sort_order": 0,
         "verified": False,
         "is_verified": False,
         "profile_strength": 10,
         "privy_id": privy_id,
         "business_profile_id": business_profile_id,
         "account_id": account_id,
+        "token_name": title,
+        "token_supply": 0,
+        "token_decimals": 0,
+        "token_utility": "Services storefront — no token",
         "token_status": "inactive",
+        "token_mint_address": None,
+        "token_created_at": None,
+        "promo_copy": "",
+        "store_items": [],
+        "ai_output": {},
     }
 
-    for slug in candidates:
+    last_exc: Optional[Exception] = None
+    for idx, slug in enumerate(candidates):
+        token_symbol = _token_symbol_from_slug(slug)
+        # Numeric suffix on collision-retry attempts so the token_symbol
+        # uniqueness constraint doesn't trip on the same symbol twice.
+        if idx > 0:
+            token_symbol = (token_symbol[: max(2, 10 - len(str(idx + 1)))]) + str(idx + 1)
         try:
             res = (
                 supabase.table("projects")
-                .insert({**base_row, "slug": slug})
+                .insert({**base_row, "slug": slug, "token_symbol": token_symbol})
                 .execute()
             )
             if res.data:
-                print(f"[merchant/signup] created storefront project slug={slug} for privy={privy_id[-6:]}")
+                print(f"[merchant/signup] created storefront project slug={slug} token_symbol={token_symbol} for privy={privy_id[-6:]}")
                 return res.data[0]
         except Exception as exc:
-            # Unique-key violation on slug → try the next candidate.
+            last_exc = exc
             msg = repr(exc).lower()
             is_dup = "23505" in msg or "duplicate" in msg or "unique" in msg
             if is_dup:
+                # Try the next slug+symbol pair.
                 continue
-            # Non-duplicate failure (e.g. constraint we haven't anticipated)
-            # — log and bail. The merchant signup itself still succeeds.
-            print(f"[merchant/signup] project insert failed slug={slug}: {exc!r}")
+            # Non-duplicate failure (e.g. NOT NULL or FK violation) — log
+            # the FULL exception so the next operator iteration can name
+            # the missing column, then bail. Signup itself still succeeds.
+            print(f"[merchant/signup] project insert failed slug={slug} token_symbol={token_symbol}: {type(exc).__name__}: {exc}")
             return None
-    print(f"[merchant/signup] all slug candidates collided for privy={privy_id[-6:]} — skipped project create")
+    if last_exc is not None:
+        print(f"[merchant/signup] all slug candidates exhausted for privy={privy_id[-6:]} last_err={type(last_exc).__name__}: {last_exc}")
+    else:
+        print(f"[merchant/signup] all slug candidates collided for privy={privy_id[-6:]} — skipped project create")
     return None
 
 
