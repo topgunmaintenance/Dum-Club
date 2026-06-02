@@ -272,6 +272,27 @@ def _create_storefront_project(
     candidates = [base_slug] + [f"{base_slug}-{n}" for n in range(2, 6)]
     candidates.append(f"{base_slug}-{(privy_id or '')[-8:].lower()}")
 
+    # Resolve the canonical account_id for this merchant. Without it, the
+    # row is invisible to list_projects (and therefore /api/projects/?owner_id=
+    # returns empty, which deadlocks the /dashboard/post and /merchant
+    # checklist flows). _resolve_account_id reads account_logins.privy_did →
+    # accounts.id; if no row exists yet (very-first-session race) we leave
+    # account_id NULL and the legacy privy_id fallback in list_projects
+    # takes over.
+    account_id: Optional[str] = None
+    try:
+        al = (
+            supabase.table("account_logins")
+            .select("account_id")
+            .eq("privy_did", privy_id)
+            .limit(1)
+            .execute()
+        )
+        if al.data and al.data[0].get("account_id"):
+            account_id = al.data[0]["account_id"]
+    except Exception as exc:
+        print(f"[merchant/signup] account_id resolve failed privy={privy_id[-6:]}: {exc!r}")
+
     title = (business_name or "").strip() or "My Storefront"
     base_row = {
         "name": title,
@@ -288,6 +309,7 @@ def _create_storefront_project(
         "profile_strength": 10,
         "privy_id": privy_id,
         "business_profile_id": business_profile_id,
+        "account_id": account_id,
         "token_status": "inactive",
     }
 
@@ -680,12 +702,15 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
     # Backfill: legacy merchants signed up before auto-create-storefront
     # have a merchants row but no projects row, so the dashboard checklist
     # dead-ends at "Add your first offer". Create the project on the fly.
+    # Also stamp account_id on orphan rows from the PR #305 window where
+    # the project was created but account_id was left NULL (which makes
+    # the row invisible to list_projects's canonical-accounts filter).
     # Best-effort; failures are silent because the merchant fetch itself
     # is the primary purpose of this endpoint.
     try:
         existing_proj = (
             supabase.table("projects")
-            .select("id")
+            .select("id, account_id")
             .eq("privy_id", privy_id)
             .eq("is_deleted", False)
             .limit(1)
@@ -698,6 +723,21 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
                 business_name=merchant_row.get("business_name") or "",
                 business_profile_id=merchant_row.get("business_profile_id"),
             )
+        elif existing_proj.data[0].get("account_id") is None:
+            # Project exists but account_id is NULL — invisible to
+            # list_projects. Stamp it now.
+            al = (
+                supabase.table("account_logins")
+                .select("account_id")
+                .eq("privy_did", privy_id)
+                .limit(1)
+                .execute()
+            )
+            if al.data and al.data[0].get("account_id"):
+                supabase.table("projects").update({
+                    "account_id": al.data[0]["account_id"],
+                }).eq("privy_id", privy_id).is_("account_id", "null").execute()
+                print(f"[merchant/me] backfilled account_id on projects for privy={privy_id[-6:]}")
     except Exception as exc:
         print(f"[merchant/me] storefront backfill check failed: {exc!r}")
 
