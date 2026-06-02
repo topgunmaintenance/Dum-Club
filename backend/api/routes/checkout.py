@@ -1317,6 +1317,114 @@ async def stripe_webhook(request: Request):
             except Exception as mail_exc:
                 print(f"[webhook] reminder dispatch failed sub={sub_id}: {mail_exc!r}")
 
+    elif event["type"] == "charge.refunded":
+        # Marketplace order was refunded (full or partial) in Stripe.
+        # The event payload is the Charge object AFTER the refund. We
+        # look up the corresponding order by stripe_payment_intent_id
+        # (Strategy 2 in _find_order) and stamp the status so the
+        # /project/[id] order list and /orders buyer surface reflect
+        # reality.
+        #
+        # Idempotency: the processed_webhook_events claim at the top
+        # of this handler already prevents duplicate processing of the
+        # same event_id. A subsequent partial-refund event arriving
+        # AFTER a full-refund event is a different event_id and will
+        # re-stamp the status — that's fine, the latest write wins
+        # and the values are consistent with the Stripe state at the
+        # time the event fired.
+        #
+        # No money math here. We never recompute application_fee_amount
+        # or seller_receives_usd; Stripe handles the actual reversal,
+        # we only mirror the status label.
+        charge = event["data"]["object"]
+        pi_id = charge.get("payment_intent") or ""
+        session_id = ""  # not on Charge events; pi_id is the canonical key
+        metadata = charge.get("metadata") or {}
+        order = _find_order(session_id, pi_id, metadata)
+        if not order:
+            print(f"[webhook] charge.refunded: no order match for pi={pi_id}")
+        else:
+            amount = int(charge.get("amount") or 0)
+            amount_refunded = int(charge.get("amount_refunded") or 0)
+            fully_refunded = bool(charge.get("refunded")) or (amount > 0 and amount_refunded >= amount)
+            new_status = "refunded" if fully_refunded else "partially_refunded"
+            try:
+                supabase.table("orders").update({
+                    "status": new_status,
+                    "updated_at": _now_iso(),
+                }).eq("id", order["id"]).execute()
+                print(
+                    f"[webhook] charge.refunded: order={order['id']} "
+                    f"status={new_status} amount_refunded={amount_refunded} amount={amount}"
+                )
+            except Exception as exc:
+                print(f"[webhook] charge.refunded: update failed order={order['id']}: {exc!r}")
+
+    elif event["type"] == "charge.dispute.created":
+        # Buyer filed a chargeback with their card issuer. Stripe holds
+        # the funds; the platform has a deadline to submit evidence.
+        # We only mirror the status here — evidence submission stays
+        # in the Stripe Dashboard (operator workflow).
+        dispute = event["data"]["object"]
+        pi_id = dispute.get("payment_intent") or ""
+        session_id = ""
+        metadata = dispute.get("metadata") or {}
+        order = _find_order(session_id, pi_id, metadata)
+        if not order:
+            print(f"[webhook] charge.dispute.created: no order match for pi={pi_id}")
+        else:
+            try:
+                supabase.table("orders").update({
+                    "status": "disputed",
+                    "updated_at": _now_iso(),
+                }).eq("id", order["id"]).execute()
+                print(
+                    f"[webhook] charge.dispute.created: order={order['id']} "
+                    f"amount={dispute.get('amount')} reason={dispute.get('reason')!r}"
+                )
+            except Exception as exc:
+                print(f"[webhook] charge.dispute.created: update failed order={order['id']}: {exc!r}")
+
+    elif event["type"] == "charge.dispute.closed":
+        # Dispute resolved. dispute.status is the outcome:
+        #   won            — platform kept the money; restore order to paid
+        #   lost           — issuer reversed the charge; mark chargeback
+        #   warning_closed — inquiry resolved without a formal dispute; restore to paid
+        # Anything else (e.g. warning_needs_response slipping through)
+        # we leave as 'disputed' and log for operator follow-up.
+        dispute = event["data"]["object"]
+        outcome = (dispute.get("status") or "").lower()
+        pi_id = dispute.get("payment_intent") or ""
+        session_id = ""
+        metadata = dispute.get("metadata") or {}
+        order = _find_order(session_id, pi_id, metadata)
+        if not order:
+            print(f"[webhook] charge.dispute.closed: no order match for pi={pi_id} outcome={outcome!r}")
+        else:
+            if outcome in ("won", "warning_closed"):
+                new_status = "paid"
+            elif outcome == "lost":
+                new_status = "chargeback"
+            else:
+                new_status = None  # leave existing 'disputed' in place
+            if new_status is None:
+                print(
+                    f"[webhook] charge.dispute.closed: order={order['id']} "
+                    f"unhandled outcome={outcome!r}, leaving status unchanged"
+                )
+            else:
+                try:
+                    supabase.table("orders").update({
+                        "status": new_status,
+                        "updated_at": _now_iso(),
+                    }).eq("id", order["id"]).execute()
+                    print(
+                        f"[webhook] charge.dispute.closed: order={order['id']} "
+                        f"outcome={outcome} → status={new_status}"
+                    )
+                except Exception as exc:
+                    print(f"[webhook] charge.dispute.closed: update failed order={order['id']}: {exc!r}")
+
     else:
         print(f"[webhook] Unhandled event: {event['type']}")
 

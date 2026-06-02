@@ -401,6 +401,66 @@ class WebhookNoRecomputeTests(unittest.TestCase):
             )
 
 
+class RefundDisputeWebhookSourceTests(unittest.TestCase):
+    """Static checks on the new charge.refunded / charge.dispute.*
+    branches added in PR B. These confirm the routing is wired in the
+    webhook source and that none of them touch fee-audit columns.
+
+    Wired in: api/routes/checkout.py:stripe_webhook event dispatch."""
+
+    def _webhook_source(self) -> str:
+        from api.routes.checkout import stripe_webhook
+        import inspect
+        return inspect.getsource(stripe_webhook)
+
+    def test_charge_refunded_branch_present(self):
+        src = self._webhook_source()
+        self.assertIn('"charge.refunded"', src)
+        # Both outcomes — full and partial — must be expressible
+        self.assertIn('"refunded"', src)
+        self.assertIn('"partially_refunded"', src)
+
+    def test_charge_dispute_created_branch_present(self):
+        src = self._webhook_source()
+        self.assertIn('"charge.dispute.created"', src)
+        self.assertIn('"disputed"', src)
+
+    def test_charge_dispute_closed_branch_present(self):
+        src = self._webhook_source()
+        self.assertIn('"charge.dispute.closed"', src)
+        # Both terminal outcomes must be expressible
+        self.assertIn('"chargeback"', src)
+        # The "won" outcome restores to paid — covered by the existing
+        # 'paid' literal elsewhere in the handler. Verify the branch
+        # uses the dispute.status field rather than guessing.
+        self.assertIn('"won"', src)
+        self.assertIn('"lost"', src)
+
+    def test_refund_dispute_branches_dont_touch_fee_audit_columns(self):
+        """The branches must NOT recompute application_fee_amount_cents
+        or resolved_commission_rate. Same rule as process_order_paid:
+        once set at session-create time, those columns are immutable."""
+        src = self._webhook_source()
+        # The webhook source already references these strings in unrelated
+        # branches (the SQL builder for the order insert in the SOL path
+        # lives outside stripe_webhook). Scope the check to just the new
+        # branches by extracting the slice from 'charge.refunded' to the
+        # final 'else:' Unhandled branch.
+        start = src.index('"charge.refunded"')
+        end = src.rindex('print(f"[webhook] Unhandled event:')
+        branches_slice = src[start:end]
+        self.assertNotIn(
+            "application_fee_amount_cents",
+            branches_slice,
+            msg="refund/dispute branches must not rewrite application_fee_amount_cents",
+        )
+        self.assertNotIn(
+            "resolved_commission_rate",
+            branches_slice,
+            msg="refund/dispute branches must not rewrite resolved_commission_rate",
+        )
+
+
 class SolPathCommissionAuditTests(unittest.TestCase):
     """SOL path must stamp resolved_commission_rate (and
     application_fee_amount_cents for the audit "would-have-been" value)
