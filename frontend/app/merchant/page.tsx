@@ -62,6 +62,18 @@ export default function MerchantPage() {
   const [bizType, setBizType] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  // Tier selected on /pricing or /upgrade (CTA hrefs carry `?tier=`).
+  // Empty string when the user landed on /merchant directly — backend
+  // defaults to growth in that case. Read once on mount from the URL.
+  const [tier, setTier] = useState<string>("");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get("tier") || "").toLowerCase();
+    if (raw === "starter" || raw === "growth" || raw === "pro") {
+      setTier(raw);
+    }
+  }, []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -304,6 +316,10 @@ export default function MerchantPage() {
           business_type: bizType.trim() || null,
           location_city: city.trim() || null,
           location_state: state.trim() || null,
+          // Only include tier when one was selected via /pricing or
+          // /upgrade. Omitting (null) lets the backend keep its
+          // existing growth default for direct /merchant arrivals.
+          tier: tier || null,
         }),
       });
       if (res.ok) {

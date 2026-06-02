@@ -38,7 +38,7 @@ const TIERS = [
       "Listed on Discover page",
     ],
     cta: "Get Started",
-    href: "/merchant",
+    href: "/merchant?tier=starter",
   },
   {
     name: "Growth",
@@ -56,7 +56,7 @@ const TIERS = [
       "Best Deals This Week eligibility",
     ],
     cta: "Get Started",
-    href: "/merchant",
+    href: "/merchant?tier=growth",
   },
   {
     name: "Pro",
@@ -75,7 +75,7 @@ const TIERS = [
       "Priority placement in search",
     ],
     cta: "Get Started",
-    href: "/merchant",
+    href: "/merchant?tier=pro",
   },
 ];
 

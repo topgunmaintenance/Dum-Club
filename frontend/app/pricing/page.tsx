@@ -65,7 +65,7 @@ const TIERS: Tier[] = [
       "Listed on Discover",
     ],
     ctaLabel: "Start with Starter",
-    ctaHref: "/merchant",
+    ctaHref: "/merchant?tier=starter",
   },
   {
     name: "Growth",
@@ -80,7 +80,7 @@ const TIERS: Tier[] = [
       "Best Deals This Week eligibility",
     ],
     ctaLabel: "Start with Growth",
-    ctaHref: "/merchant",
+    ctaHref: "/merchant?tier=growth",
     highlight: true,
   },
   {
@@ -97,7 +97,7 @@ const TIERS: Tier[] = [
       "Priority placement in search",
     ],
     ctaLabel: "Start with Pro",
-    ctaHref: "/merchant",
+    ctaHref: "/merchant?tier=pro",
   },
   {
     name: "Business",
