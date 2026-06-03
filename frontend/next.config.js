@@ -66,6 +66,12 @@ const nextConfig = {
       { source: "/contact", destination: "/about#contact", permanent: false },
       { source: "/for-business", destination: "/business", permanent: true },
       { source: "/become-a-merchant", destination: "/merchant", permanent: true },
+      // Signup aliases. /signup and /register previously 404'd, so any
+      // ad, email, or referral link using those common paths dead-ended.
+      // Merchant signup lives at /merchant. 308 permanent so the redirect
+      // is cached and search signal consolidates on the canonical page.
+      { source: "/signup", destination: "/merchant", permanent: true },
+      { source: "/register", destination: "/merchant", permanent: true },
     ];
   },
 };
