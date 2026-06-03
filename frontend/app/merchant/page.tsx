@@ -385,6 +385,9 @@ export default function MerchantPage() {
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
             Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1% sales fee. Industry-low (Whatnot takes 8%). No credit card.
           </p>
+          <p className="mx-auto mt-2 max-w-sm text-[13px] font-semibold text-secondary">
+            Plans start at $39/month after your trial. Cancel anytime.
+          </p>
 
           <button
             onClick={() => login()}
@@ -403,11 +406,13 @@ export default function MerchantPage() {
           <h2 className="text-center text-lg font-extrabold tracking-tight text-primary">
             What happens after you sign up
           </h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {[
               { n: "1", title: "Sign in", body: "Use your email or Google. No password to remember." },
               { n: "2", title: "Enter business name", body: "One field. That's the whole signup." },
               { n: "3", title: "Connect Stripe", body: "When you're ready to take payments. Money goes straight to your bank." },
+              { n: "4", title: "Create your first offer", body: "Add a photo, set a price. Takes 30 seconds." },
+              { n: "5", title: "You're live", body: "Share your link. Customers can buy immediately." },
             ].map((step) => (
               <div key={step.n} className="rounded-2xl border border-default bg-surface-page p-5 text-center">
                 <div className="mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
