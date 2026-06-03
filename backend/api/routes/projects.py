@@ -706,12 +706,36 @@ async def list_public_projects():
         # migration) this will throw — fall through to standard results.
         print(f"[projects] public verified query failed (ignored): {exc!r}")
 
-    # Union + dedupe by id. Verified rows win when duplicates exist.
+    # Pass 3: actively-live projects. A store that is broadcasting right now
+    # should be discoverable while live, regardless of review_status /
+    # publication status — live commerce surfaces live sellers, and a real
+    # merchant who clicks Go Live must show up on /discover. Still respect
+    # visibility + soft-delete. Going live requires Stripe verification
+    # upstream (ivs /create-stage), so this is not an open door.
+    live_rows: list[dict] = []
+    try:
+        lres = (
+            supabase.table("projects")
+            .select("*")
+            .eq("is_live", True)
+            .eq("is_deleted", False)
+            .eq("visibility", "public")
+            .limit(50)
+            .execute()
+        )
+        live_rows = lres.data or []
+    except Exception as exc:
+        print(f"[projects] public live query failed (ignored): {exc!r}")
+
+    # Union + dedupe by id. Verified / live rows win when duplicates exist.
     by_id: dict[str, dict] = {}
     for p in standard_rows:
         if p.get("id"):
             by_id[p["id"]] = p
     for p in verified_rows:
+        if p.get("id"):
+            by_id[p["id"]] = p
+    for p in live_rows:
         if p.get("id"):
             by_id[p["id"]] = p
 
