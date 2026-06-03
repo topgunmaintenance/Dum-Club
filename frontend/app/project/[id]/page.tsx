@@ -3471,13 +3471,6 @@ const heroUtility =
   // Prefer backend reviews if available, fall back to local
   const averageRating = backendReviewCount > 0 ? backendAvgRating : localAvgRating;
   const totalReviewCount = backendReviewCount > 0 ? backendReviewCount : feedbackEntries.length;
-  const nextStepMessage = isRejected
-    ? "Make edits and resubmit"
-    : isSubmitted
-    ? "Waiting for admin approval"
-    : isPending
-    ? "Ready to submit for review"
-    : "Complete your project details";
 
   const isSimulated = isSimulatedToken(tokenMeta.mint_address || project?.token_mint_address);
 
@@ -7176,7 +7169,7 @@ return (
 
               <div className="mt-6 rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
-                <div className="mt-2 text-sm text-primary">{nextStepMessage}</div>
+                <div className="mt-2 text-sm text-primary">Add an offer, then share your store link to make your first sale.</div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -7186,17 +7179,6 @@ return (
                 >
                   Edit Project
                 </Link>
-                {(reviewStatus === "draft" || reviewStatus === "pending") && (
-                  <button
-                    type="button"
-                    onClick={() => submitReview()}
-                    disabled={loadingAction}
-                    className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                    style={{ background: accent }}
-                  >
-                    {loadingAction ? "Submitting..." : "Submit for Review"}
-                  </button>
-                )}
               </div>
             </>
           )}
