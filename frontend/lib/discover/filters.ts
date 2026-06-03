@@ -85,6 +85,10 @@ export function categoryIncludesProject(project: Project, category: DiscoverCate
  * land on /discover regardless of legacy field shape.
  */
 export function isDiscoverable(project: Project): boolean {
+  // An actively-live store is always discoverable while broadcasting —
+  // live commerce surfaces live sellers, even before their profile is
+  // fully built out. Mirrors the backend /api/projects/public live pass.
+  if (project.is_live === true) return true;
   if (!project.verified && !hasOffers(project)) return false;
   const desc = (project.description || "").trim();
   if (desc.length < 20) return false;
