@@ -7063,9 +7063,13 @@ return (
           this off the public/customer storefront. */}
       {showOwnerInlineUi && (() => {
         const hasOffer = offers.length > 0;
-        // "Live" for a merchant means a buyer can find and shop the store
-        // right now — either it's published or it's broadcasting live.
-        const storeIsLive = Boolean(project?.is_live) || project?.status === "live";
+        // Store "live" here means the storefront is PUBLISHED and shoppable
+        // (status === "live") — the publication signal. This is deliberately
+        // NOT is_live: is_live is the livestream/broadcast state, a separate
+        // concept (the backend keeps them distinct — see projects.py: status
+        // = public publication/discover visibility, is_live = broadcasting).
+        // A store can be published with the livestream off, and vice versa.
+        const storeIsLive = project?.status === "live";
         const rawDesc = (project?.description || "").trim();
         const descIsPlaceholder =
           !rawDesc ||
