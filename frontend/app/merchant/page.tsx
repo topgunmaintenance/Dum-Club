@@ -1384,7 +1384,7 @@ export default function MerchantPage() {
               Your numbers show up here
             </div>
             <div className="text-base font-semibold text-primary">
-              Transactions · Revenue · DUM Issued · Page Views
+              Transactions · Revenue · Page Views
             </div>
             <p className="mx-auto mt-2 max-w-sm text-sm text-secondary">
               Once your first sale lands, this panel lights up with live stats.
@@ -1417,7 +1417,7 @@ export default function MerchantPage() {
             </div>
             <div>
               <p className="text-sm text-secondary">Print this and display at your register.</p>
-              <p className="text-xs text-secondary mt-1">Customers scan to earn DUM Points on every visit.</p>
+              <p className="text-xs text-secondary mt-1">Customers scan to open your storefront.</p>
               <a
                 href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrUrl)}`}
                 download="dum-club-qr.png"

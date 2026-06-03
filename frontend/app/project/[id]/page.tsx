@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
 import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
+import { deriveStoreStatusCta } from "../../../lib/storeStatus";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
 const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
@@ -2836,65 +2837,9 @@ export default function ProjectPage() {
     subscription: { label: "Subscription", color: "border-default text-brand-teal" },
   };
 
-  async function submitReview(e?: React.FormEvent) {
-    e?.preventDefault();
-
-    if (!tokenName.trim() || !tokenSymbol.trim() || !tokenSupply.trim()) {
-      notify("Please complete your business setup before submitting.", "error");
-      return;
-    }
-
-    const isPlaceholder =
-      !project?.description ||
-      project.description === "Auto-created from dashboard." ||
-      project.description.startsWith("Project workspace for ");
-
-    if (isPlaceholder) {
-      notify("Please add a real description before submitting for review.", "error");
-      return;
-    }
-
-    try {
-      setLoadingAction(true);
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const userId = user?.id;
-      if (!userId || !UUID_RE.test(userId)) {
-        notify("Please sign in with a valid account to submit for review.", "error");
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/projects/${id}/submit-review`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          user_id: userId,
-        },
-        body: JSON.stringify({
-          token_name: tokenName.trim(),
-          token_symbol: tokenSymbol.trim().toUpperCase(),
-          token_supply: Number(tokenSupply),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to submit review");
-      }
-
-      await loadProject();
-      await loadTokenMetadata();
-      notify("Project submitted for review.", "success");
-    } catch (err: any) {
-      console.error(err);
-      notify(err.message || "Failed to submit review", "error");
-    } finally {
-      setLoadingAction(false);
-    }
-  }
+  // The merchant-facing "Submit for Review" flow was removed — review
+  // never published a store and only confused new merchants. Publishing
+  // and going live happen through the offer + Go Live flows on this page.
 
   async function approveProject() {
     try {
@@ -3471,14 +3416,6 @@ const heroUtility =
   // Prefer backend reviews if available, fall back to local
   const averageRating = backendReviewCount > 0 ? backendAvgRating : localAvgRating;
   const totalReviewCount = backendReviewCount > 0 ? backendReviewCount : feedbackEntries.length;
-  const nextStepMessage = isRejected
-    ? "Make edits and resubmit"
-    : isSubmitted
-    ? "Waiting for admin approval"
-    : isPending
-    ? "Ready to submit for review"
-    : "Complete your project details";
-
   const isSimulated = isSimulatedToken(tokenMeta.mint_address || project?.token_mint_address);
 
   // ── Hero display values (read-only aliases; gates unchanged) ─────────────
@@ -7117,91 +7054,95 @@ return (
       {/* ── AI Tools (Score + Builder. Analytics view) ────────────── */}
 
 
-      {/* The Business Status card lives here as the owner's launch
-          readiness signal — Edit Project + Submit for Review buttons
-          and draft/publication pills. Without this gate the surface
-          renders to every anonymous storefront visitor (the customer/
-          owner separation audit's headline leak). showOwnerInlineUi
-          is `isOwner && !viewAsCustomer`, matching the gate the other
-          adjacent owner sections (Business Blueprint, Seller Sales,
-          Manage) already use. */}
-      {showOwnerInlineUi && (
-        <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-default" : "border-default"} border bg-surface-card p-6`}>
-          <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-brand-teal/60" : "text-muted"}`}>
-            Store Status
-          </div>
-
-          <h2 className="text-2xl font-bold text-primary sm:text-3xl">
-            {isApprovedProject ? launchSectionHeading : projectName}
-          </h2>
-          <p className="mt-2 text-sm text-secondary">
-            {isApprovedProject
-              ? (nextStepHint || "Your business is live on DUM Club.")
-              : (project?.description || parsedAiOutput?.description || "No description available yet.")}
-          </p>
-
-          {isApprovedProject ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-default bg-surface-page p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted">Status</div>
-                <div className="mt-2 text-lg font-bold text-brand-teal">Live</div>
-              </div>
-              <div className="rounded-2xl border border-default bg-surface-page p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted">Checkout</div>
-                <div className="mt-2 text-primary">Stripe</div>
-              </div>
+      {/* Store Status card — the owner's single launch-readiness signal
+          and primary call to action. It collapses to one plain next step
+          plus one big button so a non-technical owner knows exactly what
+          to do in a few seconds. The old token/review "Submit for Review"
+          flow is gone: review never published a store and only confused
+          merchants. showOwnerInlineUi (isOwner && !viewAsCustomer) keeps
+          this off the public/customer storefront. */}
+      {showOwnerInlineUi && (() => {
+        const hasOffer = offers.length > 0;
+        // "Live" for a merchant means a buyer can find and shop the store
+        // right now — either it's published or it's broadcasting live.
+        const storeIsLive = Boolean(project?.is_live) || project?.status === "live";
+        const rawDesc = (project?.description || "").trim();
+        const descIsPlaceholder =
+          !rawDesc ||
+          rawDesc === "Auto-created from dashboard." ||
+          rawDesc.startsWith("Project workspace for ");
+        const { nextStep, primaryLabel, primaryAction } = deriveStoreStatusCta({ hasOffer, storeIsLive });
+        const storeUrl =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/project/${project?.slug || id}`
+            : `/project/${project?.slug || id}`;
+        // Primary action wires to the page's real flows — never a dead
+        // button. Go Live uses the IVS host when enabled, otherwise the
+        // legacy camera preview, matching how the rest of the page goes
+        // live.
+        const runPrimaryAction = () => {
+          if (primaryAction === "add_offer") {
+            openOfferForm();
+            scrollToSection("offers-section");
+          } else if (primaryAction === "go_live") {
+            if (IVS_REALTIME_ENABLED) {
+              setAutoGoLive(true);
+              scrollToSection("project-live-host");
+            } else {
+              startCameraPreview();
+            }
+          } else {
+            copyToClipboard(storeUrl, "store link");
+            setCopyFlash(true);
+            window.setTimeout(() => setCopyFlash(false), 2000);
+          }
+        };
+        const primaryClass =
+          primaryAction === "go_live"
+            ? "bg-state-live text-white hover:bg-red-400"
+            : "bg-brand-teal text-black hover:bg-brand-teal-hover";
+        return (
+          <div className="mb-8 rounded-3xl border border-default bg-surface-card p-5 sm:p-6">
+            <div className="mb-3 text-xs uppercase tracking-[0.3em] text-muted">
+              Store Status
             </div>
-          ) : (
-            <>
-              <div className="mt-4 inline-flex rounded-full border border-default px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
-                {category}
-              </div>
 
-              {/* Pre-sale: hide the Review/Publication technical grid — a
-                  brand-new merchant doesn't act on it, and "pending/draft"
-                  reads as something being wrong. It returns once they've
-                  made a sale. The DUM Points tile is removed entirely. */}
-              {ownerHasSales && (
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-default bg-surface-page p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted">Review</div>
-                    <div className="mt-2 text-primary">{reviewStatus}</div>
-                  </div>
-                  <div className="rounded-2xl border border-default bg-surface-page p-4">
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted">Publication</div>
-                    <div className="mt-2 text-primary">{project?.status || "draft"}</div>
-                  </div>
-                </div>
-              )}
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-2xl font-bold text-primary sm:text-3xl">{projectName}</h2>
+              <span className="mt-1 shrink-0 rounded-full border border-default px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">
+                Business
+              </span>
+            </div>
 
-              <div className="mt-6 rounded-2xl border border-default bg-surface-page p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
-                <div className="mt-2 text-sm text-primary">{nextStepMessage}</div>
-              </div>
+            <p className="mt-2 text-sm text-secondary">
+              {descIsPlaceholder
+                ? "Add a short description so customers know what you offer."
+                : rawDesc}
+            </p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  href="/dashboard"
-                  className="rounded-2xl border border-default bg-surface-page px-5 py-3 text-sm uppercase tracking-[0.18em] text-primary transition hover:bg-surface-muted"
-                >
-                  Edit Project
-                </Link>
-                {(reviewStatus === "draft" || reviewStatus === "pending") && (
-                  <button
-                    type="button"
-                    onClick={() => submitReview()}
-                    disabled={loadingAction}
-                    className="rounded-2xl px-5 py-3 text-sm uppercase tracking-[0.18em] text-black transition hover:opacity-90 disabled:opacity-50"
-                    style={{ background: accent }}
-                  >
-                    {loadingAction ? "Submitting..." : "Submit for Review"}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+            <div className="mt-5 rounded-2xl border border-default bg-surface-page p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
+              <div className="mt-1.5 text-sm font-medium text-primary">{nextStep}</div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={runPrimaryAction}
+                className={`w-full rounded-2xl px-6 py-3.5 text-center text-base font-bold transition active:scale-[0.99] sm:w-auto ${primaryClass}`}
+              >
+                {primaryAction === "copy_link" && copyFlash ? "Copied ✓" : primaryLabel}
+              </button>
+              <Link
+                href="/dashboard"
+                className="w-full rounded-2xl border border-default bg-surface-page px-6 py-3.5 text-center text-base font-semibold text-primary transition hover:bg-surface-muted sm:w-auto"
+              >
+                Edit Project
+              </Link>
+            </div>
+          </div>
+        );
+      })()}
 
 
         {/* Business Blueprint is advanced/curiosity tooling — irrelevant to

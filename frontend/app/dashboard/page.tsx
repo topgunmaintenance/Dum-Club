@@ -63,8 +63,12 @@ import { API_BASE } from "../../lib/apiBase";
 function statusLabel(project: Project): { text: string; color: string } {
   const s = project.status || "draft";
   if (s === "live") return { text: "Live", color: "text-brand-teal border-default bg-brand-teal-soft" };
-  if (project.review_status === "submitted") return { text: "In Review", color: "text-amber-400 border-amber-400/30 bg-amber-400/10" };
-  if (project.review_status === "approved") return { text: "Approved", color: "text-sky-400 border-sky-400/30 bg-sky-400/10" };
+  // Pre-sale merchants shouldn't see review / approval / publication
+  // states on their dashboard — "In Review" / "Approved" / "pending"
+  // read like a gatekeeping process and confuse a brand-new merchant
+  // who just wants to set up and sell. Everything that isn't live is a
+  // simple "Draft". The submit-for-review/publish path still lives on
+  // the storefront page itself.
   return { text: "Draft", color: "text-secondary border-default bg-surface-muted" };
 }
 
@@ -463,7 +467,7 @@ export default function DashboardPage() {
                           <span className="rounded-full bg-surface-muted border border-default px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-secondary">Unverified</span>
                         )}
                       </div>
-                      <div className="text-[11px] text-secondary">{bizProfile.category} · Accepts DUM Points</div>
+                      <div className="text-[11px] text-secondary">{bizProfile.category}{hasMadeSale ? " · Accepts DUM Points" : ""}</div>
                     </div>
                   </div>
                   {bizProfile.verification_status === "unverified" && (
@@ -551,7 +555,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-bold text-primary">Set up your business profile</div>
-                      <p className="mt-1 text-xs text-secondary">Add your business identity, get verified, and accept DUM Points</p>
+                      <p className="mt-1 text-xs text-secondary">Add your business identity and get verified</p>
                     </div>
                     <button
                       onClick={() => setShowBizForm(true)}
@@ -591,15 +595,21 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-1 text-[11px] text-muted">total earned</div>
               </div>
-              <div className="rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-brand-teal/60">DUM Received</div>
-                <div className="mt-1 font-mono text-2xl font-bold text-brand-teal">{analytics.total_dum_received || 0}</div>
-                <div className="mt-1 text-[11px] text-muted">
-                  {analytics.dum_discount_orders > 0
-                    ? `${analytics.dum_discount_orders} order${analytics.dum_discount_orders !== 1 ? "s" : ""} used DUM discount`
-                    : "from customer DUM spending"}
+              {/* DUM Received — held back until the merchant's first sale.
+                  Before any sale a "DUM Received: 0" tile is just
+                  confusing token-style noise on the dashboard. It returns
+                  on its own once real sales (and DUM activity) exist. */}
+              {hasMadeSale && (
+                <div className="rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
+                  <div className="text-[10px] uppercase tracking-[0.28em] text-brand-teal/60">DUM Received</div>
+                  <div className="mt-1 font-mono text-2xl font-bold text-brand-teal">{analytics.total_dum_received || 0}</div>
+                  <div className="mt-1 text-[11px] text-muted">
+                    {analytics.dum_discount_orders > 0
+                      ? `${analytics.dum_discount_orders} order${analytics.dum_discount_orders !== 1 ? "s" : ""} used DUM discount`
+                      : "from customer DUM spending"}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Per-project breakdown */}
@@ -845,7 +855,8 @@ export default function DashboardPage() {
         {/* Next best action — hidden when needsFirstOffer is true so the
             primary "Post your first offer" card above is the only thing
             asking for the merchant's attention. */}
-        {!needsFirstOffer && (
+        {!needsFirstOffer &&
+         (projects.length === 0 || projects.some((p) => p.status === "live") || hasMadeSale) && (
         <div className="mb-6 rounded-2xl border border-default bg-surface-muted/20 p-5">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">What to do next</div>
           <div className="space-y-2">
@@ -863,11 +874,15 @@ export default function DashboardPage() {
                 <span className="text-base">🏷️</span>
                 <div>
                   <div className="text-sm font-bold text-primary">Add or improve offers</div>
-                  <div className="text-[11px] text-secondary">Earn +5 DUM Points per offer</div>
+                  <div className="text-[11px] text-secondary">Add or edit what you sell</div>
                 </div>
               </Link>
             )}
-            {dumBalance < 50 && (
+            {/* Discover / explore prompts are about earning DUM Points by
+                shopping other stores — off-task noise for a merchant who
+                hasn't made their first sale yet. They return once the
+                first sale lands. */}
+            {hasMadeSale && dumBalance < 50 && (
               <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">💡</span>
                 <div>
@@ -876,7 +891,7 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            {!isPreSelling && (
+            {hasMadeSale && (
               <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
                 <span className="text-base">🔍</span>
                 <div>
