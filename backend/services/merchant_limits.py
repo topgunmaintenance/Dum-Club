@@ -41,6 +41,14 @@ from typing import Any, Optional
 # cap, configurable per-merchant on contract.
 DEFAULT_MAX_STREAM_DURATION_MIN = 60
 
+# Base tier every merchant starts on. Used as a graceful fallback when a
+# merchant row has plan_id = NULL (historically left unset at signup). This
+# is NOT a permissive default — 'starter' carries concrete, non-NULL caps
+# (the most restrictive real tier), so the "fail closed on a NULL cap"
+# doctrine still holds. The signup path + backfill migration set plan_id
+# explicitly; this fallback only keeps Go Live working if one slips through.
+DEFAULT_PLAN_ID = "starter"
+
 
 class MerchantLimitsUnresolved(Exception):
     """No live-streaming limits could be resolved for the merchant.
@@ -116,7 +124,20 @@ def resolve_merchant_limits(merchant_id: str, *, supabase: Any) -> MerchantLimit
 
     plan_id = merchant.get("plan_id")
     if not plan_id:
-        raise MerchantLimitsUnresolved(merchant_id, "merchants.plan_id is NULL")
+        # A merchant with no plan assigned is, by product definition, on the
+        # base Starter tier (founding/standard both map to 'starter' —
+        # migration 051). Signup historically left plan_id NULL on insert,
+        # which hard-blocked Go Live with a confusing "contact support to set
+        # your stream caps" message. Default to Starter's concrete caps so
+        # livestreaming degrades gracefully instead of failing closed on what
+        # is really an onboarding-data gap. The signup path now sets plan_id
+        # at insert and a backfill migration repairs existing rows; this is
+        # defense in depth.
+        print(
+            f"[merchant_limits] plan_id NULL for merchant_id={merchant_id!r}; "
+            f"defaulting to {DEFAULT_PLAN_ID!r} (onboarding-data gap)"
+        )
+        plan_id = DEFAULT_PLAN_ID
 
     # 2. Per-merchant override row (may be absent — that's fine, all
     #    fields fall through to the plan default).

@@ -1902,8 +1902,8 @@ async def go_live(
             detail={
                 "code": "merchant_limits_unresolved",
                 "message": (
-                    "Your account isn't fully configured for live streaming. "
-                    "Reach out to support so we can set your stream caps before you go live."
+                    "Live setup is still finishing for your account. "
+                    "Please try again in a moment."
                 ),
                 "reason": exc.reason,
             },

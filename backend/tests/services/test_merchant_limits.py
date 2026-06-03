@@ -258,13 +258,21 @@ class TestFailClosed(unittest.TestCase):
         with self.assertRaises(MerchantLimitsUnresolved):
             resolve_merchant_limits(MID, supabase=sb)
 
-    def test_null_plan_id_raises(self):
+    def test_null_plan_id_defaults_to_starter(self):
+        """Onboarding historically left merchants.plan_id NULL, which used
+        to hard-block Go Live with a confusing "contact support" error.
+        The resolver now defaults a NULL plan_id to the base Starter tier
+        (concrete caps, never "unlimited"). Root cause is fixed at signup
+        and by a backfill migration; this is defense in depth."""
         sb = _supabase_with(
             merchant_row={"id": MID, "plan_id": None, "active": True},
+            plan_row=PLAN_STARTER,
         )
-        with self.assertRaises(MerchantLimitsUnresolved) as ctx:
-            resolve_merchant_limits(MID, supabase=sb)
-        self.assertIn("plan_id is NULL", ctx.exception.reason)
+        limits = resolve_merchant_limits(MID, supabase=sb)
+        self.assertEqual(limits.plan_id, "starter")
+        self.assertEqual(limits.max_concurrent_viewers, 250)
+        self.assertEqual(limits.max_concurrent_streams, 1)
+        self.assertEqual(limits.max_monthly_viewer_hours, Decimal("250"))
 
     def test_missing_plan_limits_row_raises(self):
         sb = _supabase_with(
