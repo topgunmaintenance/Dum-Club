@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ScrollReveal } from "../components/motion/ScrollReveal";
+import { LiveRail } from "../components/discover/LiveRail";
 
 // Below-the-fold components — code-split out of the initial homepage
 // bundle so the hero text (the LCP element on mobile) can paint without
@@ -1988,6 +1989,27 @@ export default function Home() {
   const [findResults, setFindResults] = useState<Project[] | null>(null);
   const [findLoading, setFindLoading] = useState(false);
   const [findCity, setFindCity] = useState("");
+
+  // Live businesses for the homepage "Live Now" rail. The homepage was a
+  // merchant pitch with no shopper-facing content; this surfaces real-time
+  // activity so a visitor immediately sees who is broadcasting. Best-effort
+  // single fetch on mount; LiveRail renders nothing when no one is live, so
+  // an empty state is impossible.
+  const [discoverProjects, setDiscoverProjects] = useState<Project[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/projects/public`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setDiscoverProjects(data.projects || data || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const hasLiveNow = discoverProjects.some((p) => p.is_live === true);
   const [findSuggestSent, setFindSuggestSent] = useState(false);
   const [findTopOffer, setFindTopOffer] = useState<{ title: string; price: number; label: string; reason: string } | null>(null);
   // AI agent layer state
@@ -2712,12 +2734,23 @@ export default function Home() {
                   brand-teal-hover. The old emerald glow shadow is
                   removed for a flatter SaaS feel. */}
               <div className="mt-8 flex flex-col items-center gap-3">
-                <Link
-                  href="/merchant"
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-                >
-                  Start free for 60 days →
-                </Link>
+                {/* Two doors: merchants start a trial, shoppers browse what
+                    is live right now. The homepage previously offered only
+                    the merchant CTA, so shoppers had no entry point. */}
+                <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:justify-center">
+                  <Link
+                    href="/merchant"
+                    className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+                  >
+                    Start free for 60 days →
+                  </Link>
+                  <Link
+                    href="/discover"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-default bg-surface-card px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-brand-teal hover:text-brand-teal"
+                  >
+                    Browse live deals →
+                  </Link>
+                </div>
                 <Link
                   href="/pricing"
                   className="text-[12px] font-bold uppercase tracking-[0.12em] text-secondary transition hover:text-brand-teal"
@@ -2736,6 +2769,26 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Customer-facing "Live Now" rail. Surfaces real-time activity to
+            shoppers right below the hero so a visitor immediately sees
+            businesses broadcasting now and has a reason to browse. Renders
+            only when someone is live (LiveRail returns null otherwise), so
+            there is never an empty/sad state. Tapping a card opens that
+            live storefront; the link routes to the full /discover feed. */}
+        {hasLiveNow && (
+          <div className="mx-auto max-w-5xl px-4 pb-6 sm:px-6">
+            <LiveRail projects={discoverProjects} />
+            <div className="text-center">
+              <Link
+                href="/discover"
+                className="text-[12px] font-bold uppercase tracking-[0.12em] text-brand-teal transition hover:text-brand-teal-hover"
+              >
+                Browse all live deals →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* ── SEARCH RESULTS + DEALS removed. the homepage no longer
              has a customer search surface; buyer-side search lives at
