@@ -317,6 +317,23 @@ async def api_create_stage(
     }).eq("id", project_uuid).execute()
     print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
 
+    # Notify "remind me when live" subscribers that the show has started.
+    # Fire-and-forget on a daemon thread so a slow/large email batch never
+    # delays the merchant's tap-to-broadcast. notify_project_live_now uses
+    # the same atomic sent_at claim as the scheduled cron, so a subscriber
+    # is emailed at most once even if both paths run. Best-effort: any
+    # failure is logged inside the helper, never raised into go-live.
+    try:
+        import threading
+        from services.agents.live_reminders import notify_project_live_now
+        threading.Thread(
+            target=notify_project_live_now,
+            args=(project_uuid,),
+            daemon=True,
+        ).start()
+    except Exception as exc:
+        print(f"[ivs] live-now notify dispatch failed (ignored): {exc!r}")
+
     # Wait for AWS to fully propagate the new stage before minting
     # tokens. Originally 1.0s; halved to 0.5s after observed AWS
     # propagation in us-east-1 stays under 200ms in steady-state, so
