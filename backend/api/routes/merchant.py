@@ -496,6 +496,16 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         "location_state": body.location_state,
         "subscription_price_usd": 0,
         "platform_fee_percent": 0,
+        # Every new merchant starts on the base Starter tier. Without this,
+        # merchants.plan_id was left NULL at insert, which the commission
+        # resolver and the livestream-limit resolver both fail-closed on —
+        # surfacing the confusing "contact support to set your stream caps"
+        # error on Go Live. plan_id is the plan_limits key ('starter' |
+        # 'growth' | ...); subscription_tier/plan_type ('founding'|'standard')
+        # are a separate billing axis. Both founding and standard map to
+        # 'starter' (migration 051). Upgrades change plan_id in a later
+        # billing PR.
+        "plan_id": "starter",
     }
 
     inserted = None

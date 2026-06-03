@@ -1,0 +1,11 @@
+-- 068_rollback.sql
+-- Rollback for 068_backfill_merchant_plan_id.sql.
+--
+-- 068 is a DATA backfill, not a schema change. It set plan_id on rows that
+-- were NULL; it did not record which rows it touched, so there is no safe,
+-- lossless way to restore the prior NULLs (and doing so would re-introduce
+-- the Go-Live / commission fail-closed bug). This rollback is intentionally
+-- a documented no-op. The plan_id COLUMN itself is owned by migration 051;
+-- drop it via 051's rollback if the whole bridge column must be removed.
+
+-- (no-op)
