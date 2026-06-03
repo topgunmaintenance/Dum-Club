@@ -120,14 +120,15 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
   if (status?.grandfathered) {
     return (
       <div className="mb-6 rounded-2xl border border-brand-teal/40 bg-brand-teal-soft px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-brand-navy sm:text-sm">
+        <div className="flex flex-col gap-y-1 text-xs font-semibold text-brand-navy sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
           <span className="font-bold text-brand-teal">◆ FOUNDING MERCHANT</span>
-          <span className="text-secondary">·</span>
-          <span>$0/mo locked in</span>
-          <span className="text-secondary">·</span>
-          <span>1% sales fee</span>
-          <span className="text-secondary">·</span>
-          <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span>$0/mo locked in</span>
+            <span className="text-secondary">·</span>
+            <span>1% sales fee</span>
+            <span className="text-secondary">·</span>
+            <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          </div>
         </div>
       </div>
     );
@@ -137,12 +138,13 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
   if (!status || !status.has_merchant) {
     return (
       <div className="mb-6 rounded-2xl border border-default bg-surface-card px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-secondary sm:text-sm">
+        <div className="flex flex-col gap-y-1 text-xs font-semibold text-secondary sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
           <span>Plan status unavailable</span>
-          <span>·</span>
-          <span>1% marketplace fee</span>
-          <span>·</span>
-          <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span>1% marketplace fee</span>
+            <span>·</span>
+            <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          </div>
         </div>
       </div>
     );
@@ -157,26 +159,27 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
   if (isTrialing) {
     return (
       <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-400/5 px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-primary sm:text-sm">
+        <div className="flex flex-col gap-y-1 text-xs font-semibold text-primary sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
           <span className="font-bold text-amber-500">Trial active</span>
-          <span className="text-secondary">·</span>
-          <span>{planLabel}</span>
-          {planPrice && (
-            <>
-              <span className="text-secondary">·</span>
-              <span>{planPrice} after trial</span>
-            </>
-          )}
-          {trialEndsLabel && (
-            <>
-              <span className="text-secondary">·</span>
-              <span className="text-secondary">Trial ends {trialEndsLabel}</span>
-            </>
-          )}
-          <span className="text-secondary">·</span>
-          <span>1% marketplace fee</span>
-          <span className="text-secondary">·</span>
-          <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span>{planLabel}</span>
+            {planPrice && (
+              <>
+                <span className="text-secondary">·</span>
+                <span>{planPrice} after trial</span>
+              </>
+            )}
+            {trialEndsLabel && (
+              <>
+                <span className="text-secondary">·</span>
+                <span className="text-secondary">Trial ends {trialEndsLabel}</span>
+              </>
+            )}
+            <span className="text-secondary">·</span>
+            <span>1% marketplace fee</span>
+            <span className="text-secondary">·</span>
+            <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+          </div>
         </div>
       </div>
     );
@@ -186,20 +189,21 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
   // that isn't trial and isn't grandfathered, including unknown statuses).
   return (
     <div className="mb-6 rounded-2xl border border-default bg-surface-card px-4 py-3 sm:px-5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-primary sm:text-sm">
+      <div className="flex flex-col gap-y-1 text-xs font-semibold text-primary sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
         <span className="font-bold">
           {planLabel} {(status.subscription_status || "active").toLowerCase()}
         </span>
-        {planPrice && (
-          <>
-            <span className="text-secondary">·</span>
-            <span>{planPrice}</span>
-          </>
-        )}
-        <span className="text-secondary">·</span>
-        <span>1% marketplace fee</span>
-        <span className="text-secondary">·</span>
-        <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {planPrice && (
+            <>
+              <span>{planPrice}</span>
+              <span className="text-secondary">·</span>
+            </>
+          )}
+          <span>1% marketplace fee</span>
+          <span className="text-secondary">·</span>
+          <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
+        </div>
       </div>
     </div>
   );
