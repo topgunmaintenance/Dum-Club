@@ -257,8 +257,25 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         body: JSON.stringify({ project_id: projectId }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Stage creation failed (${res.status})`);
+        // Backend uses structured FastAPI HTTPException detail for cap /
+        // suspension / limits errors:
+        //   detail = {code: "merchant_limits_unresolved",
+        //             message: "...",
+        //             reason: "..."}
+        // Naively passing `detail` straight to `new Error(detail)` stringifies
+        // the object as "[object Object]" — which is what rendered in the red
+        // error banner on the owner-view storefront. Pull out the .message
+        // field when detail is an object; treat string detail as the message
+        // verbatim; fall back to a generic-with-status message otherwise.
+        const errBody = await res.json().catch(() => ({}));
+        const d = errBody?.detail;
+        const friendly =
+          typeof d === "string"
+            ? d
+            : d && typeof d.message === "string"
+              ? d.message
+              : `Stage creation failed (${res.status})`;
+        throw new Error(friendly);
       }
       const data = await res.json();
       __debug && console.log("[ivs-host] Stage:", data.stage_id, "token:", !!data.host_token);
