@@ -301,6 +301,19 @@ export default function DashboardPage() {
     (!Array.isArray(analytics.top_offers) || analytics.top_offers.length === 0)
   );
 
+  // "isPreSelling" = STATE_1: a merchant with no posted offer and no
+  // sale yet. In this state the dashboard hides activity surfaces
+  // (analytics, the My Orders quick action, explore-other-businesses)
+  // so the only ask on screen is the primary next step. Mirrors the
+  // STATE_1 line in lib/merchantState.ts. Requires analytics to have
+  // loaded so we don't hide surfaces during the first render (matches
+  // needsFirstOffer's null-guard philosophy).
+  const hasPostedOffer = Boolean(
+    analytics && Array.isArray(analytics.top_offers) && analytics.top_offers.length > 0
+  );
+  const hasMadeSale = Boolean(analytics && (analytics.total_orders || 0) > 0);
+  const isPreSelling = Boolean(merchant) && Boolean(analytics) && !hasPostedOffer && !hasMadeSale;
+
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
       <div className="relative z-[1] mx-auto max-w-5xl">
@@ -553,8 +566,9 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Business Analytics */}
-        {bizProfile && analytics && (
+        {/* Business Analytics. Hidden in STATE_1 (pre-selling) — an all-
+            zero performance panel only confuses a brand-new merchant. */}
+        {bizProfile && analytics && !isPreSelling && (
           <div className="mb-6">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">Business Performance</div>
 
@@ -862,13 +876,15 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
-              <span className="text-base">🔍</span>
-              <div>
-                <div className="text-sm font-bold text-primary">Explore & support other businesses</div>
-                <div className="text-[11px] text-secondary">Earn +2 DUM Points per purchase</div>
-              </div>
-            </Link>
+            {!isPreSelling && (
+              <Link href="/discover" className="flex items-center gap-3 rounded-xl border border-default/30 bg-surface-card px-4 py-3 transition hover:border-default">
+                <span className="text-base">🔍</span>
+                <div>
+                  <div className="text-sm font-bold text-primary">Explore & support other businesses</div>
+                  <div className="text-[11px] text-secondary">Earn +2 DUM Points per purchase</div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
         )}
@@ -883,6 +899,10 @@ export default function DashboardPage() {
             "My Orders" stays for everyone since orders are useful at
             every stage. When "Become a Merchant" is hidden, "My Orders"
             spans the row so the layout doesn't leave a gap. */}
+        {/* Hidden for STATE_1 merchants — a brand-new merchant has no
+            orders yet, so the My Orders card is just noise. Non-merchants
+            still see the Become a Merchant card. */}
+        {!(merchant && isPreSelling) && (
         <div className={`mb-10 grid gap-4 ${merchant ? "" : "sm:grid-cols-2"}`}>
           {!merchant && (
             <Link
@@ -901,6 +921,7 @@ export default function DashboardPage() {
             <span className="text-lg font-bold text-primary">My Orders</span>
           </Link>
         </div>
+        )}
 
         {/* ── Action Prompts ── Hidden when needsFirstOffer is true;
             those Share/Manage/View-orders cards all assume offers
@@ -1040,19 +1061,27 @@ export default function DashboardPage() {
                         what unlocks it instead of pretending the link
                         is dead. */}
                     {isShareable ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (typeof navigator !== "undefined" && navigator.clipboard) {
-                            navigator.clipboard.writeText(storefrontUrl).catch(() => {});
-                          }
-                        }}
-                        className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-brand-teal-soft hover:text-brand-teal"
-                      >
-                        📋 Copy storefront link
-                      </button>
+                      <>
+                        {/* 1F: surface the actual storefront URL so the
+                            merchant can see and share their link, not just
+                            copy it blind. */}
+                        <div className="mx-4 mb-2 truncate rounded-lg border border-default bg-surface-page px-3 py-2 text-center font-mono text-[11px] text-secondary">
+                          dum.club/{project.slug || project.id}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof navigator !== "undefined" && navigator.clipboard) {
+                              navigator.clipboard.writeText(storefrontUrl).catch(() => {});
+                            }
+                          }}
+                          className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-brand-teal-soft hover:text-brand-teal"
+                        >
+                          📋 Copy storefront link
+                        </button>
+                      </>
                     ) : (
                       <div className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-default bg-surface-muted px-4 py-2.5 text-xs text-muted">
                         Publish your first offer to unlock sharing

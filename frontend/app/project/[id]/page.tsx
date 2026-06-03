@@ -811,6 +811,15 @@ export default function ProjectPage() {
   }
   const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
   const [storeEditing, setStoreEditing] = useState<StoreItem | null>(null);
+  // ── Owner-view lifecycle gating (UX simplification sprint) ──
+  // Mirrors the STATE definitions in lib/merchantState.ts using the data
+  // this page already loads, so growth / advanced owner surfaces stay
+  // hidden until the merchant has something to grow:
+  //   ownerHasOffers — STATE_2+ (at least one offer exists)
+  //   ownerHasSales  — STATE_3+ (at least one paid order)
+  // A brand-new owner (pre-first-sale) sees a clean page focused on
+  // creating and sharing their first offer.
+  const ownerHasSales = sellerOrders.length > 0;
   const [storeFormOpen, setStoreFormOpen] = useState(false);
   const [storeTargetItem, setStoreTargetItem] = useState<StoreItem | null>(null);
   const [storePickerFor, setStorePickerFor] = useState<string | null>(null);
@@ -3416,13 +3425,13 @@ const heroUtility =
   const buyCount = trades.filter((t) => t.side === "buy").length;
   const sellCount = trades.filter((t) => t.side === "sell").length;
   const statusBanner = isApprovedProject
-    ? "Approved. Business is live."
+    ? "🟢 Your shop is live and accepting orders."
     : isRejected
-    ? "Needs changes before resubmission"
+    ? "⚠️ Your shop needs a small update before it can go live."
     : isSubmitted
-    ? "Under review"
+    ? "⏳ Your shop is being reviewed. We'll let you know when it's live."
     : isPending
-    ? "Created. Not yet submitted."
+    ? "✅ Created. Finish setup, then go live."
     : "Draft. Continue setting up your business.";
   const nextTokenActionLabel =
     tokenStatus === "draft"
@@ -3590,7 +3599,10 @@ return (
         ]}
       />
     )}
-    <SectionNav />
+    {/* 2J: the right-rail section dot-nav is power-user chrome. Hide it
+        for owners until their first sale (clean early-stage page);
+        customers and STATE_3+ owners keep it. */}
+    {(!showOwnerInlineUi || ownerHasSales) && <SectionNav />}
     {statusToast}
     {isOwner && (
       <>
@@ -3932,7 +3944,7 @@ return (
            phones. Desktop continues to render the chip grid inline as a
            merchant-facing nudge — there's no floating bubble equivalent
            visual real-estate cost on a 1280px+ screen. */}
-      {showOwnerInlineUi && (
+      {showOwnerInlineUi && ownerHasSales && (
         <div className="mb-6 hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5 sm:block">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -4989,7 +5001,6 @@ return (
       {/* ── DUM Hub Card ── */}
       <div className="mb-6 rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
         <div className="flex flex-wrap items-center gap-4 text-[11px] text-secondary">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">DUM Hub</span>
           <span className="flex items-center gap-1.5">💳 Stripe checkout</span>
           <span className="text-muted">·</span>
           <span className="flex items-center gap-1.5">◆ Earn DUM Points</span>
@@ -5117,14 +5128,14 @@ return (
         {isOwner && offers.filter((o) => o.is_active).length > 0 && (
           <div className="mt-4 space-y-3 rounded-2xl border border-default bg-surface-card p-4">
             <div className="flex items-center justify-between">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product (Live)</div>
+              <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Featured offer</div>
               {project?.pinned_offer_id && (
                 <button
                   onClick={() => handlePinOffer(null)}
                   disabled={pinningOfferId !== null}
                   className="text-[10px] uppercase tracking-wider text-secondary hover:text-primary disabled:opacity-40"
                 >
-                  Unpin
+                  Clear
                 </button>
               )}
             </div>
@@ -5148,7 +5159,7 @@ return (
                     {offer.title} · ${Number(offer.price_usd).toFixed(0)}
                     {isPinned && (
                       <span className="ml-1 text-[10px] font-bold uppercase tracking-wider text-brand-teal">
-                        PINNED
+                        FEATURED
                       </span>
                     )}
                     {isThisInFlight && (
@@ -5165,7 +5176,7 @@ return (
             )}
             {project?.pinned_offer_id && !pinError && (
               <p className="text-[11px] text-secondary">
-                Pinned. Refresh the embed to see it as &quot;Now showing&quot;.
+                Featured. Refresh the embed to see it as &quot;Now showing&quot;.
               </p>
             )}
           </div>
@@ -5183,7 +5194,7 @@ return (
             time so the URL adapts to whatever domain serves this page
             (Vercel preview alias, production custom domain, localhost).
             No new dependencies. */}
-        {showOwnerInlineUi && project?.slug && (() => {
+        {showOwnerInlineUi && ownerHasSales && project?.slug && (() => {
           // Canonical host for production embed snippets. The apex
           // host (dum.club) is currently misconfigured at the
           // Vercel routing layer, so generated merchant snippets
@@ -6517,9 +6528,12 @@ return (
                             Sold Out
                           </div>
                         ) : isOwner ? (
-                          <div className="w-full rounded-xl border border-default bg-surface-muted px-4 py-3 text-center text-[11px] font-medium text-muted select-none">
-                            Your Offer
-                          </div>
+                          <button
+                            onClick={() => openOfferForm(offer)}
+                            className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-center text-[11px] font-semibold text-secondary transition hover:border-strong hover:text-primary"
+                          >
+                            Edit
+                          </button>
                         ) : (
                           <>
                             <button
@@ -6693,6 +6707,11 @@ return (
           target #ai-workspace; modern browsers open the matching
           <details> when scrollIntoView lands on a child node, so
           those affordances continue to work without changes. */}
+      {/* 2E: "Ask AI about this business" is a buyer feature. Hide it
+          for the owner until their first sale so a new merchant's page
+          stays focused. Customers always see it; STATE_3+ owners keep
+          it because the growth-AI chips above target #ai-workspace. */}
+      {(!showOwnerInlineUi || ownerHasSales) && (
       <details
         id="ai-workspace"
         className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
@@ -6774,6 +6793,7 @@ return (
         </div>
         </div>
       </details>
+      )}
 
 
       {/* ── OWNER TOOLS ──────────────────────────── */}
@@ -6788,7 +6808,7 @@ return (
       {showOwnerInlineUi && (
         <div className="mb-8 rounded-2xl border border-default bg-surface-card p-4 text-sm text-primary">
           <span className="uppercase tracking-[0.18em] text-secondary">
-            Review & publication
+            Shop status
           </span>
           <div className="mt-2 text-base text-primary">{statusBanner}</div>
         </div>
@@ -6975,7 +6995,7 @@ return (
 
           <div className="mt-4 rounded-lg border border-default bg-surface-muted px-3 py-2">
             <span className="text-[11px] text-muted">
-              Payouts are currently platform-managed. Automated seller payouts will be enabled in a future update.
+              Your earnings go to your Stripe account after each sale. Need help? Contact support.
             </span>
           </div>
 
@@ -7262,8 +7282,10 @@ return (
     </div>
   )}
 
-  {/* AI Sales Assistant. visible to all visitors */}
-  {offers.length > 0 && (
+  {/* AI Sales Assistant. Customer-facing — hidden for the authenticated
+      owner (2E/2F) so the owner's own page isn't cluttered with a buyer
+      chat widget. Still shown to all visitors and in view-as-customer. */}
+  {offers.length > 0 && !showOwnerInlineUi && (
     <AiSalesChat
       projectId={id}
       businessName={projectName}
