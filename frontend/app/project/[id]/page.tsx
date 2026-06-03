@@ -7128,7 +7128,7 @@ return (
       {showOwnerInlineUi && (
         <div className={`mb-8 rounded-3xl ${isApprovedProject ? "border-default" : "border-default"} border bg-surface-card p-6`}>
           <div className={`mb-4 text-xs uppercase tracking-[0.3em] ${isApprovedProject ? "text-brand-teal/60" : "text-muted"}`}>
-            Business Status
+            Store Status
           </div>
 
           <h2 className="text-2xl font-bold text-primary sm:text-3xl">
@@ -7141,18 +7141,14 @@ return (
           </p>
 
           {isApprovedProject ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Status</div>
                 <div className="mt-2 text-lg font-bold text-brand-teal">Live</div>
               </div>
               <div className="rounded-2xl border border-default bg-surface-page p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
-                <div className="mt-2 text-primary">DUM Points</div>
-              </div>
-              <div className="rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Checkout</div>
-                <div className="mt-2 text-primary">Stripe + DUM</div>
+                <div className="mt-2 text-primary">Stripe</div>
               </div>
             </div>
           ) : (
@@ -7161,20 +7157,22 @@ return (
                 {category}
               </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-2xl border border-default bg-surface-page p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Review</div>
-                  <div className="mt-2 text-primary">{reviewStatus}</div>
+              {/* Pre-sale: hide the Review/Publication technical grid — a
+                  brand-new merchant doesn't act on it, and "pending/draft"
+                  reads as something being wrong. It returns once they've
+                  made a sale. The DUM Points tile is removed entirely. */}
+              {ownerHasSales && (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-default bg-surface-page p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted">Review</div>
+                    <div className="mt-2 text-primary">{reviewStatus}</div>
+                  </div>
+                  <div className="rounded-2xl border border-default bg-surface-page p-4">
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted">Publication</div>
+                    <div className="mt-2 text-primary">{project?.status || "draft"}</div>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-default bg-surface-page p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Publication</div>
-                  <div className="mt-2 text-primary">{project?.status || "draft"}</div>
-                </div>
-                <div className="rounded-2xl border border-default bg-surface-page p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted">Rewards</div>
-                  <div className="mt-2 text-brand-teal">DUM Points</div>
-                </div>
-              </div>
+              )}
 
               <div className="mt-6 rounded-2xl border border-default bg-surface-page p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
@@ -7206,7 +7204,10 @@ return (
       )}
 
 
-        {showOwnerInlineUi && (
+        {/* Business Blueprint is advanced/curiosity tooling — irrelevant to
+            a merchant chasing their first sale. Hidden until first sale,
+            then it returns as a reference. */}
+        {showOwnerInlineUi && ownerHasSales && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-muted hover:text-secondary">
             <span>Business Blueprint</span>
