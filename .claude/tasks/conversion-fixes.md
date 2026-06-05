@@ -68,6 +68,21 @@ without a live stream. Reuse the existing store-status plumbing
 (`frontend/lib/storeStatus.ts` and its backend route). Do NOT couple
 publish state to streaming state.
 
+**Status: DONE (authed-endpoint approach).** Before this, the only
+path to `status='live'` was the deprecated Solana token pipeline, so
+merchants had no way to publish. Added owner-gated
+`POST /api/projects/{id}/publish` + `/unpublish` (same ownership check
+as `/go-live`, requires the `user_id` privy header) that flip
+`projects.status` draft↔live — kept out of the generic PATCH whitelist
+because that endpoint's ownership check is optional. Frontend adds a
+"Publish Store" / "Unpublish" toggle in the owner Store Status card
+(`/project/[id]`), shown once the store has an offer, fully separate
+from Go Live broadcasting. Buyability is unchanged (governed by
+`visibility`, public by default); publishing is what lists the store
+on Discover and advances the Store Status card.
+Files: `backend/api/routes/projects.py`,
+`frontend/app/project/[id]/page.tsx`.
+
 ## P3 — Onboarding checklist: "Add first offer" gated on Published
 
 Fix the onboarding checklist so "Add first offer" is marked complete

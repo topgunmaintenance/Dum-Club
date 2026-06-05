@@ -593,6 +593,11 @@ export default function ProjectPage() {
     setInstallConfirmed(false);
   }
   const [projectStatus, setProjectStatus] = useState("draft");
+  // Publish Store toggle — flips projects.status draft <-> live via the
+  // owner-gated /publish + /unpublish endpoints. Separate from the
+  // livestream (is_live); see the Store Status card below.
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
 
   const [memoryText, setMemoryText] = useState("");
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -2826,6 +2831,44 @@ export default function ProjectPage() {
   }
 
   /* ── Store / Offers helpers ─────────────────────── */
+  // Publish / unpublish the storefront. Flips projects.status
+  // draft <-> live through the owner-gated endpoints, which is what
+  // lists the store on Discover and moves the Store Status card into
+  // the published state. Deliberately independent of going live: a
+  // store can be published with the stream off.
+  async function togglePublish() {
+    if (!project || !id || publishing) return;
+    const publish = project.status !== "live";
+    setPublishing(true);
+    setPublishError("");
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/${id}/${publish ? "publish" : "unpublish"}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            user_id: authUser?.privyId || "",
+          },
+        },
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setPublishError(
+          typeof errData.detail === "string"
+            ? errData.detail
+            : "Could not update your store. Try again.",
+        );
+        return;
+      }
+      setProject((prev) => (prev ? { ...prev, status: publish ? "live" : "draft" } : prev));
+    } catch {
+      setPublishError("Could not reach the server. Try again.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   function persistStoreItems(items: StoreItem[]) {
     fetch(`${API_BASE}/api/projects/${id}`, {
       method: "PATCH",
@@ -7238,6 +7281,41 @@ return (
               <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
               <div className="mt-1.5 text-sm font-medium text-primary">{nextStep}</div>
             </div>
+
+            {/* Publish Store toggle — flips the store between draft and
+                published (status live). Publishing lists it on Discover
+                and is separate from Go Live broadcasting: customers can
+                buy a published store whether or not a stream is on.
+                Shown once there is something to sell. */}
+            {hasOffer && (
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-default bg-surface-page p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-primary">
+                    {storeIsLive ? "Your store is published" : "Your store is a draft"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-secondary">
+                    {storeIsLive
+                      ? "Customers can find it on Discover and buy any time, stream or not."
+                      : "Publish to list it on Discover. Customers can buy without you going live."}
+                  </div>
+                  {publishError && (
+                    <div className="mt-1.5 text-xs text-state-live">{publishError}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePublish}
+                  disabled={publishing}
+                  className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition active:scale-[0.99] disabled:opacity-60 ${
+                    storeIsLive
+                      ? "border border-default bg-surface-card text-secondary hover:text-primary"
+                      : "bg-brand-teal text-black hover:bg-brand-teal-hover"
+                  }`}
+                >
+                  {publishing ? "Saving…" : storeIsLive ? "Unpublish" : "Publish Store"}
+                </button>
+              </div>
+            )}
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button
