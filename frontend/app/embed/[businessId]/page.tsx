@@ -1326,6 +1326,7 @@ export default function EmbedShellPage() {
                   userId={viewerUserId}
                   userName={viewerName}
                   isHost={false}
+                  getToken={getToken}
                   onItemUpdate={(data) => {
                     setOffers((prev) =>
                       prev.map((o) =>
