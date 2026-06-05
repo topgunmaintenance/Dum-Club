@@ -102,6 +102,16 @@ Ensure live chat messages flow in real time between host and viewers
 (auth + moderation, #328/#329). Verify what's real-time vs persisted
 and complete the gap.
 
+**Status: DONE.** `LiveChatIVS` (the IVS-path chat) is genuinely
+real-time — authenticated WebSocket to `/api/auction-ws/events/{id}`
+with viewer-count presence, send cooldown, and host ban. Completed two
+robustness gaps: (1) reconnect was a FIXED 2s retry that hammered the
+relay every 2s through an entire outage — now exponential backoff (2s,
+4s, 8s … cap 30s), reset to 0 on a successful open; (2) added message
+dedup by id so a reconnect that replays recent history can't
+double-post a message or collide React keys. IVS path, frontend-only.
+File: `frontend/components/LiveChatIVS.tsx`.
+
 ## L5 — Live auction / flash-sale countdown + buy-now
 
 Turn the `active_auction_id` path into a timed event: countdown timer,

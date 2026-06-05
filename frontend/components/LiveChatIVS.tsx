@@ -71,6 +71,10 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Reconnect backoff: a fixed 2s retry hammered the relay every 2s for
+  // the whole outage. Back off exponentially (2s, 4s, 8s … capped at
+  // 30s) and reset to 0 on a successful open.
+  const reconnectAttemptsRef = useRef(0);
   const lastSendRef = useRef<number>(0);
 
   useEffect(() => {
@@ -97,13 +101,21 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       ws.onopen = () => {
         __debug && console.log("[live-chat] Connected");
         setConnected(true);
+        reconnectAttemptsRef.current = 0;
       };
 
       ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
           if (msg.type === "chat") {
-            setMessages((prev) => [...prev.slice(-199), msg.data as ChatMessage]);
+            const incoming = msg.data as ChatMessage;
+            // Dedup by id so a reconnect that replays recent history
+            // can't double-post a message (or collide React keys).
+            setMessages((prev) =>
+              incoming?.id && prev.some((m) => m.id === incoming.id)
+                ? prev
+                : [...prev.slice(-199), incoming],
+            );
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
             onViewerCountChange?.(msg.data.count);
@@ -142,8 +154,11 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
         __debug && console.log("[live-chat] Disconnected");
         setConnected(false);
         wsRef.current = null;
-        // Auto-reconnect after 2s
-        reconnectRef.current = setTimeout(connect, 2000);
+        // Auto-reconnect with exponential backoff (2s, 4s, 8s … cap 30s)
+        // so a sustained relay outage doesn't get hammered every 2s.
+        const attempt = reconnectAttemptsRef.current++;
+        const delay = Math.min(2000 * 2 ** attempt, 30000);
+        reconnectRef.current = setTimeout(connect, delay);
       };
 
       ws.onerror = () => {
