@@ -750,6 +750,10 @@ export default function DashboardPage() {
           const stripeVerified = merchant?.stripe_connect_status === "verified";
           const hasOffer = offers.length > 0;
           const isLive = primary.is_live === true;
+          // Published = storefront status is live (the Publish Store
+          // toggle), distinct from is_live broadcasting. Drives the
+          // checklist's "Add what you sell" completion.
+          const isPublished = primary.status === "live";
           // Display-mode card considered "done" once the merchant has
           // explicitly saved the value (i.e. it differs from the DB
           // default OR the column is non-null). Every fresh project
@@ -814,6 +818,7 @@ export default function DashboardPage() {
                 hasBusinessName={Boolean((primary.title || primary.name || "").trim())}
                 stripeVerified={stripeVerified}
                 hasOffer={hasOffer}
+                isPublished={isPublished}
                 hasPinnedOffer={Boolean(primary.pinned_offer_id)}
                 isLive={isLive}
                 projectSlug={(primary.slug || primary.id || "").toString()}

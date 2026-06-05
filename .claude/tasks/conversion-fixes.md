@@ -88,6 +88,17 @@ Files: `backend/api/routes/projects.py`,
 Fix the onboarding checklist so "Add first offer" is marked complete
 ONLY when the shop is Published, not merely when an offer is saved.
 
+**Status: DONE.** The onboarding checklist is `GetLiveSteps` ("Your
+Launch Checklist"). Step 3 ("Add what you sell") was `done: hasOffer`;
+now `done: hasOffer && isPublished` (storefront `status === "live"`,
+the P2 publish state). Added an `isPublished` prop wired from the
+dashboard's `primary.status`. When an offer exists but the store is
+still a draft, step 3 stays open and its CTA becomes "Publish store",
+pointing at the Publish Store toggle on the storefront — so the step
+doesn't dead-end as an unchecked "Add another".
+Files: `frontend/components/GetLiveSteps.tsx`,
+`frontend/app/dashboard/page.tsx`.
+
 ## P11 — Public storefront ABOUT section empty-state handling
 
 In the public storefront ABOUT section: when `description` is empty,
