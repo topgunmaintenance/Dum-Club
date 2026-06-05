@@ -66,6 +66,17 @@ Make the "Start camera" step capture camera+mic and broadcast over the
 EXISTING Amazon IVS path. Host goes live reliably, stays live
 (heartbeat), with clear error states. No new streaming provider.
 
+**Status: DONE (IVS path, IVSStageHost only).** The capture→preview→
+go-live pipeline already existed (getUserMedia + per-error recovery,
+create-stage → Stage.join → CONNECTED → heartbeat → end-stage). Added
+the two missing reliability pieces: (1) a 20s connect-timeout safety
+net so a stuck handshake no longer strands the host on "Connecting…"
+forever (tears down + retryable error); (2) unexpected-DISCONNECTED
+handling so a dropped stage stops the heartbeat and shows a clear "Tap
+Try Again to reconnect" instead of a false "live". Guarded with
+endingRef so the host's own End Stream isn't flagged as a drop. No
+backend, no new deps. File: `frontend/components/IVSStageHost.tsx`.
+
 ## L3 — Buyer live viewer page
 
 When `is_live`, non-owner viewers get the live player (Amazon IVS
