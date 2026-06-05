@@ -1575,11 +1575,19 @@ export default function ProjectPage() {
   }
 
   async function loadSellerOrders() {
-    if (!id || !isOwner) return;
+    // Use the canonical project UUID, never the route param `id` — that can
+    // be a slug (e.g. /project/topgun-maintenance). The backend
+    // /api/checkout/orders/seller/{project_id} looks the project up by its
+    // UUID `id`, so passing a slug fails the lookup. That mismatch is the
+    // root cause of the "[seller-orders] fetch failed" error on
+    // slug-routed project pages; every other fetch here already uses
+    // project.id (see handlePinOffer / /api/offers/${project.id}).
+    const projectUuid = project?.id;
+    if (!projectUuid || !isOwner) return;
     try {
       const token = await getToken();
       if (!token) return;
-      const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${id}`, {
+      const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${projectUuid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -5133,11 +5141,15 @@ return (
               projectId={id as string}
               userId={authUser?.privyId || ""}
               autoStart={autoGoLive}
-              // Phase 3 (Q6). pre-stream guard. The component shows a
-              // confirm dialog before requesting camera if no offer is
-              // pinned, so the merchant doesn't go live to viewers who
-              // can't buy.
-              pinnedOfferId={project?.pinned_offer_id ?? null}
+              // Pre-stream guard reads the SAME resolved featured offer the
+              // storefront shows (`pinnedOffer`), not the raw
+              // project.pinned_offer_id. Keying off the resolved object keeps
+              // the host panel in lock-step with the FEATURED display: it
+              // advances to Start camera only when there's a real, loaded,
+              // active featured offer, and shows the pin prompt otherwise —
+              // never a state where a stale/deleted pinned id makes the panel
+              // disagree with what's actually featured.
+              pinnedOfferId={pinnedOffer?.id ?? null}
               // Phase 2 grace-period rollout: lets the host check
               // /api/merchant/trial-status so it can replace the Go
               // Live button with a "Shop paused" notice when the plan

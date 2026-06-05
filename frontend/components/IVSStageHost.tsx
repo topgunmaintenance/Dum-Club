@@ -118,8 +118,12 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     heartbeatTimerRef.current = setInterval(send, 5000);
   }
 
+  // Defensive: only treat it as pinned when it's a non-empty string.
+  // Guarding the type means a non-string id (null, or anything odd that
+  // slips through the prop) can never throw on .trim() and blank the
+  // whole host panel.
   const hasPinnedOffer = Boolean(
-    pinnedOfferId && pinnedOfferId.trim() !== "",
+    typeof pinnedOfferId === "string" && pinnedOfferId.trim() !== "",
   );
 
   const startPreview = useCallback(async () => {
