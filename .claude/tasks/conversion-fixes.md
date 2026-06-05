@@ -47,6 +47,19 @@ to offer cards in the customer view that triggers the EXISTING Stripe
 checkout flow. Reuse the existing checkout call path — do not build a
 new checkout. This is the highest-priority fix in this file.
 
+**Status: RESOLVED-BY-P5 (no code change).** Investigation found the
+Buy/Book button already exists in each offer card's action area
+(`frontend/app/project/[id]/page.tsx`) and is rendered for every
+non-owner — logged-out and logged-in alike. It calls the existing
+`buyOffer` handler, which is built for guest checkout: the bearer
+token is optional, the backend mints a `guest:<token>` buyer id, and
+Stripe collects the buyer email at the payment step. There is NO
+login wall on the primary Stripe CTA (only the secondary SOL button
+requires sign-in). The reason the audit saw "no buy path" was the P5
+leak: owners previewing as a customer saw the Edit button instead of
+Buy/Book. P5 fixed that, so the customer view now correctly shows the
+working Buy/Book button in every case.
+
 ## P2 — Publish Store toggle (DRAFT → PUBLISHED)
 
 Add a "Publish Store" toggle, separate from Go Live streaming, that
