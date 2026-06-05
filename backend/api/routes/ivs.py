@@ -178,6 +178,44 @@ async def api_create_stage(
     # the cap.
     supabase_client = get_client()
     owner_privy_for_limits = project.get("privy_id") or user_id
+
+    # Stripe-Connect gate — a merchant must be able to ACCEPT payments
+    # before they can broadcast. Going live burns AWS IVS viewer-hours
+    # (real cost to DUM Club); letting a merchant with no Stripe Connect
+    # go live is pure cost with zero possible revenue — no checkout, so no
+    # 1% sales fee. The Mux /go-live path already enforced this; the IVS
+    # create-stage path did not, so a direct call bypassed it (the
+    # frontend only hid the button). Mirror the Mux gate exactly so the
+    # rule holds on every go-live path: Stripe-verified merchants go live,
+    # everyone else is routed to finish Stripe onboarding.
+    stripe_status_res = (
+        supabase_client.table("merchants")
+        .select("stripe_connect_status")
+        .eq("owner_privy_id", owner_privy_for_limits)
+        .limit(1)
+        .execute()
+    )
+    merchant_stripe_status = (
+        stripe_status_res.data[0].get("stripe_connect_status")
+        if stripe_status_res.data else None
+    )
+    if merchant_stripe_status != "verified":
+        print(
+            f"[ivs] Refusing create-stage: project={project_uuid} "
+            f"merchant={owner_privy_for_limits} "
+            f"stripe_connect_status={merchant_stripe_status!r}"
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "merchant_stripe_not_verified",
+                "message": (
+                    "Stripe onboarding is not complete yet. "
+                    "Finish Stripe verification before going live."
+                ),
+            },
+        )
+
     from services.merchant_limits import (
         resolve_merchant_limits_by_privy_did,
         check_monthly_hard_block,
