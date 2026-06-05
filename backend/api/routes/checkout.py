@@ -248,6 +248,35 @@ def _assert_merchant_can_receive(stripe_sdk, connect_id: str) -> None:
 # downstream dashboards depend on them.
 
 
+def _extract_shipping_address(session_obj: dict) -> Optional[dict]:
+    """Normalize the shipping address from a Stripe Checkout Session.
+
+    Stripe populates shipping_details when shipping_address_collection is
+    enabled (physical offers); we fall back to customer_details for the
+    name/phone. Returns None when no address was collected (digital
+    orders). Best-effort — never raises into the webhook path.
+    """
+    try:
+        details = session_obj.get("shipping_details") or {}
+        cust = session_obj.get("customer_details") or {}
+        addr = details.get("address") or cust.get("address")
+        if not addr:
+            return None
+        return {
+            "name": details.get("name") or cust.get("name"),
+            "phone": cust.get("phone"),
+            "line1": addr.get("line1"),
+            "line2": addr.get("line2"),
+            "city": addr.get("city"),
+            "state": addr.get("state"),
+            "postal_code": addr.get("postal_code"),
+            "country": addr.get("country"),
+        }
+    except Exception as exc:
+        print(f"[webhook] shipping address extract failed (ignored): {exc!r}")
+        return None
+
+
 def process_order_paid(
     supabase,
     order: dict,
@@ -784,6 +813,16 @@ async def create_payment_intent(
         if payment_intent_data:
             session_params["payment_intent_data"] = payment_intent_data
 
+        # Physical goods need a delivery address. Stripe Checkout collects
+        # AND validates it natively (no custom address form, no PII handling
+        # on our side); the webhook reads it back into orders.shipping_address
+        # so the seller can fulfill. Only for physical_product offers —
+        # digital/service offers don't ship. US-only for now (DUM Club is a
+        # local-commerce platform); widen allowed_countries when we expand.
+        if offer.get("offer_type") == "physical_product":
+            session_params["shipping_address_collection"] = {"allowed_countries": ["US"]}
+            session_params["phone_number_collection"] = {"enabled": True}
+
         # stripe_account is a Stripe SDK request option (becomes the
         # Stripe-Account HTTP header), not a payload field. Passing it
         # as a kwarg to Session.create makes the whole call execute
@@ -1084,6 +1123,19 @@ async def stripe_webhook(request: Request):
         # ── Regular offer order ──
         order = _find_order(session_id, pi_id, metadata)
         if order:
+            # Store the delivery address (physical offers) independently of
+            # the paid-processing guard below, so it's captured even if the
+            # payment_intent.succeeded event raced ahead and already marked
+            # the order paid. Best-effort — never blocks the paid flow.
+            shipping_address = _extract_shipping_address(obj)
+            if shipping_address:
+                try:
+                    supabase.table("orders").update(
+                        {"shipping_address": shipping_address}
+                    ).eq("id", order["id"]).execute()
+                    print(f"[webhook] stored shipping address for order {order['id']}")
+                except Exception as exc:
+                    print(f"[webhook] shipping address store failed (ignored): {exc!r}")
             _process_paid(order, session_id, pi_id, "checkout.session.completed")
         else:
             print(f"[webhook] CRITICAL: Could not find order for session={session_id}")
