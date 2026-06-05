@@ -3628,7 +3628,9 @@ return (
     {/* 2J: the right-rail section dot-nav is power-user chrome. Hide it
         for owners until their first sale (clean early-stage page);
         customers and STATE_3+ owners keep it. */}
-    {(!showOwnerInlineUi || ownerHasSales) && <SectionNav />}
+    {(!showOwnerInlineUi || ownerHasSales) && (
+      <SectionNav refreshKey={loadingProject ? "loading" : "loaded"} />
+    )}
     {statusToast}
     {isOwner && (
       <>
@@ -4878,25 +4880,64 @@ return (
         </div>
       </div>
 
-      <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
-        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
-        {loadingProject ? (
-          <div className="space-y-2">
-            <div className="h-4 w-full animate-pulse rounded bg-surface-muted" />
-            <div className="h-4 w-5/6 animate-pulse rounded bg-surface-muted" />
-            <div className="h-4 w-4/6 animate-pulse rounded bg-surface-muted" />
+      {(() => {
+        // While the project loads we can't tell whether a description
+        // exists — keep the skeleton (and the #section-about anchor) so
+        // the section doesn't flash hidden then reappear.
+        if (loadingProject) {
+          return (
+            <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+              <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+              <div className="space-y-2">
+                <div className="h-4 w-full animate-pulse rounded bg-surface-muted" />
+                <div className="h-4 w-5/6 animate-pulse rounded bg-surface-muted" />
+                <div className="h-4 w-4/6 animate-pulse rounded bg-surface-muted" />
+              </div>
+            </div>
+          );
+        }
+
+        const aboutText = (project?.description || parsedAiOutput?.description || "").trim();
+        // Auto-generated placeholders count as empty — they're not a
+        // real description a customer should read.
+        const aboutIsEmpty =
+          !aboutText ||
+          aboutText === "Auto-created from dashboard." ||
+          aboutText.startsWith("Project workspace for ");
+
+        if (aboutIsEmpty) {
+          // Visitors (and owners previewing as a customer) see nothing —
+          // an empty About block reads as an unfinished page. Owners get
+          // an inline prompt to fill it in instead.
+          if (!showOwnerInlineUi) return null;
+          return (
+            <div id="section-about" className="mb-8 rounded-3xl border border-dashed border-default bg-surface-card p-6 backdrop-blur-sm">
+              <div className="mb-2 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+              <p className="max-w-3xl text-sm leading-relaxed text-secondary">
+                Add a short description so customers know what you offer. Only you can see this prompt.
+              </p>
+              <Link
+                href={`/project/${project?.slug || id}/manage#settings`}
+                className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-brand-teal px-4 py-2 text-[11px] font-bold text-black transition hover:bg-brand-teal-hover"
+              >
+                Add description →
+              </Link>
+            </div>
+          );
+        }
+
+        return (
+          <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+            <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+            <p className="max-w-3xl text-base leading-relaxed text-primary">{aboutText}</p>
+            {project?.prompt && (
+              <p className="mt-4 text-sm text-secondary">
+                Launched from the idea: &ldquo;{project.prompt}&rdquo;
+              </p>
+            )}
           </div>
-        ) : (
-          <p className="max-w-3xl text-base leading-relaxed text-primary">
-            {project?.description || parsedAiOutput?.description || "No description available yet."}
-          </p>
-        )}
-        {project?.prompt && (
-          <p className="mt-4 text-sm text-secondary">
-            Launched from the idea: &ldquo;{project.prompt}&rdquo;
-          </p>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (

@@ -105,6 +105,17 @@ In the public storefront ABOUT section: when `description` is empty,
 hide the section entirely for non-owners. For owners, show an inline
 prompt to add a description instead of an empty block.
 
+**Status: DONE.** Rewrote the ABOUT block in
+`frontend/app/project/[id]/page.tsx`. Empty now also covers the
+auto-generated placeholders ("Auto-created from dashboard.",
+"Project workspace for …"). When empty: visitors (and owners in
+view-as-customer preview) get nothing — the whole `#section-about`
+block is removed, and `SectionNav` already drops the dot for absent
+sections (passed a load-aware `refreshKey` so it re-scans once the
+project loads). Owners see a dashed-border prompt with an "Add
+description" CTA linking to `/project/[id]/manage#settings`. The old
+"No description available yet." filler is gone.
+
 ## P10 — Require category on "Create Your Shop"
 
 During the Create Your Shop step, require a category selection from
