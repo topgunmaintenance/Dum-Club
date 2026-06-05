@@ -16,6 +16,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from db.supabase import get_client
 from services.live_limits import check_chat_rate, check_stream_duration
+from auth.privy import verify_privy_token
 
 router = APIRouter()
 
@@ -23,8 +24,43 @@ _connections: Dict[str, Set[WebSocket]] = {}
 _auction_timers: Dict[str, asyncio.Task] = {}
 # Rate limit: track last message time per connection
 _last_chat: Dict[int, float] = {}
+# Per-connection authenticated identity: ws_id -> {"privy_id", "is_host"}.
+# Set on connect from a verified ?token=. Anonymous viewers (no/invalid
+# token) are absent → they can watch + receive events but cannot send chat.
+_ws_auth: Dict[int, dict] = {}
+# Host-issued chat bans per project: project_id -> set of banned privy_ids.
+# In-memory, matching _connections' single-process broadcast model; a ban
+# lasts the live session, which is the moderation window that matters.
+_bans: Dict[str, Set[str]] = {}
 MAX_CHAT_LENGTH = 300
 CHAT_COOLDOWN = 0.5  # seconds between messages
+
+
+def _resolve_is_host(supabase, project_id: str, privy_id: str) -> bool:
+    """True if privy_id owns the project (3-strategy match, same as the
+    HTTP owner checks). Used to grant verified 'host' role + moderation."""
+    try:
+        r = (
+            supabase.table("projects")
+            .select("owner_id, privy_id")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if not r.data:
+            return False
+        p = r.data[0]
+        if p.get("privy_id") and p["privy_id"] == privy_id:
+            return True
+        if p.get("owner_id"):
+            if p["owner_id"] == privy_id:
+                return True
+            from api.routes.projects import _resolve_owner_uuid
+            resolved = _resolve_owner_uuid(supabase, privy_id)
+            return bool(resolved and p["owner_id"] == resolved)
+        return False
+    except Exception:
+        return False
 
 
 async def _broadcast(project_id: str, event: dict):
@@ -202,6 +238,24 @@ async def auction_events(websocket: WebSocket, project_id: str):
 
     ws_id = id(websocket)
 
+    # Authenticate this connection (optional). A valid Privy token in the
+    # ?token= query param binds the socket to a real user id + host flag,
+    # derived SERVER-SIDE so chat identity and the host badge can't be
+    # spoofed. No/invalid token = anonymous viewer: can watch + receive
+    # events, but can't send chat (gated in the chat handler below).
+    _token = websocket.query_params.get("token")
+    if _token:
+        try:
+            _claims = verify_privy_token(_token)
+            _pid = _claims.get("sub")
+            if _pid:
+                _ws_auth[ws_id] = {
+                    "privy_id": _pid,
+                    "is_host": _resolve_is_host(get_client(), project_id, _pid),
+                }
+        except Exception as exc:
+            print(f"[live-ws] token verify failed (guest): {type(exc).__name__}")
+
     # Keep connection alive, handle client messages
     try:
         while True:
@@ -214,6 +268,22 @@ async def auction_events(websocket: WebSocket, project_id: str):
                     await websocket.send_text(json.dumps({"type": "pong", "timestamp": time.time()}))
 
                 elif msg_type == "chat":
+                    # Auth gate: only signed-in users can SEND. Identity is
+                    # taken from the verified token, never from the client —
+                    # this is what makes the host badge + bans trustworthy.
+                    # Anonymous viewers can still watch; they just can't post.
+                    auth = _ws_auth.get(ws_id)
+                    if not auth:
+                        await websocket.send_text(json.dumps({"type": "error", "data": {"message": "Sign in to chat."}}))
+                        continue
+                    sender_id = auth["privy_id"]
+
+                    # Banned users can't post (ban is by verified user id, so
+                    # a reconnect under a new socket can't evade it).
+                    if sender_id in _bans.get(project_id, set()):
+                        await websocket.send_text(json.dumps({"type": "error", "data": {"message": "You can no longer chat in this stream."}}))
+                        continue
+
                     # Rate limit (per-connection cooldown + per-user sliding window)
                     now = time.time()
                     last = _last_chat.get(ws_id, 0)
@@ -221,12 +291,10 @@ async def auction_events(websocket: WebSocket, project_id: str):
                         continue
                     _last_chat[ws_id] = now
 
-                    sender_id = msg.get("sender_id", "")
-                    if sender_id:
-                        rate_err = check_chat_rate(sender_id)
-                        if rate_err:
-                            await websocket.send_text(json.dumps({"type": "error", "data": {"message": rate_err}}))
-                            continue
+                    rate_err = check_chat_rate(sender_id)
+                    if rate_err:
+                        await websocket.send_text(json.dumps({"type": "error", "data": {"message": rate_err}}))
+                        continue
 
                     # Check stream duration — auto-end if exceeded
                     if check_stream_duration(project_id):
@@ -242,15 +310,34 @@ async def auction_events(websocket: WebSocket, project_id: str):
                         "data": {
                             "id": f"msg-{now:.0f}-{ws_id}",
                             "project_id": project_id,
-                            "sender_id": msg.get("sender_id", ""),
-                            "sender_name": msg.get("sender_name", "Viewer"),
-                            "sender_role": msg.get("sender_role", "viewer"),
+                            "sender_id": sender_id,
+                            # Display name only — capped, not security-critical
+                            # (the host badge comes from the verified role).
+                            "sender_name": (msg.get("sender_name") or "Viewer")[:60],
+                            "sender_role": "host" if auth.get("is_host") else "viewer",
                             "body": body,
                             "created_at": now,
                         },
                         "timestamp": now,
                     }
                     await _broadcast(project_id, chat_event)
+
+                elif msg_type in ("ban", "unban"):
+                    # Host-only moderation, by verified user id. Mute == ban
+                    # for chat. Broadcast so every client hides/restores the
+                    # target's messages immediately.
+                    auth = _ws_auth.get(ws_id)
+                    if not auth or not auth.get("is_host"):
+                        continue
+                    target = (msg.get("target_id") or "").strip()
+                    if not target:
+                        continue
+                    if msg_type == "ban":
+                        _bans.setdefault(project_id, set()).add(target)
+                        await _broadcast(project_id, {"type": "user_banned", "data": {"target_id": target}, "timestamp": time.time()})
+                    else:
+                        _bans.get(project_id, set()).discard(target)
+                        await _broadcast(project_id, {"type": "user_unbanned", "data": {"target_id": target}, "timestamp": time.time()})
 
             except json.JSONDecodeError:
                 pass
@@ -262,6 +349,7 @@ async def auction_events(websocket: WebSocket, project_id: str):
     finally:
         _connections.get(project_id, set()).discard(websocket)
         _last_chat.pop(ws_id, None)
+        _ws_auth.pop(ws_id, None)
         remaining = len(_connections.get(project_id, set()))
         print(f"[live-ws] Client disconnected (project {project_id}, {remaining} remaining)")
         # Broadcast updated viewer count

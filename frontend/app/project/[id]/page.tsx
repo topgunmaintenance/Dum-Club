@@ -4473,6 +4473,7 @@ return (
                   userId={authUser?.privyId || ""}
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
+                  getToken={getToken}
                   onViewerCountChange={setLiveViewerCount}
                   onItemUpdate={(data) => {
                     setOffers((prev) => prev.map((o) =>

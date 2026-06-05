@@ -37,6 +37,11 @@ interface LiveChatIVSProps {
   // WebSocket connection. Optional callback; existing call
   // sites work unchanged.
   onViewerCountChange?: (count: number) => void;
+  // When provided, the chat authenticates the WebSocket with the viewer's
+  // Privy token (?token=). The server then derives sender id + host role
+  // from the verified token (not the client), gates sending to signed-in
+  // users, and honors host bans. Guests (no token) can still watch.
+  getToken?: () => Promise<string | null>;
 }
 
 // Anonymous viewer ids carry an "anon-" prefix (set client-side in
@@ -55,8 +60,10 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
+  const [chatError, setChatError] = useState("");
   const [input, setInput] = useState("");
   const [viewerCount, setViewerCount] = useState(0);
   const [connected, setConnected] = useState(false);
@@ -69,11 +76,20 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   useEffect(() => {
     __debug && console.log("[live-chat] MOUNTED — host:", isHost, "project:", projectId, "user:", userId);
 
-    function connect() {
+    async function connect() {
       const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
       const wsHost = API_BASE.replace(/^https?:\/\//, "");
-      const url = `${wsProtocol}://${wsHost}/api/auction-ws/events/${projectId}`;
-      __debug && console.log("[live-chat] Connecting:", url);
+      // Authenticate the socket so the server can trust who is sending +
+      // enforce bans. Guests (no token) connect without it — watch only.
+      let tokenParam = "";
+      if (getToken) {
+        try {
+          const t = await getToken();
+          if (t) tokenParam = `?token=${encodeURIComponent(t)}`;
+        } catch {}
+      }
+      const url = `${wsProtocol}://${wsHost}/api/auction-ws/events/${projectId}${tokenParam}`;
+      __debug && console.log("[live-chat] Connecting:", url.replace(/token=[^&]+/, "token=***"));
 
       const ws = new WebSocket(url);
       wsRef.current = ws;
@@ -94,6 +110,18 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           } else if (msg.type === "item_updated" && onItemUpdate) {
             __debug && console.log("[live-chat] Item updated:", msg.data);
             onItemUpdate(msg.data as ItemUpdateEvent);
+          } else if (msg.type === "user_banned") {
+            const target = msg.data?.target_id;
+            if (target) setBannedIds((prev) => new Set(prev).add(target));
+          } else if (msg.type === "user_unbanned") {
+            const target = msg.data?.target_id;
+            if (target) setBannedIds((prev) => { const n = new Set(prev); n.delete(target); return n; });
+          } else if (msg.type === "error") {
+            const m = msg.data?.message;
+            if (m) {
+              setChatError(m);
+              window.setTimeout(() => setChatError(""), 4000);
+            }
           } else if (msg.type === "item_sold" && onItemSold) {
             __debug && console.log("[live-chat] Item sold:", msg.data);
             onItemSold(msg.data);
@@ -206,8 +234,19 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           </div>
         )}
         {messages.map((msg) => {
+          // Hide anyone the host has banned (server broadcasts user_banned).
+          if (bannedIds.has(msg.sender_id)) return null;
           const guest =
             msg.sender_role === "viewer" && isGuestSenderId(msg.sender_id);
+          // Host can ban a real (non-host, non-guest, non-system) sender.
+          // The server re-verifies the requester is the host, so a spoofed
+          // isHost prop can't actually ban anyone.
+          const canBan =
+            isHost &&
+            msg.sender_role !== "host" &&
+            !!msg.sender_id &&
+            msg.sender_id !== "system" &&
+            !isGuestSenderId(msg.sender_id);
           return (
             <div key={msg.id} style={{ fontSize: 14, lineHeight: 1.6 }}>
               <span style={{
@@ -232,10 +271,26 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
                 )}
               </span>
               <span style={{ color: "#d4d4d8" }}>{msg.body}</span>
+              {canBan && (
+                <button
+                  type="button"
+                  onClick={() => wsRef.current?.send(JSON.stringify({ type: "ban", target_id: msg.sender_id }))}
+                  title="Ban this viewer from chat"
+                  style={{ marginLeft: 6, fontSize: 9, color: "#71717a", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.06em" }}
+                >
+                  ban
+                </button>
+              )}
             </div>
           );
         })}
       </div>
+
+      {chatError && (
+        <div style={{ padding: "6px 12px", fontSize: 12, color: "#f87171", borderTop: "1px solid #27272a" }}>
+          {chatError}
+        </div>
+      )}
 
       {/* Input */}
       <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
