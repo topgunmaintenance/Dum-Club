@@ -1136,6 +1136,21 @@ async def stripe_webhook(request: Request):
                     print(f"[webhook] stored shipping address for order {order['id']}")
                 except Exception as exc:
                     print(f"[webhook] shipping address store failed (ignored): {exc!r}")
+            # Capture the buyer's email from Stripe. Guest checkout collects
+            # the email on the Stripe-hosted page, so the order row starts
+            # with a NULL buyer_email — without this, guest buyers never get
+            # a confirmation email (process_order_paid skips when the email
+            # is empty). Persist it before _process_paid, which re-reads the
+            # order and sends the email. Best-effort; never blocks the flow.
+            buyer_email = (obj.get("customer_details") or {}).get("email") or obj.get("customer_email")
+            if buyer_email:
+                try:
+                    supabase.table("orders").update(
+                        {"buyer_email": buyer_email}
+                    ).eq("id", order["id"]).execute()
+                    print(f"[webhook] stored buyer email for order {order['id']}")
+                except Exception as exc:
+                    print(f"[webhook] buyer email store failed (ignored): {exc!r}")
             _process_paid(order, session_id, pi_id, "checkout.session.completed")
         else:
             print(f"[webhook] CRITICAL: Could not find order for session={session_id}")
