@@ -6526,7 +6526,7 @@ return (
                           <div className="w-full rounded-xl bg-[var(--state-live)]/10 border border-[var(--state-live)]/30 px-5 py-3 text-center text-xs font-semibold text-state-live select-none">
                             Sold Out
                           </div>
-                        ) : isOwner ? (
+                        ) : showOwnerInlineUi ? (
                           <button
                             onClick={() => openOfferForm(offer)}
                             className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-center text-[11px] font-semibold text-secondary transition hover:border-strong hover:text-primary"
