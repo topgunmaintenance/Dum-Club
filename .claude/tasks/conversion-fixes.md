@@ -145,6 +145,13 @@ Add "No credit card required" text directly under the START FREE FOR
 60 DAYS button in the homepage hero. Plain copy, no dashes (human-copy
 guard applies).
 
+**Status: DONE.** Wrapped the hero "Start free for 60 days" CTA
+(`frontend/app/page.tsx`, `#section-hero`) in a flex-col with a
+`No credit card required` line directly beneath it. The two-door row
+is now `sm:items-start` so the adjacent "Browse live deals" button
+stays top-aligned with the trial button. Accurate: signup is
+Privy-auth only, no card collected to start.
+
 ## P13 — Gate the Share Shop CTA
 
 Show the Share Shop CTA as disabled, with a tooltip reading
