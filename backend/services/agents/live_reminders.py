@@ -181,6 +181,107 @@ def run_once() -> dict:
     return counts
 
 
+def notify_project_live_now(project_id: str, supabase=None) -> dict:
+    """Email a project's "remind me when live" subscribers that the show
+    has started NOW — fired from the instant Go Live paths (ivs
+    /create-stage and the Mux /go-live handler), not the scheduled cron.
+
+    Reuses the exact atomic sent_at claim that run_once() uses, so a
+    subscriber is emailed at most once even if the instant path and the
+    scheduled cron both run: whichever stamps sent_at first owns the send.
+    Unlike the cron, this ignores scheduled_for and notifies every unsent
+    subscriber for the project — the show is literally starting now.
+
+    Best-effort and exception-safe by contract: the caller is a live
+    go-live request, which must never fail because of an email hiccup.
+    Returns a counts dict for logging.
+    """
+    counts = {"scanned": 0, "claimed": 0, "sent": 0, "errored": 0}
+    try:
+        sb = supabase or get_client()
+    except Exception as exc:
+        print(f"[live-reminders:now] no client for project={project_id}: {exc!r}")
+        return counts
+
+    try:
+        subs = (
+            sb.table("live_reminders")
+            .select("id, customer_email")
+            .eq("project_id", project_id)
+            .is_("sent_at", "null")
+            .limit(1000)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[live-reminders:now] scan failed project={project_id}: {exc!r}")
+        return counts
+
+    rows = subs.data or []
+    counts["scanned"] = len(rows)
+    if not rows:
+        return counts
+
+    # Resolve business name + storefront link once for the whole batch.
+    business_name = "A business on DUM Club"
+    slug_or_id = project_id
+    try:
+        pr = (
+            sb.table("projects")
+            .select("id, slug, name, title")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if pr.data:
+            p = pr.data[0]
+            business_name = (
+                (p.get("title") or "").strip()
+                or (p.get("name") or "").strip()
+                or business_name
+            )
+            slug_or_id = p.get("slug") or p["id"]
+    except Exception as exc:
+        print(f"[live-reminders:now] project lookup failed {project_id}: {exc!r}")
+
+    for row in rows:
+        rid = row["id"]
+        try:
+            # Atomic claim — the UPDATE only matches when sent_at is still
+            # NULL. The scheduled cron (run_once) uses the identical claim,
+            # so the two paths can never double-send the same subscriber.
+            now_iso = datetime.now(timezone.utc).isoformat()
+            claim = (
+                sb.table("live_reminders")
+                .update({"sent_at": now_iso})
+                .eq("id", rid)
+                .is_("sent_at", "null")
+                .execute()
+            )
+            if not claim.data:
+                # Lost the race (cron or a concurrent go-live owns it).
+                continue
+            counts["claimed"] += 1
+            ok = send_live_reminder(
+                customer_email=row["customer_email"],
+                business_name=business_name,
+                project_slug_or_id=slug_or_id,
+                scheduled_for_label="now",
+            )
+            if ok:
+                counts["sent"] += 1
+        except Exception as exc:
+            counts["errored"] += 1
+            print(f"[live-reminders:now] row {rid} failed: {exc!r}")
+            # Same at-most-once trade-off as run_once: we do NOT roll back
+            # the sent_at stamp on a send failure.
+
+    print(
+        f"[live-reminders:now] project={project_id} scanned={counts['scanned']} "
+        f"claimed={counts['claimed']} sent={counts['sent']} errored={counts['errored']}"
+    )
+    return counts
+
+
 if __name__ == "__main__":
     if not EMAIL_ENABLED:
         print("[live-reminders] EMAIL disabled (no RESEND_API_KEY). Worker will scan and claim but won't actually send. Set RESEND_API_KEY in Railway env to enable.")

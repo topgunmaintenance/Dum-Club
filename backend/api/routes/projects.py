@@ -2031,6 +2031,20 @@ async def go_live(
         stage_arn=None,
     )
 
+    # Notify "remind me when live" subscribers that the show has started.
+    # Fire-and-forget + best-effort (see the IVS /create-stage hook). Same
+    # atomic sent_at claim as the scheduled cron, so no double-sends.
+    try:
+        import threading
+        from services.agents.live_reminders import notify_project_live_now
+        threading.Thread(
+            target=notify_project_live_now,
+            args=(project_id,),
+            daemon=True,
+        ).start()
+    except Exception as exc:
+        print(f"[projects] live-now notify dispatch failed (ignored): {exc!r}")
+
     result: dict = {"status": "success", "is_live": True, "provider": body.provider}
     if body.provider == "native_mux":
         result["stream_key"] = update_fields["live_stream_key"]
