@@ -191,6 +191,74 @@ import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+// Inline storefront-description editor. Writes projects.description via
+// the owner-gated PATCH /api/projects/{id}. This is the only path that
+// fills the field the public About block and the Share Shop gate both
+// read — the older "Add description" prompt linked to the booking
+// settings page, which edits a different field and left the storefront
+// description permanently empty.
+function AboutDescriptionEditor({
+  projectId,
+  ownerId,
+  onSaved,
+}: {
+  projectId: string;
+  ownerId: string;
+  onSaved: (text: string) => void;
+}) {
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save() {
+    const trimmed = text.trim();
+    if (!trimmed || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Owner-Id": ownerId || "",
+        },
+        body: JSON.stringify({ description: trimmed }),
+      });
+      if (!res.ok) {
+        setError("Could not save. Try again.");
+        return;
+      }
+      onSaved(trimmed);
+    } catch {
+      setError("Could not reach the server. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        maxLength={600}
+        placeholder="Tell customers what you sell and why they should buy from you."
+        className="w-full resize-none rounded-xl border border-default bg-surface-page px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+      />
+      {error && <div className="mt-1.5 text-xs text-state-live">{error}</div>}
+      <button
+        type="button"
+        onClick={save}
+        disabled={!text.trim() || saving}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-teal px-4 py-2 text-[11px] font-bold text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+      >
+        {saving ? "Saving…" : "Save description"}
+      </button>
+    </div>
+  );
+}
+
 function getProjectEmoji(project: Project | null) {
   const source = `${project?.title || project?.name || ""} ${project?.template_type || ""}`.toLowerCase();
 
@@ -4499,7 +4567,7 @@ return (
                             buyer sees the same payment trust signal. */}
                         {!isOwner && (
                           <p className="mt-3 text-[11px] leading-relaxed text-secondary">
-                            <span className="text-secondary">Stripe checkout</span> · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                            <span className="text-secondary">Stripe checkout</span> · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout. The seller handles refunds and questions.</span>
                           </p>
                         )}
                       </div>
@@ -4664,7 +4732,7 @@ return (
                   </div>
                 </div>
                 <p className="mt-1.5 text-[10px] leading-snug text-secondary">
-                  Stripe checkout · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                  Stripe checkout · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout. The seller handles refunds and questions.</span>
                 </p>
                 </div>
               ) : null}
@@ -4942,12 +5010,13 @@ return (
               <p className="max-w-3xl text-sm leading-relaxed text-secondary">
                 Add a short description so customers know what you offer. Only you can see this prompt.
               </p>
-              <Link
-                href={`/project/${project?.slug || id}/manage#settings`}
-                className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-brand-teal px-4 py-2 text-[11px] font-bold text-black transition hover:bg-brand-teal-hover"
-              >
-                Add description →
-              </Link>
+              <AboutDescriptionEditor
+                projectId={project?.id || id}
+                ownerId={authUser?.privyId || ""}
+                onSaved={(text) =>
+                  setProject((prev) => (prev ? { ...prev, description: text } : prev))
+                }
+              />
             </div>
           );
         }

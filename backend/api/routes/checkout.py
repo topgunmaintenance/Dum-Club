@@ -1136,6 +1136,21 @@ async def stripe_webhook(request: Request):
                     print(f"[webhook] stored shipping address for order {order['id']}")
                 except Exception as exc:
                     print(f"[webhook] shipping address store failed (ignored): {exc!r}")
+            # Capture the buyer's email from Stripe. Guest checkout collects
+            # the email on the Stripe-hosted page, so the order row starts
+            # with a NULL buyer_email — without this, guest buyers never get
+            # a confirmation email (process_order_paid skips when the email
+            # is empty). Persist it before _process_paid, which re-reads the
+            # order and sends the email. Best-effort; never blocks the flow.
+            buyer_email = (obj.get("customer_details") or {}).get("email") or obj.get("customer_email")
+            if buyer_email:
+                try:
+                    supabase.table("orders").update(
+                        {"buyer_email": buyer_email}
+                    ).eq("id", order["id"]).execute()
+                    print(f"[webhook] stored buyer email for order {order['id']}")
+                except Exception as exc:
+                    print(f"[webhook] buyer email store failed (ignored): {exc!r}")
             _process_paid(order, session_id, pi_id, "checkout.session.completed")
         else:
             print(f"[webhook] CRITICAL: Could not find order for session={session_id}")
@@ -1156,7 +1171,18 @@ async def stripe_webhook(request: Request):
         if not order:
             print(f"[webhook] PI lookup failed — attempting to resolve Checkout Session from Stripe")
             try:
-                sessions = s.checkout.Session.list(payment_intent=pi_id, limit=1)
+                # Direct charges live inside the connected account, so this
+                # lookup must be scoped to it — a platform-level list returns
+                # nothing. Connect webhook events carry the connected-account
+                # id on event.account.
+                connect_acct = event.get("account")
+                sessions = (
+                    s.checkout.Session.list(
+                        payment_intent=pi_id, limit=1, stripe_account=connect_acct
+                    )
+                    if connect_acct
+                    else s.checkout.Session.list(payment_intent=pi_id, limit=1)
+                )
                 if sessions.data:
                     resolved_session = sessions.data[0]
                     resolved_session_id = resolved_session["id"]
@@ -1821,7 +1847,7 @@ async def recover_pending_orders(_admin=Depends(require_admin)):
     # Find all stuck orders
     pending_res = (
         supabase.table("orders")
-        .select("id, offer_id, stripe_session_id, stripe_payment_intent_id, status, created_at")
+        .select("id, offer_id, seller_user_id, stripe_session_id, stripe_payment_intent_id, status, created_at")
         .eq("status", "pending_payment")
         .order("created_at", desc=True)
         .limit(50)
@@ -1841,15 +1867,26 @@ async def recover_pending_orders(_admin=Depends(require_admin)):
             paid = False
             actual_pi_id = pi_id
 
+            # Direct charges live inside the merchant's connected account,
+            # so every retrieve must be scoped to it — the same way the
+            # refund path resolves the account. Without this the unscoped
+            # platform-level retrieve raises "No such session" and the
+            # stuck order can never be recovered.
+            connect_id = _get_seller_stripe_connect_id(supabase, order.get("seller_user_id"))
+            if not connect_id:
+                print(f"[recover] Order {order_id}: no connected account on seller, skipping")
+                results.append({"order_id": order_id, "action": "skipped", "stripe_status": "no_connect_account"})
+                continue
+
             if session_id:
-                session = s.checkout.Session.retrieve(session_id)
+                session = s.checkout.Session.retrieve(session_id, stripe_account=connect_id)
                 print(f"[recover] Order {order_id}: session={session_id}, payment_status={session.payment_status}")
                 if session.payment_status == "paid":
                     paid = True
                     actual_pi_id = actual_pi_id or session.payment_intent
 
             if not paid and actual_pi_id:
-                pi = s.PaymentIntent.retrieve(actual_pi_id)
+                pi = s.PaymentIntent.retrieve(actual_pi_id, stripe_account=connect_id)
                 print(f"[recover] Order {order_id}: PI={actual_pi_id}, status={pi.status}")
                 if pi.status == "succeeded":
                     paid = True

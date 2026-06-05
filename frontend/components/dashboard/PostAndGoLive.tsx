@@ -41,11 +41,17 @@ type Props = {
   project: Project;
   stripeVerified: boolean;
   getToken: () => Promise<string | null | undefined>;
+  // Caller's Privy DID. The pin-offer endpoint authenticates the owner
+  // off the user_id header (the privy id), not the Bearer token, so this
+  // must be the real DID — sending anything else 403s and the auto-pin
+  // is silently dropped, stranding the merchant on the go-live screen
+  // with no featured offer.
+  userId: string;
 };
 
 type Chip = "quantity" | "shipping" | "description";
 
-export function PostAndGoLive({ project, stripeVerified, getToken }: Props) {
+export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Props) {
   const router = useRouter();
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -190,7 +196,7 @@ export function PostAndGoLive({ project, stripeVerified, getToken }: Props) {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                user_id: (await getToken()) ? "set" : "",
+                user_id: userId,
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({ offer_id: newOfferId }),

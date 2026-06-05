@@ -212,6 +212,7 @@ export default function DashboardPostPage() {
             project={primaryProject}
             stripeVerified={stripeVerified}
             getToken={getToken}
+            userId={user?.privyId || ""}
           />
         )}
       </div>
