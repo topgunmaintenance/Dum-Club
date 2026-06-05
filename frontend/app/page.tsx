@@ -2715,13 +2715,20 @@ export default function Home() {
                 {/* Two doors: merchants start a trial, shoppers browse what
                     is live right now. The homepage previously offered only
                     the merchant CTA, so shoppers had no entry point. */}
-                <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:justify-center">
-                  <Link
-                    href="/merchant"
-                    className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-                  >
-                    Start free for 60 days →
-                  </Link>
+                <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-start sm:justify-center">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <Link
+                      href="/merchant"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white sm:w-auto"
+                    >
+                      Start free for 60 days →
+                    </Link>
+                    {/* Trust microcopy directly under the trial CTA — signup
+                        is Privy-auth only; no card is collected to start. */}
+                    <p className="text-[11px] font-medium text-secondary">
+                      No credit card required
+                    </p>
+                  </div>
                   <Link
                     href="/discover"
                     className="inline-flex h-12 items-center justify-center rounded-xl border border-default bg-surface-card px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-primary transition hover:border-brand-teal hover:text-brand-teal"

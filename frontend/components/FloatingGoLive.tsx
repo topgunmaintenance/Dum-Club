@@ -123,10 +123,15 @@ export function FloatingGoLive() {
   if (!hasOffer) return null;
   if (!stripeVerified) return null;
 
-  // Hide the floating pill on the merchant's own project pages — the
-  // AdminBar already renders a Go Live action there, so the floating
-  // pill is redundant overlap. Keep it on /dashboard, /discover, etc.
-  if (pathname && pathname.startsWith("/project/")) return null;
+  // Restrict the floating pill to the merchant's dashboard. It used to
+  // render on every non-/project route, which leaked it onto public and
+  // marketing pages (/, /pricing, /about, /why-dum-club, /discover,
+  // /for-business) where it confuses visitors who can't broadcast. The
+  // project page already has its own Go Live control in the AdminBar, so
+  // the dashboard is the single surface where this shortcut adds value.
+  const onDashboard =
+    pathname === "/dashboard" || (pathname?.startsWith("/dashboard/") ?? false);
+  if (!onDashboard) return null;
 
   const target = `/project/${project.slug || project.id}#project-live-host`;
   const isLive = !!project.is_live;

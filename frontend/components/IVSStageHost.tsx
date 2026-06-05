@@ -10,6 +10,11 @@ import { API_BASE } from "../lib/apiBase";
 // browser console stays clean during the demo recording.
 const __debug = process.env.NODE_ENV === "development";
 
+// If the IVS CONNECTED event never arrives after stage.join(), don't
+// strand the merchant on "Connecting…" forever — surface a retryable
+// error after this window instead.
+const CONNECT_TIMEOUT_MS = 20000;
+
 type HostStatus = "idle" | "requesting_camera" | "previewing" | "connecting" | "live" | "error" | "ended";
 
 interface IVSStageHostProps {
@@ -92,11 +97,26 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   // this, viewers landed on /embed/* and saw "Waiting for host
   // video..." indefinitely after a host crash.
   const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Reliable go-live bookkeeping:
+  //  - connectTimerRef: fires if CONNECTED never lands after join()
+  //  - connectedRef: true once the stage has reached CONNECTED
+  //  - endingRef: set while the host is intentionally ending, so the
+  //    DISCONNECTED that leave() triggers isn't reported as a drop
+  const connectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectedRef = useRef(false);
+  const endingRef = useRef(false);
 
   function stopHeartbeat() {
     if (heartbeatTimerRef.current) {
       clearInterval(heartbeatTimerRef.current);
       heartbeatTimerRef.current = null;
+    }
+  }
+
+  function clearConnectTimer() {
+    if (connectTimerRef.current) {
+      clearTimeout(connectTimerRef.current);
+      connectTimerRef.current = null;
     }
   }
 
@@ -118,8 +138,12 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     heartbeatTimerRef.current = setInterval(send, 5000);
   }
 
+  // Defensive: only treat it as pinned when it's a non-empty string.
+  // Guarding the type means a non-string id (null, or anything odd that
+  // slips through the prop) can never throw on .trim() and blank the
+  // whole host panel.
   const hasPinnedOffer = Boolean(
-    pinnedOfferId && pinnedOfferId.trim() !== "",
+    typeof pinnedOfferId === "string" && pinnedOfferId.trim() !== "",
   );
 
   const startPreview = useCallback(async () => {
@@ -248,6 +272,8 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     }
 
     setStatus("connecting");
+    connectedRef.current = false;
+    endingRef.current = false;
     __debug && console.log("[ivs-host] Creating IVS stage...");
 
     try {
@@ -338,17 +364,58 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         __debug && console.log("[ivs-host] Connection:", state);
         if (state === ConnectionState.CONNECTED) {
           __debug && console.log("[ivs-host] ✓ CONNECTED — calling onLive");
+          connectedRef.current = true;
+          clearConnectTimer();
           setStatus("live");
           startHeartbeat();
           onLive();
+        } else if (state === ConnectionState.DISCONNECTED) {
+          // The host's own End Stream triggers a disconnect via leave() —
+          // that's intentional, so don't report it as a drop.
+          if (endingRef.current) return;
+          // Unexpected drop (network loss, sleep, token expiry). Don't
+          // leave the UI falsely "live" with a beating heartbeat — stop
+          // the beat and surface a clear, retryable error so the merchant
+          // knows they're off air.
+          console.error("[ivs-host] stage disconnected unexpectedly");
+          clearConnectTimer();
+          stopHeartbeat();
+          _stageInstance = null;
+          _localStreams = [];
+          setErrorMsg(
+            connectedRef.current
+              ? "Your live connection dropped. Tap Try Again to reconnect."
+              : "Couldn't reach the live server. Check your internet and tap Try Again.",
+          );
+          setErrorKind("generic");
+          setStatus("error");
+          onError("ivs disconnected");
         }
       });
 
       __debug && console.log("[ivs-host] Joining stage...");
+      // Safety net: if CONNECTED never fires (stuck handshake, silent
+      // network failure), don't hang on "Connecting…" forever — tear the
+      // stage down and surface a retryable error.
+      clearConnectTimer();
+      connectTimerRef.current = setTimeout(() => {
+        if (connectedRef.current) return;
+        console.error("[ivs-host] connect timeout — CONNECTED never fired");
+        try { _stageInstance?.leave(); } catch {}
+        _stageInstance = null;
+        _localStreams = [];
+        stopHeartbeat();
+        setErrorMsg("Couldn't reach the live server. Check your internet and tap Try Again.");
+        setErrorKind("generic");
+        setStatus("error");
+        onError("ivs connect timeout");
+      }, CONNECT_TIMEOUT_MS);
+
       await stage.join();
       __debug && console.log("[ivs-host] ✓ stage.join() resolved");
 
     } catch (err) {
+      clearConnectTimer();
       const msg = err instanceof Error ? err.message : "Failed";
       console.error("[ivs-host] Error:", msg, err);
       setErrorMsg(msg); setStatus("error"); onError(msg);
@@ -359,6 +426,13 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
   const endStream = useCallback(async () => {
     __debug && console.log("[ivs-host] Ending stream (user action)...");
+
+    // Mark intentional end so the DISCONNECTED event that leave() fires
+    // isn't reported as an unexpected drop, and cancel any pending
+    // connect-timeout from a join still in flight.
+    endingRef.current = true;
+    connectedRef.current = false;
+    clearConnectTimer();
 
     // Stop heartbeat first so the explicit end isn't accompanied
     // by stray heartbeats racing the /end-stage call.
@@ -403,6 +477,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       // bubble + Discover will flip to offline within seconds —
       // exactly the auto-end-stale behaviour we want.
       stopHeartbeat();
+      clearConnectTimer();
     };
   }, []);
 

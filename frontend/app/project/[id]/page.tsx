@@ -593,6 +593,11 @@ export default function ProjectPage() {
     setInstallConfirmed(false);
   }
   const [projectStatus, setProjectStatus] = useState("draft");
+  // Publish Store toggle — flips projects.status draft <-> live via the
+  // owner-gated /publish + /unpublish endpoints. Separate from the
+  // livestream (is_live); see the Store Status card below.
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
 
   const [memoryText, setMemoryText] = useState("");
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -1092,6 +1097,13 @@ export default function ProjectPage() {
         pinned_offer_id: fresh.pinned_offer_id ?? null,
         active_auction_id: fresh.active_auction_id ?? null,
         live_provider: fresh.live_provider ?? null,
+        // ivs_stage_arn MUST be merged: the live IVS player only mounts
+        // when `isIVSSession(project) && project.ivs_stage_arn`. Without
+        // this, a viewer who opened the page before the host went live
+        // would get live_provider="ivs_realtime" on the next poll but a
+        // stale null ARN — so the IVSStageViewer never renders and they
+        // can't watch the stream they came for.
+        ivs_stage_arn: fresh.ivs_stage_arn ?? null,
         live_playback_id: fresh.live_playback_id ?? null,
         live_stream_id: fresh.live_stream_id ?? null,
         stream_url: fresh.stream_url ?? null,
@@ -1570,11 +1582,19 @@ export default function ProjectPage() {
   }
 
   async function loadSellerOrders() {
-    if (!id || !isOwner) return;
+    // Use the canonical project UUID, never the route param `id` — that can
+    // be a slug (e.g. /project/topgun-maintenance). The backend
+    // /api/checkout/orders/seller/{project_id} looks the project up by its
+    // UUID `id`, so passing a slug fails the lookup. That mismatch is the
+    // root cause of the "[seller-orders] fetch failed" error on
+    // slug-routed project pages; every other fetch here already uses
+    // project.id (see handlePinOffer / /api/offers/${project.id}).
+    const projectUuid = project?.id;
+    if (!projectUuid || !isOwner) return;
     try {
       const token = await getToken();
       if (!token) return;
-      const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${id}`, {
+      const res = await fetch(`${API_BASE}/api/checkout/orders/seller/${projectUuid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -2633,6 +2653,14 @@ export default function ProjectPage() {
 
   useEffect(() => { loadAuction(); }, [project?.active_auction_id]);
 
+  // Fire the timer-expiry auto-close at most once per auction per tab.
+  // The backend has no server-side expiry close, so the client countdown
+  // is what closes a timed-out auction. Without this guard the 1s tick
+  // re-POSTed /close every second (from every viewer's tab) between
+  // expiry and the 3s poll flipping status to "ended" — a burst of
+  // redundant requests for a single close.
+  const autoCloseFiredRef = useRef<string | null>(null);
+
   // Countdown timer
   useEffect(() => {
     if (!auction || auction.status !== "active") { setAuctionCountdown(""); return; }
@@ -2642,11 +2670,14 @@ export default function ProjectPage() {
       const diff = Math.max(0, end - now);
       if (diff <= 0) {
         setAuctionCountdown("0:00");
-        // Auto-close when timer hits zero
-        fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        }).then(() => loadAuction()).catch(() => {});
+        // Auto-close when the timer hits zero — once per auction per tab.
+        if (autoCloseFiredRef.current !== auction!.id) {
+          autoCloseFiredRef.current = auction!.id;
+          fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+          }).then(() => loadAuction()).catch(() => {});
+        }
         return;
       }
       const m = Math.floor(diff / 60000);
@@ -2826,6 +2857,44 @@ export default function ProjectPage() {
   }
 
   /* ── Store / Offers helpers ─────────────────────── */
+  // Publish / unpublish the storefront. Flips projects.status
+  // draft <-> live through the owner-gated endpoints, which is what
+  // lists the store on Discover and moves the Store Status card into
+  // the published state. Deliberately independent of going live: a
+  // store can be published with the stream off.
+  async function togglePublish() {
+    if (!project || !id || publishing) return;
+    const publish = project.status !== "live";
+    setPublishing(true);
+    setPublishError("");
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/${id}/${publish ? "publish" : "unpublish"}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            user_id: authUser?.privyId || "",
+          },
+        },
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setPublishError(
+          typeof errData.detail === "string"
+            ? errData.detail
+            : "Could not update your store. Try again.",
+        );
+        return;
+      }
+      setProject((prev) => (prev ? { ...prev, status: publish ? "live" : "draft" } : prev));
+    } catch {
+      setPublishError("Could not reach the server. Try again.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   function persistStoreItems(items: StoreItem[]) {
     fetch(`${API_BASE}/api/projects/${id}`, {
       method: "PATCH",
@@ -3585,7 +3654,9 @@ return (
     {/* 2J: the right-rail section dot-nav is power-user chrome. Hide it
         for owners until their first sale (clean early-stage page);
         customers and STATE_3+ owners keep it. */}
-    {(!showOwnerInlineUi || ownerHasSales) && <SectionNav />}
+    {(!showOwnerInlineUi || ownerHasSales) && (
+      <SectionNav refreshKey={loadingProject ? "loading" : "loaded"} />
+    )}
     {statusToast}
     {isOwner && (
       <>
@@ -4835,25 +4906,64 @@ return (
         </div>
       </div>
 
-      <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
-        <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
-        {loadingProject ? (
-          <div className="space-y-2">
-            <div className="h-4 w-full animate-pulse rounded bg-surface-muted" />
-            <div className="h-4 w-5/6 animate-pulse rounded bg-surface-muted" />
-            <div className="h-4 w-4/6 animate-pulse rounded bg-surface-muted" />
+      {(() => {
+        // While the project loads we can't tell whether a description
+        // exists — keep the skeleton (and the #section-about anchor) so
+        // the section doesn't flash hidden then reappear.
+        if (loadingProject) {
+          return (
+            <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+              <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+              <div className="space-y-2">
+                <div className="h-4 w-full animate-pulse rounded bg-surface-muted" />
+                <div className="h-4 w-5/6 animate-pulse rounded bg-surface-muted" />
+                <div className="h-4 w-4/6 animate-pulse rounded bg-surface-muted" />
+              </div>
+            </div>
+          );
+        }
+
+        const aboutText = (project?.description || parsedAiOutput?.description || "").trim();
+        // Auto-generated placeholders count as empty — they're not a
+        // real description a customer should read.
+        const aboutIsEmpty =
+          !aboutText ||
+          aboutText === "Auto-created from dashboard." ||
+          aboutText.startsWith("Project workspace for ");
+
+        if (aboutIsEmpty) {
+          // Visitors (and owners previewing as a customer) see nothing —
+          // an empty About block reads as an unfinished page. Owners get
+          // an inline prompt to fill it in instead.
+          if (!showOwnerInlineUi) return null;
+          return (
+            <div id="section-about" className="mb-8 rounded-3xl border border-dashed border-default bg-surface-card p-6 backdrop-blur-sm">
+              <div className="mb-2 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+              <p className="max-w-3xl text-sm leading-relaxed text-secondary">
+                Add a short description so customers know what you offer. Only you can see this prompt.
+              </p>
+              <Link
+                href={`/project/${project?.slug || id}/manage#settings`}
+                className="mt-4 inline-flex items-center gap-1.5 self-start rounded-lg bg-brand-teal px-4 py-2 text-[11px] font-bold text-black transition hover:bg-brand-teal-hover"
+              >
+                Add description →
+              </Link>
+            </div>
+          );
+        }
+
+        return (
+          <div id="section-about" className="mb-8 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm">
+            <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">About</div>
+            <p className="max-w-3xl text-base leading-relaxed text-primary">{aboutText}</p>
+            {project?.prompt && (
+              <p className="mt-4 text-sm text-secondary">
+                Launched from the idea: &ldquo;{project.prompt}&rdquo;
+              </p>
+            )}
           </div>
-        ) : (
-          <p className="max-w-3xl text-base leading-relaxed text-primary">
-            {project?.description || parsedAiOutput?.description || "No description available yet."}
-          </p>
-        )}
-        {project?.prompt && (
-          <p className="mt-4 text-sm text-secondary">
-            Launched from the idea: &ldquo;{project.prompt}&rdquo;
-          </p>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ── */}
       {project?.slug === "topgun-maintenance" && (
@@ -5049,11 +5159,15 @@ return (
               projectId={id as string}
               userId={authUser?.privyId || ""}
               autoStart={autoGoLive}
-              // Phase 3 (Q6). pre-stream guard. The component shows a
-              // confirm dialog before requesting camera if no offer is
-              // pinned, so the merchant doesn't go live to viewers who
-              // can't buy.
-              pinnedOfferId={project?.pinned_offer_id ?? null}
+              // Pre-stream guard reads the SAME resolved featured offer the
+              // storefront shows (`pinnedOffer`), not the raw
+              // project.pinned_offer_id. Keying off the resolved object keeps
+              // the host panel in lock-step with the FEATURED display: it
+              // advances to Start camera only when there's a real, loaded,
+              // active featured offer, and shows the pin prompt otherwise —
+              // never a state where a stale/deleted pinned id makes the panel
+              // disagree with what's actually featured.
+              pinnedOfferId={pinnedOffer?.id ?? null}
               // Phase 2 grace-period rollout: lets the host check
               // /api/merchant/trial-status so it can replace the Go
               // Live button with a "Shop paused" notice when the plan
@@ -6526,7 +6640,7 @@ return (
                           <div className="w-full rounded-xl bg-[var(--state-live)]/10 border border-[var(--state-live)]/30 px-5 py-3 text-center text-xs font-semibold text-state-live select-none">
                             Sold Out
                           </div>
-                        ) : isOwner ? (
+                        ) : showOwnerInlineUi ? (
                           <button
                             onClick={() => openOfferForm(offer)}
                             className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-center text-[11px] font-semibold text-secondary transition hover:border-strong hover:text-primary"
@@ -7238,6 +7352,41 @@ return (
               <div className="text-xs uppercase tracking-[0.2em] text-muted">Next Step</div>
               <div className="mt-1.5 text-sm font-medium text-primary">{nextStep}</div>
             </div>
+
+            {/* Publish Store toggle — flips the store between draft and
+                published (status live). Publishing lists it on Discover
+                and is separate from Go Live broadcasting: customers can
+                buy a published store whether or not a stream is on.
+                Shown once there is something to sell. */}
+            {hasOffer && (
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-default bg-surface-page p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-primary">
+                    {storeIsLive ? "Your store is published" : "Your store is a draft"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-secondary">
+                    {storeIsLive
+                      ? "Customers can find it on Discover and buy any time, stream or not."
+                      : "Publish to list it on Discover. Customers can buy without you going live."}
+                  </div>
+                  {publishError && (
+                    <div className="mt-1.5 text-xs text-state-live">{publishError}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePublish}
+                  disabled={publishing}
+                  className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition active:scale-[0.99] disabled:opacity-60 ${
+                    storeIsLive
+                      ? "border border-default bg-surface-card text-secondary hover:text-primary"
+                      : "bg-brand-teal text-black hover:bg-brand-teal-hover"
+                  }`}
+                >
+                  {publishing ? "Saving…" : storeIsLive ? "Unpublish" : "Publish Store"}
+                </button>
+              </div>
+            )}
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <button

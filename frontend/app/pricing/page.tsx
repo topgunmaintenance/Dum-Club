@@ -147,6 +147,14 @@ const FAQS: { q: string; a: string }[] = [
   },
 ];
 
+// FAQ items expanded by default. The first three answers give quick
+// context; the conversion audit (P16) adds the cancellation and Stripe
+// objections so those answers are visible without a click.
+const DEFAULT_OPEN_FAQS = new Set<string>([
+  "Can I cancel any time?",
+  "Do I need to integrate Stripe?",
+]);
+
 // ISR: marketing content changes rarely. Serve a statically generated
 // page, regenerate at most once an hour. Absorbs traffic without hitting
 // the backend on every view.
@@ -404,7 +412,7 @@ export default function PricingPage() {
           <div className="space-y-3">
             {FAQS.map((f, i) => (
               <Card key={f.q} variant="surface" padding="md">
-                <details className="group" open={i < 3}>
+                <details className="group" open={i < 3 || DEFAULT_OPEN_FAQS.has(f.q)}>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-primary">
                     {f.q}
                     <span

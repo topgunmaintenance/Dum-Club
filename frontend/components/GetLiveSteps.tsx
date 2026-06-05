@@ -6,10 +6,17 @@
  *
  *   1. Business name set
  *   2. Connect Stripe
- *   3. Create your first offer
+ *   3. Add an offer AND publish the store
  *   4. Pin a featured item
  *   5. Add DUM Live to your website
  *   6. Press Go Live
+ *
+ * Step 3 only counts as done once the store is published (status
+ * live), not the moment an offer is saved: a draft offer isn't
+ * buyable by customers, so checking the box on save would tell the
+ * merchant they're further along than they are. When an offer exists
+ * but the store is still a draft, the step points the merchant at the
+ * Publish Store toggle on their storefront.
  *
  * Each step has a clear pass signal we can derive from data the
  * dashboard already loads, plus a CTA so the merchant can finish
@@ -47,6 +54,10 @@ type Props = {
   hasBusinessName: boolean;
   stripeVerified: boolean;
   hasOffer: boolean;
+  /** Storefront is published (projects.status === "live"). Step 3
+   *  ("Add what you sell") only completes once this is true — saving a
+   *  draft offer isn't enough, since a draft store isn't buyable. */
+  isPublished: boolean;
   /** Project has a non-null pinned_offer_id — the featured item the
    *  live host surfaces to viewers the moment a stream goes live.
    *  Required by IVSStageHost.startPreview() since PR #269. */
@@ -70,6 +81,7 @@ export function GetLiveSteps({
   hasBusinessName,
   stripeVerified,
   hasOffer,
+  isPublished,
   hasPinnedOffer,
   isLive,
   projectSlug,
@@ -116,11 +128,24 @@ export function GetLiveSteps({
     {
       n: 3,
       title: "Add what you sell",
-      body: "Pick one thing. Set a price.",
+      // Saving an offer isn't the finish line — the store has to be
+      // published before customers can buy. Keep this step open until
+      // isPublished, and once an offer exists, point the merchant at
+      // the Publish Store toggle on their storefront.
+      body: !hasOffer
+        ? "Pick one thing. Set a price."
+        : !isPublished
+        ? "Offer saved. Publish your store so customers can buy."
+        : "Pick one thing. Set a price.",
       icon: Tag,
-      done: hasOffer,
-      ctaLabel: hasOffer ? "Add another" : "Add an offer",
-      ctaHref: `${projectHref}/manage#offers`,
+      done: hasOffer && isPublished,
+      ctaLabel: !hasOffer
+        ? "Add an offer"
+        : !isPublished
+        ? "Publish store"
+        : "Add another",
+      ctaHref:
+        hasOffer && !isPublished ? projectHref : `${projectHref}/manage#offers`,
     },
     {
       n: 4,

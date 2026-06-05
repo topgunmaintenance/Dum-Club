@@ -1813,6 +1813,90 @@ async def update_project(
 
 
 # -----------------------------
+# Publish / unpublish storefront
+# -----------------------------
+# Publishing is the merchant-facing "open my store" switch: it flips
+# projects.status draft <-> live. This is deliberately separate from
+# going live (is_live / broadcasting) — a store can be published with
+# the stream off, and a merchant can broadcast a draft store. Before
+# this endpoint the only path to status='live' was the deprecated
+# Solana token pipeline (advance-token-status), which left normal
+# merchants with no way to publish. Buyability is governed by
+# visibility (public by default), not status, so a published store is
+# shoppable whether or not a stream is running; publishing is what
+# lists it on /discover and flips the owner's Store Status card to the
+# published state.
+#
+# Status is intentionally NOT exposed through the generic PATCH
+# /{project_id} whitelist: that endpoint's ownership check is optional
+# (only runs when x_owner_id is sent), and publish/unpublish is too
+# high-stakes to leave un-gated. These endpoints require the caller's
+# privy id in the user_id header and verify ownership the same way
+# /go-live does.
+
+
+async def _set_publication_status(project_id: str, user_id: str, *, publish: bool):
+    """Owner-gated flip of projects.status between 'live' and 'draft'."""
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    supabase = get_client()
+
+    project_res = (
+        supabase.table("projects")
+        .select("id, owner_id, privy_id, status")
+        .eq("id", project_id)
+        .eq("is_deleted", False)
+        .limit(1)
+        .execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    project = project_res.data[0]
+    resolved_owner = _resolve_owner_uuid(supabase, user_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == user_id)
+        or (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner)
+        or (project.get("privy_id") and project["privy_id"] == user_id)
+    )
+    if not owner_match:
+        raise HTTPException(status_code=403, detail="Not project owner")
+
+    # A 'rejected' project is a moderation decision, not a draft —
+    # refuse to publish it rather than silently overriding the review.
+    current = (project.get("status") or "draft").strip()
+    if publish and current == "rejected":
+        raise HTTPException(
+            status_code=400,
+            detail="This store can't be published. Contact support if you think this is a mistake.",
+        )
+
+    new_status = "live" if publish else "draft"
+    supabase.table("projects").update({"status": new_status}).eq("id", project_id).execute()
+
+    return {"status": "success", "published": publish, "project_status": new_status}
+
+
+@router.post("/{project_id}/publish")
+async def publish_project(
+    project_id: str,
+    user_id: str = Header(default="", convert_underscores=False),
+):
+    """Owner publishes the storefront (status draft -> live)."""
+    return await _set_publication_status(project_id, user_id, publish=True)
+
+
+@router.post("/{project_id}/unpublish")
+async def unpublish_project(
+    project_id: str,
+    user_id: str = Header(default="", convert_underscores=False),
+):
+    """Owner reverts the storefront to a draft (status live -> draft)."""
+    return await _set_publication_status(project_id, user_id, publish=False)
+
+
+# -----------------------------
 # Live Commerce MVP
 # -----------------------------
 
