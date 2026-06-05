@@ -73,30 +73,30 @@ async def subscribe_live_reminder(
         raise HTTPException(status_code=404, detail="Project not found")
 
     project = proj_res.data[0]
+
+    # A subscription stores a scheduled_for. When the merchant has a real
+    # upcoming scheduled show we snapshot that time (the cron fires it near
+    # then). When there's NO upcoming schedule, we store a GENERAL
+    # subscription under a far-future sentinel: the cron's time-window scan
+    # never matches the sentinel, so these only ever fire via the instant
+    # go-live notifier (notify_project_live_now), which emails every unsent
+    # subscriber the moment the merchant actually goes live. This lets the
+    # storefront offer "notify me when they go live" on every page, not
+    # only when a time is posted.
+    GENERAL_SENTINEL = "9999-12-31T00:00:00+00:00"
     scheduled = project.get("scheduled_live_at")
-    if not scheduled:
-        raise HTTPException(
-            status_code=409,
-            detail="No upcoming live show is scheduled for this business yet. Check back soon.",
-        )
-
-    # Parse the schedule as a UTC datetime so we can compare to now.
-    try:
-        scheduled_dt = datetime.fromisoformat(str(scheduled).replace("Z", "+00:00"))
-    except ValueError:
-        # If the column ever contains a malformed value (shouldn't —
-        # the column is TIMESTAMPTZ) we treat it as "no schedule" so
-        # the customer gets a sensible message rather than a 500.
-        raise HTTPException(
-            status_code=409,
-            detail="No upcoming live show is scheduled for this business yet. Check back soon.",
-        )
-
-    if scheduled_dt <= datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=409,
-            detail="That live show already started or has already passed. Refresh the page for the next one.",
-        )
+    scheduled_for: str = GENERAL_SENTINEL
+    is_general = True
+    if scheduled:
+        try:
+            scheduled_dt = datetime.fromisoformat(str(scheduled).replace("Z", "+00:00"))
+            if scheduled_dt > datetime.now(timezone.utc):
+                # Real upcoming show — snapshot its time (existing behavior).
+                scheduled_for = scheduled
+                is_general = False
+        except ValueError:
+            # Malformed column value — fall through to a general subscription.
+            pass
 
     customer_email = body.email.strip().lower()
 
@@ -104,14 +104,13 @@ async def subscribe_live_reminder(
         supabase.table("live_reminders").insert({
             "project_id": project["id"],
             "customer_email": customer_email,
-            # Store the same ISO string the project row carries so the
-            # snapshot is exact-byte traceable for support.
-            "scheduled_for": scheduled,
+            "scheduled_for": scheduled_for,
         }).execute()
         return {
             "ok": True,
             "already_subscribed": False,
-            "scheduled_for": scheduled,
+            "scheduled_for": scheduled_for,
+            "general": is_general,
         }
     except Exception as exc:
         # Supabase-py raises an APIError for 23505 unique violations.
@@ -123,7 +122,8 @@ async def subscribe_live_reminder(
             return {
                 "ok": True,
                 "already_subscribed": True,
-                "scheduled_for": scheduled,
+                "scheduled_for": scheduled_for,
+                "general": is_general,
             }
         # Anything else is a real failure — surface a calm message.
         print(f"[live-reminders] insert failed for project={project_id}: {exc!r}")
