@@ -27,6 +27,7 @@ import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
+import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
 import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
@@ -3283,6 +3284,19 @@ export default function ProjectPage() {
         const data = await res.json();
         setIsFavorited(data.favorited);
         setFavoriteCount((c) => data.favorited ? c + 1 : Math.max(0, c - 1));
+        // Following a business should also opt the customer into a
+        // go-live alert. Favorites are keyed by Privy id (no email), so
+        // when we know the signed-in viewer's email, register a general
+        // live-reminder subscription. Best-effort + fire-and-forget: a
+        // failure (or no email on file) never blocks favoriting, and the
+        // endpoint dedupes repeat taps.
+        if (data.favorited && authUser?.email) {
+          fetch(`${API_BASE}/api/projects/${encodeURIComponent(id)}/live-reminders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: authUser.email }),
+          }).catch(() => {});
+        }
       }
     } catch {} finally { setTogglingFavorite(false); }
   }
@@ -4017,6 +4031,21 @@ return (
           recordedAt={project.replay_recorded_at ?? null}
           businessName={projectName}
           storefrontPath={`/project/${project.slug || project.id}`}
+        />
+      )}
+
+      {/* Always-on "notify me when live" — shown to customers when the
+          merchant has no upcoming scheduled show (the scheduled case is
+          covered by ScheduledLiveBanner above). Lets a visitor opt into
+          the next go-live from any storefront, which is what makes the
+          go-live email notifications reachable for every business. Owner
+          (non-preview) view is excluded — a merchant doesn't subscribe to
+          their own shop. */}
+      {!project?.is_live && !project?.scheduled_live_at && !showOwnerInlineUi && (
+        <LiveAlertSignup
+          projectId={id as string}
+          businessName={projectName}
+          defaultEmail={authUser?.email || undefined}
         />
       )}
 
