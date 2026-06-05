@@ -178,6 +178,14 @@ Files: `frontend/components/MerchantNextStep.tsx`,
 On `/pricing`, the "Can I cancel any time" and "Do I need to
 integrate Stripe" FAQ items should render expanded by default.
 
+**Status: DONE.** The FAQ `<details>` opened the first three items
+(`open={i < 3}`); those two questions sit at indices 3 and 4 and were
+collapsed. Added a text-keyed `DEFAULT_OPEN_FAQS` set and changed the
+condition to `open={i < 3 || DEFAULT_OPEN_FAQS.has(f.q)}`, so the two
+audit-flagged objections (cancellation, Stripe) are now expanded by
+default alongside the existing three. Text-keyed so it survives FAQ
+reordering. File: `frontend/app/pricing/page.tsx`.
+
 ---
 
 > Do not modify any code outside the named files for this task.
