@@ -1611,6 +1611,28 @@ export default function ProjectPage() {
     } catch (err) { console.error(err); }
   }
 
+  async function refundOrder(orderId: string) {
+    if (!window.confirm("Refund this order in full? This returns the buyer's money (including the 1% fee) and can't be undone.")) return;
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch(`${API_BASE}/api/checkout/orders/${orderId}/refund`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        alert(typeof d?.detail === "string" ? d.detail : "Refund failed. Try again.");
+        return;
+      }
+      await loadSellerOrders();
+      await loadOffers();
+    } catch (err) {
+      console.error(err);
+      alert("Refund failed. Try again.");
+    }
+  }
+
   // Token-only data fetchers below (market/trades/candles/redemptions).
   // Service-mode projects (Topgun, etc.) have token_status='inactive' and
   // these endpoints legitimately return non-2xx. Silently fall back to
@@ -7100,23 +7122,33 @@ return (
                         }`} />
                         {order.status === "pending_payment" ? "Checkout not completed" : order.status}
                       </span>
-                      {order.status === "paid" && (
-                        <button
-                          onClick={() => {
-                            // Optional tracking number on fulfill. Cancel
-                            // aborts; OK (even blank) proceeds.
-                            const t = window.prompt(
-                              "Mark fulfilled. Add a shipment tracking number (optional):",
-                              "",
-                            );
-                            if (t === null) return;
-                            updateOrderStatus(order.id, "fulfilled", t.trim() || undefined);
-                          }}
-                          className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal"
-                        >
-                          Mark Fulfilled
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {order.status === "paid" && (
+                          <button
+                            onClick={() => {
+                              // Optional tracking number on fulfill. Cancel
+                              // aborts; OK (even blank) proceeds.
+                              const t = window.prompt(
+                                "Mark fulfilled. Add a shipment tracking number (optional):",
+                                "",
+                              );
+                              if (t === null) return;
+                              updateOrderStatus(order.id, "fulfilled", t.trim() || undefined);
+                            }}
+                            className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal"
+                          >
+                            Mark Fulfilled
+                          </button>
+                        )}
+                        {(order.status === "paid" || order.status === "fulfilled" || order.status === "delivered") && (
+                          <button
+                            onClick={() => refundOrder(order.id)}
+                            className="rounded-lg border border-default px-3 py-1.5 text-[11px] font-medium text-secondary transition hover:border-[var(--state-live)]/40 hover:text-state-live"
+                          >
+                            Refund
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

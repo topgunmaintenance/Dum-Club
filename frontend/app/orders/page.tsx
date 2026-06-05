@@ -24,6 +24,8 @@ interface Order {
 
 function statusBadge(status: string) {
   if (status === "fulfilled" || status === "delivered") return { label: "Fulfilled", cls: "border-default text-brand-teal bg-brand-teal-soft" };
+  if (status === "refunded") return { label: "Refunded", cls: "border-default text-secondary bg-surface-muted" };
+  if (status === "partially_refunded") return { label: "Partially refunded", cls: "border-default text-secondary bg-surface-muted" };
   if (status === "paid") return { label: "Paid", cls: "border-sky-400/30 text-sky-400 bg-sky-400/10" };
   // "Checkout not completed" is more honest than "Awaiting Payment" —
   // these rows are the buyer's abandoned/expired Stripe Checkout

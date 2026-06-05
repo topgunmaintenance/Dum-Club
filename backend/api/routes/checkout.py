@@ -1701,6 +1701,111 @@ async def update_order_status(
     return {"status": new_status, "order_id": order_id}
 
 
+@router.post("/orders/{order_id}/refund")
+async def refund_order(
+    order_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Seller-initiated FULL refund of a paid order.
+
+    Money-out, so tightly guarded:
+      - caller must own the order's project (3-strategy owner match);
+      - only paid / fulfilled / delivered orders are refundable;
+      - idempotent: an already-refunded order is a no-op success;
+      - FULL refund only of the order's PaymentIntent;
+      - executed on the seller's connected account (direct-charge model)
+        with refund_application_fee=True so our 1% returns to the buyer too.
+
+    The existing charge.refunded webhook also stamps the status; we set it
+    optimistically for instant UI + restore one unit of inventory. Stripe
+    emails the buyer the refund receipt — no custom email needed.
+    """
+    supabase = get_client()
+    privy_id = current_user.get("sub")
+
+    order_res = (
+        supabase.table("orders")
+        .select("id, project_id, status, stripe_payment_intent_id, seller_user_id, offer_id")
+        .eq("id", order_id)
+        .limit(1)
+        .execute()
+    )
+    if not order_res.data:
+        raise HTTPException(status_code=404, detail="Order not found")
+    order = order_res.data[0]
+
+    # Idempotent: already refunded → success no-op (never double-refund).
+    if order["status"] == "refunded":
+        return {"ok": True, "status": "refunded", "already": True}
+
+    if order["status"] not in ("paid", "fulfilled", "delivered"):
+        raise HTTPException(status_code=400, detail="Only a paid order can be refunded.")
+
+    # Owner check — 3-strategy match (same as seller_orders) so privy-only
+    # projects still authorize for their real owner.
+    project_res = (
+        supabase.table("projects").select("owner_id, privy_id")
+        .eq("id", order["project_id"]).limit(1).execute()
+    )
+    if not project_res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project = project_res.data[0]
+    resolved = _resolve_privy_to_owner(supabase, privy_id)
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == privy_id)
+        or (project.get("owner_id") and resolved and project["owner_id"] == resolved)
+        or (project.get("privy_id") and project["privy_id"] == privy_id)
+    )
+    if not owner_match:
+        raise HTTPException(status_code=403, detail="Not the project owner")
+
+    pi_id = order.get("stripe_payment_intent_id")
+    if not pi_id:
+        raise HTTPException(status_code=400, detail="This order has no captured payment to refund.")
+
+    connect_id = _get_seller_stripe_connect_id(supabase, order.get("seller_user_id"))
+    if not connect_id:
+        raise HTTPException(status_code=400, detail="Seller Stripe account not found for refund.")
+
+    s = _get_stripe()
+    try:
+        # Direct-charge refund: created on the connected account; the fee is
+        # returned to the buyer as well so it's a true full refund.
+        refund = s.Refund.create(
+            payment_intent=pi_id,
+            refund_application_fee=True,
+            stripe_account=connect_id,
+        )
+    except Exception as exc:
+        print(f"[refund] Stripe refund failed order={order_id}: {exc!r}")
+        raise HTTPException(status_code=502, detail=f"Refund failed: {str(exc)}")
+
+    # Optimistic status (charge.refunded webhook also sets this — same value).
+    try:
+        supabase.table("orders").update(
+            {"status": "refunded", "updated_at": _now_iso()}
+        ).eq("id", order_id).execute()
+    except Exception as exc:
+        print(f"[refund] status update failed (webhook will sync) order={order_id}: {exc!r}")
+
+    # Restore one unit of inventory (best-effort; the webhook does not).
+    try:
+        oid = order.get("offer_id")
+        if oid:
+            off = supabase.table("offers").select("quantity_sold").eq("id", oid).limit(1).execute()
+            if off.data:
+                cur = off.data[0].get("quantity_sold") or 0
+                supabase.table("offers").update(
+                    {"quantity_sold": max(0, cur - 1)}
+                ).eq("id", oid).execute()
+    except Exception as exc:
+        print(f"[refund] inventory restore failed (non-fatal) order={order_id}: {exc!r}")
+
+    refund_id = refund.get("id") if isinstance(refund, dict) else getattr(refund, "id", None)
+    print(f"[refund] ✓ order={order_id} refund={refund_id} by={privy_id}")
+    return {"ok": True, "status": "refunded", "refund_id": refund_id}
+
+
 # ── Admin: Recover stuck orders ──────────────────────────────
 
 @router.post("/orders/recover-pending")
