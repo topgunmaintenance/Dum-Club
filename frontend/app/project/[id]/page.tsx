@@ -5154,20 +5154,31 @@ return (
             broadcast lifecycle is unaffected by the move from
             its previous top-of-page slot.) */}
         {isOwner && IVS_REALTIME_ENABLED && (!project?.is_live || isIVSSession(project)) && (
-          <div id="project-live-host" className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"}`}>
+          <div
+            id="project-live-host"
+            // L7: force a clean remount the instant a featured offer first
+            // exists (pre-live). The dynamically-imported host was holding a
+            // stale "no pinned offer" render and not reflecting the updated
+            // pinnedOfferId prop, so the panel stayed stuck on the pin prompt
+            // even though the storefront's FEATURED chip (same
+            // project.pinned_offer_id) showed the offer. The key flips once
+            // (empty -> ready) when a pin appears and then stays stable while
+            // a pin exists OR the stream is live, so it never remounts
+            // mid-broadcast.
+            key={(project?.pinned_offer_id || project?.is_live) ? "host-ready" : "host-empty"}
+            className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"}`}
+          >
             <IVSStageHost
               projectId={id as string}
               userId={authUser?.privyId || ""}
               autoStart={autoGoLive}
-              // Pre-stream guard reads the SAME resolved featured offer the
-              // storefront shows (`pinnedOffer`), not the raw
-              // project.pinned_offer_id. Keying off the resolved object keeps
-              // the host panel in lock-step with the FEATURED display: it
-              // advances to Start camera only when there's a real, loaded,
-              // active featured offer, and shows the pin prompt otherwise —
-              // never a state where a stale/deleted pinned id makes the panel
-              // disagree with what's actually featured.
-              pinnedOfferId={pinnedOffer?.id ?? null}
+              // Advance to Start camera whenever a featured offer is set.
+              // Prefer the resolved offer id, but fall back to the raw
+              // project.pinned_offer_id — the SAME source the storefront's
+              // FEATURED chip uses — so the gate can't read null while the
+              // chip shows the offer (the resolved-only prop did exactly
+              // that and left the panel stuck on the pin prompt).
+              pinnedOfferId={pinnedOffer?.id ?? project?.pinned_offer_id ?? null}
               // Phase 2 grace-period rollout: lets the host check
               // /api/merchant/trial-status so it can replace the Go
               // Live button with a "Shop paused" notice when the plan

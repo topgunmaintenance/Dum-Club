@@ -150,5 +150,36 @@ endpoints — nothing was stubbed. No change needed.
 
 ---
 
+## L7 — Live-host panel STILL stuck on pin prompt (real fix)
+
+Production repro (owner, `/project/website-designer`): the storefront
+FEATURED chip shows the pinned offer ("T-shirts · $1") but the live-host
+panel stays on "Pick what you're selling first / Pin a featured item →"
+and never reaches Start camera. DOM-confirmed: `hasPinPrompt=true`,
+`hasStartCamera=false`. The L1 fix (read resolved `pinnedOffer`) did not
+resolve this path.
+
+**Root cause:** not a value-derivation bug. The chip's `isPinned` is
+gated on `project.pinned_offer_id`, and the chip only renders once
+`offers` is loaded — so when the user sees FEATURED, the parent provably
+HAS `project.pinned_offer_id` set and `offers` loaded, meaning the parent
+passes a truthy `pinnedOfferId`. Yet the dynamically-imported
+`IVSStageHost` rendered `hasPinnedOffer=false` — it was holding a stale
+"no pinned offer" render and not reflecting the updated prop (this is why
+neither the original raw prop nor L1's resolved prop fixed it — same
+value, stale host render).
+
+**Fix (frontend, `frontend/app/project/[id]/page.tsx`):**
+1. `key` on the `#project-live-host` wrapper that flips `host-empty ->
+   host-ready` the instant a featured offer first exists pre-live,
+   forcing a clean remount so the host re-reads its gate. The key stays
+   stable while a pin exists OR the stream is live, so it never remounts
+   mid-broadcast (preserves the module-level live session).
+2. `pinnedOfferId={pinnedOffer?.id ?? project?.pinned_offer_id ?? null}`
+   — fall back to the raw id (the chip's exact source) so the gate can't
+   read null while the chip shows the offer.
+
+**Status: DONE.**
+
 > Do not modify any code outside the named files for this task.
 > If more files are needed, stop and ask first.
