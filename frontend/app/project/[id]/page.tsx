@@ -26,6 +26,7 @@ import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
+import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
 import { ReplayCard } from "../../../components/ReplayCard";
@@ -7349,6 +7350,15 @@ return (
         if (el) el.scrollIntoView({ behavior: "smooth", block: match ? "center" : "start" });
       }}
     />
+  )}
+
+  {/* Trust & safety: discreet report control for the customer view.
+      Hidden for the owner (non-preview). Extra bottom padding on mobile
+      clears the sticky buy bar. */}
+  {!showOwnerInlineUi && (
+    <div className="mx-auto max-w-6xl px-4 pb-24 pt-2 text-center sm:px-6 lg:pb-6">
+      <ReportButton projectId={id as string} />
+    </div>
   )}
 
   {/* Sticky mobile CTA bar. only visible on mobile, hides on desktop */}
