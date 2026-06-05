@@ -134,6 +134,20 @@ File: `frontend/app/project/[id]/page.tsx`.
 On `/discover`, surface currently-live merchants in a real "Live Now"
 rail/filter wired to actual `is_live` state.
 
+**Status: RESOLVED-BY-EXISTING (no code change).** The Live Now wiring
+is already complete end-to-end and keyed to real `is_live`:
+- Backend `/api/projects/discover` (+ `/public` fallback) return
+  `is_live` and attach `viewer_count` for live projects, with
+  heartbeat-staleness auto-clear so a host that dropped flips offline.
+- `useProjects` polls every 20s (+ on tab refocus) so `is_live` stays
+  fresh; `liveOnly` filter + `hasAnyLive` are wired to the filter bar.
+- `/discover` renders a prominent "Live Now · N" section above the
+  business grid whenever any merchant is live (not just when filtered).
+- `ListingCard` shows a "Live now · N watching" badge, a live-context
+  CTA, and a `?live=1` deep link.
+Verified by reading the hook, page, card, and backend listing
+endpoints — nothing was stubbed. No change needed.
+
 ---
 
 > Do not modify any code outside the named files for this task.
