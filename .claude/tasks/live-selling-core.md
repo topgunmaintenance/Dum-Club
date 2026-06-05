@@ -118,6 +118,17 @@ Turn the `active_auction_id` path into a timed event: countdown timer,
 current price/high bid, prominent Buy-Now/Bid button, auto-close →
 winner/checkout.
 
+**Status: DONE.** The live auction is already fully built — start
+(host), 1s countdown display, 3s state poll, current/high bid + bid
+count + bidder, bid inputs, highest-bidder state, timer auto-close,
+winner Pay-Now, and ended/awaiting/paid states. Fixed the real gap in
+the auto-close: the backend has no server-side expiry close, so the
+client closes the auction — but the 1s tick re-POSTed `/close` every
+second from every viewer tab between expiry and the 3s poll flipping
+status to "ended". Now the timer-expiry close fires at most once per
+auction per tab (`autoCloseFiredRef`). Frontend-only.
+File: `frontend/app/project/[id]/page.tsx`.
+
 ## L6 — Discover "Live Now" wiring
 
 On `/discover`, surface currently-live merchants in a real "Live Now"

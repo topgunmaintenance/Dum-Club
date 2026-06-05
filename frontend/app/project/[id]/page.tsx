@@ -2653,6 +2653,14 @@ export default function ProjectPage() {
 
   useEffect(() => { loadAuction(); }, [project?.active_auction_id]);
 
+  // Fire the timer-expiry auto-close at most once per auction per tab.
+  // The backend has no server-side expiry close, so the client countdown
+  // is what closes a timed-out auction. Without this guard the 1s tick
+  // re-POSTed /close every second (from every viewer's tab) between
+  // expiry and the 3s poll flipping status to "ended" — a burst of
+  // redundant requests for a single close.
+  const autoCloseFiredRef = useRef<string | null>(null);
+
   // Countdown timer
   useEffect(() => {
     if (!auction || auction.status !== "active") { setAuctionCountdown(""); return; }
@@ -2662,11 +2670,14 @@ export default function ProjectPage() {
       const diff = Math.max(0, end - now);
       if (diff <= 0) {
         setAuctionCountdown("0:00");
-        // Auto-close when timer hits zero
-        fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        }).then(() => loadAuction()).catch(() => {});
+        // Auto-close when the timer hits zero — once per auction per tab.
+        if (autoCloseFiredRef.current !== auction!.id) {
+          autoCloseFiredRef.current = auction!.id;
+          fetch(`${API_BASE}/api/auctions/${auction!.id}/close`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+          }).then(() => loadAuction()).catch(() => {});
+        }
         return;
       }
       const m = Math.floor(diff / 60000);
