@@ -1097,6 +1097,13 @@ export default function ProjectPage() {
         pinned_offer_id: fresh.pinned_offer_id ?? null,
         active_auction_id: fresh.active_auction_id ?? null,
         live_provider: fresh.live_provider ?? null,
+        // ivs_stage_arn MUST be merged: the live IVS player only mounts
+        // when `isIVSSession(project) && project.ivs_stage_arn`. Without
+        // this, a viewer who opened the page before the host went live
+        // would get live_provider="ivs_realtime" on the next poll but a
+        // stale null ARN — so the IVSStageViewer never renders and they
+        // can't watch the stream they came for.
+        ivs_stage_arn: fresh.ivs_stage_arn ?? null,
         live_playback_id: fresh.live_playback_id ?? null,
         live_stream_id: fresh.live_stream_id ?? null,
         stream_url: fresh.stream_url ?? null,

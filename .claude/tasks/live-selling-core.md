@@ -83,6 +83,18 @@ When `is_live`, non-owner viewers get the live player (Amazon IVS
 playback), live badge, pinned-product buy card, and chat — and can buy
 the featured item live. Reuse `buyOffer`. No new streaming provider.
 
+**Status: DONE.** The buyer live view was already built (IVSStageViewer
+player, LIVE badge + viewer count wired from LiveChatIVS + sold
+counter, Featured-Product buy card via buyOffer gated to !isOwner,
+LiveChatIVS chat). Fixed the one real gap: the viewer live-poll
+(`refreshLiveStateForViewer`) merged `live_provider` but NOT
+`ivs_stage_arn`, and the IVS player only mounts when
+`isIVSSession(project) && project.ivs_stage_arn`. So a viewer who
+opened the page before the host went live got the provider but a stale
+null ARN — the player never rendered and they couldn't watch. Now the
+poll merges `ivs_stage_arn`. IVS path, frontend-only.
+File: `frontend/app/project/[id]/page.tsx`.
+
 ## L4 — Real-time live chat
 
 Ensure live chat messages flow in real time between host and viewers
