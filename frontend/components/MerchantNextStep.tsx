@@ -41,6 +41,12 @@ type Props = {
    *  variant or when the surrounding UI already shows progress
    *  elsewhere. */
   hideCompleted?: boolean;
+  /** When set AND the current step is `share_shop`, the primary
+   *  "Share Shop" CTA renders disabled with this string as a tooltip.
+   *  Used to block sharing a storefront whose public profile
+   *  (description + category) isn't filled in yet. Only affects the
+   *  share_shop step; every other step's CTA stays a live link. */
+  shareDisabledReason?: string;
 };
 
 function CompletedRow({ state }: { state: MerchantState }) {
@@ -74,8 +80,13 @@ export function MerchantNextStep({
   variant = "card",
   eyebrow,
   hideCompleted,
+  shareDisabledReason,
 }: Props) {
   const state = deriveMerchantState(inputs);
+
+  // Gate the Share Shop CTA when the profile isn't complete. Only the
+  // share_shop step is affected — other steps' CTAs are never blocked.
+  const shareGated = state.step === "share_shop" && Boolean(shareDisabledReason);
 
   if (variant === "compact") {
     return (
@@ -89,12 +100,24 @@ export function MerchantNextStep({
               {state.headline}
             </div>
           </div>
-          <Link
-            href={state.nextAction.href}
-            className="shrink-0 rounded-lg bg-brand-teal px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-          >
-            {state.nextAction.label} →
-          </Link>
+          {shareGated ? (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={shareDisabledReason}
+              className="shrink-0 cursor-not-allowed rounded-lg bg-surface-muted px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-muted"
+            >
+              {state.nextAction.label} →
+            </button>
+          ) : (
+            <Link
+              href={state.nextAction.href}
+              className="shrink-0 rounded-lg bg-brand-teal px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+            >
+              {state.nextAction.label} →
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -123,14 +146,31 @@ export function MerchantNextStep({
               {state.secondaryAction.label}
             </Link>
           )}
-          <Link
-            href={state.nextAction.href}
-            className="rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
-          >
-            {state.nextAction.label} →
-          </Link>
+          {shareGated ? (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={shareDisabledReason}
+              className="cursor-not-allowed rounded-xl bg-surface-muted px-5 py-2.5 text-sm font-bold uppercase tracking-[0.12em] text-muted"
+            >
+              {state.nextAction.label} →
+            </button>
+          ) : (
+            <Link
+              href={state.nextAction.href}
+              className="rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+            >
+              {state.nextAction.label} →
+            </Link>
+          )}
         </div>
       </div>
+      {shareGated && (
+        <p className="mt-3 text-xs font-medium text-secondary">
+          {shareDisabledReason}
+        </p>
+      )}
     </div>
   );
 }

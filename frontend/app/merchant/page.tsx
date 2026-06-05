@@ -100,7 +100,7 @@ export default function MerchantPage() {
   // project page. If no project exists yet, the link falls back to
   // /dashboard so the merchant creates one first. We only need id
   // + slug; ignore the rest of the project payload.
-  const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null } | null>(null);
+  const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null; description: string | null } | null>(null);
 
   // Live Stripe Connect verification. fetched from
   // /api/merchant/stripe-connect/status which does a fresh
@@ -270,10 +270,11 @@ export default function MerchantPage() {
       const list = (data?.projects ?? data ?? []) as Array<{
         id?: string;
         slug?: string | null;
+        description?: string | null;
       }>;
       const first = list.find((p) => !!p?.id);
       if (first?.id) {
-        setFirstProject({ id: first.id, slug: first.slug ?? null });
+        setFirstProject({ id: first.id, slug: first.slug ?? null, description: first.description ?? null });
       }
     } catch {
       // non-fatal. checklist still renders, just lands on /dashboard
@@ -881,22 +882,35 @@ export default function MerchantPage() {
             detailed Launch Checklist below it covers the same ground
             with finer-grained per-step actions; this card is the
             dominant "what should I do RIGHT NOW" prompt. */}
-        {merchant && (
-          <MerchantNextStep
-            inputs={{
-              isAuthenticated: true,
-              hasMerchant: true,
-              stripeStatus: merchant.stripe_connect_status ?? null,
-              hasBusinessProfile: Boolean(merchant.business_name),
-              hasProject: Boolean(firstProject),
-              offerCount: hasOffer ? 1 : 0,
-              salesCount: 0,
-              gmvUsd: 0,
-              primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
-            }}
-            variant="card"
-          />
-        )}
+        {merchant && (() => {
+          // Share Shop gate: block sharing the storefront link until it
+          // has a real description (P11) and a category (P10, on
+          // merchant.business_type). Mirrors the dashboard gate.
+          const rawDesc = (firstProject?.description || "").trim();
+          const hasDescription =
+            !!rawDesc &&
+            rawDesc !== "Auto-created from dashboard." &&
+            !rawDesc.startsWith("Project workspace for ");
+          const hasCategory = Boolean((merchant.business_type || "").trim());
+          const profileComplete = hasDescription && hasCategory;
+          return (
+            <MerchantNextStep
+              inputs={{
+                isAuthenticated: true,
+                hasMerchant: true,
+                stripeStatus: merchant.stripe_connect_status ?? null,
+                hasBusinessProfile: Boolean(merchant.business_name),
+                hasProject: Boolean(firstProject),
+                offerCount: hasOffer ? 1 : 0,
+                salesCount: 0,
+                gmvUsd: 0,
+                primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
+              }}
+              variant="card"
+              shareDisabledReason={profileComplete ? undefined : "Complete your profile first"}
+            />
+          );
+        })()}
 
         {/* ── Onboarding checklist ──
             Always rendered. Even at 5 of 5 we keep the row visible

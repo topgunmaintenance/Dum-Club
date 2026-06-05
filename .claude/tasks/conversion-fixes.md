@@ -158,6 +158,21 @@ Show the Share Shop CTA as disabled, with a tooltip reading
 "Complete your profile first", until BOTH description and category
 are filled. Enable it once both are present.
 
+**Status: DONE.** Added a `shareDisabledReason` prop to
+`MerchantNextStep` that, only on the `share_shop` step, renders the
+primary "Share Shop" CTA as a disabled button with the reason as a
+`title` tooltip (plus a visible hint line under the card). Both
+callers compute completeness and pass the reason when incomplete:
+- description = storefront `project.description` non-empty and not an
+  auto-generated placeholder (same rule as P11)
+- category = `merchant.business_type` non-empty (P10's field;
+  `projects.category` is always "service" so it can't be the signal)
+Dashboard reads `primary.description` + `merchant.business_type`; the
+`/merchant` page now threads `description` into `firstProject` and
+reads `merchant.business_type`. Other steps' CTAs are never gated.
+Files: `frontend/components/MerchantNextStep.tsx`,
+`frontend/app/dashboard/page.tsx`, `frontend/app/merchant/page.tsx`.
+
 ## P16 — Expand two FAQ items on /pricing by default
 
 On `/pricing`, the "Can I cancel any time" and "Do I need to

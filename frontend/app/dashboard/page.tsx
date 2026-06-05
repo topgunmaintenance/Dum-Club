@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const [merchant, setMerchant] = useState<{
     subscription_tier?: string;
     stripe_connect_status?: string | null;
+    business_type?: string | null;
   } | null>(null);
   const [showBizForm, setShowBizForm] = useState(false);
   const [bizName, setBizName] = useState("");
@@ -359,6 +360,17 @@ export default function DashboardPage() {
             : 0;
           const salesCount = typeof analytics?.orders_count === "number" ? analytics.orders_count : 0;
           const gmvUsd = typeof analytics?.gmv_usd === "number" ? analytics.gmv_usd : 0;
+          // Share Shop gate: don't let a merchant share a storefront link
+          // until it has a real description (P11) and a category (P10,
+          // stored on merchant.business_type). projects.category is
+          // hardcoded "service" so it can't be the signal.
+          const rawDesc = (primary?.description || "").trim();
+          const hasDescription =
+            !!rawDesc &&
+            rawDesc !== "Auto-created from dashboard." &&
+            !rawDesc.startsWith("Project workspace for ");
+          const hasCategory = Boolean((merchant?.business_type || "").trim());
+          const profileComplete = hasDescription && hasCategory;
           return (
             <MerchantNextStep
               inputs={{
@@ -373,6 +385,7 @@ export default function DashboardPage() {
                 primaryProjectSlug: primary ? (primary.slug || primary.id?.toString() || null) : null,
               }}
               variant="card"
+              shareDisabledReason={profileComplete ? undefined : "Complete your profile first"}
             />
           );
         })()}
