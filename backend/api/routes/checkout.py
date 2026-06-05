@@ -1637,6 +1637,9 @@ async def update_order_status(
     """Owner marks an order as delivered."""
     body = await request.json()
     new_status = body.get("status")
+    # Optional shipment tracking the seller pastes when marking fulfilled.
+    # Carrier-agnostic free text; capped to a sane length.
+    tracking_number = (body.get("tracking_number") or "").strip()[:128] or None
     if new_status not in ("fulfilled", "delivered"):
         raise HTTPException(status_code=400, detail="Invalid status. Allowed: fulfilled, delivered")
 
@@ -1671,10 +1674,12 @@ async def update_order_status(
     if resolved != project_res.data[0].get("owner_id"):
         raise HTTPException(status_code=403, detail="Not the project owner")
 
-    supabase.table("orders").update({
-        "status": new_status,
-        "updated_at": _now_iso(),
-    }).eq("id", order_id).execute()
+    status_update: dict = {"status": new_status, "updated_at": _now_iso()}
+    if tracking_number:
+        status_update["tracking_number"] = tracking_number
+    if new_status == "fulfilled":
+        status_update["fulfilled_at"] = _now_iso()
+    supabase.table("orders").update(status_update).eq("id", order_id).execute()
 
     # Send fulfillment email to buyer (non-blocking)
     if new_status in ("fulfilled", "delivered"):

@@ -14,6 +14,11 @@ interface Order {
   status: string;
   created_at: string;
   updated_at: string;
+  tracking_number?: string | null;
+  shipping_address?: {
+    name?: string | null; line1?: string | null; line2?: string | null;
+    city?: string | null; state?: string | null; postal_code?: string | null;
+  } | null;
   offers?: { title: string; offer_type: string; price_usd: number } | null;
 }
 
@@ -110,6 +115,31 @@ export default function OrdersPage() {
                       </span>
                     </div>
                   </div>
+                  {(order.shipping_address || order.tracking_number) && (
+                    <div className="mt-3 rounded-xl border border-default bg-surface-page px-3 py-2 text-[11px] text-secondary">
+                      {order.shipping_address && (
+                        <div>
+                          <span className="font-semibold text-primary">Ship to: </span>
+                          {[
+                            order.shipping_address.name,
+                            order.shipping_address.line1,
+                            order.shipping_address.line2,
+                            [order.shipping_address.city, order.shipping_address.state, order.shipping_address.postal_code]
+                              .filter(Boolean)
+                              .join(", "),
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </div>
+                      )}
+                      {order.tracking_number && (
+                        <div className="mt-0.5">
+                          <span className="font-semibold text-primary">Tracking: </span>
+                          <span className="font-mono">{order.tracking_number}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-3 flex items-center gap-2">
                     <Link
                       href={`/project/${order.project_id}`}

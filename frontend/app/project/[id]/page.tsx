@@ -809,6 +809,13 @@ export default function ProjectPage() {
     status: string;
     created_at: string;
     updated_at: string;
+    tracking_number?: string | null;
+    shipping_address?: {
+      name?: string | null; phone?: string | null;
+      line1?: string | null; line2?: string | null;
+      city?: string | null; state?: string | null;
+      postal_code?: string | null; country?: string | null;
+    } | null;
     offers?: { title: string; offer_type: string; price_usd: number } | null;
   }
   const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
@@ -1588,14 +1595,16 @@ export default function ProjectPage() {
     }
   }
 
-  async function updateOrderStatus(orderId: string, status: string) {
+  async function updateOrderStatus(orderId: string, status: string, trackingNumber?: string) {
     try {
       const token = await getToken();
       if (!token) return;
+      const body: Record<string, string> = { status };
+      if (trackingNumber) body.tracking_number = trackingNumber;
       await fetch(`${API_BASE}/api/checkout/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       await loadSellerOrders();
       await loadOffers(); // refresh inventory counts
@@ -7044,6 +7053,35 @@ return (
                         })()}
                       </div>
                     </div>
+                    {/* Shipping address (physical orders, captured at
+                        checkout) + tracking — what the seller needs to
+                        actually fulfill, and a record of what was shipped. */}
+                    {(order.shipping_address || order.tracking_number) && (
+                      <div className="mt-3 rounded-xl border border-default bg-surface-card px-3 py-2 text-[11px] text-secondary">
+                        {order.shipping_address && (
+                          <div>
+                            <span className="font-semibold text-primary">Ship to: </span>
+                            {[
+                              order.shipping_address.name,
+                              order.shipping_address.line1,
+                              order.shipping_address.line2,
+                              [order.shipping_address.city, order.shipping_address.state, order.shipping_address.postal_code]
+                                .filter(Boolean)
+                                .join(", "),
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                            {order.shipping_address.phone ? ` · ${order.shipping_address.phone}` : ""}
+                          </div>
+                        )}
+                        {order.tracking_number && (
+                          <div className="mt-0.5">
+                            <span className="font-semibold text-primary">Tracking: </span>
+                            <span className="font-mono">{order.tracking_number}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                         order.status === "fulfilled" || order.status === "delivered"
@@ -7064,7 +7102,16 @@ return (
                       </span>
                       {order.status === "paid" && (
                         <button
-                          onClick={() => updateOrderStatus(order.id, "fulfilled")}
+                          onClick={() => {
+                            // Optional tracking number on fulfill. Cancel
+                            // aborts; OK (even blank) proceeds.
+                            const t = window.prompt(
+                              "Mark fulfilled. Add a shipment tracking number (optional):",
+                              "",
+                            );
+                            if (t === null) return;
+                            updateOrderStatus(order.id, "fulfilled", t.trim() || undefined);
+                          }}
                           className="rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[11px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal"
                         >
                           Mark Fulfilled
