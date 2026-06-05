@@ -122,6 +122,23 @@ During the Create Your Shop step, require a category selection from
 exactly: Restaurant, Auto & Repair, HVAC, Gym & Wellness, Retail,
 Service, Other. Block progression until one is chosen.
 
+**Status: DONE (frontend-only).** Added a required Category `<select>`
+(the 7 options above, `SHOP_CATEGORIES` const) to the `/merchant`
+Create Your Shop form, between Business Name and the submit button.
+Bound to the existing `bizType` state, which already flows to the
+signup payload as `business_type` and is persisted on the merchant
+row — no backend change. Submit is blocked (button disabled +
+`handleSignup` guard, covering the Enter-key path) until a category is
+chosen.
+
+NOTE for P13: the category lives on `merchants.business_type` (null
+until chosen), NOT `projects.category` (still hardcoded "service" in
+`_create_storefront_project`). So P13's "category filled" check must
+read the merchant's `business_type`, not the project category. If we
+later want category to drive Discover filtering, thread `business_type`
+into `_create_storefront_project` (backend) — out of scope here.
+Files: `frontend/app/merchant/page.tsx`.
+
 ## P6 — "No credit card required" under hero CTA
 
 Add "No credit card required" text directly under the START FREE FOR
