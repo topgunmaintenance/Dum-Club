@@ -144,8 +144,14 @@ export function GetLiveSteps({
         : !isPublished
         ? "Publish store"
         : "Add another",
+      // Add-offer actions ("Add an offer" / "Add another") route to
+      // /dashboard/post — the composer that ensures the storefront
+      // exists before adding. The Publish-store action stays on the
+      // storefront page where the publish toggle lives. The old
+      // .../manage#offers target had no offer form (manage = settings /
+      // availability / bookings), so add-offer dead-ended there.
       ctaHref:
-        hasOffer && !isPublished ? projectHref : `${projectHref}/manage#offers`,
+        hasOffer && !isPublished ? projectHref : "/dashboard/post",
     },
     {
       n: 4,
