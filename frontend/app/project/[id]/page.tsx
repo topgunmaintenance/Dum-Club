@@ -107,6 +107,19 @@ type Project = {
   live_playback_id?: string | null;
   live_stream_key?: string | null;
   live_ingest_url?: string | null;
+  // Embedded merchant brand fields, joined by GET /api/projects/{id}
+  // via the projects.business_profile_id FK (mig 014). The seeded
+  // logo/cover live on this linked row — the legacy by-owner lookup
+  // can miss them when owner_privy_id on the biz_profile row doesn't
+  // match the project's privy_id. The storefront effect prefers this
+  // embed and falls back to /api/business/by-owner only when absent
+  // (e.g. projects without a business_profile_id linkage).
+  business_profile?: {
+    logo_url?: string | null;
+    cover_image_url?: string | null;
+    verification_status?: string | null;
+    business_name?: string | null;
+  } | null;
 };
 
 type GatedChatResponse = {
@@ -3241,8 +3254,37 @@ export default function ProjectPage() {
     }, 300);
   }, [recommendedOffer, offers]);
 
-  // Load business profile for the project owner (for verified badge)
+  // Hydrate the merchant brand profile (logo / cover / verification).
+  //
+  // Primary path: the GET /api/projects/{id} response embeds
+  // business_profile via the projects.business_profile_id FK (mig 014).
+  // That row is the canonical link — the seeded merchant logo URL lives
+  // on it. Reading from the embed avoids the legacy bug where the
+  // by-owner lookup missed the linked row whenever its owner_privy_id
+  // didn't match the project's privy_id (the case the storefront-visual
+  // P3 follow-up was filed for: Topgun's seeded logo never displayed).
+  //
+  // Fallback path: the by-owner lookup still runs for projects WITHOUT
+  // an embedded profile (business_profile_id NULL, or the linked row
+  // has no usable fields). Preserves backwards-compat for legacy
+  // projects whose merchant brand is only reachable via owner_privy_id.
   useEffect(() => {
+    const embed = project?.business_profile;
+    if (
+      embed &&
+      (embed.logo_url ||
+        embed.cover_image_url ||
+        embed.verification_status ||
+        embed.business_name)
+    ) {
+      setOwnerBizProfile({
+        logo_url: embed.logo_url ?? null,
+        cover_image_url: embed.cover_image_url ?? null,
+        verification_status: embed.verification_status ?? undefined,
+        business_name: embed.business_name ?? undefined,
+      });
+      return;
+    }
     const ownerPrivyId = project?.privy_id || project?.owner_id;
     if (!ownerPrivyId) return;
     (async () => {
@@ -3254,7 +3296,7 @@ export default function ProjectPage() {
         }
       } catch {}
     })();
-  }, [project?.privy_id, project?.owner_id]);
+  }, [project?.business_profile, project?.privy_id, project?.owner_id]);
 
   useEffect(() => {
     if (!project) {
