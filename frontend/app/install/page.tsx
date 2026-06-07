@@ -39,7 +39,7 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
     label: "Wix",
     steps: [
       "In your Wix editor, click Add → Embed → Embed HTML / Custom code.",
-      "Paste the snippet from above.",
+      "Paste the code from above.",
       "Drag the box anywhere on the page (the bubble floats to the corner on its own).",
       "Click Publish.",
     ],
@@ -50,7 +50,7 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
     steps: [
       "Open Pages → pick the page you want it on.",
       "Edit the page, click + → Code → Embed.",
-      "Paste the snippet.",
+      "Paste the code.",
       "Save, then Publish.",
     ],
   },
@@ -60,7 +60,7 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
     steps: [
       "In your admin, go to Online Store → Themes → Customize.",
       "Add a Custom Liquid block to the footer.",
-      "Paste the snippet into the block.",
+      "Paste the code into the block.",
       "Save.",
     ],
   },
@@ -70,7 +70,7 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
     steps: [
       "In your admin, go to Appearance → Theme File Editor (or use a Custom HTML widget).",
       "Open footer.php (or paste into a Custom HTML widget in your footer area).",
-      "Paste the snippet just before the closing </body> tag.",
+      "Paste the code just before the closing </body> tag.",
       "Update / Save.",
     ],
   },
@@ -162,7 +162,7 @@ export default function InstallPage() {
 
   const mailtoBody = encodeURIComponent(
     `Hi,\n\nWe'd like to add a small live-selling button to our website.\n\n` +
-      `Please paste the snippet below into the site's footer (or just before the closing </body> tag), then publish:\n\n` +
+      `Please paste the code below into the site's footer (or just before the closing </body> tag), then publish:\n\n` +
       `${snippet}\n\n` +
       `That's it. No other changes needed. Once it's live, customers will see a small circular bubble in the corner that shows our face when we're live, and they can buy directly from our site.\n\nThanks!`,
   );
@@ -201,10 +201,10 @@ export default function InstallPage() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="mb-4 text-3xl font-bold text-primary">
-          Embed on your site (optional)
+          Add to your website (optional)
         </h1>
         <p className="mb-6 text-secondary">
-          Sign in to grab your install snippet.
+          Sign in to get your install code.
         </p>
         <button
           type="button"
@@ -221,17 +221,17 @@ export default function InstallPage() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="mb-4 text-3xl font-bold text-primary">
-          Embed on your site (optional)
+          Add to your website (optional)
         </h1>
         <p className="mb-6 text-secondary">
-          You'll need a project first. Set one up and come back here for your
-          snippet.
+          You'll need a shop first. Set one up and come back here for your
+          code.
         </p>
         <Link
           href="/merchant"
           className="rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
         >
-          Set up my project
+          Set up my shop
         </Link>
       </main>
     );
@@ -246,7 +246,7 @@ export default function InstallPage() {
   // non-technical owner who doesn't have a web person OR doesn't
   // want to copy/paste code themselves.
   const installForMeBody = encodeURIComponent(
-    `Hi Julian,\n\nI'd like help adding DUM Club to my website. Here's my install snippet:\n\n${snippet}\n\nMy storefront link: ${origin}/project/${slug}\n\nThanks!`,
+    `Hi Julian,\n\nI'd like help adding DUM Club to my website. Here's my install code:\n\n${snippet}\n\nMy storefront link: ${origin}/project/${slug}\n\nThanks!`,
   );
 
   return (
@@ -294,7 +294,7 @@ export default function InstallPage() {
             Send to my web person
           </div>
           <p className="mt-2 text-[13px] leading-relaxed text-secondary">
-            Opens an email with the snippet and step-by-step instructions. They paste it once.
+            Opens an email with the code and step-by-step instructions. They paste it once.
           </p>
           <span className="mt-4 inline-flex items-center text-[12px] font-bold text-brand-teal">
             Open email →
@@ -313,10 +313,10 @@ export default function InstallPage() {
             Copy the code myself
           </div>
           <p className="mt-2 text-[13px] leading-relaxed text-secondary">
-            Grab the snippet below and follow the steps for Wix, Squarespace, Shopify, or WordPress.
+            Copy the code below and follow the steps for Wix, Squarespace, Shopify, or WordPress.
           </p>
           <span className="mt-4 inline-flex items-center text-[12px] font-bold text-brand-teal">
-            See the snippet ↓
+            See the code ↓
           </span>
         </a>
       </section>
@@ -324,7 +324,7 @@ export default function InstallPage() {
       {/* Step 1 — Copy snippet (anchored for Option C above) */}
       <section id="copy-snippet" className="mb-8 rounded-2xl border border-default bg-surface-card p-5 scroll-mt-24">
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-          Step 1 · Copy this snippet
+          Step 1 · Copy this code
         </div>
         <pre className="overflow-x-auto rounded-xl border border-default bg-surface-page p-4 font-mono text-xs leading-relaxed text-primary">
 {snippet}
@@ -335,7 +335,7 @@ export default function InstallPage() {
             onClick={handleCopy}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-teal px-4 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
           >
-            {copyState === "copied" ? "Copied ✓" : "Copy snippet"}
+            {copyState === "copied" ? "Copied ✓" : "Copy code"}
           </button>
           <a
             href={`mailto:?subject=${encodeURIComponent(
@@ -380,7 +380,7 @@ export default function InstallPage() {
           ))}
         </ol>
         <p className="mt-4 text-[12px] text-muted">
-          Using a different platform? Paste the snippet anywhere inside your
+          Using a different platform? Paste the code anywhere inside your
           page's HTML. Closer to the end is better. It works on any modern
           site.
         </p>
@@ -392,7 +392,7 @@ export default function InstallPage() {
           Step 3 · Test the install
         </div>
         <p className="mb-4 text-sm text-secondary">
-          We'll check that your project is reachable. Once the snippet is on
+          We'll check that your shop is reachable. Once the code is on
           your site, refresh your site and look for the bubble in the corner.
         </p>
         <button
@@ -404,13 +404,13 @@ export default function InstallPage() {
         </button>
         {testState === "ok" && (
           <p className="mt-3 text-sm text-brand-teal">
-            ✓ Your project is live and ready. Add the snippet to your site and
+            ✓ Your shop is live and ready. Add the code to your site and
             refresh to see the bubble.
           </p>
         )}
         {testState === "missing" && (
           <p className="mt-3 text-sm text-amber-400">
-            We couldn't reach your project. Double-check your slug is{" "}
+            We couldn't reach your shop. Double-check your shop link is{" "}
             <code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs">
               {slug}
             </code>{" "}

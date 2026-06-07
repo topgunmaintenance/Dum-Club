@@ -628,7 +628,7 @@ export default function MerchantPage() {
             <ul className="space-y-3">
               {[
                 "Just a 1% sales fee per order (Whatnot takes 8%, DoorDash takes 15-30%)",
-                "Customers earn DUM Points on every purchase. They can redeem these loyalty rewards at any DUM Club business, so customers come back without you paying for ads",
+                "Built-in loyalty rewards bring customers back to your shop and every DUM Club business, so you keep them without paying for ads",
                 "Get 60 days free and lock in founding pricing for life when you join the first 100 merchants",
               ].map((line) => (
                 <li
@@ -932,7 +932,7 @@ export default function MerchantPage() {
                         : !stepLiveEver
                           ? "Go live for the first time"
                           : !stepSnippet
-                            ? "Paste the snippet on your site (optional)"
+                            ? "Add DUM Club to your website (optional)"
                             : !qrPrinted
                               ? "Print your QR"
                               : "You are set. Go live and start selling."}
@@ -1042,7 +1042,7 @@ export default function MerchantPage() {
                 )}
                 <div className="flex-1">
                   <div className={`text-sm font-semibold ${stepSnippet ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
-                    Paste the snippet on your site <span className="text-[11px] font-normal text-secondary">(optional)</span>
+                    Add DUM Club to your website <span className="text-[11px] font-normal text-secondary">(optional)</span>
                   </div>
                   <div className="text-xs text-secondary">
                     {stepSnippet
