@@ -5,7 +5,7 @@
  * No projectReadinessScore — Pass 1 doesn't render profile strength.
  */
 
-import { CATEGORIES, classifyProject, type CategoryId } from "../categories";
+import { CATEGORIES, resolveFilterCategory, type CategoryId } from "../categories";
 import type {
   Project,
   MarketSnapshot,
@@ -69,7 +69,11 @@ export function getProjectLabel(project?: Project): string {
 
 export function categoryIncludesProject(project: Project, category: DiscoverCategoryId): boolean {
   if (category === "all") return true;
-  return classifyProject(project) === category;
+  // Prefer project.category_id (mig 035 canonical seed) via the
+  // FILTER_BY_CATEGORY_ID map; fall back to the keyword classifier
+  // for NULL / unmapped values. Existing NULL-category projects
+  // (Topgun et al.) match the same pill they always did.
+  return resolveFilterCategory(project) === category;
 }
 
 /* ─── Visibility filter (Pass 1 — client-side) ─── */

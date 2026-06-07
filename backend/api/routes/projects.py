@@ -1689,6 +1689,12 @@ class ProjectUpdate(BaseModel):
     # schedule_rollforward cron auto-advances by +7 days.
     # Migration 066.
     recurring_weekly: Optional[bool] = None
+    # Canonical category from the seeded categories table (mig 035).
+    # FK constraint at DB level rejects unknown values, so the
+    # frontend dropdown only offers the 12 seeded ids. Existing
+    # `if v is not None` filter below handles persistence; clear-to-
+    # null is intentionally not exposed in v1 (set-only).
+    category_id: Optional[str] = None
 
 
 # Allow-list of fields the popin_config payload may contain. Unknown
