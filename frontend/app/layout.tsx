@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Caveat } from "next/font/google";
@@ -17,6 +17,16 @@ const caveat = Caveat({
   variable: "--font-caveat",
   display: "swap",
 });
+
+// Explicit responsive viewport so mobile renders at device width
+// instead of a zoomed-out desktop. width=device-width + initial-scale=1;
+// maximum-scale is intentionally left unset so pinch-zoom still works
+// (accessibility). Next injects a default, but pinning it here removes
+// any doubt and documents the intent.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "DUM Club. Drive Ur Market. Live Selling. 1% Sales Fee.",

@@ -216,7 +216,12 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
       // Background: /92 instead of /95 — a hair more transparent so
       // the content below shows through subtly, reinforcing the
       // "floating chrome" feel.
-      className="fixed left-0 right-0 top-14 z-40 flex h-12 items-center gap-2 border-b border-default bg-surface-card/92 px-3 text-sm backdrop-blur-sm supports-[backdrop-filter]:bg-surface-card/80 sm:h-11 sm:px-4"
+      // top-16 lg:top-20 sits the bar flush BELOW the global navbar
+      // (Navbar is fixed top-0, h-16 lg:h-20). The old top-14 (56px)
+      // tucked the bar — and the GO LIVE pill — under the 64/80px
+      // navbar, which renders above it (navbar z-50 > bar z-40), so the
+      // pill's top was clipped behind the navbar on mobile and desktop.
+      className="fixed left-0 right-0 top-16 lg:top-20 z-40 flex h-12 items-center gap-2 border-b border-default bg-surface-card/92 px-3 text-sm backdrop-blur-sm supports-[backdrop-filter]:bg-surface-card/80 sm:h-11 sm:px-4"
       style={{
         paddingLeft: "max(0.75rem, env(safe-area-inset-left))",
         paddingRight: "max(0.75rem, env(safe-area-inset-right))",
