@@ -1275,7 +1275,10 @@ async def get_project(project_id: str):
     if _UUID_SHAPE.match(project_id):
         project_res = (
             supabase.table("projects")
-            .select("*")
+            .select(
+                "*, business_profile:business_profiles("
+                "logo_url, cover_image_url, verification_status, business_name)"
+            )
             .eq("id", project_id)
             .eq("is_deleted", False)
             .limit(1)
@@ -1285,7 +1288,10 @@ async def get_project(project_id: str):
     if not project_res or not project_res.data:
         project_res = (
             supabase.table("projects")
-            .select("*")
+            .select(
+                "*, business_profile:business_profiles("
+                "logo_url, cover_image_url, verification_status, business_name)"
+            )
             .eq("slug", project_id)
             .eq("is_deleted", False)
             .limit(1)
