@@ -2963,11 +2963,15 @@ export default function ProjectPage() {
   }
 
   function persistStoreItems(items: StoreItem[]) {
+    // Fire-and-forget. Silent catch so a network blip during nav
+    // doesn't pollute the buyer / merchant console with a noisy
+    // "Failed to fetch". Real persistence failures still surface
+    // via subsequent reads of the project payload.
     fetch(`${API_BASE}/api/projects/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ store_items: items }),
-    }).catch((err) => console.error("Failed to persist store items:", err));
+    }).catch(() => {});
   }
 
   function openStoreForm(item?: StoreItem) {
@@ -3438,15 +3442,22 @@ export default function ProjectPage() {
       .catch(() => {});
     // Auth check
     if (authUser) {
-      getToken().then((token) => {
-        if (!token) return;
-        fetch(`${API_BASE}/api/favorites/check/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+      // Outer .catch covers getToken() itself rejecting (Privy not
+      // ready, token refresh failure). The inner fetch is already
+      // guarded; without this, a getToken rejection during nav or in
+      // the fresh-deploy window surfaced as an uncaught console error
+      // attributed to project/[id]/page.js.
+      getToken()
+        .then((token) => {
+          if (!token) return;
+          fetch(`${API_BASE}/api/favorites/check/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => { if (data) setIsFavorited(data.favorited); })
+            .catch(() => {});
         })
-          .then((r) => r.ok ? r.json() : null)
-          .then((data) => { if (data) setIsFavorited(data.favorited); })
-          .catch(() => {});
-      });
+        .catch(() => {});
     }
   }, [id, authUser]);
 
