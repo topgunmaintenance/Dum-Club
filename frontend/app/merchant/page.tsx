@@ -1014,12 +1014,15 @@ export default function MerchantPage() {
                       : "Pick one thing you sell and set a price."}
                   </div>
                   {!hasOffer && (
+                    // Always route through /dashboard/post — the composer
+                    // that calls /api/merchant/storefront/ensure on load,
+                    // so the shop is created-or-found before the offer is
+                    // added. The old `firstProject ? .../manage#offers`
+                    // branch sent merchants who already had a storefront to
+                    // the manage page, which has no offer form (settings /
+                    // availability / bookings only) — a dead-end.
                     <Link
-                      href={
-                        firstProject
-                          ? `/project/${firstProject.slug || firstProject.id}/manage#offers`
-                          : "/dashboard/post"
-                      }
+                      href="/dashboard/post"
                       className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
                     >
                       Add offer →
