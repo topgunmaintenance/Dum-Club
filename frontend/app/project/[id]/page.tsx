@@ -867,7 +867,12 @@ export default function ProjectPage() {
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
   const [buyError, setBuyError] = useState<Record<string, string>>({});
-  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
+  // Demo mode short-circuits buyOffer with a simulated purchase instead
+  // of calling /api/checkout/create-payment-intent. It is opt-IN: prod
+  // leaves NEXT_PUBLIC_DEMO_MODE unset → isDemo === false → real Stripe
+  // checkout. The previous `!== "false"` default-on form silently killed
+  // checkout in prod because the env was never set.
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [simulatedPurchase, setSimulatedPurchase] = useState<string | null>(null);
   const [simulatedRevenue, setSimulatedRevenue] = useState(0);
   const [simPurchaseCount, setSimPurchaseCount] = useState(0);
