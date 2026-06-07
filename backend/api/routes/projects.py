@@ -1024,7 +1024,23 @@ async def live_stats():
             .eq("visibility", "public")
             .execute()
         )
-        offers_res = supabase.table("offers").select("id", count="exact").eq("is_active", True).execute()
+        # Scope active_offers to offers whose parent project matches the
+        # same visibility filter live_projects uses above — i.e. offers a
+        # buyer can actually click Buy on, on the /discover feed. The old
+        # global count (every `is_active=True` row, no parent filter)
+        # inflated to 56 against a feed that rendered 1 business because
+        # it counted offers on soft-deleted / hidden / draft / seed
+        # projects the buyer can never reach. Uses PostgREST !inner the
+        # same way /api/offers/search does (~line 249).
+        offers_res = (
+            supabase.table("offers")
+            .select("id, projects!inner(id)", count="exact")
+            .eq("is_active", True)
+            .eq("projects.status", "live")
+            .eq("projects.visibility", "public")
+            .eq("projects.is_deleted", False)
+            .execute()
+        )
         biz_res = supabase.table("business_profiles").select("id", count="exact").execute()
 
         # Verified merchants: trust_level set to 'verified' or 'trusted'.
