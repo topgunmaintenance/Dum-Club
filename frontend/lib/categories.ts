@@ -72,3 +72,72 @@ export function classifyProject(project: any): CategoryId {
   if (/\b(photograph|music|dj|band|comedy|art|gallery|theater|event|wedding|party|entertain|gaming|tattoo)/.test(source)) return "entertainment";
   return "home";
 }
+
+/**
+ * Canonical category labels by category_id, mirroring the
+ * twelve top-level rows seeded into the `categories` table by
+ * backend/db/migrations/035_public_commerce_metadata.sql.
+ *
+ * Used as the SOURCE-OF-TRUTH label whenever a project carries a
+ * non-null category_id. Falls back to classifyProject() (keyword
+ * inference) when the column is null — every existing project
+ * created before migration 035 has a NULL category_id, so the
+ * fallback keeps their badge stable.
+ *
+ * Keep this map in sync with the SQL seed. If you add or rename a
+ * category row in migration 035 (or a future 0xx migration), mirror
+ * it here.
+ */
+export const CATEGORY_LABEL_BY_ID: Readonly<Record<string, string>> = {
+  "restaurants":            "Restaurants",
+  "food-trucks":            "Food Trucks",
+  "coffee-shops":           "Coffee Shops",
+  "bars":                   "Bars",
+  "auto-services":          "Auto Services",
+  "home-services":          "Home Services",
+  "beauty-services":        "Beauty Services",
+  "fitness":                "Fitness",
+  "retail":                 "Retail",
+  "art-handcraft":          "Art & Handcraft",
+  "events":                 "Events",
+  "professional-services":  "Professional Services",
+};
+
+/**
+ * Map a (legacy) keyword-inferred CategoryId to its closest
+ * display label from the canonical seed. Used when a project has
+ * no category_id and we fall back to the classifyProject() output.
+ * Keeps the two pathways visually consistent — "auto" inferred
+ * from a title reads as "Auto Services", same as a row that was
+ * explicitly set to category_id='auto-services'.
+ */
+const LEGACY_LABEL_BY_CATEGORY_ID: Readonly<Record<CategoryId, string>> = {
+  restaurants:   "Restaurants",
+  auto:          "Auto Services",
+  home:          "Home Services",
+  aviation:      "Aviation",
+  beauty:        "Beauty Services",
+  pets:          "Pets",
+  health:        "Fitness",
+  entertainment: "Entertainment",
+};
+
+/**
+ * Resolve a human-readable category label for a project.
+ *
+ * Priority:
+ *   1. project.category_id from the canonical taxonomy seed.
+ *   2. classifyProject() keyword inference (legacy fallback).
+ *
+ * Backwards-compat: existing projects with NULL category_id
+ * continue to render the same label the keyword classifier would
+ * have produced before this helper landed. New projects that opt
+ * into category_id get the canonical seed label.
+ */
+export function resolveCategoryLabel(project: any): string {
+  const id = (project?.category_id || "").trim();
+  if (id && CATEGORY_LABEL_BY_ID[id]) {
+    return CATEGORY_LABEL_BY_ID[id];
+  }
+  return LEGACY_LABEL_BY_CATEGORY_ID[classifyProject(project)];
+}

@@ -670,7 +670,7 @@ async def list_public_projects():
     try:
         res = (
             supabase.table("projects")
-            .select("*")
+            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
             .eq("review_status", "approved")
             .eq("status", "live")
             .eq("is_deleted", False)
@@ -693,7 +693,7 @@ async def list_public_projects():
     try:
         vres = (
             supabase.table("projects")
-            .select("*")
+            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
             .eq("verified", True)
             .eq("is_deleted", False)
             .eq("visibility", "public")
@@ -716,7 +716,7 @@ async def list_public_projects():
     try:
         lres = (
             supabase.table("projects")
-            .select("*")
+            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
             .eq("is_live", True)
             .eq("is_deleted", False)
             .eq("visibility", "public")

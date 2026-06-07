@@ -104,6 +104,7 @@ export default function DiscoverPage() {
             title: o.title || "Untitled offer",
             description: o.description,
             price: o.price_usd != null ? Number(o.price_usd) : null,
+            image: (typeof o.primary_image_url === "string" && o.primary_image_url.trim()) || null,
           }),
         );
         setOfferSearchResults(items);
@@ -298,6 +299,21 @@ export default function DiscoverPage() {
                         href={`/project/${item.projectSlug || item.projectId}#offers-section`}
                         className="group flex flex-col rounded-xl border border-default bg-surface-card p-5 shadow-sm transition hover:border-strong hover:shadow-md"
                       >
+                        {/* Per-offer thumbnail. Optional — backwards-compat:
+                            an offer with no primary_image_url still renders
+                            the existing text-only tile layout exactly as
+                            before this PR. */}
+                        {item.image && (
+                          <div className="-mx-5 -mt-5 mb-4 overflow-hidden rounded-t-xl border-b border-default bg-surface-muted">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              loading="lazy"
+                              className="block h-32 w-full object-cover"
+                            />
+                          </div>
+                        )}
                         <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
                           {item.projectName}
                         </div>

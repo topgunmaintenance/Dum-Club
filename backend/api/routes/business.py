@@ -18,6 +18,7 @@ class BusinessProfileCreate(BaseModel):
     category: str = "General"
     short_description: Optional[str] = None
     logo_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
     website: Optional[str] = None
     contact_email: Optional[str] = None
 
@@ -27,6 +28,7 @@ class BusinessProfileUpdate(BaseModel):
     category: Optional[str] = None
     short_description: Optional[str] = None
     logo_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
     website: Optional[str] = None
     contact_email: Optional[str] = None
 
@@ -378,7 +380,7 @@ async def get_business_by_owner(owner_privy_id: str):
     supabase = get_client()
     res = (
         supabase.table("business_profiles")
-        .select("id, business_name, category, short_description, logo_url, website, verification_status, created_at")
+        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, created_at")
         .eq("owner_privy_id", owner_privy_id)
         .limit(1)
         .execute()
@@ -395,7 +397,7 @@ async def get_business(business_id: str):
     supabase = get_client()
     res = (
         supabase.table("business_profiles")
-        .select("id, business_name, category, short_description, logo_url, website, verification_status, created_at")
+        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, created_at")
         .eq("id", business_id)
         .limit(1)
         .execute()
@@ -438,6 +440,7 @@ async def create_business(
         "category": body.category or "General",
         "short_description": (body.short_description or "").strip() or None,
         "logo_url": (body.logo_url or "").strip() or None,
+        "cover_image_url": (body.cover_image_url or "").strip() or None,
         "website": (body.website or "").strip() or None,
         "contact_email": (body.contact_email or "").strip() or None,
         "verification_status": "unverified",
@@ -484,6 +487,8 @@ async def update_business(
         updates["short_description"] = body.short_description.strip() or None
     if body.logo_url is not None:
         updates["logo_url"] = body.logo_url.strip() or None
+    if body.cover_image_url is not None:
+        updates["cover_image_url"] = body.cover_image_url.strip() or None
     if body.website is not None:
         updates["website"] = body.website.strip() or None
     if body.contact_email is not None:
