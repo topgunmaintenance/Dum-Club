@@ -8,6 +8,7 @@
  * Static thumbnail + LIVE badge only.
  */
 
+import { useState } from "react";
 import Link from "next/link";
 import type { Project } from "../../lib/discover/types";
 import { getProjectEmoji, getAccent, lowestOfferPrice } from "../../lib/discover/filters";
@@ -15,6 +16,13 @@ import { classifyProject } from "../../lib/categories";
 
 export function LiveRail({ projects }: { projects: Project[] }) {
   const liveProjects = projects.filter((p) => p.is_live === true);
+  // Project IDs whose <img> failed to load. We keep this at the rail
+  // level (rather than per-card local state) so we don't have to
+  // extract every card into its own component just to host one piece
+  // of fallback state. On failure, the project ID is added and the
+  // card flips back to the emoji avatar — same backwards-compat
+  // behavior as ListingCard's per-card state.
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(() => new Set());
   if (liveProjects.length === 0) return null;
 
   return (
@@ -41,7 +49,8 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           const category = classifyProject(project);
           const accent = getAccent(index);
           const price = lowestOfferPrice(project);
-          const logoUrl = (project.business_profile?.logo_url || "").trim() || null;
+          const rawLogo = (project.business_profile?.logo_url || "").trim() || null;
+          const logoUrl = rawLogo && !failedLogos.has(project.id) ? rawLogo : null;
 
           return (
             <Link
@@ -57,6 +66,14 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                     src={logoUrl}
                     alt={`${project.title || project.name || "Business"} logo`}
                     loading="lazy"
+                    onError={() => {
+                      setFailedLogos((prev) => {
+                        if (prev.has(project.id)) return prev;
+                        const next = new Set(prev);
+                        next.add(project.id);
+                        return next;
+                      });
+                    }}
                     className="h-7 w-7 rounded-md border border-default object-cover"
                   />
                 ) : (
