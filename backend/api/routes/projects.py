@@ -1015,30 +1015,47 @@ async def live_stats():
     """
     supabase = get_client()
     try:
-        # Live, public, non-deleted projects.
+        # live_projects: align with the /api/projects/public union — same
+        # set the /discover feed renders. Previously this only counted
+        # status='live' + public + not-deleted, which inflated against
+        # the union doctrine (verified founding merchants + actively
+        # broadcasting carve-outs). On prod today: 3 narrow vs 1 union
+        # (Topgun) — the homepage's ProofOfMotion "Businesses live"
+        # display caught this drift.
+        #
+        # Union shape (mirrors list_public_projects Pass 1/2/3):
+        #   (review_status='approved' AND status='live')
+        #   OR verified=true
+        #   OR is_live=true
+        # all gated by visibility='public' AND is_deleted=false.
+        UNION_OR = (
+            "and(review_status.eq.approved,status.eq.live),"
+            "verified.eq.true,"
+            "is_live.eq.true"
+        )
         projects_res = (
             supabase.table("projects")
             .select("id", count="exact")
-            .eq("status", "live")
             .eq("is_deleted", False)
             .eq("visibility", "public")
+            .or_(UNION_OR)
             .execute()
         )
-        # Scope active_offers to offers whose parent project matches the
-        # same visibility filter live_projects uses above — i.e. offers a
-        # buyer can actually click Buy on, on the /discover feed. The old
-        # global count (every `is_active=True` row, no parent filter)
-        # inflated to 56 against a feed that rendered 1 business because
-        # it counted offers on soft-deleted / hidden / draft / seed
-        # projects the buyer can never reach. Uses PostgREST !inner the
-        # same way /api/offers/search does (~line 249).
+        # active_offers: align to the SAME union via reference_table on
+        # the inner-joined projects row. Today this still resolves to 6
+        # (Topgun's services — verified AND status='live' AND approved),
+        # but future-proofs against a Pass-2-only verified merchant whose
+        # offers would otherwise be missed from this count while their
+        # project shows on the /discover feed via Pass 2. Symmetry with
+        # live_projects + the union doctrine — closes the latent
+        # consistency drift before it can ever surface.
         offers_res = (
             supabase.table("offers")
             .select("id, projects!inner(id)", count="exact")
             .eq("is_active", True)
-            .eq("projects.status", "live")
-            .eq("projects.visibility", "public")
             .eq("projects.is_deleted", False)
+            .eq("projects.visibility", "public")
+            .or_(UNION_OR, reference_table="projects")
             .execute()
         )
         biz_res = supabase.table("business_profiles").select("id", count="exact").execute()
