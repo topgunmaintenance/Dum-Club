@@ -73,8 +73,17 @@ function statusLabel(project: Project): { text: string; color: string } {
 }
 
 export default function DashboardPage() {
-  const { user, getToken } = useAuth();
+  const { user, getToken, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  // Hydration guards. AuthContext reports loading=true while Privy's
+  // `ready` flag is still flipping (user?.privyId undefined for a render
+  // or two). Without gating on these, a signed-in merchant briefly saw
+  // "Not signed in" and "0 storefronts / wrong next step" on hard
+  // refresh before the data fetches returned. Each flag flips true once
+  // its fetch settles (success OR failure), so the gates never hang.
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [merchantLoaded, setMerchantLoaded] = useState(false);
+  const [bizLoaded, setBizLoaded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [dumBalance, setDumBalance] = useState(0);
   const [bizProfile, setBizProfile] = useState<any>(null);
@@ -95,6 +104,10 @@ export default function DashboardPage() {
   const [bizSaving, setBizSaving] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  // Settles true once the analytics fetch completes (success OR
+  // failure). Used by the next-step gate so a failed analytics call
+  // doesn't strand the card in a skeleton forever.
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
 
   useEffect(() => {
     async function loadDum() {
@@ -136,6 +149,8 @@ export default function DashboardPage() {
     } catch (err) {
       console.error(err);
       setProjects([]);
+    } finally {
+      setProjectsLoaded(true);
     }
   }, [user?.privyId]);
 
@@ -167,7 +182,9 @@ export default function DashboardPage() {
           const data = await res.json();
           setBizProfile(data.profile || null);
         }
-      } catch {}
+      } catch {} finally {
+        setBizLoaded(true);
+      }
     }
     loadBiz();
   }, [user?.privyId]);
@@ -187,6 +204,8 @@ export default function DashboardPage() {
         }
       } catch {
         // tier gate falls open to "no access" → upgrade card. Safe.
+      } finally {
+        setMerchantLoaded(true);
       }
     })();
   }, [user?.privyId]);
@@ -210,6 +229,7 @@ export default function DashboardPage() {
         // best-effort enrichment, not a hard requirement for /dashboard.
       } catch {} finally {
         setAnalyticsLoading(false);
+        setAnalyticsLoaded(true);
       }
     })();
   }, [bizProfile, user]);
@@ -319,6 +339,35 @@ export default function DashboardPage() {
   const hasMadeSale = Boolean(analytics && (analytics.total_orders || 0) > 0);
   const isPreSelling = Boolean(merchant) && Boolean(analytics) && !hasPostedOffer && !hasMadeSale;
 
+  // Core merchant data needed before the next-step card can show an
+  // ACCURATE step. Until merchant + business profile + projects settle,
+  // deriveMerchantState would walk through wrong early steps ("Create
+  // your shop", "Connect Stripe") for an already-set-up merchant.
+  // analytics only matters once a business profile exists — it drives
+  // the offer/sales counts that separate create_offer / share / repeat;
+  // a profile-less merchant doesn't wait on it.
+  const analyticsReady = !bizProfile || analyticsLoaded;
+  const coreLoaded = merchantLoaded && bizLoaded && projectsLoaded && analyticsReady;
+
+  // Auth-hydration skeleton. While Privy is still resolving, show a
+  // neutral skeleton instead of the signed-out "Sign in" CTA / empty
+  // dashboard — otherwise a signed-in merchant sees a flash of "Not
+  // signed in" on hard refresh. Mirrors the same guard on /install.
+  if (authLoading) {
+    return (
+      <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6" aria-busy="true">
+        <div className="relative z-[1] mx-auto max-w-5xl">
+          <div className="mb-6 h-10 w-2/3 animate-pulse rounded bg-surface-muted" />
+          <div className="mb-8 h-24 w-full animate-pulse rounded-2xl bg-surface-card" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
+            <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
       <div className="relative z-[1] mx-auto max-w-5xl">
@@ -353,7 +402,10 @@ export default function DashboardPage() {
             merchant's lifecycle state via deriveMerchantState. Single
             source of truth shared with /merchant and /project/[id]
             owner-view. */}
-        {user && (() => {
+        {user && !coreLoaded && (
+          <div className="mb-8 h-28 w-full animate-pulse rounded-3xl bg-surface-card" aria-busy="true" />
+        )}
+        {user && coreLoaded && (() => {
           const primary = projects.find((p) => p.status === "live") ?? projects[0] ?? null;
           const offerCount = Array.isArray(analytics?.top_offers)
             ? analytics.top_offers.length
@@ -1030,13 +1082,18 @@ export default function DashboardPage() {
               Your Businesses
             </h2>
             <span className="text-xs text-muted">
-              {projects.length} project{projects.length !== 1 ? "s" : ""}
+              {projectsLoaded ? `${projects.length} project${projects.length !== 1 ? "s" : ""}` : ""}
             </span>
           </div>
 
           {!user ? (
             <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
               <p className="text-sm text-secondary">Sign in to view your businesses.</p>
+            </div>
+          ) : !projectsLoaded ? (
+            <div className="grid gap-4 sm:grid-cols-2" aria-busy="true">
+              <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
+              <div className="h-40 animate-pulse rounded-2xl bg-surface-card" />
             </div>
           ) : projects.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-default bg-surface-card p-10 text-center">
