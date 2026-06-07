@@ -14,6 +14,7 @@ import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
 import { SubscriptionStatusBar } from "../../components/SubscriptionStatusBar";
 import { MerchantNextStep } from "../../components/MerchantNextStep";
+import { MerchantImageUploader } from "../../components/dashboard/MerchantImageUploader";
 import { ScheduleNextLiveCard } from "../../components/ScheduleNextLiveCard";
 
 type Project = {
@@ -563,6 +564,25 @@ export default function DashboardPage() {
                 </div>
                 {bizProfile.short_description && (
                   <p className="mt-3 text-xs text-primary">{bizProfile.short_description}</p>
+                )}
+                {/* Brand image uploader — logo + cover banner. Reuses the
+                    existing offers storage bucket under a per-biz subpath
+                    (see MerchantImageUploader). Merchants who don't upload
+                    keep the existing emoji avatar / no-banner fallback
+                    on their storefront (#341/#342/#344 reader path
+                    unchanged). */}
+                {bizProfile.id && (
+                  <MerchantImageUploader
+                    bizId={bizProfile.id}
+                    logoUrl={bizProfile.logo_url ?? null}
+                    coverImageUrl={bizProfile.cover_image_url ?? null}
+                    getToken={getToken}
+                    onChange={(next) =>
+                      setBizProfile((prev: any) =>
+                        prev ? { ...prev, ...next } : prev,
+                      )
+                    }
+                  />
                 )}
               </div>
             ) : (
