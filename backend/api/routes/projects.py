@@ -670,7 +670,7 @@ async def list_public_projects():
     try:
         res = (
             supabase.table("projects")
-            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
+            .select("*, business_profile:business_profiles!projects_business_profile_id_fkey(logo_url, cover_image_url)")
             .eq("review_status", "approved")
             .eq("status", "live")
             .eq("is_deleted", False)
@@ -693,7 +693,7 @@ async def list_public_projects():
     try:
         vres = (
             supabase.table("projects")
-            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
+            .select("*, business_profile:business_profiles!projects_business_profile_id_fkey(logo_url, cover_image_url)")
             .eq("verified", True)
             .eq("is_deleted", False)
             .eq("visibility", "public")
@@ -716,7 +716,7 @@ async def list_public_projects():
     try:
         lres = (
             supabase.table("projects")
-            .select("*, business_profile:business_profiles(logo_url, cover_image_url)")
+            .select("*, business_profile:business_profiles!projects_business_profile_id_fkey(logo_url, cover_image_url)")
             .eq("is_live", True)
             .eq("is_deleted", False)
             .eq("visibility", "public")
@@ -1276,7 +1276,7 @@ async def get_project(project_id: str):
         project_res = (
             supabase.table("projects")
             .select(
-                "*, business_profile:business_profiles("
+                "*, business_profile:business_profiles!projects_business_profile_id_fkey("
                 "logo_url, cover_image_url, verification_status, business_name)"
             )
             .eq("id", project_id)
@@ -1289,7 +1289,7 @@ async def get_project(project_id: str):
         project_res = (
             supabase.table("projects")
             .select(
-                "*, business_profile:business_profiles("
+                "*, business_profile:business_profiles!projects_business_profile_id_fkey("
                 "logo_url, cover_image_url, verification_status, business_name)"
             )
             .eq("slug", project_id)
