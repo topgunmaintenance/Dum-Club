@@ -141,3 +141,44 @@ export function resolveCategoryLabel(project: any): string {
   }
   return LEGACY_LABEL_BY_CATEGORY_ID[classifyProject(project)];
 }
+
+/**
+ * DB category_id → discover filter pill CategoryId.
+ *
+ * Sub-categories roll up to their nearest pill (e.g. food-trucks →
+ * restaurants). Categories without a pill mapping (retail,
+ * art-handcraft, events, professional-services) fall through to the
+ * keyword classifier in resolveFilterCategory — they appear under
+ * "All" but not pinned to a specific pill until the filter bar grows.
+ *
+ * Keep aligned with mig 035 seed + the 8-entry CategoryId enum above.
+ */
+const FILTER_BY_CATEGORY_ID: Readonly<Record<string, CategoryId>> = {
+  "restaurants":     "restaurants",
+  "food-trucks":     "restaurants",
+  "coffee-shops":    "restaurants",
+  "bars":            "restaurants",
+  "auto-services":   "auto",
+  "home-services":   "home",
+  "beauty-services": "beauty",
+  "fitness":         "health",
+};
+
+/**
+ * Resolve which filter pill a project belongs to.
+ *
+ * Priority mirrors resolveCategoryLabel:
+ *   1. project.category_id mapped via FILTER_BY_CATEGORY_ID.
+ *   2. classifyProject() keyword inference (legacy fallback).
+ *
+ * Backwards-compat: NULL or unmapped category_id falls through to the
+ * keyword classifier, so projects that haven't opted into category_id
+ * (or that picked a category like 'retail' which has no pill yet)
+ * land in the same pill they did before this helper landed —
+ * byte-for-byte identical to today.
+ */
+export function resolveFilterCategory(project: any): CategoryId {
+  const id = (project?.category_id || "").trim();
+  if (id && FILTER_BY_CATEGORY_ID[id]) return FILTER_BY_CATEGORY_ID[id];
+  return classifyProject(project);
+}

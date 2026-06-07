@@ -57,7 +57,30 @@ type Project = {
     mode?: "bubble" | "recorded" | "live" | "auto";
     video_url?: string | null;
   } | null;
+  // Canonical category from the seeded categories table (mig 035).
+  // Drives the storefront badge + /discover filter pill. NULL until
+  // the merchant picks one in the dashboard.
+  category_id?: string | null;
 };
+
+// Canonical category dropdown options. Mirrors mig 035's seed exactly
+// (12 entries). The dropdown only offers these ids, so the DB FK
+// (categories.id) cannot be violated from the UI — making the
+// backend FK-500 path unreachable without per-error mapping.
+const DB_CATEGORIES: readonly { id: string; label: string }[] = [
+  { id: "restaurants",           label: "Restaurants" },
+  { id: "food-trucks",           label: "Food Trucks" },
+  { id: "coffee-shops",          label: "Coffee Shops" },
+  { id: "bars",                  label: "Bars" },
+  { id: "auto-services",         label: "Auto Services" },
+  { id: "home-services",         label: "Home Services" },
+  { id: "beauty-services",       label: "Beauty Services" },
+  { id: "fitness",               label: "Fitness" },
+  { id: "retail",                label: "Retail" },
+  { id: "art-handcraft",         label: "Art & Handcraft" },
+  { id: "events",                label: "Events" },
+  { id: "professional-services", label: "Professional Services" },
+] as const;
 
 import { API_BASE } from "../../lib/apiBase";
 
@@ -290,6 +313,35 @@ export default function DashboardPage() {
       alert(err instanceof Error ? err.message : "Failed to delete project");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  // Set the merchant's canonical category on a specific project. The
+  // dropdown only offers mig-035 seed ids, so the FK constraint at
+  // DB level can't reject from the UI. We PATCH and update local
+  // state optimistically; on error, the alert pattern mirrors the
+  // existing dashboard PATCH callers.
+  async function updateProjectCategory(projectId: string | number, categoryId: string) {
+    if (!user?.privyId || !categoryId) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Owner-Id": user.privyId,
+        },
+        body: JSON.stringify({ category_id: categoryId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || "Could not save category");
+      }
+      setProjects((prev) =>
+        prev.map((p) => (p.id === projectId ? { ...p, category_id: categoryId } : p)),
+      );
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Could not save category. Try again.");
     }
   }
 
@@ -1163,6 +1215,38 @@ export default function DashboardPage() {
                         <span className="text-xs text-muted opacity-0 transition group-hover:opacity-100">View →</span>
                       </div>
                     </Link>
+
+                    {/* Category setter — mounted OUTSIDE the wrapping
+                        <Link> so clicking the dropdown doesn't navigate.
+                        Dropdown offers the 12 mig-035 seed ids + a
+                        disabled "Uncategorized" placeholder for the NULL
+                        state (set-only in v1; no clear affordance). FK
+                        constraint at DB rejects unknown values, but the
+                        constrained option list keeps the 500 path
+                        unreachable from the UI. */}
+                    <div className="mx-4 mb-2 flex items-center justify-between gap-3 rounded-lg border border-default bg-surface-page px-3 py-2">
+                      <label
+                        htmlFor={`cat-${project.id}`}
+                        className="text-[10px] font-bold uppercase tracking-[0.1em] text-secondary"
+                      >
+                        Category
+                      </label>
+                      <select
+                        id={`cat-${project.id}`}
+                        value={project.category_id ?? ""}
+                        onChange={(e) => updateProjectCategory(project.id, e.target.value)}
+                        className="rounded-lg border border-default bg-surface-card px-2 py-1 text-[11px] text-primary outline-none transition hover:border-strong focus:border-brand-teal"
+                      >
+                        <option value="" disabled>
+                          Uncategorized
+                        </option>
+                        {DB_CATEGORIES.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     {/* Copy storefront link — primary post-publish action.
                         Disabled until status='live' so a brand-new
