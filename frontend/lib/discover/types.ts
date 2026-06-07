@@ -30,6 +30,18 @@ export type Project = {
   is_live?: boolean;
   live_playback_id?: string | null;
   live_provider?: string | null;
+  // Canonical category from the seeded `categories` table
+  // (migration 035). NULL on every pre-mig project; the discover
+  // and storefront UIs fall back to keyword classification when
+  // absent, so backwards-compat is preserved.
+  category_id?: string | null;
+  // Embedded merchant logo/cover (joined via projects.business_profile_id
+  // by /api/projects/public). Optional on both axes — a merchant that
+  // hasn't supplied an image still renders the existing emoji avatar.
+  business_profile?: {
+    logo_url?: string | null;
+    cover_image_url?: string | null;
+  } | null;
 };
 
 export type MarketSnapshot = {
@@ -66,6 +78,10 @@ export type ItemResult = {
   title: string;
   description?: string;
   price: number | null;
+  // Per-offer thumbnail. Already returned by /api/offers/search
+  // (offers.primary_image_url, migration 011). Optional — falls
+  // back to a text-only tile when absent.
+  image?: string | null;
 };
 
 /* ─── View model for ListingCard ─── */

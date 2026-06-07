@@ -41,6 +41,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           const category = classifyProject(project);
           const accent = getAccent(index);
           const price = lowestOfferPrice(project);
+          const logoUrl = (project.business_profile?.logo_url || "").trim() || null;
 
           return (
             <Link
@@ -50,7 +51,17 @@ export function LiveRail({ projects }: { projects: Project[] }) {
               style={{ scrollSnapAlign: "start" }}
             >
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-2xl">{emoji}</span>
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={logoUrl}
+                    alt={`${project.title || project.name || "Business"} logo`}
+                    loading="lazy"
+                    className="h-7 w-7 rounded-md border border-default object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">{emoji}</span>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />

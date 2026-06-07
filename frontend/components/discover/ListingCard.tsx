@@ -21,22 +21,7 @@ import {
   hasSubscription,
   offerCount,
 } from "../../lib/discover/filters";
-import { classifyProject, type CategoryId } from "../../lib/categories";
-
-const ALLOWED_CATEGORIES: CategoryId[] = [
-  "auto", "home", "beauty", "restaurants", "aviation", "pets", "health", "entertainment",
-];
-
-const CATEGORY_LABELS: Record<CategoryId, string> = {
-  auto: "Auto",
-  home: "Home",
-  beauty: "Beauty",
-  restaurants: "Food & Dining",
-  aviation: "Aviation",
-  pets: "Pets",
-  health: "Health",
-  entertainment: "Entertainment",
-};
+import { classifyProject, resolveCategoryLabel } from "../../lib/categories";
 
 function RelativeTime({ dateStr }: { dateStr?: string | null }) {
   const [label, setLabel] = useState("—");
@@ -95,8 +80,13 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
 
   const emoji = getProjectEmoji(project, index);
   const accent = getAccent(index);
-  const category = classifyProject(project);
-  const categoryLabel = ALLOWED_CATEGORIES.includes(category) ? CATEGORY_LABELS[category] : null;
+  // categoryId still drives the CTA branch below (auto/home/beauty/etc).
+  // categoryLabel is now the SOURCE-OF-TRUTH human label: prefers the
+  // canonical seeded category_id, falls back to the keyword classifier
+  // so pre-mig-035 projects keep their existing badge.
+  const categoryId = classifyProject(project);
+  const categoryLabel = resolveCategoryLabel(project);
+  const logoUrl = (project.business_profile?.logo_url || "").trim() || null;
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
@@ -107,17 +97,17 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   // else lands on the generic shop-now.
   const ctaLabel = isLive
     ? "Join live →"
-    : category === "restaurants"
+    : categoryId === "restaurants"
       ? "Order now →"
-      : category === "entertainment"
+      : categoryId === "entertainment"
         ? "Buy tickets →"
         : (
-            category === "auto" ||
-            category === "home" ||
-            category === "beauty" ||
-            category === "aviation" ||
-            category === "pets" ||
-            category === "health"
+            categoryId === "auto" ||
+            categoryId === "home" ||
+            categoryId === "beauty" ||
+            categoryId === "aviation" ||
+            categoryId === "pets" ||
+            categoryId === "health"
           )
           ? "Ask for a price →"
           : "Browse offers →";
@@ -133,24 +123,37 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
               : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
-        {/* Thumbnail area */}
+        {/* Thumbnail area — merchant logo when supplied, gradient + emoji
+            fallback for every existing merchant who hasn't uploaded one.
+            Backwards-compat: a null logo_url renders the exact same
+            avatar this card showed before P3. */}
         <div
-          className="mb-4 flex h-20 items-center justify-center rounded-lg"
-          style={{ background: idGradient(project.id) }}
+          className="mb-4 flex h-20 items-center justify-center overflow-hidden rounded-lg"
+          style={logoUrl ? undefined : { background: idGradient(project.id) }}
         >
-          <span className="text-3xl">{emoji}</span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={`${project.title || project.name || "Business"} logo`}
+              loading="lazy"
+              className="block h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-3xl">{emoji}</span>
+          )}
         </div>
 
-        {/* Header: category + live badge. */}
+        {/* Header: category + live badge. resolveCategoryLabel() always
+            returns a string, so the category pill always renders — no
+            more "BUSINESS · BUSINESS" generic dead-end. */}
         <div className="mb-2 flex items-center justify-between gap-2">
-          {categoryLabel && (
-            <span
-              className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.08em]"
-              style={{ borderColor: accent, color: accent }}
-            >
-              {categoryLabel}
-            </span>
-          )}
+          <span
+            className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.08em]"
+            style={{ borderColor: accent, color: accent }}
+          >
+            {categoryLabel}
+          </span>
           {isLive && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-state-live/40 bg-state-live/10 px-2 py-0.5">
               <span className="relative flex h-2 w-2">

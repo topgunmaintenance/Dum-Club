@@ -187,6 +187,7 @@ import {
   sanitizeBearerToken,
   updateOffer,
 } from "../../../lib/offers";
+import { resolveCategoryLabel } from "../../../lib/categories";
 import { AdminBar, ExitCustomerViewChip, useViewAsCustomer, writeViewAsCustomer } from "../../../components/project/AdminBar";
 import { OfferActionsMenu } from "../../../components/project/OfferActionsMenu";
 const UUID_RE =
@@ -712,7 +713,16 @@ export default function ProjectPage() {
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const [loadingProject, setLoadingProject] = useState(true);
-  const [ownerBizProfile, setOwnerBizProfile] = useState<{ business_name?: string; verification_status?: string } | null>(null);
+  const [ownerBizProfile, setOwnerBizProfile] = useState<{
+    business_name?: string;
+    verification_status?: string;
+    // Image-forward fields. logo_url existed pre-mig-072 (mig 014);
+    // cover_image_url ships with mig 072. Both nullable / optional —
+    // the storefront falls back to emoji avatar / no cover banner
+    // when null, preserving every existing merchant's render.
+    logo_url?: string | null;
+    cover_image_url?: string | null;
+  } | null>(null);
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
   const [dumDiscountError, setDumDiscountError] = useState<string | null>(null);
@@ -3510,6 +3520,13 @@ export default function ProjectPage() {
 
   const emoji = useMemo(() => getProjectEmoji(project), [project]);
   const category = useMemo(() => getCategory(project), [project]);
+  // categoryLabel is the SOURCE-OF-TRUTH human label for the badge:
+  // prefer the canonical seeded category_id (migration 035), fall back
+  // to the legacy keyword-classifier (getCategory above) for storefronts
+  // with NULL category_id. Resolves the "BUSINESS · BUSINESS" dead-end
+  // for projects whose title/template_type don't match the old narrow
+  // regex (e.g. Topgun, which the keyword path dead-ended on).
+  const categoryLabel = useMemo(() => resolveCategoryLabel(project), [project]);
   const accent = useMemo(() => getAccent(project), [project]);
   const parsedAiOutput = useMemo(() => parseAiOutput(project?.ai_output), [project?.ai_output]);
 
@@ -4765,6 +4782,24 @@ return (
 
       )}
 
+      {/* Cover banner — image-forward hero strip when the merchant has
+          uploaded one (business_profiles.cover_image_url, mig 072).
+          Renders nothing when absent → existing storefronts continue to
+          look exactly as before this PR. */}
+      {ownerBizProfile?.cover_image_url && (
+        <div
+          id="section-top-cover"
+          className={`mb-6 h-32 w-full overflow-hidden rounded-3xl border border-default bg-surface-card sm:h-48 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
+          style={{
+            backgroundImage: `url(${ownerBizProfile.cover_image_url})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+          role="img"
+          aria-label={`${project?.title || project?.name || "Business"} cover image`}
+        />
+      )}
+
       <div
         id="section-top"
         className={`mb-8 rounded-3xl border border-default bg-surface-page p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
@@ -4775,8 +4810,22 @@ return (
       >
         <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-default bg-surface-card text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
-              {emoji}
+            {/* Avatar — merchant logo when supplied, emoji fallback for
+                every existing merchant who hasn't set one. Backwards-compat:
+                a null logo_url renders the same emoji avatar this card
+                showed before P3. */}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-default bg-surface-card text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
+              {ownerBizProfile?.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={ownerBizProfile.logo_url}
+                  alt={`${project?.title || project?.name || "Business"} logo`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                emoji
+              )}
             </div>
 
             <div className="max-w-4xl">
@@ -4858,7 +4907,7 @@ return (
                         : "Business"}
                   </span>
                   <span className="rounded-full border border-default px-2.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-secondary">
-                    {category}
+                    {categoryLabel}
                   </span>
                   {ownerBizProfile?.verification_status === "verified" && (
                     <span className="rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[9px] font-semibold text-brand-teal">
