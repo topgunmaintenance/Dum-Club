@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
                     <Link href={`/project/${project.id}`} className="block p-6">
                       <div className="flex items-start justify-between gap-3">
                         <h3 className="text-base font-semibold text-primary group-hover:text-brand-teal">
-                          {project.title || project.name || "Untitled Project"}
+                          {project.title || project.name || "Untitled Shop"}
                         </h3>
                         <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${st.color}`}>
                           {st.text}
