@@ -3336,6 +3336,19 @@ export default function ProjectPage() {
     return () => clearTimeout(t);
   }, [isOwner, showLiveBanner]);
 
+  // ?golive=1 / AdminBar "Go Live" on non-IVS builds. autoGoLive drives
+  // the IVS host's autoStart prop, but the legacy camera panel doesn't
+  // read it — so without this, the deep-link and the AdminBar GO LIVE
+  // (both of which set autoGoLive / target #project-live-host) were a
+  // no-op when IVS is disabled. Once ownership resolves, scroll the
+  // owner to the legacy Go Live panel (now id="project-live-host").
+  useEffect(() => {
+    if (!autoGoLive || IVS_REALTIME_ENABLED) return;
+    if (!isOwner || project?.is_live) return;
+    scrollToSection("project-live-host");
+    setAutoGoLive(false);
+  }, [autoGoLive, isOwner, project?.is_live]);
+
   useEffect(() => {
     const addr = authUser?.walletAddress ?? wallets[0]?.address ?? null;
     setUserWallet(addr);
@@ -7008,8 +7021,13 @@ return (
 
 
       {/* ── Legacy Live Control Panel (non-IVS only) ── */}
+      {/* Carries id="project-live-host" so the AdminBar "Go Live" anchor
+          and the ?golive=1 deep-link land on a REAL go-live control when
+          IVS is disabled. The IVS host section above owns the same id
+          when IVS is enabled; the two are mutually exclusive on
+          IVS_REALTIME_ENABLED, so the id is never duplicated at runtime. */}
       {isOwner && !IVS_REALTIME_ENABLED && (
-        <div className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
+        <div id="project-live-host" className="scroll-mt-32 mb-8 rounded-3xl border border-default bg-surface-card p-6">
 
           {/* Selling controls. shown for non-IVS live providers only (IVS controls are in the banner) */}
           {project?.is_live && !isIVSSession(project) && (
