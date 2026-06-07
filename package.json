@@ -7,7 +7,8 @@
     "test": "node --test frontend/__tests__/lib/offers.test.mjs frontend/__tests__/lib/storeStatus.test.mjs frontend/__tests__/lib/discover-filters.test.mjs",
     "check:human-copy": "node scripts/check-human-copy.mjs",
     "check:no-stray-text-white": "node scripts/check-no-stray-text-white.mjs",
-    "check:storefront-images": "node scripts/check-storefront-images.mjs"
+    "check:storefront-images": "node scripts/check-storefront-images.mjs",
+    "check:fk-embed": "node scripts/check-fk-embed-disambiguation.mjs"
   },
   "keywords": [],
   "author": "",

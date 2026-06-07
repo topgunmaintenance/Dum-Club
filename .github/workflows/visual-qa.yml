@@ -70,6 +70,17 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: npm run check:storefront-images
 
+      - name: Check PostgREST business_profiles embeds disambiguate FK
+        # Guards against the FK-ambiguity regression that took prod
+        # down between #341 and #343 (PGRST201: "more than one
+        # relationship was found for 'projects' and
+        # 'business_profiles'"). Fails CI if any backend route
+        # contains a bare `business_profiles(...)` PostgREST embed
+        # instead of the disambiguated
+        # `business_profiles!projects_business_profile_id_fkey(...)`.
+        working-directory: ${{ github.workspace }}
+        run: npm run check:fk-embed
+
       - name: Install Playwright browsers (chromium only)
         run: npx playwright install --with-deps chromium
 

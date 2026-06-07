@@ -3298,6 +3298,19 @@ export default function ProjectPage() {
     })();
   }, [project?.business_profile, project?.privy_id, project?.owner_id]);
 
+  // Hero-avatar logo source with broken-image recovery. Mirrors
+  // ownerBizProfile.logo_url on load, resets back to null on <img>
+  // onError below. Decoupling the rendered src from the profile field
+  // means a 404 or decode failure flips us back to the emoji avatar
+  // without losing the rest of the merchant brand. The reset effect
+  // refires when the source URL changes so navigating between
+  // projects can't pin a prior failure on the next storefront.
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  useEffect(() => {
+    const next = (ownerBizProfile?.logo_url || "").trim() || null;
+    setLogoSrc(next);
+  }, [ownerBizProfile?.logo_url]);
+
   useEffect(() => {
     if (!project) {
       setIsOwner(false);
@@ -4857,12 +4870,19 @@ return (
                 a null logo_url renders the same emoji avatar this card
                 showed before P3. */}
             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-default bg-surface-card text-3xl shadow-inner sm:h-20 sm:w-20 sm:text-4xl">
-              {ownerBizProfile?.logo_url ? (
+              {logoSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={ownerBizProfile.logo_url}
+                  src={logoSrc}
                   alt={`${project?.title || project?.name || "Business"} logo`}
                   loading="lazy"
+                  // onError: if the logo URL 404s or fails to decode, drop
+                  // back to the existing emoji avatar. Robust against bad
+                  // seed data + missing CDN assets. The useEffect above
+                  // resets logoSrc whenever ownerBizProfile.logo_url
+                  // changes, so navigating between projects doesn't pin
+                  // a prior project's failure on the next one.
+                  onError={() => setLogoSrc(null)}
                   className="h-full w-full object-cover"
                 />
               ) : (

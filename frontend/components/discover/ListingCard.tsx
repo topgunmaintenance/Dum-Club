@@ -86,7 +86,19 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   // so pre-mig-035 projects keep their existing badge.
   const categoryId = classifyProject(project);
   const categoryLabel = resolveCategoryLabel(project);
-  const logoUrl = (project.business_profile?.logo_url || "").trim() || null;
+  // logoSrc mirrors business_profile.logo_url on load and resets to
+  // null on <img> onError below. This keeps the emoji+gradient
+  // fallback robust against broken seed data / missing CDN assets:
+  // a 404 or decode failure flips this card back to the existing
+  // text+emoji avatar without losing the rest of the card. The
+  // useEffect resets the source when the project's logo URL changes
+  // so a card recycled into a new project via list virtualisation
+  // can't pin a prior project's failure on the next one.
+  const initialLogo = (project.business_profile?.logo_url || "").trim() || null;
+  const [logoSrc, setLogoSrc] = useState<string | null>(initialLogo);
+  useEffect(() => {
+    setLogoSrc(initialLogo);
+  }, [initialLogo]);
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
@@ -129,14 +141,15 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             avatar this card showed before P3. */}
         <div
           className="mb-4 flex h-20 items-center justify-center overflow-hidden rounded-lg"
-          style={logoUrl ? undefined : { background: idGradient(project.id) }}
+          style={logoSrc ? undefined : { background: idGradient(project.id) }}
         >
-          {logoUrl ? (
+          {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={logoUrl}
+              src={logoSrc}
               alt={`${project.title || project.name || "Business"} logo`}
               loading="lazy"
+              onError={() => setLogoSrc(null)}
               className="block h-full w-full object-cover"
             />
           ) : (
