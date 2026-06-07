@@ -180,6 +180,7 @@ type Candle = {
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 import { API_BASE } from "../../../lib/apiBase";
+import { errorText } from "../../../lib/errorText";
 import {
   createOffer,
   OffersError,
@@ -1509,7 +1510,7 @@ export default function ProjectPage() {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         console.error("[buyOffer] Checkout error detail:", errData);
-        const msg = typeof errData.detail === "string" ? errData.detail : `Checkout failed (HTTP ${res.status})`;
+        const msg = errorText(errData.detail, `Checkout failed (HTTP ${res.status})`);
         setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
         setBuyError((p) => ({ ...p, [oid]: msg }));
         setBuyingOfferId(null);
@@ -2428,7 +2429,7 @@ export default function ProjectPage() {
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const detail = typeof errData.detail === "string" ? errData.detail : "Failed to create stream";
+        const detail = errorText(errData.detail, "Failed to create stream");
         // Fallback: if Mux isn't configured, go live without video
         if (res.status === 503 || res.status === 502) {
           // Mux not available. fall back to live-without-video mode
@@ -2608,7 +2609,7 @@ export default function ProjectPage() {
         setLiveSalesCount(0);
       } else {
         const errData = await res.json().catch(() => ({}));
-        const detail = typeof errData.detail === "string" ? errData.detail : `Go live failed (HTTP ${res.status})`;
+        const detail = errorText(errData.detail, `Go live failed (HTTP ${res.status})`);
         setGoLiveError(detail);
         console.error("[go-live] Error:", detail);
       }
@@ -2683,10 +2684,7 @@ export default function ProjectPage() {
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
-        const msg =
-          typeof errBody.detail === "string"
-            ? errBody.detail
-            : `Pin failed (HTTP ${res.status})`;
+        const msg = errorText(errBody.detail, `Pin failed (HTTP ${res.status})`);
         setPinError(msg);
         return;
       }
@@ -2823,7 +2821,7 @@ export default function ProjectPage() {
         }
       } else {
         const err = await res.json().catch(() => ({}));
-        setAuctionBidError(err.detail || "Bid failed");
+        setAuctionBidError(errorText(err.detail, "Bid failed"));
       }
     } catch { setAuctionBidError("Network error"); }
     finally { setAuctionBidding(false); }
@@ -2953,11 +2951,7 @@ export default function ProjectPage() {
       );
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        setPublishError(
-          typeof errData.detail === "string"
-            ? errData.detail
-            : "Could not update your store. Try again.",
-        );
+        setPublishError(errorText(errData.detail, "Could not update your store. Try again."));
         return;
       }
       setProject((prev) => (prev ? { ...prev, status: publish ? "live" : "draft" } : prev));

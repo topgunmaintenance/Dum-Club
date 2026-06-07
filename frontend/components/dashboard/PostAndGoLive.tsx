@@ -27,6 +27,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE } from "../../lib/apiBase";
+import { errorText } from "../../lib/errorText";
 import { createClient } from "../../lib/supabase/client";
 import { sanitizeBearerToken } from "../../lib/offers";
 
@@ -175,8 +176,7 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
       });
       if (!createRes.ok) {
         const err = await createRes.json().catch(() => ({}));
-        const detail =
-          typeof err.detail === "string" ? err.detail : `Post failed (HTTP ${createRes.status})`;
+        const detail = errorText(err.detail, `Post failed (HTTP ${createRes.status})`);
         setError(detail);
         setSubmitting(false);
         return;
