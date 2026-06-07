@@ -1,25 +1,17 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import { WalletProviders } from "./WalletProviders";
 import { AuthProvider } from "../lib/auth/AuthContext";
 
-// Pre-built once at module scope so the array reference is stable across
-// renders. Without this, Privy's "Solana wallet login enabled, but no
-// Solana wallet connectors have been passed to Privy" warning fires on
-// every page. Privy v2+ requires explicit external connectors when
-// embeddedWallets.solana is configured.
-const solanaConnectors = toSolanaWalletConnectors();
-
-// Privy's internal SDK still emits a handful of warnings even with
-// connectors registered. They're harmless and unfixable from outside
-// the SDK ("Wallet proxy not initialized", "Failed to add embedded
-// wallet connector", "no Solana wallet connectors" once-on-first-
-// paint). Silence them on the production bundle so the merchant
-// devtools console reads clean for new merchants doing install
-// debug. Dev + preview builds keep the full warning stream so we
-// can still investigate genuine regressions.
+// Privy's internal SDK emits a handful of warnings during init —
+// "Wallet proxy not initialized", "Failed to add embedded wallet
+// connector", "no Solana wallet connectors", "useWallets was called
+// outside the PrivyProvider" (a known once-per-route race). They're
+// harmless and unfixable from outside the SDK. Silence them on the
+// production bundle so the merchant + buyer devtools console reads
+// clean. Dev + preview keeps the full stream so we can still
+// investigate genuine regressions.
 const _NOISY_WALLET_FRAGMENTS = [
   "Wallet proxy not initialized",
   "Failed to add embedded wallet connector",
@@ -78,13 +70,18 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
-        // Real Solana connectors so Privy's wallet-proxy iframe has
-        // something to attach to on init. Missing this triggers both
-        // the "Wallet proxy not initialized" and "no Solana wallet
-        // connectors" warnings on every page load.
-        externalWallets: {
-          solana: { connectors: solanaConnectors },
-        },
+        // No externalWallets.solana.connectors here, deliberately.
+        // Wiring toSolanaWalletConnectors() makes Privy's wallet-proxy
+        // iframe pre-fetch the WalletConnect explorer registry
+        // (https://explorer-api.walletconnect.com/v3/wallets) on every
+        // page load — including the public buyer storefront. Doctrine
+        // §8 / §12.3 forbid Solana/blockchain code on consumer-facing
+        // pages, and the buyer's only path is Stripe Checkout (card),
+        // so there is nothing to connect to. The "no Solana wallet
+        // connectors" / "Wallet proxy not initialized" warnings Privy
+        // emits as a result are silenced by the noise filter above.
+        // If/when SOL_CHECKOUT_ENABLED ships to prod, wire connectors
+        // only on routes that actually need them — never globally.
         appearance: {
           theme: "dark",
           accentColor: "#00FFB2",
