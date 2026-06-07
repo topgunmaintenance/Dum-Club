@@ -32,6 +32,7 @@ import type {
   ItemResult,
 } from "../../lib/discover/types";
 import { API_BASE } from "../../lib/apiBase";
+import { resolveOfferCategoryLabel } from "../../lib/categories";
 
 import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
@@ -105,6 +106,14 @@ export default function DiscoverPage() {
             description: o.description,
             price: o.price_usd != null ? Number(o.price_usd) : null,
             image: (typeof o.primary_image_url === "string" && o.primary_image_url.trim()) || null,
+            // Per-offer category badge dual-pathway support.
+            categoryId: o.category_id ?? null,
+            parentProject: {
+              name: o.project_name,
+              description: o.project_description,
+              template_type: o.project_template_type,
+              category_id: o.project_category_id,
+            },
           }),
         );
         setOfferSearchResults(items);
@@ -314,8 +323,20 @@ export default function DiscoverPage() {
                             />
                           </div>
                         )}
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
-                          {item.projectName}
+                        {/* Eyebrow row — project name + per-offer category
+                            pill. Pill resolves through offers.category_id →
+                            project.category_id → classifier; never empty,
+                            never "undefined" (see resolveOfferCategoryLabel).
+                            All offers are NULL category_id today, so the
+                            label cascades to the parent project's resolved
+                            label (Topgun → "Aviation" via classifier).  */}
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="min-w-0 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
+                            {item.projectName}
+                          </span>
+                          <span className="shrink-0 rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-secondary">
+                            {resolveOfferCategoryLabel({ category_id: item.categoryId, project: item.parentProject })}
+                          </span>
                         </div>
                         <div className="text-sm font-bold text-primary transition group-hover:text-brand-teal">
                           {item.title}

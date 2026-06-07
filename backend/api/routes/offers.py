@@ -249,9 +249,10 @@ async def search_offers(q: str = "", limit: int = 20):
         res = (
             supabase.table("offers")
             .select(
-                "id, title, description, price_usd, primary_image_url, "
+                "id, title, description, price_usd, primary_image_url, category_id, "
                 "is_active, created_at, project_id, "
-                "projects!inner(name, slug, review_status, is_deleted)"
+                "projects!inner(name, slug, review_status, is_deleted, "
+                "category_id, description, template_type)"
             )
             .eq("is_active", True)
             .eq("projects.review_status", "approved")
@@ -267,6 +268,10 @@ async def search_offers(q: str = "", limit: int = 20):
 
     # Flatten the embedded project into top-level fields so the
     # frontend consumer doesn't have to deal with nested shapes.
+    # Per-offer category badge dual-pathway resolution (parallel to
+    # #341 / #347): the frontend prefers offers.category_id, then
+    # falls back to the parent project's resolved label via the
+    # projects.{category_id, description, template_type} fields below.
     results = []
     for row in (res.data or []):
         proj = row.get("projects") or {}
@@ -281,6 +286,11 @@ async def search_offers(q: str = "", limit: int = 20):
             "project_id": row.get("project_id"),
             "project_name": proj.get("name"),
             "project_slug": proj.get("slug"),
+            # Per-offer category badge dual-pathway support.
+            "category_id": row.get("category_id"),
+            "project_category_id": proj.get("category_id"),
+            "project_description": proj.get("description"),
+            "project_template_type": proj.get("template_type"),
         })
 
     print(f"[offers] search q='{q_clean}' limit={limit_int}: {len(results)} results")

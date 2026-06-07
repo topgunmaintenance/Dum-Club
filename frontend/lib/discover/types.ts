@@ -82,6 +82,19 @@ export type ItemResult = {
   // (offers.primary_image_url, migration 011). Optional — falls
   // back to a text-only tile when absent.
   image?: string | null;
+  // Per-offer category badge dual-pathway resolution (mig 035 /
+  // resolveOfferCategoryLabel). Both NULL today on every offer;
+  // fallback handles all NULL paths so the pill is always populated.
+  categoryId?: string | null;
+  // Slim parent-project view used by the classifier fallback when
+  // both offer.category_id and project.category_id are NULL. Mirrors
+  // the fields /api/offers/search includes for that exact purpose.
+  parentProject?: {
+    name?: string;
+    description?: string;
+    template_type?: string;
+    category_id?: string | null;
+  } | null;
 };
 
 /* ─── View model for ListingCard ─── */
