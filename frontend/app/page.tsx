@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { ScrollReveal } from "../components/motion/ScrollReveal";
+// ListingGrid powers the homepage marketplace rail — same component
+// /discover renders. Reused verbatim: gives the homepage the
+// image+category+price card layout without duplicating any rendering
+// logic. ListingCard inside is wallet-clean (no @solana/* imports
+// reachable), so this stays out of the lazy-Solana-subtree chunk
+// added by #351.
+import { ListingGrid } from "../components/discover/ListingGrid";
 
 // Below-the-fold components — code-split out of the initial homepage
 // bundle so the hero text (the LCP element on mobile) can paint without
@@ -2635,6 +2642,38 @@ export default function Home() {
 
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
+        {/* ── BUSINESSES ON DUM CLUB ── homepage marketplace rail.
+             Reuses /discover's ListingGrid + ListingCard verbatim so
+             buyers see image-forward, category-pilled merchant cards
+             above the existing Live Now rail. Honest count — exactly
+             how many rows /api/projects/public returned (CLAUDE.md
+             §12.2: no fake inflation). Section hides entirely when
+             the list is empty, so the rest of the homepage layout
+             below stays byte-for-byte identical to today. Topgun
+             (NULL category, only visible merchant in prod) renders
+             via the existing classifier + emoji + onError fallback
+             chains shipped in #341 / #344. */}
+        {allPublicProjects.length > 0 && (
+          <div className="mb-12">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
+                Businesses on DUM Club · {allPublicProjects.length}
+              </h2>
+              <Link
+                href="/discover"
+                className="shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal transition hover:text-brand-teal-hover"
+              >
+                See all on Discover →
+              </Link>
+            </div>
+            <ListingGrid
+              projects={allPublicProjects}
+              marketByProject={marketByProject}
+              pulseId={null}
+            />
+          </div>
+        )}
+
         {/* ── LIVE NOW ── hidden when no real live projects.
              Wrapping in an explicit length check stops the component
              tree from emitting *anything* (margins, wrappers, layout
