@@ -4,7 +4,10 @@ Business Profiles API — create, read, update, verify.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Depends
+import re
+import time
+
+from fastapi import APIRouter, File, Form, HTTPException, Depends, UploadFile
 from pydantic import BaseModel
 from typing import Optional
 from db.supabase import get_client
@@ -548,3 +551,123 @@ async def request_verification(
 
     refreshed = supabase.table("business_profiles").select("*").eq("id", biz["id"]).limit(1).execute()
     return {"status": "pending", "profile": refreshed.data[0] if refreshed.data else None}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Server-mediated image upload — Path 2 hardening sprint PR 1.
+#
+# Receives the merchant's logo / cover image via multipart, validates
+# size + MIME + ownership server-side, then writes to Supabase Storage
+# using the SUPABASE_SERVICE_KEY client (BYPASSRLS). Replaces the
+# browser-direct upload at frontend/components/dashboard/
+# MerchantImageUploader.tsx in a subsequent frontend swap PR.
+#
+# Until that swap lands, BOTH paths coexist — the frontend keeps
+# writing via the anon-key client through the existing wide-open
+# storage policy. This endpoint is additive only.
+#
+# Mirrors transcribe.py's UploadFile + size-guard shape.
+# ─────────────────────────────────────────────────────────────────────
+
+
+_MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB — matches MerchantImageUploader.MAX_BYTES
+_VALID_BUSINESS_SLOTS = ("logo", "cover")
+_EXT_RE = re.compile(r"^[a-z0-9]{1,5}$")
+
+
+def _safe_extension(filename: Optional[str], default: str = "jpg") -> str:
+    """Extract a safe lowercase extension from an UploadFile.filename.
+
+    Avoids letting a forged filename inject path traversal / weird
+    characters into the storage key. Mirrors the validation the
+    browser-direct upload sites already do client-side.
+    """
+    if not filename or "." not in filename:
+        return default
+    ext = filename.rsplit(".", 1)[-1].lower().strip()
+    return ext if _EXT_RE.match(ext) else default
+
+
+@router.post("/upload-image")
+async def upload_business_image(
+    slot: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Server-mediated logo / cover image upload.
+
+    Form fields:
+      slot: 'logo' | 'cover'
+      file: multipart image (image/*, ≤ 5 MB)
+
+    Mirrors the storage layout the browser-direct upload at
+    MerchantImageUploader.tsx writes today, so PATCH /api/business/update
+    consumes the returned public_url unchanged.
+
+    Returns: {"public_url": str, "path": str}
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    if slot not in _VALID_BUSINESS_SLOTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"slot must be one of: {', '.join(_VALID_BUSINESS_SLOTS)}",
+        )
+
+    content_type = (file.content_type or "").lower()
+    if not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be an image (JPEG, PNG, WebP, GIF).",
+        )
+
+    contents = await file.read()
+    if len(contents) > _MAX_IMAGE_BYTES:
+        size_mb = len(contents) / 1024 / 1024
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is too large ({size_mb:.1f}MB). Max 5MB.",
+        )
+
+    supabase = get_client()
+
+    # Resolve the caller's business_profile_id from owner_privy_id.
+    # Mirrors the ownership check pattern PATCH /api/business/update
+    # uses above — 404 if no profile, so the merchant must finish biz
+    # signup before uploading brand images.
+    bp_res = (
+        supabase.table("business_profiles")
+        .select("id")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not bp_res.data:
+        raise HTTPException(
+            status_code=404,
+            detail="No business profile found. Set up your business first.",
+        )
+    biz_id = bp_res.data[0]["id"]
+
+    ext = _safe_extension(file.filename)
+    path = f"business-images/{biz_id}/{slot}-{int(time.time() * 1000)}.{ext}"
+
+    try:
+        supabase.storage.from_("offers").upload(
+            path=path,
+            file=contents,
+            file_options={
+                "content-type": content_type,
+                "cache-control": "3600",
+                "upsert": "false",
+            },
+        )
+    except Exception as exc:
+        print(f"[upload] business image upload failed for biz={biz_id}: {type(exc).__name__}: {exc}")
+        raise HTTPException(status_code=500, detail="Upload failed. Try again.")
+
+    public_url = supabase.storage.from_("offers").get_public_url(path)
+
+    return {"public_url": public_url, "path": path}

@@ -58,6 +58,7 @@ from api.routes import (
     merchant,
     outreach,
     analytics,
+    popin,
 )
 
 from db.supabase import init_supabase
@@ -320,6 +321,10 @@ app.include_router(dum_points.router, prefix="/api/dum", tags=["DUM Points"])
 
 # Business Profiles
 app.include_router(business.router, prefix="/api/business", tags=["Business"])
+
+# Pop-In recorded-video uploads (server-mediated, Path 2 hardening
+# sprint PR 1). Thin one-route module — POST /api/popin/upload-video.
+app.include_router(popin.router, prefix="/api/popin", tags=["Popin"])
 
 # Token Creation (NO PREFIX so route stays clean)
 app.include_router(token.router, tags=["Token"])
