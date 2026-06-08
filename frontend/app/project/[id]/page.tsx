@@ -141,6 +141,7 @@ type GatedChatResponse = {
   holder_unlimited: boolean;
   token_required: boolean;
   token_mint_address?: string | null;
+  contact_email?: string | null;
 };
 
 
@@ -1030,16 +1031,18 @@ export default function ProjectPage() {
     token_mint_address?: string | null;
     locked: boolean;
     lock_message: string;
+    contact_email: string | null;
   }>({
     is_holder: false,
-    free_limit: 3,
+    free_limit: 1,
     used_count: 0,
-    free_questions_left: 3,
+    free_questions_left: 1,
     holder_unlimited: true,
     token_required: false,
     token_mint_address: null,
     locked: false,
     lock_message: "",
+    contact_email: null,
   });
   async function loadProject() {
     if (!id) return;
@@ -1065,8 +1068,8 @@ export default function ProjectPage() {
 
       setChatMeta((prev) => ({
         ...prev,
-        free_limit: Number(projectData?.ai_free_question_limit || 3),
-        free_questions_left: Number(projectData?.ai_free_question_limit || 3),
+        free_limit: Number(projectData?.ai_free_question_limit || 1),
+        free_questions_left: Number(projectData?.ai_free_question_limit || 1),
         holder_unlimited: Boolean(
           projectData?.holder_ai_unlimited === undefined ? true : projectData?.holder_ai_unlimited
         ),
@@ -2070,7 +2073,7 @@ export default function ProjectPage() {
         setChatMeta((prev) => ({
           ...prev,
           is_holder: Boolean(detail?.is_holder),
-          free_limit: Number(detail?.free_limit || prev.free_limit || 3),
+          free_limit: Number(detail?.free_limit || prev.free_limit || 1),
           used_count: Number(detail?.used_count || prev.used_count || 0),
           free_questions_left: Number(detail?.free_questions_left || 0),
           token_required: Boolean(detail?.token_required),
@@ -2078,12 +2081,13 @@ export default function ProjectPage() {
           locked: true,
           lock_message:
             detail?.message ||
-            "You’ve reached the free question limit. Purchase an offer to unlock unlimited AI access.",
+            "You've used your free question. Send the business a message for more answers.",
+          contact_email: detail?.contact_email || prev.contact_email,
         }));
 
         setResponse(
           detail?.message ||
-            "You’ve reached the free question limit. Purchase an offer to unlock unlimited AI access."
+            "You've used your free question. Send the business a message for more answers."
         );
         return;
       }
@@ -2095,9 +2099,9 @@ export default function ProjectPage() {
       setResponse(data.answer || "No response returned.");
       setQuestion("");
 
-      setChatMeta({
+      setChatMeta((prev) => ({
         is_holder: Boolean(data.is_holder),
-        free_limit: Number(data.free_limit || 3),
+        free_limit: Number(data.free_limit || 1),
         used_count: Number(data.used_count || 0),
         free_questions_left: Number(data.free_questions_left || 0),
         holder_unlimited: Boolean(data.holder_unlimited),
@@ -2105,7 +2109,8 @@ export default function ProjectPage() {
         token_mint_address: data.token_mint_address || null,
         locked: false,
         lock_message: "",
-      });
+        contact_email: data.contact_email ?? prev.contact_email,
+      }));
     } catch (err) {
       console.error(err);
       setResponse("Failed to get AI response.");
@@ -7123,7 +7128,7 @@ return (
               <div className="text-sm text-primary">
                 {chatMeta.is_holder && chatMeta.holder_unlimited
                   ? `You have unlimited AI access for this business.`
-                  : `This business includes ${chatMeta.free_limit} free AI questions. Purchase any offer to unlock unlimited access.`}
+                  : `Ask one free question about ${projectName}. Message the business directly for more.`}
               </div>
             </div>
           </>
@@ -7138,6 +7143,14 @@ return (
         {chatMeta.locked && (
           <div className="mt-5 rounded-2xl border border-default bg-surface-card p-5">
             <p className="text-sm text-secondary">{chatMeta.lock_message}</p>
+            {chatMeta.contact_email && (
+              <a
+                href={`mailto:${chatMeta.contact_email}`}
+                className="mt-3 inline-flex items-center justify-center rounded-xl border border-brand-teal bg-brand-teal-soft px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-teal transition hover:bg-brand-teal hover:text-brand-navy"
+              >
+                Email the business
+              </a>
+            )}
           </div>
         )}
 
@@ -7156,7 +7169,7 @@ return (
             disabled={loadingAsk || chatMeta.locked || !question.trim()}
             className="w-full rounded-2xl border border-default bg-surface-muted px-5 py-3 text-sm uppercase tracking-[0.18em] text-primary transition hover:bg-surface-muted disabled:opacity-50"
           >
-            {loadingAsk ? "Asking..." : chatMeta.locked ? "Purchase to Unlock" : "Ask AI"}
+            {loadingAsk ? "Asking..." : chatMeta.locked ? "Message the business" : "Ask AI"}
           </button>
         </form>
 
