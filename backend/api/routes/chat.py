@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
 from services.token_mode import is_simulated_token, token_mode
+from api.routes.projects import resolve_project_uuid
 try:
     import anthropic
 except ImportError:
@@ -347,16 +348,37 @@ async def chat(req: ChatRequest):
     project = {}
 
     if req.project_id:
-        project_res = (
-            client.table("projects")
-            .select("*")
-            .eq("id", req.project_id)
-            .single()
-            .execute()
-        )
-        project = project_res.data or {}
+        # Resolve slug-or-UUID to canonical UUID. Storefront URLs are
+        # slug-addressed (/project/website-designer) and the owner-mode
+        # AI assist forwards the slug verbatim into req.project_id. The
+        # bare .eq("id", req.project_id) call raised Postgres 22P02 on
+        # slugs — same uncaught-exception class PR #361 fixed for
+        # live-reminders. Wrap the lookup in the same try/except shape
+        # so any future DB hiccup returns a clean 500 instead of a
+        # browser-invisible CORS-stripped failure.
+        try:
+            resolved_id = resolve_project_uuid(client, req.project_id)
+            if not resolved_id:
+                raise HTTPException(status_code=404, detail="Project not found")
 
-        memories_text, memories_used = load_project_memories(req.project_id)
+            project_res = (
+                client.table("projects")
+                .select("*")
+                .eq("id", resolved_id)
+                .single()
+                .execute()
+            )
+            project = project_res.data or {}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            print(f"[chat] project lookup failed for project={req.project_id}: {exc!r}")
+            raise HTTPException(
+                status_code=500,
+                detail="Couldn't get an AI response right now. Try again in a moment.",
+            )
+
+        memories_text, memories_used = load_project_memories(resolved_id)
 
     system = build_system_prompt(project, memories_text)
 
@@ -406,18 +428,36 @@ async def project_gated_chat(
 ):
     client = get_client()
 
-    project_res = (
-        client.table("projects")
-        .select("*")
-        .eq("id", req.project_id)
-        .single()
-        .execute()
-    )
+    # Resolve slug-or-UUID to canonical UUID. The frontend's Ask-AI panel
+    # forwards the storefront URL slug verbatim (useParams()?.id), and the
+    # prior bare .eq("id", req.project_id) raised Postgres 22P02 on slugs —
+    # an uncaught exception that surfaced in the browser as
+    # "TypeError: Failed to fetch" (CORS headers stripped on the error
+    # response). Same fix template as PR #361 for live-reminders.
+    try:
+        resolved_id = resolve_project_uuid(client, req.project_id)
+        if not resolved_id:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    project = project_res.data
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        project_res = (
+            client.table("projects")
+            .select("*")
+            .eq("id", resolved_id)
+            .single()
+            .execute()
+        )
+        project = project_res.data
+        if not project:
+            # Resolver matched but row vanished (race with soft-delete).
+            raise HTTPException(status_code=404, detail="Project not found")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[chat/project-gated] project lookup failed for project={req.project_id}: {exc!r}")
+        raise HTTPException(
+            status_code=500,
+            detail="Couldn't get an AI response right now. Try again in a moment.",
+        )
 
     token_mint = project.get("token_mint_address")
     token_is_simulated = is_simulated_token(token_mint)
@@ -434,7 +474,7 @@ async def project_gated_chat(
     if wallet_address and token_mint and not token_is_simulated:
         is_holder = wallet_holds_project_token(wallet_address, token_mint)
 
-    usage_record = get_usage_record(req.project_id, wallet_address, session_id)
+    usage_record = get_usage_record(resolved_id, wallet_address, session_id)
     used_count = int(usage_record.get("question_count", 0)) if usage_record else 0
 
     if not (is_holder and holder_unlimited):
@@ -460,9 +500,9 @@ async def project_gated_chat(
                 }
             )
 
-    memories_text, memories_used = load_project_memories(req.project_id)
+    memories_text, memories_used = load_project_memories(resolved_id)
     system = build_system_prompt(project, memories_text)
-    history = load_chat_history(req.project_id, wallet_address, session_id, limit=10)
+    history = load_chat_history(resolved_id, wallet_address, session_id, limit=10)
 
     messages = [{"role": "system", "content": system}]
     messages.extend(history)
@@ -493,21 +533,21 @@ async def project_gated_chat(
                     print(f"[chat/project-stream] Ollama error: {e}")
                     yield "data: Something went wrong.\n\n"
 
-            save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
-            save_chat_message(req.project_id, "assistant", collected, wallet_address, session_id)
+            save_chat_message(resolved_id, "user", req.message, wallet_address, session_id)
+            save_chat_message(resolved_id, "assistant", collected, wallet_address, session_id)
 
-            increment_usage(req.project_id, wallet_address, session_id)
+            increment_usage(resolved_id, wallet_address, session_id)
             yield "data: [DONE]\n\n"
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
 
     answer = _chat_with_fallback(messages)
 
-    save_chat_message(req.project_id, "user", req.message, wallet_address, session_id)
-    save_chat_message(req.project_id, "assistant", answer, wallet_address, session_id)
+    save_chat_message(resolved_id, "user", req.message, wallet_address, session_id)
+    save_chat_message(resolved_id, "assistant", answer, wallet_address, session_id)
 
     new_count = used_count if (is_holder and holder_unlimited) else increment_usage(
-        req.project_id, wallet_address, session_id
+        resolved_id, wallet_address, session_id
     )
 
     free_questions_left = max(0, free_limit - new_count)
