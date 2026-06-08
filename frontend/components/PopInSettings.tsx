@@ -150,7 +150,16 @@ export function PopInSettings({
       return;
     }
     setUploadingVideo(true);
-    const result = await uploadPopinVideo(file, project.id);
+    // .ts helper can't read Privy state directly — caller threads the
+    // bearer in. Short-circuit on signed-out before the network hop so
+    // the merchant sees a clear "please sign in" rather than a 401.
+    const token = await getToken();
+    if (!token) {
+      setUploadingVideo(false);
+      setUploadError("Please sign in to upload a video.");
+      return;
+    }
+    const result = await uploadPopinVideo(file, project.id, token);
     setUploadingVideo(false);
     if (result.ok !== true) {
       setUploadError(result.error);
