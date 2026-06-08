@@ -85,6 +85,10 @@ export type OfferPayload = {
   video_url?: string | null;
   quantity_available?: number | null;
   unlimited_inventory?: boolean;
+  // Canonical category from the seeded categories table (mig 035).
+  // Optional: existing callers that don't supply it preserve their
+  // current behavior (NULL on create; field dropped on update).
+  category_id?: string | null;
 };
 
 type RequestOpts = {

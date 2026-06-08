@@ -30,6 +30,7 @@ import { API_BASE } from "../../lib/apiBase";
 import { errorText } from "../../lib/errorText";
 import { createClient } from "../../lib/supabase/client";
 import { sanitizeBearerToken } from "../../lib/offers";
+import { DB_CATEGORIES } from "../../lib/categories";
 
 type Project = {
   id: string;
@@ -63,6 +64,12 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
   const [quantity, setQuantity] = useState("");
   const [shipping, setShipping] = useState("");
   const [description, setDescription] = useState("");
+  // Optional canonical category. Empty string = "Uncategorized" (the
+  // disabled placeholder); the body threading below maps "" → null
+  // so the row stays NULL until the merchant explicitly picks one.
+  // The /discover offer-tile cascade (#348) renders a meaningful pill
+  // even when category_id is NULL.
+  const [categoryId, setCategoryId] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +171,9 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
         primary_image_url: imageUrl,
         quantity_available: qty,
         unlimited_inventory: qty == null,
+        // NULL when the merchant didn't pick a category. /discover offer
+        // tiles cascade through the parent project's resolver (#348).
+        category_id: categoryId || null,
       };
 
       const createRes = await fetch(`${API_BASE}/api/offers/create`, {
@@ -295,6 +305,31 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
             className="w-full rounded-xl border border-default bg-surface-card pl-8 pr-4 py-3 text-base text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
           />
         </div>
+      </div>
+
+      {/* Category — top-level row (mirrors #347's project card dropdown).
+          12 mig-035 seed ids + a disabled "Uncategorized" placeholder for
+          the NULL state. FK constraint at DB rejects unknown values, but
+          the constrained option list keeps the 500 path unreachable from
+          the UI. Set-only in v1 (no clear affordance). */}
+      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-default bg-surface-card px-4 py-3">
+        <label
+          htmlFor="post-category"
+          className="text-xs font-bold uppercase tracking-[0.1em] text-secondary"
+        >
+          Category
+        </label>
+        <select
+          id="post-category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="rounded-lg border border-default bg-surface-page px-2 py-1.5 text-sm text-primary outline-none transition hover:border-strong focus:border-brand-teal"
+        >
+          <option value="" disabled>Uncategorized</option>
+          {DB_CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Optional chips */}
