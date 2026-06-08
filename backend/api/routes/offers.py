@@ -3,7 +3,8 @@ Offers CRUD — structured items available for purchase on a project.
 Separate from store_items JSONB (which remains untouched).
 """
 import re
-from fastapi import APIRouter, HTTPException, Depends
+import time
+from fastapi import APIRouter, File, Form, HTTPException, Depends, UploadFile
 from pydantic import BaseModel, Field
 from typing import Optional
 from decimal import Decimal
@@ -377,3 +378,98 @@ async def update_offer(
         .execute()
     )
     return updated.data
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Server-mediated offer-image upload — Path 2 hardening sprint PR 1.
+#
+# Receives an offer's primary image via multipart, validates size +
+# MIME + project ownership server-side, then writes to Supabase
+# Storage using SUPABASE_SERVICE_KEY (BYPASSRLS). Replaces the
+# browser-direct upload at TWO sites — frontend/components/dashboard/
+# PostAndGoLive.tsx AND frontend/app/project/[id]/page.tsx — in
+# subsequent frontend swap PRs.
+#
+# Until those swaps land, BOTH paths coexist — the frontend keeps
+# writing via the anon-key client through the existing wide-open
+# storage policy. This endpoint is additive only.
+#
+# Mirrors transcribe.py's UploadFile + size-guard shape.
+# ─────────────────────────────────────────────────────────────────────
+
+
+_MAX_OFFER_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+_OFFER_EXT_RE = re.compile(r"^[a-z0-9]{1,5}$")
+
+
+def _safe_offer_extension(filename: Optional[str], default: str = "jpg") -> str:
+    if not filename or "." not in filename:
+        return default
+    ext = filename.rsplit(".", 1)[-1].lower().strip()
+    return ext if _OFFER_EXT_RE.match(ext) else default
+
+
+@router.post("/upload-image")
+async def upload_offer_image(
+    project_id: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Server-mediated offer-image upload.
+
+    Form fields:
+      project_id: the project the offer belongs to (ownership-gated)
+      file: multipart image (image/*, ≤ 5 MB)
+
+    Mirrors the storage layout the browser-direct upload at
+    PostAndGoLive.tsx and project/[id]/page.tsx writes today, so
+    POST /api/offers/create / PATCH /api/offers/{id} consume the
+    returned public_url unchanged.
+
+    Returns: {"public_url": str, "path": str}
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    content_type = (file.content_type or "").lower()
+    if not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be an image (JPEG, PNG, WebP, GIF).",
+        )
+
+    contents = await file.read()
+    if len(contents) > _MAX_OFFER_IMAGE_BYTES:
+        size_mb = len(contents) / 1024 / 1024
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is too large ({size_mb:.1f}MB). Max 5MB.",
+        )
+
+    supabase = get_client()
+
+    # Owner gate — _verify_project_owner already 404s on missing
+    # project and 403s on wrong owner. Reused verbatim.
+    _verify_project_owner(supabase, project_id, privy_id)
+
+    ext = _safe_offer_extension(file.filename)
+    path = f"offer-images/{project_id}/{int(time.time() * 1000)}.{ext}"
+
+    try:
+        supabase.storage.from_("offers").upload(
+            path=path,
+            file=contents,
+            file_options={
+                "content-type": content_type,
+                "cache-control": "3600",
+                "upsert": "false",
+            },
+        )
+    except Exception as exc:
+        print(f"[upload] offer image upload failed for project={project_id}: {type(exc).__name__}: {exc}")
+        raise HTTPException(status_code=500, detail="Upload failed. Try again.")
+
+    public_url = supabase.storage.from_("offers").get_public_url(path)
+
+    return {"public_url": public_url, "path": path}
