@@ -1,7 +1,6 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { WalletProviders } from "./WalletProviders";
 import { AuthProvider } from "../lib/auth/AuthContext";
 
 // Privy's internal SDK emits a handful of warnings during init —
@@ -38,20 +37,18 @@ if (
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
-  // PrivyProvider must be mounted on the very first render. Page-level
-  // components (app/page.tsx, app/embed/*, app/project/*, lib/auth/*)
-  // call useSolanaWallets() / usePrivy() unconditionally at the top of
-  // their tree, and any render where those hooks run without a
-  // PrivyProvider ancestor throws "useWallets was called outside the
-  // PrivyProvider component". An earlier change here deferred the
-  // provider tree behind a useState/useEffect mount gate to chase a
-  // hydration mismatch, which fixed that symptom but broke every
-  // wallet hook on first paint. The legitimate hydration sources have
-  // been addressed elsewhere (the deploy badge env-var read, and the
-  // homepage `new Date().getFullYear()`); Privy itself is SSR-safe
-  // per its documented usage, so it stays mounted from render zero.
+  // PrivyProvider must be mounted on the very first render so Privy's
+  // own hooks (useLogin, useAuth tooling) work app-wide. The
+  // @solana/wallet-adapter-react WalletProviders chain is intentionally
+  // NOT mounted here — buyer pages never call useWallet()/useSolanaWallets()
+  // at the top level after the lazy-Solana-subtree refactor. The lazy
+  // SolanaCheckoutButton (frontend/components/SolanaCheckoutButton.tsx)
+  // mounts WalletProviders inside itself, only when the consumer page
+  // renders a SOL CTA (i.e. SOL_CHECKOUT_ENABLED === true — dev/preview
+  // only). Doctrine §8 / §12.3: buyers receive zero @solana/wallet-adapter
+  // bytes in their page chunk in prod.
   if (!appId) {
-    return <WalletProviders>{children}</WalletProviders>;
+    return <>{children}</>;
   }
 
   return (
@@ -88,9 +85,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      <AuthProvider>
-        <WalletProviders>{children}</WalletProviders>
-      </AuthProvider>
+      <AuthProvider>{children}</AuthProvider>
     </PrivyProvider>
   );
 }
