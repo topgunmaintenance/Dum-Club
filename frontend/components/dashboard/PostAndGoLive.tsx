@@ -9,8 +9,12 @@
  * decimal keyboard, title autofocus after image, sticky bottom CTA.
  *
  * Flow on Post:
- *   1. (if image) upload to Supabase storage "offers" bucket — same
- *      pattern as the existing project-page offer form.
+ *   1. (if image) POST multipart (project_id, file) to
+ *      /api/offers/upload-image with the Privy bearer. Backend writes
+ *      to the offers bucket under offer-images/<project>/ via the
+ *      service-role key after gating on project ownership. Same
+ *      subpath shape as the prior anon-key browser-direct path —
+ *      Path 2 hardening sprint PR 3 of 6.
  *   2. POST /api/offers/create with the canonical OfferCreate payload.
  *   3. POST /api/projects/{id}/pin-offer to pin the new offer.
  *   4. router.push(`/project/<slug>?golive=1`) — the project page
@@ -28,7 +32,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE } from "../../lib/apiBase";
 import { errorText } from "../../lib/errorText";
-import { createClient } from "../../lib/supabase/client";
 import { sanitizeBearerToken } from "../../lib/offers";
 import { DB_CATEGORIES } from "../../lib/categories";
 
@@ -104,20 +107,42 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
     setImagePreview(URL.createObjectURL(file));
   }
 
-  async function uploadImage(file: File): Promise<string | null> {
+  async function uploadImage(file: File, token: string): Promise<string | null> {
+    // Server-mediated upload (Path 2 hardening sprint PR 3). The browser
+    // posts the file to FastAPI; the backend uses the Supabase service
+    // key to write into the offers bucket under offer-images/<project>/
+    // and gates the write on the Privy bearer + project ownership. Same
+    // subpath shape as the prior anon-key browser-direct path so a git
+    // revert keeps already-uploaded objects resolving.
+    //
+    // Best-effort by design: every failure path logs + returns null and
+    // the offer still posts image-less (matches L150-153 contract in
+    // handleSubmit). The downstream offers/create POST is where auth /
+    // ownership errors surface to the user.
     try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `offer-images/${project.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("offers")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (upErr) {
-        console.error("[post-go-live] image upload:", upErr);
+      const fd = new FormData();
+      fd.append("project_id", project.id);
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/api/offers/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        let detail: string | undefined;
+        try {
+          detail = (await res.json())?.detail;
+        } catch {
+          // non-JSON error body
+        }
+        console.error(
+          `[post-go-live] image upload HTTP ${res.status}:`,
+          detail || "(no detail)",
+        );
         return null;
       }
-      const { data } = supabase.storage.from("offers").getPublicUrl(path);
-      return data.publicUrl;
+      const body = (await res.json()) as { public_url?: string };
+      return body.public_url ?? null;
     } catch (err) {
       console.error("[post-go-live] image upload failed:", err);
       return null;
@@ -146,7 +171,7 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
 
       let imageUrl: string | null = null;
       if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+        imageUrl = await uploadImage(imageFile, token);
         // Image upload is best-effort — if it fails, post without an
         // image rather than blocking. Matches the existing offer-form
         // behaviour.
