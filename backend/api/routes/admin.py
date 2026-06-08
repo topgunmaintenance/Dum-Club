@@ -274,3 +274,181 @@ async def operations_overview(_admin=Depends(require_admin)):
             "distinct_merchants": recent_distinct_merchants,
         },
     }
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Merchants monitoring view — owner-only roll-up of every signup.
+# Read-only: three SELECTs + Python aggregation. No writes, no schema
+# change, no new tables. Reuses the existing `require_admin` gate.
+# ─────────────────────────────────────────────────────────────────────
+
+
+def _merchant_view_is_discoverable(p: dict) -> bool:
+    """Mirror /api/projects/public 3-pass union for a single project row.
+
+    A project is shown on /discover iff visibility='public' AND not deleted
+    AND at least one of:
+      - review_status='approved' AND status='live' (strict standard pass)
+      - verified=true (verified-founding-merchant carve-out)
+      - is_live=true (actively broadcasting carve-out)
+    """
+    if p.get("is_deleted") or p.get("visibility") != "public":
+        return False
+    if p.get("review_status") == "approved" and p.get("status") == "live":
+        return True
+    if p.get("verified"):
+        return True
+    if p.get("is_live"):
+        return True
+    return False
+
+
+def _merchant_view_primary_sort_key(p: dict):
+    """Order key for picking the merchant's most "primary" project row.
+
+    Lower tuple sorts first. Verified first, then status='live', then
+    public visibility, then oldest created_at. So the operator sees the
+    canonical / verified storefront ahead of seed-residue rows.
+    """
+    return (
+        0 if p.get("verified") else 1,
+        0 if p.get("status") == "live" else 1,
+        0 if p.get("visibility") == "public" else 1,
+        p.get("created_at") or "",
+    )
+
+
+@router.get("/merchants")
+async def list_all_merchants(_admin=Depends(require_admin)):
+    """Owner-only monitoring view: every merchant + their roll-up state.
+
+    Three-query read-only roll-up. A naive `merchants ⨝ projects` join
+    inflates the result (4 merchants × ~18 attached project rows in prod
+    today — one merchant has 14+ pre-Phase-0B seed-residue project rows
+    from earlier auto-create churn). Aggregating in Python keeps the
+    response one-row-per-merchant.
+
+    Response shape (per merchant):
+      merchant_id              (uuid)
+      business_name            (string, the user's chosen shop name)
+      owner_privy_id           (Privy DID — opaque to operators)
+      owner_email              (string | null — null when users.email
+                                is NULL or when no users row exists)
+      signup_date              (merchants.created_at, ISO 8601)
+      stripe_connect_status    ('not_connected' | 'connected' | 'verified')
+      subscription_tier        ('founding' | 'standard' | null)
+      subscription_status      ('active' | 'trialing' | 'inactive' | ...)
+      founding_merchant        (bool)
+      project_count            (count of merchant's not-deleted projects
+                                — surfaces seed-residue at a glance)
+      primary_project          ({id, slug, status, visibility, verified,
+                                is_live} | null when zero projects)
+      discoverable             (bool — true iff at least one of the
+                                merchant's projects passes the same
+                                3-pass union /api/projects/public uses)
+    """
+    supabase = get_client()
+
+    merchants = (
+        supabase.table("merchants")
+        .select(
+            "id, owner_privy_id, business_name, stripe_connect_status, "
+            "subscription_tier, subscription_status, founding_merchant, "
+            "created_at"
+        )
+        .order("created_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    if not merchants:
+        return {"merchants": []}
+
+    privy_ids = [m["owner_privy_id"] for m in merchants if m.get("owner_privy_id")]
+
+    # Users — only the privy_ids we already have from merchants. Email
+    # may be NULL on a row, or the row may not exist at all (the
+    # /api/auth/sync write that populates users.email runs on every
+    # Privy session, but very-first-signup edge cases can leave it
+    # absent). Both paths collapse to `owner_email = None`.
+    email_by_privy_id: dict[str, str | None] = {}
+    if privy_ids:
+        try:
+            users = (
+                supabase.table("users")
+                .select("privy_id, email")
+                .in_("privy_id", privy_ids)
+                .execute()
+                .data
+                or []
+            )
+            email_by_privy_id = {
+                u["privy_id"]: u.get("email") for u in users if u.get("privy_id")
+            }
+        except Exception as exc:
+            print(f"[admin/merchants] users lookup failed: {exc!r}")
+
+    # Projects — every non-deleted project for the privy_ids we collected.
+    # Filter is_deleted=false at the DB so we don't ship residue we're not
+    # going to count. visibility / status / review_status / verified /
+    # is_live all returned so the aggregation can compute discoverable +
+    # primary_project deterministically.
+    by_privy_id: dict[str, list[dict]] = {}
+    if privy_ids:
+        try:
+            projects = (
+                supabase.table("projects")
+                .select(
+                    "id, slug, privy_id, status, review_status, visibility, "
+                    "is_live, verified, is_deleted, created_at"
+                )
+                .in_("privy_id", privy_ids)
+                .eq("is_deleted", False)
+                .order("created_at", desc=True)
+                .execute()
+                .data
+                or []
+            )
+            for p in projects:
+                pid = p.get("privy_id")
+                if pid:
+                    by_privy_id.setdefault(pid, []).append(p)
+        except Exception as exc:
+            print(f"[admin/merchants] projects lookup failed: {exc!r}")
+
+    out: list[dict] = []
+    for m in merchants:
+        pid = m.get("owner_privy_id") or ""
+        rows = by_privy_id.get(pid, [])
+        primary = sorted(rows, key=_merchant_view_primary_sort_key)[0] if rows else None
+        out.append(
+            {
+                "merchant_id": m.get("id"),
+                "business_name": m.get("business_name"),
+                "owner_privy_id": pid,
+                "owner_email": email_by_privy_id.get(pid),
+                "signup_date": m.get("created_at"),
+                "stripe_connect_status": m.get("stripe_connect_status"),
+                "subscription_tier": m.get("subscription_tier"),
+                "subscription_status": m.get("subscription_status"),
+                "founding_merchant": m.get("founding_merchant"),
+                "project_count": len(rows),
+                "primary_project": (
+                    {
+                        "id": primary.get("id"),
+                        "slug": primary.get("slug"),
+                        "status": primary.get("status"),
+                        "visibility": primary.get("visibility"),
+                        "verified": primary.get("verified"),
+                        "is_live": primary.get("is_live"),
+                    }
+                    if primary
+                    else None
+                ),
+                "discoverable": any(
+                    _merchant_view_is_discoverable(p) for p in rows
+                ),
+            }
+        )
+
+    return {"merchants": out}
