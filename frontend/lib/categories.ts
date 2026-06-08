@@ -101,6 +101,13 @@ export const CATEGORY_LABEL_BY_ID: Readonly<Record<string, string>> = {
   "art-handcraft":          "Art & Handcraft",
   "events":                 "Events",
   "professional-services":  "Professional Services",
+  // Added by migration 074. Display_order in DB: aviation 130,
+  // pets 140, entertainment 150 — appended after the 12 mig-035
+  // rows. CategoryId enum values match the new DB ids 1:1, so
+  // resolvers + filter pills cohere with the storefront badge.
+  "aviation":               "Aviation",
+  "pets":                   "Pets",
+  "entertainment":          "Entertainment",
 };
 
 /**
@@ -123,6 +130,11 @@ export const DB_CATEGORIES: readonly { id: string; label: string }[] = [
   { id: "art-handcraft",         label: "Art & Handcraft" },
   { id: "events",                label: "Events" },
   { id: "professional-services", label: "Professional Services" },
+  // Added by migration 074 — display_order 130 / 140 / 150 in the
+  // categories table, so they appear last in the dropdown.
+  { id: "aviation",              label: "Aviation" },
+  { id: "pets",                  label: "Pets" },
+  { id: "entertainment",         label: "Entertainment" },
 ] as const;
 
 /**
@@ -184,6 +196,11 @@ const FILTER_BY_CATEGORY_ID: Readonly<Record<string, CategoryId>> = {
   "home-services":   "home",
   "beauty-services": "beauty",
   "fitness":         "health",
+  // Added by migration 074. First-class pill mapping for the 3
+  // new DB rows; CategoryId enum values match the new ids 1:1.
+  "aviation":        "aviation",
+  "pets":            "pets",
+  "entertainment":   "entertainment",
 };
 
 /**
