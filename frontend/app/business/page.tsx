@@ -400,7 +400,8 @@ const WHATNOT_STRIPE_PCT = 0.029;
 const WHATNOT_STRIPE_FIXED = 0.30;
 const COMMONSOLD_COMMISSION = 0.05;
 const COMMONSOLD_BASE = 49;
-const DUM_CLUB_FLAT = 49;
+const DUM_CLUB_FLAT = 39;          // Starter tier subscription
+const DUM_CLUB_SALES_FEE = 0.01;   // 1% platform sales fee per order (CLAUDE.md §12 cap)
 
 function formatMoneyPrecise(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
@@ -424,7 +425,7 @@ function CalculatorTab() {
     const txCount = Math.max(1, Math.round(monthlyGmv / AVG_TXN_VALUE));
     const whatnot = monthlyGmv * WHATNOT_COMMISSION + monthlyGmv * WHATNOT_STRIPE_PCT + txCount * WHATNOT_STRIPE_FIXED;
     const commonsold = monthlyGmv * COMMONSOLD_COMMISSION + COMMONSOLD_BASE;
-    const dumClub = DUM_CLUB_FLAT;
+    const dumClub = DUM_CLUB_FLAT + monthlyGmv * DUM_CLUB_SALES_FEE;
     const bestCompetitor = Math.min(whatnot, commonsold);
     const monthlySavings = bestCompetitor - dumClub;
     const annualSavings = monthlySavings * 12;
@@ -486,8 +487,8 @@ function CalculatorTab() {
             <div className="rounded-2xl border-2 border-brand-teal bg-gradient-to-b from-brand-teal-soft to-surface-muted p-5 text-center">
               <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">DUM Club</div>
               <div className="font-mono text-3xl font-extrabold text-brand-teal">{formatMoneyPrecise(fees.dumClub)}</div>
-              <div className="mt-1 text-[10px] text-brand-teal/60">flat / month</div>
-              <div className="mt-3 text-[11px] text-primary">Growth tier · 0% per sale</div>
+              <div className="mt-1 text-[10px] text-brand-teal/60">total / month</div>
+              <div className="mt-3 text-[11px] text-primary">$39 Starter tier + 1% per sale</div>
             </div>
           </div>
 
