@@ -31,6 +31,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
 from db.supabase import get_client
+from api.routes.projects import resolve_project_uuid
 
 router = APIRouter()
 
@@ -61,18 +62,41 @@ async def subscribe_live_reminder(
     """
     supabase = get_client()
 
-    proj_res = (
-        supabase.table("projects")
-        .select("id, scheduled_live_at")
-        .eq("id", project_id)
-        .eq("is_deleted", False)
-        .limit(1)
-        .execute()
-    )
-    if not proj_res.data:
-        raise HTTPException(status_code=404, detail="Project not found")
+    # Storefront URLs are slug-addressed (e.g. /project/website-designer),
+    # and the slug is forwarded verbatim into this path param. The prior
+    # .eq("id", project_id) call ran the slug against the UUID column and
+    # raised Postgres 22P02 — an uncaught exception that surfaced as 503
+    # on the Railway edge (response shape broken, CORS header stripped,
+    # browser saw a network failure). Use the canonical resolver from
+    # projects.py so both UUID and slug callers work. Also wrap the
+    # follow-up SELECT in the same try/except as the INSERT so any future
+    # DB hiccup returns a clean 500 with a calm detail string instead of
+    # the same browser-invisible 503.
+    try:
+        resolved_id = resolve_project_uuid(supabase, project_id)
+        if not resolved_id:
+            raise HTTPException(status_code=404, detail="Project not found")
 
-    project = proj_res.data[0]
+        proj_res = (
+            supabase.table("projects")
+            .select("id, scheduled_live_at")
+            .eq("id", resolved_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+        if not proj_res.data:
+            # Resolver matched but row vanished (race with soft-delete).
+            raise HTTPException(status_code=404, detail="Project not found")
+        project = proj_res.data[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[live-reminders] project lookup failed for project={project_id}: {exc!r}")
+        raise HTTPException(
+            status_code=500,
+            detail="Couldn't save your reminder right now. Try again in a moment.",
+        )
 
     # A subscription stores a scheduled_for. When the merchant has a real
     # upcoming scheduled show we snapshot that time (the cron fires it near
