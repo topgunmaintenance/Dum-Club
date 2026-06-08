@@ -11,8 +11,17 @@ import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
 import { deriveStoreStatusCta } from "../../../lib/storeStatus";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
 const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import { useWallet } from "@solana/wallet-adapter-react";
+// The SOL checkout UI lives behind SOL_CHECKOUT_ENABLED (false in prod).
+// SolanaCheckoutButton is lazy-imported via next/dynamic({ ssr: false })
+// so the @solana/wallet-adapter packages — and the Phantom/Solflare
+// adapters + adapter-ui CSS — stay out of the consumer page chunk in
+// prod. The component mounts WalletProviders internally on first use
+// in dev/preview when SOL_CHECKOUT_ENABLED is true.
+const SolanaCheckoutButton = dynamic(
+  () => import("../../../components/SolanaCheckoutButton").then((m) => ({ default: m.SolanaCheckoutButton })),
+  { ssr: false },
+);
+import type { SolanaCheckoutApi } from "../../../components/SolanaCheckoutButton";
 import {
   SOL_CHECKOUT_ENABLED,
   pickSolPayWallet,
@@ -593,12 +602,15 @@ export default function ProjectPage() {
   const id = params?.id as string;
   const { user: authUser, loading: authLoading, login, getToken } = useAuth();
   const { notify, toast: statusToast } = useStatusToast();
-  const { wallets } = useSolanaWallets();
-  // External Solana wallet adapter (Phantom / Solflare). Used as a
-  // fallback for the "Pay with SOL" CTA when the user prefers an
-  // external wallet over the Privy embedded wallet. Always called
-  //. rules of hooks. and consumed only when SOL checkout fires.
-  const adapterWallet = useWallet();
+  // useSolanaWallets() / useWallet() were called here at the top of the
+  // component before the lazy-Solana-subtree refactor (Option C). They
+  // forced the @solana/wallet-adapter packages into every consumer page
+  // chunk even though the SOL CTA is gated by SOL_CHECKOUT_ENABLED
+  // (false in prod). The hooks now live inside the lazy
+  // SolanaCheckoutButton, which passes the resolved `wallets` +
+  // `adapterWallet` back through its render-prop to the SOL CTA's
+  // onClick handler — `payOfferWithSolHandler` receives them as
+  // arguments instead of reading them from this top-level closure.
 
   // Diagnostic: log effective API base on mount
   useEffect(() => {
@@ -1567,9 +1579,14 @@ export default function ProjectPage() {
   // Stripe button is disabled while a SOL payment is in flight.
   async function payOfferWithSolHandler(
     offer: Offer,
+    sol: SolanaCheckoutApi,
     auctionId?: string,
     overridePrice?: number,
   ) {
+    // wallets + adapterWallet now arrive as the `sol` argument from the
+    // lazy SolanaCheckoutButton's render-prop. The rest of the body is
+    // unchanged from before the lazy-Solana-subtree refactor.
+    const { wallets, adapterWallet } = sol;
     const oid = offer.id;
     setBuyError((p) => ({ ...p, [oid]: "" }));
 
@@ -3419,9 +3436,14 @@ export default function ProjectPage() {
   }, [autoGoLive, isOwner, project?.is_live]);
 
   useEffect(() => {
-    const addr = authUser?.walletAddress ?? wallets[0]?.address ?? null;
+    // authUser.walletAddress is the canonical source via AuthContext,
+    // which itself computes `linkedWallets[0] || embeddedWallet` from
+    // useSolanaWallets(). The previous `?? wallets[0]?.address` fallback
+    // was a same-source duplicate that pinned a hard reference to
+    // useSolanaWallets here, defeating the lazy-Solana-subtree split.
+    const addr = authUser?.walletAddress ?? null;
     setUserWallet(addr);
-  }, [authUser, wallets]);
+  }, [authUser]);
 
   useEffect(() => {
     const ts = normalizeTokenLifecycleStatus(tokenMeta.status || project?.token_status);
@@ -6888,29 +6910,38 @@ return (
                             {/* Secondary CTA: pay with SOL. Feature-flagged
                                 off by default. Stripe stays the primary
                                 button above; this is intentionally smaller
-                                and lower-contrast. */}
+                                and lower-contrast. Wrapped in the lazy
+                                SolanaCheckoutButton render-prop so the
+                                @solana/wallet-adapter chunk only loads
+                                when SOL_CHECKOUT_ENABLED is true (dev /
+                                preview only — gated short-circuit means
+                                the chunk is never fetched in prod). */}
                             {SOL_CHECKOUT_ENABLED && (
-                              <button
-                                type="button"
-                                disabled={buyingOfferId === offer.id}
-                                onClick={() => payOfferWithSolHandler(offer)}
-                                className="mt-2 w-full rounded-lg border border-default bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal disabled:opacity-50"
-                                aria-label="Pay with Solana wallet"
-                              >
-                                {(() => {
-                                  const step = buyStep[offer.id] || "";
-                                  if (buyingOfferId === offer.id && step.startsWith("sol_")) {
-                                    if (step === "sol_quoting") return "Quoting…";
-                                    if (step === "sol_building") return "Building tx…";
-                                    if (step === "sol_signing") return "Confirm in your wallet…";
-                                    if (step === "sol_confirming") return "Waiting for network…";
-                                    if (step === "sol_verifying") return "Verifying…";
-                                    if (step === "sol_done") return "✓ Paid with SOL";
-                                    return "Processing…";
-                                  }
-                                  return "or pay with SOL";
-                                })()}
-                              </button>
+                              <SolanaCheckoutButton>
+                                {(sol) => (
+                                  <button
+                                    type="button"
+                                    disabled={buyingOfferId === offer.id}
+                                    onClick={() => payOfferWithSolHandler(offer, sol)}
+                                    className="mt-2 w-full rounded-lg border border-default bg-transparent px-4 py-2 text-xs font-medium uppercase tracking-[0.12em] text-secondary transition hover:border-default hover:text-brand-teal disabled:opacity-50"
+                                    aria-label="Pay with Solana wallet"
+                                  >
+                                    {(() => {
+                                      const step = buyStep[offer.id] || "";
+                                      if (buyingOfferId === offer.id && step.startsWith("sol_")) {
+                                        if (step === "sol_quoting") return "Quoting…";
+                                        if (step === "sol_building") return "Building tx…";
+                                        if (step === "sol_signing") return "Confirm in your wallet…";
+                                        if (step === "sol_confirming") return "Waiting for network…";
+                                        if (step === "sol_verifying") return "Verifying…";
+                                        if (step === "sol_done") return "✓ Paid with SOL";
+                                        return "Processing…";
+                                      }
+                                      return "or pay with SOL";
+                                    })()}
+                                  </button>
+                                )}
+                              </SolanaCheckoutButton>
                             )}
                           </>
                         )}

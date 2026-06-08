@@ -5,14 +5,20 @@ import { trackEvent } from "../../../lib/analytics";
 import { PopInSellerHost } from "../../../components/PopInSellerHost";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { API_BASE } from "../../../lib/apiBase";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { isIVSSession } from "../../../lib/liveProvider";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
 import { JsonLd } from "../../../components/JsonLd";
 import { buildProductSchema } from "../../../lib/schemaOrg";
+// Lazy SOL wallet-adapter mount. Same boundary as /project/[id]:
+// the @solana/wallet-adapter chunk only loads when SOL_CHECKOUT_ENABLED
+// is true (dev/preview), so consumer-page bytes stay clean in prod.
+const SolanaCheckoutButton = dynamic(
+  () => import("../../../components/SolanaCheckoutButton").then((m) => ({ default: m.SolanaCheckoutButton })),
+  { ssr: false },
+);
+import type { SolanaCheckoutApi } from "../../../components/SolanaCheckoutButton";
 import {
   SOL_CHECKOUT_ENABLED,
   SolCheckoutError,
@@ -133,12 +139,16 @@ export default function EmbedShellPage() {
   const viewerName = authUser?.email
     || (anonId ? `Guest #${anonId.slice(-4).toUpperCase()}` : "Viewer");
 
-  // SOL wallet sources — Privy embedded wallet first, then any
-  // external wallet adapter (Phantom / Solflare). pickSolPayWallet
-  // collapses both into the same shape, so the rest of the SOL
-  // flow doesn't have to care which one signed.
-  const { wallets: solanaWallets } = useSolanaWallets();
-  const adapterWallet = useWallet();
+  // SOL wallet sources used to live here as top-level useSolanaWallets() +
+  // useWallet() calls — they pinned the @solana/wallet-adapter packages
+  // into every consumer page chunk even when SOL_CHECKOUT_ENABLED is
+  // false (always, in prod). After the lazy-Solana-subtree refactor
+  // (Option C), the lazy SolanaCheckoutButton mounts WalletProviders on
+  // demand and passes the resolved `wallets` + `adapterWallet` back via
+  // its render-prop. handlePayWithSol receives them as the `sol`
+  // argument — body otherwise unchanged. pickSolPayWallet still
+  // collapses Privy + external adapter into the same shape so the rest
+  // of the flow doesn't have to care which one signed.
 
   const [project, setProject] = useState<EmbedProject | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -155,6 +165,12 @@ export default function EmbedShellPage() {
   const [solBuying, setSolBuying] = useState<boolean>(false);
   const [solStep, setSolStep] = useState<PayOfferStep | null>(null);
   const [solError, setSolError] = useState<string | null>(null);
+  // Latest sol wallet API surfaced by the lazy SolanaCheckoutButton's
+  // render-prop. Mirrored into a ref so the post-login autobuy-resume
+  // effect can read fresh wallet state without re-running every time
+  // wallets/adapterWallet identity changes. Ref mutation happens in
+  // the render-prop body — idempotent, deterministic, safe.
+  const solApiRef = useRef<SolanaCheckoutApi | null>(null);
 
   // Reaction layer (Step 8) — purchase toasts, floating emojis, and
   // a one-shot sold-out flash. All driven by the existing item_sold /
@@ -559,10 +575,23 @@ export default function EmbedShellPage() {
     // mid-checkout doesn't re-trigger a second payment intent.
     clearAutobuy();
     // Defer one tick so any pending state writes from the load
-    // path settle before we open the Stripe (or SOL) flow.
+    // path settle before we open the Stripe (or SOL) flow. The SOL
+    // path reads wallet state from solApiRef.current — populated by
+    // the lazy SolanaCheckoutButton's render-prop. If the lazy chunk
+    // hasn't hydrated yet (rare on this autobuy resume path because
+    // SOL_CHECKOUT_ENABLED is dev/preview-only and the user just
+    // signed in, so the SOL button has typically mounted by now),
+    // surface a fallback error rather than firing without wallets.
     const t = window.setTimeout(() => {
       if (pay === "sol") {
-        handlePayWithSol();
+        const sol = solApiRef.current;
+        if (sol) {
+          handlePayWithSol(sol);
+        } else {
+          setSolError(
+            "Wallet not ready yet. Tap 'or pay with SOL' to continue.",
+          );
+        }
       } else {
         handleBuy();
       }
@@ -771,7 +800,11 @@ export default function EmbedShellPage() {
   // On success we surface the same checkoutResult banner Step 6
   // built for Stripe, then refresh project + offers so the pinned
   // card's inventory reflects the just-recorded sale.
-  async function handlePayWithSol() {
+  async function handlePayWithSol(sol: SolanaCheckoutApi) {
+    // wallets + adapterWallet now arrive as the `sol` argument from the
+    // lazy SolanaCheckoutButton's render-prop. The rest of the body is
+    // unchanged from before the lazy-Solana-subtree refactor.
+    const { wallets: solanaWallets, adapterWallet } = sol;
     if (!pinnedOffer) return;
     if (soldOut) return;
 
@@ -1195,22 +1228,29 @@ export default function EmbedShellPage() {
                       double-payment. */}
                   {SOL_CHECKOUT_ENABLED && !soldOut && (
                     <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={handlePayWithSol}
-                        disabled={buying || solBuying}
-                        className="w-full rounded-xl border border-default bg-transparent px-5 py-2 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
-                      >
-                        {solBuying
-                          ? solStep === "signing"
-                            ? "Approve in wallet..."
-                            : solStep === "confirming"
-                              ? "Confirming on Solana..."
-                              : solStep === "verifying"
-                                ? "Verifying..."
-                                : "Processing..."
-                          : "or pay with SOL"}
-                      </button>
+                      <SolanaCheckoutButton>
+                        {(sol) => {
+                          solApiRef.current = sol;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handlePayWithSol(sol)}
+                              disabled={buying || solBuying}
+                              className="w-full rounded-xl border border-default bg-transparent px-5 py-2 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
+                            >
+                              {solBuying
+                                ? solStep === "signing"
+                                  ? "Approve in wallet..."
+                                  : solStep === "confirming"
+                                    ? "Confirming on Solana..."
+                                    : solStep === "verifying"
+                                      ? "Verifying..."
+                                      : "Processing..."
+                                : "or pay with SOL"}
+                            </button>
+                          );
+                        }}
+                      </SolanaCheckoutButton>
                       {solError && (
                         <div className="rounded-lg border border-red-500/20 bg-state-live/5 px-3 py-2 text-xs text-state-live">
                           {solError}
@@ -1453,22 +1493,29 @@ export default function EmbedShellPage() {
               </div>
             </div>
             {SOL_CHECKOUT_ENABLED && !soldOut && (
-              <button
-                type="button"
-                onClick={handlePayWithSol}
-                disabled={buying || solBuying}
-                className="mt-2 min-h-[44px] w-full rounded-lg border border-default bg-transparent px-3 py-2.5 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
-              >
-                {solBuying
-                  ? solStep === "signing"
-                    ? "Approve in wallet..."
-                    : solStep === "confirming"
-                      ? "Confirming on Solana..."
-                      : solStep === "verifying"
-                        ? "Verifying..."
-                        : "Processing..."
-                  : "or pay with SOL"}
-              </button>
+              <SolanaCheckoutButton>
+                {(sol) => {
+                  solApiRef.current = sol;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handlePayWithSol(sol)}
+                      disabled={buying || solBuying}
+                      className="mt-2 min-h-[44px] w-full rounded-lg border border-default bg-transparent px-3 py-2.5 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
+                    >
+                      {solBuying
+                        ? solStep === "signing"
+                          ? "Approve in wallet..."
+                          : solStep === "confirming"
+                            ? "Confirming on Solana..."
+                            : solStep === "verifying"
+                              ? "Verifying..."
+                              : "Processing..."
+                        : "or pay with SOL"}
+                    </button>
+                  );
+                }}
+              </SolanaCheckoutButton>
             )}
             {(buyError || solError) && (
               <p className="mt-1.5 truncate text-[11px] text-state-live">
