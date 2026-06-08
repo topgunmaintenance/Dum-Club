@@ -1,19 +1,22 @@
 /**
- * popinVideoUpload — uploads a phone-recorded video to Supabase
- * Storage and returns its public URL. Mirrors the offer-image upload
- * pattern (`uploadOfferImage` in app/project/[id]/page.tsx) so the
- * existing `offers` bucket + RLS policies get reused — no new
- * infrastructure.
+ * popinVideoUpload — uploads a phone-recorded video to the offers
+ * Storage bucket via the server-mediated /api/popin/upload-video
+ * endpoint (Path 2 hardening sprint PR 5 of 6 — the last browser-
+ * direct anon-key upload site is gone after this PR). Validation
+ * lives here so we fail-fast in the dashboard before the network
+ * hop; the backend re-validates as defense-in-depth.
  *
- * Validation lives here, not on the server. The Pop-In Seller flow
- * ultimately writes the returned URL into `projects.popin_config.
+ * The returned URL ultimately flows into `projects.popin_config.
  * video_url`, where the existing PR #136 backend sanitizer enforces
- * http(s)-only + 2048-char cap as a safety net. The fields validated
- * here (MIME, size, extension) are merchant-experience guardrails:
- * we want to fail fast in the dashboard before the file uploads.
+ * http(s)-only + 2048-char cap as a safety net.
+ *
+ * This module is a plain .ts helper (not a React component), so the
+ * Privy bearer is threaded in by the caller (PopInSettings.tsx)
+ * rather than fetched inside. Keeps the helper testable in isolation
+ * and avoids coupling lib code to the auth provider.
  */
 
-import { createClient } from "./supabase/client";
+import { API_BASE } from "./apiBase";
 
 // 50 MB client-side ceiling — matches the Supabase project default
 // and fits ~60s of 1080p mobile video. Larger files reject before
@@ -74,46 +77,68 @@ export function validatePopinVideo(file: File): PopinVideoValidation {
 export async function uploadPopinVideo(
   file: File,
   projectId: string,
+  token: string,
 ): Promise<PopinVideoUploadResult> {
   const check = validatePopinVideo(file);
   if (check.ok !== true) return { ok: false, error: check.error };
 
   if (!projectId) {
-    return { ok: false, error: "Project not loaded yet — try again." };
+    return { ok: false, error: "Project not loaded yet. Please try again." };
+  }
+  if (!token) {
+    return { ok: false, error: "Please sign in to upload a video." };
   }
 
-  const supabase = createClient();
-  const extRaw = (file.name.split(".").pop() || "mp4").toLowerCase();
-  // Re-validate the extension we actually use for the path so a
-  // forged filename can't insert weird characters into the storage
-  // key. ALLOWED_EXT membership was already verified above for
-  // non-empty extensions; default to mp4 when missing.
-  const ext = ALLOWED_EXT.has(extRaw) ? extRaw : "mp4";
-  const path = `popin-videos/${projectId}/${Date.now()}.${ext}`;
-
   try {
-    const { error } = await supabase.storage
-      .from("offers")
-      .upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type || `video/${ext === "mov" ? "quicktime" : ext}`,
-      });
-    if (error) {
-      console.error("[popin-video] upload error:", error);
-      return {
-        ok: false,
-        error: error.message || "Upload failed. Please try again.",
-      };
+    const fd = new FormData();
+    fd.append("project_id", projectId);
+    fd.append("file", file);
+    const res = await fetch(`${API_BASE}/api/popin/upload-video`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      let detail: string | undefined;
+      try {
+        detail = (await res.json())?.detail;
+      } catch {
+        // non-JSON error body
+      }
+      console.error(
+        `[popin-video] upload HTTP ${res.status}:`,
+        detail || "(no detail)",
+      );
+      if (res.status === 401) {
+        return { ok: false, error: "Please sign in to upload a video." };
+      }
+      if (res.status === 404) {
+        return {
+          ok: false,
+          error: "Project not found. Try refreshing the page.",
+        };
+      }
+      if (res.status === 413) {
+        return {
+          ok: false,
+          error: detail || "Video is too large. Pop-In videos must be under 50 MB.",
+        };
+      }
+      if (res.status === 400) {
+        return {
+          ok: false,
+          error: detail || "Please choose an MP4, WebM, or MOV video file.",
+        };
+      }
+      return { ok: false, error: "Upload failed. Please try again." };
     }
-    const { data } = supabase.storage.from("offers").getPublicUrl(path);
-    if (!data?.publicUrl) {
+    const body = (await res.json()) as { public_url?: string };
+    if (!body.public_url) {
       return { ok: false, error: "Upload succeeded but URL not returned." };
     }
-    return { ok: true, url: data.publicUrl };
+    return { ok: true, url: body.public_url };
   } catch (err: unknown) {
     console.error("[popin-video] unexpected upload error:", err);
-    const msg = err instanceof Error ? err.message : "Upload failed.";
-    return { ok: false, error: msg };
+    return { ok: false, error: "Upload failed. Please try again." };
   }
 }
