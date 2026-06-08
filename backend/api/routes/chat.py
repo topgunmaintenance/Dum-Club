@@ -461,7 +461,7 @@ async def project_gated_chat(
 
     token_mint = project.get("token_mint_address")
     token_is_simulated = is_simulated_token(token_mint)
-    free_limit = int(project.get("ai_free_question_limit") or 3)
+    free_limit = int(project.get("ai_free_question_limit") or 1)
     holder_unlimited = bool(project.get("holder_ai_unlimited", True))
 
     session_id = req.session_id or x_session_id or f"anon:{req.project_id}"
@@ -479,12 +479,10 @@ async def project_gated_chat(
 
     if not (is_holder and holder_unlimited):
         if used_count >= free_limit:
-            # Honest 403 message — for SIM_ mints, tell the user the truth:
-            # this project's token layer is a demo and cannot be held.
-            if token_is_simulated:
-                limit_message = "Free AI limit reached. This project's token is a demo — holder unlimited access is not available until real on-chain minting ships."
-            else:
-                limit_message = "Free AI limit reached. Hold this project's token to unlock unlimited AI access."
+            # Plain merchant-readable lock copy — no token/demo/on-chain/
+            # holder jargon. The frontend surfaces a mailto CTA below this
+            # string when contact_email is present on the project row.
+            limit_message = "You've used your free question. Send the business a message for more answers."
             raise HTTPException(
                 status_code=403,
                 detail={
@@ -495,8 +493,8 @@ async def project_gated_chat(
                     "free_questions_left": 0,
                     "token_required": not token_is_simulated,
                     "token_mint_address": token_mint,
-                    "is_simulated": token_is_simulated,
-                    "token_mode": token_mode(token_mint),
+                    "contact_email": project.get("contact_email"),
+                    "business_name": project.get("title") or project.get("name"),
                 }
             )
 
