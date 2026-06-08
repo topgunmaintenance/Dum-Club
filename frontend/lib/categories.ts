@@ -182,3 +182,34 @@ export function resolveFilterCategory(project: any): CategoryId {
   if (id && FILTER_BY_CATEGORY_ID[id]) return FILTER_BY_CATEGORY_ID[id];
   return classifyProject(project);
 }
+
+/**
+ * Resolve a human-readable category label for an OFFER.
+ *
+ * Priority cascades down the data-ownership chain (parallel to
+ * resolveCategoryLabel and resolveFilterCategory):
+ *   1. offer.category_id (canonical, mig 035)
+ *   2. parent project's resolved label, which itself cascades through
+ *      project.category_id → classifyProject(project) keyword
+ *      fallback.
+ *
+ * Backwards-compat: NULL offer.category_id falls through to the parent
+ * resolver; NULL project.category_id falls through to the classifier
+ * (which never returns null — worst case it's the "home" default mapped
+ * to "Home Services"). The resolved label is therefore never empty,
+ * never "undefined", and never a broken pill — by construction.
+ *
+ * Pass enough of the parent project shape for classifyProject to work
+ * (title / name / description / template_type). /api/offers/search
+ * includes those fields for that exact purpose.
+ */
+export function resolveOfferCategoryLabel(input: {
+  category_id?: string | null;
+  project?: any | null;
+}): string {
+  const id = (input?.category_id || "").trim();
+  if (id && CATEGORY_LABEL_BY_ID[id]) {
+    return CATEGORY_LABEL_BY_ID[id];
+  }
+  return resolveCategoryLabel(input?.project || {});
+}
