@@ -11,17 +11,18 @@
  *   - logo  → business_profiles.logo_url        (small square avatar)
  *   - cover → business_profiles.cover_image_url (wide hero banner)
  *
- * Upload pipeline (mirrors PostAndGoLive.tsx:uploadImage):
+ * Upload pipeline:
  *   1. Client-side validate: image/* MIME, ≤5MB.
- *   2. Upload to Supabase Storage bucket "offers" under the subpath
- *      `business-images/${bizId}/${slot}-${Date.now()}.${ext}`. We
- *      deliberately reuse the existing offers bucket + its existing
- *      RLS policies — no new bucket, no new policy, no migration.
- *      The auth-scoped binding (PATCH /api/business/update only
- *      updates rows where owner_privy_id = current_user.sub) closes
- *      the actual logo-hijack vector, mirroring the offer-image
- *      security posture already shipped.
- *   3. PATCH /api/business/update with the resulting public URL.
+ *   2. POST multipart (slot, file) to /api/business/upload-image with
+ *      the Privy bearer. The backend resolves biz_id from
+ *      business_profiles.owner_privy_id, validates MIME + size + ext,
+ *      and writes to the offers bucket under
+ *      `business-images/${biz_id}/${slot}-${ms}.${ext}` using the
+ *      service-role key. The anon-key browser-direct path is gone for
+ *      this slot — Path 2 hardening sprint PR 2 of 6. Other upload
+ *      sites swap in PRs 3-5 before Migration 073 locks down the
+ *      offers bucket RLS.
+ *   3. PATCH /api/business/update with the returned public_url.
  *   4. Bubble the new URL to the parent via onChange so the dashboard
  *      can refresh its local state without a re-fetch.
  *
@@ -31,7 +32,6 @@
  */
 
 import { useRef, useState } from "react";
-import { createClient } from "../../lib/supabase/client";
 import { API_BASE } from "../../lib/apiBase";
 
 type Slot = "logo" | "cover";
@@ -39,7 +39,12 @@ type Slot = "logo" | "cover";
 const MAX_BYTES = 5 * 1024 * 1024;
 
 type Props = {
-  /** business_profiles.id — the upload subpath is keyed on this. */
+  /**
+   * business_profiles.id — historically used to key the upload subpath,
+   * now informational only since the backend derives biz_id from the
+   * Privy bearer. Kept on the prop signature so the dashboard parent
+   * does not need a same-PR change.
+   */
   bizId: string;
   logoUrl: string | null;
   coverImageUrl: string | null;
@@ -49,7 +54,6 @@ type Props = {
 };
 
 export function MerchantImageUploader({
-  bizId,
   logoUrl,
   coverImageUrl,
   getToken,
@@ -89,20 +93,47 @@ export function MerchantImageUploader({
 
     setBusy(slot);
     try {
-      const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `business-images/${bizId}/${slot}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("offers")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (upErr) {
-        setError(upErr.message || "Upload failed. Try again.");
+      const token = await getToken();
+
+      // Server-mediated upload (Path 2 hardening sprint PR 2). The browser
+      // posts the file to FastAPI; the backend uses the Supabase service
+      // key to write into the offers bucket, scoped to business-images/<biz>/
+      // and gated by the Privy bearer + business_profiles owner check. The
+      // browser-direct anon-key path is gone for this slot — the other three
+      // upload sites swap in PRs 3-5 before Migration 073 tightens RLS.
+      const fd = new FormData();
+      fd.append("slot", slot);
+      fd.append("file", file);
+      const uploadRes = await fetch(`${API_BASE}/api/business/upload-image`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!uploadRes.ok) {
+        let detail: string | undefined;
+        try {
+          detail = (await uploadRes.json())?.detail;
+        } catch {
+          // non-JSON body — fall through to status-based mapping below
+        }
+        if (uploadRes.status === 401) {
+          setError("Session expired. Sign in again.");
+        } else if (uploadRes.status === 404) {
+          setError("Business profile not set up yet. Save your profile first.");
+        } else if (uploadRes.status === 413 || uploadRes.status === 400) {
+          setError(detail || "Upload failed. Try again.");
+        } else {
+          setError(detail || "Upload failed. Try again.");
+        }
         return;
       }
-      const { data } = supabase.storage.from("offers").getPublicUrl(path);
-      const publicUrl = data.publicUrl;
+      const uploadBody = (await uploadRes.json()) as { public_url?: string };
+      const publicUrl = uploadBody.public_url;
+      if (!publicUrl) {
+        setError("Upload failed. Try again.");
+        return;
+      }
 
-      const token = await getToken();
       const res = await fetch(`${API_BASE}/api/business/update`, {
         method: "PATCH",
         headers: {
