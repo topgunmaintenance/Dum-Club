@@ -33,7 +33,6 @@ import { useAuth } from "../../../lib/auth/AuthContext";
 import { useStatusToast } from "../../../lib/useStatusToast";
 import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
-import { createClient } from "../../../lib/supabase/client";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
@@ -1265,18 +1264,41 @@ export default function ProjectPage() {
     scrollToSection("offers-section");
   }
 
-  async function uploadOfferImage(file: File): Promise<string | null> {
+  async function uploadOfferImage(file: File, token: string): Promise<string | null> {
+    // Server-mediated upload (Path 2 hardening sprint PR 4). The browser
+    // posts the file to FastAPI; the backend uses the Supabase service
+    // key to write into the offers bucket under offer-images/<project>/
+    // and gates the write on the Privy bearer + project ownership. Same
+    // subpath shape as the prior anon-key browser-direct path so a git
+    // revert keeps already-uploaded objects resolving.
+    //
+    // Failure returns null. The caller (saveOffer) preserves this site's
+    // existing UX: surfaces a setOfferSaveError warning, then saves the
+    // offer image-less rather than blocking.
     try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `offer-images/${id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("offers").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
+      const fd = new FormData();
+      fd.append("project_id", String(id));
+      fd.append("file", file);
+      const res = await fetch(`${API_BASE}/api/offers/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
-      if (error) { console.error("[image] Upload error:", error); throw error; }
-      const { data } = supabase.storage.from("offers").getPublicUrl(path);
-      return data.publicUrl;
+      if (!res.ok) {
+        let detail: string | undefined;
+        try {
+          detail = (await res.json())?.detail;
+        } catch {
+          // non-JSON error body
+        }
+        console.error(
+          `[image] Upload HTTP ${res.status}:`,
+          detail || "(no detail)",
+        );
+        return null;
+      }
+      const body = (await res.json()) as { public_url?: string };
+      return body.public_url ?? null;
     } catch (err) {
       console.error("[image] Upload failed:", err);
       return null;
@@ -1351,11 +1373,11 @@ export default function ProjectPage() {
       // Upload image if file selected
       let imageUrl = offerEditing.primary_image_url?.trim() || null;
       if (offerImageFile) {
-        const uploaded = await uploadOfferImage(offerImageFile);
+        const uploaded = await uploadOfferImage(offerImageFile, cleanToken);
         if (uploaded) {
           imageUrl = uploaded;
         } else {
-          setOfferSaveError("Image upload failed. Offer will be saved without image. Check that the 'offers' storage bucket exists in Supabase.");
+          setOfferSaveError("Could not save the image. Offer will be saved without it. Please try again.");
         }
       }
 
