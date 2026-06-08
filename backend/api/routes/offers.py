@@ -48,6 +48,11 @@ class OfferCreate(BaseModel):
     video_url: Optional[str] = None
     quantity_available: Optional[int] = None
     unlimited_inventory: bool = True
+    # Canonical category from the seeded categories table (mig 035).
+    # FK constraint at DB rejects unknown values, but the dashboard
+    # dropdown only emits the 12 seeded ids — so the 500 path is
+    # unreachable from the UI. Set-only in v1 (no clear affordance).
+    category_id: Optional[str] = None
 
 
 class OfferUpdate(BaseModel):
@@ -62,6 +67,10 @@ class OfferUpdate(BaseModel):
     video_url: Optional[str] = None
     quantity_available: Optional[int] = None
     unlimited_inventory: Optional[bool] = None
+    # See OfferCreate.category_id. The update path picks this up via
+    # the existing `updates = {k: v for k, v in body.dict().items()
+    # if v is not None}` filter further down — no extra wiring.
+    category_id: Optional[str] = None
 
 
 VALID_OFFER_TYPES = {"digital_service", "physical_product"}
@@ -190,6 +199,10 @@ async def create_offer(
         "quantity_sold": 0,
         "unlimited_inventory": body.unlimited_inventory,
         "is_active": True,
+        # NULL when the merchant didn't pick a category. /discover offer
+        # tiles cascade through the parent project's resolver (#348),
+        # so a NULL-category offer still renders a meaningful pill.
+        "category_id": body.category_id,
     }
 
     try:

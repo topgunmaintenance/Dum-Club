@@ -104,6 +104,28 @@ export const CATEGORY_LABEL_BY_ID: Readonly<Record<string, string>> = {
 };
 
 /**
+ * Canonical category dropdown options as an ordered array. Mirrors
+ * mig 035's seed exactly (12 entries). Used by the dashboard project
+ * setter (#347) and the offer composer's category select (#349).
+ * Single source of truth — keep aligned with CATEGORY_LABEL_BY_ID
+ * above; the order here is what the merchant sees in the dropdown.
+ */
+export const DB_CATEGORIES: readonly { id: string; label: string }[] = [
+  { id: "restaurants",           label: "Restaurants" },
+  { id: "food-trucks",           label: "Food Trucks" },
+  { id: "coffee-shops",          label: "Coffee Shops" },
+  { id: "bars",                  label: "Bars" },
+  { id: "auto-services",         label: "Auto Services" },
+  { id: "home-services",         label: "Home Services" },
+  { id: "beauty-services",       label: "Beauty Services" },
+  { id: "fitness",               label: "Fitness" },
+  { id: "retail",                label: "Retail" },
+  { id: "art-handcraft",         label: "Art & Handcraft" },
+  { id: "events",                label: "Events" },
+  { id: "professional-services", label: "Professional Services" },
+] as const;
+
+/**
  * Map a (legacy) keyword-inferred CategoryId to its closest
  * display label from the canonical seed. Used when a project has
  * no category_id and we fall back to the classifyProject() output.
