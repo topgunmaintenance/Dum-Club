@@ -54,6 +54,7 @@ type Props = {
 };
 
 export function MerchantImageUploader({
+  bizId,
   logoUrl,
   coverImageUrl,
   getToken,
@@ -104,6 +105,9 @@ export function MerchantImageUploader({
       const fd = new FormData();
       fd.append("slot", slot);
       fd.append("file", file);
+      // business_id scopes the upload to the chosen brand (multi-business).
+      // Backend defaults to the owner's first/only business when omitted.
+      if (bizId) fd.append("business_id", bizId);
       const uploadRes = await fetch(`${API_BASE}/api/business/upload-image`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -134,7 +138,10 @@ export function MerchantImageUploader({
         return;
       }
 
-      const res = await fetch(`${API_BASE}/api/business/update`, {
+      const updateUrl = bizId
+        ? `${API_BASE}/api/business/update?business_id=${encodeURIComponent(bizId)}`
+        : `${API_BASE}/api/business/update`;
+      const res = await fetch(updateUrl, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
