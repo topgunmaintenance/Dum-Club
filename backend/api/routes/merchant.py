@@ -13,7 +13,7 @@ import urllib.parse
 
 import httpx
 import stripe
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
 from typing import Optional
 from db.supabase import get_client
@@ -868,7 +868,10 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
 # ── Storefront ensure (explicit, idempotent, loud failures) ──
 
 @router.post("/storefront/ensure")
-async def ensure_merchant_storefront(current_user: dict = Depends(get_current_user)):
+async def ensure_merchant_storefront(
+    business_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
     """Idempotent endpoint that GUARANTEES the authed merchant has a
     projects row, OR returns a structured error explaining why one
     can't be created.
@@ -912,15 +915,38 @@ async def ensure_merchant_storefront(current_user: dict = Depends(get_current_us
         }
     m = merchant_res.data[0]
 
-    # 2. Already exists? Return it. Idempotent.
-    existing = (
+    # 1b. Multi-business (STEP 1.6): when a business_id is given, verify it
+    #     belongs to this owner (fail-closed) so a new storefront can be
+    #     attached to the CHOSEN business. Omitted → legacy single-storefront
+    #     path below, byte-identical.
+    if business_id:
+        owned = (
+            supabase.table("business_profiles")
+            .select("id")
+            .eq("owner_privy_id", privy_id)
+            .eq("id", business_id)
+            .limit(1)
+            .execute()
+        )
+        if not owned.data:
+            return {
+                "ok": False,
+                "code": "business_not_found",
+                "error": "That business isn't yours or doesn't exist.",
+            }
+
+    # 2. Already exists? Return it. Idempotent. When a business_id is given,
+    #    the idempotency is PER-BUSINESS (so a second business with no
+    #    storefront yet doesn't short-circuit on the owner's first project).
+    existing_q = (
         supabase.table("projects")
-        .select("id, slug, status, name, title, account_id")
+        .select("id, slug, status, name, title, account_id, business_profile_id")
         .eq("privy_id", privy_id)
         .eq("is_deleted", False)
-        .limit(1)
-        .execute()
     )
+    if business_id:
+        existing_q = existing_q.eq("business_profile_id", business_id)
+    existing = existing_q.limit(1).execute()
     if existing.data:
         proj = existing.data[0]
         # Stamp account_id if it's somehow NULL (legacy orphan from
@@ -960,7 +986,9 @@ async def ensure_merchant_storefront(current_user: dict = Depends(get_current_us
             supabase,
             privy_id=privy_id,
             business_name=m.get("business_name") or "",
-            business_profile_id=m.get("business_profile_id"),
+            # Link to the chosen business when given; else the merchant's
+            # own bp_id (NULL for unlinked merchants) — legacy behavior.
+            business_profile_id=business_id or m.get("business_profile_id"),
         )
     captured = buf.getvalue()
     # Replay captured stdout so the operator still sees the log lines
