@@ -144,6 +144,24 @@ type GatedChatResponse = {
   contact_email?: string | null;
 };
 
+// Shape of the `detail` object returned by /api/chat/project-gated on
+// a non-2xx (PR #363 backend contract). FastAPI's default
+// HTTPException ships `detail` as a string; this endpoint ships it as
+// an object on the 403 free-limit path so the frontend can lock the
+// panel and render the mailto CTA. Every field optional — defensive
+// against shape drift.
+type GatedErrorDetail = {
+  message?: string;
+  is_holder?: boolean;
+  free_limit?: number;
+  used_count?: number;
+  free_questions_left?: number;
+  token_required?: boolean;
+  token_mint_address?: string | null;
+  contact_email?: string | null;
+  business_name?: string | null;
+};
+
 
 type MarketState = {
   id?: number;
@@ -2066,33 +2084,48 @@ export default function ProjectPage() {
         }),
       });
 
-      if (res.status === 403) {
-        const errorData = await res.json();
-        const detail = errorData?.detail || {};
+      if (!res.ok) {
+        // Surface the backend's structured detail (PR #363 shape) instead
+        // of swallowing every non-2xx into "Failed to get AI response."
+        // For a 403 (free-limit hit), also lock the panel + surface
+        // contact_email so the mailto CTA renders. For any other non-2xx,
+        // render the backend's plain-English message inline. Wire-level
+        // failures still fall to the outer catch below.
+        const errorData = await res.json().catch(() => null);
+        const detail = errorData?.detail;
+        const detailObj: GatedErrorDetail | null =
+          detail && typeof detail === "object" ? (detail as GatedErrorDetail) : null;
+        const detailString = typeof detail === "string" ? detail : null;
+        const backendMessage = detailObj?.message || detailString || null;
 
-        setChatMeta((prev) => ({
-          ...prev,
-          is_holder: Boolean(detail?.is_holder),
-          free_limit: Number(detail?.free_limit || prev.free_limit || 1),
-          used_count: Number(detail?.used_count || prev.used_count || 0),
-          free_questions_left: Number(detail?.free_questions_left || 0),
-          token_required: Boolean(detail?.token_required),
-          token_mint_address: detail?.token_mint_address || prev.token_mint_address,
-          locked: true,
-          lock_message:
-            detail?.message ||
-            "You've used your free question. Send the business a message for more answers.",
-          contact_email: detail?.contact_email || prev.contact_email,
-        }));
+        if (res.status === 403 && detailObj) {
+          // Free-limit hit. Lock the panel, persist limit metadata, surface
+          // contact_email + business_name for the mailto CTA. Byte-identical
+          // user-visible behavior to PR #363's 403 path.
+          const lockCopy =
+            backendMessage ||
+            "You've used your free question. Send the business a message for more answers.";
+          setChatMeta((prev) => ({
+            ...prev,
+            is_holder: Boolean(detailObj.is_holder),
+            free_limit: Number(detailObj.free_limit || prev.free_limit || 1),
+            used_count: Number(detailObj.used_count || prev.used_count || 0),
+            free_questions_left: Number(detailObj.free_questions_left || 0),
+            token_required: Boolean(detailObj.token_required),
+            token_mint_address: detailObj.token_mint_address || prev.token_mint_address,
+            locked: true,
+            lock_message: lockCopy,
+            contact_email: detailObj.contact_email || prev.contact_email,
+          }));
+          setResponse(lockCopy);
+          return;
+        }
 
-        setResponse(
-          detail?.message ||
-            "You've used your free question. Send the business a message for more answers."
-        );
+        // Any other non-2xx: render the backend's message inline (preferred),
+        // fall back to the generic only when truly nothing structured returned.
+        setResponse(backendMessage || "Failed to get AI response.");
         return;
       }
-
-      if (!res.ok) throw new Error("Failed to ask AI");
 
       const data: GatedChatResponse = await res.json();
 
