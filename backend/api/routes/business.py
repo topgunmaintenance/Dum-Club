@@ -425,21 +425,30 @@ async def create_business(
         raise HTTPException(status_code=400, detail="Business name is required")
 
     supabase = get_client()
+    name = body.business_name.strip()
 
-    # Check if user already has a business profile
-    existing = (
+    # Multi-business (migration 075): an owner may hold many DISTINCT
+    # businesses. The old one-per-owner block is replaced with a
+    # same-name dedupe — a double-tap can't create two identical rows,
+    # but distinct names are allowed. Case-insensitive match.
+    dupe = (
         supabase.table("business_profiles")
         .select("id")
         .eq("owner_privy_id", privy_id)
+        .ilike("business_name", name)
         .limit(1)
         .execute()
     )
-    if existing.data:
-        raise HTTPException(status_code=400, detail="You already have a business profile")
+    if dupe.data:
+        raise HTTPException(status_code=409, detail="You already have a business with that name.")
 
     payload = {
         "owner_privy_id": privy_id,
-        "business_name": body.business_name.strip(),
+        # privy_id is NOT NULL on the live table; the prior payload missed
+        # it, which is why the raw INSERT crashed (CORS-stripped 500).
+        # Populated from the session DID, same value as owner_privy_id.
+        "privy_id": privy_id,
+        "business_name": name,
         "category": body.category or "General",
         "short_description": (body.short_description or "").strip() or None,
         "logo_url": (body.logo_url or "").strip() or None,
@@ -447,13 +456,27 @@ async def create_business(
         "website": (body.website or "").strip() or None,
         "contact_email": (body.contact_email or "").strip() or None,
         "verification_status": "unverified",
+        # project_id intentionally omitted → NULL (migration 075 relaxed
+        # the NOT NULL). A storefront links itself to this business later
+        # via projects.business_profile_id.
     }
 
-    res = supabase.table("business_profiles").insert(payload).execute()
+    # Wrap the INSERT so a constraint violation returns a clean 4xx/5xx
+    # that flows back through the CORS middleware with ACAO intact —
+    # never an uncaught raw 500 that strips CORS and shows the visitor a
+    # "Failed to fetch". Same hardening pattern as PR #361/#362/#379.
+    try:
+        res = supabase.table("business_profiles").insert(payload).execute()
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "duplicate key" in msg or "23505" in msg:
+            raise HTTPException(status_code=409, detail="You already have a business with that name.")
+        print(f"[business] create failed for {privy_id}: {exc!r}")
+        raise HTTPException(status_code=500, detail="Couldn't create your business right now. Try again in a moment.")
     if not res.data:
-        raise HTTPException(status_code=500, detail="Failed to create business profile")
+        raise HTTPException(status_code=500, detail="Couldn't create your business right now. Try again in a moment.")
 
-    print(f"[business] created profile for {privy_id}: {body.business_name}")
+    print(f"[business] created profile for {privy_id}: {name}")
     return {"profile": res.data[0]}
 
 
