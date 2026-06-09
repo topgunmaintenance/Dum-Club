@@ -83,9 +83,18 @@ export default function DashboardPostPage() {
         }
 
         // If no project yet, call ensure-storefront to lazily create one.
-        // Idempotent on the backend — safe to retry on every mount.
+        // Idempotent on the backend — safe to retry on every mount. When the
+        // URL carries ?business_id= (multi-business: "Add a storefront for
+        // <business>"), forward it so the new project attaches to that brand.
         if (list.length === 0) {
-          const eRes = await fetch(`${API_BASE}/api/merchant/storefront/ensure`, {
+          const bizParam =
+            typeof window !== "undefined"
+              ? new URLSearchParams(window.location.search).get("business_id")
+              : null;
+          const ensureUrl = bizParam
+            ? `${API_BASE}/api/merchant/storefront/ensure?business_id=${encodeURIComponent(bizParam)}`
+            : `${API_BASE}/api/merchant/storefront/ensure`;
+          const eRes = await fetch(ensureUrl, {
             method: "POST",
             headers,
           });

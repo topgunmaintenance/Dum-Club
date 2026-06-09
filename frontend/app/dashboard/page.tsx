@@ -61,6 +61,10 @@ type Project = {
   // Drives the storefront badge + /discover filter pill. NULL until
   // the merchant picks one in the dashboard.
   category_id?: string | null;
+  // Which business this storefront belongs to (projects.business_profile_id,
+  // mig 014/055 FK). NULL for legacy/unlinked storefronts. Drives the
+  // per-project business pill + the multi-business grid filter.
+  business_profile_id?: string | null;
 };
 
 // DB_CATEGORIES is imported from lib/categories.ts — single source of
@@ -100,6 +104,7 @@ export default function DashboardPage() {
   // All of the owner's businesses (multi-business switcher). The dropdown
   // only renders when length > 1, so single-business owners see no change.
   const [businesses, setBusinesses] = useState<any[]>([]);
+  const [creatingStorefront, setCreatingStorefront] = useState(false);
   const [bizLoading, setBizLoading] = useState(false);
   // Drive Your Market Analytics — merchant subscription_tier drives the
   // tier gate. Loaded once when the user is known; null while loading.
@@ -229,6 +234,36 @@ export default function DashboardPage() {
         setBizProfile(data.profile || null);
       }
     } catch {}
+  }
+
+  // Create a storefront (project) attached to a chosen business. Per-business
+  // idempotent on the backend, so re-clicking returns the existing one.
+  async function createStorefrontForBusiness(businessId: string) {
+    if (!businessId || creatingStorefront) return;
+    setCreatingStorefront(true);
+    try {
+      const token = await getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(
+        `${API_BASE}/api/merchant/storefront/ensure?business_id=${encodeURIComponent(businessId)}`,
+        { method: "POST", headers },
+      );
+      if (res.ok) {
+        const j = await res.json();
+        if (j?.ok && j?.project) {
+          await loadProjects();
+        } else if (j && j.ok === false) {
+          alert(j.error || "Could not create storefront.");
+        }
+      } else {
+        alert(`Storefront setup failed (HTTP ${res.status}). Try again.`);
+      }
+    } catch {
+      alert("Network error. Try again.");
+    } finally {
+      setCreatingStorefront(false);
+    }
   }
 
   // Load merchant record (for the Drive Your Market Analytics tier gate)
@@ -1188,14 +1223,41 @@ export default function DashboardPage() {
         )}
 
         {/* Projects list */}
+        {(() => {
+          // Business-name lookup for the per-storefront pill.
+          const bizNameById: Record<string, string> = {};
+          for (const b of businesses) bizNameById[b.id] = b.business_name;
+          const multiBiz = businesses.length > 1;
+          // When the owner has multiple businesses, filter the grid to the
+          // selected business — plus any unlinked (NULL) storefronts, which
+          // stay visible across selections so legacy projects aren't hidden.
+          const visibleProjects = multiBiz && bizProfile?.id
+            ? projects.filter(
+                (p) => p.business_profile_id === bizProfile.id || !p.business_profile_id,
+              )
+            : projects;
+          return (
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-xs uppercase tracking-[0.3em] text-muted">
               Your Businesses
             </h2>
-            <span className="text-xs text-muted">
-              {projectsLoaded ? `${projects.length} project${projects.length !== 1 ? "s" : ""}` : ""}
-            </span>
+            <div className="flex items-center gap-3">
+              {/* Add a storefront for the selected business (multi-business). */}
+              {multiBiz && bizProfile?.id && (
+                <button
+                  type="button"
+                  onClick={() => createStorefrontForBusiness(bizProfile.id)}
+                  disabled={creatingStorefront}
+                  className="rounded-lg border border-default bg-brand-teal/5 px-3 py-1.5 text-[11px] font-bold text-brand-teal transition hover:border-brand-teal hover:bg-brand-teal-soft disabled:opacity-50"
+                >
+                  {creatingStorefront ? "Adding…" : `Add a storefront for ${bizProfile.business_name}`}
+                </button>
+              )}
+              <span className="text-xs text-muted">
+                {projectsLoaded ? `${visibleProjects.length} project${visibleProjects.length !== 1 ? "s" : ""}` : ""}
+              </span>
+            </div>
           </div>
 
           {!user ? (
@@ -1222,8 +1284,11 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {projects.map((project) => {
+              {visibleProjects.map((project) => {
                 const st = statusLabel(project);
+                const bizLabel = project.business_profile_id
+                  ? bizNameById[project.business_profile_id]
+                  : null;
                 // Storefront is "shareable" once the merchant has
                 // published — pre-live, the link points at a draft
                 // page and would confuse a real customer. Use the
@@ -1249,6 +1314,16 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
+
+                      {/* Business pill — which business this storefront
+                          belongs to. Hidden for legacy/unlinked storefronts. */}
+                      {bizLabel && (
+                        <div className="mt-2">
+                          <span className="inline-flex items-center rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-secondary">
+                            {bizLabel}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-xs text-muted"> </span>
@@ -1366,6 +1441,8 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        );
+        })()}
       </div>
     </div>
   );
