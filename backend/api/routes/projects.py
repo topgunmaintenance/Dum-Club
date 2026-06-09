@@ -2034,8 +2034,12 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
             missing.append("add at least one offer")
 
         # Gate 3: Stripe Connect verified on the owner's merchant row.
-        # Conservative on lookup failure: treat as unverified.
+        # Conservative on lookup failure: treat as unverified. The
+        # missing-message distinguishes "never started Stripe" from
+        # "started but Stripe is still reviewing" so the merchant knows
+        # whether to take an action or just wait.
         stripe_verified = False
+        stripe_status_value = ""
         owner_privy = project.get("privy_id") or user_id
         try:
             merchant_res = (
@@ -2046,13 +2050,17 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
                 .execute()
             )
             if merchant_res.data:
-                stripe_verified = (
-                    (merchant_res.data[0].get("stripe_connect_status") or "") == "verified"
-                )
+                stripe_status_value = merchant_res.data[0].get("stripe_connect_status") or ""
+                stripe_verified = stripe_status_value == "verified"
         except Exception:
             pass
         if not stripe_verified:
-            missing.append("finish connecting your Stripe payment account")
+            if stripe_status_value in ("", "not_connected"):
+                missing.append("connect your Stripe payment account")
+            else:
+                missing.append(
+                    "wait for Stripe to finish checking your account, then check back shortly"
+                )
 
         if missing:
             detail = (
