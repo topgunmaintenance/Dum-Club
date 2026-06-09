@@ -39,6 +39,16 @@ export function hasSubscription(project: Project): boolean {
 }
 
 export function offerCount(project: Project): number {
+  // Prefer the modern active_offer_count enriched onto the project
+  // payload by /api/projects/public (PR #374). Fall back to the legacy
+  // store_items JSONB length when the modern field is absent (older
+  // API responses, direct callers using GET /api/projects/{id}, edge
+  // cases where the backend enrichment failed and logged a zero).
+  // Single source of truth when both are present: modern wins, so a
+  // merchant whose AI-builder pre-populated store_items AND whose
+  // dashboard later added offers via the modern editor reports the
+  // canonical modern count rather than double-counting overlap.
+  if (typeof project.active_offer_count === "number") return project.active_offer_count;
   return Array.isArray(project.store_items) ? project.store_items.length : 0;
 }
 
