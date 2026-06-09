@@ -1894,7 +1894,18 @@ async def update_project(
 
 
 async def _set_publication_status(project_id: str, user_id: str, *, publish: bool):
-    """Owner-gated flip of projects.status between 'live' and 'draft'."""
+    """Owner-gated flip of projects.status between 'live' and 'draft'.
+
+    Publish path (PR 5, owner D4): gated on description >=20 chars +
+    at least one active offer + Stripe Connect verified. When all
+    gates pass, atomically flips status='live', review_status='approved',
+    verified=True, is_verified=True — mirrors PR #364's founding
+    override so a self-serve publisher lands on /discover Pass 1 + 2
+    the same way a founder does.
+
+    Unpublish path: always allowed for the owner (no gates) — a
+    merchant can pull their storefront back to draft at any time.
+    """
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -1902,7 +1913,7 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
 
     project_res = (
         supabase.table("projects")
-        .select("id, owner_id, privy_id, status")
+        .select("id, owner_id, privy_id, status, review_status, description")
         .eq("id", project_id)
         .eq("is_deleted", False)
         .limit(1)
@@ -1930,10 +1941,78 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
             detail="This store can't be published. Contact support if you think this is a mistake.",
         )
 
-    new_status = "live" if publish else "draft"
-    supabase.table("projects").update({"status": new_status}).eq("id", project_id).execute()
+    if publish:
+        # Self-serve publish gates (owner D4 doctrine, PR 5). Each gate
+        # is checked independently so the user-visible 400 detail names
+        # every missing requirement, not just the first one.
+        missing: list[str] = []
 
-    return {"status": "success", "published": publish, "project_status": new_status}
+        # Gate 1: description >= 20 chars. Mirrors filters.ts:97 and
+        # the discovery filter shipped in PR #367.
+        desc = (project.get("description") or "").strip()
+        if len(desc) < 20:
+            missing.append("add a description of at least 20 characters")
+
+        # Gate 2: at least one active offer.
+        try:
+            offers_res = (
+                supabase.table("offers")
+                .select("id", count="exact")
+                .eq("project_id", project_id)
+                .eq("is_active", True)
+                .limit(1)
+                .execute()
+            )
+            offer_count = offers_res.count or 0
+        except Exception:
+            offer_count = 0
+        if offer_count < 1:
+            missing.append("add at least one offer")
+
+        # Gate 3: Stripe Connect verified on the owner's merchant row.
+        # Conservative on lookup failure: treat as unverified.
+        stripe_verified = False
+        owner_privy = project.get("privy_id") or user_id
+        try:
+            merchant_res = (
+                supabase.table("merchants")
+                .select("stripe_connect_status")
+                .eq("owner_privy_id", owner_privy)
+                .limit(1)
+                .execute()
+            )
+            if merchant_res.data:
+                stripe_verified = (
+                    (merchant_res.data[0].get("stripe_connect_status") or "") == "verified"
+                )
+        except Exception:
+            pass
+        if not stripe_verified:
+            missing.append("finish connecting your Stripe payment account")
+
+        if missing:
+            detail = (
+                "Your storefront isn't ready to publish yet. To publish, "
+                + ", and ".join(missing)
+                + "."
+            )
+            raise HTTPException(status_code=400, detail=detail)
+
+        # All gates passed — atomic 4-field flip to live + approved +
+        # verified. Same row state PR #364 sets for founders at signup.
+        supabase.table("projects").update({
+            "status": "live",
+            "review_status": "approved",
+            "verified": True,
+            "is_verified": True,
+        }).eq("id", project_id).execute()
+        return {"status": "success", "published": True, "project_status": "live"}
+
+    # Unpublish path — no gates beyond owner-check. Reverts status only;
+    # review_status and verified are preserved so re-publishing later
+    # doesn't require operator re-approval.
+    supabase.table("projects").update({"status": "draft"}).eq("id", project_id).execute()
+    return {"status": "success", "published": False, "project_status": "draft"}
 
 
 @router.post("/{project_id}/publish")

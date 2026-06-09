@@ -101,7 +101,16 @@ export default function MerchantPage() {
   // project page. If no project exists yet, the link falls back to
   // /dashboard so the merchant creates one first. We only need id
   // + slug; ignore the rest of the project payload.
-  const [firstProject, setFirstProject] = useState<{ id: string; slug: string | null; description: string | null } | null>(null);
+  const [firstProject, setFirstProject] = useState<{
+    id: string;
+    slug: string | null;
+    description: string | null;
+    status: string | null;
+    review_status: string | null;
+    verified: boolean | null;
+  } | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   // Live Stripe Connect verification. fetched from
   // /api/merchant/stripe-connect/status which does a fresh
@@ -272,10 +281,20 @@ export default function MerchantPage() {
         id?: string;
         slug?: string | null;
         description?: string | null;
+        status?: string | null;
+        review_status?: string | null;
+        verified?: boolean | null;
       }>;
       const first = list.find((p) => !!p?.id);
       if (first?.id) {
-        setFirstProject({ id: first.id, slug: first.slug ?? null, description: first.description ?? null });
+        setFirstProject({
+          id: first.id,
+          slug: first.slug ?? null,
+          description: first.description ?? null,
+          status: first.status ?? null,
+          review_status: first.review_status ?? null,
+          verified: first.verified ?? null,
+        });
       }
     } catch {
       // non-fatal. checklist still renders, just lands on /dashboard
@@ -360,6 +379,64 @@ export default function MerchantPage() {
       setError("Network error");
     }
     setSaving(false);
+  }
+
+  async function publishStorefront() {
+    if (!firstProject?.id || !user?.privyId) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/${encodeURIComponent(firstProject.id)}/publish`,
+        {
+          method: "POST",
+          headers: { user_id: user.privyId },
+        },
+      );
+      if (res.ok) {
+        loadFirstProject();
+      } else {
+        const data = await res.json().catch(() => null);
+        setPublishError(
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Could not publish right now. Try again in a moment."
+        );
+      }
+    } catch {
+      setPublishError("Network error. Try again in a moment.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function unpublishStorefront() {
+    if (!firstProject?.id || !user?.privyId) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/projects/${encodeURIComponent(firstProject.id)}/unpublish`,
+        {
+          method: "POST",
+          headers: { user_id: user.privyId },
+        },
+      );
+      if (res.ok) {
+        loadFirstProject();
+      } else {
+        const data = await res.json().catch(() => null);
+        setPublishError(
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Could not move to draft right now. Try again in a moment."
+        );
+      }
+    } catch {
+      setPublishError("Network error. Try again in a moment.");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   async function connectStripe() {
@@ -907,6 +984,62 @@ export default function MerchantPage() {
                 <div className="text-xs text-brand-teal/60">60 days free · Lock in founding pricing for life · 1% sales fee</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Storefront publish status (owner D4, PR 5). Surfaces the
+            self-serve publish action when the project is in draft, and
+            a confirmation badge when it's live + approved. Backend gates
+            on description + offer + Stripe Connect — the 400 detail is
+            rendered inline below the button when a gate fails. */}
+        {firstProject && firstProject.status === "live" && firstProject.review_status === "approved" && (
+          <div className="rounded-2xl border border-brand-teal bg-brand-teal-soft px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">✓</span>
+                <div>
+                  <div className="text-sm font-bold text-brand-teal">Storefront published</div>
+                  <div className="text-xs text-brand-teal/60">
+                    Customers can buy from your shop. Founding storefronts publish automatically; everyone else publishes here.
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={unpublishStorefront}
+                disabled={publishing}
+                className="text-xs font-medium text-brand-teal/70 underline-offset-4 transition hover:text-brand-teal hover:underline disabled:opacity-50"
+              >
+                Move to draft
+              </button>
+            </div>
+            {publishError && (
+              <p className="mt-3 text-xs text-state-live">{publishError}</p>
+            )}
+          </div>
+        )}
+        {firstProject && !(firstProject.status === "live" && firstProject.review_status === "approved") && (
+          <div className="rounded-2xl border border-default bg-surface-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Storefront status</div>
+                <div className="mt-1 text-sm font-semibold text-primary">Draft · not published yet</div>
+              </div>
+              <button
+                onClick={publishStorefront}
+                disabled={publishing}
+                className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+              >
+                {publishing ? "Publishing..." : "Publish storefront"}
+              </button>
+            </div>
+            {publishError && (
+              <p className="mt-3 text-xs text-state-live">{publishError}</p>
+            )}
+            {!publishError && (
+              <p className="mt-3 text-[11px] text-secondary">
+                Connect Stripe, write a description, and add at least one offer to publish your storefront on DUM Club.
+              </p>
+            )}
           </div>
         )}
 
