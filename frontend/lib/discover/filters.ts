@@ -25,7 +25,10 @@ export const DISCOVER_CATEGORIES: readonly DiscoverCategoryDef[] = [
 /* ─── Project field helpers ─── */
 
 export function hasOffers(project: Project): boolean {
-  return Array.isArray(project.store_items) && project.store_items.length > 0;
+  const modern =
+    typeof project.active_offer_count === "number" && project.active_offer_count > 0;
+  const legacy = Array.isArray(project.store_items) && project.store_items.length > 0;
+  return modern || legacy;
 }
 
 export function hasSubscription(project: Project): boolean {
@@ -82,11 +85,21 @@ export function categoryIncludesProject(project: Project, category: DiscoverCate
  * A project is visible on /discover iff it has at least one offer,
  * a non-placeholder description, and isn't auto-generated junk.
  *
- * Verified founding merchants bypass the offers check: their offers
- * live in the `offers` table (read by /api/offers/search), not in the
- * legacy `store_items` JSONB. This mirrors the backend's Pass 2
- * contract in /api/projects/public — verified=true projects always
- * land on /discover regardless of legacy field shape.
+ * Two paths satisfy the "has at least one offer" check (hasOffers):
+ *   1. active_offer_count > 0 on the project payload. Modern path:
+ *      offers live in the `offers` table, written via the dashboard
+ *      offer editor and PR #354's server-mediated upload. Enriched
+ *      onto each project row by /api/projects/public itself.
+ *   2. store_items.length > 0 on the row. Legacy JSONB, populated by
+ *      the original AI builder flow and by live-streaming merchants
+ *      who pre-fill offers without using the modern editor.
+ *
+ * Verified founding merchants also bypass the offers check entirely.
+ * Originally the only escape hatch for modern-flow storefronts (their
+ * offers lived in the offers table, not store_items). Path 1 now
+ * covers that class directly, so the verified bypass is mostly
+ * redundant for the modern flow, but kept so any future trust signal
+ * tied to verified still lands on /discover regardless of field shape.
  */
 export function isDiscoverable(project: Project): boolean {
   // An actively-live store is always discoverable while broadcasting —
