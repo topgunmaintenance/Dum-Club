@@ -1553,25 +1553,69 @@ async def recent_sales(limit: int = 10):
             .select(
                 "id, amount_paid_usd, status, created_at, "
                 "stripe_session_id, stripe_payment_intent_id, "
-                "offers(title, project_id, projects(title, visibility))"
+                "offers(title, project_id, projects(title, visibility, privy_id))"
             )
             .in_("status", ["paid", "fulfilled"])
             .order("created_at", desc=True)
             .limit(db_limit)
             .execute()
         )
+        rows = res.data or []
+
+        # Stripe-verified gate: mirror the /discover policy (PR #376) so
+        # the ticker only ever surfaces sales from real businesses that
+        # can actually take payment. Without this, a merchant who is on
+        # Stripe 'connected' (not 'verified') — hidden from /discover —
+        # still scrolled past in the ticker, contradicting the policy.
+        # Collect the owners of candidate rows, then one bulk SELECT for
+        # the verified subset. Fail-CLOSED: a lookup error surfaces no
+        # sales rather than risk showing a non-payable merchant. Orphaned
+        # sales (null project, no owner) are now excluded too — they
+        # can't be attributed to a verified business and rendered with a
+        # blank name anyway.
+        candidate_owners: set[str] = set()
+        for row in rows:
+            if not (row.get("stripe_session_id") or row.get("stripe_payment_intent_id")):
+                continue
+            project = (row.get("offers") or {}).get("projects") or {}
+            if project.get("visibility") == "hidden":
+                continue
+            pid = project.get("privy_id")
+            if pid:
+                candidate_owners.add(pid)
+
+        verified_owners: set[str] = set()
+        if candidate_owners:
+            try:
+                merch = (
+                    supabase.table("merchants")
+                    .select("owner_privy_id, stripe_connect_status")
+                    .in_("owner_privy_id", list(candidate_owners))
+                    .eq("stripe_connect_status", "verified")
+                    .execute()
+                )
+                verified_owners = {
+                    m["owner_privy_id"] for m in (merch.data or [])
+                    if m.get("owner_privy_id")
+                }
+            except Exception as exc:
+                print(f"[checkout] recent-sales verified-merchant gate lookup failed: {exc!r}")
+                verified_owners = set()
+
         sales = []
-        for row in (res.data or []):
+        for row in rows:
             # Real-Stripe-only: skip seed rows that have no Stripe id.
             if not (row.get("stripe_session_id") or row.get("stripe_payment_intent_id")):
                 continue
             offer = row.get("offers") or {}
             project = offer.get("projects") or {}
             # Hard-exclude sales whose project is hidden from the public
-            # directory. Orphaned sales (null project) are included —
-            # they can't be affirmatively hidden, so we default to
-            # showing them rather than silently swallowing them.
+            # directory.
             if project.get("visibility") == "hidden":
+                continue
+            # Stripe-verified gate (see above). Excludes 'connected'-only
+            # merchants and orphaned (null-owner) sales.
+            if project.get("privy_id") not in verified_owners:
                 continue
             sales.append({
                 "id": row["id"],

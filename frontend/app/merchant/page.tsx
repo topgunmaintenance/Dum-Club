@@ -122,6 +122,9 @@ export default function MerchantPage() {
   //. most often surfaces while live OAuth is still being set up).
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [stripeStatusError, setStripeStatusError] = useState<string | null>(null);
+  // True while a manual "Check status" re-poll is in flight, so the
+  // button can show a busy label and prevent double-taps.
+  const [checkingStripe, setCheckingStripe] = useState(false);
 
   // Stripe Connect return banner. Set from `?stripe=connected` or
   // `?stripe=error&reason=<code>` which the /merchant/stripe-callback
@@ -322,6 +325,22 @@ export default function MerchantPage() {
       }
     } catch (err) {
       setStripeStatusError(err instanceof Error ? err.message : "Network error");
+    }
+  }
+
+  // Manual re-check of Stripe verification. After a merchant finishes
+  // Stripe onboarding their account can sit in "still reviewing" for a
+  // while before it flips to verified; this lets them re-pull the live
+  // status on demand instead of waiting blind. loadStripeStatus writes
+  // the resolved status back to the merchant row, so a successful
+  // re-check immediately updates the published/discoverable messaging.
+  async function recheckStripeStatus() {
+    setCheckingStripe(true);
+    try {
+      const t = await getToken();
+      if (t) await loadStripeStatus(t);
+    } finally {
+      setCheckingStripe(false);
     }
   }
 
@@ -906,9 +925,19 @@ export default function MerchantPage() {
                   Stripe connected
                 </div>
                 <div className="mt-1 text-xs text-brand-teal">
-                  We'll show &ldquo;verified&rdquo; below as soon as Stripe
-                  finishes reviewing your account.
+                  Stripe may take a few minutes to finish checking your
+                  account. You show up on the Discover page once they say
+                  you are ready to take payments. Tap Check status to see
+                  where you are.
                 </div>
+                <button
+                  type="button"
+                  onClick={recheckStripeStatus}
+                  disabled={checkingStripe}
+                  className="mt-3 inline-flex items-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover hover:text-white disabled:opacity-50"
+                >
+                  {checkingStripe ? "Checking..." : "Check status"}
+                </button>
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
@@ -992,56 +1021,107 @@ export default function MerchantPage() {
             a confirmation badge when it's live + approved. Backend gates
             on description + offer + Stripe Connect — the 400 detail is
             rendered inline below the button when a gate fails. */}
-        {firstProject && firstProject.status === "live" && firstProject.review_status === "approved" && (
-          <div className="rounded-2xl border border-brand-teal bg-brand-teal-soft px-5 py-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">✓</span>
-                <div>
-                  <div className="text-sm font-bold text-brand-teal">Storefront published</div>
-                  <div className="text-xs text-brand-teal/60">
-                    Customers can buy from your shop. Founding storefronts publish automatically; everyone else publishes here.
+        {firstProject && (() => {
+          const isPubliclyLive =
+            firstProject.status === "live" && firstProject.review_status === "approved";
+          // Discoverability now also requires a Stripe-verified merchant
+          // (the /discover gate). Read the live status first, fall back to
+          // the cached merchant row. A storefront can be "published"
+          // (live + approved) yet still be off Discover until Stripe
+          // finishes verifying — surface that honestly instead of a flat
+          // "published" badge that over-promises.
+          const stripeVerified =
+            stripeStatus?.status === "verified" ||
+            merchant?.stripe_connect_status === "verified";
+
+          // Published AND Stripe-verified: truly on Discover.
+          if (isPubliclyLive && stripeVerified) {
+            return (
+              <div className="rounded-2xl border border-brand-teal bg-brand-teal-soft px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">✓</span>
+                    <div>
+                      <div className="text-sm font-bold text-brand-teal">Storefront published</div>
+                      <div className="text-xs text-brand-teal/60">
+                        Customers can find you on Discover and buy from your shop.
+                      </div>
+                    </div>
                   </div>
+                  <button
+                    onClick={unpublishStorefront}
+                    disabled={publishing}
+                    className="text-xs font-medium text-brand-teal/70 underline-offset-4 transition hover:text-brand-teal hover:underline disabled:opacity-50"
+                  >
+                    Move to draft
+                  </button>
                 </div>
+                {publishError && (
+                  <p className="mt-3 text-xs text-state-live">{publishError}</p>
+                )}
               </div>
-              <button
-                onClick={unpublishStorefront}
-                disabled={publishing}
-                className="text-xs font-medium text-brand-teal/70 underline-offset-4 transition hover:text-brand-teal hover:underline disabled:opacity-50"
-              >
-                Move to draft
-              </button>
-            </div>
-            {publishError && (
-              <p className="mt-3 text-xs text-state-live">{publishError}</p>
-            )}
-          </div>
-        )}
-        {firstProject && !(firstProject.status === "live" && firstProject.review_status === "approved") && (
-          <div className="rounded-2xl border border-default bg-surface-card p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Storefront status</div>
-                <div className="mt-1 text-sm font-semibold text-primary">Draft · not published yet</div>
+            );
+          }
+
+          // Published but NOT yet Stripe-verified: live as a page but
+          // hidden from Discover until Stripe finishes. Tell them plainly
+          // and give them the re-check action.
+          if (isPubliclyLive && !stripeVerified) {
+            return (
+              <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-500">Storefront status</div>
+                    <div className="mt-1 text-sm font-semibold text-primary">Published, but not on Discover yet</div>
+                    <div className="mt-1 text-xs text-secondary">
+                      Your shop page is live. To show up on the Discover page,
+                      Stripe needs to finish checking your account so you can
+                      take payments. This usually takes a few minutes.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={recheckStripeStatus}
+                    disabled={checkingStripe}
+                    className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+                  >
+                    {checkingStripe ? "Checking..." : "Check status"}
+                  </button>
+                </div>
+                {publishError && (
+                  <p className="mt-3 text-xs text-state-live">{publishError}</p>
+                )}
               </div>
-              <button
-                onClick={publishStorefront}
-                disabled={publishing}
-                className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
-              >
-                {publishing ? "Publishing..." : "Publish storefront"}
-              </button>
+            );
+          }
+
+          // Draft: not published yet.
+          return (
+            <div className="rounded-2xl border border-default bg-surface-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Storefront status</div>
+                  <div className="mt-1 text-sm font-semibold text-primary">Draft · not published yet</div>
+                </div>
+                <button
+                  onClick={publishStorefront}
+                  disabled={publishing}
+                  className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+                >
+                  {publishing ? "Publishing..." : "Publish storefront"}
+                </button>
+              </div>
+              {publishError && (
+                <p className="mt-3 text-xs text-state-live">{publishError}</p>
+              )}
+              {!publishError && (
+                <p className="mt-3 text-[11px] text-secondary">
+                  Connect Stripe, write a description, and add at least one offer to publish your storefront on DUM Club.
+                </p>
+              )}
             </div>
-            {publishError && (
-              <p className="mt-3 text-xs text-state-live">{publishError}</p>
-            )}
-            {!publishError && (
-              <p className="mt-3 text-[11px] text-secondary">
-                Connect Stripe, write a description, and add at least one offer to publish your storefront on DUM Club.
-              </p>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         {/* Next Step — shared component, single source of truth. The
             detailed Launch Checklist below it covers the same ground
