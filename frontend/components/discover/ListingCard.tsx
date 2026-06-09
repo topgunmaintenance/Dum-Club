@@ -71,12 +71,13 @@ type ListingCardProps = {
 export function ListingCard({ project, index, marketSnapshot, isPulsing }: ListingCardProps) {
   const offers = offerCount(project);
 
-  // Card should not render without offers (filtered upstream, but guard).
-  // Verified founding merchants bypass: their offers live in the `offers`
-  // table, not store_items JSONB — the card still renders, just without
-  // the "N offers" badge and price label. Mirrors isDiscoverable() and
-  // /api/projects/public Pass 2 contract.
-  if (offers === 0 && !project.verified) return null;
+  // Card should not render without offers (filtered upstream by
+  // filterProjects + isDiscoverable, but kept as a defensive guard).
+  // Reads hasOffers which honors both sources after PR #374: the modern
+  // active_offer_count enriched onto the project payload and the legacy
+  // store_items JSONB. Verified founding merchants bypass entirely so
+  // the verified badge always renders even on a zero-offer card.
+  if (!hasOffers(project) && !project.verified) return null;
 
   const emoji = getProjectEmoji(project, index);
   const accent = getAccent(index);
