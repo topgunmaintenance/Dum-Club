@@ -472,7 +472,21 @@ async def project_gated_chat(
     free_limit = 1
     holder_unlimited = bool(project.get("holder_ai_unlimited", True))
 
-    session_id = req.session_id or x_session_id or f"anon:{req.project_id}"
+    # PR B / Issue 2 fix: require a per-caller session_id so anonymous
+    # callers can't share a global anon:<project_id> counter row. Accept
+    # the session_id from either the request body (frontend default at
+    # frontend/app/project/[id]/page.tsx:2065) or the X-Session-Id
+    # header (header-based API consumers). Reject any caller that sends
+    # neither — the previous `or f"anon:{req.project_id}"` fallback meant
+    # one anonymous tester could exhaust every other anonymous visitor's
+    # quota for the same project.
+    raw_session = (req.session_id or x_session_id or "").strip()
+    if not raw_session:
+        raise HTTPException(
+            status_code=400,
+            detail="A session_id is required.",
+        )
+    session_id = raw_session
     wallet_address = req.wallet_address
 
     # SIM_ mints have no on-chain presence — wallet_holds_project_token would
