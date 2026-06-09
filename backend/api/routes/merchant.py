@@ -270,6 +270,7 @@ def _token_symbol_from_slug(slug: str) -> str:
 
 def _create_storefront_project(
     supabase, *, privy_id: str, business_name: str, business_profile_id: Optional[str],
+    is_founding: bool = False,
 ) -> Optional[dict]:
     """Insert a `projects` row tied to this merchant so the rest of the
     dashboard ("Add your first offer", install snippet, Go Live) has
@@ -286,6 +287,16 @@ def _create_storefront_project(
     Defaults match CLAUDE.md doctrine: status='draft' so it doesn't show
     on Discover until the merchant actually goes live; review_status
     'pending' until the operator approves; no token (token_status='inactive').
+
+    Founding override: when is_founding=True (caller passes the resolved
+    founding_merchant flag from the just-inserted merchants row), the
+    row is created at status='live' + review_status='approved' +
+    verified=True + is_verified=True. This honors CLAUDE.md §1/§10's
+    founding-100 promise without an ops approval step. The discoverable-
+    description gate (frontend isDiscoverable + the backend equivalent
+    shipping in a sibling PR) still requires the merchant to write a
+    real description before they surface on /discover — auto-approve
+    only removes the manual review bottleneck.
     """
     base_slug = _slugify_business_name(business_name) or "merchant"
     candidates = [base_slug] + [f"{base_slug}-{n}" for n in range(2, 6)]
@@ -380,6 +391,17 @@ def _create_storefront_project(
         "store_items": [],
         "ai_output": {},
     }
+
+    # Founding-100 doctrine override (CLAUDE.md §1/§10). Forward-only —
+    # existing draft rows from before this code path are not retroactively
+    # flipped. Description gate (≥20 chars) still applies separately, so
+    # an empty-description founder still won't render on /discover until
+    # they actually write something.
+    if is_founding:
+        base_row["status"] = "live"
+        base_row["review_status"] = "approved"
+        base_row["verified"] = True
+        base_row["is_verified"] = True
 
     last_exc: Optional[Exception] = None
     for idx, slug in enumerate(candidates):
@@ -596,6 +618,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             privy_id=privy_id,
             business_name=body.business_name,
             business_profile_id=bp_id,
+            is_founding=bool(inserted.get("founding_merchant")),
         )
         if project_row:
             inserted["_storefront_project_id"] = project_row.get("id")
