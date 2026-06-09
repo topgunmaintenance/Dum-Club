@@ -741,6 +741,19 @@ async def list_public_projects():
 
     projects = list(by_id.values())
 
+    # Mirror the frontend isDiscoverable description gate (filters.ts:97-98)
+    # plus the live bypass (filters.ts:95). Live broadcasts surface
+    # regardless of description length; everything else needs >=20 chars so
+    # /discover doesn't show shells. After PR #364 auto-approves founding
+    # storefronts at signup, this gate is what guarantees a founding row
+    # with an empty description still doesn't appear until the merchant
+    # writes one. Single source of truth at the backend per owner D3.
+    projects = [
+        p for p in projects
+        if p.get("is_live") is True
+        or len((p.get("description") or "").strip()) >= 20
+    ]
+
     # Sort: pinned first (sort_order non-null, ascending, 0 = top),
     # then by created_at desc. Pinned verified founding merchants
     # land above the organic firehose.
