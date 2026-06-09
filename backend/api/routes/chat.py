@@ -32,6 +32,26 @@ _anthropic_client = None
 if anthropic and _CHAT_ANTHROPIC_API_KEY:
     _anthropic_client = anthropic.Anthropic(api_key=_CHAT_ANTHROPIC_API_KEY)
 
+# Startup observability (PR C, mirrors merchant.py:102-111 Stripe pattern).
+# Lets the operator answer "is the AI key set?" from Railway logs alone
+# without any live probe. Prints booleans + model names + the Ollama host
+# (all non-secret); the actual API keys are NEVER printed. The conditional
+# warnings disambiguate "SDK not installed" from "key not set" so a missing
+# requirement is named precisely instead of inferred from a generic 503.
+print(
+    f"[chat] AI config at startup: "
+    f"anthropic_client_built={_anthropic_client is not None} "
+    f"anthropic_model={_CHAT_ANTHROPIC_MODEL!r} "
+    f"openai_fallback_configured={bool(_CHAT_OPENAI_API_KEY)} "
+    f"ollama_host={OLLAMA_HOST!r} "
+    f"ollama_model={OLLAMA_MODEL!r}"
+)
+if _anthropic_client is None:
+    if anthropic is None:
+        print("[chat] WARNING: anthropic SDK not installed. Falling back to OpenAI then Ollama.")
+    elif not _CHAT_ANTHROPIC_API_KEY:
+        print("[chat] WARNING: ANTHROPIC_API_KEY is not set. Falling back to OpenAI then Ollama.")
+
 
 class ChatRequest(BaseModel):
     message: str
