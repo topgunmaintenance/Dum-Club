@@ -22,6 +22,12 @@ export type Project = {
   token_utility?: string | null;
   promo_copy?: string | null;
   store_items?: any[] | null;
+  // Count of offers in the modern `offers` table for this project,
+  // enriched by /api/projects/public after the 3-pass union. Lets the
+  // frontend isDiscoverable gate honor merchants whose offers live in
+  // the modern table (PR #354 path) without falling back to the legacy
+  // store_items JSONB. Optional: absent on older API responses.
+  active_offer_count?: number | null;
   owner_verified?: boolean;
   verified?: boolean;
   is_verified?: boolean;

@@ -754,6 +754,37 @@ async def list_public_projects():
         or len((p.get("description") or "").strip()) >= 20
     ]
 
+    # Enrich each project with active_offer_count from the modern offers
+    # table (PR #354 server-mediated path). The frontend isDiscoverable
+    # gate at filters.ts:96 historically only checked store_items JSONB,
+    # which rejected modern-flow storefronts whose offers live in the
+    # offers table instead. Decorating the response payload here lets the
+    # frontend honor both sources without an extra round trip. Single
+    # bulk SELECT bounded by the post-3-pass project list (max ~50 rows),
+    # aggregated in Python so no Postgres function is needed.
+    project_ids = [p["id"] for p in projects if p.get("id")]
+    active_offer_counts: dict[str, int] = {}
+    if project_ids:
+        try:
+            offer_rows = (
+                supabase.table("offers")
+                .select("project_id")
+                .eq("is_active", True)
+                .in_("project_id", project_ids)
+                .execute()
+            )
+            for row in (offer_rows.data or []):
+                pid = row.get("project_id")
+                if pid:
+                    active_offer_counts[pid] = active_offer_counts.get(pid, 0) + 1
+        except Exception as exc:
+            # Non-fatal: failure to enrich falls back to active_offer_count=0
+            # for all rows. Frontend gate then uses store_items only (today's
+            # behavior). Logged so the operator sees the regression.
+            print(f"[projects] active_offer_count enrichment failed: {exc!r}")
+    for p in projects:
+        p["active_offer_count"] = active_offer_counts.get(p.get("id", ""), 0)
+
     # Sort: pinned first (sort_order non-null, ascending, 0 = top),
     # then by created_at desc. Pinned verified founding merchants
     # land above the organic firehose.
