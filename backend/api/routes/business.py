@@ -7,13 +7,37 @@ from __future__ import annotations
 import re
 import time
 
-from fastapi import APIRouter, File, Form, HTTPException, Depends, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Depends, Query, UploadFile
 from pydantic import BaseModel
 from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user
 
 router = APIRouter()
+
+
+def _resolve_owned_business(supabase, privy_id: str, business_id: Optional[str]) -> dict:
+    """Resolve the caller's business profile, scoped by an optional
+    business_id (multi-business STEP 1.5).
+
+    - business_id given: match on id AND owner_privy_id, so a non-owner's
+      id never resolves (fail-closed — 404, never admit a non-owner).
+    - business_id omitted: the owner's first/only business
+      (ORDER BY created_at), preserving single-business behavior exactly.
+
+    Raises 404 when nothing matches.
+    """
+    q = (
+        supabase.table("business_profiles")
+        .select("*")
+        .eq("owner_privy_id", privy_id)
+    )
+    if business_id:
+        q = q.eq("id", business_id)
+    rows = q.order("created_at").limit(1).execute().data
+    if not rows:
+        raise HTTPException(status_code=404, detail="Business not found")
+    return rows[0]
 
 
 class BusinessProfileCreate(BaseModel):
@@ -45,7 +69,34 @@ class VerificationRequest(BaseModel):
 # ── Get my business profile ──
 
 @router.get("/me")
-async def get_my_business(current_user: dict = Depends(get_current_user)):
+async def get_my_business(
+    business_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    supabase = get_client()
+    # Scope to the chosen business when business_id is given; otherwise the
+    # owner's first/only business (single-business behavior unchanged).
+    q = (
+        supabase.table("business_profiles")
+        .select("*")
+        .eq("owner_privy_id", privy_id)
+    )
+    if business_id:
+        q = q.eq("id", business_id)
+    res = q.order("created_at").limit(1).execute()
+    if not res.data:
+        return {"profile": None}
+    return {"profile": res.data[0]}
+
+
+# ── List all my business profiles (multi-business switcher) ──
+
+@router.get("/list")
+async def list_my_businesses(current_user: dict = Depends(get_current_user)):
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Invalid auth")
@@ -53,14 +104,12 @@ async def get_my_business(current_user: dict = Depends(get_current_user)):
     supabase = get_client()
     res = (
         supabase.table("business_profiles")
-        .select("*")
+        .select("id, business_name, category, logo_url, cover_image_url, verification_status, created_at")
         .eq("owner_privy_id", privy_id)
-        .limit(1)
+        .order("created_at")
         .execute()
     )
-    if not res.data:
-        return {"profile": None}
-    return {"profile": res.data[0]}
+    return {"businesses": res.data or []}
 
 
 # ── Business analytics (owner only) ──
@@ -485,6 +534,7 @@ async def create_business(
 @router.patch("/update")
 async def update_business(
     body: BusinessProfileUpdate,
+    business_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
     privy_id = current_user.get("sub")
@@ -493,17 +543,8 @@ async def update_business(
 
     supabase = get_client()
 
-    existing = (
-        supabase.table("business_profiles")
-        .select("id")
-        .eq("owner_privy_id", privy_id)
-        .limit(1)
-        .execute()
-    )
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="No business profile found")
-
-    biz_id = existing.data[0]["id"]
+    # Scope to the chosen business (fail-closed); default to first/only.
+    biz_id = _resolve_owned_business(supabase, privy_id, business_id)["id"]
     updates = {}
     if body.business_name is not None:
         updates["business_name"] = body.business_name.strip()
@@ -537,6 +578,7 @@ async def update_business(
 @router.post("/request-verification")
 async def request_verification(
     body: VerificationRequest,
+    business_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
     privy_id = current_user.get("sub")
@@ -545,17 +587,8 @@ async def request_verification(
 
     supabase = get_client()
 
-    existing = (
-        supabase.table("business_profiles")
-        .select("id, verification_status")
-        .eq("owner_privy_id", privy_id)
-        .limit(1)
-        .execute()
-    )
-    if not existing.data:
-        raise HTTPException(status_code=404, detail="No business profile found")
-
-    biz = existing.data[0]
+    # Scope to the chosen business (fail-closed); default to first/only.
+    biz = _resolve_owned_business(supabase, privy_id, business_id)
     if biz["verification_status"] == "verified":
         return {"status": "already_verified", "profile": biz}
     if biz["verification_status"] == "pending":
@@ -615,6 +648,7 @@ def _safe_extension(filename: Optional[str], default: str = "jpg") -> str:
 async def upload_business_image(
     slot: str = Form(...),
     file: UploadFile = File(...),
+    business_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
 ):
     """Server-mediated logo / cover image upload.
@@ -656,23 +690,10 @@ async def upload_business_image(
 
     supabase = get_client()
 
-    # Resolve the caller's business_profile_id from owner_privy_id.
-    # Mirrors the ownership check pattern PATCH /api/business/update
-    # uses above — 404 if no profile, so the merchant must finish biz
-    # signup before uploading brand images.
-    bp_res = (
-        supabase.table("business_profiles")
-        .select("id")
-        .eq("owner_privy_id", privy_id)
-        .limit(1)
-        .execute()
-    )
-    if not bp_res.data:
-        raise HTTPException(
-            status_code=404,
-            detail="No business profile found. Set up your business first.",
-        )
-    biz_id = bp_res.data[0]["id"]
+    # Resolve the target business, scoped by business_id (fail-closed);
+    # default to the owner's first/only business. The storage path is
+    # keyed on biz_id below, so the upload lands under the chosen brand.
+    biz_id = _resolve_owned_business(supabase, privy_id, business_id)["id"]
 
     ext = _safe_extension(file.filename)
     path = f"business-images/{biz_id}/{slot}-{int(time.time() * 1000)}.{ext}"

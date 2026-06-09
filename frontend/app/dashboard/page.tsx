@@ -97,6 +97,9 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [dumBalance, setDumBalance] = useState(0);
   const [bizProfile, setBizProfile] = useState<any>(null);
+  // All of the owner's businesses (multi-business switcher). The dropdown
+  // only renders when length > 1, so single-business owners see no change.
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [bizLoading, setBizLoading] = useState(false);
   // Drive Your Market Analytics — merchant subscription_tier drives the
   // tier gate. Loaded once when the user is known; null while loading.
@@ -179,7 +182,8 @@ export default function DashboardPage() {
       .finally(() => loadProjects());
   }, [user?.privyId, loadProjects]);
 
-  // Load business profile
+  // Load business profile(s). Fetches the full list for the switcher,
+  // then loads the first business's full profile into bizProfile.
   useEffect(() => {
     if (!user?.privyId) return;
     async function loadBiz() {
@@ -187,7 +191,17 @@ export default function DashboardPage() {
         const token = await getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}/api/business/me`, { headers });
+        let list: any[] = [];
+        const listRes = await fetch(`${API_BASE}/api/business/list`, { headers });
+        if (listRes.ok) {
+          list = (await listRes.json()).businesses || [];
+          setBusinesses(list);
+        }
+        // Load the first business's full profile (no business_id => first).
+        const meUrl = list[0]?.id
+          ? `${API_BASE}/api/business/me?business_id=${encodeURIComponent(list[0].id)}`
+          : `${API_BASE}/api/business/me`;
+        const res = await fetch(meUrl, { headers });
         if (res.ok) {
           const data = await res.json();
           setBizProfile(data.profile || null);
@@ -198,6 +212,24 @@ export default function DashboardPage() {
     }
     loadBiz();
   }, [user?.privyId]);
+
+  // Switch the active business — loads its full profile so the card +
+  // image uploader + verification target the chosen brand.
+  async function selectBusiness(id: string) {
+    try {
+      const token = await getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(
+        `${API_BASE}/api/business/me?business_id=${encodeURIComponent(id)}`,
+        { headers },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setBizProfile(data.profile || null);
+      }
+    } catch {}
+  }
 
   // Load merchant record (for the Drive Your Market Analytics tier gate)
   useEffect(() => {
@@ -551,6 +583,25 @@ export default function DashboardPage() {
         {/* Business Profile */}
         {user && (
           <div className="mb-6">
+            {/* Business switcher — only when the owner has more than one.
+                Single-business owners never see this. */}
+            {businesses.length > 1 && (
+              <div className="mb-3 flex items-center gap-2">
+                <label htmlFor="biz-switcher" className="text-[11px] font-bold uppercase tracking-[0.15em] text-secondary">
+                  Business
+                </label>
+                <select
+                  id="biz-switcher"
+                  value={bizProfile?.id ?? ""}
+                  onChange={(e) => selectBusiness(e.target.value)}
+                  className="rounded-lg border border-default bg-surface-card px-3 py-1.5 text-sm text-primary outline-none transition hover:border-strong focus:border-brand-teal"
+                >
+                  {businesses.map((b) => (
+                    <option key={b.id} value={b.id}>{b.business_name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {bizProfile ? (
               <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -580,7 +631,10 @@ export default function DashboardPage() {
                       onClick={async () => {
                         try {
                           const token = await getToken();
-                          const res = await fetch(`${API_BASE}/api/business/request-verification`, {
+                          const verifyUrl = bizProfile.id
+                            ? `${API_BASE}/api/business/request-verification?business_id=${encodeURIComponent(bizProfile.id)}`
+                            : `${API_BASE}/api/business/request-verification`;
+                          const res = await fetch(verifyUrl, {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
