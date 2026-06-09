@@ -74,6 +74,7 @@ export default function MerchantPage() {
   // Signup form
   const [bizName, setBizName] = useState("");
   const [bizType, setBizType] = useState("");
+  const [bizDescription, setBizDescription] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   // Tier selected on /pricing or /upgrade (CTA hrefs carry `?tier=`).
@@ -317,6 +318,10 @@ export default function MerchantPage() {
   async function handleSignup() {
     if (!bizName.trim()) { setError("Business name required"); return; }
     if (!bizType) { setError("Pick a category"); return; }
+    if (bizDescription.trim().length < 20) {
+      setError("Add a short description (at least 20 characters) so people know what you do.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -330,6 +335,7 @@ export default function MerchantPage() {
         body: JSON.stringify({
           business_name: bizName.trim(),
           business_type: bizType.trim() || null,
+          description: bizDescription.trim(),
           location_city: city.trim() || null,
           location_state: state.trim() || null,
           // Only include tier when one was selected via /pricing or
@@ -538,6 +544,32 @@ export default function MerchantPage() {
                 />
               </div>
               <div>
+                <label className="mb-1.5 block text-xs font-medium text-secondary">What does your business do?</label>
+                <textarea
+                  value={bizDescription}
+                  onChange={(e) => setBizDescription(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="e.g. Family-owned diner in Morristown serving classic American breakfast and lunch."
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                />
+                <p
+                  className={`mt-1.5 text-xs ${
+                    bizDescription.trim().length === 0
+                      ? "text-muted"
+                      : bizDescription.trim().length < 20
+                      ? "text-state-live"
+                      : "text-secondary"
+                  }`}
+                >
+                  {bizDescription.trim().length === 0
+                    ? "At least 20 characters. This shows on your storefront."
+                    : bizDescription.trim().length < 20
+                    ? `A few more words helps people understand what you do. (${bizDescription.trim().length}/20)`
+                    : "Looks good."}
+                </p>
+              </div>
+              <div>
                 <label className="mb-1.5 block text-xs font-medium text-secondary">Category</label>
                 <select
                   value={bizType}
@@ -552,7 +584,7 @@ export default function MerchantPage() {
               </div>
               <button
                 onClick={handleSignup}
-                disabled={saving || !bizName.trim() || !bizType}
+                disabled={saving || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
                 className="w-full rounded-xl bg-brand-teal py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover: disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving

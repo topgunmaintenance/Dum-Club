@@ -224,6 +224,14 @@ FOUNDING_CAP = 100
 class MerchantSignup(BaseModel):
     business_name: str
     business_type: Optional[str] = None
+    # Merchant-supplied "what we do" string. Stored on the auto-created
+    # project row. The /merchant signup form gates client-side at >=20
+    # chars; the backend stores whatever it receives (any length, or
+    # absent — back-compat with older clients and admin/seed paths).
+    # Visibility on /discover is enforced separately by the >=20-char
+    # gate in list_public_projects — single source of truth for the
+    # discovery rule, signup itself stays frictionless.
+    description: Optional[str] = None
     location_city: Optional[str] = None
     location_state: Optional[str] = None
     # Tier selected on /pricing or /upgrade. Optional; defaults to "growth"
@@ -270,7 +278,7 @@ def _token_symbol_from_slug(slug: str) -> str:
 
 def _create_storefront_project(
     supabase, *, privy_id: str, business_name: str, business_profile_id: Optional[str],
-    is_founding: bool = False,
+    is_founding: bool = False, description: Optional[str] = None,
 ) -> Optional[dict]:
     """Insert a `projects` row tied to this merchant so the rest of the
     dashboard ("Add your first offer", install snippet, Go Live) has
@@ -365,7 +373,7 @@ def _create_storefront_project(
     base_row = {
         "name": title,
         "title": title,
-        "description": "",
+        "description": (description or "").strip(),
         "category": "service",
         "template_type": "local_service",
         "status": "draft",
@@ -619,6 +627,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             business_name=body.business_name,
             business_profile_id=bp_id,
             is_founding=bool(inserted.get("founding_merchant")),
+            description=body.description,
         )
         if project_row:
             inserted["_storefront_project_id"] = project_row.get("id")
