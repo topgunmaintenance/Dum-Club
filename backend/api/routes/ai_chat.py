@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from db.supabase import get_client
+from api.routes.projects import resolve_project_uuid
 
 try:
     import anthropic
@@ -342,32 +343,49 @@ async def project_chat(req: ProjectChatRequest, debug: bool = Query(False)):
 
     sb = get_client()
 
-    # Fetch project
-    proj_res = (
-        sb.table("projects")
-        .select("id, title, name, description, template_type, category")
-        .eq("id", req.project_id)
-        .eq("is_deleted", False)
-        .limit(1)
-        .execute()
-    )
-    if not proj_res.data:
-        raise HTTPException(status_code=404, detail="Business not found")
-    project = proj_res.data[0]
+    # Storefront URLs are slug-addressed (/project/website-designer) and
+    # the AiSalesChat bubble forwards the slug verbatim as project_id.
+    # The prior .eq("id", req.project_id) compared the slug against the
+    # uuid column and raised Postgres 42883/22P02 — uncaught, which
+    # stripped CORS on the error path so the visitor's every send got the
+    # canned "Having trouble right now" reply. Same slug→UUID class
+    # PR #361/#362 fixed; this adopts the same resolver + try/except.
+    try:
+        resolved_id = resolve_project_uuid(sb, req.project_id)
+        if not resolved_id:
+            raise HTTPException(status_code=404, detail="Business not found")
 
-    # Fetch active offers
+        proj_res = (
+            sb.table("projects")
+            .select("id, title, name, description, template_type, category")
+            .eq("id", resolved_id)
+            .eq("is_deleted", False)
+            .limit(1)
+            .execute()
+        )
+        if not proj_res.data:
+            raise HTTPException(status_code=404, detail="Business not found")
+        project = proj_res.data[0]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[ai-chat] project lookup failed for project={req.project_id}: {exc!r}")
+        raise HTTPException(status_code=500, detail="AI response failed")
+
+    # Fetch active offers (keyed on the resolved UUID, not the raw slug).
     offers_res = (
         sb.table("offers")
         .select("title, description, price_usd, offer_type")
-        .eq("project_id", req.project_id)
+        .eq("project_id", resolved_id)
         .eq("is_active", True)
         .order("price_usd", desc=False)
         .execute()
     )
     offers = offers_res.data or []
 
-    # Session memory
-    skey = _session_key(req.project_id, req.session_id)
+    # Session memory — key on the resolved UUID so a visitor's session is
+    # canonical across slug / uuid / share-link forms of the same page.
+    skey = _session_key(resolved_id, req.session_id)
     session = _get_session(skey)
 
     # Classify intent
