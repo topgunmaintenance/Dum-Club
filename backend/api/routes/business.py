@@ -4,9 +4,11 @@ Business Profiles API — create, read, update, verify.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 
+import stripe
 from fastapi import APIRouter, File, Form, HTTPException, Depends, Query, UploadFile
 from pydantic import BaseModel
 from typing import Optional
@@ -14,6 +16,50 @@ from db.supabase import get_client
 from auth.privy import get_current_user
 
 router = APIRouter()
+
+
+# Curated MCC (Stripe merchant category code) -> create-business form
+# category. Covers the common ranges a small local business reports;
+# anything unmapped falls back to "General". Partial mapping is fine —
+# the merchant edits the prefilled value before saving.
+_MCC_TO_CATEGORY = {
+    # Food & Beverage
+    "5811": "Food & Beverage", "5812": "Food & Beverage", "5813": "Food & Beverage",
+    "5814": "Food & Beverage", "5499": "Food & Beverage", "5462": "Food & Beverage",
+    "5451": "Food & Beverage", "5411": "Food & Beverage",
+    # Retail
+    "5311": "Retail", "5300": "Retail", "5331": "Retail", "5399": "Retail",
+    "5999": "Retail", "5912": "Retail", "5942": "Retail", "5651": "Retail",
+    "5691": "Retail", "5944": "Retail",
+    # Technology
+    "5732": "Technology", "5734": "Technology", "5045": "Technology",
+    "7372": "Technology", "7379": "Technology",
+    # Health & Fitness
+    "8011": "Health & Fitness", "8021": "Health & Fitness", "8031": "Health & Fitness",
+    "8049": "Health & Fitness", "8062": "Health & Fitness", "8099": "Health & Fitness",
+    "7298": "Health & Fitness", "7997": "Health & Fitness",
+    # Creative
+    "7333": "Creative", "7929": "Creative", "5970": "Creative", "7221": "Creative",
+    "7338": "Creative",
+    # Education
+    "8211": "Education", "8220": "Education", "8241": "Education", "8244": "Education",
+    "8249": "Education", "8299": "Education",
+    # Gaming
+    "7994": "Gaming", "7993": "Gaming",
+    # Services
+    "7299": "Services", "7392": "Services", "7349": "Services", "1520": "Services",
+    "1711": "Services", "7538": "Services", "7531": "Services", "7549": "Services",
+    "4121": "Services", "7230": "Services", "7211": "Services",
+}
+
+
+def _stripe_attr(obj, key):
+    """Read a key from a Stripe object or dict, returning None when absent."""
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj.get(key)
+    return getattr(obj, key, None)
 
 
 def _resolve_owned_business(supabase, privy_id: str, business_id: Optional[str]) -> dict:
@@ -527,6 +573,96 @@ async def create_business(
 
     print(f"[business] created profile for {privy_id}: {name}")
     return {"profile": res.data[0]}
+
+
+# ── Stripe Connect prefill (read-only) ──
+
+@router.get("/stripe-prefill")
+async def stripe_prefill(current_user: dict = Depends(get_current_user)):
+    """Read-only business-identity suggestions from the caller's connected
+    Stripe account, so creating a business profile becomes photos-only.
+
+    Additive + read-only: NO merchants/business_profiles write, NO schema.
+    Owner-scoped (the authenticated caller's own merchant row) — a caller
+    can never read another owner's Stripe data. Returns {connected:false}
+    (never an error leak) when there's no connected Stripe or the lookup
+    fails. The frontend prefills only EMPTY form fields, non-destructively.
+
+    Returns: {connected: bool, status: str|None, suggested: {...}}
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    supabase = get_client()
+    m = (
+        supabase.table("merchants")
+        .select("stripe_connect_id")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    connect_id = m.data[0].get("stripe_connect_id") if m.data else None
+    if not connect_id:
+        return {"connected": False, "status": None, "suggested": {}}
+
+    secret = os.getenv("STRIPE_SECRET_KEY", "").strip()
+    if not secret:
+        return {"connected": False, "status": None, "suggested": {}}
+    stripe.api_key = secret
+
+    try:
+        account = stripe.Account.retrieve(connect_id)
+    except Exception as exc:
+        # Fail-closed: never surface a raw error; the form just stays blank.
+        print(f"[business] stripe-prefill Account.retrieve failed for {connect_id}: {type(exc).__name__}")
+        return {"connected": False, "status": None, "suggested": {}}
+
+    bp = _stripe_attr(account, "business_profile") or {}
+    settings = _stripe_attr(account, "settings")
+    dashboard = _stripe_attr(settings, "dashboard")
+    company = _stripe_attr(account, "company")
+    individual = _stripe_attr(account, "individual")
+
+    # business_name fallback chain.
+    name = (
+        _stripe_attr(bp, "name")
+        or _stripe_attr(dashboard, "display_name")
+        or _stripe_attr(company, "name")
+    )
+    if not name and individual is not None:
+        fn = _stripe_attr(individual, "first_name") or ""
+        ln = _stripe_attr(individual, "last_name") or ""
+        name = (f"{fn} {ln}").strip() or None
+
+    contact_email = _stripe_attr(bp, "support_email") or _stripe_attr(account, "email")
+    website = _stripe_attr(bp, "url")
+    short_description = _stripe_attr(bp, "product_description")
+    mcc = _stripe_attr(bp, "mcc")
+    category = _MCC_TO_CATEGORY.get(str(mcc), "General") if mcc else "General"
+
+    # Derived status (read-only mirror of the status endpoint's logic).
+    charges = bool(_stripe_attr(account, "charges_enabled"))
+    payouts = bool(_stripe_attr(account, "payouts_enabled"))
+    details = bool(_stripe_attr(account, "details_submitted"))
+    if charges and payouts and details:
+        status = "verified"
+    elif details:
+        status = "pending_verification"
+    else:
+        status = "connected"
+
+    return {
+        "connected": True,
+        "status": status,
+        "suggested": {
+            "business_name": name or "",
+            "contact_email": contact_email or "",
+            "website": website or "",
+            "short_description": short_description or "",
+            "category": category,
+        },
+    }
 
 
 # ── Update business profile ──

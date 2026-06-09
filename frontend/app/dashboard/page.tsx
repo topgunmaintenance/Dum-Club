@@ -119,6 +119,9 @@ export default function DashboardPage() {
   const [bizDesc, setBizDesc] = useState("");
   const [bizEmail, setBizEmail] = useState("");
   const [bizWebsite, setBizWebsite] = useState("");
+  // True when the create-business form was prefilled from the connected
+  // Stripe account, so we can show the "edit before saving" note.
+  const [prefilledFromStripe, setPrefilledFromStripe] = useState(false);
   const [bizSaving, setBizSaving] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -310,6 +313,32 @@ export default function DashboardPage() {
       }
     })();
   }, [bizProfile, user]);
+
+  // Open the create-business form and, when the owner has a connected
+  // Stripe account, prefill identity fields from it. Non-destructive:
+  // only fills fields that are still empty, never clobbers typed input.
+  async function openBizForm() {
+    setShowBizForm(true);
+    try {
+      const token = await getToken();
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/api/business/stripe-prefill`, { headers });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data?.connected || !data?.suggested) return;
+      const s = data.suggested;
+      let applied = false;
+      setBizName((v) => { if (!v.trim() && s.business_name?.trim()) { applied = true; return s.business_name.trim(); } return v; });
+      setBizEmail((v) => { if (!v.trim() && s.contact_email?.trim()) { applied = true; return s.contact_email.trim(); } return v; });
+      setBizWebsite((v) => { if (!v.trim() && s.website?.trim()) { applied = true; return s.website.trim(); } return v; });
+      setBizDesc((v) => { if (!v.trim() && s.short_description?.trim()) { applied = true; return s.short_description.trim(); } return v; });
+      setBizCategory((v) => { if ((!v || v === "General") && s.category && s.category !== "General") { applied = true; return s.category; } return v; });
+      if (applied) setPrefilledFromStripe(true);
+    } catch {
+      // Best-effort — a failed prefill just leaves the form blank.
+    }
+  }
 
   async function createBusiness() {
     if (!bizName.trim() || bizSaving) return;
@@ -717,6 +746,11 @@ export default function DashboardPage() {
                 {showBizForm ? (
                   <div className="space-y-3">
                     <div className="text-sm font-bold text-primary">Create your business profile</div>
+                    {prefilledFromStripe && (
+                      <p className="text-xs text-brand-teal">
+                        Prefilled from your Stripe account. Edit anything before saving.
+                      </p>
+                    )}
                     <input
                       value={bizName}
                       onChange={(e) => setBizName(e.target.value)}
@@ -747,6 +781,12 @@ export default function DashboardPage() {
                       rows={2}
                       className="w-full resize-none rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-default"
                     />
+                    <input
+                      value={bizWebsite}
+                      onChange={(e) => setBizWebsite(e.target.value)}
+                      placeholder="Website (optional)"
+                      className="w-full rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-default"
+                    />
                     <div className="flex gap-2">
                       <button
                         onClick={createBusiness}
@@ -770,7 +810,7 @@ export default function DashboardPage() {
                       <p className="mt-1 text-xs text-secondary">Add your business identity and get verified</p>
                     </div>
                     <button
-                      onClick={() => setShowBizForm(true)}
+                      onClick={openBizForm}
                       className="shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover"
                     >
                       Create Business Profile
