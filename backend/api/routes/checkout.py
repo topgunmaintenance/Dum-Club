@@ -2,6 +2,7 @@
 Checkout — Stripe payment intents, webhook, Solana wallet checkout,
 and order queries.
 """
+import asyncio
 import os
 import time
 from datetime import datetime, timezone
@@ -724,7 +725,12 @@ async def create_payment_intent(
                 ),
             },
         )
-    _assert_merchant_can_receive(s, merchant_stripe_id)
+    # Offloaded to a worker thread so the blocking Stripe Account.retrieve
+    # inside doesn't stall the async event loop on every checkout. The
+    # HTTPException it raises propagates correctly when awaited.
+    await asyncio.run_in_executor(
+        None, _assert_merchant_can_receive, s, merchant_stripe_id
+    )
 
     # ── Commission resolution (PR-COMM) ──────────────────────────
     # Resolve the per-merchant commission rate, then derive the integer
