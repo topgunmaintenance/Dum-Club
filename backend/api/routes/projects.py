@@ -1882,7 +1882,7 @@ async def update_project(
 
     project_res = (
         supabase.table("projects")
-        .select("id, owner_id")
+        .select("id, owner_id, privy_id")
         .eq("id", project_id)
         .eq("is_deleted", False)
         .limit(1)
@@ -1894,8 +1894,23 @@ async def update_project(
     project = project_res.data[0]
 
     if x_owner_id:
-        resolved = _resolve_owner_uuid(supabase, x_owner_id)
-        if resolved != project.get("owner_id"):
+        # 3-way ownership match, verbatim from _set_publication_status.
+        # The prior check compared only `_resolve_owner_uuid(...) ==
+        # owner_id`, which rejected wallet-less email/Google merchants:
+        # _resolve_owner_uuid bridges privy -> users.wallet_address ->
+        # profiles.id, so a NULL wallet returns None and the compare
+        # fails even though the account legitimately owns the row via
+        # privy_id. The listing + publish endpoints already admit by
+        # privy_id; this aligns update with them so "can see it" implies
+        # "can edit it". Admits more legitimate owners, rejects no one
+        # the old check accepted.
+        resolved_owner = _resolve_owner_uuid(supabase, x_owner_id)
+        owner_match = (
+            (project.get("owner_id") and project["owner_id"] == x_owner_id)
+            or (project.get("owner_id") and resolved_owner and project["owner_id"] == resolved_owner)
+            or (project.get("privy_id") and project["privy_id"] == x_owner_id)
+        )
+        if not owner_match:
             raise HTTPException(status_code=403, detail="Not the project owner")
 
     updates = {k: v for k, v in body.dict().items() if v is not None}
