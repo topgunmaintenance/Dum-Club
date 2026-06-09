@@ -4,6 +4,7 @@ Business Profiles API — create, read, update, verify.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import time
@@ -612,7 +613,9 @@ async def stripe_prefill(current_user: dict = Depends(get_current_user)):
     stripe.api_key = secret
 
     try:
-        account = stripe.Account.retrieve(connect_id)
+        account = await asyncio.run_in_executor(
+            None, stripe.Account.retrieve, connect_id
+        )
     except Exception as exc:
         # Fail-closed: never surface a raw error; the form just stays blank.
         print(f"[business] stripe-prefill Account.retrieve failed for {connect_id}: {type(exc).__name__}")

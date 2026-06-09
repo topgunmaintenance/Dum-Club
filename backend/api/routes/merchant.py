@@ -4,6 +4,7 @@ Merchant API — signup, Stripe Connect, Square OAuth, dashboard.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import os
@@ -1305,7 +1306,9 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
     stripe.api_key = _STRIPE_SECRET
 
     try:
-        account = stripe.Account.retrieve(connect_id)
+        account = await asyncio.run_in_executor(
+            None, stripe.Account.retrieve, connect_id
+        )
     except Exception as exc:
         print(f"[merchant] stripe-connect/status Account.retrieve failed for {connect_id}: {exc!r}")
         raise HTTPException(status_code=502, detail="stripe_account_retrieve_failed")
@@ -1455,7 +1458,10 @@ async def stripe_connect_callback(
     )
 
     try:
-        resp = stripe.OAuth.token(grant_type="authorization_code", code=code)
+        resp = await asyncio.run_in_executor(
+            None,
+            lambda: stripe.OAuth.token(grant_type="authorization_code", code=code),
+        )
     except stripe.oauth_error.OAuthError as e:
         # "Authorization code provided does not belong to you" means the
         # SECRET KEY's Stripe account doesn't own the Connect app that
