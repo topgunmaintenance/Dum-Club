@@ -1998,20 +1998,32 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
             )
             raise HTTPException(status_code=400, detail=detail)
 
-        # All gates passed — atomic 4-field flip to live + approved +
-        # verified. Same row state PR #364 sets for founders at signup.
+        # All gates passed — atomic 5-field flip to live + approved +
+        # verified + visibility=public. Same row state PR #364 sets for
+        # founders at signup PLUS visibility alignment so the dashboard
+        # "Storefront published" badge actually matches /discover state
+        # (previously the row could be live+approved but visibility=hidden
+        # — invisible on /discover while the dashboard claimed it was up).
+        # Idempotent: re-publishing an already-public row is a no-op.
         supabase.table("projects").update({
             "status": "live",
             "review_status": "approved",
             "verified": True,
             "is_verified": True,
+            "visibility": "public",
         }).eq("id", project_id).execute()
         return {"status": "success", "published": True, "project_status": "live"}
 
-    # Unpublish path — no gates beyond owner-check. Reverts status only;
-    # review_status and verified are preserved so re-publishing later
-    # doesn't require operator re-approval.
-    supabase.table("projects").update({"status": "draft"}).eq("id", project_id).execute()
+    # Unpublish path — no gates beyond owner-check. Flips status AND
+    # visibility together so unpublishing fully removes the row from
+    # /discover (status='draft' alone is not enough — the discovery
+    # query also gates on visibility='public'). review_status and
+    # verified are preserved so re-publishing later doesn't require
+    # operator re-approval.
+    supabase.table("projects").update({
+        "status": "draft",
+        "visibility": "hidden",
+    }).eq("id", project_id).execute()
     return {"status": "success", "published": False, "project_status": "draft"}
 
 
