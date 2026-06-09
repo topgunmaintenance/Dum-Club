@@ -461,7 +461,12 @@ async def project_gated_chat(
 
     token_mint = project.get("token_mint_address")
     token_is_simulated = is_simulated_token(token_mint)
-    free_limit = int(project.get("ai_free_question_limit") or 1)
+    # Doctrine §12: one free question, capped by code regardless of any
+    # per-project override stored on the row. Migration 074 backfilled
+    # every active row to ai_free_question_limit=1 and flipped the column
+    # default to 1, so the column value is now informational only — the
+    # runtime cap is enforced here.
+    free_limit = 1
     holder_unlimited = bool(project.get("holder_ai_unlimited", True))
 
     session_id = req.session_id or x_session_id or f"anon:{req.project_id}"
