@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from auth.privy import get_current_user
 from db.supabase import get_client
 from services.seed_claim import maybe_claim_seed_profiles
+from services.live_limits import enforce_rate_limit
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -26,6 +27,9 @@ class SyncRequest(BaseModel):
 
 @router.post("/sync")
 async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_user)):
+    # Per-user throttle on the authenticated sync path (credential-stuffing
+    # and enumeration guard). Keyed by the verified Privy subject.
+    enforce_rate_limit(current_user.get("sub"), "auth-sync", 30)
     try:
         print("🔥 SYNC HIT")
 

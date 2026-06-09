@@ -1,10 +1,11 @@
 from typing import Optional, Tuple
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from db.supabase import get_client
 from services.token_mode import is_simulated_token, token_mode
+from services.live_limits import client_ip_from_request, enforce_rate_limit
 from api.routes.projects import resolve_project_uuid
 try:
     import anthropic
@@ -361,7 +362,10 @@ def _chat_with_fallback(messages: list) -> str:
 
 
 @router.post("/")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
+    # Per-IP throttle on the LLM chat path before any model call.
+    enforce_rate_limit(client_ip_from_request(request), "ai-chat", 10)
+
     client = get_client()
     memories_text = ""
     memories_used = 0
@@ -444,8 +448,12 @@ async def chat(req: ChatRequest):
 @router.post("/project-gated")
 async def project_gated_chat(
     req: ProjectGatedChatRequest,
+    request: Request,
     x_session_id: Optional[str] = Header(default=None)
 ):
+    # Per-session (fall back to IP) throttle on the LLM chat path.
+    enforce_rate_limit(x_session_id or client_ip_from_request(request), "ai-chat", 10)
+
     client = get_client()
 
     # Resolve slug-or-UUID to canonical UUID. The frontend's Ask-AI panel

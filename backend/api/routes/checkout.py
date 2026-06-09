@@ -16,6 +16,7 @@ from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user, get_optional_current_user, require_admin
 from services.commission import CommissionRateUnset, resolve_commission_rate
+from services.live_limits import client_ip_from_request, enforce_rate_limit
 from services.email import send_buyer_payment_confirmed, send_seller_new_order, send_buyer_fulfilled
 from services.solana_verify import (
     LAMPORTS_PER_SOL,
@@ -512,8 +513,14 @@ def process_order_paid(
 @router.post("/create-payment-intent")
 async def create_payment_intent(
     body: PaymentIntentRequest,
+    request: Request,
     current_user: Optional[dict] = Depends(get_optional_current_user),
 ):
+    # Throttle checkout initiation per buyer (or IP when anonymous) so a
+    # single source can't spin up Stripe sessions in a loop.
+    _ident = (current_user or {}).get("sub") or client_ip_from_request(request)
+    enforce_rate_limit(_ident, "checkout", 10)
+
     if not _STRIPE_SECRET:
         raise HTTPException(status_code=503, detail="Stripe is not configured")
 
