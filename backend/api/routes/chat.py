@@ -441,7 +441,10 @@ async def project_gated_chat(
 
         project_res = (
             client.table("projects")
-            .select("*")
+            .select(
+                "*, business_profile:business_profiles!projects_business_profile_id_fkey("
+                "business_name, contact_email, business_email)"
+            )
             .eq("id", resolved_id)
             .single()
             .execute()
@@ -498,8 +501,26 @@ async def project_gated_chat(
                     "free_questions_left": 0,
                     "token_required": not token_is_simulated,
                     "token_mint_address": token_mint,
-                    "contact_email": project.get("contact_email"),
-                    "business_name": project.get("title") or project.get("name"),
+                    # Pull contact info from the linked business_profile row
+                    # via the FK embed above. PR #363 sourced this from a
+                    # nonexistent projects.contact_email column — the field
+                    # was always None in prod, so the frontend mailto CTA
+                    # never rendered. Fall back to business_email for
+                    # merchants who set the canonical owner-account email but
+                    # not the customer-facing contact_email. Stays None for
+                    # projects with no business_profile linkage (59 of 61
+                    # active rows today) — the frontend's mailto CTA
+                    # gracefully doesn't render when null, per the PR #363
+                    # design.
+                    "contact_email": (
+                        (project.get("business_profile") or {}).get("contact_email")
+                        or (project.get("business_profile") or {}).get("business_email")
+                    ),
+                    "business_name": (
+                        (project.get("business_profile") or {}).get("business_name")
+                        or project.get("title")
+                        or project.get("name")
+                    ),
                 }
             )
 
