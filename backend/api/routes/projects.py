@@ -785,6 +785,39 @@ async def list_public_projects():
     for p in projects:
         p["active_offer_count"] = active_offer_counts.get(p.get("id", ""), 0)
 
+    # Stripe-verified gate (owner policy: only real businesses that can
+    # take payment are publicly discoverable). Mirrors the publish-gate
+    # Stripe check in _set_publication_status and the go-live gate in
+    # ivs.py create-stage — both already require stripe_connect_status
+    # == 'verified'. This read-time filter closes the gap where a row
+    # was made public via founding auto-approve + a direct visibility
+    # backfill, bypassing both write-time gates. Applied post-union so
+    # all three passes (standard, verified-founder, live) are covered.
+    # One bulk SELECT against merchants keyed on owner_privy_id; keep
+    # only projects whose owner is Stripe-verified. Bounded by the
+    # ~50-row post-3-pass list. Fail-CLOSED: if the lookup errors we
+    # can't confirm Stripe status, so we surface nothing rather than
+    # risk listing a storefront that can't take payment.
+    owner_privy_ids = list({p.get("privy_id") for p in projects if p.get("privy_id")})
+    verified_owners: set[str] = set()
+    if owner_privy_ids:
+        try:
+            merch_rows = (
+                supabase.table("merchants")
+                .select("owner_privy_id, stripe_connect_status")
+                .in_("owner_privy_id", owner_privy_ids)
+                .eq("stripe_connect_status", "verified")
+                .execute()
+            )
+            verified_owners = {
+                r["owner_privy_id"] for r in (merch_rows.data or [])
+                if r.get("owner_privy_id")
+            }
+        except Exception as exc:
+            print(f"[projects] stripe-verified discovery gate lookup failed: {exc!r}")
+            verified_owners = set()
+    projects = [p for p in projects if p.get("privy_id") in verified_owners]
+
     # Sort: pinned first (sort_order non-null, ascending, 0 = top),
     # then by created_at desc. Pinned verified founding merchants
     # land above the organic firehose.
