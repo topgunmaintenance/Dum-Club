@@ -122,6 +122,8 @@ export default function MerchantPage() {
   //. most often surfaces while live OAuth is still being set up).
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [stripeStatusError, setStripeStatusError] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   // True while a manual "Check status" re-poll is in flight, so the
   // button can show a busy label and prevent double-taps.
   const [checkingStripe, setCheckingStripe] = useState(false);
@@ -459,16 +461,33 @@ export default function MerchantPage() {
   }
 
   async function connectStripe() {
+    setConnectError(null);
+    setConnecting(true);
     try {
       const token = await getToken();
+      if (!token) {
+        setConnectError("Please sign in again, then click Connect Stripe.");
+        return;
+      }
       const res = await fetch(`${API_BASE}/api/merchant/stripe-connect/authorize`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        window.location.href = data.url;
+        const data = await res.json().catch(() => null);
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+        setConnectError("We couldn't start Stripe setup. Please try again in a moment.");
+        return;
       }
-    } catch {}
+      setConnectError("We couldn't reach Stripe just now. Please try again in a moment.");
+    } catch (err) {
+      console.error("[merchant] connectStripe failed", err);
+      setConnectError("Network problem reaching Stripe. Check your connection and try again.");
+    } finally {
+      setConnecting(false);
+    }
   }
 
   if (loading) {
@@ -1231,10 +1250,16 @@ export default function MerchantPage() {
                       </div>
                       <button
                         onClick={connectStripe}
-                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-bold text-black transition hover:bg-brand-teal-hover sm:w-auto"
+                        disabled={connecting}
+                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-bold text-black transition hover:bg-brand-teal-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
-                        Connect Stripe →
+                        {connecting ? "Opening Stripe..." : "Connect Stripe →"}
                       </button>
+                      {connectError && (
+                        <p role="alert" className="mt-2 text-xs font-medium text-rose-300">
+                          {connectError}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
@@ -1398,11 +1423,16 @@ export default function MerchantPage() {
               {merchant.stripe_connect_id ? (
                 <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-teal">Connected</span>
               ) : (
-                <button onClick={connectStripe} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20">
-                  Connect
+                <button onClick={connectStripe} disabled={connecting} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                  {connecting ? "Opening..." : "Connect"}
                 </button>
               )}
             </div>
+            {connectError && (
+              <p role="alert" className="mt-2 text-xs font-medium text-rose-300">
+                {connectError}
+              </p>
+            )}
           </div>
         </div>
         )}
