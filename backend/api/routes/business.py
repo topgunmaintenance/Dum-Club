@@ -221,33 +221,30 @@ async def get_business_analytics(current_user: dict = Depends(get_current_user))
     total_dum_received = sum(p.get("dum_received", 0) or 0 for p in projects)
     live_projects = sum(1 for p in projects if p.get("status") == "live")
 
-    # Get orders for all projects
-    orders = []
-    for pid in project_ids:
-        order_res = (
-            supabase.table("orders")
-            .select("id, amount_paid_usd, status, token_discount_applied, created_at, offers(title)")
-            .eq("project_id", pid)
-            .execute()
-        )
-        for o in (order_res.data or []):
-            o["project_id"] = pid
-            orders.append(o)
+    # Get orders for all projects in ONE batched query (was N queries, one
+    # per project_id). project_id is selected so each row carries its own
+    # value, replacing the per-row stamp the loop used to set.
+    order_res = (
+        supabase.table("orders")
+        .select("id, amount_paid_usd, status, token_discount_applied, created_at, project_id, offers(title)")
+        .in_("project_id", project_ids)
+        .execute()
+    )
+    orders = order_res.data or []
 
     paid_orders = [o for o in orders if o.get("status") in ("paid", "fulfilled", "delivered")]
     total_revenue = sum(float(o.get("amount_paid_usd", 0) or 0) for o in paid_orders)
     dum_discount_orders = sum(1 for o in paid_orders if o.get("token_discount_applied"))
 
-    # Get offers with quantity_sold for top-performing
-    all_offers = []
-    for pid in project_ids:
-        offer_res = (
-            supabase.table("offers")
-            .select("id, title, price_usd, quantity_sold, is_active, project_id")
-            .eq("project_id", pid)
-            .execute()
-        )
-        all_offers.extend(offer_res.data or [])
+    # Get offers with quantity_sold for top-performing, in ONE batched
+    # query (was N queries, one per project_id).
+    offer_res = (
+        supabase.table("offers")
+        .select("id, title, price_usd, quantity_sold, is_active, project_id")
+        .in_("project_id", project_ids)
+        .execute()
+    )
+    all_offers = offer_res.data or []
 
     top_offers = sorted(all_offers, key=lambda o: o.get("quantity_sold", 0) or 0, reverse=True)[:5]
 
