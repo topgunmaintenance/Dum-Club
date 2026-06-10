@@ -31,7 +31,7 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Starting at $39/month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Founding merchants get preferred pricing after launch.",
+    "Starting at $39/month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:

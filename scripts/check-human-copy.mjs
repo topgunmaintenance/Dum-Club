@@ -97,6 +97,11 @@ const BANNED_PHRASES = [
   "Money goes straight to your bank — never to us",
   "Paste one script tag. Or list on DUM Club",
   "Every purchase earns DUM Points — loyalty rewards",
+  // Founding-pricing wording the doctrine forbids: vague about what the
+  // merchant actually pays after the trial. Use the canonical
+  // "Lock in founding pricing for life" instead.
+  "preferred founding pricing",
+  "preferred pricing after launch",
 ];
 
 // Approved compound words / brand terms that look like
