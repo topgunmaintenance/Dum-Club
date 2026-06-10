@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -1649,15 +1649,22 @@ async def recent_sales(limit: int = 10):
 # ── Order Queries ─────────────────────────────────────────────
 
 @router.get("/orders/buyer")
-async def buyer_orders(current_user: dict = Depends(get_current_user)):
+async def buyer_orders(
+    current_user: dict = Depends(get_current_user),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
     supabase = get_client()
     privy_id = current_user.get("sub")
 
+    # Bound the result set so a buyer with a long history never pulls an
+    # unbounded list. Newest first; page with limit/offset. Default 50.
     res = (
         supabase.table("orders")
         .select("*, offers(title, offer_type, price_usd)")
         .eq("buyer_user_id", privy_id)
         .order("created_at", desc=True)
+        .range(offset, offset + limit - 1)
         .execute()
     )
 
@@ -1668,6 +1675,8 @@ async def buyer_orders(current_user: dict = Depends(get_current_user)):
 async def seller_orders(
     project_id: str,
     current_user: dict = Depends(get_current_user),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
 ):
     supabase = get_client()
     privy_id = current_user.get("sub")
@@ -1700,11 +1709,14 @@ async def seller_orders(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not the project owner")
 
+    # Bound the result set so a busy storefront never pulls an unbounded
+    # list. Newest first; page with limit/offset. Default 50.
     res = (
         supabase.table("orders")
         .select("*, offers(title, offer_type, price_usd)")
         .eq("project_id", project_id)
         .order("created_at", desc=True)
+        .range(offset, offset + limit - 1)
         .execute()
     )
 
