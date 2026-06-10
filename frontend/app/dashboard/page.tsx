@@ -130,6 +130,19 @@ export default function DashboardPage() {
   // doesn't strand the card in a skeleton forever.
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
 
+  // Inline action feedback, replacing the blocking window.alert() this
+  // page used to fire. tone drives the color. Auto-dismisses after a few
+  // seconds and can be closed by hand.
+  const [notice, setNotice] = useState<{ tone: "error" | "success"; text: string } | null>(null);
+  function showNotice(tone: "error" | "success", text: string) {
+    setNotice({ tone, text });
+  }
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
   useEffect(() => {
     async function loadDum() {
       const privyId = user?.privyId;
@@ -257,13 +270,14 @@ export default function DashboardPage() {
         if (j?.ok && j?.project) {
           await loadProjects();
         } else if (j && j.ok === false) {
-          alert(j.error || "Could not create storefront.");
+          showNotice("error", j.error || "We couldn't create your storefront. Please try again.");
         }
       } else {
-        alert(`Storefront setup failed (HTTP ${res.status}). Try again.`);
+        console.warn(`[dashboard] storefront ensure failed: HTTP ${res.status}`);
+        showNotice("error", "We couldn't set up your storefront. Please try again.");
       }
     } catch {
-      alert("Network error. Try again.");
+      showNotice("error", "Network problem. Please check your connection and try again.");
     } finally {
       setCreatingStorefront(false);
     }
@@ -365,10 +379,11 @@ export default function DashboardPage() {
         setShowBizForm(false);
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.detail || "Failed to create business profile");
+        showNotice("error", err.detail || "We couldn't create your business profile. Please try again.");
       }
     } catch (err) {
-      alert("Failed to create business profile");
+      console.error("[dashboard] createBusiness failed", err);
+      showNotice("error", "We couldn't create your business profile. Please try again.");
     } finally {
       setBizSaving(false);
     }
@@ -392,7 +407,7 @@ export default function DashboardPage() {
       setProjects((prev) => prev.filter((p) => p.id !== project.id));
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to delete project");
+      showNotice("error", err instanceof Error ? err.message : "We couldn't remove that storefront. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -423,7 +438,7 @@ export default function DashboardPage() {
       );
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Could not save category. Try again.");
+      showNotice("error", err instanceof Error ? err.message : "We couldn't save the category. Please try again.");
     }
   }
 
@@ -505,6 +520,29 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen bg-surface-page px-4 py-12 text-primary sm:px-6">
+      {/* Inline action feedback banner (replaces window.alert). */}
+      {notice && (
+        <div
+          role="alert"
+          className={`fixed left-1/2 top-4 z-[200] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg ${
+            notice.tone === "error"
+              ? "border-rose-400/30 bg-rose-500/10 text-rose-200"
+              : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <span>{notice.text}</span>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              aria-label="Dismiss"
+              className="shrink-0 text-lg leading-none opacity-70 transition hover:opacity-100"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative z-[1] mx-auto max-w-5xl">
 
         {/* Header */}
@@ -1223,7 +1261,7 @@ export default function DashboardPage() {
                       if (live) {
                         const url = `${window.location.origin}/project/${live.id}`;
                         navigator.clipboard.writeText(url).catch(() => {});
-                        alert("Link copied! Share it with your audience.");
+                        showNotice("success", "Link copied. Share it with your audience.");
                       }
                     }}
                     className="flex items-center gap-3 rounded-2xl border border-default bg-surface-card p-4 text-left transition hover:border-default hover:bg-brand-teal-soft"
