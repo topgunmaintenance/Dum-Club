@@ -1872,7 +1872,10 @@ async def refund_order(
         )
     except Exception as exc:
         print(f"[refund] Stripe refund failed order={order_id}: {exc!r}")
-        raise HTTPException(status_code=502, detail=f"Refund failed: {str(exc)}")
+        raise HTTPException(
+            status_code=502,
+            detail="We couldn't process the refund. Please try again, or contact support if it keeps failing.",
+        )
 
     # Optimistic status (charge.refunded webhook also sets this — same value).
     try:
