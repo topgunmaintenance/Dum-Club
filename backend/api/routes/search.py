@@ -19,9 +19,10 @@ services/agents/_search_helpers.py so both this route and the agent use
 the exact same code path.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from services.live_limits import client_ip_from_request, enforce_rate_limit
 from services.external_places import search_nearby
 from services.agents.local_discovery import LocalDiscoveryAgent
 from services.agents._search_helpers import (
@@ -352,7 +353,7 @@ async def _homepage_search_legacy(req: SearchRequest) -> SearchResponse:
 # ── Endpoints ──
 
 @router.post("/homepage", response_model=SearchResponse)
-async def homepage_search(req: SearchRequest):
+async def homepage_search(req: SearchRequest, request: Request):
     """
     Search for projects and offers matching a homepage query.
 
@@ -361,13 +362,16 @@ async def homepage_search(req: SearchRequest):
     and the response includes `debug.agent = "local_discovery"`. When
     off, the original code path runs and `debug.agent = "legacy"`.
     """
+    # Per-IP throttle on the public search path.
+    enforce_rate_limit(client_ip_from_request(request), "search", 30)
+
     if get_flag("local_discovery_agent_enabled"):
         return await _homepage_search_via_agent(req)
     return await _homepage_search_legacy(req)
 
 
 @router.post("/discover")
-async def discover(req: SearchRequest):
+async def discover(req: SearchRequest, request: Request):
     """
     Raw Local Discovery Agent output — labeled on_dum_club and
     nearby_off_platform packets. Additive endpoint, intended for callers
@@ -377,6 +381,9 @@ async def discover(req: SearchRequest):
     Returns 404-equivalent empty payload when the agent feature flag is
     off, so we do not accidentally ship raw agent data without the gate.
     """
+    # Per-IP throttle on the public discover-search path.
+    enforce_rate_limit(client_ip_from_request(request), "search", 30)
+
     if not get_flag("local_discovery_agent_enabled"):
         return {
             "enabled": False,

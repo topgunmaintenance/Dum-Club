@@ -17,10 +17,11 @@ import os
 import time
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from db.supabase import get_client
+from services.live_limits import client_ip_from_request, enforce_rate_limit
 from api.routes.projects import resolve_project_uuid
 
 try:
@@ -336,8 +337,12 @@ If the customer's first message is a greeting or general question, respond with 
 # ═══════════════════════════════════════════════════════════════════
 
 @router.post("/project-chat")
-async def project_chat(req: ProjectChatRequest, debug: bool = Query(False)):
+async def project_chat(req: ProjectChatRequest, request: Request, debug: bool = Query(False)):
     """Customer-facing AI chat for a project page."""
+    # Per-IP throttle: this path calls a paid LLM, so cap runaway/abusive
+    # send loops before any model call.
+    enforce_rate_limit(client_ip_from_request(request), "ai-chat", 8)
+
     if not _client:
         raise HTTPException(status_code=503, detail="AI service not available")
 

@@ -230,3 +230,41 @@ def check_chat_rate(user_id: str) -> str | None:
 
 def check_join_rate(user_id: str) -> str | None:
     return check_rate_limit(user_id, "stream joins", MAX_JOIN_PER_MINUTE)
+
+
+def client_ip_from_request(request) -> str:
+    """Best-effort client IP behind Railway/proxies. Mirrors the
+    extraction already used by the merchant founding-status guard."""
+    try:
+        xff = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        real_ip = request.headers.get("x-real-ip", "").strip()
+        return (
+            xff
+            or real_ip
+            or (request.client.host if request.client else "")
+            or "unknown"
+        )
+    except Exception:
+        return "unknown"
+
+
+def enforce_rate_limit(identifier: str, action: str, max_per_minute: int) -> None:
+    """Raise HTTPException(429) when `identifier` exceeds `max_per_minute`
+    requests for `action` in the trailing 60s. Fails OPEN on any internal
+    limiter error so a defensive-layer bug never breaks the request path.
+
+    NOTE: the underlying window is per-process in-memory. On a multi-worker
+    deploy the effective ceiling is (workers x max_per_minute) and it resets
+    on restart. This is a single-source flood / runaway-loop guard, not a
+    distributed limiter; true cross-instance limiting needs a shared store
+    (e.g. Redis) and is tracked separately.
+    """
+    try:
+        err = check_rate_limit(identifier or "unknown", action, max_per_minute)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[rate-limit] check failed for action={action}: {exc!r}")
+        return
+    if err:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=429, detail=err)
