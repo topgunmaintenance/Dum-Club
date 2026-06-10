@@ -1745,7 +1745,7 @@ async def update_order_status(
 
     project_res = (
         supabase.table("projects")
-        .select("owner_id")
+        .select("owner_id, privy_id")
         .eq("id", order["project_id"])
         .limit(1)
         .execute()
@@ -1753,8 +1753,19 @@ async def update_order_status(
     if not project_res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Canonical 3-strategy ownership match (same shape as seller_orders and
+    # ivs._verify_owner). The previous single-strategy check
+    # (resolved != owner_id) returned a false 403 for any project created
+    # via the privy_id path, so a legitimate owner could not mark their own
+    # orders fulfilled/delivered. Fail-closed: only an actual owner passes.
+    project = project_res.data[0]
     resolved = _resolve_privy_to_owner(supabase, privy_id)
-    if resolved != project_res.data[0].get("owner_id"):
+    owner_match = (
+        (project.get("owner_id") and project["owner_id"] == privy_id)
+        or (project.get("owner_id") and resolved and project["owner_id"] == resolved)
+        or (project.get("privy_id") and project["privy_id"] == privy_id)
+    )
+    if not owner_match:
         raise HTTPException(status_code=403, detail="Not the project owner")
 
     status_update: dict = {"status": new_status, "updated_at": _now_iso()}
