@@ -608,10 +608,14 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             continue
 
     if not inserted:
-        detail = "Failed to create merchant"
+        # Keep the full exception in the server log for debugging, but never
+        # return a raw repr to the merchant.
         if last_error is not None:
-            detail = f"{detail}: {last_error!r}"
-        raise HTTPException(status_code=500, detail=detail)
+            print(f"[merchant] signup insert failed after retries: {last_error!r}")
+        raise HTTPException(
+            status_code=500,
+            detail="We couldn't set up your account just now. Please try again in a moment, or contact support if it keeps happening.",
+        )
 
     # ── Storefront project auto-create ────────────────────────────
     # The /merchant launch checklist ("Add your first offer", "Paste the
@@ -1547,7 +1551,13 @@ async def square_callback(code: str, state: str):
         )
 
     if token_resp.status_code != 200:
-        raise HTTPException(status_code=400, detail=f"Square token exchange failed: {token_resp.text}")
+        # Square's raw response body can contain internal detail; log it
+        # server-side and return a clean message to the merchant.
+        print(f"[merchant] Square token exchange failed: status={token_resp.status_code} body={token_resp.text!r}")
+        raise HTTPException(
+            status_code=400,
+            detail="Couldn't connect your Square account. Please try again, or contact support if it keeps happening.",
+        )
 
     token_data = token_resp.json()
     access_token = token_data.get("access_token")
