@@ -9,6 +9,7 @@ import { DriveYourMarketAnalytics } from "../../components/DriveYourMarketAnalyt
 import { UpgradeAnalyticsCard } from "../../components/UpgradeAnalyticsCard";
 import { PopInSettings } from "../../components/PopInSettings";
 import { EmbedDisplayModeCard } from "../../components/EmbedDisplayModeCard";
+import { MerchantInbox } from "../../components/dashboard/MerchantInbox";
 import { GetLiveSteps } from "../../components/GetLiveSteps";
 import { StripeResumeBanner } from "../../components/StripeResumeBanner";
 import { TrialCountdownBanner } from "../../components/TrialCountdownBanner";
@@ -998,6 +999,19 @@ export default function DashboardPage() {
           ) : (
             <UpgradeAnalyticsCard />
           )
+        )}
+
+        {/* Guest-chat inbox: messages from storefront visitors. */}
+        {projects.length > 0 && (
+          <div className="mt-8">
+            <MerchantInbox
+              projects={projects.map((p) => ({
+                id: p.id,
+                name: p.title || p.name || "Storefront",
+              }))}
+              getToken={getToken}
+            />
+          </div>
         )}
 
         {/* DUM Pop-In Seller settings (PR #135) + outer Embed Display

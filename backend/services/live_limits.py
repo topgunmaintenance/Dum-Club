@@ -268,3 +268,42 @@ def enforce_rate_limit(identifier: str, action: str, max_per_minute: int) -> Non
         from fastapi import HTTPException
 
         raise HTTPException(status_code=429, detail=err)
+
+
+def check_rate_limit_window(
+    identifier: str, action: str, max_per_window: int, window_seconds: float
+) -> str | None:
+    """Sliding-window rate limit over an arbitrary window (not just 60s).
+
+    Same in-memory backing as check_rate_limit (and the same per-process
+    caveat), but lets callers express limits like "5 per 10 minutes".
+    Returns an error message when the limit is exceeded, else None.
+    """
+    key = (identifier, action)
+    now = time.time()
+    _rate_windows[key] = _clean_old_entries(_rate_windows[key], window_seconds)
+
+    if len(_rate_windows[key]) >= max_per_window:
+        return f"Rate limit exceeded — max {max_per_window} {action} per window"
+
+    _rate_windows[key].append(now)
+    return None
+
+
+def enforce_rate_limit_window(
+    identifier: str, action: str, max_per_window: int, window_seconds: float
+) -> None:
+    """Windowed sibling of enforce_rate_limit. Raises HTTPException(429)
+    when the windowed limit is exceeded; fails OPEN on internal error.
+    Per-process in-memory (same Redis caveat as enforce_rate_limit)."""
+    try:
+        err = check_rate_limit_window(
+            identifier or "unknown", action, max_per_window, window_seconds
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[rate-limit] windowed check failed for action={action}: {exc!r}")
+        return
+    if err:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=429, detail=err)
