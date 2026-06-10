@@ -1224,9 +1224,27 @@ function LiveSaleToast() {
 
 /* ─── Comparison Table: Whatnot vs Commonsold vs Google Maps vs DUM Club ─── */
 function ComparisonTable() {
+  const rows = [
+    { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
+    { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1% only" },
+    { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
+    { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
+    { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
+    { f: "Bring customers back", w: "None", c: "None", g: "None", d: "Built in" },
+    { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
+    { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
+  ];
+  const competitors: { label: string; key: "w" | "c" | "g" }[] = [
+    { label: "Whatnot", key: "w" },
+    { label: "Commonsold", key: "c" },
+    { label: "Google Maps", key: "g" },
+  ];
   return (
     <div className="mx-auto mt-10 max-w-4xl">
-      <div className="overflow-x-auto">
+      {/* Desktop / tablet: full table, horizontally scrollable as a safety
+          net on the narrowest tablets. Hidden on phones in favor of the
+          stacked cards below. */}
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full border-collapse font-mono text-[11px]" style={{ minWidth: "600px" }}>
           <thead>
             <tr className="border-b border-default">
@@ -1238,16 +1256,7 @@ function ComparisonTable() {
             </tr>
           </thead>
           <tbody>
-            {[
-              { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
-              { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1% only" },
-              { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
-              { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
-              { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
-              { f: "Bring customers back", w: "None", c: "None", g: "None", d: "Built in" },
-              { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
-              { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
-            ].map((row, i) => (
+            {rows.map((row, i) => (
               <tr key={i} className="border-b border-default/40">
                 <td className="py-3 pr-4 text-[12px] font-medium text-secondary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</td>
                 <td className="px-3 py-3 text-center text-secondary">{row.w}</td>
@@ -1263,6 +1272,28 @@ function ComparisonTable() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Phones: one card per row so nothing overflows. DUM Club is
+          highlighted on top, the three competitors listed below. */}
+      <div className="space-y-3 sm:hidden">
+        {rows.map((row, i) => (
+          <div key={i} className="rounded-xl border border-default bg-surface-card p-4">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{row.f}</div>
+            <div className="mb-2 flex items-center justify-between gap-3 rounded-lg border border-brand-teal/20 bg-brand-teal-soft/40 px-3 py-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal">DUM Club ★</span>
+              <span className="text-right text-[12px] font-semibold text-brand-teal">{row.d}</span>
+            </div>
+            <dl className="space-y-1 font-mono text-[12px]">
+              {competitors.map((comp) => (
+                <div key={comp.key} className="flex items-center justify-between gap-3">
+                  <dt className="text-muted" style={{ fontFamily: "'DM Sans', sans-serif" }}>{comp.label}</dt>
+                  <dd className="text-right text-secondary">{row[comp.key]}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
       </div>
     </div>
   );
