@@ -550,9 +550,14 @@ async def instant_launch(req: LaunchRequest):
     except HTTPException:
         raise
     except Exception as exc:
+        # Full detail stays in the server log (above); never return the raw
+        # exception text to the client.
         print(f"[launch] UNHANDLED ERROR: {exc!r}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Launch failed: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="We couldn't finish setting up your project. Please try again, or contact support if it keeps happening.",
+        )
 
 
 async def _do_launch(req: LaunchRequest) -> LaunchResponse:
