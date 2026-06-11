@@ -20,6 +20,12 @@ import Link from "next/link";
 
 import { useProjects } from "../../lib/discover/useProjects";
 import {
+  applyLocationFilter,
+  availableCities,
+  countWithCoords,
+  type LatLng,
+} from "../../lib/discover/location";
+import {
   filterProjects,
   sortProjects,
   isDiscoverable,
@@ -53,6 +59,13 @@ export default function DiscoverPage() {
   const [dealsOnly, setDealsOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("any");
   const [searchQuery, setSearchQuery] = useState("");
+
+  /* ─── Location filter state ("Near me" + city) ─── */
+  const NEAR_ME_RADIUS_MILES = 50;
+  const [nearMe, setNearMe] = useState(false);
+  const [coords, setCoords] = useState<LatLng | null>(null);
+  const [cityFilter, setCityFilter] = useState("");
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   /* ─── Pulse animation ─── */
   const [pulseId, setPulseId] = useState<string | null>(null);
@@ -167,8 +180,49 @@ export default function DiscoverPage() {
     return sortProjects(filtered, sortBy, marketByProject);
   }, [projects, activeCategory, sortBy, liveOnly, dealsOnly, priceFilter, searchQuery, marketByProject]);
 
-  const liveResults = useMemo(() => filteredProjects.filter((p) => p.is_live === true), [filteredProjects]);
-  const businessResults = useMemo(() => filteredProjects.filter((p) => p.is_live !== true), [filteredProjects]);
+  /* ─── Location filter (city + "near me"), applied on top of the rest ───
+     Reads optional city/lat/lng off each project; degrades to a no-op when
+     that data is absent (today: storefronts have no coordinates yet). */
+  const cities = useMemo(() => availableCities(projects as Array<Record<string, unknown>>), [projects]);
+  const noCoordsAnywhere = useMemo(
+    () => nearMe && countWithCoords(filteredProjects as Array<Record<string, unknown>>) === 0,
+    [nearMe, filteredProjects],
+  );
+  const locatedProjects = useMemo(
+    () =>
+      applyLocationFilter(filteredProjects, {
+        city: cityFilter || null,
+        near: nearMe && coords ? { center: coords, radiusMiles: NEAR_ME_RADIUS_MILES } : null,
+      }),
+    [filteredProjects, cityFilter, nearMe, coords],
+  );
+
+  const toggleNearMe = useCallback(() => {
+    if (nearMe) {
+      setNearMe(false);
+      setGeoError(null);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("Location isn't available on this device.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setNearMe(true);
+        setGeoError(null);
+      },
+      () => {
+        setGeoError("We couldn't get your location. Check your browser permission and try again.");
+        setNearMe(false);
+      },
+      { timeout: 8000 },
+    );
+  }, [nearMe]);
+
+  const liveResults = useMemo(() => locatedProjects.filter((p) => p.is_live === true), [locatedProjects]);
+  const businessResults = useMemo(() => locatedProjects.filter((p) => p.is_live !== true), [locatedProjects]);
 
   /* ─── Filter item results by price ─── */
   const filteredItems = useMemo(() => {
@@ -188,7 +242,7 @@ export default function DiscoverPage() {
   const hasAnyLive = useMemo(() => discoverable.some((p) => p.is_live === true), [discoverable]);
   const hasAnyPromo = useMemo(() => discoverable.some((p) => !!p.promo_copy), [discoverable]);
   const isFiltered =
-    activeCategory !== "all" || sortBy !== "newest" || priceFilter !== "any" || liveOnly || dealsOnly || searchQuery.trim() !== "";
+    activeCategory !== "all" || sortBy !== "newest" || priceFilter !== "any" || liveOnly || dealsOnly || searchQuery.trim() !== "" || nearMe || cityFilter !== "";
 
   const resetFilters = useCallback(() => {
     setActiveCategory("all");
@@ -197,6 +251,9 @@ export default function DiscoverPage() {
     setLiveOnly(false);
     setDealsOnly(false);
     setSearchQuery("");
+    setNearMe(false);
+    setCityFilter("");
+    setGeoError(null);
   }, []);
 
   /* ─── Render ─── */
@@ -229,6 +286,48 @@ export default function DiscoverPage() {
           onReset={resetFilters}
         />
 
+        {/* Location filter: Near me + city. Degrades gracefully — the city
+            select only appears when storefronts have shared a city, and
+            Near me shows a note when none have coordinates yet. */}
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleNearMe}
+            aria-pressed={nearMe}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+              nearMe
+                ? "border-brand-teal/40 bg-brand-teal-soft text-brand-teal"
+                : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
+            }`}
+          >
+            <span aria-hidden="true">📍</span>
+            {nearMe ? `Near me · ${NEAR_ME_RADIUS_MILES} mi` : "Near me"}
+          </button>
+
+          {cities.length > 0 && (
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              aria-label="Filter by city"
+              className="rounded-full border border-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-secondary"
+            >
+              <option value="">All cities</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {geoError && <span className="text-xs text-rose-300">{geoError}</span>}
+          {noCoordsAnywhere && (
+            <span className="text-xs text-muted">
+              No storefronts have shared a location yet, so we're showing everything.
+            </span>
+          )}
+        </div>
+
         {/* Live Rail */}
         <LiveRail projects={discoverable} />
 
@@ -257,6 +356,27 @@ export default function DiscoverPage() {
             )
           ) : (
             <>
+              {/* Location filter removed everything (but other filters still
+                  match) — tell the user instead of showing a blank grid. */}
+              {locatedProjects.length === 0 && (
+                <div className="rounded-2xl border border-default bg-surface-card p-6 text-center">
+                  <p className="text-sm text-secondary">
+                    No storefronts match your location filter.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNearMe(false);
+                      setCityFilter("");
+                      setGeoError(null);
+                    }}
+                    className="mt-3 inline-flex items-center rounded-xl border border-default bg-surface-muted px-4 py-2 text-sm font-semibold text-primary transition hover:border-strong"
+                  >
+                    Clear location filter
+                  </button>
+                </div>
+              )}
+
               {/* Live section */}
               {liveResults.length > 0 && (
                 <section className="mb-8">
