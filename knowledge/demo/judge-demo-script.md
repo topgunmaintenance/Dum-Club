@@ -52,7 +52,7 @@ A: Flat monthly tiers after the founding period —
    On-site advertising for featured placements.
    AI social media service for Pro sellers.
    AI retention program replacing direct mail.
-   1% cut on buyer transactions.
+   1.5% cut on buyer transactions.
    White-label loyalty for enterprises.
 
 **Q: Why not just use Whatnot?**

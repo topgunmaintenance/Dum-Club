@@ -183,7 +183,7 @@ async def api_create_stage(
     # before they can broadcast. Going live burns AWS IVS viewer-hours
     # (real cost to DUM Club); letting a merchant with no Stripe Connect
     # go live is pure cost with zero possible revenue — no checkout, so no
-    # 1% sales fee. The Mux /go-live path already enforced this; the IVS
+    # 1.5% sales fee. The Mux /go-live path already enforced this; the IVS
     # create-stage path did not, so a direct call bypassed it (the
     # frontend only hid the button). Mirror the Mux gate exactly so the
     # rule holds on every go-live path: Stripe-verified merchants go live,

@@ -1828,7 +1828,7 @@ export default function ProjectPage() {
   }
 
   async function refundOrder(orderId: string) {
-    if (!window.confirm("Refund this order in full? This returns the buyer's money (including the 1% fee) and can't be undone.")) return;
+    if (!window.confirm("Refund this order in full? This returns the buyer's money (including the 1.5% fee) and can't be undone.")) return;
     try {
       const token = await getToken();
       if (!token) return;
@@ -6157,7 +6157,7 @@ return (
                                     reassurance they had when connecting
                                     Stripe. */}
                                 <p className="text-center text-[11px] leading-relaxed text-secondary">
-                                  1% sales fee per order · Your bank info goes to Stripe, never to DUM Club.
+                                  1.5% sales fee per order · Your bank info goes to Stripe, never to DUM Club.
                                 </p>
 
                                 <a
@@ -7517,7 +7517,7 @@ return (
                           // Per-order Marketplace Fee breakdown, computed
                           // from data already on the row (no extra call).
                           // `seller_receives_usd` is the merchant's payout
-                          // AFTER our 1% Marketplace Fee but BEFORE Stripe's
+                          // AFTER our 1.5% Marketplace Fee but BEFORE Stripe's
                           // own processing fee, which Stripe deducts on
                           // payout. gross - net here equals the Marketplace
                           // Fee, not the Stripe processing fee. Falls back
@@ -7528,7 +7528,7 @@ return (
                           const fee = Math.max(0, gross - net);
                           const breakdownOk = Number.isFinite(fee) && fee > 0 && Number.isFinite(net) && net > 0;
                           const tipMsg = breakdownOk
-                            ? `Gross Sale $${gross.toFixed(2)} − Marketplace Fee $${fee.toFixed(2)} (1%) = Net Received $${net.toFixed(2)}. Marketplace Fee is deducted from your payout; the customer is not charged extra. Stripe's own processing fee is applied separately on payout.`
+                            ? `Gross Sale $${gross.toFixed(2)} − Marketplace Fee $${fee.toFixed(2)} (1.5%) = Net Received $${net.toFixed(2)}. Marketplace Fee is deducted from your payout; the customer is not charged extra. Stripe's own processing fee is applied separately on payout.`
                             : "Net of Marketplace Fee. Stripe's processing fee is applied separately on payout.";
                           return (
                             <div

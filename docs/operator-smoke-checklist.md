@@ -253,14 +253,14 @@ parallel):
 
 ---
 
-## 10. Stripe $1 checkout charges 1% fee
+## 10. Stripe checkout charges 1.5% fee
 
 On the buyer side (incognito), with the merchant signed in on the
 other browser:
 
-- [ ] Pin a $1.00 offer in the merchant dashboard (set price = 1.00)
+- [ ] Pin a $2.00 offer in the merchant dashboard (set price = 2.00). Use $2.00 (not $1.00) so 1.5% is an exact $0.03 — on $1.00 it would be 1.5 cents, which rounds half-up to $0.02.
 - [ ] Buyer reloads `/project/topgun-maintenance` — sticky offer
-      shows the $1.00 item
+      shows the $2.00 item
 - [ ] Buyer taps the offer → Stripe checkout opens
 - [ ] Use test card `4242 4242 4242 4242`, any future expiry, any CVC
 - [ ] Checkout completes → buyer lands back on storefront with
@@ -268,9 +268,9 @@ other browser:
 
 Verify the platform fee on the Stripe dashboard:
 - [ ] **Connected account → Topgun** → Payments → latest PaymentIntent
-- [ ] Amount: $1.00
-- [ ] Application fee: **$0.01** (1% of $1.00)
-- [ ] Net to merchant: $0.99 minus Stripe processing fee
+- [ ] Amount: $2.00
+- [ ] Application fee: **$0.03** (1.5% of $2.00)
+- [ ] Net to merchant: $1.97 minus Stripe processing fee
 
 Verify in DB:
 
@@ -281,10 +281,10 @@ WHERE status = 'paid'
 ORDER BY created_at DESC LIMIT 1;
 ```
 
-- [ ] Latest paid row has `status='paid'`, `amount_total=100` (cents)
+- [ ] Latest paid row has `status='paid'`, `amount_total=200` (cents)
 - [ ] `stripe_payment_intent_id` is non-null
 
-If the application fee is anything other than $0.01: STOP. The
+If the application fee is anything other than $0.03: STOP. The
 commission resolution path in `backend/services/commission.py` is
 broken — do not send a single outreach email until this is fixed.
 Commission accounting is the platform's only revenue stream besides
@@ -308,7 +308,7 @@ Sign in as the operator. Navigate to `/admin/operations` (requires
       (or empty if you ended >2 minutes ago — this is expected)
 - [ ] This month usage card shows non-zero `viewer_hours` and a
       `stream_count >= 1`
-- [ ] Stripe fees (30d) card shows the $0.01 platform fee from §10
+- [ ] Stripe fees (30d) card shows the $0.03 platform fee from §10
       (or close to it depending on prior test transactions)
 - [ ] Recent streams (7d) shows at least 1 stream
 - [ ] Page auto-refreshes every 30s (watch the "as_of" timestamp tick)
@@ -364,7 +364,7 @@ safe to begin.
 **Fail:** at least one box is unchecked AND that box is one of:
 - §6 (cron sends reminders)
 - §8 (go-live / end-live)
-- §10 (Stripe charges 1% correctly)
+- §10 (Stripe charges 1.5% correctly)
 - §11 (ops dashboard reads correctly)
 
 Any of those four failures = stop outreach until fixed. A

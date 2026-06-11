@@ -18,12 +18,12 @@ Two-layer design (mirrors services/commission.py + services/merchant_limits.py):
         the same period returns the prior row instead of double-charging.
 
 CLAUDE.md §3 no-double-bill rule, restated:
-    > "At billing-period close, if the merchant's 1% sales fee earnings
+    > "At billing-period close, if the merchant's 1.5% sales fee earnings
     >  already cover their viewer-hour overage, the overage is waived
     >  (or netted against the sales fee)."
 
 That's what the net_overage formula does. The platform either gets paid
-via the per-sale 1% (always; via Stripe application_fee_amount on every
+via the per-sale 1.5% (always; via Stripe application_fee_amount on every
 PaymentIntent) OR via overage billing (only if needed) — never both.
 
 Cross-DID sales-fee aggregation:

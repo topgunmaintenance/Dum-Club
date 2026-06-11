@@ -42,7 +42,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold text-white">4. Payments</h2>
             <p>
-              Payments are processed through Stripe. DUM Club applies a 1% platform sales fee on each paid order, deducted from the seller&apos;s Stripe payout via Stripe&apos;s application_fee_amount mechanism. Sellers pay their flat monthly subscription fee for platform access in addition to the 1% per-order fee. Stripe&apos;s standard payment-processing fees (e.g. 2.9% + $0.30) are paid by the buyer at checkout. Sellers receive payouts directly to their connected Stripe account on Stripe&apos;s standard processing timeline, less the 1% platform sales fee. All prices are listed in USD; Stripe handles any currency conversion at checkout.
+              Payments are processed through Stripe. DUM Club applies a 1.5% platform sales fee on each paid order, deducted from the seller&apos;s Stripe payout via Stripe&apos;s application_fee_amount mechanism. Sellers pay their flat monthly subscription fee for platform access in addition to the 1.5% per-order fee. Stripe&apos;s standard payment-processing fees (e.g. 2.9% + $0.30) are paid by the buyer at checkout. Sellers receive payouts directly to their connected Stripe account on Stripe&apos;s standard processing timeline, less the 1.5% platform sales fee. All prices are listed in USD; Stripe handles any currency conversion at checkout.
             </p>
           </section>
 

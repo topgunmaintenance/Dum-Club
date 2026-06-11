@@ -5,7 +5,7 @@
  *
  * Always renders for any signed-in user with a merchants row. Surfaces
  * what plan they're on, what they're paying, trial status (with end
- * date when known), the 1% marketplace fee constant, and Stripe
+ * date when known), the 1.5% marketplace fee constant, and Stripe
  * connection state.
  *
  * Four variants, driven by /api/merchant/trial-status:
@@ -125,7 +125,7 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span>$0/mo locked in</span>
             <span className="text-secondary">·</span>
-            <span>1% sales fee</span>
+            <span>1.5% sales fee</span>
             <span className="text-secondary">·</span>
             <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
           </div>
@@ -141,7 +141,7 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
         <div className="flex flex-col gap-y-1 text-xs font-semibold text-secondary sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
           <span>Plan status unavailable</span>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span>1% marketplace fee</span>
+            <span>1.5% marketplace fee</span>
             <span>·</span>
             <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
           </div>
@@ -176,7 +176,7 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
               </>
             )}
             <span className="text-secondary">·</span>
-            <span>1% marketplace fee</span>
+            <span>1.5% marketplace fee</span>
             <span className="text-secondary">·</span>
             <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
           </div>
@@ -200,7 +200,7 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
               <span className="text-secondary">·</span>
             </>
           )}
-          <span>1% marketplace fee</span>
+          <span>1.5% marketplace fee</span>
           <span className="text-secondary">·</span>
           <span className={stripe.ok ? "text-brand-teal" : "text-amber-500"}>{stripe.text}</span>
         </div>

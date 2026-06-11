@@ -71,10 +71,10 @@ Without this, a Railway crash at 3am is invisible until a merchant complains. ~5
 
 | Risk | Mitigation | Residual | Next action |
 |---|---|---|---|
-| Merchant under-pays IVS cost (loss-leader risk) | Viewer-hour overage billing (migration 060); commission floor at 1% on all tiers (CLAUDE.md §3) | low | accept low margin on the loss-leader Starter tier as customer-acquisition cost |
+| Merchant under-pays IVS cost (loss-leader risk) | Viewer-hour overage billing (migration 060); commission floor at 1.5% on all tiers (CLAUDE.md §3) | low | accept low margin on the loss-leader Starter tier as customer-acquisition cost |
 | Merchant hits unlimited viewer count (cost explosion) | Per-tier concurrent-viewer ceilings (250/600/2000) enforced server-side at token mint time | low | already shipped |
 | Single high-GMV merchant suddenly stops paying | No mitigation today; manual recovery + reach-out | medium | accept; reach out personally if a Pro merchant misses a renewal |
-| 1% commission too low for sustainable margins | CLAUDE.md §12 Rule 1 doctrine-locks the 1% cap | accepted | the entire pitch is "industry-low 1%". Raising it requires a doctrine update. |
+| 1.5% commission balance vs margins | CLAUDE.md §12 Rule 1 doctrine-locks the 1.5% cap | accepted | the pitch is "industry-low 1.5% (vs Whatnot 8%)". Exceeding it requires a doctrine update. |
 
 ---
 
@@ -153,4 +153,4 @@ These are known residual risks the operator is choosing to accept until scale fo
 - **Single-region Vercel + Railway** (acceptable until 1,000+ merchants)
 - **Privy as single-vendor sign-in** (acceptable; switching mid-flight is more risk than the residual outage probability)
 - **No clip generator / no RTMP simulcast** (acceptable; see `docs/social-distribution-plan.md`)
-- **1% commission cap** (doctrine, not a risk — CLAUDE.md §12 Rule 1)
+- **1.5% commission cap** (doctrine, not a risk — CLAUDE.md §12 Rule 1)

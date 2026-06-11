@@ -2,9 +2,9 @@
 
 ## Decision
 
-The 1% deduction DUM Club takes from every marketplace sale is called
+The 1.5% deduction DUM Club takes from every marketplace sale is called
 **"Marketplace Fee"** in all merchant-facing, admin-facing, and Stripe-
-metadata surfaces. The CLAUDE.md doctrine value is unchanged at 1%.
+metadata surfaces. The CLAUDE.md doctrine value is 1.5% (raised from 1%; CLAUDE.md §12 Rule 1).
 
 This is purely a wording / labeling decision. The math, routing, and
 Stripe Connect mechanics are not affected.

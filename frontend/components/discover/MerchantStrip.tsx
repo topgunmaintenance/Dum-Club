@@ -14,7 +14,7 @@ export function MerchantStrip() {
         Own a local business?
       </p>
       <p className="mt-2 text-sm font-medium text-primary sm:text-base">
-        Flat $39/mo plus 1% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.
+        Flat $39/mo plus 1.5% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.
       </p>
       <Link
         href="/merchant"
