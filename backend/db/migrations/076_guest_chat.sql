@@ -1,8 +1,7 @@
 -- Migration 076: guest chat (storefront visitor -> merchant messaging)
 --
 -- ⚠️  DRAFT — NOT APPLIED. Authored for review only. Do NOT run this
---     against any database until the two OPEN QUESTIONS below are
---     resolved and the file is approved.
+--     against any database until the file is approved.
 --
 -- WHY
 -- ---
@@ -27,22 +26,18 @@
 -- at the bottom are COMMENTED OUT and only become relevant if these
 -- tables are ever exposed directly to anon/authenticated PostgREST.
 --
--- ── OPEN QUESTION 1 — merchant_id linkage (DO NOT ASSUME) ─────────────
--- `merchant_id` is created as a NULLABLE uuid with NO enforced foreign
--- key in this draft, on purpose. The "merchant" that owns a conversation
--- is reachable transitively through the project, and there are THREE
--- plausible canonical anchors in the current schema:
---     (a) merchants(id)          — merchant record; merchants.business_profile_id -> business_profiles(id)
---     (b) business_profiles(id)  — reachable directly via projects.business_profile_id   <-- the join you flagged
---     (c) accounts(id)           — via business_profiles.account_id
--- Pick ONE during review and uncomment the matching FK in the
--- "merchant_id FK options" block below. `merchant_id` is a denormalized
--- convenience; the authoritative ownership path is the project join.
+-- DECISION 1 — no merchant_id column.
+-- A conversation's owning merchant is derived authoritatively through the
+-- project join projects.business_profile_id -> business_profiles, which is
+-- exactly what the inbox endpoints use. The earlier denormalized
+-- merchant_id column (and its three candidate FK targets) is dropped as
+-- unused — there is no second source of truth to keep in sync.
 --
--- ── OPEN QUESTION 2 — NOT NULL / status domain hardening ─────────────
--- This draft adds NOT NULL to created_at (DEFAULT now()) and status
--- (DEFAULT 'open') as house-style hardening beyond the bare spec, and
--- leaves a CHECK on status commented out. Relax/keep per review.
+-- DECISION 2 — status domain is enforced.
+-- status is NOT NULL DEFAULT 'open' with a CHECK constraint covering
+-- ('open', 'closed', 'spam'). 'spam' is written by the abuse heuristics in
+-- the guest POST endpoint (honeypot / min-time / link-stuffing), so it is
+-- part of the allowed domain.
 --
 -- Forward-only. Idempotent via IF NOT EXISTS so a re-run is a no-op.
 
@@ -50,36 +45,16 @@
 CREATE TABLE IF NOT EXISTS public.guest_conversations (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id      uuid NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
-    -- merchant_id: LINKAGE UNRESOLVED — see OPEN QUESTION 1. Nullable
-    -- uuid, NO FK enforced in this draft. Do not assume a target table.
-    merchant_id     uuid,
     guest_name      text,
     guest_email     text,
-    status          text NOT NULL DEFAULT 'open',
+    status          text NOT NULL DEFAULT 'open'
+                        CHECK (status IN ('open', 'closed', 'spam')),
     created_at      timestamptz NOT NULL DEFAULT now(),
     last_message_at timestamptz
 );
 
--- merchant_id FK options — UNCOMMENT EXACTLY ONE after review:
--- ALTER TABLE public.guest_conversations
---   ADD CONSTRAINT guest_conversations_merchant_fk
---   FOREIGN KEY (merchant_id) REFERENCES public.merchants(id) ON DELETE SET NULL;
--- ALTER TABLE public.guest_conversations
---   ADD CONSTRAINT guest_conversations_merchant_fk
---   FOREIGN KEY (merchant_id) REFERENCES public.business_profiles(id) ON DELETE SET NULL;
--- ALTER TABLE public.guest_conversations
---   ADD CONSTRAINT guest_conversations_merchant_fk
---   FOREIGN KEY (merchant_id) REFERENCES public.accounts(id) ON DELETE SET NULL;
-
--- Optional status domain guard — uncomment if you want it enforced:
--- ALTER TABLE public.guest_conversations
---   ADD CONSTRAINT guest_conversations_status_chk
---   CHECK (status IN ('open', 'closed'));
-
 CREATE INDEX IF NOT EXISTS idx_guest_conversations_project
     ON public.guest_conversations (project_id);
-CREATE INDEX IF NOT EXISTS idx_guest_conversations_merchant
-    ON public.guest_conversations (merchant_id) WHERE merchant_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_guest_conversations_last_message
     ON public.guest_conversations (last_message_at DESC);
 
@@ -110,7 +85,7 @@ CREATE POLICY deny_all ON public.guest_messages
 
 -- ─────────────────────────────────────────────────────────────────────
 -- SCOPED MERCHANT POLICIES — COMMENTED OUT, FOR REVIEW. DO NOT ENABLE
--- without resolving OPEN QUESTION 1 and the identity note below.
+-- without the identity note below.
 --
 -- IDENTITY NOTE: this app authenticates with Privy, not Supabase Auth,
 -- and the backend uses the service_role key (BYPASSES RLS). So today the
@@ -120,11 +95,11 @@ CREATE POLICY deny_all ON public.guest_messages
 -- ever mint Supabase-side JWTs. `<privy_did_claim>` MUST be replaced with
 -- whatever JWT claim actually carries the Privy DID before enabling.
 --
--- OWNERSHIP JOIN (the one you flagged):
+-- OWNERSHIP JOIN (the sole source of truth — there is no merchant_id
+-- column; see DECISION 1):
 --     guest_conversations.project_id
 --       -> projects.business_profile_id     <-- THE JOIN
 --       -> business_profiles.owner_privy_id  (Privy DID = identity)
--- `merchant_id` on the row is NOT used by these policies.
 --
 -- -- Merchant reads conversations for projects they own:
 -- CREATE POLICY merchant_read_conversations ON public.guest_conversations
