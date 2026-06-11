@@ -1054,6 +1054,160 @@ async def discover_projects(
     return body
 
 
+# ── Live cards (homepage "Go Live" rail) ─────────────────────────────
+
+LIVE_HEARTBEAT_WINDOW_SECONDS = 90
+
+# Cleared when a stale live row is reaped. Matches the on-read auto-clear
+# used by the discover feed (is_live + IVS stage handles).
+_REAP_CLEAR_FIELDS = {
+    "is_live": False,
+    "ivs_stage_arn": None,
+    "ivs_stage_id": None,
+}
+
+
+def reap_stale_live(supabase) -> int:
+    """Flip is_live=false on projects whose most recent heartbeat is older
+    than the 90s liveness window. NULL-heartbeat rows are left alone (a
+    just-went-live storefront before its first heartbeat); the startup
+    sweep in main.py handles long-lived NULL orphans via updated_at.
+    Best-effort; returns the number of rows reaped. Safe to call from a
+    cron as well as on-read."""
+    from datetime import timedelta
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(seconds=LIVE_HEARTBEAT_WINDOW_SECONDS)
+    ).isoformat()
+    try:
+        res = (
+            supabase.table("projects")
+            .update(_REAP_CLEAR_FIELDS)
+            .eq("is_live", True)
+            .not_.is_("last_heartbeat_at", "null")
+            .lt("last_heartbeat_at", cutoff)
+            .execute()
+        )
+        n = len(res.data or [])
+        if n:
+            print(f"[live-cards] reaped {n} stale live project(s)")
+        return n
+    except Exception as exc:
+        print(f"[live-cards] reaper failed: {exc!r}")
+        return 0
+
+
+def _featured_offer(project: dict) -> Optional[dict]:
+    """Featured offer for a card: the pinned offer if set and still active,
+    else the most recently created active offer. Expects an embedded
+    `offers` list on the row."""
+    offers = project.get("offers") or []
+    if not isinstance(offers, list) or not offers:
+        return None
+    pinned_id = project.get("pinned_offer_id")
+    if pinned_id:
+        for o in offers:
+            if o.get("id") == pinned_id and o.get("is_active"):
+                return o
+    active = [o for o in offers if o.get("is_active")]
+    if not active:
+        return None
+    active.sort(key=lambda o: o.get("created_at") or "", reverse=True)
+    return active[0]
+
+
+def _within_live_window(ts_iso: Optional[str], cutoff_iso: str) -> bool:
+    """True when ts_iso is newer than cutoff_iso. ISO-8601 UTC strings sort
+    lexicographically; both sides here originate from Postgres timestamptz
+    / our own UTC isoformat()."""
+    if not ts_iso:
+        return False
+    try:
+        return ts_iso > cutoff_iso
+    except Exception:
+        return False
+
+
+@router.get("/live-cards")
+async def live_cards(limit: int = Query(12, ge=1, le=50)):
+    """Homepage 'Go Live' rail. Currently-live storefronts with the merchant
+    (logo / business_name / category) and featured offer joined. Liveness =
+    is_live AND last_heartbeat_at within 90s. Runs the reaper first so stale
+    rows are flipped off before the read. live_viewer_count drives the count
+    (column pending migration 077; falls back to 0 if absent)."""
+    supabase = get_client()
+    reap_stale_live(supabase)
+
+    from datetime import timedelta
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(seconds=LIVE_HEARTBEAT_WINDOW_SECONDS)
+    ).isoformat()
+
+    _full_select = (
+        "id, slug, name, title, is_live, last_heartbeat_at, updated_at, "
+        "pinned_offer_id, live_viewer_count, "
+        "business_profile:business_profiles!projects_business_profile_id_fkey(logo_url, business_name, category), "
+        "offers(id, title, price_usd, is_active, created_at)"
+    )
+    _lite_select = _full_select.replace("live_viewer_count, ", "")
+
+    def _query(select_str: str):
+        return (
+            supabase.table("projects")
+            .select(select_str)
+            .eq("is_live", True)
+            .eq("is_deleted", False)
+            .eq("visibility", "public")
+            .limit(limit)
+            .execute()
+        ).data or []
+
+    try:
+        rows = _query(_full_select)
+    except Exception as exc:
+        # live_viewer_count is pending migration 077; if the column is not
+        # there yet the select errors. Retry without it so the rail still
+        # works pre-migration (count defaults to 0).
+        print(f"[live-cards] full select failed (live_viewer_count pending migration?): {exc!r}")
+        try:
+            rows = _query(_lite_select)
+        except Exception as exc2:
+            print(f"[live-cards] lite select failed: {exc2!r}")
+            rows = []
+
+    cards = []
+    for p in rows:
+        hb = p.get("last_heartbeat_at")
+        # Heartbeat within window, OR a fresh go-live whose first heartbeat
+        # hasn't landed yet (NULL heartbeat + recent updated_at).
+        live = _within_live_window(hb, cutoff) or (
+            hb is None and _within_live_window(p.get("updated_at"), cutoff)
+        )
+        if not live:
+            continue
+        bp = p.get("business_profile") or {}
+        offer = _featured_offer(p)
+        cards.append({
+            "id": p.get("id"),
+            "slug": p.get("slug"),
+            "name": bp.get("business_name") or p.get("name") or p.get("title") or "Untitled",
+            "logo_url": bp.get("logo_url"),
+            "category": bp.get("category"),
+            "is_live": True,
+            "viewer_count": int(p.get("live_viewer_count") or 0),
+            "featured_offer": (
+                {
+                    "id": offer.get("id"),
+                    "title": offer.get("title"),
+                    "price_usd": offer.get("price_usd"),
+                } if offer else None
+            ),
+        })
+
+    # All cards are live; within that, busiest first.
+    cards.sort(key=lambda c: c.get("viewer_count") or 0, reverse=True)
+    return cards[:limit]
+
+
 def _neg_iso(s: str) -> str:
     """Return a string that sorts opposite to the input ISO timestamp.
 

@@ -78,6 +78,8 @@ type MarketSnapshot = {
 };
 
 import { API_BASE } from "../lib/apiBase";
+import { createClient } from "../lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 // Feature flag: use backend search endpoint instead of client-side filtering.
 // Set to false to roll back to the previous client-side behaviour.
@@ -2603,6 +2605,53 @@ export default function Home() {
     fetch(`${API_BASE}/api/flags`).then((r) => r.ok ? r.json() : { off_platform_receipt_rewards_enabled: false } as Record<string, boolean>).then((flags: Record<string, boolean>) => {
       if (flags.off_platform_receipt_rewards_enabled) setProofRewardsEnabled(true);
     }).catch(() => {});
+  }, []);
+
+  // Keep the "Go Live" rail fresh within seconds. Primary path is Supabase
+  // realtime on the projects table (is_live flips on go-live / end-live);
+  // a slow poll is a fallback for when realtime is gated by RLS or the row
+  // isn't in the realtime publication, so liveness still reconciles without
+  // a page refresh. Refetch is debounced so a burst of row updates collapses
+  // into one reload.
+  useEffect(() => {
+    let cancelled = false;
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+
+    const refetch = () => {
+      if (cancelled) return;
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        if (!cancelled) loadPublicProjects();
+      }, 800);
+    };
+
+    let channel: RealtimeChannel | null = null;
+    try {
+      const supabase = createClient();
+      channel = supabase
+        .channel("home:projects-live")
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "projects" },
+          () => refetch(),
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn("[home] realtime subscribe failed; polling only", err);
+    }
+
+    const poll = setInterval(refetch, 30000);
+
+    return () => {
+      cancelled = true;
+      if (debounce) clearTimeout(debounce);
+      clearInterval(poll);
+      try {
+        channel?.unsubscribe();
+      } catch {
+        /* no-op */
+      }
+    };
   }, []);
 
   useEffect(() => {

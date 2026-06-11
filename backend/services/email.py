@@ -199,6 +199,35 @@ def send_buyer_fulfilled(buyer_email: str, offer_title: str):
     _send(buyer_email, subject, html)
 
 
+def send_guest_reply_notification(
+    guest_email: str,
+    business_name: str,
+    reply_text: str,
+    storefront_url: str = "",
+):
+    """Email a guest when the merchant replies to their storefront message,
+    so the conversation can thread back over email. Best-effort: no-op when
+    guest_email is missing. Body text is escaped by the caller path (plain
+    merchant prose); we inset it into a simple template."""
+    if not guest_email:
+        print("[email] No guest email, skipping guest reply notification")
+        return
+    safe_name = business_name or "The merchant"
+    subject = f"{safe_name} replied to your message"
+    link = storefront_url or _PLATFORM_URL
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
+      <h2 style="color:#fff;margin:0 0 8px;">{safe_name} replied</h2>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;white-space:pre-wrap;">{reply_text}</p>
+      <a href="{link}" style="display:inline-block;margin-top:16px;padding:10px 20px;background:#4ade80;color:#000;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">
+        Reply on their storefront
+      </a>
+    </div>
+    """
+    _send(guest_email, subject, html)
+
+
 # ══════════════════════════════════════════════════════════════════
 # MERCHANT OUTREACH
 # ══════════════════════════════════════════════════════════════════

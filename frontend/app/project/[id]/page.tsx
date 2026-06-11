@@ -34,6 +34,7 @@ import { useStatusToast } from "../../../lib/useStatusToast";
 import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { AiSalesChat } from "../../../components/AiSalesChat";
+import { GuestChat } from "../../../components/GuestChat";
 import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
@@ -7818,6 +7819,12 @@ return (
         if (el) el.scrollIntoView({ behavior: "smooth", block: match ? "center" : "start" });
       }}
     />
+  )}
+
+  {/* Guest chat: storefront visitor -> merchant inbox. Customer view only,
+      bottom-left so it clears the AiSalesChat bubble on the right. */}
+  {!showOwnerInlineUi && (
+    <GuestChat projectId={id} businessName={projectName} />
   )}
 
   {/* Trust & safety: discreet report control for the customer view.

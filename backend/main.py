@@ -59,6 +59,7 @@ from api.routes import (
     outreach,
     analytics,
     popin,
+    guest_chat,
 )
 
 from db.supabase import init_supabase
@@ -344,6 +345,10 @@ app.include_router(search.router, prefix="/api/search", tags=["Search"])
 # Off-platform demand capture
 app.include_router(external_business.router, prefix="/api/external", tags=["External Business"])
 app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
+
+# Guest chat (storefront visitor -> merchant messaging). Tables provisioned
+# by a separate migration (draft 076), applied out-of-band.
+app.include_router(guest_chat.router, prefix="/api/guest", tags=["Guest Chat"])
 app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
 app.include_router(live_relay.router, prefix="/api/live", tags=["Live Relay"])
 app.include_router(ivs.router, prefix="/api/ivs", tags=["IVS Real-Time"])
