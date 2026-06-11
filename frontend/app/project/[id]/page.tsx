@@ -223,6 +223,7 @@ type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 import { API_BASE } from "../../../lib/apiBase";
 import { errorText } from "../../../lib/errorText";
+import { resolveImageUrl, cleanLogoUrl, STOREFRONT_PLACEHOLDER } from "../../../lib/imageSrc";
 import {
   createOffer,
   OffersError,
@@ -3426,7 +3427,7 @@ export default function ProjectPage() {
   // projects can't pin a prior failure on the next storefront.
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
   useEffect(() => {
-    const next = (ownerBizProfile?.logo_url || "").trim() || null;
+    const next = cleanLogoUrl(ownerBizProfile?.logo_url);
     setLogoSrc(next);
   }, [ownerBizProfile?.logo_url]);
 
@@ -3900,10 +3901,10 @@ return (
           <div className="mx-auto flex max-w-md items-center gap-3">
             {pinnedOffer.primary_image_url && (
               <img
-                src={pinnedOffer.primary_image_url}
+                src={resolveImageUrl(pinnedOffer.primary_image_url)}
                 alt=""
                 className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }}
               />
             )}
             <div className="min-w-0 flex-1">
@@ -4738,9 +4739,10 @@ return (
                       <div>
                         {pinnedOffer.primary_image_url && (
                           <img
-                            src={pinnedOffer.primary_image_url}
+                            src={resolveImageUrl(pinnedOffer.primary_image_url)}
                             alt={pinnedOffer.title}
                             className="mb-3 h-32 w-full rounded-xl object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }}
                           />
                         )}
                         <h3 className="text-lg font-bold text-primary">{pinnedOffer.title}</h3>
@@ -6914,10 +6916,10 @@ return (
                       onClick={() => setLightboxUrl(offer.primary_image_url!)}
                     >
                       <img
-                        src={offer.primary_image_url}
+                        src={resolveImageUrl(offer.primary_image_url)}
                         alt={offer.title}
                         className="w-full aspect-[4/3] object-cover transition-transform duration-300 group-hover/img:scale-105"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }}
                       />
                     </div>
                   ) : null}

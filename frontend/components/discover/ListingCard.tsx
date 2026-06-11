@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { cleanLogoUrl } from "../../lib/imageSrc";
 import type { Project, MarketSnapshot } from "../../lib/discover/types";
 import {
   getProjectEmoji,
@@ -95,7 +96,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   // useEffect resets the source when the project's logo URL changes
   // so a card recycled into a new project via list virtualisation
   // can't pin a prior project's failure on the next one.
-  const initialLogo = (project.business_profile?.logo_url || "").trim() || null;
+  const initialLogo = cleanLogoUrl(project.business_profile?.logo_url);
   const [logoSrc, setLogoSrc] = useState<string | null>(initialLogo);
   useEffect(() => {
     setLogoSrc(initialLogo);
