@@ -2,7 +2,7 @@
 
 Turn your existing website into a live-selling storefront.
 
-DUM Club helps local businesses run live sales, flash deals, loyalty rewards, and customer-retention campaigns under one flat monthly fee — with direct Stripe payouts and zero commission on sales.
+DUM Club helps local businesses run live sales, flash deals, loyalty rewards, and customer-retention campaigns under one flat monthly subscription plus a low 1.5% sales fee per order — with direct Stripe payouts (industry-low; Whatnot takes 8%).
 
 > «Sell $10,000 or $100,000 a month — your fee never changes.»
 
@@ -47,7 +47,7 @@ without giving away a percentage of every sale.
 
 | Tier | Price | Key Features |
 |------|-------|--------------|
-| Founding 100 | $0 → $29/mo | Founding access, all core features, 0% commission |
+| Founding 100 | $0 → $29/mo | Founding access, all core features, 1.5% sales fee |
 | Starter | $29/mo | Live storefront, DUM Points, Stripe payouts |
 | Growth | $49/mo | Customer-retention tools, featured placement |
 | Pro | $99/mo | AI social tools, homepage placement |
