@@ -12,7 +12,7 @@
  *   Whatnot:    8% of GMV + 2.9% of GMV + $0.30 per txn
  *               Assumes average transaction value of $50 to compute txn count.
  *   Commonsold: 5% of GMV + $49/mo base
- *   DUM Club:   $99/mo Growth tier flat + 1% sales fee on GMV.
+ *   DUM Club:   $99/mo Growth tier flat + 1.5% sales fee on GMV.
  */
 
 import { useMemo, useState } from "react";
@@ -25,7 +25,7 @@ const WHATNOT_STRIPE_FIXED = 0.30; // $0.30
 const COMMONSOLD_COMMISSION = 0.05; // 5%
 const COMMONSOLD_BASE = 49;
 const DUM_CLUB_FLAT = 99;          // Growth tier subscription
-const DUM_CLUB_SALES_FEE = 0.01;   // 1% platform sales fee per order
+const DUM_CLUB_SALES_FEE = 0.015;  // 1.5% platform sales fee per order
 
 function formatMoney(n: number): string {
   if (n >= 10000) return `$${Math.round(n / 1000)}k`;
@@ -96,7 +96,7 @@ export function FeeCalculator() {
             See what you&apos;d save vs Whatnot&apos;s 8% commission.
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
-            Drag the slider. DUM Club: $99/mo Growth tier plus a 1% sales fee per order. Whatnot: 8% + 2.9% Stripe on every sale. DUM Club also replaces loyalty, retention, and deal-platform tools, all in the same subscription.
+            Drag the slider. DUM Club: $99/mo Growth tier plus a 1.5% sales fee per order. Whatnot: 8% + 2.9% Stripe on every sale. DUM Club also replaces loyalty, retention, and deal-platform tools, all in the same subscription.
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export function FeeCalculator() {
             </div>
             <div className="mt-1 text-[10px] uppercase tracking-[0.15em] text-emerald-400/60">total / month</div>
             <div className="mt-3 text-[11px] text-zinc-300">
-              $99 Growth tier + 1% per sale
+              $99 Growth tier + 1.5% per sale
             </div>
           </div>
         </div>

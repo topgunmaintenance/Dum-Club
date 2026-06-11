@@ -11,7 +11,7 @@
  * truth). Doctrine compliance:
  *   §3   tier numbers verbatim
  *   §11  comparison framed as "expense replacement"
- *   §12  Rule 1: 1% sales fee + flat subscription tier; never higher
+ *   §12  Rule 1: 1.5% sales fee + flat subscription tier; never higher
  *   §12  Rule 11: Stripe is the only payment processor
  */
 
@@ -31,11 +31,11 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Starting at $39/month plus a 1% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.",
+    "Starting at $39/month plus a 1.5% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:
-      "One flat monthly subscription covers live selling, loyalty, automatic customer win-back texts, and local flash sales. Plus a 1% sales fee per order. Industry-low.",
+      "One flat monthly subscription covers live selling, loyalty, automatic customer win-back texts, and local flash sales. Plus a 1.5% sales fee per order. Industry-low.",
     type: "website",
   },
 };
@@ -119,7 +119,7 @@ const TIERS: Tier[] = [
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Do you take a percentage of my sales?",
-    a: "Yes. 1% per paid order, deducted from your Stripe payout. That's industry-low: Whatnot takes 8%, DoorDash takes 15-30%, Etsy takes 6.5%. The 1% is your only per-sale fee on DUM Club. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout, not by you.",
+    a: "Yes. 1.5% per paid order, deducted from your Stripe payout. That's industry-low: Whatnot takes 8%, DoorDash takes 15-30%, Etsy takes 6.5%. The 1.5% is your only per-sale fee on DUM Club. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout, not by you.",
   },
   {
     q: "What does 'founding merchant' actually get me?",
@@ -169,7 +169,7 @@ export default function PricingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <Eyebrow tone="brand">Pricing · One flat fee</Eyebrow>
             <Heading level="display" className="mt-4">
-              Starting at <span className="text-brand-navy">$39/month + 1% sales fee</span>.<br />
+              Starting at <span className="text-brand-navy">$39/month + 1.5% sales fee</span>.<br />
               Keep more of every dollar.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
@@ -199,7 +199,7 @@ export default function PricingPage() {
               Pick the plan that fits.
             </Heading>
             <p className="mx-auto mt-3 max-w-xl text-secondary">
-              Same 1% sales fee on every plan. Upgrade when the next
+              Same 1.5% sales fee on every plan. Upgrade when the next
               capability earns its keep.
             </p>
           </div>
@@ -378,7 +378,7 @@ export default function PricingPage() {
               <ul className="space-y-2 text-[13px] text-primary">
                 <li className="flex items-start gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />
-                  <span>1% sales fee on $10,000 = $100 (Whatnot would take $800)</span>
+                  <span>1.5% sales fee on $10,000 = $150 (Whatnot would take $800)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />
@@ -392,10 +392,29 @@ export default function PricingPage() {
           </div>
 
           <p className="mt-8 text-center text-[13px] text-secondary">
-            <span className="font-semibold text-brand-navy">$991/month</span>{" "}
-            saved on Whatnot's fees alone, before the loyalty, retention,
-            and AI social tooling Growth includes.
+            <span className="font-semibold text-brand-navy">$841/month</span>{" "}
+            saved vs Whatnot at $10k/month ($1,090 in Whatnot fees vs $249
+            all-in on DUM Club), before the loyalty, retention, and AI social
+            tooling Growth includes.
           </p>
+
+          {/* Per-sale fee vs the field — sourced positioning (#5). */}
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-default bg-surface-card p-6">
+            <div className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+              Lowest per-sale fee, period
+            </div>
+            <ul className="space-y-1.5 text-[13px] text-primary">
+              <li className="flex items-center justify-between gap-3"><span>Whatnot</span><span className="font-mono text-secondary">8% + 2.9% + $0.30 / sale</span></li>
+              <li className="flex items-center justify-between gap-3"><span>eBay Live</span><span className="font-mono text-secondary">10-15% / sale</span></li>
+              <li className="flex items-center justify-between gap-3"><span>TikTok Shop Live</span><span className="font-mono text-secondary">6% + processing</span></li>
+              <li className="flex items-center justify-between gap-3"><span>Facebook Live</span><span className="font-mono text-secondary">~5% + processing</span></li>
+              <li className="flex items-center justify-between gap-3"><span>Shopify + livestream app</span><span className="font-mono text-secondary">$39+/mo + 2.9% + $0.30 + app fees</span></li>
+              <li className="flex items-center justify-between gap-3 border-t border-default pt-2 font-semibold text-brand-navy"><span>DUM Club</span><span className="font-mono text-brand-teal">$39+/mo + 1.5% / sale</span></li>
+            </ul>
+            <p className="mt-4 text-center text-[12px] text-secondary">
+              Lowest per-sale fee on the list, on your own website, and you keep the customer.
+            </p>
+          </div>
         </Container>
       </Section>
 

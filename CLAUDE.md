@@ -267,10 +267,10 @@ What we replace, in one bill:
 - Local-deal and review platforms (pay-to-rank ad spend)
 
 DUM Club charges a flat $39-$2,000+/month subscription plus
-a 1% sales fee — industry-low (vs Whatnot 8%, DoorDash 15-30%,
+a 1.5% sales fee — industry-low (vs Whatnot 8%, DoorDash 15-30%,
 CommentSold 2-3% plus subscription). The combined model
 includes tier-based viewer-hour limits, overage above the
-included viewer-hours, and the 1% sales fee on every paid
+included viewer-hours, and the 1.5% sales fee on every paid
 order. Stripe processing (2.9% + $0.30) is paid by the buyer
 at checkout, not by the seller.
 
@@ -288,16 +288,16 @@ We are NOT:
 - A delivery platform
 - A crypto app (Solana is future, optional, legal-pending)
 - An AI business launcher (deprecated — v1 positioning)
-- Taking Whatnot-scale percentages (we charge 1%; Whatnot
+- Taking Whatnot-scale percentages (we charge 1.5%; Whatnot
   charges 8%; DoorDash charges 15-30%)
 
 We ARE positioned against (in expense-replacement context):
 - Delivery apps (15-30% per order vs our subscription
-  $39-$299/month + 1% sales fee)
+  $39-$299/month + 1.5% sales fee)
 - Whatnot (8% + 2.9% per sale vs our subscription
-  $39-$299/month + 1% sales fee)
+  $39-$299/month + 1.5% sales fee)
 - Commonsold (2-3% + $499-$1,499/month vs our subscription
-  $39-$299/month + 1% sales fee)
+  $39-$299/month + 1.5% sales fee)
 - Loyalty software like Yotpo/Smile.io ($50-$999/month
   loyalty only vs our loyalty-included subscription)
 - SMS / email retention tools ($20-$200/month vs our
@@ -328,7 +328,7 @@ Browse live sellers + best local deals this week
 ### Founding 100 Sellers
 - $0 subscription during 60-day founding trial period
 - After trial: locks in founding-tier subscription pricing
-  for life (Starter base = $39/month). The 1% sales fee
+  for life (Starter base = $39/month). The 1.5% sales fee
   and overage rules apply to all merchants including
   founders — founding lock is on the subscription tier,
   not on the sales-fee or overage lines.
@@ -351,7 +351,7 @@ account.
 > in founding pricing for life."
 
 **Supporting line** (always pairs with the long form):
-> "Flat monthly subscription + 1% sales fee. Industry-low
+> "Flat monthly subscription + 1.5% sales fee. Industry-low
 > (Whatnot takes 8%). Keep more of every sale."
 
 **Short form / scarcity pill / banner**:
@@ -398,7 +398,7 @@ Every tier includes a monthly subscription, an included
 viewer-hour budget (concurrent viewers × time watched),
 an overage rate billed per viewer-hour above the included
 amount, a concurrent-viewer ceiling, and a max-concurrent-
-streams cap. Every tier also pays a flat 1% sales fee on
+streams cap. Every tier also pays a flat 1.5% sales fee on
 every paid order. See `backend/db/migrations/049_plan_limits.sql`
 for the seed values — that table is the source of truth.
 
@@ -406,7 +406,7 @@ for the seed values — that table is the source of truth.
 - 250 included viewer-hours/month
 - 250 concurrent viewer ceiling, 1 concurrent stream max
 - $0.13/viewer-hour overage above the included 250
-- 1% sales fee on all paid orders
+- 1.5% sales fee on all paid orders
 - Storefront on DUM Club marketplace
 - DUM Points built in automatically
 - Basic sales analytics
@@ -417,7 +417,7 @@ for the seed values — that table is the source of truth.
 - 700 included viewer-hours/month
 - 600 concurrent viewer ceiling, 1 concurrent stream max
 - $0.12/viewer-hour overage above the included 700
-- 1% sales fee on all paid orders
+- 1.5% sales fee on all paid orders
 - Everything in Starter
 - Featured placement in category browse
 - Automatic customer win-back texts (replaces direct mail)
@@ -428,7 +428,7 @@ for the seed values — that table is the source of truth.
 - 1,500 included viewer-hours/month
 - 2,000 concurrent viewer ceiling, 3 concurrent streams max
 - $0.10/viewer-hour overage above the included 1,500
-- 1% sales fee on all paid orders
+- 1.5% sales fee on all paid orders
 - Everything in Growth
 - AI social media management
   (Instagram/TikTok/Facebook automated posting)
@@ -441,7 +441,7 @@ for the seed values — that table is the source of truth.
 - Custom viewer-hour budget, concurrent ceiling, and
   max-streams negotiated per contract
 - $0.10/viewer-hour overage above the contracted budget
-- 1% sales fee on all paid orders
+- 1.5% sales fee on all paid orders
 - DUM Points under YOUR brand name
 - Custom rewards rules and earning rates
 - API access for your own platform
@@ -453,7 +453,7 @@ for the seed values — that table is the source of truth.
 - Custom viewer-hour budget, concurrent ceiling, and
   max-streams negotiated per contract
 - $0.08/viewer-hour overage above the contracted budget
-- 1% sales fee on all paid orders (subject to contract
+- 1.5% sales fee on all paid orders (subject to contract
   negotiation on enterprise deals)
 - Full white-label loyalty infrastructure
 - Custom integrations (POS, CRM, ERP)
@@ -462,7 +462,7 @@ for the seed values — that table is the source of truth.
 - For hotel chains, retail chains, franchise networks
 
 ### No-double-bill rule (applies to all tiers)
-At billing-period close, if the merchant's 1% sales fee
+At billing-period close, if the merchant's 1.5% sales fee
 earnings already cover their viewer-hour overage, the
 overage is waived (or netted against the sales fee). The
 merchant only pays for video if their sales didn't already
@@ -471,13 +471,13 @@ cover the cost. Formula:
 This applies uniformly across all five tiers.
 
 ### Never
-- Never charge more than 1% on sales (1% is the cap;
-  doctrine forbids raising it)
+- Never charge more than 1.5% on sales (1.5% is the cap;
+  doctrine forbids exceeding it)
 - Never charge per-transaction extras to sellers above the
-  flat 1% sales fee
+  flat 1.5% sales fee
 - Never charge listing fees
 - Never advertise a tier without disclosing the viewer-hour
-  budget, overage rate, and 1% sales fee
+  budget, overage rate, and 1.5% sales fee
 - Stripe processing fees (2.9% + $0.30) are paid by
   the buyer as part of checkout — not by the seller
 
@@ -507,10 +507,10 @@ Customers can find nearby deals across the merchant network
 Automated point expiry reminders and deal pushes
 No stamps, no printing, no mailing
 
-**Stream 5: 1% sales fee on all paid orders**
+**Stream 5: 1.5% sales fee on all paid orders**
 Deducted from seller payout via Stripe application_fee_amount
 on every PaymentIntent. Reads commission_rate from plan_limits
-(1.00% on every tier after migration 054); merchant-specific
+(1.50% on every tier after migration 082); merchant-specific
 overrides via merchants.commission_rate_override (currently
 unused — left untouched by 054).
 At $100k merchant GMV/month: ~$1,000/month per merchant.
@@ -686,10 +686,10 @@ FOUNDING_CAP = 100
 (in backend/api/routes/merchant.py — single source of truth)
 
 Standard subscription after founding: $39/month base (Starter tier)
-Sales fee on all sales: 1% — applied via Stripe
+Sales fee on all sales: 1.5% — applied via Stripe
 application_fee_amount on every PaymentIntent. Source of
-truth: plan_limits.commission_rate (1.00% on every tier after
-migration 054). 1% applies to all merchants including
+truth: plan_limits.commission_rate (1.50% on every tier after
+migration 082). 1.5% applies to all merchants including
 founders; founding-tier lock covers the subscription price,
 not the sales fee.
 Founding badge: permanent, never removed
@@ -708,9 +708,9 @@ takedowns.
 
 | Expense line | What businesses pay today | DUM Club |
 |---|---|---|
-| Delivery-app commissions | 15-30% of every order | $39-$299/mo + 1% sales fee |
-| Live-selling commissions (Whatnot) | 8% + 2.9% per sale | $39-$299/mo + 1% sales fee |
-| Live-selling commissions (Commonsold) | 2-3% per sale + $499-$1,499/mo | $39-$299/mo + 1% sales fee |
+| Delivery-app commissions | 15-30% of every order | $39-$299/mo + 1.5% sales fee |
+| Live-selling commissions (Whatnot) | 8% + 2.9% per sale | $39-$299/mo + 1.5% sales fee |
+| Live-selling commissions (Commonsold) | 2-3% per sale + $499-$1,499/mo | $39-$299/mo + 1.5% sales fee |
 | Loyalty software (Yotpo, Smile.io) | $50-$999/mo | Included every tier |
 | SMS / email retention | $20-$200/mo | Included Growth+ |
 | Local-deal / review platforms | $500-$2,000/mo ad spend | Free display + deals |
@@ -720,7 +720,7 @@ takedowns.
 
 | | Live-selling competitors | Loyalty / retention SaaS | Delivery apps | DUM Club |
 |---|---|---|---|---|
-| Fee model | 8%+ per sale | Monthly per tool | 15-30% per order | $39-$2,000+/mo + 1% sales fee |
+| Fee model | 8%+ per sale | Monthly per tool | 15-30% per order | $39-$2,000+/mo + 1.5% sales fee |
 | Loyalty | None / basic | Their only product | None | Every tier |
 | AI retention | None | Add-on | None | Growth+ |
 | Local discovery | No | No | Listing only | Free + deals |
@@ -742,9 +742,9 @@ those are different categories that confuse the pitch.
 
 ## 12. WHAT NEVER CHANGES (ABSOLUTE RULES)
 
-1. 1% sales fee on every paid order; flat subscription
-   tier; never charge more than 1% to sellers. The 1% cap
-   is doctrine — raising it requires a doctrine update,
+1. 1.5% sales fee on every paid order; flat subscription
+   tier; never charge more than 1.5% to sellers. The 1.5% cap
+   is doctrine — exceeding it requires a doctrine update,
    not a billing-config change.
 2. Never fake data — no simulated tickers, no demo
    storefronts visible in Discover

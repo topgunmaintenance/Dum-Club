@@ -1,7 +1,7 @@
 -- phase0_verify.sql
 -- Read-only verification for Phase 0 livestream cost-protection.
 --
--- Covers migrations 048 (telemetry tables), 054 (1% commission), and
+-- Covers migrations 048 (telemetry tables), 054 (1% commission), 082 (1.5% commission), and
 -- 059 (last_heartbeat_at column) plus the runtime sanity checks for
 -- the code changes that depend on them. Run after every Phase 0 deploy.
 --
@@ -9,11 +9,11 @@
 -- "Expected" comment. Failures: STOP, diagnose, do not proceed.
 
 -- ================================================================
--- Section 1: migration 054 (1% commission active)
+-- Section 1: migration 082 (1.5% commission active)
 -- ================================================================
 
--- Expected: every plan_id has commission_rate = 0.0100
--- (Pre-054 state: every row was 0.0000 -> 0% charged while UI said 1%.)
+-- Expected: every plan_id has commission_rate = 0.0150
+-- (Was 0.0100 (1%) after migration 054; migration 082 raises every tier to 0.0150 = 1.5%.)
 SELECT plan_id, commission_rate
   FROM public.plan_limits
  ORDER BY plan_id;

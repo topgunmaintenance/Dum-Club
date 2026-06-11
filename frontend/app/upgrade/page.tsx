@@ -15,7 +15,7 @@ const TIERS = [
       "Storefront on DUM Club marketplace",
       "DUM Points built in automatically",
       "Basic sales analytics",
-      "Stripe direct payouts. Keep 99% (1% sales fee)",
+      "Stripe direct payouts. Keep 98.5% (1.5% sales fee)",
       "Listed on Discover page",
       "Founding seller badge (permanent)",
     ],
@@ -34,7 +34,7 @@ const TIERS = [
       "Storefront on DUM Club marketplace",
       "DUM Points built in automatically",
       "Basic sales analytics",
-      "Stripe direct payouts. Keep 99% (1% sales fee)",
+      "Stripe direct payouts. Keep 98.5% (1.5% sales fee)",
       "Listed on Discover page",
     ],
     cta: "Get Started",
@@ -100,10 +100,10 @@ export default function PricingPage() {
           <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
             Flat monthly fee.
             <br />
-            <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
+            <span className="text-brand-teal">1.5% sales fee. That&apos;s it.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
-            Flat monthly subscription plus a 1% sales fee per order. Keep more of every dollar. No listing fees, no surprise charges. Ever.
+            Flat monthly subscription plus a 1.5% sales fee per order. Keep more of every dollar. No listing fees, no surprise charges. Ever.
           </p>
         </div>
 
@@ -111,7 +111,7 @@ export default function PricingPage() {
         <div className="mx-auto mt-8 max-w-xl rounded-xl border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-5 py-3 text-center text-sm text-secondary">
           <span className="text-red-400 font-semibold">Whatnot charges 8% + 2.9% per sale.</span>{" "}
           Sell $10k/month and you lose $1,090.
-          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $39/month + 1% ($199 at $10k).</span>
+          <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $39/month + 1.5% ($189 at $10k).</span>
         </div>
 
         {/* Tier cards */}
@@ -180,7 +180,7 @@ export default function PricingPage() {
             { icon: "💸", title: "Whatnot", desc: "8% + 2.9% per sale", bad: true },
             { icon: "💰", title: "Commonsold", desc: "% per sale + monthly", bad: true },
             { icon: "📍", title: "Google Maps", desc: "Pay to rank in ads", bad: true },
-            { icon: "◆", title: "DUM Club", desc: "From $39/mo + 1%", bad: false },
+            { icon: "◆", title: "DUM Club", desc: "From $39/mo + 1.5%", bad: false },
           ].map((comp) => (
             <div key={comp.title} className={`rounded-xl border p-4 text-center ${comp.bad ? "border-default bg-surface-muted" : "border-default bg-brand-teal-soft"}`}>
               <div className="text-xl">{comp.icon}</div>

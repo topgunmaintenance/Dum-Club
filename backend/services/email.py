@@ -281,7 +281,7 @@ OUTREACH_TEMPLATES: dict = {
             "Hi {business_name},\n\n"
             "How much are you losing in fees every month?\n\n"
             "We built DUM Club — a platform where you pay a flat monthly "
-            "subscription plus just a 1% sales fee per order. Whatnot takes "
+            "subscription plus just a 1.5% sales fee per order. Whatnot takes "
             "8% per sale; DoorDash takes 15-30%. DUM Club is industry-low, "
             "with customer loyalty rewards built in automatically.\n\n"
             "We already set up a store page for you. Want access?\n\n"
@@ -302,7 +302,7 @@ OUTREACH_TEMPLATES: dict = {
             "mentioned we already set one up for you — free forever as a "
             "founding merchant.\n\n"
             "No credit card today. 60 days free, then a flat subscription "
-            "plus a 1% sales fee per order (Whatnot takes 8%). Want a look?\n\n"
+            "plus a 1.5% sales fee per order (Whatnot takes 8%). Want a look?\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
             "— Julian\n"
@@ -473,7 +473,7 @@ def send_trial_t_minus_14(merchant_email: str, business_name: str, plan_price_us
         headline=f"Hey {business_name or 'there'} — two weeks left in your free trial",
         body_paragraphs=[
             f"Your 60-day free trial of DUM Club ends on <strong>{trial_end_date}</strong>.",
-            f"After that, your plan will be <strong>${plan_price_usd}/month</strong> plus a 1% sales fee per order (industry-low; Whatnot takes 8%).",
+            f"After that, your plan will be <strong>${plan_price_usd}/month</strong> plus a 1.5% sales fee per order (industry-low; Whatnot takes 8%).",
             "Add a payment method any time before then to keep your shop running with no break. If you do nothing, your plan pauses automatically — no surprise charges.",
         ],
         cta_label="Open my dashboard",
@@ -525,7 +525,7 @@ def send_trial_conversion_confirmed(merchant_email: str, business_name: str, pla
         headline="You're in. Plan is active.",
         body_paragraphs=[
             f"Your free trial is over and your <strong>${plan_price_usd}/month</strong> plan is now running.",
-            "1% sales fee per paid order, deducted from your Stripe payout (industry-low — Whatnot takes 8%). Money still goes straight to your bank.",
+            "1.5% sales fee per paid order, deducted from your Stripe payout (industry-low — Whatnot takes 8%). Money still goes straight to your bank.",
             "Thanks for building with us.",
         ],
         cta_label="Open my dashboard",
@@ -659,7 +659,7 @@ def send_weekly_merchant_recap(
         Open your dashboard
       </a>
       <p style="color:#888;font-size:12px;line-height:1.5;margin-top:28px;">
-        Flat monthly subscription plus a 1% sales fee. Industry-low.
+        Flat monthly subscription plus a 1.5% sales fee. Industry-low.
         DUM Club helps local businesses sell direct and keep every customer.
       </p>
     </div>

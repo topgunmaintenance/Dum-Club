@@ -31,7 +31,7 @@ import {
 export const metadata: Metadata = {
   title: "Why DUM Club vs Instagram Live, DoorDash, Whatnot",
   description:
-    "Why local businesses pick DUM Club over Instagram Live, DoorDash, or Whatnot. Own your customers, fill slow hours, sell direct, lower platform dependency. From $39/month plus a 1% sales fee.",
+    "Why local businesses pick DUM Club over Instagram Live, DoorDash, or Whatnot. Own your customers, fill slow hours, sell direct, lower platform dependency. From $39/month plus a 1.5% sales fee.",
   openGraph: {
     title: "Why DUM Club vs Instagram Live, DoorDash, Whatnot",
     description:
@@ -68,7 +68,7 @@ const COMPARE_ROWS: CompareRow[] = [
     ig: "0% (no checkout). You lose the customer data to the platform.",
     doordash: "15 to 30% of every order.",
     whatnot: "8% per sale + 2.9% processing.",
-    dum: "1% per sale. Stripe processing paid by the buyer.",
+    dum: "1.5% per sale. Stripe processing paid by the buyer.",
   },
   {
     label: "Where you sell",
@@ -182,7 +182,7 @@ const OWNERSHIP_PROMISES = [
   {
     title: "Sell directly",
     body:
-      "Stripe pays you, not a marketplace. 1% per sale is the only cut we take. Everything else hits your bank account.",
+      "Stripe pays you, not a marketplace. 1.5% per sale is the only cut we take. Everything else hits your bank account.",
   },
   {
     title: "Lower platform dependency",
@@ -220,7 +220,7 @@ export default function WhyDumClubPage() {
             <span className="text-brand-teal">Whatnot</span>.
           </Heading>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
-            One flat monthly subscription. 1% per sale. Customers who come
+            One flat monthly subscription. 1.5% per sale. Customers who come
             back on their own. Live selling that drops your slow-hour
             calendar onto autopilot.
           </p>
@@ -239,7 +239,7 @@ export default function WhyDumClubPage() {
             </Link>
           </div>
           <p className="mx-auto mt-5 max-w-xl text-[13px] text-muted">
-            From $39/month plus a 1% sales fee. Founding 100 merchants get
+            From $39/month plus a 1.5% sales fee. Founding 100 merchants get
             60 days free and lock in founding pricing for life.
           </p>
         </Container>
@@ -417,7 +417,7 @@ export default function WhyDumClubPage() {
           </Heading>
           <p className="mx-auto mt-4 max-w-xl text-secondary">
             Get 60 days free and lock in founding pricing for life. Flat
-            monthly subscription plus a 1% sales fee. Industry-low (Whatnot
+            monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot
             takes 8%). Keep more of every sale.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">

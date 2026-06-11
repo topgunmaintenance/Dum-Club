@@ -4,11 +4,11 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About DUM Club. Built by a Local Business, for Local Businesses",
   description:
-    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business. Flat monthly subscription plus a 1% sales fee. Industry-low.",
+    "DUM Club was built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. The loyalty network for local business. Flat monthly subscription plus a 1.5% sales fee. Industry-low.",
   openGraph: {
     title: "About DUM Club. Built by a Local Business, for Local Businesses",
     description:
-      "Built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. Flat monthly subscription plus a 1% sales fee. Industry-low.",
+      "Built by Julian Mero, founder of Topgun Maintenance LLC. Drive Ur Market. Flat monthly subscription plus a 1.5% sales fee. Industry-low.",
     siteName: "DUM Club",
     type: "website",
   },
@@ -34,7 +34,7 @@ export default function AboutPage() {
           DUM Club is the loyalty network for local commerce. Live selling,
           DUM Points loyalty, automatic customer win-back texts, and flash
           sales. Every tool a local business needs to keep its own customers,
-          on its own website, for one flat monthly subscription plus a 1% sales fee.
+          on its own website, for one flat monthly subscription plus a 1.5% sales fee.
         </p>
 
         {/* Founder Note */}
@@ -71,7 +71,7 @@ export default function AboutPage() {
               </p>
               <p className="mt-4 text-[15px] leading-relaxed text-primary sm:text-base">
                 DUM Club is the platform I wished existed: flat monthly
-                fee plus just 1% per sale (Whatnot takes 8%), every tool
+                fee plus just 1.5% per sale (Whatnot takes 8%), every tool
                 included. Built for the shop owner who already paid for
                 the website and just wants more customers walking in.
               </p>
@@ -132,7 +132,7 @@ export default function AboutPage() {
             {[
               {
                 label: "Live selling on your own page",
-                body: "Add live shopping to any business website with a single script tag. No marketplace; just 1% per sale (vs Whatnot's 8%).",
+                body: "Add live shopping to any business website with a single script tag. No marketplace; just 1.5% per sale (vs Whatnot's 8%).",
               },
               {
                 label: "DUM Points loyalty across the network",
@@ -168,7 +168,7 @@ export default function AboutPage() {
             Pricing
           </div>
           <p className="mt-3 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-            Starting at $39/month plus a 1% sales fee. Always.
+            Starting at $39/month plus a 1.5% sales fee. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
             Join the first 100 merchants. Get 60 days free and lock in

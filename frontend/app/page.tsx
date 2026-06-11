@@ -1227,8 +1227,8 @@ function LiveSaleToast() {
 /* ─── Comparison Table: Whatnot vs Commonsold vs Google Maps vs DUM Club ─── */
 function ComparisonTable() {
   const rows = [
-    { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1%" },
-    { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1% only" },
+    { f: "Fee model", w: "8% + 2.9%", c: "% per sale", g: "Pay for ads", d: "Starting at $39/mo + 1.5%" },
+    { f: "Per-sale commission", w: "8%", c: "Varies", g: "none", d: "1.5% only" },
     { f: "Live selling", w: "Yes", c: "Yes", g: "No", d: "Yes" },
     { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
     { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
@@ -1820,7 +1820,7 @@ function PricingTiers() {
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Pricing</div>
       <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
-        Flat fee. <span className="text-brand-teal">1% sales fee. That&apos;s it.</span>
+        Flat fee. <span className="text-brand-teal">1.5% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
         Join the first 100 merchants. Get 60 days free and lock in founding pricing for life.
@@ -2809,10 +2809,10 @@ export default function Home() {
                 Sell Live. <span className="text-brand-navy">Keep More of Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-                Live selling on your own website. Flat monthly subscription plus a 1% sales fee. Industry-low.
+                Live selling on your own website. Flat monthly subscription plus a 1.5% sales fee. Industry-low.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1% sales fee.</span> Keep more of every dollar.
+                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1.5% sales fee.</span> Keep more of every dollar.
               </p>
 
               {/* Founder trust row. Personal phone + email were
@@ -2978,7 +2978,7 @@ export default function Home() {
                   Buy Now
                 </button>
                 <p className="mt-2 text-center text-[10px] uppercase tracking-[0.15em] text-secondary">
-                  Stripe checkout · 1% sales fee
+                  Stripe checkout · 1.5% sales fee
                 </p>
               </div>
             </div>
@@ -3093,7 +3093,7 @@ export default function Home() {
               { name: "Live selling", fees: "8% + fees", detail: "per sale", muted: true },
               { name: "Loyalty software", fees: "$50 to $300", detail: "per month", muted: true },
               { name: "SMS retention", fees: "$20 to $200", detail: "per month", muted: true },
-              { name: "DUM Club", fees: "From $39", detail: "flat / month · 1% sales fee", muted: false },
+              { name: "DUM Club", fees: "From $39", detail: "flat / month · 1.5% sales fee", muted: false },
             ].map((p) => (
               <div
                 key={p.name}
@@ -3262,7 +3262,7 @@ export default function Home() {
               <span className="text-brand-teal">live storefront?</span>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-primary">
-              Starting at $39/month + 1% sales fee. Join the first 100 merchants and lock in founding pricing for life.
+              Starting at $39/month + 1.5% sales fee. Join the first 100 merchants and lock in founding pricing for life.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3">
               <Link

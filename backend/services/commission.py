@@ -12,16 +12,16 @@ Resolution order at sale time:
     2. plan_limits.commission_rate via merchants.plan_id
        (migration 049 / 051). If the merchant has a plan_id and the
        plan_limits row has a non-NULL commission_rate, use it.
-       Migration 054 set every tier to 0.0100 (1% sales fee) after
-       migration 053's earlier zeroing; today this returns
-       Decimal("0.0100") for any non-overridden merchant on one of
+       Migration 082 set every tier to 0.0150 (1.5% sales fee),
+       superseding migration 054's earlier 0.0100; today this returns
+       Decimal("0.0150") for any non-overridden merchant on one of
        the five seeded tiers. The lookup still happens so a future
        doctrine change (different tier rate) Just Works.
 
     3. Raise CommissionRateUnset.
        Fail closed. The caller must refuse the sale-setup rather
        than silently default. This is the doctrine-correct posture:
-       the 1% sales fee is encoded as an explicit value in
+       the 1.5% sales fee is encoded as an explicit value in
        plan_limits, never as "absence of a rate". A NULL
        commission_rate column means the rate is unset and the
        sale-setup MUST fail rather than guess.
