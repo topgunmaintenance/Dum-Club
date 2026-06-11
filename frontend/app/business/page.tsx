@@ -149,7 +149,7 @@ function BusinessPageInner() {
             {[
               {
                 q: "Do you take a percentage of my sales?",
-                a: "Yes. 1% per paid order, deducted from your Stripe payout. That is the only per-sale fee on DUM Club. There is no listing fee, no extra cut. Whatnot takes 8% per sale; DUM Club takes 1.5%. Stripe's standard card-processing fee is paid by the buyer at checkout, not by you.",
+                a: "Yes. 1.5% per paid order, deducted from your Stripe payout. That is the only per-sale fee on DUM Club. There is no listing fee, no extra cut. Whatnot takes 8% per sale; DUM Club takes 1.5%. Stripe's standard card-processing fee is paid by the buyer at checkout, not by you.",
               },
               {
                 q: "What if I don't have a website yet?",
