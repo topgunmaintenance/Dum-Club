@@ -11,6 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Project } from "../../lib/discover/types";
+import { cleanLogoUrl } from "../../lib/imageSrc";
 import { getProjectEmoji, getAccent, lowestOfferPrice } from "../../lib/discover/filters";
 import { classifyProject } from "../../lib/categories";
 
@@ -49,7 +50,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           const category = classifyProject(project);
           const accent = getAccent(index);
           const price = lowestOfferPrice(project);
-          const rawLogo = (project.business_profile?.logo_url || "").trim() || null;
+          const rawLogo = cleanLogoUrl(project.business_profile?.logo_url);
           const logoUrl = rawLogo && !failedLogos.has(project.id) ? rawLogo : null;
 
           return (
