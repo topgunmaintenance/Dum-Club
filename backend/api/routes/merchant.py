@@ -25,6 +25,7 @@ from services.subscriptions import (
     cancel_subscription,
 )
 from services.live_limits import check_rate_limit
+from services.trial_identity import evaluate_trial_gate, record_trial_identity
 
 router = APIRouter()
 
@@ -499,6 +500,28 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
     if existing.data:
         return {"merchant": existing.data[0], "created": False}
 
+    # ── Trial-identity gate (audit a-d) ───────────────────────────
+    # Compute the salted identity hash and check the ledger BEFORE the
+    # 60-day trial is provisioned further down. Inert unless
+    # TRIAL_IDENTITY_GATE_ENABLED is on (and migration 080 applied). This
+    # NEVER blocks account creation — only the free-trial GRANT is gated,
+    # fail-closed. Email is the dedupe signal (hashed); look it up once
+    # here and reuse it for the trial call below.
+    trial_gate_email: Optional[str] = None
+    try:
+        _ue = (
+            supabase.table("users")
+            .select("email")
+            .eq("privy_id", privy_id)
+            .limit(1)
+            .execute()
+        )
+        if _ue.data:
+            trial_gate_email = (_ue.data[0] or {}).get("email")
+    except Exception as exc:
+        print(f"[merchant/signup] trial-gate email lookup failed: {exc!r}")
+    trial_gate = evaluate_trial_gate(supabase, trial_gate_email)
+
     # Link to existing business_profile if one exists
     bp_id = None
     bp = (
@@ -651,21 +674,8 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
     # state, and a follow-up dashboard load can call this code path again
     # (gated by stripe_subscription_id IS NULL) to retry.
     if not inserted.get("founding_merchant"):
-        # Look up the merchant's cached email from users.email — sync writes
-        # it on every Privy session, so first-signup callers have it.
-        user_email: Optional[str] = None
-        try:
-            user_res = (
-                supabase.table("users")
-                .select("email")
-                .eq("privy_id", privy_id)
-                .limit(1)
-                .execute()
-            )
-            if user_res.data:
-                user_email = (user_res.data[0] or {}).get("email")
-        except Exception as exc:
-            print(f"[merchant/signup] email lookup failed: {exc!r}")
+        # Email was already resolved for the trial-identity gate above.
+        user_email: Optional[str] = trial_gate_email
 
         # Resolve the tier the merchant actually picked on /pricing or
         # /upgrade. Validate against the allowed self-serve set; anything
@@ -680,12 +690,20 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
                 f"falling back to {resolved_tier}"
             )
 
-        trial = create_trial_subscription(
-            privy_id=privy_id,
-            email=user_email,
-            business_name=body.business_name,
-            tier=resolved_tier,
-        )
+        # Trial-identity gate: only provision a fresh trial when the gate
+        # allows it. When blocked (prior trial / unverifiable / gate error),
+        # skip issuance — the account is still created, just without a new
+        # 60-day trial. Fail-closed: a gate error withholds the trial.
+        if trial_gate["allowed"]:
+            trial = create_trial_subscription(
+                privy_id=privy_id,
+                email=user_email,
+                business_name=body.business_name,
+                tier=resolved_tier,
+            )
+        else:
+            print(f"[merchant/signup] trial withheld by identity gate: {trial_gate['reason']}")
+            trial = {"error": f"trial_gate:{trial_gate['reason']}"}
         if not trial.get("error"):
             try:
                 trial_update = {
@@ -705,6 +723,10 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
                     "id", inserted["id"]
                 ).execute()
                 inserted.update(trial_update)
+                # Record the granted trial in the identity ledger so this
+                # identity can't claim a second trial later. No-op when the
+                # gate is disabled or there's no hash.
+                record_trial_identity(supabase, inserted["id"], trial_gate.get("identity_hash"))
             except Exception as exc:
                 print(f"[merchant/signup] trial write-through failed: {exc!r}")
         else:
