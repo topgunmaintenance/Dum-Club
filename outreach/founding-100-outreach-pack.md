@@ -13,7 +13,7 @@
 
 > Every purchase earns the customer DUM Points — loyalty rewards they can use at any business on the network. That means my customers discover your business, and yours discover mine. It's a shared loyalty network that grows with every merchant.
 
-> Right now I'm recruiting the founding 100 merchants. You join free. After the founding period, you're locked in at $29 a month forever. That's it. Flat fee plus a low 1.5% sales fee. Stripe pays you direct.
+> Right now I'm recruiting the founding 100 merchants. You join free. After the founding period, you lock in founding pricing for life. That's it. Flat fee plus a low 1.5% sales fee. Stripe pays you direct.
 
 > If you're on Whatnot paying 8% plus processing, or running your own site with no built-in traffic — this is the alternative. Click the link below and claim your spot."
 
@@ -31,9 +31,9 @@
 
 > Quick question: how much are you paying in platform fees per month? If you're doing $10K/mo on Whatnot, that's roughly $1,150 gone — 8% platform + 2.9% processing on every sale.
 
-> I built DUM Club as the flat-fee alternative. $29-$99/month plus a low 1.5% sales fee, Stripe pays you direct. Keep more of every sale.
+> I built DUM Club as the flat-fee alternative. $39-$299/month plus a low 1.5% sales fee, Stripe pays you direct. Keep more of every sale.
 
-> I'm recruiting the founding 100 merchants right now. Founding merchants join free and lock in $29/mo forever. I'm merchant #1 — I run an aircraft maintenance shop on the platform myself.
+> I'm recruiting the founding 100 merchants right now. Founding merchants join free and lock in founding pricing for life. I'm merchant #1 — I run an aircraft maintenance shop on the platform myself.
 
 > Here's a 90-second walkthrough: [Loom link]
 
@@ -53,7 +53,7 @@
 
 > We also have built-in loyalty (DUM Points) that brings customers back automatically — no stamps, no apps, no extra work. Customers earn points at your store and can spend them at any store on the network.
 
-> Right now I'm filling the founding 100 slots. Free to join, $29/mo locked in forever after founding period. I'm seller #1 — running my own business on it.
+> Right now I'm filling the founding 100 slots. Free to join, founding pricing locked in for life after the founding period. I'm seller #1 — running my own business on it.
 
 > 90-second demo: [Loom link]
 > Grab your spot: [dumclub.com/merchant]
@@ -68,11 +68,11 @@
 
 > Hey [Name] — I found your [business type] on Google and your reviews are impressive.
 
-> Quick pitch: I built DUM Club as a local business marketplace with a flat fee plus a low 1.5% sales fee. Instead of paying Google to show up in search or running expensive ad campaigns, your business gets listed with your real deals and Google reviews — for free during the founding period, then $29/mo flat.
+> Quick pitch: I built DUM Club as a local business marketplace with a flat fee plus a low 1.5% sales fee. Instead of paying Google to show up in search or running expensive ad campaigns, your business gets listed with your real deals and Google reviews — for free during the founding period, then $39/mo flat.
 
 > The platform also includes a built-in loyalty program (DUM Points). Every customer who buys from you earns points they can spend at any business on the network. It's like a shared loyalty card that works across every local business — replaces direct mail, punch cards, and Yotpo ($199+/mo) in one flat fee.
 
-> I'm merchant #1 — I run Topgun Maintenance LLC, an aircraft maintenance shop in Morristown, NJ. The first 100 merchants get in free and lock $29/mo forever.
+> I'm merchant #1 — I run Topgun Maintenance LLC, an aircraft maintenance shop in Morristown, NJ. The first 100 merchants get in free and lock in founding pricing for life.
 
 > Quick walkthrough: [Loom link]
 > Claim your founding spot: [dumclub.com/merchant]

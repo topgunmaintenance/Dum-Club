@@ -47,8 +47,8 @@ without giving away a percentage of every sale.
 
 | Tier | Price | Key Features |
 |------|-------|--------------|
-| Founding 100 | $0 → $29/mo | Founding access, all core features, 1.5% sales fee |
-| Starter | $29/mo | Live storefront, DUM Points, Stripe payouts |
+| Founding 100 | $0 → $39/mo | Founding access, all core features, 1.5% sales fee |
+| Starter | $39/mo | Live storefront, DUM Points, Stripe payouts |
 | Growth | $49/mo | Customer-retention tools, featured placement |
 | Pro | $99/mo | AI social tools, homepage placement |
 | Business | $499/mo | White-label loyalty infrastructure |
