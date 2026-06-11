@@ -200,7 +200,7 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         )
     except Exception as db_err:
         print(f"[trade] DB ERROR fetching project: {type(db_err).__name__}: {db_err}")
-        raise HTTPException(status_code=500, detail=f"Database error fetching project")
+        raise HTTPException(status_code=500, detail="Could not load the project. Please try again.")
 
     project = project_res.data
     if not project:
@@ -309,7 +309,7 @@ async def create_project_trade(project_id: str, body: TradeRequest):
         print(f"[trade] inserted project={project_id} side={side} amount={amount} id={trade_res.data[0]['id'] if trade_res.data else '?'}")
     except Exception as db_err:
         print(f"[trade] DB ERROR inserting trade project={project_id} side={side} amount={amount} err={type(db_err).__name__}: {db_err}")
-        raise HTTPException(status_code=500, detail=f"Failed to record trade: {str(db_err)}")
+        raise HTTPException(status_code=500, detail="Could not record the trade. Please try again.")
 
     market_upsert = {
         "project_id": project_id,
