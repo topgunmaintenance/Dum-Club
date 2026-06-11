@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DUM Club. Drive Ur Market. Live Selling. 1.5% Sales Fee.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1%, not 8%.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1.5%, not 8%.",
     siteName: "DUM Club",
     type: "website",
   },
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DUM Club. Drive Ur Market. Live Selling. 1.5% Sales Fee.",
     description:
-      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1%, not 8%.",
+      "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1.5%, not 8%.",
   },
 };
 
