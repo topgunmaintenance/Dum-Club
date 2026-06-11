@@ -1807,6 +1807,137 @@ async def update_order_status(
     return {"status": new_status, "order_id": order_id}
 
 
+class ClaimOfferRequest(BaseModel):
+    project_id: str
+    display_name: Optional[str] = None
+    keyword: Optional[str] = None
+
+
+@router.post("/claim-offer")
+async def claim_offer(
+    body: ClaimOfferRequest,
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Comment-to-buy: claim/reserve the active PINNED offer of a live show
+    and hand back its offer_id so the client opens the EXISTING
+    /create-payment-intent checkout (commission_rate stays fail-closed there
+    — this endpoint does NOT touch fee math). Broadcasts an "X just claimed!"
+    event to the live chat rail via the same WS broadcast item_sold uses.
+
+    The live_offer_claims ledger insert is BEST-EFFORT: if migration 081
+    isn't applied yet, the claim + broadcast + checkout hand-off still work
+    (degraded — no reservation/inventory-reserve tracking)."""
+    from datetime import timedelta
+
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Sign in to claim.")
+
+    # Per-buyer throttle on the claim action (in-memory limiter).
+    enforce_rate_limit(privy_id, "claim-offer", 30)
+
+    supabase = get_client()
+
+    try:
+        from api.routes.projects import resolve_project_uuid
+        project_uuid = resolve_project_uuid(supabase, body.project_id) or body.project_id
+    except Exception:
+        project_uuid = body.project_id
+
+    prow = (
+        supabase.table("projects")
+        .select("pinned_offer_id, is_live")
+        .eq("id", project_uuid)
+        .limit(1)
+        .execute()
+    )
+    if not prow.data:
+        raise HTTPException(status_code=404, detail="Storefront not found.")
+    pinned_id = prow.data[0].get("pinned_offer_id")
+    if not pinned_id:
+        raise HTTPException(status_code=409, detail="No item is pinned right now.")
+
+    ores = (
+        supabase.table("offers")
+        .select("id, title, is_active, quantity_available, quantity_sold, unlimited_inventory")
+        .eq("id", pinned_id)
+        .limit(1)
+        .execute()
+    )
+    if not ores.data:
+        raise HTTPException(status_code=409, detail="The pinned item is unavailable.")
+    offer = ores.data[0]
+    if offer.get("is_active") is False:
+        raise HTTPException(status_code=409, detail="The pinned item is no longer available.")
+
+    remaining = None
+    if not bool(offer.get("unlimited_inventory")):
+        qa = offer.get("quantity_available") or 0
+        qs = offer.get("quantity_sold") or 0
+        active_claims = 0
+        try:
+            cres = (
+                supabase.table("live_offer_claims")
+                .select("id")
+                .eq("offer_id", pinned_id)
+                .in_("status", ["claimed", "checkout_started"])
+                .execute()
+            )
+            active_claims = len(cres.data or [])
+        except Exception:
+            active_claims = 0
+        remaining = max(0, qa - qs - active_claims)
+        # qa == 0 with unlimited_inventory False is treated as "unset" (no
+        # cap) to match the existing pinned-card sold-out logic.
+        if qa > 0 and remaining <= 0:
+            raise HTTPException(status_code=409, detail="That item just sold out.")
+
+    # ── CLAIM INSERT (best-effort; degrades when migration 081 is absent) ──
+    claim_recorded = False
+    try:
+        existing = (
+            supabase.table("live_offer_claims")
+            .select("id")
+            .eq("offer_id", pinned_id)
+            .eq("buyer_privy_id", privy_id)
+            .in_("status", ["claimed", "checkout_started"])
+            .limit(1)
+            .execute()
+        )
+        if not existing.data:
+            supabase.table("live_offer_claims").insert({
+                "project_id": project_uuid,
+                "offer_id": pinned_id,
+                "buyer_privy_id": privy_id,
+                "status": "claimed",
+                "keyword": ((body.keyword or "").strip()[:32]) or None,
+                "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+            }).execute()
+        claim_recorded = True
+    except Exception as exc:  # noqa: BLE001
+        print(f"[claim-offer] ledger insert skipped/failed (continuing): {exc!r}")
+
+    # Live "X just claimed!" feed — reuses the item_sold WS broadcast path.
+    display = (body.display_name or "").strip()[:40] or "Someone"
+    try:
+        broadcast_sync(project_uuid, {
+            "type": "claim",
+            "data": {
+                "offer_id": pinned_id,
+                "title": offer.get("title"),
+                "display_name": display,
+                "remaining": remaining,
+            },
+        })
+    except Exception as exc:  # noqa: BLE001
+        print(f"[claim-offer] broadcast failed (non-fatal): {exc!r}")
+
+    # Hand off: the client now calls the EXISTING /create-payment-intent with
+    # this offer_id (Stripe + commission logic untouched).
+    return {"ok": True, "offer_id": pinned_id, "remaining": remaining, "claim_recorded": claim_recorded}
+
+
 @router.post("/orders/{order_id}/refund")
 async def refund_order(
     order_id: str,

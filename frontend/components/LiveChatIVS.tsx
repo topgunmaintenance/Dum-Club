@@ -42,7 +42,16 @@ interface LiveChatIVSProps {
   // from the verified token (not the client), gates sending to signed-in
   // users, and honors host bans. Guests (no token) can still watch.
   getToken?: () => Promise<string | null>;
+  // Comment-to-buy: when a viewer types a claim keyword ("!buy" / "sold"),
+  // the chat hands the raw text up instead of posting it, so the parent can
+  // claim the pinned offer + open checkout. Optional; existing call sites
+  // unchanged.
+  onCommentBuy?: (text: string) => void;
 }
+
+// Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
+// (optionally followed by more text) at the start of the message.
+const CLAIM_KEYWORD_RE = /^\s*!?(buy|sold)\b/i;
 
 // Anonymous viewer ids carry an "anon-" prefix (set client-side in
 // /embed/[businessId]/page.tsx when no Privy user is signed in). The
@@ -60,7 +69,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -146,6 +155,19 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
               body: `${msg.data.title || "Item"} just sold! 🎉`,
               created_at: Date.now() / 1000,
             }]);
+          } else if (msg.type === "claim") {
+            // Live "X just claimed!" feed (comment-to-buy). System line in
+            // the chat rail; reuses the same broadcast plumbing as item_sold.
+            const d = msg.data || {};
+            const left = typeof d.remaining === "number" ? ` (${d.remaining} left)` : "";
+            setMessages((prev) => [...prev.slice(-199), {
+              id: `claim-${Date.now()}`,
+              sender_id: "system",
+              sender_name: "DUM Club",
+              sender_role: "host" as const,
+              body: `🛒 ${d.display_name || "Someone"} just claimed ${d.title || "the item"}!${left}`,
+              created_at: Date.now() / 1000,
+            }]);
           }
         } catch {}
       };
@@ -185,7 +207,19 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   function sendMessage(e: React.FormEvent) {
     e.preventDefault();
     const body = input.trim();
-    if (!body || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (!body) return;
+
+    // Comment-to-buy: a claim keyword opens checkout for the pinned offer
+    // instead of posting as chat. Viewers only (the host pins/sells). Runs
+    // before the WS-open guard so a claim works even mid-reconnect (it's a
+    // REST call, not a chat send).
+    if (!isHost && onCommentBuy && CLAIM_KEYWORD_RE.test(body)) {
+      onCommentBuy(body);
+      setInput("");
+      return;
+    }
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
     // Client-side rate limit. Bail (and visibly disable the send
     // button for the remaining window) if the user clicks/Enters
