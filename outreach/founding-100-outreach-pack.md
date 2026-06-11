@@ -9,11 +9,11 @@
 
 > "Hey — I'm Julian. I built DUM Club because I was tired of platforms taking 8-10% of every sale. I also run Topgun Maintenance, an aircraft maintenance shop in Morristown, NJ — so I'm the first merchant on my own platform.
 
-> Here's what it looks like. This is my storefront. Customers can browse my services, book directly, and pay through Stripe. I keep everything — there's no commission, no per-sale fee, ever.
+> Here's what it looks like. This is my storefront. Customers can browse my services, book directly, and pay through Stripe. I keep almost everything — just a low 1.5% sales fee per order, no hidden cuts.
 
 > Every purchase earns the customer DUM Points — loyalty rewards they can use at any business on the network. That means my customers discover your business, and yours discover mine. It's a shared loyalty network that grows with every merchant.
 
-> Right now I'm recruiting the founding 100 merchants. You join free. After the founding period, you're locked in at $29 a month forever. That's it. Flat fee. Zero commission. Stripe pays you direct.
+> Right now I'm recruiting the founding 100 merchants. You join free. After the founding period, you're locked in at $29 a month forever. That's it. Flat fee plus a low 1.5% sales fee. Stripe pays you direct.
 
 > If you're on Whatnot paying 8% plus processing, or running your own site with no built-in traffic — this is the alternative. Click the link below and claim your spot."
 
@@ -31,7 +31,7 @@
 
 > Quick question: how much are you paying in platform fees per month? If you're doing $10K/mo on Whatnot, that's roughly $1,150 gone — 8% platform + 2.9% processing on every sale.
 
-> I built DUM Club as the flat-fee alternative. $29-$99/month, zero commission, Stripe pays you direct. Every sale, 100% yours.
+> I built DUM Club as the flat-fee alternative. $29-$99/month plus a low 1.5% sales fee, Stripe pays you direct. Keep more of every sale.
 
 > I'm recruiting the founding 100 merchants right now. Founding merchants join free and lock in $29/mo forever. I'm merchant #1 — I run an aircraft maintenance shop on the platform myself.
 
@@ -49,7 +49,7 @@
 
 > Hey [Name] — saw your [product type] content on TikTok and it's great. You clearly know how to sell live.
 
-> I'm building DUM Club — a live selling marketplace like Whatnot but with one difference: flat monthly fee, zero commission. You keep 100% of every sale. Stripe pays you direct to your bank.
+> I'm building DUM Club — a live selling marketplace like Whatnot but with one difference: flat monthly fee plus a low 1.5% sales fee. You keep more of every sale. Stripe pays you direct to your bank.
 
 > We also have built-in loyalty (DUM Points) that brings customers back automatically — no stamps, no apps, no extra work. Customers earn points at your store and can spend them at any store on the network.
 
@@ -68,7 +68,7 @@
 
 > Hey [Name] — I found your [business type] on Google and your reviews are impressive.
 
-> Quick pitch: I built DUM Club as a local business marketplace with zero commission. Instead of paying Google to show up in search or running expensive ad campaigns, your business gets listed with your real deals and Google reviews — for free during the founding period, then $29/mo flat.
+> Quick pitch: I built DUM Club as a local business marketplace with a flat fee plus a low 1.5% sales fee. Instead of paying Google to show up in search or running expensive ad campaigns, your business gets listed with your real deals and Google reviews — for free during the founding period, then $29/mo flat.
 
 > The platform also includes a built-in loyalty program (DUM Points). Every customer who buys from you earns points they can spend at any business on the network. It's like a shared loyalty card that works across every local business — replaces direct mail, punch cards, and Yotpo ($199+/mo) in one flat fee.
 
@@ -90,7 +90,7 @@ Send one of the three variants above based on seller type.
 
 > Hey [Name] — just bumping this in case it got buried. Founding spots are filling up ([X] of 100 claimed). No pressure — just didn't want you to miss it if you were interested.
 
-> The short version: flat fee, zero commission, Stripe direct payouts, built-in loyalty. Here's the 90-second walkthrough if you haven't seen it: [Loom link]
+> The short version: flat fee, low 1.5% sales fee, Stripe direct payouts, built-in loyalty. Here's the 90-second walkthrough if you haven't seen it: [Loom link]
 
 ### Day 5 — Value-add follow-up (only if no reply)
 
