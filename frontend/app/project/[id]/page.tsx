@@ -1619,6 +1619,41 @@ export default function ProjectPage() {
     }
   }
 
+  // Comment-to-buy: a viewer typed a claim keyword in live chat. Claim the
+  // active pinned offer (records the claim + broadcasts "X just claimed!"),
+  // then hand off to the EXISTING buyOffer() Stripe checkout for the
+  // returned offer. Degrades gracefully: a 409 (no pin / sold out) just
+  // surfaces nothing here — the chat input was already cleared.
+  async function handleCommentBuy(_text: string) {
+    if (!pinnedOffer || !id) return;
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/checkout/claim-offer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          project_id: id,
+          // Same self-reported display the chat already shows for this user.
+          display_name: authUser?.email ? authUser.email.split("@")[0] : undefined,
+          keyword: _text.slice(0, 32),
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        console.warn("[comment-buy] claim not accepted:", j?.detail || res.status);
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      const off = (data?.offer_id && offers.find((o) => o.id === data.offer_id)) || pinnedOffer;
+      if (off) buyOffer(off);
+    } catch (err) {
+      console.error("[comment-buy] failed", err);
+    }
+  }
+
   // Solana wallet checkout. secondary CTA, additive to Stripe.
   // Same per-offer state (buyingOfferId, buyStep, buyError) so the
   // Stripe button is disabled while a SOL payment is in flight.
@@ -3852,9 +3887,11 @@ return (
         buyOffer handler the inline card uses, so checkout behavior
         is unchanged. */}
     {project?.is_live && pinnedOffer && !isOwner && (() => {
-      const isSoldOut = !pinnedOffer.unlimited_inventory
-        && (pinnedOffer.quantity_available || 0) > 0
-        && ((pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0)) <= 0;
+      const hasCap = !pinnedOffer.unlimited_inventory && (pinnedOffer.quantity_available || 0) > 0;
+      const remaining = hasCap
+        ? Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))
+        : null;
+      const isSoldOut = hasCap && (remaining ?? 0) <= 0;
       return (
         <div
           className="fixed inset-x-0 bottom-0 z-[55] border-t border-default bg-surface-card/95 backdrop-blur-md px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:hidden"
@@ -3872,10 +3909,16 @@ return (
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold text-primary">
                 {pinnedOffer.title}
+                {typeof remaining === "number" && remaining > 0 && (
+                  <span className="ml-2 rounded-full border border-state-live/40 bg-state-live/10 px-1.5 py-0.5 align-middle text-[10px] font-bold text-state-live">
+                    {remaining} left
+                  </span>
+                )}
               </div>
               <div className="font-mono text-sm font-bold text-brand-teal">
                 ${Number(pinnedOffer.price_usd).toFixed(2)}
               </div>
+              <div className="text-[10px] text-secondary">Type “buy” in chat to claim</div>
             </div>
             {isSoldOut ? (
               <span className="shrink-0 rounded-xl border border-default px-4 py-2.5 text-sm font-bold text-secondary">
@@ -4802,6 +4845,7 @@ return (
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
                   getToken={getToken}
+                  onCommentBuy={handleCommentBuy}
                   onViewerCountChange={setLiveViewerCount}
                   onItemUpdate={(data) => {
                     setOffers((prev) => prev.map((o) =>
