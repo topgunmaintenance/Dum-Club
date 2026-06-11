@@ -205,7 +205,8 @@ async def mint_project_tokens(project_id: str):
     )
 
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=result.stderr)
+        print(f"[token] mint subprocess failed rc={result.returncode} stderr={result.stderr!r}")
+        raise HTTPException(status_code=500, detail="Token operation failed. Please try again, or contact support if it keeps happening.")
 
     try:
         output = json.loads(result.stdout)

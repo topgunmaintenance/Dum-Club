@@ -2766,6 +2766,11 @@ export default function ProjectPage() {
   }
 
   async function handlePinOffer(offerId: string | null) {
+    // Debounce concurrent clicks: a pin request is already in flight, so
+    // ignore further clicks until it settles. Not all call sites disable
+    // their button, so this is the canonical guard against racing PATCHes
+    // (last-write-wins on the backend, which has no optimistic lock).
+    if (pinningOfferId !== null) return;
     // Backend matches projects by UUID, not slug. The URL param `id`
     // can be either (e.g. /project/topgun-maintenance is a slug),
     // so we must call with project.id. same canonical-UUID
@@ -3580,34 +3585,38 @@ export default function ProjectPage() {
       .catch(() => {});
   }, [id]);
 
-  // Load favorite status
+  // Load favorite status. Split into two effects on purpose: the PUBLIC
+  // count is auth-independent, so it is keyed on [id] only and does NOT
+  // refetch when the auth object hydrates (null -> user). The auth-only
+  // "did I favorite this" check is keyed on the stable privyId rather than
+  // the authUser object reference.
   useEffect(() => {
     if (!id) return;
-    // Public count
     fetch(`${API_BASE}/api/favorites/count/${id}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setFavoriteCount(data.count || 0); })
       .catch(() => {});
-    // Auth check
-    if (authUser) {
-      // Outer .catch covers getToken() itself rejecting (Privy not
-      // ready, token refresh failure). The inner fetch is already
-      // guarded; without this, a getToken rejection during nav or in
-      // the fresh-deploy window surfaced as an uncaught console error
-      // attributed to project/[id]/page.js.
-      getToken()
-        .then((token) => {
-          if (!token) return;
-          fetch(`${API_BASE}/api/favorites/check/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then((r) => r.ok ? r.json() : null)
-            .then((data) => { if (data) setIsFavorited(data.favorited); })
-            .catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !authUser) return;
+    // Outer .catch covers getToken() itself rejecting (Privy not
+    // ready, token refresh failure). The inner fetch is already
+    // guarded; without this, a getToken rejection during nav or in
+    // the fresh-deploy window surfaced as an uncaught console error
+    // attributed to project/[id]/page.js.
+    getToken()
+      .then((token) => {
+        if (!token) return;
+        fetch(`${API_BASE}/api/favorites/check/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
         })
-        .catch(() => {});
-    }
-  }, [id, authUser]);
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => { if (data) setIsFavorited(data.favorited); })
+          .catch(() => {});
+      })
+      .catch(() => {});
+  }, [id, authUser?.privyId]);
 
   // Toggle favorite
   async function toggleFavorite() {
@@ -3856,6 +3865,7 @@ return (
                 src={pinnedOffer.primary_image_url}
                 alt=""
                 className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             )}
             <div className="min-w-0 flex-1">
@@ -6862,6 +6872,7 @@ return (
                         src={offer.primary_image_url}
                         alt={offer.title}
                         className="w-full aspect-[4/3] object-cover transition-transform duration-300 group-hover/img:scale-105"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                       />
                     </div>
                   ) : null}
@@ -7802,6 +7813,7 @@ return (
         alt="Full size"
         className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        onError={() => setLightboxUrl(null)}
       />
     </div>
   )}
