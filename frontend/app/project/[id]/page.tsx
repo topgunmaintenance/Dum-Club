@@ -35,6 +35,7 @@ import { trackEvent } from "../../../lib/analytics";
 import { TEMPLATES, matchTemplate } from "../../../lib/templates";
 import { AiSalesChat } from "../../../components/AiSalesChat";
 import { GuestChat } from "../../../components/GuestChat";
+import { ReviewsSection } from "../../../components/ReviewsSection";
 import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
@@ -7804,6 +7805,18 @@ return (
         onClick={(e) => e.stopPropagation()}
       />
     </div>
+  )}
+
+  {/* Storefront reviews: list + write-a-review for signed-in non-owners.
+      Customer-facing surface (hidden in the owner's inline view). */}
+  {!showOwnerInlineUi && id && (
+    <ReviewsSection
+      projectId={id as string}
+      isOwner={isOwner}
+      isAuthenticated={!!authUser}
+      getToken={getToken}
+      onLogin={login}
+    />
   )}
 
   {/* AI Sales Assistant. Customer-facing — hidden for the authenticated
