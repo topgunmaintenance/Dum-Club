@@ -143,22 +143,6 @@ async def post_guest_message(project_id: str, body: GuestMessageIn, request: Req
 
     status = "spam" if _looks_spammy(text, body.hp, body.elapsed_ms) else "open"
 
-    # Denormalized merchant link (business_profile id). FK intentionally
-    # unresolved in the migration draft; stored for convenience only.
-    merchant_bp_id = None
-    try:
-        prow = (
-            supabase.table("projects")
-            .select("business_profile_id")
-            .eq("id", project_uuid)
-            .limit(1)
-            .execute()
-        )
-        if prow.data:
-            merchant_bp_id = prow.data[0].get("business_profile_id")
-    except Exception:
-        merchant_bp_id = None
-
     # Create or link. A supplied conversation_id is honored ONLY if it
     # belongs to this project (never write into another project's thread).
     conv_id: Optional[str] = None
@@ -182,7 +166,6 @@ async def post_guest_message(project_id: str, body: GuestMessageIn, request: Req
                 supabase.table("guest_conversations")
                 .insert({
                     "project_id": project_uuid,
-                    "merchant_id": merchant_bp_id,
                     "guest_name": (body.name or None),
                     "guest_email": (body.email or None),
                     "status": status,
