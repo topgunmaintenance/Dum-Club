@@ -105,13 +105,14 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
 
-  // Context-aware CTA per Phase 1 DC-2 of the Discover plan. Live
-  // always wins; service categories prompt for a quote; restaurants
-  // get an order CTA; entertainment maps to tickets; everything
-  // else lands on the generic shop-now.
-  const ctaLabel = isLive
-    ? "Join live →"
-    : categoryId === "restaurants"
+  // Context-aware CTA per Phase 1 DC-2 of the Discover plan. Service
+  // categories prompt for a quote; restaurants get an order CTA;
+  // entertainment maps to tickets; everything else lands on the
+  // generic shop-now. The live CTA/badge moved to LiveRail — the
+  // single live surface — so a live seller no longer renders twice
+  // with live treatment (rail + grid). The card still deep-links
+  // into the stream via the ?live=1 href above.
+  const ctaLabel = categoryId === "restaurants"
       ? "Order now →"
       : categoryId === "entertainment"
         ? "Buy tickets →"
@@ -132,9 +133,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
         className={`flex h-full flex-col rounded-xl border bg-surface-card p-5 shadow-sm transition-all duration-200 sm:p-6 ${
           isPulsing
             ? "border-brand-teal shadow-[0_0_16px_rgba(20,184,154,0.18)]"
-            : isLive
-              ? "border-state-live/30 hover:border-state-live/50"
-              : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
+            : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
         {/* Thumbnail area — merchant logo when supplied, gradient + emoji
@@ -159,9 +158,11 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           )}
         </div>
 
-        {/* Header: category + live badge. resolveCategoryLabel() always
-            returns a string, so the category pill always renders — no
-            more "BUSINESS · BUSINESS" generic dead-end. */}
+        {/* Header: category pill. resolveCategoryLabel() always returns
+            a string, so the pill always renders — no more
+            "BUSINESS · BUSINESS" generic dead-end. The LIVE NOW badge
+            that rendered alongside it moved to LiveRail (the single
+            live surface) — see the CTA comment above. */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <span
             className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.08em]"
@@ -169,21 +170,6 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           >
             {categoryLabel}
           </span>
-          {isLive && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-state-live/40 bg-state-live/10 px-2 py-0.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-state-live" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-state-live">
-                Live now
-                {typeof (project as { viewer_count?: number }).viewer_count === "number" &&
-                ((project as { viewer_count?: number }).viewer_count || 0) > 0
-                  ? ` · ${(project as { viewer_count?: number }).viewer_count} watching`
-                  : ""}
-              </span>
-            </span>
-          )}
         </div>
 
         {/* Title — verified merchants get the brand-teal check pill.
