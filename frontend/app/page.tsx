@@ -23,6 +23,10 @@ import { ScrollReveal } from "../components/motion/ScrollReveal";
 // reachable), so this stays out of the lazy-Solana-subtree chunk
 // added by #351.
 import { ListingGrid } from "../components/discover/ListingGrid";
+// LiveRail powers the homepage Live Now rail — same component the
+// /discover page renders, so live cards look and link identically
+// on both surfaces (/project/{slug}?live=1, cap 12 + overflow).
+import { LiveRail } from "../components/discover/LiveRail";
 
 // Below-the-fold components — code-split out of the initial homepage
 // bundle so the hero text (the LCP element on mobile) can paint without
@@ -1489,105 +1493,12 @@ function ExternalTopCard({ data }: { data: ExternalTopResult }) {
   );
 }
 
-/* ─── Live Now Section ─── */
-type LiveNowCard = {
-  id: string;
-  name: string;
-  product: string;
-  price: number;
-};
-
-function LiveNowSection({ projects }: { projects: Project[] }) {
-  const [cards, setCards] = useState<LiveNowCard[]>([]);
-
-  useEffect(() => {
-    if (!projects.length) {
-      setCards([]);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const results = await Promise.all(
-        projects.map(async (p) => {
-          try {
-            const res = await fetch(`${API_BASE}/api/offers/${p.id}`);
-            if (!res.ok) return null;
-            const data = await res.json();
-            const active = Array.isArray(data)
-              ? data.filter((o: { is_active?: boolean }) => o.is_active !== false)
-              : [];
-            if (active.length === 0) return null;
-            const cheapest = [...active].sort(
-              (a: { price_usd?: number }, b: { price_usd?: number }) =>
-                Number(a.price_usd || 0) - Number(b.price_usd || 0)
-            )[0] as { title?: string; price_usd?: number };
-            const price = Number(cheapest?.price_usd || 0);
-            if (!price) return null;
-            return {
-              id: p.id,
-              name: p.title || p.name || "Untitled",
-              product: String(cheapest?.title || ""),
-              price,
-            } as LiveNowCard;
-          } catch {
-            return null;
-          }
-        })
-      );
-      if (cancelled) return;
-      setCards(results.filter((c): c is LiveNowCard => c !== null));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [projects]);
-
-  // Real-data gate: if no live projects or none have a real active
-  // offer with a real price, hide the section entirely. No placeholders.
-  if (cards.length === 0) return null;
-
-  return (
-    <div className="mt-12 sm:mt-16">
-      <div className="mb-5 flex items-center gap-3">
-        <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
-          Live Now
-        </h2>
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-        </span>
-      </div>
-      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
-        {cards.map((c) => (
-          <Link
-            key={c.id}
-            href={`/project/${c.id}`}
-            className="group min-w-[260px] max-w-[280px] shrink-0 snap-start rounded-2xl border border-default/60 bg-surface-card p-5 transition hover:border-default hover:bg-surface-card/80"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-brand-teal">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-teal" />
-                </span>
-                Live
-              </span>
-            </div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">
-              {c.name}
-            </div>
-            <div className="mt-1 line-clamp-2 text-[15px] font-bold text-primary">
-              {c.product}
-            </div>
-            <div className="mt-3 font-mono text-xl font-extrabold text-brand-teal">
-              ${c.price.toLocaleString()}
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
+/* ─── Live Now Section ───
+   Replaced by /discover's shared LiveRail (homepage-live-rail task).
+   The bespoke LiveNowSection fired one /api/offers fetch per live
+   project and hid live sellers without a priced offer; LiveRail
+   reads prices from the already-loaded rows and shows every live
+   seller, omitting the price line when none exists. */
 
 /* ─── Deals Section ─── */
 type DealCard = {
@@ -2757,9 +2668,15 @@ export default function Home() {
         {/* ── LIVE NOW ── hidden when no real live projects.
              Wrapping in an explicit length check stops the component
              tree from emitting *anything* (margins, wrappers, layout
-             reservations) when the projects list is empty. */}
+             reservations) when the projects list is empty. Reuses
+             /discover's LiveRail (like ListingGrid above) so the
+             homepage and discover live cards are one component:
+             same /project/{slug}?live=1 link target, same cap-12 +
+             "+N more live" overflow, no per-project offer fetches. */}
         {liveNowProjects.length > 0 && (
-          <LiveNowSection projects={liveNowProjects} />
+          <div className="mt-12 sm:mt-16">
+            <LiveRail projects={liveNowProjects} />
+          </div>
         )}
 
         {/* ── HERO. light-theme migration (Phase 1) ──

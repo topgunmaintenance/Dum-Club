@@ -6,6 +6,13 @@
  * Renders ONLY if items.some(isLive). Returns null otherwise.
  * No Mux autoplay on cards (perf/bandwidth).
  * Static thumbnail + LIVE badge only.
+ *
+ * Card cap: at most MAX_LIVE_CARDS cards render; past that, one
+ * overflow card links to /discover?live=1 (the discover page
+ * already reads live=1 and switches to live-only). Ordering
+ * inherits the projects prop as-is; most-recently-live-first
+ * needs projects.live_started_at and ships with the queued
+ * live-started-at task, not here.
  */
 
 import { useState } from "react";
@@ -15,8 +22,12 @@ import { cleanLogoUrl } from "../../lib/imageSrc";
 import { getProjectEmoji, getAccent, lowestOfferPrice } from "../../lib/discover/filters";
 import { classifyProject } from "../../lib/categories";
 
+const MAX_LIVE_CARDS = 12;
+
 export function LiveRail({ projects }: { projects: Project[] }) {
   const liveProjects = projects.filter((p) => p.is_live === true);
+  const visibleProjects = liveProjects.slice(0, MAX_LIVE_CARDS);
+  const overflowCount = liveProjects.length - visibleProjects.length;
   // Project IDs whose <img> failed to load. We keep this at the rail
   // level (rather than per-card local state) so we don't have to
   // extract every card into its own component just to host one piece
@@ -45,7 +56,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
         className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden"
         style={{ scrollSnapType: "x mandatory" }}
       >
-        {liveProjects.map((project, index) => {
+        {visibleProjects.map((project, index) => {
           const emoji = getProjectEmoji(project, index);
           const category = classifyProject(project);
           const accent = getAccent(index);
@@ -111,6 +122,21 @@ export function LiveRail({ projects }: { projects: Project[] }) {
             </Link>
           );
         })}
+
+        {overflowCount > 0 && (
+          <Link
+            href="/discover?live=1"
+            className="flex w-[280px] flex-shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-[var(--state-live)]/30 bg-surface-card p-4 transition hover:border-[var(--state-live)]/30"
+            style={{ scrollSnapAlign: "start" }}
+          >
+            <span className="text-lg font-bold text-primary">
+              +{overflowCount} more live
+            </span>
+            <span className="text-[10px] font-medium text-red-400">
+              See all live →
+            </span>
+          </Link>
+        )}
       </div>
     </section>
   );
