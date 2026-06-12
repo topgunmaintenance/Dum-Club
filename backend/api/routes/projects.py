@@ -2292,7 +2292,7 @@ async def unpublish_project(
 
 class GoLiveRequest(BaseModel):
     stream_url: Optional[str] = Field(default=None, max_length=500)
-    provider: str = Field(default="manual_embed")  # "native_mux" or "manual_embed"
+    provider: str = Field(default="manual_embed")  # "manual_embed" only; "native_mux" retired (410)
 
 class PinOfferRequest(BaseModel):
     offer_id: Optional[str] = None
@@ -2381,7 +2381,7 @@ async def go_live(
         )
 
     # Phase 1 cap enforcement — same check as /api/ivs/create-stage.
-    # Refuse the Mux go-live if the merchant is at max_concurrent_streams,
+    # Refuse the go-live if the merchant is at max_concurrent_streams,
     # or if the resolver fails closed on an unset cap (Business / Enterprise
     # without a merchant_plan_limits override).
     from services.merchant_limits import (
@@ -2464,21 +2464,21 @@ async def go_live(
     }
 
     if body.provider == "native_mux":
-        from services.mux_live import is_mux_configured, create_live_stream
-        if not is_mux_configured():
-            raise HTTPException(status_code=503, detail="Mux is not configured on this server — set MUX_TOKEN_ID and MUX_TOKEN_SECRET")
-        mux_data = await create_live_stream()
-        if "error" in mux_data:
-            error_code = mux_data["error"]
-            status = 401 if error_code == "mux_auth_failed" else 403 if error_code == "mux_forbidden" else 502
-            raise HTTPException(status_code=status, detail=mux_data["detail"])
-        update_fields.update({
-            "live_stream_id": mux_data["stream_id"],
-            "live_playback_id": mux_data["playback_id"],
-            "live_stream_key": mux_data["stream_key"],
-            "live_ingest_url": mux_data["ingest_url"],
-            "stream_url": None,
-        })
+        # Mux isolation: the native_mux provider was retired after IVS
+        # Real-Time was confirmed as the only provider running in prod
+        # (13/13 stream_sessions). Explicit 410 instead of silently
+        # treating the request as manual_embed, so any stale client or
+        # direct API caller gets an actionable error.
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "provider_retired",
+                "message": (
+                    "Live video streaming now runs on the in-browser "
+                    "Go Live flow. Open your storefront and tap Go Live."
+                ),
+            },
+        )
     else:
         if not body.stream_url or len(body.stream_url.strip()) < 5:
             raise HTTPException(status_code=400, detail="stream_url required for manual embed")
@@ -2492,10 +2492,7 @@ async def go_live(
 
     supabase.table("projects").update(update_fields).eq("id", project_id).execute()
 
-    # Phase 0 telemetry — best-effort INSERT into stream_sessions. The
-    # Mux path is the actively-running provider today (IVS flag off);
-    # capturing it here is what populates the table during the data-
-    # collection week before any Phase 1 caps are set.
+    # Phase 0 telemetry — best-effort INSERT into stream_sessions.
     from services.stream_telemetry import on_stream_start
     on_stream_start(
         supabase,
@@ -2520,10 +2517,6 @@ async def go_live(
         print(f"[projects] live-now notify dispatch failed (ignored): {exc!r}")
 
     result: dict = {"status": "success", "is_live": True, "provider": body.provider}
-    if body.provider == "native_mux":
-        result["stream_key"] = update_fields["live_stream_key"]
-        result["ingest_url"] = update_fields["live_ingest_url"]
-        result["playback_id"] = update_fields["live_playback_id"]
     return result
 
 
@@ -2555,18 +2548,6 @@ async def end_live(
     )
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
-
-    # Disable Mux stream if native
-    live_data = supabase.table("projects").select("live_provider, live_stream_id").eq("id", project_id).limit(1).execute()
-    if live_data.data and live_data.data[0].get("live_provider") == "native_mux":
-        stream_id = live_data.data[0].get("live_stream_id")
-        if stream_id:
-            try:
-                from services.mux_live import disable_live_stream
-                import asyncio
-                asyncio.ensure_future(disable_live_stream(stream_id))
-            except Exception:
-                pass
 
     # Phase 0 telemetry — close the stream_sessions row before the
     # clear-live update. Helper is best-effort; never blocks.
@@ -2681,15 +2662,6 @@ async def get_live_status(project_id: str, response: Response):
     except Exception:
         # Soft-fail — defaults already in result.
         pass
-
-    # Optionally check Mux stream health
-    if project.get("live_provider") == "native_mux" and project.get("live_stream_id"):
-        try:
-            from services.mux_live import get_stream_status
-            status = await get_stream_status(project["live_stream_id"])
-            result["stream_health"] = status
-        except Exception:
-            result["stream_health"] = "unknown"
 
     return result
 

@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
-
 import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
 import { deriveStoreStatusCta } from "../../../lib/storeStatus";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
@@ -982,8 +980,6 @@ export default function ProjectPage() {
   const [showLiveBanner, setShowLiveBanner] = useState(false);
 
   // Live Commerce state
-  const [liveStreamUrl, setLiveStreamUrl] = useState("");
-  const [goingLive, setGoingLive] = useState(false);
   const [liveSalesCount, setLiveSalesCount] = useState(0);
   const [saleToasts, setSaleToasts] = useState<{ id: string; title: string; count: number }[]>([]);
   const [dumPointsEarned, setDumPointsEarned] = useState<number | null>(null);
@@ -1001,20 +997,7 @@ export default function ProjectPage() {
   const [streamJustEnded, setStreamJustEnded] = useState(false);
   const [streamEndedSummary, setStreamEndedSummary] = useState<{ sales: number } | null>(null);
   const [autoGoLive, setAutoGoLive] = useState(false);
-  const [liveMode, setLiveMode] = useState<"native_mux" | "manual_embed">("native_mux");
-  const [muxStreamKey, setMuxStreamKey] = useState<string | null>(null);
-  const [muxIngestUrl, setMuxIngestUrl] = useState<string | null>(null);
-  const [muxPlaybackId, setMuxPlaybackId] = useState<string | null>(null);
-  const [keyCopied, setKeyCopied] = useState(false);
-  const [urlCopied, setUrlCopied] = useState(false);
   const [goLiveError, setGoLiveError] = useState<string | null>(null);
-  const [cameraPreview, setCameraPreview] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [showAdvancedLive, setShowAdvancedLive] = useState(false);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const relayWsRef = useRef<WebSocket | null>(null);
-  const liveCameraStreamRef = useRef<MediaStream | null>(null);
 
   // Auction state
   type Auction = {
@@ -2488,302 +2471,16 @@ export default function ProjectPage() {
     window.history.replaceState({}, "", url.toString());
   }
 
-  /* ── Camera Preview ────────────────────────────────── */
-  async function startCameraPreview() {
-    setGoLiveError(null);
-
-    // Check if getUserMedia is available
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setGoLiveError("Camera not supported on this browser. Try Chrome or Safari.");
-      console.error("[camera] getUserMedia not available");
-      return;
-    }
-
-    // Mobile-friendly constraints: prefer front camera, limit resolution for performance
-    const constraints: MediaStreamConstraints = {
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: true,
-    };
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      setCameraStream(stream);
-      setCameraPreview(true);
-
-      // Attach to video element after render. retry a few times for mobile
-      const attachToVideo = (attempt = 0) => {
-        if (previewVideoRef.current) {
-          previewVideoRef.current.srcObject = stream;
-          previewVideoRef.current.play().catch(() => {});
-        } else if (attempt < 5) {
-          setTimeout(() => attachToVideo(attempt + 1), 100);
-        } else {
-        }
-      };
-      setTimeout(() => attachToVideo(), 50);
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[camera] getUserMedia failed:", msg);
-      if (msg.includes("Permission") || msg.includes("NotAllowed")) {
-        setGoLiveError("Camera access denied. Please allow camera and microphone in your browser settings.");
-      } else if (msg.includes("NotFound") || msg.includes("DevicesNotFound")) {
-        setGoLiveError("No camera found. Make sure your device has a camera.");
-      } else {
-        setGoLiveError(`Camera error: ${msg}`);
-      }
-    }
-  }
-
-  function cancelCameraPreview() {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
-    }
-    setCameraPreview(false);
-  }
-
-  async function startLiveFromCamera() {
-    setCameraPreview(false);
-    setGoingLive(true);
-    setGoLiveError(null);
-
-    // Keep the camera stream alive. we need it for MediaRecorder
-    const stream = cameraStream;
-    if (!stream) {
-      setGoLiveError("Camera stream lost. Please try again.");
-      setGoingLive(false);
-      return;
-    }
-    liveCameraStreamRef.current = stream;
-
-    try {
-      // 1. Create native Mux stream on backend
-      const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ provider: "native_mux" }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        const detail = errorText(errData.detail, "Failed to create stream");
-        // Fallback: if Mux isn't configured, go live without video
-        if (res.status === 503 || res.status === 502) {
-          // Mux not available. fall back to live-without-video mode
-          const fallbackRes = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-            body: JSON.stringify({ provider: "manual_embed", stream_url: "camera://local" }),
-          });
-          if (fallbackRes.ok) {
-            stream.getTracks().forEach((t) => t.stop());
-            setCameraStream(null);
-            setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "manual_embed", stream_url: "camera://local", live_playback_id: null } : prev);
-            setLiveSalesCount(0);
-            setGoingLive(false);
-            return;
-          }
-        }
-        setGoLiveError(detail);
-        setGoingLive(false);
-        return;
-      }
-
-      const data = await res.json();
-      setMuxStreamKey(data.stream_key);
-      setMuxIngestUrl(data.ingest_url);
-      setMuxPlaybackId(data.playback_id);
-      setProject((prev) => prev ? {
-        ...prev, is_live: true, live_provider: "native_mux",
-        live_playback_id: data.playback_id, stream_url: null,
-      } : prev);
-      setLiveSalesCount(0);
-
-      // 2. Open WebSocket to live relay
-      const wsProtocol = API_BASE.startsWith("https") ? "wss" : "ws";
-      const wsHost = API_BASE.replace(/^https?:\/\//, "");
-      const wsUrl = `${wsProtocol}://${wsHost}/api/live/stream/${id}`;
-
-      const ws = new WebSocket(wsUrl);
-      relayWsRef.current = ws;
-
-      ws.binaryType = "arraybuffer";
-
-      ws.onopen = () => {
-
-        // 3. Detect best supported mimeType
-        // Order: webm VP8 (Chrome/Firefox) → webm VP9 → webm (generic) → mp4 (Safari)
-        const candidates = [
-          "video/webm;codecs=vp8,opus",
-          "video/webm;codecs=vp9,opus",
-          "video/webm;codecs=vp8",
-          "video/webm",
-          "video/mp4",  // Safari on iOS/macOS
-        ];
-        const supported = candidates.filter((m) => {
-          try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
-        });
-
-        const mimeType = supported[0] || "";
-
-        // Determine input format for backend ffmpeg
-        const isMP4 = mimeType.includes("mp4");
-        if (isMP4) {
-        }
-
-        let recorder: MediaRecorder;
-        try {
-          const opts: MediaRecorderOptions = { videoBitsPerSecond: 1_500_000 };
-          if (mimeType) opts.mimeType = mimeType;
-          recorder = new MediaRecorder(stream, opts);
-        } catch (recErr) {
-          console.error("[go-live] MediaRecorder creation failed:", recErr);
-          // Last resort: try with no options
-          recorder = new MediaRecorder(stream);
-        }
-        mediaRecorderRef.current = recorder;
-
-        let chunksSent = 0;
-        let totalBytesSent = 0;
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            chunksSent++;
-            totalBytesSent += e.data.size;
-            ws.send(e.data);
-            if (chunksSent <= 5 || chunksSent % 50 === 0) {
-            }
-          }
-        };
-
-        recorder.onerror = (e) => {
-          console.error("[go-live] MediaRecorder error:", e);
-          setGoLiveError("Recording error. Please try again.");
-        };
-
-        recorder.onstop = () => {
-        };
-
-        // Send chunks every 1000ms. gives ffmpeg substantial data per chunk
-        recorder.start(1000);
-      };
-
-      ws.onmessage = (e) => {
-        // Backend sends status/error JSON messages
-        try {
-          const msg = typeof e.data === "string" ? JSON.parse(e.data) : null;
-          if (msg) {
-            if (msg.error) {
-              setGoLiveError(msg.error);
-            }
-          }
-        } catch { /* ignore binary */ }
-      };
-
-      ws.onclose = (e) => {
-      };
-
-      ws.onerror = (err) => {
-        console.error("[go-live] WebSocket error:", err);
-      };
-
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      setGoLiveError(msg);
-      // Clean up camera on failure
-      stream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
-    } finally {
-      setGoingLive(false);
-    }
-  }
-
-  // Clean up live stream on unmount / tab close
-  useEffect(() => {
-    function cleanup() {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-      if (relayWsRef.current) relayWsRef.current.close();
-      if (liveCameraStreamRef.current) liveCameraStreamRef.current.getTracks().forEach((t) => t.stop());
-    }
-    window.addEventListener("beforeunload", cleanup);
-    return () => {
-      window.removeEventListener("beforeunload", cleanup);
-      cleanup();
-    };
-  }, []);
-
   /* ── Live Commerce ────────────────────────────────── */
-  async function handleGoLive() {
-    if (!id) return;
-    if (liveMode === "manual_embed" && !liveStreamUrl.trim()) return;
-    setGoingLive(true);
-    setGoLiveError(null);
-    try {
-      const reqBody: Record<string, unknown> = { provider: liveMode };
-      if (liveMode === "manual_embed") reqBody.stream_url = liveStreamUrl.trim();
-      const res = await fetch(`${API_BASE}/api/projects/${id}/go-live`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify(reqBody),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.provider === "native_mux") {
-          setMuxStreamKey(data.stream_key);
-          setMuxIngestUrl(data.ingest_url);
-          setMuxPlaybackId(data.playback_id);
-          setProject((prev) => prev ? {
-            ...prev, is_live: true, live_provider: "native_mux",
-            live_playback_id: data.playback_id, stream_url: null,
-          } : prev);
-        } else {
-          setProject((prev) => prev ? {
-            ...prev, is_live: true, live_provider: "manual_embed",
-            stream_url: liveStreamUrl.trim(), live_playback_id: null,
-          } : prev);
-        }
-        setLiveSalesCount(0);
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        const detail = errorText(errData.detail, `Go live failed (HTTP ${res.status})`);
-        setGoLiveError(detail);
-        console.error("[go-live] Error:", detail);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      setGoLiveError(msg);
-      console.error("Go live failed", err);
-    } finally {
-      setGoingLive(false);
-    }
-  }
+  // The native_mux / camera-relay Go Live flow (startCameraPreview,
+  // startLiveFromCamera, the MediaRecorder->WebSocket->ffmpeg relay,
+  // and handleGoLive) was removed with the Mux isolation: IVS
+  // Real-Time is the only live provider (13/13 prod sessions).
+  // handleEndLive stays: it ends any non-IVS session (manual_embed)
+  // and is the End Stream control in the legacy panel below.
 
   async function handleEndLive() {
     if (!id) return;
-
-    // Stop MediaRecorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-    }
-
-    // Close WebSocket relay
-    if (relayWsRef.current) {
-      relayWsRef.current.close();
-      relayWsRef.current = null;
-    }
-
-    // Stop camera tracks
-    if (liveCameraStreamRef.current) {
-      liveCameraStreamRef.current.getTracks().forEach((t) => t.stop());
-      liveCameraStreamRef.current = null;
-    }
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((t) => t.stop());
-      setCameraStream(null);
-    }
 
     try {
       await fetch(`${API_BASE}/api/projects/${id}/end-live`, {
@@ -2794,9 +2491,6 @@ export default function ProjectPage() {
         ...prev, is_live: false, stream_url: null, pinned_offer_id: null,
         live_provider: null, live_playback_id: null,
       } : prev);
-      setMuxStreamKey(null);
-      setMuxIngestUrl(null);
-      setMuxPlaybackId(null);
     } catch (err) {
       console.error("End live failed", err);
     }
@@ -3524,19 +3218,6 @@ export default function ProjectPage() {
     const t = window.setTimeout(() => setShowLiveBanner(false), 8000);
     return () => clearTimeout(t);
   }, [isOwner, showLiveBanner]);
-
-  // ?golive=1 / AdminBar "Go Live" on non-IVS builds. autoGoLive drives
-  // the IVS host's autoStart prop, but the legacy camera panel doesn't
-  // read it — so without this, the deep-link and the AdminBar GO LIVE
-  // (both of which set autoGoLive / target #project-live-host) were a
-  // no-op when IVS is disabled. Once ownership resolves, scroll the
-  // owner to the legacy Go Live panel (now id="project-live-host").
-  useEffect(() => {
-    if (!autoGoLive || IVS_REALTIME_ENABLED) return;
-    if (!isOwner || project?.is_live) return;
-    scrollToSection("project-live-host");
-    setAutoGoLive(false);
-  }, [autoGoLive, isOwner, project?.is_live]);
 
   useEffect(() => {
     // authUser.walletAddress is the canonical source via AuthContext,
@@ -4513,18 +4194,7 @@ return (
                   />
                 ) : (
                 <div className="overflow-hidden rounded-2xl border border-default bg-black">
-                  {project.live_provider === "native_mux" && project.live_playback_id ? (
-                    <MuxPlayer
-                      playbackId={project.live_playback_id}
-                      streamType="live"
-                      autoPlay="muted"
-                      muted
-                      style={{ width: "100%", aspectRatio: "16/9" }}
-                      primaryColor="#10b981"
-                      secondaryColor="#09090b"
-                      accentColor="#10b981"
-                    />
-                  ) : project.stream_url === "camera://local" ? (
+                  {project.stream_url === "camera://local" ? (
                     <div className="flex items-center justify-center bg-surface-muted" style={{ aspectRatio: "16/9" }}>
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-2">
@@ -5536,6 +5206,13 @@ return (
               }}
               onError={(msg) => setGoLiveError(msg)}
             />
+            {/* Error surface for the onError callback above. The legacy
+                Mux/camera panel used to be the only place goLiveError
+                rendered; with that panel removed in the Mux isolation,
+                this keeps host errors visible instead of set-and-lost. */}
+            {goLiveError && (
+              <div className="mt-3 rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">{goLiveError}</div>
+            )}
           </div>
         )}
 
@@ -7398,57 +7075,10 @@ return (
             </div>
           )}
 
-          {/* Legacy Mux/camera flow. only when IVS is NOT enabled and NOT live */}
-          {!IVS_REALTIME_ENABLED && !project?.is_live && (
-            goingLive ? (
-              // Optimistic-feedback panel: shown the instant Start Live is
-              // clicked, before the /go-live API + Mux stream creation
-              // resolve. The merchant gets clear reassurance during the
-              // ~1-2s wait instead of a silently-disabled button. Covers
-              // both startLiveFromCamera() and handleGoLive() — both set
-              // goingLive=true on click.
-              <div className="rounded-2xl border border-[var(--state-live)]/30 bg-state-live/5 p-8 text-center">
-                <div
-                  className="mx-auto mb-4 flex h-12 w-12 items-center justify-center"
-                  role="status"
-                  aria-live="polite"
-                  aria-label="Starting your live show"
-                >
-                  <span className="relative flex h-3 w-3">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
-                  </span>
-                </div>
-                <div className="text-lg font-bold text-primary">Starting your live show…</div>
-                <p className="mt-2 text-sm text-secondary">
-                  Connecting your camera. This usually takes a second or two.
-                </p>
-              </div>
-            ) : cameraPreview ? (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-primary">Camera Ready</h2>
-                <div className="overflow-hidden rounded-2xl border border-default bg-black">
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={startLiveFromCamera} disabled={goingLive} className="flex-1 rounded-xl bg-state-live py-3 text-sm font-bold text-white transition hover:bg-red-400 disabled:opacity-40">
-                    {goingLive ? "Starting..." : "Start Live"}
-                  </button>
-                  <button onClick={cancelCameraPreview} className="rounded-xl border border-default px-5 py-3 text-sm text-secondary hover:text-white">Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <button onClick={startCameraPreview} className="rounded-2xl bg-state-live px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
-                  Go Live
-                </button>
-                <p className="mt-3 text-sm text-secondary">Start selling in seconds</p>
-                {goLiveError && (
-                  <div className="mt-3 mx-auto max-w-md rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">{goLiveError}</div>
-                )}
-              </div>
-            )
-          )}
+          {/* The legacy Mux/camera Go Live flow that rendered here was
+              removed with the Mux isolation. On non-IVS builds the panel
+              now only shows the live selling controls above for an
+              already-live (manual_embed) session. */}
         </div>
       )}
 
@@ -7682,9 +7312,9 @@ return (
             ? `${window.location.origin}/project/${project?.slug || id}`
             : `/project/${project?.slug || id}`;
         // Primary action wires to the page's real flows — never a dead
-        // button. Go Live uses the IVS host when enabled, otherwise the
-        // legacy camera preview, matching how the rest of the page goes
-        // live.
+        // button. Go Live targets the IVS host; the legacy camera flow
+        // was removed with the Mux isolation, so non-IVS builds scroll
+        // to the live panel anchor instead.
         const runPrimaryAction = () => {
           if (primaryAction === "add_offer") {
             openOfferForm();
@@ -7692,10 +7322,8 @@ return (
           } else if (primaryAction === "go_live") {
             if (IVS_REALTIME_ENABLED) {
               setAutoGoLive(true);
-              scrollToSection("project-live-host");
-            } else {
-              startCameraPreview();
             }
+            scrollToSection("project-live-host");
           } else {
             copyToClipboard(storeUrl, "store link");
             setCopyFlash(true);
