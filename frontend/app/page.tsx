@@ -1167,7 +1167,7 @@ function LiveSaleToast() {
 
   useEffect(() => {
     // Fetch real Stripe-verified sales. same endpoint LiveActivityTicker uses
-    fetch("/api/checkout/recent-sales?limit=6")
+    fetch(`${API_BASE}/api/checkout/recent-sales?limit=6`)
       .then((r) => (r.ok ? r.json() : { sales: [] }))
       .then((data) => {
         const rows: RealSale[] = (data.sales || []).map(
