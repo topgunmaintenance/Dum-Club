@@ -3,15 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
 
-type ViewerStatus = "loading" | "connecting" | "watching" | "ended" | "error";
+type ViewerStatus = "loading" | "connecting" | "watching" | "reconnecting" | "ended" | "error";
 
 interface IVSStageViewerProps {
   projectId: string;
   userId: string;
 }
 
-// Module-level guard to prevent multiple Stage instances across re-mounts
-let _activeStageProjectId: string | null = null;
+// Module-level dedup: at most one active stage subscription per project
+// across all mounted viewer instances (e.g. the embed bubble preview and
+// the full overlay on the same page), so one visitor isn't double-counted
+// against the viewer cap. Claims are owner-tagged so an instance can only
+// release its OWN claim, and a loser WAITS for the slot instead of bailing
+// permanently — the old single-variable guard left the second mount on a
+// silent black "Connecting..." with no path to ever join.
+let _claimSeq = 0;
+const _activeClaims = new Map<string, number>(); // projectId -> claim owner
 
 export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
@@ -22,57 +29,85 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stageRef = useRef<any>(null);
   const mountedRef = useRef(true);
-  // Per-instance guard. The module-level `_activeStageProjectId`
-  // alone can't catch React StrictMode double-mounts in dev or a
-  // rapid prop-change re-run, because both pass the guard check
-  // before the cleanup that nulls it out runs. The ref makes each
-  // mount idempotent: even if useEffect fires twice for the same
-  // instance, the second pass short-circuits before calling
-  // stage.join() and the backend doesn't see a duplicate viewer.
-  const joinAttemptedRef = useRef(false);
+  // Re-join trigger. Bumping this re-runs the join effect from scratch
+  // (cleanup of the previous run leaves the stage and releases the claim
+  // first). The old Retry buttons only flipped `status`, which re-rendered
+  // but never re-joined — every error/ended state was terminal.
+  const [joinNonce, setJoinNonce] = useState(0);
+  // Consecutive automatic retries since the last healthy connection.
+  // Capped so a genuinely dead stream can't grind token mints against
+  // the backend's per-viewer-per-session budget (MAX_TOKENS_PER_VIEWER).
+  const autoRetriesRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
+
+  // Manual retry from the error / ended overlays.
+  const manualRetry = () => {
+    autoRetriesRef.current = 0;
+    setErrorMsg(null);
+    setHasVideo(false);
+    setStatus("loading");
+    setJoinNonce((n) => n + 1);
+  };
 
   useEffect(() => {
     mountedRef.current = true;
+    // Per-run cancellation. With joinNonce in the deps a re-join is an
+    // ordinary effect re-run, so each run only needs to know whether IT
+    // has been cleaned up. Stage event handlers close over this flag —
+    // a late event from a left stage can't clobber the next run's state.
+    let cancelled = false;
+    const owner = ++_claimSeq;
+    let claimed = false;
+    let waitTimer: number | null = null;
 
-    // Per-instance: this useEffect already ran for this mount.
-    if (joinAttemptedRef.current) {
-      return;
+    // Automatic retry with capped backoff: 2s / 4s / 8s, then give up
+    // into `fallback` with the manual button as the recovery path.
+    const scheduleAutoRetry = (fallback: ViewerStatus, msg?: string) => {
+      if (cancelled || !mountedRef.current) return;
+      const attempt = autoRetriesRef.current;
+      setHasVideo(false);
+      if (attempt >= 3) {
+        if (msg) setErrorMsg(msg);
+        setStatus(fallback);
+        return;
+      }
+      autoRetriesRef.current = attempt + 1;
+      setStatus("reconnecting");
+      retryTimerRef.current = window.setTimeout(() => {
+        retryTimerRef.current = null;
+        setJoinNonce((n) => n + 1);
+      }, 2000 * 2 ** attempt);
+    };
+
+    async function fetchToken(): Promise<string> {
+      const res = await fetch(`${API_BASE}/api/ivs/viewer-token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: userId },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Token failed (${res.status})`);
+      }
+      const data = await res.json();
+      if (!data.token) throw new Error("No token");
+      return data.token as string;
     }
-    // Module-level: another mount of the same project elsewhere
-    // (e.g., the full overlay opened while the bubble preview is
-    // still subscribed) is already holding the slot. Bail rather
-    // than double-counting the visitor against MAX_VIEWERS_PER_STREAM.
-    if (_activeStageProjectId === projectId) {
-      console.log("[ivs-viewer] Stage already active for this project, skipping");
-      return;
-    }
-    joinAttemptedRef.current = true;
-    _activeStageProjectId = projectId;
 
     async function join() {
-      setStatus("connecting");
+      setStatus(autoRetriesRef.current > 0 ? "reconnecting" : "connecting");
       console.log("[ivs-viewer] === JOIN START (single) ===");
 
       try {
         // 1. Get token
-        const res = await fetch(`${API_BASE}/api/ivs/viewer-token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", user_id: userId },
-          body: JSON.stringify({ project_id: projectId }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || `Token failed (${res.status})`);
-        }
-        const data = await res.json();
-        if (!data.token) throw new Error("No token");
+        let token = await fetchToken();
         console.log("[ivs-viewer] Token OK");
-
-        if (!mountedRef.current) return;
+        if (cancelled) return;
 
         // 2. Load SDK
         const IVS = await import("amazon-ivs-web-broadcast");
         const { Stage, StageEvents, ConnectionState, SubscribeType } = IVS;
+        if (cancelled) return;
 
         // 3. Strategy
         const strategy = {
@@ -85,156 +120,218 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
           },
         };
 
-        // 4. Create stage
-        const stage = new Stage(data.token, strategy);
-        stageRef.current = stage;
+        // 4-11. Build a stage with all listeners attached. Factored into
+        // a function so the stale-stage retry below can rebuild from a
+        // fresh token without duplicating handler registration.
+        const buildStage = (tok: string) => {
+          const stage = new Stage(tok, strategy);
 
-        // 5. Register ALL event listeners
-        const allEvents = Object.values(StageEvents) as string[];
-        for (const evt of allEvents) {
-          stage.on(evt, (...args: any[]) => {
-            const summary = args.map((a: any) => {
-              if (Array.isArray(a)) return `[array:${a.length}]`;
-              if (a && typeof a === "object") return JSON.stringify({ userId: a.userId, isLocal: a.isLocal, isPublishing: a.isPublishing, id: a.id });
-              return String(a);
-            }).join(", ");
-            console.log(`[IVS] ${evt} → ${summary}`);
+          // Register ALL event listeners (debug visibility)
+          const allEvents = Object.values(StageEvents) as string[];
+          for (const evt of allEvents) {
+            stage.on(evt, (...args: any[]) => {
+              const summary = args.map((a: any) => {
+                if (Array.isArray(a)) return `[array:${a.length}]`;
+                if (a && typeof a === "object") return JSON.stringify({ userId: a.userId, isLocal: a.isLocal, isPublishing: a.isPublishing, id: a.id });
+                return String(a);
+              }).join(", ");
+              console.log(`[IVS] ${evt} → ${summary}`);
+            });
+          }
+
+          // Connection state
+          stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
+            if (cancelled || !mountedRef.current) return;
+            console.log("[ivs-viewer] CONNECTION:", state);
+            if (state === ConnectionState.CONNECTED) {
+              // Healthy again — reset the backoff budget.
+              autoRetriesRef.current = 0;
+              setStatus("watching");
+            } else if (state === ConnectionState.DISCONNECTED) {
+              // A disconnect can be a real stream end OR a network blip.
+              // Auto-retry first; settle into "ended" when the budget is
+              // spent (the manual button remains as recovery).
+              scheduleAutoRetry("ended");
+            }
           });
-        }
 
-        // 6. Connection state
-        stage.on(StageEvents.STAGE_CONNECTION_STATE_CHANGED, (state: any) => {
-          if (!mountedRef.current) return;
-          console.log("[ivs-viewer] CONNECTION:", state);
-          if (state === ConnectionState.CONNECTED) setStatus("watching");
-          else if (state === ConnectionState.DISCONNECTED) setStatus("ended");
-        });
+          // Participant joined — log everything
+          stage.on(StageEvents.STAGE_PARTICIPANT_JOINED, (p: any) => {
+            console.log("[ivs-viewer] JOINED:", JSON.stringify({
+              userId: p?.userId,
+              id: p?.id,
+              isLocal: p?.isLocal,
+              isPublishing: p?.isPublishing,
+              audioMuted: p?.audioMuted,
+              videoStopped: p?.videoStopped,
+              capabilities: p?.capabilities ? Array.from(p.capabilities) : [],
+            }));
+          });
 
-        // 7. Participant joined — log everything
-        stage.on(StageEvents.STAGE_PARTICIPANT_JOINED, (p: any) => {
-          console.log("[ivs-viewer] JOINED:", JSON.stringify({
-            userId: p?.userId,
-            id: p?.id,
-            isLocal: p?.isLocal,
-            isPublishing: p?.isPublishing,
-            audioMuted: p?.audioMuted,
-            videoStopped: p?.videoStopped,
-            capabilities: p?.capabilities ? Array.from(p.capabilities) : [],
-          }));
-        });
+          // Subscribe state changed
+          stage.on(StageEvents.STAGE_PARTICIPANT_SUBSCRIBE_STATE_CHANGED, (p: any, state: any) => {
+            console.log("[ivs-viewer] SUBSCRIBE_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
+          });
 
-        // 8. Subscribe state changed
-        stage.on(StageEvents.STAGE_PARTICIPANT_SUBSCRIBE_STATE_CHANGED, (p: any, state: any) => {
-          console.log("[ivs-viewer] SUBSCRIBE_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
-        });
+          // Publish state changed
+          stage.on(StageEvents.STAGE_PARTICIPANT_PUBLISH_STATE_CHANGED, (p: any, state: any) => {
+            console.log("[ivs-viewer] PUBLISH_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
+          });
 
-        // 9. Publish state changed
-        stage.on(StageEvents.STAGE_PARTICIPANT_PUBLISH_STATE_CHANGED, (p: any, state: any) => {
-          console.log("[ivs-viewer] PUBLISH_STATE:", p?.userId, "isLocal:", p?.isLocal, "state:", state);
-        });
+          // STREAMS ADDED — the critical handler
+          stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
+            console.log("[ivs-viewer] ★★★ STREAMS_ADDED ★★★");
+            console.log("[ivs-viewer]   from:", participant?.userId, "isLocal:", participant?.isLocal);
+            console.log("[ivs-viewer]   count:", streams?.length);
 
-        // 10. STREAMS ADDED — the critical handler
-        stage.on(StageEvents.STAGE_PARTICIPANT_STREAMS_ADDED, (participant: any, streams: any[]) => {
-          console.log("[ivs-viewer] ★★★ STREAMS_ADDED ★★★");
-          console.log("[ivs-viewer]   from:", participant?.userId, "isLocal:", participant?.isLocal);
-          console.log("[ivs-viewer]   count:", streams?.length);
+            if (!streams || cancelled) return;
+            for (let i = 0; i < streams.length; i++) {
+              const s = streams[i];
+              const track = s?.mediaStreamTrack;
+              console.log(`[ivs-viewer]   stream[${i}]: type=${s?.streamType} muted=${s?.isMuted} hasTrack=${!!track} trackKind=${track?.kind} trackState=${track?.readyState}`);
 
-          if (!streams) return;
-          for (let i = 0; i < streams.length; i++) {
-            const s = streams[i];
-            const track = s?.mediaStreamTrack;
-            console.log(`[ivs-viewer]   stream[${i}]: type=${s?.streamType} muted=${s?.isMuted} hasTrack=${!!track} trackKind=${track?.kind} trackState=${track?.readyState}`);
-
-            if (track instanceof MediaStreamTrack && track.kind === "video") {
-              const videoEl = videoRef.current;
-              if (!videoEl) {
-                console.error("[ivs-viewer] videoRef is null!");
-                return;
-              }
-              videoEl.srcObject = new MediaStream([track]);
-              videoEl.muted = true;
-              videoEl.play().then(() => {
-                console.log("[ivs-viewer] play() OK:", videoEl.videoWidth, "x", videoEl.videoHeight);
-                if (mountedRef.current) setHasVideo(true);
-              }).catch(e => console.error("[ivs-viewer] play() failed:", e.message));
-            }
-
-            if (track instanceof MediaStreamTrack && track.kind === "audio") {
-              console.log("[ivs-viewer] Setting up audio track:", track.id, "state:", track.readyState, "enabled:", track.enabled);
-              try {
-                // Store in ref to prevent garbage collection
-                if (!audioRef.current) {
-                  audioRef.current = new Audio();
-                  // Whenever audio actually starts producing sound — whether
-                  // via initial autoplay, the document-level click listener,
-                  // or the visible "Tap to hear audio" overlay — hide the
-                  // blocked overlay. Single source of truth for the UI state.
-                  audioRef.current.addEventListener("playing", () => {
-                    if (mountedRef.current) setAudioBlocked(false);
-                  });
+              if (track instanceof MediaStreamTrack && track.kind === "video") {
+                const videoEl = videoRef.current;
+                if (!videoEl) {
+                  console.error("[ivs-viewer] videoRef is null!");
+                  return;
                 }
-                const a = audioRef.current;
-                a.srcObject = new MediaStream([track]);
-                a.muted = false;
-                a.volume = 1.0;
-                a.autoplay = true;
-                // Optimistically show the "Tap to hear audio" overlay the
-                // moment the audio track arrives. If autoplay succeeds, the
-                // "playing" event listener above flips this back to false
-                // within a frame. If autoplay is blocked, the existing
-                // document-level recovery handler takes over. Doing this
-                // BEFORE calling play() avoids a 30s+ delay waiting for the
-                // play() promise to reject under autoplay policy.
-                if (mountedRef.current) setAudioBlocked(true);
-                a.play().then(() => {
-                  console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
-                }).catch((e) => {
-                  console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
-                  // audioBlocked is already true from the pre-play set above;
-                  // the visible overlay is therefore already on screen. The
-                  // document-level listeners below remain the primary
-                  // recovery path for the actual unmute.
-                  // Autoplay was blocked — unmute on next user interaction
-                  const unmute = () => {
-                    a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
-                    document.removeEventListener("click", unmute);
-                    document.removeEventListener("touchstart", unmute);
-                  };
-                  document.addEventListener("click", unmute, { once: true });
-                  document.addEventListener("touchstart", unmute, { once: true });
-                });
-              } catch (e) {
-                console.error("[ivs-viewer] Audio setup error:", e);
+                videoEl.srcObject = new MediaStream([track]);
+                videoEl.muted = true;
+                videoEl.play().then(() => {
+                  console.log("[ivs-viewer] play() OK:", videoEl.videoWidth, "x", videoEl.videoHeight);
+                  if (!cancelled && mountedRef.current) setHasVideo(true);
+                }).catch(e => console.error("[ivs-viewer] play() failed:", e.message));
+              }
+
+              if (track instanceof MediaStreamTrack && track.kind === "audio") {
+                console.log("[ivs-viewer] Setting up audio track:", track.id, "state:", track.readyState, "enabled:", track.enabled);
+                try {
+                  // Store in ref to prevent garbage collection
+                  if (!audioRef.current) {
+                    audioRef.current = new Audio();
+                    // Whenever audio actually starts producing sound — whether
+                    // via initial autoplay, the document-level click listener,
+                    // or the visible "Tap to hear audio" overlay — hide the
+                    // blocked overlay. Single source of truth for the UI state.
+                    audioRef.current.addEventListener("playing", () => {
+                      if (!cancelled && mountedRef.current) setAudioBlocked(false);
+                    });
+                  }
+                  const a = audioRef.current;
+                  a.srcObject = new MediaStream([track]);
+                  a.muted = false;
+                  a.volume = 1.0;
+                  a.autoplay = true;
+                  // Optimistically show the "Tap to hear audio" overlay the
+                  // moment the audio track arrives. If autoplay succeeds, the
+                  // "playing" event listener above flips this back to false
+                  // within a frame. If autoplay is blocked, the existing
+                  // document-level recovery handler takes over. Doing this
+                  // BEFORE calling play() avoids a 30s+ delay waiting for the
+                  // play() promise to reject under autoplay policy.
+                  if (!cancelled && mountedRef.current) setAudioBlocked(true);
+                  a.play().then(() => {
+                    console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
+                  }).catch((e) => {
+                    console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
+                    // audioBlocked is already true from the pre-play set above;
+                    // the visible overlay is therefore already on screen. The
+                    // document-level listeners below remain the primary
+                    // recovery path for the actual unmute.
+                    // Autoplay was blocked — unmute on next user interaction
+                    const unmute = () => {
+                      a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
+                      document.removeEventListener("click", unmute);
+                      document.removeEventListener("touchstart", unmute);
+                    };
+                    document.addEventListener("click", unmute, { once: true });
+                    document.addEventListener("touchstart", unmute, { once: true });
+                  });
+                } catch (e) {
+                  console.error("[ivs-viewer] Audio setup error:", e);
+                }
               }
             }
-          }
-        });
+          });
 
-        // 11. Participant left
-        stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (p: any) => {
-          console.log("[ivs-viewer] LEFT:", p?.userId, "isLocal:", p?.isLocal);
-          if (!p?.isLocal) {
-            if (videoRef.current) videoRef.current.srcObject = null;
-            if (mountedRef.current) { setHasVideo(false); setStatus("ended"); }
-          }
-        });
+          // Participant left
+          stage.on(StageEvents.STAGE_PARTICIPANT_LEFT, (p: any) => {
+            console.log("[ivs-viewer] LEFT:", p?.userId, "isLocal:", p?.isLocal);
+            if (!p?.isLocal) {
+              if (videoRef.current) videoRef.current.srcObject = null;
+              // A non-local LEFT is the genuine host-gone signal — no
+              // auto-retry here; "Tap to check again" covers the
+              // false-positive (works now: it re-runs the join effect).
+              if (!cancelled && mountedRef.current) { setHasVideo(false); setStatus("ended"); }
+            }
+          });
 
-        // 12. Join
-        console.log("[ivs-viewer] Calling stage.join()...");
-        await stage.join();
+          return stage;
+        };
+
+        // 12. Join — with ONE fresh-token rebuild if the first attempt is
+        // rejected. Covers a stale/deleted stage or an expired token: the
+        // backend mints against the CURRENT DB stage ARN, so a fresh token
+        // heals an out-of-date first attempt instead of dead-ending.
+        let stage = buildStage(token);
+        try {
+          console.log("[ivs-viewer] Calling stage.join()...");
+          await stage.join();
+        } catch (joinErr) {
+          try { stage.leave(); } catch {}
+          if (cancelled) return;
+          const m = joinErr instanceof Error ? joinErr.message : String(joinErr);
+          console.warn("[ivs-viewer] stage.join() failed — refreshing token once:", m);
+          token = await fetchToken();
+          if (cancelled) return;
+          stage = buildStage(token);
+          await stage.join();
+        }
         console.log("[ivs-viewer] stage.join() resolved");
+
+        if (cancelled) {
+          try { stage.leave(); } catch {}
+          return;
+        }
+        stageRef.current = stage;
 
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed";
         console.error("[ivs-viewer] ERROR:", msg);
-        if (mountedRef.current) { setErrorMsg(msg); setStatus("error"); }
+        if (!cancelled && mountedRef.current) {
+          setErrorMsg(msg);
+          scheduleAutoRetry("error", msg);
+        }
       }
     }
 
-    join();
+    // Claim the project's subscription slot, or wait for it. The waiting
+    // instance polls until the holder unmounts (releasing the claim) and
+    // then joins — replacing the old permanent bail that left the second
+    // mount black forever.
+    const claimOrWait = () => {
+      if (cancelled) return;
+      const holder = _activeClaims.get(projectId);
+      if (holder === undefined) {
+        _activeClaims.set(projectId, owner);
+        claimed = true;
+        join();
+      } else {
+        console.log("[ivs-viewer] Stage held by another instance, waiting for the slot...");
+        waitTimer = window.setTimeout(claimOrWait, 1000);
+      }
+    };
+    claimOrWait();
 
     return () => {
+      cancelled = true;
       mountedRef.current = false;
+      if (waitTimer !== null) window.clearTimeout(waitTimer);
+      if (retryTimerRef.current !== null) {
+        window.clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
       if (stageRef.current) {
         try { stageRef.current.leave(); } catch {}
         stageRef.current = null;
@@ -244,13 +341,13 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         audioRef.current.srcObject = null;
         audioRef.current = null;
       }
-      // Reset both guards in cleanup so a genuine re-mount on
-      // the same instance (StrictMode dev double-mount or a
-      // prop change) can join cleanly the second time.
-      joinAttemptedRef.current = false;
-      _activeStageProjectId = null;
+      // Release the slot only if THIS run owns it — a waiting (never-
+      // claimed) instance must not free another instance's claim.
+      if (claimed && _activeClaims.get(projectId) === owner) {
+        _activeClaims.delete(projectId);
+      }
     };
-  }, [projectId, userId]);
+  }, [projectId, userId, joinNonce]);
 
   return (
     // P0 Android-viewer fix: restore a small min-height floor on the
@@ -322,12 +419,16 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         style={{ aspectRatio: "16/9", objectFit: "cover" }}
       />
 
-      {!hasVideo && (status === "loading" || status === "connecting" || status === "watching") && (
+      {!hasVideo && (status === "loading" || status === "connecting" || status === "reconnecting" || status === "watching") && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="h-3 w-3 animate-ping rounded-full bg-red-500 mx-auto mb-3" />
             <p className="text-sm text-zinc-400">
-              {status === "watching" ? "Waiting for host video..." : "Connecting..."}
+              {status === "watching"
+                ? "Waiting for host video..."
+                : status === "reconnecting"
+                  ? "Reconnecting..."
+                  : "Connecting..."}
             </p>
           </div>
         </div>
@@ -336,8 +437,11 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       {status === "error" && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
           <div className="text-center px-6">
-            <p className="text-sm text-red-400">{errorMsg}</p>
-            <button onClick={() => { setErrorMsg(null); _activeStageProjectId = null; setStatus("loading"); }}
+            <p className="text-sm text-red-400">{errorMsg || "Stream connection failed."}</p>
+            {/* Re-runs the join effect via manualRetry. The previous
+                handler only flipped status, so the button never
+                actually reconnected. */}
+            <button onClick={manualRetry}
               className="mt-3 rounded-lg border border-zinc-800 px-4 py-2 text-xs text-zinc-400 hover:text-white">
               Retry
             </button>
@@ -352,15 +456,12 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
               mobile-network blip from the customer's side. A retry
               that succeeds catches the false-positive; a retry that
               fails returns the same ended view + the same button.
-              Mirrors the existing error-state Retry behavior:
-              reset the active-stage marker + status to "loading"
-              so the connect path re-runs from scratch. */}
+              manualRetry re-runs the join effect from scratch (the
+              previous handler only flipped status and never
+              reconnected). */}
           <button
             type="button"
-            onClick={() => {
-              _activeStageProjectId = null;
-              setStatus("loading");
-            }}
+            onClick={manualRetry}
             className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white"
           >
             Tap to check again
