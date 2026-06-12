@@ -81,6 +81,12 @@ class CreateStageRequest(BaseModel):
 
 class TokenRequest(BaseModel):
     project_id: str
+    # Optional caller context tag (e.g. "homepage_preview") so future
+    # metering can distinguish preview joins from full watch-view joins.
+    # Accepted and logged only - NO enforcement reads it and nothing is
+    # persisted (no schema change). Declared explicitly so a tagged
+    # request can never 422 on an unknown field.
+    context: Optional[str] = None
 
 
 class EndStageRequest(BaseModel):
@@ -457,6 +463,9 @@ async def api_viewer_token(
 ):
     """Viewer gets a SUBSCRIBE participant token for a project's stage.
 
+    body.context ("homepage_preview" etc.) is logged below for future
+    metering visibility; it changes no behavior.
+
     Accepts either a project UUID or slug as body.project_id — same reasoning
     as _verify_owner. Once resolved, all downstream keying (viewer-count
     bucket, anon viewer id, log lines) uses the canonical UUID so two
@@ -480,6 +489,12 @@ async def api_viewer_token(
         project_id=resolved_uuid,
         request=request,
     )
+
+    if body.context:
+        # Context tag is observe-only (see TokenRequest). Logged so the
+        # operator can already see preview vs watch-view joins in Railway
+        # logs before any metering column exists.
+        print(f"[ivs] viewer-token context={body.context!r} viewer={viewer_id!r}")
 
     # Rate limit joins (now per-actual-viewer with stable IDs).
     join_err = check_join_rate(viewer_id)

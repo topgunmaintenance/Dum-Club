@@ -8,6 +8,14 @@ type ViewerStatus = "loading" | "connecting" | "watching" | "reconnecting" | "en
 interface IVSStageViewerProps {
   projectId: string;
   userId: string;
+  // Compact muted-autoplay mode for the homepage LiveRail cards:
+  // video only (no audio element, no tap-to-hear overlay, no error
+  // copy beyond the spinner), smaller pre-frame height floor, and the
+  // viewer-token request is tagged context:"homepage_preview" so
+  // future metering can tell preview joins from watch-view joins.
+  // Everything else (claim/wait guard, retries, token refresh) is
+  // identical to the full watch view.
+  preview?: boolean;
 }
 
 // Module-level dedup: at most one active stage subscription per project
@@ -20,7 +28,7 @@ interface IVSStageViewerProps {
 let _claimSeq = 0;
 const _activeClaims = new Map<string, number>(); // projectId -> claim owner
 
-export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
+export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -83,7 +91,11 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
       const res = await fetch(`${API_BASE}/api/ivs/viewer-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: userId },
-        body: JSON.stringify({ project_id: projectId }),
+        body: JSON.stringify(
+          preview
+            ? { project_id: projectId, context: "homepage_preview" }
+            : { project_id: projectId }
+        ),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -204,7 +216,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
                 }).catch(e => console.error("[ivs-viewer] play() failed:", e.message));
               }
 
-              if (track instanceof MediaStreamTrack && track.kind === "audio") {
+              if (!preview && track instanceof MediaStreamTrack && track.kind === "audio") {
                 console.log("[ivs-viewer] Setting up audio track:", track.id, "state:", track.readyState, "enabled:", track.enabled);
                 try {
                   // Store in ref to prevent garbage collection
@@ -365,7 +377,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
     // width (390 × 9/16 = 219, 360 × 9/16 = 202) so it never engages
     // on the layout — it's purely the pre-frame safety floor that
     // keeps the element non-collapsed long enough for WebRTC to bind.
-    <div className="relative min-h-[180px] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+    <div className={`relative overflow-hidden bg-black ${preview ? "min-h-[90px] rounded-lg" : "min-h-[180px] rounded-2xl border border-zinc-800"}`}>
       <video
         ref={videoRef}
         autoPlay
@@ -415,7 +427,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
         // floor); on a 360px the natural box is 202px (still above);
         // the floor only engages pre-first-frame to prevent 0px
         // collapse.
-        className="block min-h-[180px] w-full bg-zinc-900"
+        className={`block w-full bg-zinc-900 ${preview ? "min-h-[90px]" : "min-h-[180px]"}`}
         style={{ aspectRatio: "16/9", objectFit: "cover" }}
       />
 
@@ -476,7 +488,7 @@ export function IVSStageViewer({ projectId, userId }: IVSStageViewerProps) {
            know audio is available. This overlay gives them a visible tap
            target. Dismisses automatically via the "playing" event listener
            on the audio element. */}
-      {audioBlocked && hasVideo && (
+      {!preview && audioBlocked && hasVideo && (
         <button
           type="button"
           aria-label="Tap to hear audio"
