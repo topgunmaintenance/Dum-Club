@@ -30,6 +30,7 @@ import {
   sortProjects,
   isDiscoverable,
   lowestOfferPrice,
+  withoutLive,
 } from "../../lib/discover/filters";
 import type {
   DiscoverCategoryId,
@@ -222,7 +223,11 @@ export default function DiscoverPage() {
   }, [nearMe]);
 
   const liveResults = useMemo(() => locatedProjects.filter((p) => p.is_live === true), [locatedProjects]);
-  const businessResults = useMemo(() => locatedProjects.filter((p) => p.is_live !== true), [locatedProjects]);
+  // Shared one-presence rule with the homepage (withoutLive): live
+  // sellers render only in the LiveRail above; the grid's "Live Now"
+  // section below renders solely when the live-only filter is active
+  // (the rail's "+N more live" overflow target).
+  const businessResults = useMemo(() => withoutLive(locatedProjects), [locatedProjects]);
 
   /* ─── Filter item results by price ─── */
   const filteredItems = useMemo(() => {
@@ -377,8 +382,11 @@ export default function DiscoverPage() {
                 </div>
               )}
 
-              {/* Live section */}
-              {liveResults.length > 0 && (
+              {/* Live section — rendered ONLY when the live-only
+                  filter is active (the LiveRail overflow's
+                  /discover?live=1 target). Otherwise the rail above
+                  is a live seller's single presence on this page. */}
+              {liveOnly && liveResults.length > 0 && (
                 <section className="mb-8">
                   <div className="mb-3 flex items-center gap-2">
                     <span className="relative flex h-2 w-2">

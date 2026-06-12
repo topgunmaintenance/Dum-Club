@@ -60,6 +60,18 @@ export function lowestOfferPrice(project: Project): number | null {
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 
+/**
+ * One presence per merchant: a live seller renders ONLY in the
+ * LiveRail, never simultaneously in a business grid. Both / and
+ * /discover call this same helper on their grid lists so the
+ * exclusion can't drift between surfaces. When the stream ends
+ * (is_live flips false) the project re-enters the grid on the
+ * next data refresh.
+ */
+export function withoutLive(list: Project[]): Project[] {
+  return list.filter((p) => p.is_live !== true);
+}
+
 export function getProjectEmoji(project: Project, index: number): string {
   const source = `${project.title || project.name || ""} ${project.template_type || ""}`.toLowerCase();
   if (source.includes("fitness") || source.includes("health")) return "💪";
