@@ -27,6 +27,8 @@ System in CLAUDE.md.
 10. [x] business-and-pricing-rebuild — `feature/pricing-real-page-and-business-light` · 2026-05-10
 11. [x] merchant-light-and-square-cleanup — `feature/merchant-light-and-square-cleanup` · 2026-05-10
 12. [x] dashboard-and-hub-light          — `feature/dashboard-and-hub-light` · 2026-05-10
+13. [x] homepage-live-rail               — `feature/homepage-live-rail` · 2026-06-12
+14. [ ] live-started-at
 
 ## Notes
 
@@ -38,3 +40,8 @@ System in CLAUDE.md.
   "run next task" regardless of merge state.
 - If a task needs to be re-done after a revert or rollback, flip
   its marker back to `[ ]` manually before invoking "run next task".
+- live-started-at is migration-gated: it adds
+  `projects.live_started_at`, switches LiveRail to
+  most-recently-live-first ordering, and powers the "Live for
+  HH:MM" timer on the project page. Do not fold any of that into
+  other tasks.
