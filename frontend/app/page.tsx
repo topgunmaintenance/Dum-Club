@@ -27,6 +27,10 @@ import { ListingGrid } from "../components/discover/ListingGrid";
 // /discover page renders, so live cards look and link identically
 // on both surfaces (/project/{slug}?live=1, cap 12 + overflow).
 import { LiveRail } from "../components/discover/LiveRail";
+// Shared one-presence rule with /discover: live sellers leave the
+// businesses grid while they're broadcasting (LiveRail is their
+// single surface) and return when the show ends.
+import { withoutLive } from "../lib/discover/filters";
 
 // Below-the-fold components — code-split out of the initial homepage
 // bundle so the hero text (the LCP element on mobile) can paint without
@@ -2421,6 +2425,15 @@ export default function Home() {
     [allPublicProjects]
   );
 
+  // One presence per merchant: live sellers render ONLY in the
+  // LiveRail above; the businesses grid shows everyone else. Shared
+  // helper with /discover (lib/discover/filters.withoutLive) so the
+  // exclusion can't drift between the two surfaces.
+  const gridProjects = useMemo(
+    () => withoutLive(allPublicProjects),
+    [allPublicProjects]
+  );
+
   const featured = useMemo(() => {
     const quality = allPublicProjects.filter((p) => !isPlaceholderDescription(p.description));
     const pool = quality.length > 0 ? quality : allPublicProjects;
@@ -2633,22 +2646,35 @@ export default function Home() {
 
       <HomeSectionNav />
       <section className="relative z-[1] mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
+        {/* ── LIVE NOW ── live content leads the homepage: the rail
+             sits ABOVE the businesses grid. Hidden when no real live
+             projects (explicit length check stops the component tree
+             from emitting anything when empty). Reuses /discover's
+             LiveRail so the homepage and discover live cards are one
+             component: same /project/{slug}?live=1 link target, same
+             cap-12 + "+N more live" overflow. */}
+        {liveNowProjects.length > 0 && (
+          <div className="mb-12">
+            <LiveRail projects={liveNowProjects} />
+          </div>
+        )}
+
         {/* ── BUSINESSES ON DUM CLUB ── homepage marketplace rail.
              Reuses /discover's ListingGrid + ListingCard verbatim so
              buyers see image-forward, category-pilled merchant cards
-             above the existing Live Now rail. Honest count — exactly
-             how many rows /api/projects/public returned (CLAUDE.md
+             below the Live Now rail. One presence per merchant: live
+             sellers are EXCLUDED here (they render only in the rail
+             above) and return to the grid when the show ends. Honest
+             count — exactly how many cards the grid shows (CLAUDE.md
              §12.2: no fake inflation). Section hides entirely when
-             the list is empty, so the rest of the homepage layout
-             below stays byte-for-byte identical to today. Topgun
-             (NULL category, only visible merchant in prod) renders
-             via the existing classifier + emoji + onError fallback
-             chains shipped in #341 / #344. */}
-        {allPublicProjects.length > 0 && (
+             the list is empty. Topgun (NULL category) renders via the
+             existing classifier + emoji + onError fallback chains
+             shipped in #341 / #344. */}
+        {gridProjects.length > 0 && (
           <div className="mb-12">
             <div className="mb-3 flex items-baseline justify-between gap-3">
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
-                Businesses on DUM Club · {allPublicProjects.length}
+                Businesses on DUM Club · {gridProjects.length}
               </h2>
               <Link
                 href="/discover"
@@ -2658,24 +2684,10 @@ export default function Home() {
               </Link>
             </div>
             <ListingGrid
-              projects={allPublicProjects}
+              projects={gridProjects}
               marketByProject={marketByProject}
               pulseId={null}
             />
-          </div>
-        )}
-
-        {/* ── LIVE NOW ── hidden when no real live projects.
-             Wrapping in an explicit length check stops the component
-             tree from emitting *anything* (margins, wrappers, layout
-             reservations) when the projects list is empty. Reuses
-             /discover's LiveRail (like ListingGrid above) so the
-             homepage and discover live cards are one component:
-             same /project/{slug}?live=1 link target, same cap-12 +
-             "+N more live" overflow, no per-project offer fetches. */}
-        {liveNowProjects.length > 0 && (
-          <div className="mt-12 sm:mt-16">
-            <LiveRail projects={liveNowProjects} />
           </div>
         )}
 
