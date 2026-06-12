@@ -4,8 +4,16 @@
  * Live Rail — horizontal scroll of live sellers.
  *
  * Renders ONLY if items.some(isLive). Returns null otherwise.
- * No Mux autoplay on cards (perf/bandwidth).
- * Static thumbnail + LIVE badge only.
+ *
+ * Video in the feed: the first MAX_AUTOPLAY_PREVIEWS live cards embed
+ * the actual show — IVSStageViewer in muted preview mode (joins the
+ * Real-Time stage as a SUBSCRIBER, like the storefront watch view).
+ * Cards beyond that stay static (logo/emoji) to bound cost: every
+ * preview viewer is a billed Real-Time participant (~$0.10/viewer-hr
+ * list) until the HLS playback path ships — accepted tradeoff, see
+ * .claude/tasks/video-architecture-passive-playback.md. Tapping
+ * anywhere on a card (video included — pointer-events disabled on the
+ * preview) lands on the storefront watch view.
  *
  * Card cap: at most MAX_LIVE_CARDS cards render; past that, one
  * overflow card links to /discover?live=1 (the discover page
@@ -17,12 +25,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { Project } from "../../lib/discover/types";
 import { cleanLogoUrl } from "../../lib/imageSrc";
 import { getProjectEmoji, getAccent, lowestOfferPrice } from "../../lib/discover/filters";
 import { classifyProject } from "../../lib/categories";
 
+// Browser-only: pulls in amazon-ivs-web-broadcast (WebRTC).
+const IVSStageViewer = dynamic(
+  () => import("../IVSStageViewer").then((m) => ({ default: m.IVSStageViewer })),
+  { ssr: false }
+);
+
 const MAX_LIVE_CARDS = 12;
+// Muted-autoplay video on at most this many rail cards; the rest stay
+// static thumbnails. Keeps worst-case preview cost at two Real-Time
+// participants per homepage visitor regardless of how many merchants
+// are live.
+const MAX_AUTOPLAY_PREVIEWS = 2;
 
 export function LiveRail({ projects }: { projects: Project[] }) {
   const liveProjects = projects.filter((p) => p.is_live === true);
@@ -71,6 +91,14 @@ export function LiveRail({ projects }: { projects: Project[] }) {
               className="flex w-[280px] flex-shrink-0 flex-col rounded-xl border border-[var(--state-live)]/30 bg-surface-card p-4 transition hover:border-[var(--state-live)]/30"
               style={{ scrollSnapAlign: "start" }}
             >
+              {/* The actual show, muted, on the first cards only.
+                  pointer-events-none so every tap falls through to
+                  the Link and lands on the storefront watch view. */}
+              {index < MAX_AUTOPLAY_PREVIEWS && (
+                <div className="pointer-events-none mb-3">
+                  <IVSStageViewer projectId={project.id} userId="" preview />
+                </div>
+              )}
               <div className="mb-3 flex items-center justify-between">
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
