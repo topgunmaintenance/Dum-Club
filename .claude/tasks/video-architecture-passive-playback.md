@@ -161,3 +161,19 @@ Until then the cheap wins are operational: confirm the real
 Real-Time rate in the AWS dashboard, and keep the viewer-cap /
 hard-block enforcement (which makes Option A's worst case bounded)
 exactly as is.
+
+---
+
+## Update 2026-06-12: homepage previews shipped on Option A
+
+The LIVE NOW rail now embeds muted autoplay previews on the first 2
+live cards (PR #413), each joining the Real-Time stage as a
+SUBSCRIBER tagged context:"homepage_preview". Cost impact: up to TWO
+extra Real-Time participants (~$0.10/viewer-hour list each) per
+homepage visitor while a merchant is live. This RAISES the priority
+of the Option B decision in proportion to homepage traffic: the
+break-even arithmetic in section 6 now includes homepage
+impressions, not just intentional watch-view viewers. Re-run the
+break-even with real homepage session counts once live shows become
+regular; the context tag in viewer-token logs is the measurement
+hook.
