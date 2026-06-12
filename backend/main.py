@@ -52,7 +52,6 @@ from api.routes import (
     external_business,
     feature_flags,
     auctions,
-    live_relay,
     ivs,
     auction_ws,
     merchant,
@@ -350,7 +349,6 @@ app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 # by a separate migration (draft 076), applied out-of-band.
 app.include_router(guest_chat.router, prefix="/api/guest", tags=["Guest Chat"])
 app.include_router(auctions.router, prefix="/api/auctions", tags=["Auctions"])
-app.include_router(live_relay.router, prefix="/api/live", tags=["Live Relay"])
 app.include_router(ivs.router, prefix="/api/ivs", tags=["IVS Real-Time"])
 app.include_router(auction_ws.router, prefix="/api/auction-ws", tags=["Auction WebSocket"])
 app.include_router(merchant.router, prefix="/api/merchant", tags=["Merchant"])
