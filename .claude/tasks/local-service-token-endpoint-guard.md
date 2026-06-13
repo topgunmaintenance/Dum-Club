@@ -166,3 +166,37 @@ The only remaining theoretical 500 surface is the WRITE/owner paths
 (POST /trade, /create-token, /mint-tokens) — but those are auth/owner-
 gated and 400 cleanly on incomplete metadata / unapproved status, so
 they are NOT the "visible passive 500s" this hygiene task targets.
+
+---
+
+## AUDIT 2026-06-13 (part 3) — live prod probe evidence (CLOSES Gate 3)
+
+Reproduction evidence the human-review point asked for. Live read-only
+GETs against dum-club-production.up.railway.app for the local_service
+project topgun-maintenance (no token_mint_address; token_status
+'inactive'; token_symbol 'TOPGUN'). All 200, ZERO 500s:
+
+- GET /token-metadata -> 200
+  {mint_address: null, symbol: "TOPGUN", status: "inactive",
+   is_simulated: true, token_mode: "simulated"}
+  (took the `if not mint_address` draft branch, project_tokens.py:84)
+- GET /market -> 200
+  {price: 0.001, market_cap: 0, is_simulated: true,
+   simulation_mode: true}  (zero-fill via _get_market_row)
+- GET /candles -> 200 []
+- GET /trades -> 200 []
+- GET /balance/SomeDummyWallet111 -> 200
+- GET /api/projects/topgun-maintenance -> 200
+
+There is no BEFORE-vs-AFTER code diff because NO CODE CHANGED: the
+endpoints already no-op correctly for local_service via mint_address /
+zero-fill. The "before" (original audit's reported 500s) could not be
+reproduced on the current deploy (PR #414); the "after" is the live
+200s above. The fix was never needed for these read paths.
+
+GATE 3 OUTCOME: GREEN — monitor-only, nothing to guard, no
+implementation to trigger. Re-open this task ONLY if a real
+@httpStatus:500 reappears on a token/market READ path in Railway logs,
+and if so implement using the corrected detection rule in part 2
+(mint_address / template_type='local_service' / token_status not
+active — NEVER NULL token fields). Closed 2026-06-13.
