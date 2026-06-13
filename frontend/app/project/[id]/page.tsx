@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import { IVS_REALTIME_ENABLED, isIVSSession } from "../../../lib/liveProvider";
+import { ENABLE_AI_FEATURES } from "../../../lib/featureFlags";
 import { deriveStoreStatusCta } from "../../../lib/storeStatus";
 const IVSStageHost = dynamic(() => import("../../../components/IVSStageHost").then(m => ({ default: m.IVSStageHost })), { ssr: false });
 const IVSStageViewer = dynamic(() => import("../../../components/IVSStageViewer").then(m => ({ default: m.IVSStageViewer })), { ssr: false });
@@ -3899,6 +3900,7 @@ return (
           {/* CTA */}
           <div className="mb-10 text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">
+              {ENABLE_AI_FEATURES && (
               <button
                 onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
                 // Mobile: hidden — AI is the floating bubble only.
@@ -3907,6 +3909,7 @@ return (
               >
                 Ask AI
               </button>
+              )}
               {isOwner && (
                 <button
                   onClick={() => copyToClipboard(`${window.location.origin}/project/${id}?view=pitch`, "pitch link")}
@@ -3980,7 +3983,7 @@ return (
            phones. Desktop continues to render the chip grid inline as a
            merchant-facing nudge — there's no floating bubble equivalent
            visual real-estate cost on a 1280px+ screen. */}
-      {showOwnerInlineUi && ownerHasSales && (
+      {ENABLE_AI_FEATURES && showOwnerInlineUi && ownerHasSales && (
         <div className="mb-6 hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5 sm:block">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -4133,6 +4136,67 @@ return (
           defaultEmail={authUser?.email || undefined}
         />
       )}
+
+      {/* ── NOT-LIVE hero (customer view) ──────────────
+           When the shop isn't broadcasting, never show an empty black
+           video box. Show a plain "isn't live right now" line plus the
+           featured product (pinned, else first active offer) with Buy
+           Now, so a first-time visitor always has something to watch
+           for AND something to buy. Owner (non-preview) is excluded —
+           they get the host/control UI instead. */}
+      {!project?.is_live && !showOwnerInlineUi && (() => {
+        const featured = pinnedOffer || offers.find((o) => o.is_active) || null;
+        const soldOut = !!featured
+          && !featured.unlimited_inventory
+          && (featured.quantity_available || 0) > 0
+          && ((featured.quantity_available || 0) - (featured.quantity_sold || 0)) <= 0;
+        return (
+          <div className="mb-6 rounded-3xl border border-default bg-surface-card p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-muted" />
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-secondary">
+                {projectName} isn&apos;t live right now
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-secondary">
+              {featured
+                ? "Catch the next show, or grab the featured product below."
+                : "Catch the next show. Get notified when they go live."}
+            </p>
+            {featured && (
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                {featured.primary_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={resolveImageUrl(featured.primary_image_url)}
+                    alt={featured.title}
+                    className="h-28 w-full rounded-xl object-cover sm:h-24 sm:w-40"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }}
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">Featured</div>
+                  <h3 className="mt-0.5 line-clamp-1 text-lg font-bold text-primary">{featured.title}</h3>
+                  <span className="font-mono text-xl font-extrabold text-brand-teal">
+                    ${Number(featured.price_usd).toFixed(2)}
+                  </span>
+                </div>
+                {soldOut ? (
+                  <span className="rounded-xl border border-default px-5 py-3 text-center text-sm font-bold text-secondary">Sold Out</span>
+                ) : (
+                  <button
+                    onClick={() => buyOffer(featured)}
+                    disabled={!!buyingOfferId}
+                    className="shrink-0 rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:text-white disabled:opacity-40"
+                  >
+                    {buyingOfferId === featured.id ? "Opening secure checkout…" : "Buy Now"}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
       {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
@@ -4484,8 +4548,14 @@ return (
                 )}
               </div>
 
-              {/* Host controls. below product on desktop */}
-              {isOwner && isIVSSession(project) && (
+              {/* Host controls. below product on desktop. showOwnerInlineUi
+                  (not bare isOwner) so the pin buttons vanish when the owner
+                  previews "view as customer" — admin chrome off the customer
+                  view. (The IVSStageHost broadcast block below stays on bare
+                  isOwner on purpose: gating it on showOwnerInlineUi would
+                  unmount the publisher and end the live stream the instant
+                  the owner toggled preview.) */}
+              {showOwnerInlineUi && isIVSSession(project) && (
                 <div className="space-y-3 rounded-2xl border border-default bg-surface-card p-4">
                   <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
                   <div className="flex flex-wrap gap-2">
@@ -4508,14 +4578,18 @@ return (
               )}
             </div>
 
-            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ── */}
+            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ──
+                 lg:h-full + fillHeight makes the chat match the video+product
+                 column height so the two read as one tile (equal height). */}
             {isIVSSession(project) && (
-              <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] pb-20 lg:pb-0">
+              <div className="lg:h-full pb-20 lg:pb-0">
                 <LiveChatIVS
                   projectId={id as string}
                   userId={authUser?.privyId || ""}
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
+                  fillHeight
+                  onRequestSignIn={login}
                   getToken={getToken}
                   onCommentBuy={handleCommentBuy}
                   onViewerCountChange={setLiveViewerCount}
@@ -4827,9 +4901,11 @@ return (
                   {/* Mobile: render only the share menu (full-width).
                       Desktop: 2-column grid with Ask AI + Share. */}
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {ENABLE_AI_FEATURES && (
                     <button type="button" onClick={() => scrollToSection("ai-workspace")} className="hidden items-center justify-center rounded-xl border border-default px-4 py-3 text-sm text-primary transition hover:border-strong hover:text-primary sm:flex">
                       Ask AI
                     </button>
+                    )}
                     <div className="relative" ref={shareMenuRef}>
                       <button
                         type="button"
@@ -6865,7 +6941,7 @@ return (
           for the owner until their first sale so a new merchant's page
           stays focused. Customers always see it; STATE_3+ owners keep
           it because the growth-AI chips above target #ai-workspace. */}
-      {(!showOwnerInlineUi || ownerHasSales) && (
+      {ENABLE_AI_FEATURES && (!showOwnerInlineUi || ownerHasSales) && (
       <details
         id="ai-workspace"
         className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
@@ -7505,10 +7581,10 @@ return (
     />
   )}
 
-  {/* AI Sales Assistant. Customer-facing — hidden for the authenticated
-      owner (2E/2F) so the owner's own page isn't cluttered with a buyer
-      chat widget. Still shown to all visitors and in view-as-customer. */}
-  {offers.length > 0 && !showOwnerInlineUi && (
+  {/* AI Sales Assistant ("Chat with <business>" bubble). Customer-facing —
+      hidden for the authenticated owner (2E/2F). Gated behind
+      ENABLE_AI_FEATURES so the whole AI surface set toggles as one. */}
+  {ENABLE_AI_FEATURES && offers.length > 0 && !showOwnerInlineUi && (
     <AiSalesChat
       projectId={id}
       businessName={projectName}
