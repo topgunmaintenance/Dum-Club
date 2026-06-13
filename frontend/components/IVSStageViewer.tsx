@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
+import { useAudioBus } from "./audio/AudioBus";
 
 type ViewerStatus = "loading" | "connecting" | "watching" | "reconnecting" | "ended" | "error";
 
@@ -32,9 +33,23 @@ export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageV
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
-  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Single-audio-owner bus: every player starts muted; only the active
+  // owner is audible. A stable per-mount id identifies this player to the
+  // bus. Bus may be null (no provider) — degrade to silent muted video.
+  const bus = useAudioBus();
+  const [audioInstanceId] = useState(
+    () => `av-${Math.random().toString(36).slice(2)}`,
+  );
+  const active = bus?.isActive(audioInstanceId) ?? false;
+  // Latest values for the unmount-only cleanup (avoids stale closure).
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const busRef = useRef(bus);
+  busRef.current = bus;
   const stageRef = useRef<any>(null);
   const mountedRef = useRef(true);
   // Re-join trigger. Bumping this re-runs the join effect from scratch
@@ -216,50 +231,24 @@ export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageV
                 }).catch(e => console.error("[ivs-viewer] play() failed:", e.message));
               }
 
-              if (!preview && track instanceof MediaStreamTrack && track.kind === "audio") {
+              if (track instanceof MediaStreamTrack && track.kind === "audio") {
                 console.log("[ivs-viewer] Setting up audio track:", track.id, "state:", track.readyState, "enabled:", track.enabled);
                 try {
-                  // Store in ref to prevent garbage collection
+                  // Store in ref to prevent garbage collection.
                   if (!audioRef.current) {
                     audioRef.current = new Audio();
-                    // Whenever audio actually starts producing sound — whether
-                    // via initial autoplay, the document-level click listener,
-                    // or the visible "Tap to hear audio" overlay — hide the
-                    // blocked overlay. Single source of truth for the UI state.
-                    audioRef.current.addEventListener("playing", () => {
-                      if (!cancelled && mountedRef.current) setAudioBlocked(false);
-                    });
                   }
                   const a = audioRef.current;
                   a.srcObject = new MediaStream([track]);
-                  a.muted = false;
-                  a.volume = 1.0;
+                  // Single-audio-owner model: start MUTED and play. A muted
+                  // element is allowed to autoplay, so this keeps audio
+                  // primed; the bus effect below unmutes only the active
+                  // owner once the viewer taps the speaker (which also
+                  // satisfies the browser autoplay-gesture requirement).
+                  a.muted = true;
                   a.autoplay = true;
-                  // Optimistically show the "Tap to hear audio" overlay the
-                  // moment the audio track arrives. If autoplay succeeds, the
-                  // "playing" event listener above flips this back to false
-                  // within a frame. If autoplay is blocked, the existing
-                  // document-level recovery handler takes over. Doing this
-                  // BEFORE calling play() avoids a 30s+ delay waiting for the
-                  // play() promise to reject under autoplay policy.
-                  if (!cancelled && mountedRef.current) setAudioBlocked(true);
-                  a.play().then(() => {
-                    console.log("[ivs-viewer] Audio play() OK — paused:", a.paused, "volume:", a.volume, "muted:", a.muted);
-                  }).catch((e) => {
-                    console.warn("[ivs-viewer] Audio play() blocked by autoplay policy:", e.message);
-                    // audioBlocked is already true from the pre-play set above;
-                    // the visible overlay is therefore already on screen. The
-                    // document-level listeners below remain the primary
-                    // recovery path for the actual unmute.
-                    // Autoplay was blocked — unmute on next user interaction
-                    const unmute = () => {
-                      a.play().then(() => console.log("[ivs-viewer] Audio resumed after user gesture")).catch(() => {});
-                      document.removeEventListener("click", unmute);
-                      document.removeEventListener("touchstart", unmute);
-                    };
-                    document.addEventListener("click", unmute, { once: true });
-                    document.addEventListener("touchstart", unmute, { once: true });
-                  });
+                  a.play().catch(() => {});
+                  if (!cancelled && mountedRef.current) setHasAudio(true);
                 } catch (e) {
                   console.error("[ivs-viewer] Audio setup error:", e);
                 }
@@ -360,6 +349,53 @@ export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageV
       }
     };
   }, [projectId, userId, joinNonce]);
+
+  // Apply the single-audio-owner decision to the real <audio> element:
+  // the active owner unmutes + plays at the session volume; everyone else
+  // mutes. On a fresh load the unmuted play() can be blocked by the
+  // autoplay policy (no gesture yet) — revert to muted so the speaker icon
+  // reflects reality and one tap recovers it.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.muted = !active;
+    if (active) {
+      a.volume = bus?.volume ?? 1;
+      a.play().catch(() => {
+        if (mountedRef.current) bus?.setActive(null);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, hasAudio, bus?.volume]);
+
+  // Storefront auto-resume: the full (non-preview) viewer reclaims audio
+  // after an in-app navigation when the viewer had sound on, so they don't
+  // re-tap unmute on every page. Feed previews never auto-claim — a wall of
+  // tiles shouldn't fight over sound; they wait for an explicit tap.
+  useEffect(() => {
+    if (preview || !bus || !hasAudio) return;
+    if (bus.soundOn && bus.activeId === null) {
+      bus.setActive(audioInstanceId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview, hasAudio]);
+
+  // Free audio ownership on unmount so the bus doesn't point at a gone
+  // player (keeps the sticky sound-on intent intact for auto-resume).
+  useEffect(() => {
+    return () => {
+      if (activeRef.current) busRef.current?.release(audioInstanceId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleAudio = (e: React.MouseEvent) => {
+    // Stop the tap from bubbling to a parent <Link> (feed tiles are wrapped
+    // in one) so unmuting never navigates away.
+    e.preventDefault();
+    e.stopPropagation();
+    bus?.setActive(active ? null : audioInstanceId);
+  };
 
   return (
     // P0 Android-viewer fix: restore a small min-height floor on the
@@ -481,31 +517,61 @@ export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageV
         </div>
       )}
 
-      {/* ── Audio unmute banner ──────────────────────────────────────
-           When the browser's autoplay policy blocks audio.play(), the
-           existing document-level click/touchstart listener will resume
-           playback on the next interaction — but viewers have no way to
-           know audio is available. This overlay gives them a visible tap
-           target. Dismisses automatically via the "playing" event listener
-           on the audio element. */}
-      {!preview && audioBlocked && hasVideo && (
-        <button
-          type="button"
-          aria-label="Tap to hear audio"
-          onClick={() => {
-            // Direct resume as a belt-and-suspenders backup to the
-            // existing document-level listener. Safe to call even if the
-            // listener also fires — play() on an already-playing element
-            // is a no-op. Do not change any other audio logic.
-            const a = audioRef.current;
-            if (a) a.play().catch(() => {});
-          }}
-          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-400/50 bg-black/85 px-5 py-3 text-sm font-bold text-white shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(0,255,163,0.15)] backdrop-blur-md transition hover:border-emerald-400/80 hover:bg-black/95 animate-pulse"
-          style={{ minHeight: 44, minWidth: 44 }}
-        >
-          <span className="text-base leading-none">🔊</span>
-          <span className="leading-none">Tap to hear audio</span>
-        </button>
+      {/* ── Audio unmute control (single-audio-owner bus) ────────────
+           Every player starts muted (browser autoplay policy). The viewer
+           taps to unmute; the bus then mutes every other player so only
+           one is ever audible. Feed previews show a compact corner speaker
+           (pointer-events-auto so the tap toggles audio instead of falling
+           through to the card's <Link>); the full storefront viewer shows
+           a prominent labelled button plus a volume slider once unmuted. */}
+      {bus && hasAudio && hasVideo && (
+        preview ? (
+          <button
+            type="button"
+            aria-label={active ? "Mute audio" : "Unmute audio"}
+            aria-pressed={active}
+            onClick={toggleAudio}
+            className={`pointer-events-auto absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border text-sm backdrop-blur-md transition ${
+              active
+                ? "border-emerald-400/70 bg-black/80 text-white"
+                : "border-white/20 bg-black/70 text-white hover:border-emerald-400/60"
+            }`}
+          >
+            <span aria-hidden="true">{active ? "🔊" : "🔇"}</span>
+          </button>
+        ) : (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center px-4">
+            <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/15 bg-black/80 px-3 py-2 backdrop-blur-md">
+              <button
+                type="button"
+                aria-label={active ? "Mute audio" : "Unmute audio"}
+                aria-pressed={active}
+                onClick={toggleAudio}
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold transition ${
+                  active
+                    ? "text-white"
+                    : "text-white animate-pulse"
+                }`}
+                style={{ minHeight: 36 }}
+              >
+                <span aria-hidden="true" className="text-base leading-none">{active ? "🔊" : "🔇"}</span>
+                <span className="leading-none">{active ? "Sound on" : "Tap for sound"}</span>
+              </button>
+              {active && (
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={bus.volume}
+                  aria-label="Volume"
+                  onChange={(e) => bus.setVolume(parseFloat(e.target.value))}
+                  className="h-1 w-20 cursor-pointer accent-emerald-400"
+                />
+              )}
+            </div>
+          </div>
+        )
       )}
     </div>
   );

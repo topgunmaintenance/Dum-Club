@@ -2,6 +2,7 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { AuthProvider } from "../lib/auth/AuthContext";
+import { AudioBusProvider } from "./audio/AudioBus";
 
 // Privy's internal SDK emits a handful of warnings during init —
 // "Wallet proxy not initialized", "Failed to add embedded wallet
@@ -85,7 +86,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <AudioBusProvider>{children}</AudioBusProvider>
+      </AuthProvider>
     </PrivyProvider>
   );
 }
