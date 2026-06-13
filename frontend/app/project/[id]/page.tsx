@@ -4107,6 +4107,59 @@ return (
           above carries that signal). Hidden when the schedule is in
           the past (we don't auto-clear stale values; the banner
           just stops showing). */}
+      {/* ── OFFLINE LIVE-MODULE FRAME (customer view) ──────────────────
+           When the merchant isn't broadcasting we still frame the page
+           around watch / buy: a video-shaped "isn't live right now"
+           placeholder (never an empty black box) with the single
+           featured "Now Selling" product + Buy Now beneath it. Skipped
+           when a replay exists (ReplayCard fills the video slot instead)
+           and for the owner's own view. The scheduled-show + notify-me
+           banners below still render as the come-back hook. */}
+      {!project?.is_live && !project?.replay_url && !showOwnerInlineUi && (() => {
+        const featured = pinnedOffer || offers.find((o) => o.is_active) || null;
+        return (
+          <div className="mb-6 overflow-hidden rounded-3xl border border-default bg-surface-card">
+            <div className="flex items-center justify-center bg-surface-muted" style={{ aspectRatio: "16/9" }}>
+              <div className="px-6 text-center">
+                <div className="mb-2 flex items-center justify-center gap-2">
+                  <span className="inline-flex h-2.5 w-2.5 rounded-full bg-muted" />
+                  <span className="text-sm font-bold uppercase tracking-widest text-secondary">Offline</span>
+                </div>
+                <p className="text-base font-bold text-primary">{projectName} isn&apos;t live right now</p>
+                <p className="mt-1 text-xs text-secondary">Catch the next show, or grab something below.</p>
+              </div>
+            </div>
+            {featured && (
+              <div className="border-t border-default p-5">
+                <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Now Selling</div>
+                <div className="flex items-center gap-4">
+                  {featured.primary_image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={resolveImageUrl(featured.primary_image_url)}
+                      alt={featured.title}
+                      className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }}
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-base font-bold text-primary">{featured.title}</h3>
+                    <span className="font-mono text-lg font-bold text-brand-teal">${Number(featured.price_usd).toFixed(2)}</span>
+                  </div>
+                  <button
+                    onClick={() => buyOffer(featured)}
+                    disabled={!!buyingOfferId}
+                    className="shrink-0 rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-black transition hover:bg-brand-teal-hover disabled:opacity-40"
+                  >
+                    {buyingOfferId === featured.id ? "Opening…" : "Buy Now"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {!project?.is_live && project?.scheduled_live_at && (
         <ScheduledLiveBanner
           scheduledIso={project.scheduled_live_at}
@@ -4219,7 +4272,22 @@ return (
                         allowFullScreen
                       />
                     </div>
-                  ) : null}
+                  ) : (
+                    /* is_live with no playable source yet — show a waiting
+                       state instead of an empty black box. */
+                    <div className="flex items-center justify-center bg-surface-muted" style={{ aspectRatio: "16/9" }}>
+                      <div className="text-center px-6">
+                        <div className="mb-2 flex items-center justify-center gap-2">
+                          <span className="relative flex h-3 w-3">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
+                          </span>
+                          <span className="text-sm font-bold uppercase tracking-widest text-state-live">Starting soon</span>
+                        </div>
+                        <p className="text-xs text-secondary">The stream is starting. Browse products and chat below.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 )}
 
@@ -4511,8 +4579,12 @@ return (
               )}
             </div>
 
-            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ── */}
-            {isIVSSession(project) && (
+            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ──
+                 Rendered for any live session, not just IVS: the chat relay
+                 is keyed by project id and is independent of the video
+                 provider, so a legacy iframe/camera stream still gets the
+                 same watch + chat module instead of an empty column. */}
+            {project?.is_live && (
               <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] pb-20 lg:pb-0">
                 <LiveChatIVS
                   projectId={id as string}
