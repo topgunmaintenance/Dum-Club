@@ -4548,8 +4548,14 @@ return (
                 )}
               </div>
 
-              {/* Host controls. below product on desktop */}
-              {isOwner && isIVSSession(project) && (
+              {/* Host controls. below product on desktop. showOwnerInlineUi
+                  (not bare isOwner) so the pin buttons vanish when the owner
+                  previews "view as customer" — admin chrome off the customer
+                  view. (The IVSStageHost broadcast block below stays on bare
+                  isOwner on purpose: gating it on showOwnerInlineUi would
+                  unmount the publisher and end the live stream the instant
+                  the owner toggled preview.) */}
+              {showOwnerInlineUi && isIVSSession(project) && (
                 <div className="space-y-3 rounded-2xl border border-default bg-surface-card p-4">
                   <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
                   <div className="flex flex-wrap gap-2">
