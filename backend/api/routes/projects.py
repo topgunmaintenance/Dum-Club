@@ -2034,6 +2034,17 @@ async def update_project(
     """Update allowed project fields. Owner only."""
     supabase = get_client()
 
+    # Resolve slug-or-UUID to the canonical projects.id before any
+    # .eq("id", ...) below — the storefront forwards the URL param (a
+    # slug, e.g. "topgun-maintenance"), which would otherwise hit
+    # Postgres 22P02 against the uuid column. Mirrors the offers-create
+    # fix; reassigning project_id makes every downstream query use the
+    # canonical UUID.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
+
     project_res = (
         supabase.table("projects")
         .select("id, owner_id, privy_id")
@@ -2143,6 +2154,14 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
         raise HTTPException(status_code=401, detail="Authentication required")
 
     supabase = get_client()
+
+    # Resolve slug-or-UUID to the canonical projects.id (publish/unpublish
+    # are called from the storefront with the URL param, which is a slug
+    # for slug-addressable storefronts -> Postgres 22P02 otherwise).
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
 
     project_res = (
         supabase.table("projects")
@@ -2306,6 +2325,16 @@ async def go_live(
 ):
     """Owner toggles stream ON with a stream URL."""
     supabase = get_client()
+
+    # Resolve slug-or-UUID up front so the project fetch + the is_live
+    # UPDATE + telemetry all key off the canonical projects.id. The
+    # storefront calls /go-live with the URL param (a slug); a bare
+    # .eq("id", slug) would Postgres-22P02 even before the provider
+    # branch. Mirrors the offers-create fix.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
 
     # Overlap the project row + (speculative) merchant Stripe-gate fetches.
     # supabase-py is sync, so push each into a thread and gather. In the
@@ -2527,6 +2556,14 @@ async def end_live(
 ):
     """Owner ends the live stream."""
     supabase = get_client()
+
+    # Resolve slug-or-UUID before the owner fetch + clear-live UPDATE —
+    # storefront calls /end-live with the URL param (a slug) -> 22P02
+    # otherwise. Mirrors the offers-create fix.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
 
     project_res = (
         supabase.table("projects")
