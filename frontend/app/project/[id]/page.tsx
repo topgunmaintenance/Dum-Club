@@ -4580,6 +4580,7 @@ return (
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
                   fillHeight
+                  onRequestSignIn={login}
                   getToken={getToken}
                   onCommentBuy={handleCommentBuy}
                   onViewerCountChange={setLiveViewerCount}

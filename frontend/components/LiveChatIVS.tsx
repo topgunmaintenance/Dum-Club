@@ -52,6 +52,11 @@ interface LiveChatIVSProps {
   // one tile side by side. Default false keeps every existing call site
   // (embed bubble, etc.) pixel-identical.
   fillHeight?: boolean;
+  // Sign-in gate: when provided AND the viewer is signed out (no userId),
+  // the chat shows a full-width "Sign in to chat" button that calls this
+  // instead of a disabled input. Wire it to the Privy login modal. When
+  // omitted, the signed-out state falls back to the disabled input.
+  onRequestSignIn?: () => void;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -74,7 +79,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -346,52 +351,81 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
         </div>
       )}
 
-      {/* Input */}
-      <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              !connected
-                ? "Connecting…"
-                : "Say something..."
-            }
-            disabled={!userId || !connected}
-            maxLength={300}
-            style={{
-              flex: 1,
-              minHeight: 44,
-              borderRadius: 8,
-              border: "1px solid #27272a",
-              background: "#18181b",
-              padding: "10px 12px",
-              fontSize: 14,
-              color: "#fff",
-              outline: "none",
-              opacity: (!userId || !connected) ? 0.4 : 1,
-            }}
-          />
+      {/* Input — signed-out viewers can READ chat but not POST. Instead
+          of a greyed-out box, show one full-width "Sign in to chat"
+          button that opens the Privy modal (onRequestSignIn). After
+          login the parent passes a real userId and this re-renders to
+          the working input with no reload. When onRequestSignIn isn't
+          provided (e.g. the embed bubble), fall back to the disabled
+          input so nothing breaks. */}
+      {!userId && onRequestSignIn ? (
+        <div style={{ borderTop: "1px solid #27272a", padding: 8 }}>
           <button
-            type="submit"
-            disabled={!userId || !connected || !input.trim() || sendCooldown}
+            type="button"
+            onClick={onRequestSignIn}
             style={{
+              width: "100%",
               minHeight: 44,
               borderRadius: 8,
               background: "#10b981",
-              padding: "10px 18px",
-              fontSize: 13,
+              padding: "12px 18px",
+              fontSize: 14,
               fontWeight: 700,
               color: "#000",
               border: "none",
               cursor: "pointer",
-              opacity: (!userId || !connected || !input.trim() || sendCooldown) ? 0.3 : 1,
             }}
           >
-            Send
+            Sign in to chat
           </button>
         </div>
-      </form>
+      ) : (
+        <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                !connected
+                  ? "Connecting…"
+                  : "Say something..."
+              }
+              disabled={!userId || !connected}
+              maxLength={300}
+              style={{
+                flex: 1,
+                minHeight: 44,
+                borderRadius: 8,
+                border: "1px solid #27272a",
+                background: "#18181b",
+                padding: "10px 12px",
+                fontSize: 14,
+                color: "#fff",
+                outline: "none",
+                opacity: (!userId || !connected) ? 0.4 : 1,
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!userId || !connected || !input.trim() || sendCooldown}
+              style={{
+                minHeight: 44,
+                borderRadius: 8,
+                background: "#10b981",
+                padding: "10px 18px",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#000",
+                border: "none",
+                cursor: "pointer",
+                opacity: (!userId || !connected || !input.trim() || sendCooldown) ? 0.3 : 1,
+              }}
+            >
+              Send
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
