@@ -4592,6 +4592,7 @@ return (
                   userName={authUser?.email || "Viewer"}
                   isHost={isOwner}
                   getToken={getToken}
+                  onSignIn={login}
                   onCommentBuy={handleCommentBuy}
                   onViewerCountChange={setLiveViewerCount}
                   onItemUpdate={(data) => {

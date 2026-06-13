@@ -47,6 +47,12 @@ interface LiveChatIVSProps {
   // claim the pinned offer + open checkout. Optional; existing call sites
   // unchanged.
   onCommentBuy?: (text: string) => void;
+  // Sign-in gate: logged-out viewers can read chat but not post. When the
+  // viewer has no userId and this callback is provided, the message input is
+  // replaced by a single "Sign in to chat" button that opens the login
+  // modal. Optional — when omitted (e.g. anonymous embed), the prior
+  // disabled-input behavior is preserved.
+  onSignIn?: () => void;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -69,7 +75,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, onSignIn }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -341,7 +347,35 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
         </div>
       )}
 
-      {/* Input */}
+      {/* Input — gated behind sign-in. Logged-out viewers can read the
+          chat but must sign in to post: the message input is replaced by a
+          single full-width "Sign in to chat" button that opens the login
+          modal. After login the parent re-renders with a userId and the
+          real input returns with no page reload, no lost stream. When no
+          onSignIn is provided (anonymous embed), the prior disabled-input
+          behavior is preserved. */}
+      {!userId && onSignIn ? (
+        <div style={{ borderTop: "1px solid #27272a", padding: 8 }}>
+          <button
+            type="button"
+            onClick={onSignIn}
+            style={{
+              width: "100%",
+              minHeight: 44,
+              borderRadius: 8,
+              background: "#10b981",
+              padding: "12px 18px",
+              fontSize: 14,
+              fontWeight: 700,
+              color: "#000",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Sign in to chat
+          </button>
+        </div>
+      ) : (
       <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -387,6 +421,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }
