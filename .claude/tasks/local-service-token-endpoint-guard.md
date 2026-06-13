@@ -107,3 +107,62 @@ WHAT TO PULL (hand to whoever has Railway/Sentry):
 ONLY AFTER the real endpoint + crash line is in hand: resume at step 2
 (guard/no-op) of this file. Until then this task is BLOCKED on the
 prod error log — not on engineering. Flag to Julian.
+
+---
+
+## AUDIT 2026-06-13 (part 2) — prod signals from the browser agent
+
+Two findings from live Railway + prod-DB access. They MATERIALLY
+correct this task; read before any implementation.
+
+FINDING A — NO CURRENT 500s. Railway HTTP logs (active deploy, PR #414)
+filtered @httpStatus:500 returned ZERO results. Deploy logs show, for
+the local_service project topgun-maintenance, GET .../candles, /market,
+and /token-metadata all returning 200 OK right now. (Caveat: Railway's
+HTTP-log view is scoped to the ~5h-old current deploy, so older 500s
+from the original audit window may have rolled off retention — i.e.
+"no repro" is "not firing now," not "never happened.")
+
+FINDING B — THE NULL-TOKEN DETECTION CONDITION IS WRONG. Prod row for
+slug='topgun-maintenance': template_type='local_service' BUT
+token_status='inactive' and token_symbol='TOPGUN' — BOTH NON-NULL. So
+the condition this doc originally proposed ("token_status IS NULL OR
+token_symbol IS NULL") would NOT match this exact project and a guard
+keyed on it would be a no-op in the wrong direction.
+
+CORRECTED UNDERSTANDING OF THE READ PATHS (verified by reading the
+handlers, not guessing):
+The token/market READ endpoints DO NOT branch on token_status /
+token_symbol at all. They degrade on absent DATA / absent mint:
+- GET /token-metadata (project_tokens.py:84) — `if not mint_address:`
+  returns a clean draft/simulated 200 payload. topgun has no
+  token_mint_address, so it takes this branch -> 200. token_status /
+  token_symbol values are irrelevant to whether it 500s.
+- GET /market (market.py compute_market_snapshot) — null-guards
+  `(project or {})`, _get_market_row zero-fills, is_simulated_token()
+  flags simulated. 200 with zeros.
+- GET /candles (market.py:447), /trades (:158), /balance/{wallet}
+  (:175) — plain selects returning `data or []` / zero. 200.
+So for the PASSIVE READ surface there is nothing to guard: the code
+already no-ops correctly for a local_service project, by `mint_address`
+presence, NOT by NULL token fields.
+
+REVISED DETECTION RULE (if a guard is ever added to a NEW path):
+key on the REAL "no live token" signal, in priority order —
+  1. `not token_mint_address` (what the read code already uses), OR
+  2. template_type == 'local_service', OR
+  3. token_status NOT IN the active/trading set (e.g. != 'trading_live').
+NEVER on NULL token_status/token_symbol — those are populated on
+local_service projects (TOPGUN / 'inactive').
+
+STATUS CHANGE: this task is DOWNGRADED from "write a guard" to
+"monitor-only." No deterministic passive 500 exists in the current
+deploy; the read paths already no-op. Do NOT add a guard speculatively.
+Re-open ONLY if a real @httpStatus:500 reappears on a token/market
+READ path in Railway logs — then capture the path + traceback and
+implement the guard using the REVISED DETECTION RULE above.
+
+The only remaining theoretical 500 surface is the WRITE/owner paths
+(POST /trade, /create-token, /mint-tokens) — but those are auth/owner-
+gated and 400 cleanly on incomplete metadata / unapproved status, so
+they are NOT the "visible passive 500s" this hygiene task targets.
