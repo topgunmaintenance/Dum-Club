@@ -60,3 +60,50 @@ confirm a real token project's market still returns live data.
 
 No migration. No schema change. Backend-only guard. If a fix needs to
 touch more than the token/market route handlers, stop and report.
+
+---
+
+## AUDIT 2026-06-13 — step 1 (pinpoint) attempt + result
+
+STEP 1 COULD NOT BE COMPLETED: no prod backend error log is reachable
+from this session. The 500 surfaces in the Railway-hosted FastAPI app;
+the available MCP tooling is Supabase / Vercel / GitHub only. Supabase
+get_logs covers Supabase services (postgres/api/auth/...) NOT the
+Railway app, and it required approval that wasn't granted. There is no
+Railway or Sentry MCP. So the actual stack trace must be pulled by
+whoever has Railway/Sentry access — see "What to pull" below.
+
+STATIC TRACE RESULT (read-only, current main): NO deterministic
+unguarded passive 500 found — which matches PR #396's own conclusion
+verbatim ("the audit found no deterministic unguarded crash in the
+token handlers"). Specifically:
+- GET /api/projects/{id}/market (market.py:108) degrades softly:
+  compute_market_snapshot null-guards the project read as
+  `(project or {})`, and _get_market_row returns a zero-filled dict
+  when project_market_state has no row. No token => zeros, not a 500.
+- GET /trades (market.py:158), /balance/{wallet} (:175),
+  /candles (:447), /activity/recent-trades (:464): same soft pattern
+  against project_balances / market tables; empty => empty, not a 500.
+- token.py create-token (:25) and mint-tokens (:128) are OWNER-
+  triggered POSTs that 400 cleanly on incomplete metadata. The only
+  500 is the mint subprocess failure (token.py:208-209) — already
+  sanitized by #396, and it is NOT a passive local_service read path.
+
+INTERPRETATION: the reported "token-economy 500s for local_service"
+is NOT reproducible from code or from the logs reachable here. It is
+either (a) already mitigated incidentally by the soft-degrade paths
+above, (b) a transient/dependency error (Supabase timeout, Solana RPC)
+that surfaced as a 500 and got mis-attributed, or (c) on a code path
+not yet identified. Do not write a guard against a guessed line.
+
+WHAT TO PULL (hand to whoever has Railway/Sentry):
+1. Railway deploy logs for the API service, filter: status 500 AND
+   (path contains "/market" OR "/trades" OR "/candles" OR "token")
+   over the window when the 500s were observed.
+2. The full traceback + the request path + the project slug/id.
+3. Confirm the project hit is template_type "local_service" with NULL
+   token_status/token_symbol.
+
+ONLY AFTER the real endpoint + crash line is in hand: resume at step 2
+(guard/no-op) of this file. Until then this task is BLOCKED on the
+prod error log — not on engineering. Flag to Julian.
