@@ -41,6 +41,7 @@ import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { broadcastLiveEvent } from "../../../lib/liveBroadcast";
+import { ENABLE_AI_FEATURES } from "../../../lib/featureFlags";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
 import { JsonLd } from "../../../components/JsonLd";
 import {
@@ -3899,14 +3900,16 @@ return (
           {/* CTA */}
           <div className="mb-10 text-center">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
-                // Mobile: hidden — AI is the floating bubble only.
-                // Desktop: keeps the in-pitch Ask AI affordance.
-                className="hidden rounded-xl border border-default px-8 py-3 text-sm font-medium text-primary transition hover:border-default hover:text-brand-teal sm:inline-flex"
-              >
-                Ask AI
-              </button>
+              {ENABLE_AI_FEATURES && (
+                <button
+                  onClick={() => { setPitchMode(false); setTimeout(scrollToAiWorkspace, 100); }}
+                  // Mobile: hidden — AI is the floating bubble only.
+                  // Desktop: keeps the in-pitch Ask AI affordance.
+                  className="hidden rounded-xl border border-default px-8 py-3 text-sm font-medium text-primary transition hover:border-default hover:text-brand-teal sm:inline-flex"
+                >
+                  Ask AI
+                </button>
+              )}
               {isOwner && (
                 <button
                   onClick={() => copyToClipboard(`${window.location.origin}/project/${id}?view=pitch`, "pitch link")}
@@ -3980,7 +3983,7 @@ return (
            phones. Desktop continues to render the chip grid inline as a
            merchant-facing nudge — there's no floating bubble equivalent
            visual real-estate cost on a 1280px+ screen. */}
-      {showOwnerInlineUi && ownerHasSales && (
+      {ENABLE_AI_FEATURES && showOwnerInlineUi && ownerHasSales && (
         <div className="mb-6 hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5 sm:block">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -4827,9 +4830,11 @@ return (
                   {/* Mobile: render only the share menu (full-width).
                       Desktop: 2-column grid with Ask AI + Share. */}
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <button type="button" onClick={() => scrollToSection("ai-workspace")} className="hidden items-center justify-center rounded-xl border border-default px-4 py-3 text-sm text-primary transition hover:border-strong hover:text-primary sm:flex">
-                      Ask AI
-                    </button>
+                    {ENABLE_AI_FEATURES && (
+                      <button type="button" onClick={() => scrollToSection("ai-workspace")} className="hidden items-center justify-center rounded-xl border border-default px-4 py-3 text-sm text-primary transition hover:border-strong hover:text-primary sm:flex">
+                        Ask AI
+                      </button>
+                    )}
                     <div className="relative" ref={shareMenuRef}>
                       <button
                         type="button"
@@ -6865,7 +6870,7 @@ return (
           for the owner until their first sale so a new merchant's page
           stays focused. Customers always see it; STATE_3+ owners keep
           it because the growth-AI chips above target #ai-workspace. */}
-      {(!showOwnerInlineUi || ownerHasSales) && (
+      {ENABLE_AI_FEATURES && (!showOwnerInlineUi || ownerHasSales) && (
       <details
         id="ai-workspace"
         className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
@@ -7508,7 +7513,7 @@ return (
   {/* AI Sales Assistant. Customer-facing — hidden for the authenticated
       owner (2E/2F) so the owner's own page isn't cluttered with a buyer
       chat widget. Still shown to all visitors and in view-as-customer. */}
-  {offers.length > 0 && !showOwnerInlineUi && (
+  {ENABLE_AI_FEATURES && offers.length > 0 && !showOwnerInlineUi && (
     <AiSalesChat
       projectId={id}
       businessName={projectName}
