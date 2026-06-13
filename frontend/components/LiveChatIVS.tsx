@@ -47,6 +47,11 @@ interface LiveChatIVSProps {
   // claim the pinned offer + open checkout. Optional; existing call sites
   // unchanged.
   onCommentBuy?: (text: string) => void;
+  // Equal-height live module: when true the chat fills its parent cell
+  // (height:100%) instead of the fixed 480px box, so video|chat read as
+  // one tile side by side. Default false keeps every existing call site
+  // (embed bubble, etc.) pixel-identical.
+  fillHeight?: boolean;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -69,7 +74,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -251,8 +256,8 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
     <div
       style={{
         minHeight: 480,
-        height: 480,
-        maxHeight: "70vh",
+        height: fillHeight ? "100%" : 480,
+        maxHeight: fillHeight ? "none" : "70vh",
         border: "1px solid #27272a",
         borderRadius: 16,
         background: "#0a0a0a",
