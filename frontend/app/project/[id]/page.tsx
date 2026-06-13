@@ -40,7 +40,7 @@ import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
 import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
-import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
+import { broadcastLiveEvent } from "../../../lib/liveBroadcast";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
 import { JsonLd } from "../../../components/JsonLd";
 import {
