@@ -154,6 +154,24 @@ interface AdminBarProps {
 export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
   const [hidden, setHidden] = useState<boolean>(false);
   const [moreOpen, setMoreOpen] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+
+  // Copy the public storefront link — the owner's most-shared action,
+  // promoted onto the slim bar so it isn't buried in the Owner Tools
+  // card at the bottom of the page. Owner-only by construction (the
+  // whole bar is gated on isOwner upstream).
+  const copyStoreLink = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/project/${projectSlug}`;
+    navigator.clipboard
+      ?.writeText(url)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => {});
+    setMoreOpen(false);
+  }, [projectSlug]);
 
   // Hydrate from sessionStorage on mount (and re-check on slug
   // change so navigating between projects doesn't bleed state).
@@ -269,6 +287,14 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
         Setup & Stats
       </Link>
 
+      <button
+        type="button"
+        onClick={copyStoreLink}
+        className="hidden sm:inline-flex h-7 items-center rounded-lg border border-default bg-transparent px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-brand-teal/50 hover:text-primary"
+      >
+        {copied ? "Copied ✓" : "Copy link"}
+      </button>
+
       {/* ── Mobile-only More menu ───────────────────────────────── */}
       <div className="relative ml-auto sm:hidden">
         <button
@@ -314,6 +340,14 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
               >
                 Setup &amp; Stats
               </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={copyStoreLink}
+                className="block w-full border-t border-default px-4 py-3 text-left text-sm font-semibold text-primary transition hover:bg-surface-muted"
+              >
+                {copied ? "Copied ✓" : "Copy link"}
+              </button>
               <button
                 type="button"
                 role="menuitem"
