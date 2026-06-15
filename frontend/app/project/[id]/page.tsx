@@ -1246,6 +1246,15 @@ export default function ProjectPage() {
     setOfferFormOpen(true);
     setOfferImageFile(null);
     setOfferImagePreview(null);
+    // Bring the editor into view. The form mounts near the top of the
+    // offers section (the `isOwner && offerFormOpen` block), above the
+    // offer-card list — so opening Edit from a card below the fold
+    // would otherwise leave the form off-screen and read as a no-op.
+    // Target the always-present #offers-section container (not the
+    // freshly-mounting form), so the scroll fires reliably without
+    // waiting on the re-render — same mechanism convertStoreItemToOffer
+    // already uses.
+    scrollToSection("offers-section");
   }
 
   function convertStoreItemToOffer(item: StoreItem) {
