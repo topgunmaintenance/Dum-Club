@@ -1041,7 +1041,14 @@
     function ensureOverlayIframe() {
       if (overlayIframe) return;
       overlayIframe = document.createElement("iframe");
-      overlayIframe.src = embedUrl;
+      // ?display=modal tells the embed page it's in the fixed-height
+      // overlay (capped at 86vh) rather than the inline "full" wrapper
+      // that auto-grows to content. The page uses it to switch to a
+      // viewport-fit column so the video can't push the offer + CTA
+      // off the bottom. The inline full-mode iframe (createIframe
+      // below) deliberately omits the flag and keeps its natural,
+      // auto-growing layout.
+      overlayIframe.src = embedUrl + "?display=modal";
       overlayIframe.title = "DUM Club live storefront";
       overlayIframe.setAttribute("data-dum-embed", businessId);
       overlayIframe.setAttribute("frameborder", "0");
