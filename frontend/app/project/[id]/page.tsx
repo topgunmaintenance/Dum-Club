@@ -644,6 +644,12 @@ export default function ProjectPage() {
   // so the merchant doesn't have to crack open the console.
   const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
+  // Seller-selectable pin timer. When the seller features an offer it shows
+  // an on-screen urgency countdown to viewers for this many minutes. Display
+  // only — nothing about price/availability changes at zero. Must stay in
+  // sync with PIN_DURATION_CHOICES on the backend (the gate of record).
+  const PIN_DURATION_CHOICES = [2, 5, 10, 30, 60] as const;
+  const [pinDurationMinutes, setPinDurationMinutes] = useState<number>(5);
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
   //                    was just clicked. Shared across all tabs.
@@ -2518,7 +2524,12 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/projects/${projectUuid}/pin-offer`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ offer_id: offerId }),
+        // duration_minutes drives the viewer-facing urgency countdown.
+        // Only sent when pinning (offerId set); unpin clears it backend-side.
+        body: JSON.stringify({
+          offer_id: offerId,
+          duration_minutes: offerId ? pinDurationMinutes : null,
+        }),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -5358,6 +5369,36 @@ return (
                   Clear
                 </button>
               )}
+            </div>
+            {/* Pin timer picker — how long the on-screen urgency countdown
+                runs for viewers when this offer is featured. Display only:
+                at zero the countdown clears, price/availability unchanged.
+                Governs the next pin; changing it does not re-time an
+                already-featured offer until it's re-pinned. */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted">
+                Countdown shown to viewers
+              </div>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Pin timer duration">
+                {PIN_DURATION_CHOICES.map((mins) => {
+                  const active = pinDurationMinutes === mins;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setPinDurationMinutes(mins)}
+                      className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                        active
+                          ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+                          : "border-default text-secondary hover:border-strong hover:text-white"
+                      }`}
+                    >
+                      {mins} min
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {offers.filter((o) => o.is_active).map((offer) => {

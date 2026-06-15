@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header, Query, Response
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import asyncio
 import re
 import secrets
@@ -1656,7 +1656,7 @@ async def get_embed_config(project_id: str, response: Response):
             supabase.table("projects")
             .select(
                 "id, slug, embed_display_mode, is_live, live_provider, "
-                "ivs_stage_arn, pinned_offer_id, popin_config"
+                "ivs_stage_arn, pinned_offer_id, pinned_until, popin_config"
             )
             .eq("id", resolved_uuid)
             .eq("is_deleted", False)
@@ -1860,6 +1860,10 @@ async def get_embed_config(project_id: str, response: Response):
         "live_provider": row.get("live_provider"),
         "ivs_stage_arn": row.get("ivs_stage_arn"),
         "pinned_offer_id": pinned_offer_id,
+        # Display-only pin countdown deadline (ISO8601 or null). The embed
+        # renders an urgency timer until this instant; nothing about price
+        # or availability changes when it passes.
+        "pinned_until": row.get("pinned_until"),
         "pinned_offer": pinned_offer_payload,
         "active_offers": active_offers_payload,
         "live_session": live_session_payload,
@@ -2315,6 +2319,18 @@ class GoLiveRequest(BaseModel):
 
 class PinOfferRequest(BaseModel):
     offer_id: Optional[str] = None
+    # Display-only pin countdown. When pinning (offer_id set), the seller
+    # picks how long the on-screen urgency timer runs. None = pin with no
+    # timer (indefinite). Only the allowed values are honored; anything
+    # else is treated as no-timer rather than rejected, so a stale client
+    # can't 422 a pin. Nothing about price/availability changes at zero.
+    duration_minutes: Optional[int] = None
+
+
+# Seller-selectable pin durations (minutes). Mirrored in the frontend
+# picker; the backend is the gate so an out-of-range value can't set an
+# arbitrary deadline.
+PIN_DURATION_CHOICES = {2, 5, 10, 30, 60}
 
 
 @router.post("/{project_id}/go-live")
@@ -2733,8 +2749,23 @@ async def pin_offer(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
+    # Display-only pin countdown deadline. Set only when pinning (offer_id
+    # present) with an allowed duration; cleared on unpin or no-timer pin.
+    # Stored as an ISO8601 UTC timestamp so PostgREST writes the TIMESTAMPTZ
+    # column directly.
+    pinned_until = None
+    if body.offer_id and body.duration_minutes in PIN_DURATION_CHOICES:
+        pinned_until = (
+            datetime.now(timezone.utc) + timedelta(minutes=body.duration_minutes)
+        ).isoformat()
+
     supabase.table("projects").update({
         "pinned_offer_id": body.offer_id,
+        "pinned_until": pinned_until,
     }).eq("id", project_id).execute()
 
-    return {"status": "success", "pinned_offer_id": body.offer_id}
+    return {
+        "status": "success",
+        "pinned_offer_id": body.offer_id,
+        "pinned_until": pinned_until,
+    }
