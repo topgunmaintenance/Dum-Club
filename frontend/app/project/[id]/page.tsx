@@ -3216,13 +3216,45 @@ export default function ProjectPage() {
       cleanUrl.searchParams.delete("viewAsCustomer");
       window.history.replaceState({}, "", cleanUrl.toString());
     }
-    if (params.get("golive") === "1") {
-      setAutoGoLive(true);
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete("golive");
-      window.history.replaceState({}, "", cleanUrl.toString());
-    }
+    // ?golive=1 is intentionally NOT handled here — see the dedicated
+    // deep-link effect below, which also fires on a same-path
+    // (query-only) navigation that this mount-only reader would miss.
   }, []);
+
+  // Deep-link "Go Live": the navbar CTA points at
+  // /project/{id}?golive=1. The mount-only param reader above can't
+  // catch the common case where the owner is ALREADY on this project
+  // page — that click is a same-path, query-only navigation that never
+  // remounts the page, so the button looked dead. App Router still
+  // re-renders the route on that navigation, so this dep-less effect
+  // (guarded by a ref so it acts once per occurrence) handles both a
+  // fresh load and a same-path nav: it arms the IVS host panel and
+  // scrolls to it, exactly like the in-page Store Status "Go Live"
+  // button, then strips the param.
+  const goLiveDeepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wantsGoLive =
+      new URLSearchParams(window.location.search).get("golive") === "1";
+    if (!wantsGoLive) {
+      // Reset so a later ?golive=1 navigation is handled again.
+      goLiveDeepLinkHandled.current = false;
+      return;
+    }
+    if (goLiveDeepLinkHandled.current) return;
+    // Arm the host the moment the deep-link is seen (idempotent — a
+    // repeat setAutoGoLive(true) is a no-op).
+    if (IVS_REALTIME_ENABLED) setAutoGoLive(true);
+    // Wait for the owner host panel to mount before scrolling and
+    // stripping the param, so a fresh load (isOwner still resolving)
+    // still lands on the panel instead of cleaning the URL too early.
+    if (!document.getElementById("project-live-host")) return;
+    goLiveDeepLinkHandled.current = true;
+    scrollToSection("project-live-host");
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("golive");
+    window.history.replaceState({}, "", cleanUrl.toString());
+  });
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
   useEffect(() => {
