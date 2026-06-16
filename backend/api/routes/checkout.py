@@ -2,7 +2,6 @@
 Checkout — Stripe payment intents, webhook, Solana wallet checkout,
 and order queries.
 """
-import asyncio
 import os
 import time
 from datetime import datetime, timezone
@@ -732,12 +731,24 @@ async def create_payment_intent(
                 ),
             },
         )
-    # Offloaded to a worker thread so the blocking Stripe Account.retrieve
-    # inside doesn't stall the async event loop on every checkout. The
-    # HTTPException it raises propagates correctly when awaited.
-    await asyncio.run_in_executor(
-        None, _assert_merchant_can_receive, s, merchant_stripe_id
-    )
+    # Verify the merchant can actually accept charges before we create a
+    # session. Called synchronously on purpose: the run_in_executor offload
+    # added in 204cea5 (2026-06-09) coincided with checkout 500s, and the
+    # direct call is the shape that last shipped a real paid order. The
+    # HTTPException this raises (400/402/502) is rendered by FastAPI *with*
+    # CORS headers. Any *other* exception is wrapped here so it can never
+    # escape as a bare 500 — those are generated outside the CORS layer and
+    # reach the browser as an opaque "Failed to fetch" with no message.
+    try:
+        _assert_merchant_can_receive(s, merchant_stripe_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(
+            f"[checkout] Unexpected error verifying merchant "
+            f"{merchant_stripe_id}: {exc!r}"
+        )
+        raise HTTPException(status_code=502, detail="stripe_account_verify_failed")
 
     # ── Commission resolution (PR-COMM) ──────────────────────────
     # Resolve the per-merchant commission rate, then derive the integer
@@ -763,6 +774,16 @@ async def create_payment_intent(
                 ),
             },
         )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Never let an unexpected resolver error escape as a bare 500 (no
+        # CORS header → browser shows "Failed to fetch" with no detail).
+        print(
+            f"[checkout] Unexpected error resolving commission for "
+            f"{seller_user_id}: {exc!r}"
+        )
+        raise HTTPException(status_code=503, detail="commission_resolve_failed")
 
     seller_payout_cents = int(round(seller_payout_base * 100))
     application_fee_dec = (
