@@ -943,26 +943,36 @@ export default function EmbedShellPage() {
   // AND vertical scrollbars; min-w-0 on the flex children stops a
   // wide child (e.g. the 180px offer tiles) from forcing horizontal
   // overflow.
+  // Modal mode = the storefront bubble overlay (fixed 86vh iframe).
+  // It renders as a scrollable live-storefront column: the camera at a
+  // true 16:9 (no crop), then the offer + Buy CTA, then the live chat
+  // below — the whole column scrolls inside the modal when it's taller
+  // than the viewport (chat especially). overflow-x-hidden + min-w-0
+  // keep the 180px offer tiles from forcing a horizontal scrollbar.
+  // Natural mode (direct nav + inline "full" iframe) is unchanged.
   const mainCls = modal
-    ? "flex h-[100dvh] flex-col overflow-hidden bg-surface-page text-primary px-4 py-3"
+    ? "h-[100dvh] overflow-y-auto overflow-x-hidden bg-surface-page text-primary px-4 py-3"
     : "min-h-[100dvh] bg-surface-page text-primary px-4 py-4 sm:px-6 sm:py-8";
   const shellCls = modal
-    ? "mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3"
+    ? "mx-auto w-full min-w-0 max-w-6xl space-y-4"
     : "mx-auto max-w-6xl space-y-6";
   const conversionCls = modal
-    ? "flex min-h-0 flex-1 flex-col gap-3"
+    ? "flex min-w-0 flex-col gap-4"
     : "grid gap-4 lg:grid-cols-[2fr_1fr]";
+  // Camera: a real 16:9 box so the live stream shows the full frame
+  // (object-cover on a 16:9 container = no crop), instead of the prior
+  // short band that sliced the picture to a sliver.
   const videoSectionCls = modal
-    ? "relative min-w-0 shrink-0 h-[clamp(160px,34vh,320px)] overflow-hidden rounded-2xl"
+    ? "relative w-full min-w-0 aspect-video overflow-hidden rounded-2xl"
     : "relative";
   const rightColCls = modal
-    ? "flex min-h-0 min-w-0 flex-1 flex-col gap-3"
+    ? "space-y-4 min-w-0"
     : `space-y-4 ${pinnedOffer ? "pb-36 lg:pb-0" : ""}`;
-  // In modal mode the offer card is pinned; the rest (more offers +
-  // chat) shares a single internal scroll region. In natural mode the
-  // wrapper is transparent spacing-wise so the layout is unchanged.
+  // Whole modal scrolls (mainCls), so this wrapper is just normal
+  // spacing — the chat keeps its full min-height directly below the
+  // offer instead of being squeezed into a collapsed inner scroll.
   const scrollRegionCls = modal
-    ? "min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden"
+    ? "space-y-4 min-w-0"
     : "space-y-4";
 
   return (
