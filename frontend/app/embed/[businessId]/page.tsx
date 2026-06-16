@@ -1225,10 +1225,11 @@ export default function EmbedShellPage() {
                 >
                   <LiveChatIVS
                     projectId={project.id}
-                    userId={viewerUserId}
+                    userId={authUser?.privyId || ""}
                     userName={viewerName}
                     isHost={false}
                     getToken={getToken}
+                    onRequestSignIn={login}
                     fillHeight
                     onItemUpdate={(data) => {
                       setOffers((prev) =>
@@ -1658,10 +1659,11 @@ export default function EmbedShellPage() {
               <section aria-label="Live chat" className="block min-h-[480px]">
                 <LiveChatIVS
                   projectId={project.id}
-                  userId={viewerUserId}
+                  userId={authUser?.privyId || ""}
                   userName={viewerName}
                   isHost={false}
                   getToken={getToken}
+                  onRequestSignIn={login}
                   onItemUpdate={(data) => {
                     setOffers((prev) =>
                       prev.map((o) =>
