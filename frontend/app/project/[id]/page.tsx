@@ -3395,20 +3395,26 @@ export default function ProjectPage() {
   }, [id]);
 
   // Load favorite status. Split into two effects on purpose: the PUBLIC
-  // count is auth-independent, so it is keyed on [id] only and does NOT
-  // refetch when the auth object hydrates (null -> user). The auth-only
-  // "did I favorite this" check is keyed on the stable privyId rather than
-  // the authUser object reference.
+  // count is auth-independent, so it does NOT refetch when the auth object
+  // hydrates (null -> user). The auth-only "did I favorite this" check is
+  // keyed on the stable privyId rather than the authUser object reference.
+  //
+  // Both use the canonical project UUID (project.id), never the route param
+  // `id` — that can be a slug (e.g. /project/topgun-maintenance), and the
+  // favorites table is keyed by the UUID. Passing a slug made Postgres raise
+  // 22P02; the routes swallowed it and returned count 0, so favorites
+  // silently never worked on slug-routed storefronts. project.id is the same
+  // convention every other fetch on this page already uses.
   useEffect(() => {
-    if (!id) return;
-    fetch(`${API_BASE}/api/favorites/count/${id}`)
+    if (!project?.id) return;
+    fetch(`${API_BASE}/api/favorites/count/${project.id}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setFavoriteCount(data.count || 0); })
       .catch(() => {});
-  }, [id]);
+  }, [project?.id]);
 
   useEffect(() => {
-    if (!id || !authUser) return;
+    if (!project?.id || !authUser) return;
     // Outer .catch covers getToken() itself rejecting (Privy not
     // ready, token refresh failure). The inner fetch is already
     // guarded; without this, a getToken rejection during nav or in
@@ -3417,7 +3423,7 @@ export default function ProjectPage() {
     getToken()
       .then((token) => {
         if (!token) return;
-        fetch(`${API_BASE}/api/favorites/check/${id}`, {
+        fetch(`${API_BASE}/api/favorites/check/${project.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
           .then((r) => r.ok ? r.json() : null)
@@ -3425,18 +3431,22 @@ export default function ProjectPage() {
           .catch(() => {});
       })
       .catch(() => {});
-  }, [id, authUser?.privyId]);
+  }, [project?.id, authUser?.privyId]);
 
   // Toggle favorite
   async function toggleFavorite() {
     if (!authUser) { login(); return; }
+    // Favorites are keyed by the canonical project UUID, never the route
+    // param `id` (which may be a slug). See the count/check effects above.
+    const projectUuid = project?.id;
+    if (!projectUuid) return;
     setTogglingFavorite(true);
     try {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/favorites/toggle`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ project_id: id }),
+        body: JSON.stringify({ project_id: projectUuid }),
       });
       if (res.ok) {
         const data = await res.json();
