@@ -1260,9 +1260,7 @@ export default function EmbedShellPage() {
                     }}
                   />
                 </section>
-              ) : (
-                <div className="min-h-0 flex-1" />
-              )}
+              ) : null}
 
               {/* BUY AREA — pinned shrink-0, compact. Reuses the same
                   checkout handlers/state as the full card; the long
