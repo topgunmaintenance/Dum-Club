@@ -1569,14 +1569,55 @@ export default function ProjectPage() {
         ...(overridePrice != null && { override_price: overridePrice }),
       };
 
-      const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(checkoutPayload),
-      });
+      // Creating the Stripe session is a single round-trip to the
+      // backend. That host can cold-start, so the FIRST POST after the
+      // page has sat idle sometimes fails at the network layer
+      // (TypeError: Failed to fetch) before the request is ever
+      // processed — the page's earlier GETs woke nothing that stays
+      // warm by checkout time. A thrown fetch means no order and no
+      // Stripe session were created, so retrying is safe (it can't
+      // double-charge — the buyer only pays on the Stripe page). We
+      // retry ONLY on a thrown network error; any real HTTP response,
+      // even non-2xx, breaks the loop and is handled below without a
+      // retry so a server-side error is never silently repeated.
+      let res: Response | null = null;
+      let networkErr: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(checkoutPayload),
+          });
+          break;
+        } catch (netErr) {
+          networkErr = netErr;
+          res = null;
+          if (attempt < 2) {
+            setBuyStep((p) => ({ ...p, [oid]: "retrying_checkout" }));
+            // Short backoff gives a cold backend time to wake before
+            // the next attempt (700ms, then 1400ms).
+            await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+          }
+        }
+      }
+
+      if (!res) {
+        // Never got a response after retries — the backend was
+        // unreachable, not an error it returned. Show an actionable
+        // message instead of the raw "Failed to fetch".
+        console.error("[buyOffer] checkout unreachable after retries:", networkErr);
+        setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
+        setBuyError((p) => ({
+          ...p,
+          [oid]: "Couldn't reach checkout. Check your connection and try again.",
+        }));
+        setBuyingOfferId(null);
+        return;
+      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -1602,8 +1643,14 @@ export default function ProjectPage() {
         setBuyingOfferId(null);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      console.error("[buyOffer] ERROR:", msg);
+      const raw = err instanceof Error ? err.message : "Unknown error";
+      console.error("[buyOffer] ERROR:", raw);
+      // A bare "Failed to fetch" is a network reach problem, not
+      // something the buyer can act on as-is — surface the same
+      // actionable copy the retry path uses.
+      const msg = /failed to fetch/i.test(raw)
+        ? "Couldn't reach checkout. Check your connection and try again."
+        : raw;
       setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
       setBuyError((p) => ({ ...p, [oid]: msg }));
       setBuyingOfferId(null);
