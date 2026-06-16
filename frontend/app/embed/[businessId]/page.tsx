@@ -1129,16 +1129,24 @@ export default function EmbedShellPage() {
           {/* LEFT (desktop) / TOP (mobile) — Live video. Wrapped in
               a relative container so the floating emoji burst overlay
               can absolute-position inside the video bounds without
-              escaping the conversion grid. In modal mode this becomes
-              a fixed, non-growing band (videoSectionCls) so the video
-              can never dominate and clip the offer card below. */}
+              escaping the conversion grid. In modal mode this is a
+              true 16:9 box (videoSectionCls) at the top of the
+              scrollable storefront column. */}
           <section
             ref={liveSectionRef}
             aria-label="Live video"
             className={videoSectionCls}
           >
             {project?.id && ivsActive ? (
-              <IVSStageViewer projectId={project.id} userId={viewerUserId} />
+              <IVSStageViewer
+                projectId={project.id}
+                userId={viewerUserId}
+                // Storefront modal: show the seller's whole frame,
+                // centered, even on a non-16:9 webcam — never cover-
+                // crop their face. The full storefront page keeps the
+                // default full-bleed cover.
+                fit={modal ? "contain" : "cover"}
+              />
             ) : (
               <div
                 // Aspect-ratio alone now sizes this — the prior
