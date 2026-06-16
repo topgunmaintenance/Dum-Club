@@ -644,6 +644,12 @@ export default function ProjectPage() {
   // so the merchant doesn't have to crack open the console.
   const [pinningOfferId, setPinningOfferId] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
+  // Seller-selectable pin timer. When the seller features an offer it shows
+  // an on-screen urgency countdown to viewers for this many minutes. Display
+  // only — nothing about price/availability changes at zero. Must stay in
+  // sync with PIN_DURATION_CHOICES on the backend (the gate of record).
+  const PIN_DURATION_CHOICES = [2, 5, 10, 30, 60] as const;
+  const [pinDurationMinutes, setPinDurationMinutes] = useState<number>(5);
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
   //                    was just clicked. Shared across all tabs.
@@ -1563,14 +1569,55 @@ export default function ProjectPage() {
         ...(overridePrice != null && { override_price: overridePrice }),
       };
 
-      const res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(checkoutPayload),
-      });
+      // Creating the Stripe session is a single round-trip to the
+      // backend. That host can cold-start, so the FIRST POST after the
+      // page has sat idle sometimes fails at the network layer
+      // (TypeError: Failed to fetch) before the request is ever
+      // processed — the page's earlier GETs woke nothing that stays
+      // warm by checkout time. A thrown fetch means no order and no
+      // Stripe session were created, so retrying is safe (it can't
+      // double-charge — the buyer only pays on the Stripe page). We
+      // retry ONLY on a thrown network error; any real HTTP response,
+      // even non-2xx, breaks the loop and is handled below without a
+      // retry so a server-side error is never silently repeated.
+      let res: Response | null = null;
+      let networkErr: unknown = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await fetch(`${API_BASE}/api/checkout/create-payment-intent`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(checkoutPayload),
+          });
+          break;
+        } catch (netErr) {
+          networkErr = netErr;
+          res = null;
+          if (attempt < 2) {
+            setBuyStep((p) => ({ ...p, [oid]: "retrying_checkout" }));
+            // Short backoff gives a cold backend time to wake before
+            // the next attempt (700ms, then 1400ms).
+            await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+          }
+        }
+      }
+
+      if (!res) {
+        // Never got a response after retries — the backend was
+        // unreachable, not an error it returned. Show an actionable
+        // message instead of the raw "Failed to fetch".
+        console.error("[buyOffer] checkout unreachable after retries:", networkErr);
+        setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
+        setBuyError((p) => ({
+          ...p,
+          [oid]: "Couldn't reach checkout. Check your connection and try again.",
+        }));
+        setBuyingOfferId(null);
+        return;
+      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -1596,8 +1643,14 @@ export default function ProjectPage() {
         setBuyingOfferId(null);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      console.error("[buyOffer] ERROR:", msg);
+      const raw = err instanceof Error ? err.message : "Unknown error";
+      console.error("[buyOffer] ERROR:", raw);
+      // A bare "Failed to fetch" is a network reach problem, not
+      // something the buyer can act on as-is — surface the same
+      // actionable copy the retry path uses.
+      const msg = /failed to fetch/i.test(raw)
+        ? "Couldn't reach checkout. Check your connection and try again."
+        : raw;
       setBuyStep((p) => ({ ...p, [oid]: "checkout_error" }));
       setBuyError((p) => ({ ...p, [oid]: msg }));
       setBuyingOfferId(null);
@@ -2518,7 +2571,12 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/projects/${projectUuid}/pin-offer`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ offer_id: offerId }),
+        // duration_minutes drives the viewer-facing urgency countdown.
+        // Only sent when pinning (offerId set); unpin clears it backend-side.
+        body: JSON.stringify({
+          offer_id: offerId,
+          duration_minutes: offerId ? pinDurationMinutes : null,
+        }),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -3205,13 +3263,45 @@ export default function ProjectPage() {
       cleanUrl.searchParams.delete("viewAsCustomer");
       window.history.replaceState({}, "", cleanUrl.toString());
     }
-    if (params.get("golive") === "1") {
-      setAutoGoLive(true);
-      const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete("golive");
-      window.history.replaceState({}, "", cleanUrl.toString());
-    }
+    // ?golive=1 is intentionally NOT handled here — see the dedicated
+    // deep-link effect below, which also fires on a same-path
+    // (query-only) navigation that this mount-only reader would miss.
   }, []);
+
+  // Deep-link "Go Live": the navbar CTA points at
+  // /project/{id}?golive=1. The mount-only param reader above can't
+  // catch the common case where the owner is ALREADY on this project
+  // page — that click is a same-path, query-only navigation that never
+  // remounts the page, so the button looked dead. App Router still
+  // re-renders the route on that navigation, so this dep-less effect
+  // (guarded by a ref so it acts once per occurrence) handles both a
+  // fresh load and a same-path nav: it arms the IVS host panel and
+  // scrolls to it, exactly like the in-page Store Status "Go Live"
+  // button, then strips the param.
+  const goLiveDeepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wantsGoLive =
+      new URLSearchParams(window.location.search).get("golive") === "1";
+    if (!wantsGoLive) {
+      // Reset so a later ?golive=1 navigation is handled again.
+      goLiveDeepLinkHandled.current = false;
+      return;
+    }
+    if (goLiveDeepLinkHandled.current) return;
+    // Arm the host the moment the deep-link is seen (idempotent — a
+    // repeat setAutoGoLive(true) is a no-op).
+    if (IVS_REALTIME_ENABLED) setAutoGoLive(true);
+    // Wait for the owner host panel to mount before scrolling and
+    // stripping the param, so a fresh load (isOwner still resolving)
+    // still lands on the panel instead of cleaning the URL too early.
+    if (!document.getElementById("project-live-host")) return;
+    goLiveDeepLinkHandled.current = true;
+    scrollToSection("project-live-host");
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("golive");
+    window.history.replaceState({}, "", cleanUrl.toString());
+  });
 
   // Auto-dismiss 8s after isOwner resolves (only fires if banner was shown).
   useEffect(() => {
@@ -5358,6 +5448,36 @@ return (
                   Clear
                 </button>
               )}
+            </div>
+            {/* Pin timer picker — how long the on-screen urgency countdown
+                runs for viewers when this offer is featured. Display only:
+                at zero the countdown clears, price/availability unchanged.
+                Governs the next pin; changing it does not re-time an
+                already-featured offer until it's re-pinned. */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-muted">
+                Countdown shown to viewers
+              </div>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Pin timer duration">
+                {PIN_DURATION_CHOICES.map((mins) => {
+                  const active = pinDurationMinutes === mins;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setPinDurationMinutes(mins)}
+                      className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                        active
+                          ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+                          : "border-default text-secondary hover:border-strong hover:text-white"
+                      }`}
+                    >
+                      {mins} min
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {offers.filter((o) => o.is_active).map((offer) => {

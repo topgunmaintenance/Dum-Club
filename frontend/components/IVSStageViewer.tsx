@@ -17,6 +17,12 @@ interface IVSStageViewerProps {
   // Everything else (claim/wait guard, retries, token refresh) is
   // identical to the full watch view.
   preview?: boolean;
+  // How the video fills its 16:9 box. Default "cover" (full-bleed,
+  // used by feed tiles + host preview). The storefront modal passes
+  // "contain" so a seller on a non-16:9 webcam is shown whole and
+  // centered (letterboxed on the black bg) instead of cover-cropping
+  // their chin/forehead.
+  fit?: "cover" | "contain";
 }
 
 // Module-level dedup: at most one active stage subscription per project
@@ -29,7 +35,7 @@ interface IVSStageViewerProps {
 let _claimSeq = 0;
 const _activeClaims = new Map<string, number>(); // projectId -> claim owner
 
-export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageViewerProps) {
+export function IVSStageViewer({ projectId, userId, preview = false, fit = "cover" }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -448,7 +454,7 @@ export function IVSStageViewer({ projectId, userId, preview = false }: IVSStageV
         // the floor only engages pre-first-frame to prevent 0px
         // collapse.
         className={`block w-full bg-zinc-900 ${preview ? "min-h-[90px]" : "min-h-[180px]"}`}
-        style={{ aspectRatio: "16/9", objectFit: "cover" }}
+        style={{ aspectRatio: "16/9", objectFit: fit, objectPosition: "center" }}
       />
 
       {!hasVideo && (status === "loading" || status === "connecting" || status === "reconnecting" || status === "watching") && (

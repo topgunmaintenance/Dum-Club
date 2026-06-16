@@ -46,6 +46,10 @@ type EmbedProject = {
   live_provider?: string | null;
   ivs_stage_arn?: string | null;
   pinned_offer_id?: string | null;
+  // Display-only pin countdown deadline (ISO8601) or null. Drives the
+  // "Featured" urgency timer on the pinned card. Nothing about price or
+  // availability changes when it passes.
+  pinned_until?: string | null;
   // DUM Pop-In Seller merchant settings — JSONB on projects.popin_config
   // (migration 038). Empty / missing → client-side defaults.
   popin_config?: {
@@ -155,6 +159,23 @@ export default function EmbedShellPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Modal context. embed.js loads this page with ?display=modal when
+  // it's inside the fixed-height (86vh) overlay rather than the inline
+  // "full" wrapper that auto-grows to content. In modal context we
+  // switch to a viewport-fit flex column so a tall video can't shove
+  // the offer card + buy CTA off the bottom edge. Read client-side in
+  // an effect so the server render (no query string) and the first
+  // client paint agree, then flip — avoids a hydration mismatch.
+  const [modal, setModal] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      setModal(new URLSearchParams(window.location.search).get("display") === "modal");
+    } catch {
+      /* malformed URL — stay in natural layout */
+    }
+  }, []);
+
   // Checkout state — only one pinned offer is buyable from this card,
   // so a single in-flight flag + a single error string is enough.
   const [buying, setBuying] = useState<boolean>(false);
@@ -182,6 +203,9 @@ export default function EmbedShellPage() {
     Array<{ id: string; emoji: string; left: number; delay: number }>
   >([]);
   const [soldFlash, setSoldFlash] = useState<boolean>(false);
+  // Modal "see all offers" sheet (used only in the ?display=modal
+  // branch; the inline/direct embed never reads it).
+  const [showAllOffers, setShowAllOffers] = useState<boolean>(false);
 
   // Mirror `offers` into a ref so WS callbacks can resolve fresh
   // titles without being trapped in a render-stale closure. The
@@ -634,6 +658,26 @@ export default function EmbedShellPage() {
     return Math.max(0, total - sold);
   }, [pinnedOffer]);
 
+  // Display-only pin countdown. project.pinned_until is the seller-picked
+  // deadline; we tick a 1s clock only while a future deadline exists and
+  // render the remaining time as an urgency pill on the pinned card. At
+  // zero the pill clears — price and availability are untouched (this is
+  // not a deal). Honest label intentionally avoids "deal ends in".
+  const [pinNow, setPinNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!project?.pinned_until) return;
+    setPinNow(Date.now());
+    const t = window.setInterval(() => setPinNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [project?.pinned_until]);
+  const pinSecondsLeft = useMemo<number | null>(() => {
+    if (!project?.pinned_until) return null;
+    const end = Date.parse(project.pinned_until);
+    if (Number.isNaN(end)) return null;
+    const s = Math.floor((end - pinNow) / 1000);
+    return s > 0 ? s : 0;
+  }, [project?.pinned_until, pinNow]);
+
   // Detect iframe context. Cross-origin parent access throws a
   // SecurityError; treat that as iframed too — only a top-level
   // window with same-origin self can read window.top safely.
@@ -892,8 +936,57 @@ export default function EmbedShellPage() {
     }
   }
 
+  // ── Layout class selection ───────────────────────────────────
+  // Natural mode (direct nav + inline "full" iframe) is byte-for-byte
+  // the prior layout. Modal mode caps the whole page to the iframe
+  // viewport (100dvh) as a flex column: the video is a non-growing
+  // capped band, the offer card + CTA are pinned shrink-0, and the
+  // "more offers" + chat region takes the remainder with its own
+  // scroll. overflow-hidden on <main> kills the page-level horizontal
+  // AND vertical scrollbars; min-w-0 on the flex children stops a
+  // wide child (e.g. the 180px offer tiles) from forcing horizontal
+  // overflow.
+  // Modal mode = the storefront bubble overlay (the ?display=modal
+  // live window, a max-720px × min(86vh,900px) iframe). It renders as a
+  // FIT-TO-VIEWPORT column so video + chat + buy are all glanceable in
+  // one view with no outer scroll: <main> is a fixed-height flex column
+  // (overflow-hidden), the video sits shrink-0 at the top, the live
+  // chat fills the remainder (flex-1, scrolls its OWN history), and the
+  // compact buy area is pinned shrink-0 at the bottom. The video width
+  // is capped (max-w tied to viewport height) so its rigid 16:9 height
+  // leaves room for chat + buy on laptop-height windows; it stays a
+  // true 16:9 box so IVSStageViewer fills it with no crop and no bars.
+  // Natural mode (direct nav + inline "full" iframe) is byte-for-byte
+  // the prior layout — every modal value below is gated on `modal`.
+  const mainCls = modal
+    ? "flex h-[100dvh] flex-col overflow-hidden bg-surface-page text-primary px-4 py-3"
+    : "min-h-[100dvh] bg-surface-page text-primary px-4 py-4 sm:px-6 sm:py-8";
+  const shellCls = modal
+    ? "relative mx-auto flex min-h-0 w-full min-w-0 max-w-3xl flex-1 flex-col gap-3"
+    : "mx-auto max-w-6xl space-y-6";
+  const conversionCls = modal
+    ? "flex min-h-0 min-w-0 flex-1 flex-col gap-3"
+    : "grid gap-4 lg:grid-cols-[2fr_1fr]";
+  // Modal camera: capped-width true-16:9 box, centered. Capping WIDTH
+  // (not height) keeps the box 16:9 so IVSStageViewer (object-fit
+  // contain) fills it with no crop and no letterbox; the cap is tied to
+  // viewport height so the rigid 16:9 height stays small enough to leave
+  // room for chat + buy below on short windows. Natural mode unchanged.
+  const videoSectionCls = modal
+    ? "relative mx-auto w-full min-w-0 shrink-0 max-w-[clamp(360px,62vh,620px)] aspect-video overflow-hidden rounded-2xl bg-black"
+    : "relative";
+  const rightColCls = modal
+    ? "space-y-4 min-w-0"
+    : `space-y-4 ${pinnedOffer ? "pb-36 lg:pb-0" : ""}`;
+  // Whole modal scrolls (mainCls), so this wrapper is just normal
+  // spacing — the chat keeps its full min-height directly below the
+  // offer instead of being squeezed into a collapsed inner scroll.
+  const scrollRegionCls = modal
+    ? "space-y-4 min-w-0"
+    : "space-y-4";
+
   return (
-    <main className="min-h-[100dvh] bg-surface-page text-primary px-4 py-4 sm:px-6 sm:py-8">
+    <main className={mainCls}>
       {/* Schema.org JSON-LD for the pinned offer. The embed page often
           loads inside a merchant's own iframe, where their site provides
           the LocalBusiness markup; we contribute Product-level data so
@@ -954,7 +1047,7 @@ export default function EmbedShellPage() {
         </div>
       )}
 
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className={shellCls}>
         {/* Header — name + slug + live + offer count, kept tight so the
             video and product card dominate the conversion area below.
             Option A — when the merchant viewing their own embed is
@@ -962,7 +1055,7 @@ export default function EmbedShellPage() {
             chip that opens /project/<slug>/manage in a new tab.
             Discreet emerald pill; doesn't compete with the buyer
             CTAs below. Buyers never see it. */}
-        <header className="space-y-2">
+        <header className={modal ? "space-y-2 shrink-0" : "space-y-2"}>
           <h1 className="text-2xl font-semibold tracking-tight">
             {loading ? "Loading…" : displayName}
           </h1>
@@ -1042,18 +1135,28 @@ export default function EmbedShellPage() {
              Desktop (lg:): video on the left, product card stacked
              above chat on the right.
              Mobile: video first, then product card, then chat. */}
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <div className={conversionCls}>
           {/* LEFT (desktop) / TOP (mobile) — Live video. Wrapped in
               a relative container so the floating emoji burst overlay
               can absolute-position inside the video bounds without
-              escaping the conversion grid. */}
+              escaping the conversion grid. In modal mode this is a
+              true 16:9 box (videoSectionCls) at the top of the
+              scrollable storefront column. */}
           <section
             ref={liveSectionRef}
             aria-label="Live video"
-            className="relative"
+            className={videoSectionCls}
           >
             {project?.id && ivsActive ? (
-              <IVSStageViewer projectId={project.id} userId={viewerUserId} />
+              <IVSStageViewer
+                projectId={project.id}
+                userId={viewerUserId}
+                // Storefront modal: show the seller's whole frame,
+                // centered, even on a non-16:9 webcam — never cover-
+                // crop their face. The full storefront page keeps the
+                // default full-bleed cover.
+                fit={modal ? "contain" : "cover"}
+              />
             ) : (
               <div
                 // Aspect-ratio alone now sizes this — the prior
@@ -1064,7 +1167,9 @@ export default function EmbedShellPage() {
                 // tracks the live video's actual size, so the
                 // transition between offline and live feels in-place
                 // instead of layout-shifting.
-                className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary"
+                className={`flex w-full items-center justify-center overflow-hidden rounded-2xl border border-default bg-black text-sm text-secondary ${
+                  modal ? "h-full" : "aspect-video"
+                }`}
               >
                 {loading ? "Loading video…" : "Stream offline"}
               </div>
@@ -1103,9 +1208,178 @@ export default function EmbedShellPage() {
               removed at lg: where the sticky bar is hidden and the
               chat sits in the right grid column with no overlap
               risk. */}
-          <div
-            className={`space-y-4 ${pinnedOffer ? "pb-36 lg:pb-0" : ""}`}
-          >
+          {modal ? (
+            <>
+              {/* ── MODAL LIVE-WINDOW (?display=modal) ──────────────
+                  Gated entirely behind `modal`. Fit-to-viewport stack:
+                  the video above (in conversionCls) is shrink-0; this
+                  CHAT fills the remaining height and scrolls its OWN
+                  history; the compact BUY area is pinned shrink-0 at the
+                  bottom; the rest of the offers are one tap away via the
+                  see-all sheet. The inline "full" embed and the direct
+                  /embed/{slug} page render the untouched branch below. */}
+              {project?.id && isIVSSession(project) ? (
+                <section
+                  aria-label="Live chat"
+                  className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-default"
+                >
+                  <LiveChatIVS
+                    projectId={project.id}
+                    userId={viewerUserId}
+                    userName={viewerName}
+                    isHost={false}
+                    getToken={getToken}
+                    fillHeight
+                    onItemUpdate={(data) => {
+                      setOffers((prev) =>
+                        prev.map((o) =>
+                          o.id === data.offer_id
+                            ? { ...o, quantity_sold: data.quantity_sold }
+                            : o
+                        )
+                      );
+                      setInventoryEventCount((c) => c + 1);
+                      pushEvent(
+                        `Inventory event received. Offer ${data.offer_id} sold ${data.quantity_sold}${
+                          data.sold_out ? " (sold out)" : ""
+                        }`
+                      );
+                      if (data.sold_out) flashSoldOut();
+                    }}
+                    onItemSold={(data) => {
+                      setSoldEventCount((c) => c + 1);
+                      const fresh = offersRef.current.find(
+                        (o) => o.id === data.offer_id
+                      );
+                      const title = fresh?.title || data.title || "Item";
+                      pushEvent(
+                        `Sold event received, ${title} (offer ${data.offer_id})`
+                      );
+                      spawnSaleToast(title);
+                      spawnEmojiBurst();
+                    }}
+                  />
+                </section>
+              ) : null}
+
+              {/* BUY AREA — pinned shrink-0, compact. Reuses the same
+                  checkout handlers/state as the full card; the long
+                  description is omitted here to keep the column fitting
+                  in one view. */}
+              <section
+                aria-label="Buy"
+                className={`shrink-0 rounded-2xl border bg-surface-card p-3 transition-colors ${
+                  soldFlash
+                    ? "embed-sold-flash border-[var(--state-live)]/30"
+                    : "border-default"
+                }`}
+              >
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+                    Now showing
+                  </span>
+                  {pinSecondsLeft !== null && pinSecondsLeft > 0 && (
+                    <span
+                      aria-live="off"
+                      className="inline-flex items-center gap-1 rounded-full border border-brand-teal/40 bg-brand-teal-soft px-2 py-0.5 text-[10px] font-bold tabular-nums text-brand-teal"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden />
+                      Featured · {Math.floor(pinSecondsLeft / 60)}:{String(pinSecondsLeft % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                </div>
+                {pinnedOffer ? (
+                  <div className="space-y-2">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h2 className="truncate text-base font-semibold leading-tight">
+                        {pinnedOffer.title || "Untitled offer"}
+                      </h2>
+                      <span className="shrink-0 font-mono text-xl font-bold text-brand-teal">
+                        ${Number(pinnedOffer.price_usd || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    {soldOut ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full rounded-xl border border-default px-5 py-2.5 text-sm font-bold text-secondary"
+                      >
+                        Sold Out
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleBuy}
+                        disabled={buying || solBuying}
+                        className="w-full rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal disabled:opacity-40"
+                      >
+                        {buying
+                          ? "Opening secure checkout…"
+                          : `Buy now · $${Number(pinnedOffer.price_usd || 0).toFixed(2)}`}
+                      </button>
+                    )}
+                    {!soldOut && (
+                      <p className="text-center text-[11px] leading-relaxed text-secondary">
+                        Stripe checkout · Your card never touches DUM Club. <span className="text-muted">Prices in USD; Stripe converts at checkout.</span>
+                      </p>
+                    )}
+                    {!soldOut && !authUser && isInIframe() && (
+                      <p className="text-center text-[11px] leading-relaxed text-muted">
+                        Use email sign-in to continue checkout.
+                      </p>
+                    )}
+                    {buyError && (
+                      <div className="rounded-lg border border-red-500/20 bg-state-live/5 px-3 py-2 text-xs text-state-live">
+                        {buyError}
+                      </div>
+                    )}
+                    {SOL_CHECKOUT_ENABLED && !soldOut && (
+                      <SolanaCheckoutButton>
+                        {(sol) => {
+                          solApiRef.current = sol;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handlePayWithSol(sol)}
+                              disabled={buying || solBuying}
+                              className="w-full rounded-xl border border-default bg-transparent px-5 py-2 text-xs font-medium text-primary transition hover:border-strong hover:text-white disabled:opacity-40"
+                            >
+                              {solBuying ? "Processing…" : "or pay with SOL"}
+                            </button>
+                          );
+                        }}
+                      </SolanaCheckoutButton>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-secondary">No live offer pinned yet</p>
+                )}
+
+                {/* See all offers — rest of the seller's offers are one
+                    tap away in a sheet (not dumped on screen). */}
+                {(() => {
+                  const browseCount = offers.filter(
+                    (o) =>
+                      o.id !== (pinnedOffer ? pinnedOffer.id : null) &&
+                      typeof o.title === "string" &&
+                      o.title.trim().length > 0,
+                  ).length;
+                  if (browseCount === 0) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllOffers(true)}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-default bg-surface-page px-4 py-2 text-xs font-semibold text-primary transition hover:border-brand-teal/50"
+                    >
+                      See all offers · {browseCount}
+                      <span aria-hidden className="text-brand-teal">→</span>
+                    </button>
+                  );
+                })()}
+              </section>
+            </>
+          ) : (
+          <div className={rightColCls}>
             {/* Pinned offer card — title / price / description / stock.
                 Adds the embed-sold-flash class for a single ~1s flash
                 when an item_updated event arrives with sold_out=true.
@@ -1121,13 +1395,28 @@ export default function EmbedShellPage() {
             <section
               aria-label="Pinned offer"
               className={`rounded-2xl border bg-surface-card p-4 transition-colors ${
+                modal ? "shrink-0" : ""
+              } ${
                 soldFlash
                   ? "embed-sold-flash border-[var(--state-live)]/30"
                   : "border-default"
               }`}
             >
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-                Now showing
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+                  Now showing
+                </span>
+                {/* Display-only urgency countdown. Honest copy — "Featured",
+                    not "deal" — because nothing changes at zero. */}
+                {pinSecondsLeft !== null && pinSecondsLeft > 0 && (
+                  <span
+                    aria-live="off"
+                    className="inline-flex items-center gap-1 rounded-full border border-brand-teal/40 bg-brand-teal-soft px-2 py-0.5 text-[10px] font-bold tabular-nums text-brand-teal"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden />
+                    Featured · {Math.floor(pinSecondsLeft / 60)}:{String(pinSecondsLeft % 60).padStart(2, "0")}
+                  </span>
+                )}
               </div>
               {pinnedOffer ? (
                 <div className="space-y-3">
@@ -1264,6 +1553,12 @@ export default function EmbedShellPage() {
               )}
             </section>
 
+            {/* Scroll region — in modal mode the pinned offer above is
+                fixed and these (more offers + live chat) share one
+                internal scroll so they can't push the offer/CTA off
+                screen. In natural mode scrollRegionCls is just
+                "space-y-4", leaving the prior flow untouched. */}
+            <div className={scrollRegionCls}>
             {/* All-offers strip — browse beyond the pinned offer.
                 Renders the rest of the merchant's active offers as
                 view-only tiles. Each tile links out to the offer's
@@ -1402,15 +1697,79 @@ export default function EmbedShellPage() {
                 />
               </section>
             )}
+            </div>
           </div>
+          )}
         </div>
+
+        {/* See-all-offers sheet — modal only. Covers the live window
+            with a scrollable list of the seller's offers; each tile
+            links to the full storefront (no second checkout path, same
+            as the inline strip). Gated on `modal` so it never renders
+            in the inline/direct embed. shellCls adds `relative` in
+            modal so this absolute sheet is anchored to the live window. */}
+        {modal && showAllOffers && (
+          <div className="absolute inset-0 z-30 flex flex-col rounded-[20px] bg-surface-page">
+            <div className="flex shrink-0 items-center justify-between border-b border-default px-4 py-3">
+              <span className="text-sm font-bold">All offers</span>
+              <button
+                type="button"
+                onClick={() => setShowAllOffers(false)}
+                aria-label="Close offers"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-default text-secondary transition hover:text-primary"
+              >
+                ×
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
+              {offers
+                .filter(
+                  (o) => typeof o.title === "string" && o.title.trim().length > 0,
+                )
+                .map((o) => {
+                  const price =
+                    typeof o.price_usd === "number" && isFinite(o.price_usd)
+                      ? `$${o.price_usd.toFixed(2)}`
+                      : null;
+                  const isPinned = pinnedOffer ? o.id === pinnedOffer.id : false;
+                  return (
+                    <a
+                      key={o.id}
+                      href={`/project/${project?.slug || businessId}#offer-${o.id}`}
+                      target="_top"
+                      className={`flex items-center gap-3 rounded-xl border bg-surface-card p-3 transition hover:border-brand-teal/50 ${
+                        isPinned ? "border-brand-teal/40" : "border-default"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-primary">
+                          {o.title}
+                          {isPinned ? " · Now showing" : ""}
+                        </div>
+                      </div>
+                      {price && (
+                        <div className="shrink-0 font-mono text-sm font-bold text-brand-teal">
+                          {price}
+                        </div>
+                      )}
+                      <span aria-hidden className="shrink-0 text-brand-teal">
+                        →
+                      </span>
+                    </a>
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* Event-wire debug — visible confirmation that the WS callbacks
             are firing. Stays in place until real product / checkout UI
             replaces it in later steps. */}
         <section
           aria-label="Event debug"
-          className="rounded-2xl border border-default bg-surface-card p-4 text-xs"
+          className={`rounded-2xl border border-default bg-surface-card p-4 text-xs ${
+            modal ? "hidden" : ""
+          }`}
         >
           <div className="mb-2 flex gap-4 text-[var(--color-text-muted)]">
             <span>Inventory events: {inventoryEventCount}</span>
@@ -1427,7 +1786,9 @@ export default function EmbedShellPage() {
           )}
         </section>
 
-        <p className="text-xs uppercase tracking-widest text-[var(--color-text-muted)]">
+        <p className={`text-xs uppercase tracking-widest text-[var(--color-text-muted)] ${
+          modal ? "hidden" : ""
+        }`}>
           Embed shell loaded
         </p>
       </div>
@@ -1442,8 +1803,13 @@ export default function EmbedShellPage() {
            Layout: title + price/inventory on the left, primary
            Pay-with-Card on the right (or a Sold Out pill). When
            SOL is enabled, a slim secondary "or pay with SOL" row
-           appears beneath the primary row. */}
-      {pinnedOffer && (
+           appears beneath the primary row.
+
+           Hidden in modal mode: the offer card + CTA are already
+           pinned shrink-0 in the viewport-fit column, so a fixed
+           bottom bar would duplicate the CTA and overlap the chat
+           scroll region. */}
+      {pinnedOffer && !modal && (
         <div
           className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-surface-card backdrop-blur-sm lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}

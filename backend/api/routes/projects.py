@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header, Query, Response
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import asyncio
 import re
 import secrets
@@ -1656,7 +1656,7 @@ async def get_embed_config(project_id: str, response: Response):
             supabase.table("projects")
             .select(
                 "id, slug, embed_display_mode, is_live, live_provider, "
-                "ivs_stage_arn, pinned_offer_id, popin_config"
+                "ivs_stage_arn, pinned_offer_id, pinned_until, popin_config"
             )
             .eq("id", resolved_uuid)
             .eq("is_deleted", False)
@@ -1860,6 +1860,10 @@ async def get_embed_config(project_id: str, response: Response):
         "live_provider": row.get("live_provider"),
         "ivs_stage_arn": row.get("ivs_stage_arn"),
         "pinned_offer_id": pinned_offer_id,
+        # Display-only pin countdown deadline (ISO8601 or null). The embed
+        # renders an urgency timer until this instant; nothing about price
+        # or availability changes when it passes.
+        "pinned_until": row.get("pinned_until"),
         "pinned_offer": pinned_offer_payload,
         "active_offers": active_offers_payload,
         "live_session": live_session_payload,
@@ -2034,6 +2038,17 @@ async def update_project(
     """Update allowed project fields. Owner only."""
     supabase = get_client()
 
+    # Resolve slug-or-UUID to the canonical projects.id before any
+    # .eq("id", ...) below — the storefront forwards the URL param (a
+    # slug, e.g. "topgun-maintenance"), which would otherwise hit
+    # Postgres 22P02 against the uuid column. Mirrors the offers-create
+    # fix; reassigning project_id makes every downstream query use the
+    # canonical UUID.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
+
     project_res = (
         supabase.table("projects")
         .select("id, owner_id, privy_id")
@@ -2143,6 +2158,14 @@ async def _set_publication_status(project_id: str, user_id: str, *, publish: boo
         raise HTTPException(status_code=401, detail="Authentication required")
 
     supabase = get_client()
+
+    # Resolve slug-or-UUID to the canonical projects.id (publish/unpublish
+    # are called from the storefront with the URL param, which is a slug
+    # for slug-addressable storefronts -> Postgres 22P02 otherwise).
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
 
     project_res = (
         supabase.table("projects")
@@ -2296,6 +2319,18 @@ class GoLiveRequest(BaseModel):
 
 class PinOfferRequest(BaseModel):
     offer_id: Optional[str] = None
+    # Display-only pin countdown. When pinning (offer_id set), the seller
+    # picks how long the on-screen urgency timer runs. None = pin with no
+    # timer (indefinite). Only the allowed values are honored; anything
+    # else is treated as no-timer rather than rejected, so a stale client
+    # can't 422 a pin. Nothing about price/availability changes at zero.
+    duration_minutes: Optional[int] = None
+
+
+# Seller-selectable pin durations (minutes). Mirrored in the frontend
+# picker; the backend is the gate so an out-of-range value can't set an
+# arbitrary deadline.
+PIN_DURATION_CHOICES = {2, 5, 10, 30, 60}
 
 
 @router.post("/{project_id}/go-live")
@@ -2306,6 +2341,16 @@ async def go_live(
 ):
     """Owner toggles stream ON with a stream URL."""
     supabase = get_client()
+
+    # Resolve slug-or-UUID up front so the project fetch + the is_live
+    # UPDATE + telemetry all key off the canonical projects.id. The
+    # storefront calls /go-live with the URL param (a slug); a bare
+    # .eq("id", slug) would Postgres-22P02 even before the provider
+    # branch. Mirrors the offers-create fix.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
 
     # Overlap the project row + (speculative) merchant Stripe-gate fetches.
     # supabase-py is sync, so push each into a thread and gather. In the
@@ -2528,6 +2573,14 @@ async def end_live(
     """Owner ends the live stream."""
     supabase = get_client()
 
+    # Resolve slug-or-UUID before the owner fetch + clear-live UPDATE —
+    # storefront calls /end-live with the URL param (a slug) -> 22P02
+    # otherwise. Mirrors the offers-create fix.
+    resolved_pid = resolve_project_uuid(supabase, project_id)
+    if not resolved_pid:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project_id = resolved_pid
+
     project_res = (
         supabase.table("projects")
         .select("id, owner_id, privy_id")
@@ -2696,8 +2749,23 @@ async def pin_offer(
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
 
+    # Display-only pin countdown deadline. Set only when pinning (offer_id
+    # present) with an allowed duration; cleared on unpin or no-timer pin.
+    # Stored as an ISO8601 UTC timestamp so PostgREST writes the TIMESTAMPTZ
+    # column directly.
+    pinned_until = None
+    if body.offer_id and body.duration_minutes in PIN_DURATION_CHOICES:
+        pinned_until = (
+            datetime.now(timezone.utc) + timedelta(minutes=body.duration_minutes)
+        ).isoformat()
+
     supabase.table("projects").update({
         "pinned_offer_id": body.offer_id,
+        "pinned_until": pinned_until,
     }).eq("id", project_id).execute()
 
-    return {"status": "success", "pinned_offer_id": body.offer_id}
+    return {
+        "status": "success",
+        "pinned_offer_id": body.offer_id,
+        "pinned_until": pinned_until,
+    }

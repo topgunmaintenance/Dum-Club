@@ -80,11 +80,23 @@ VALID_OFFER_TYPES = {"digital_service", "physical_product"}
 # ── Helpers ───────────────────────────────────────────────────
 
 def _get_project_owner(supabase, project_id: str) -> str:
-    """Return owner_id for a project, or raise 404."""
+    """Return owner_id for a project, or raise 404.
+
+    Accepts a project UUID OR slug. The frontend forwards the storefront
+    URL param verbatim (e.g. "topgun-maintenance"), so a slug reaching a
+    bare `.eq("id", slug)` against the uuid column makes Postgres raise
+    22P02 (invalid input syntax for type uuid) -> 500 on every offer
+    create-by-slug. Resolve to the canonical UUID first (try-UUID-then-
+    slug) so both UUID and slug callers work.
+    """
+    from api.routes.projects import resolve_project_uuid  # lazy: avoid import cycle
+    resolved = resolve_project_uuid(supabase, project_id)
+    if not resolved:
+        raise HTTPException(status_code=404, detail="Project not found")
     res = (
         supabase.table("projects")
         .select("owner_id")
-        .eq("id", project_id)
+        .eq("id", resolved)
         .eq("is_deleted", False)
         .limit(1)
         .execute()
@@ -181,13 +193,23 @@ async def create_offer(
             detail=f"offer_type must be one of: {', '.join(VALID_OFFER_TYPES)}",
         )
 
-    _verify_project_owner(supabase, body.project_id, privy_id)
-    print(f"[offers] CREATE: owner verified for project={body.project_id}")
+    # Resolve slug-or-UUID to the canonical projects.id UUID ONCE. The
+    # storefront owner UI posts the URL param (a slug, e.g.
+    # "topgun-maintenance"); we must use the UUID for BOTH the owner
+    # check AND the insert into offers.project_id (a uuid FK) — inserting
+    # the raw slug would also raise Postgres 22P02. 404 if unresolvable.
+    from api.routes.projects import resolve_project_uuid  # lazy: avoid import cycle
+    project_uuid = resolve_project_uuid(supabase, body.project_id)
+    if not project_uuid:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    _verify_project_owner(supabase, project_uuid, privy_id)
+    print(f"[offers] CREATE: owner verified for project={project_uuid}")
 
     _assert_merchant_stripe_verified(supabase, privy_id)
 
     insert = {
-        "project_id": body.project_id,
+        "project_id": project_uuid,
         "title": body.title.strip(),
         "description": (body.description or "").strip() or None,
         "price_usd": float(body.price_usd),
