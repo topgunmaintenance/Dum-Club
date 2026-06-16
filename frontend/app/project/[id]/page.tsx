@@ -4344,10 +4344,12 @@ return (
             </span>
           </div>
 
-          {/* ── Two-column grid: video (left) + chat (right) on lg:, stacked on mobile ── */}
-          <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+          {/* ── Single column: video, then chat directly below, then the
+               product/offers. Mirrors the customer live window so the page
+               reads top to bottom and stays easy to use. ── */}
+          <div>
 
-            {/* ── LEFT COLUMN: video + product + controls ── */}
+            {/* ── Video, chat, then product/controls, stacked ── */}
             <div className="space-y-4">
               {/* Video player with sale toast overlay */}
               <div className="relative">
@@ -4420,6 +4422,47 @@ return (
                   </div>
                 )}
               </div>
+
+              {/* ── Live chat. Sits directly below the video so the page
+                   mirrors the customer live window (video, then chat, then
+                   offers) and stays simple to use. Fixed-height box like the
+                   customer view (no fillHeight). ── */}
+              {isIVSSession(project) && (
+                <div className="pb-2">
+                  <LiveChatIVS
+                    projectId={id as string}
+                    userId={authUser?.privyId || ""}
+                    userName={authUser?.email || "Viewer"}
+                    isHost={isOwner}
+                    onRequestSignIn={login}
+                    getToken={getToken}
+                    onCommentBuy={handleCommentBuy}
+                    onViewerCountChange={setLiveViewerCount}
+                    onItemUpdate={(data) => {
+                      setOffers((prev) => prev.map((o) =>
+                        o.id === data.offer_id
+                          ? { ...o, quantity_sold: data.quantity_sold }
+                          : o
+                      ));
+                    }}
+                    onItemSold={(data) => {
+                      loadOffers();
+                      setLiveSalesCount((c) => {
+                        const next = c + 1;
+                        const toastId = `${data.offer_id}-${Date.now()}`;
+                        setSaleToasts((prev) => [
+                          ...prev.slice(-2),
+                          { id: toastId, title: data.title || "Item", count: next },
+                        ]);
+                        setTimeout(() => {
+                          setSaleToasts((prev) => prev.filter((t) => t.id !== toastId));
+                        }, 4000);
+                        return next;
+                      });
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Reward visibility. hidden on mobile, visible on lg: (stays in DOM) */}
               <div className="hidden lg:flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-teal-soft py-2.5">
@@ -4678,48 +4721,8 @@ return (
               )}
             </div>
 
-            {/* ── RIGHT COLUMN (lg:) / BELOW VIDEO (mobile): LiveChatIVS ──
-                 lg:h-full + fillHeight makes the chat match the video+product
-                 column height so the two read as one tile (equal height). */}
-            {isIVSSession(project) && (
-              <div className="lg:h-full pb-20 lg:pb-0">
-                <LiveChatIVS
-                  projectId={id as string}
-                  userId={authUser?.privyId || ""}
-                  userName={authUser?.email || "Viewer"}
-                  isHost={isOwner}
-                  fillHeight
-                  onRequestSignIn={login}
-                  getToken={getToken}
-                  onCommentBuy={handleCommentBuy}
-                  onViewerCountChange={setLiveViewerCount}
-                  onItemUpdate={(data) => {
-                    setOffers((prev) => prev.map((o) =>
-                      o.id === data.offer_id
-                        ? { ...o, quantity_sold: data.quantity_sold }
-                        : o
-                    ));
-                  }}
-                  onItemSold={(data) => {
-                    loadOffers();
-                    setLiveSalesCount((c) => {
-                      const next = c + 1;
-                      const toastId = `${data.offer_id}-${Date.now()}`;
-                      setSaleToasts((prev) => [
-                        ...prev.slice(-2),
-                        { id: toastId, title: data.title || "Item", count: next },
-                      ]);
-                      setTimeout(() => {
-                        setSaleToasts((prev) => prev.filter((t) => t.id !== toastId));
-                      }, 4000);
-                      return next;
-                    });
-                  }}
-                />
-              </div>
-            )}
-
           </div>
+
 
           {/* ── MOBILE STICKY BUY BAR. pinned product/auction as bottom bar on mobile ── */}
           {!isOwner && (
