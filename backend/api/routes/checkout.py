@@ -92,11 +92,11 @@ def _get_stripe():
 # Commission rate is resolved per-merchant via services.commission at
 # session-create time. Resolution order: merchants.commission_rate_override
 # -> plan_limits.commission_rate (via merchants.plan_id) -> fail closed.
-# Today doctrine is 0% — both the per-tier seed (migration 053) and the
-# absence of any non-NULL override mean the resolver returns Decimal("0.0000")
-# for every existing merchant. The wiring stays general so a per-merchant
-# override or a future tier-rate change Just Works without touching this
-# code path.
+# Migration 082 set every tier's plan_limits.commission_rate to 0.0150, so the
+# resolver returns Decimal("0.0150") (1.5% sales fee) for any non-overridden
+# merchant on one of the five seeded tiers. The wiring stays general so a
+# per-merchant override or a future tier-rate change Just Works without
+# touching this code path.
 
 
 # ── Models ────────────────────────────────────────────────────
@@ -756,10 +756,10 @@ async def create_payment_intent(
     # Decimal — never float — to keep cents math exact.
     #
     # Fail closed: if the resolver raises, refuse the session. Better a
-    # visible 503 than silently defaulting to "free" or "1%". The
-    # resolver returns Decimal("0.0000") for the doctrine-correct path
-    # today; the omit-when-zero branch below preserves the existing
-    # Stripe-call shape for that case.
+    # visible 503 than silently defaulting to "free". The resolver returns
+    # Decimal("0.0150") today (1.5% sales fee, migration 082); the
+    # omit-when-zero branch below still handles a 0.0000 per-merchant
+    # override (deliberate comp) by preserving the existing Stripe-call shape.
     try:
         commission_rate = resolve_commission_rate(seller_user_id, supabase=supabase)
     except CommissionRateUnset as exc:
