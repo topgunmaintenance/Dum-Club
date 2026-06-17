@@ -260,7 +260,15 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   return (
     <div
       style={{
-        minHeight: 480,
+        // fillHeight is used ONLY by the embed modal, whose chat lives in a
+        // fixed-height (100dvh) overflow-hidden column. The old hard
+        // minHeight:480 made this box taller than its cell on short overlay
+        // viewports, so the cell clipped the bottom — the message input /
+        // "Sign in to chat" row — off-screen. In fillHeight mode drop the
+        // floor so the box exactly fills its cell (the messages area below
+        // absorbs the squeeze and scrolls), keeping the input always visible.
+        // Non-fillHeight callers (the 480px box) are unchanged.
+        minHeight: fillHeight ? 0 : 480,
         height: fillHeight ? "100%" : 480,
         maxHeight: fillHeight ? "none" : "70vh",
         border: "1px solid #27272a",
@@ -284,7 +292,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: 260 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: fillHeight ? 0 : 260 }}>
         {messages.length === 0 && (
           <div style={{ display: "flex", height: "100%", minHeight: 200, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "#a1a1aa", lineHeight: 1.5 }}>
