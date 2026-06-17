@@ -8,10 +8,10 @@
 
 | | |
 |---|---|
-| **Phase** | 0B |
-| **Complete** | ~90% |
-| **Blocked on** | 1 real paid Stripe transaction (external — Julian's outreach) |
-| **Next unlock** | Phase 0B → Phase 1 (100 founding seller recruitment sprint) |
+| **Phase** | 1 |
+| **Complete** | 0% (just unlocked) |
+| **Blocked on** | Nothing internal. Phase 1 is founding-seller recruitment — external outreach |
+| **Next unlock** | Phase 1 → Phase 2 (10+ verified sellers · $1,000+ real GMV · points legal review) |
 
 ### Active diagnostics
 - _None._ The "Untitled Project" fallback on `/project/topgun-maintenance` is resolved in production; `loadProject()` is reaching Railway and the seeded row is hydrating. Visual QA spec `frontend/tests/visual/project-page.spec.ts` now hard-fails if the placeholder reappears.
@@ -23,7 +23,7 @@
 
 ## Phase ladder
 
-Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · ⚠️ broken/diagnosing · 🔒 locked
+Status key: ✅ shipped · 🔄 in progress · ⬜ not started · ⏸️ blocked on external · ⚠️ broken/diagnosing · 🔒 locked
 
 ---
 
@@ -47,7 +47,7 @@ Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · ⚠
 
 ---
 
-### Phase 0B — Active 🔄
+### Phase 0B — Done ✅
 
 **Goal:** One real paid Stripe transaction through the Topgun Maintenance storefront.
 
@@ -59,10 +59,10 @@ Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · ⚠
 - ✅ Bump `FOUNDING_CAP` to 100 everywhere — `b2e70ab`
 - ✅ Build Topgun Maintenance LLC storefront (migration 031) — `fab6ade`
 - ✅ Storefront routable at `/project/topgun-maintenance` (slug lookup backend) — `fab6ade`
-- ⚠️ Storefront rendering correctly with seeded data — **active diagnostic, see blockers**
+- ✅ Storefront rendering correctly with seeded data
 - ✅ Discover shows verified founding merchants (backend verified-OR fallback) — `a5ef9ec`
 - ✅ Homepage comparison: Whatnot / Commonsold / Google Maps — `9336946`
-- ⏸️ **Get 1 real paid Stripe transaction** — Julian's task, external outreach
+- ✅ **1 real paid Stripe transaction** — live-mode (`cs_live_`) order against Topgun, $10.00 `status='paid'`, 2026-06-16 (`pi_3Tj6WA…`, 1.5% fee applied correctly). First live paid order was actually 2026-05-06; the gate has been met since early May.
 
 **Beyond original 0B scope — shipped in this window:**
 - ✅ `/business` landing page rebuilt (full seller recruitment) — `06d956e`
@@ -77,28 +77,33 @@ Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · ⚠
 - ✅ FounderNote: Julian headshot + flat-fee copy — `a1a1509`
 - ✅ `loadOffers` / `loadMemories` use project UUID not URL param (slug safe) — `2674dcc`
 
-**Done when:** One Stripe checkout in production mode completes against Topgun's storefront. A single `orders` row with `status='paid'` and `amount > 0` unlocks Phase 1.
+**Done when:** One Stripe checkout in production mode completes against Topgun's storefront. A single `orders` row with `status='paid'` and `amount > 0` unlocks Phase 1. **Shipped — confirmed in the DB 2026-06-17.**
+
+> Note: the four live paid orders to date all carry Julian's own
+> buyer email — they prove the production checkout + 1.5% fee
+> pipeline works end to end, but not yet external demand. Phase 1
+> recruitment is what turns the proven pipeline into real buyers.
 
 ---
 
-### Phase 1 — Locked 🔒
+### Phase 1 — Active 🔄
 
 **Goal:** 100 founding sellers recruited.
 
 **Unlock conditions:**
-- 🔒 Phase 0B done (one real Stripe transaction)
+- ✅ Phase 0B done (live Stripe transaction confirmed 2026-06-17)
 
 **Tasks:**
-- 🔒 Whatnot seller scraping agent (`backend/agents/whatnot_scraper.py`)
-- 🔒 Update 4 outreach email templates — Whatnot flat-fee pitch
-- 🔒 Homepage redesign — Whatnot visual energy:
+- ⬜ Whatnot seller scraping agent (`backend/agents/whatnot_scraper.py`)
+- ⬜ Update 4 outreach email templates — Whatnot flat-fee pitch
+- ⬜ Homepage redesign — Whatnot visual energy:
   - Live Now grid (AWS IVS)
   - Best Deals This Week section
   - Founding 100 banner with real slot counter
   - Category browse row
   - Google reviews display per business
-- 🔒 Activate AWS IVS live selling for merchants
-- 🔒 "Go Live" button on merchant dashboard
+- ⬜ Activate AWS IVS live selling for merchants
+- ⬜ "Go Live" button on merchant dashboard
 
 **Done when:** 100 rows in `merchants` table with `stripe_connect_status='connected'` AND `founding_slot_number BETWEEN 1 AND 100`.
 
@@ -166,7 +171,8 @@ Things that aren't Claude-solvable and need a human decision or action.
 |---|---|---|---|
 | ✅ | ~~Run `bash scripts/fetch-topgun-photos.sh` to mirror Topgun photos locally~~ — superseded by migration 033, which points image URLs at the public originals on topgunmaintenance.com. The mirror script stays as a contingency. | — | _resolved_ |
 | ✅ | ~~Rebind Topgun `business_profiles.owner_privy_id` from `seed:topgun-maintenance` to Julian's real Privy DID~~ — now automatic via `backend/services/seed_claim.py`. First sign-in with `julian@topgunmaintenance.com` triggers the rebind on both `business_profiles` and `projects`. Audit row written to `seed_claim_audit`. | — | _resolved_ |
-| ⏸️ | **Send `/project/topgun-maintenance` link to 20 real contacts** | Julian | Phase 0B → Phase 1 |
+| ✅ | ~~**Send `/project/topgun-maintenance` link to 20 real contacts**~~ — Phase 0B gate met; a live paid Stripe order landed against Topgun (2026-06-16). | Julian | _resolved_ |
+| ⏸️ | **Recruit founding sellers** — outreach to Whatnot sellers toward FOUNDING_CAP = 100 | Julian | Phase 1 → Phase 2 |
 | 🔒 | Legal review of DUM Points purchase flow | Legal | Phase 2 |
 | 🔒 | Legal sign-off on Solana claim flow | Legal | Phase 3 |
 | 🔒 | 10+ verified sellers live | Outreach | Phase 2 |
@@ -179,39 +185,24 @@ Things that aren't Claude-solvable and need a human decision or action.
 Last 15 commits on `main`, newest first. Regenerate via `git log main --oneline -15`.
 
 ```
-c3c700e  feat(retention): recurring weekly auto-roll for scheduled_live_at (#292)
-f07274a  feat(admin): operations overview dashboard for live ops visibility (#291)
-73b3fd0  fix(live): tap-to-retry recovery on the customer-side ended state (#290)
-428ab81  feat(retention): replay-share affordance + OG enrichment (#289)
-6a566e5  feat(retention): customer "remind me when live" loop, complete (#288)
-3a15644  feat(retention): scheduled_live_at — weekly merchant retention keystone (#287)
-116df9d  fix(mobile): safe-area-inset-bottom on two unhandled sticky bottom bars (#286)
-56b3194  fix(embed): cache last-known bubble live state in sessionStorage (#285)
-52e4183  fix(storefront): sticky pinned-offer strip during mobile livestream (#284)
-b18b843  fix(storefront): instant top-of-viewport toast on ?checkout=success (#283)
-b75440f  fix(embed): clearer "Watch live →" affordance on the live bubble (#282)
-b945706  fix(live): hide FloatingGoLive when Stripe is not verified (#281)
-3afa8ea  fix(dashboard): "Preview as customer" link on each project card (#280)
-9a95d9e  fix(onboarding): add "Pin a featured item" row to GetLiveSteps (#279)
-343fec0  fix(merchant): set Stripe expectations before the Connect Stripe click (#278)
+89887ac  feat: restyle LiveRail live cards Whatnot-style (count-ready pill) (#427)
+69aa88f  chore: add agent guardrails — typecheck Stop hook + scope fence (#426)
+f866308  fix(live): stack video→chat→offers + let customers sign in to chat (#425)
+4e04807  fix(favorites): use canonical project UUID, not slug, on storefront (#424)
+e4e5a2a  fix(checkout): restore synchronous Stripe verify and stop opaque 500s (#423)
+83febc2  fix(checkout): retry the Buy POST on network failure instead of a dead 'Failed to fetch' (#422)
+db2b1f7  fix(project): navbar Go Live deep-link works when already on the project page (#421)
+fd533cc  fix(embed): tighten modal empty-state spacing when stream is offline (#420)
+60ffba9  feat(embed): fit-to-viewport live window for the storefront modal (#420)
+0345ea6  fix(embed): center seller in storefront modal camera (contain, no chin crop) (#419)
+17a3c7c  fix(embed): proper-size live camera + restore chat in storefront modal (#419)
 ```
 
-### In flight on `claude/adoring-fermat-uEfs0` (pending merge)
-
-```
-fix(onboarding): drop .select() chain on profile upsert (supabase-py 2.5.1)
-fix(admin): correct Stripe fees column names on operations overview
-feat(retention): weekly merchant recap email (cron + log)
-feat(acquisition): /why-dum-club comparison surface for outreach
-docs(smoke): pre-outreach operator checklist (browser end-to-end)
-docs(email): RESEND_API_KEY pipeline audit + safe test recipe
-docs(cron): production setup for live_reminders + schedule_rollforward
-```
-
-These ship together as the pre-outreach readiness bundle: three
-operator docs (cron / email / smoke), one merchant-acquisition
-surface, one retention cron, and two production bug fixes
-surfaced while writing the docs.
+The window since the last roadmap refresh (~#293–#427) was a
+live-selling + checkout hardening run: storefront embed/live-window
+layout, customer chat sign-in, Stripe checkout retry + synchronous
+verify, canonical-UUID fixes, and the agent guardrails (typecheck
+Stop hook + scope fence) now enforced on every task.
 
 ### Older shipped (kept for diff context)
 
