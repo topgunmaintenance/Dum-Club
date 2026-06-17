@@ -95,6 +95,18 @@ If the user skips the audit and goes straight to the task,
 Claude should still follow the SCOPE PROTECTION RULE — but
 the audit is the cleanest path.
 
+### ARMING THE SCOPE FENCE
+
+This project has a mechanical scope fence (`.claude/scope-gate.py`, run as a PreToolUse hook) that blocks edits to any file not listed in `.claude/task-scope.txt`.
+
+At the START of every task that changes code:
+1. Identify the minimum set of files required (per SCOPE PROTECTION RULE above).
+2. Write those paths into `.claude/task-scope.txt`, one path or glob per line, replacing the disarming `*`. This arms the fence.
+3. If a file outside the list turns out to be needed mid-task: STOP, explain to Julian why, and wait for approval before adding it. Never silently expand scope.
+4. When the task is done, restore `.claude/task-scope.txt` to a single line `*` to disarm.
+
+See `.claude/tasks/scope-template.md` for the copy-paste format.
+
 ---
 
 ### COMMIT RULE

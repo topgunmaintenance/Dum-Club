@@ -17,3 +17,8 @@ token-creator.json
 .claude/*
 !.claude/tasks/
 !.claude/tasks/*.md
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/*
+!.claude/scope-gate.py
+!.claude/protected-paths.txt
