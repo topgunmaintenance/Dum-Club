@@ -4386,6 +4386,68 @@ return (
                 </div>
                 )}
 
+                {/* ── Immersive seller header overlay (Whatnot-style) ──
+                     The full hero card (#section-top) is hidden while
+                     live, so this puts the seller's identity back on
+                     screen, overlaid on the video like Whatnot. Real
+                     data only: logo, name, verified badge, the real
+                     backend rating when reviews exist, and the existing
+                     favorites toggle relabeled "Follow". No fabricated
+                     rating or viewer count — doctrine Rule #2. */}
+                <div className="absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2 rounded-full bg-black/55 py-1 pl-1 pr-3 backdrop-blur-sm">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-surface-card text-sm">
+                      {logoSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoSrc}
+                          alt={`${projectName} logo`}
+                          loading="lazy"
+                          onError={() => setLogoSrc(null)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        emoji
+                      )}
+                    </span>
+                    <div className="flex min-w-0 flex-col leading-tight">
+                      <span className="truncate text-xs font-bold text-white">
+                        {projectName}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {ownerBizProfile?.verification_status === "verified" && (
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-brand-teal">
+                            ✓ Verified
+                          </span>
+                        )}
+                        {backendReviewCount > 0 && (
+                          <span className="flex items-center gap-0.5 text-[9px] font-semibold text-white/80">
+                            <span className="text-amber-400">★</span>
+                            {backendAvgRating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {!isOwner && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleFavorite();
+                      }}
+                      disabled={togglingFavorite}
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-60 ${
+                        isFavorited
+                          ? "bg-white/15 text-white"
+                          : "bg-brand-teal text-brand-navy"
+                      }`}
+                    >
+                      {isFavorited ? "Following" : "Follow"}
+                    </button>
+                  )}
+                </div>
+
                 {/* ── Sale toast overlay. bottom-left of video ── */}
                 {saleToasts.length > 0 && (
                   <div
