@@ -72,6 +72,26 @@ type ListingCardProps = {
 export function ListingCard({ project, index, marketSnapshot, isPulsing }: ListingCardProps) {
   const offers = offerCount(project);
 
+  // logoSrc mirrors business_profile.logo_url on load and resets to
+  // null on <img> onError below. This keeps the emoji+gradient
+  // fallback robust against broken seed data / missing CDN assets:
+  // a 404 or decode failure flips this card back to the existing
+  // text+emoji avatar without losing the rest of the card. The
+  // useEffect resets the source when the project's logo URL changes
+  // so a card recycled into a new project via list virtualisation
+  // can't pin a prior project's failure on the next one.
+  //
+  // These hooks MUST stay above the early-return guard below: a card can
+  // flip between null and rendered (offers/verified change, or a recycled
+  // virtualised card reused for a new project), and calling hooks after a
+  // conditional return changes hook order between renders — Rules of Hooks,
+  // which crashes React with "rendered fewer/more hooks than expected".
+  const initialLogo = cleanLogoUrl(project.business_profile?.logo_url);
+  const [logoSrc, setLogoSrc] = useState<string | null>(initialLogo);
+  useEffect(() => {
+    setLogoSrc(initialLogo);
+  }, [initialLogo]);
+
   // Card should not render without offers (filtered upstream by
   // filterProjects + isDiscoverable, but kept as a defensive guard).
   // Reads hasOffers which honors both sources after PR #374: the modern
@@ -88,19 +108,6 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   // so pre-mig-035 projects keep their existing badge.
   const categoryId = classifyProject(project);
   const categoryLabel = resolveCategoryLabel(project);
-  // logoSrc mirrors business_profile.logo_url on load and resets to
-  // null on <img> onError below. This keeps the emoji+gradient
-  // fallback robust against broken seed data / missing CDN assets:
-  // a 404 or decode failure flips this card back to the existing
-  // text+emoji avatar without losing the rest of the card. The
-  // useEffect resets the source when the project's logo URL changes
-  // so a card recycled into a new project via list virtualisation
-  // can't pin a prior project's failure on the next one.
-  const initialLogo = cleanLogoUrl(project.business_profile?.logo_url);
-  const [logoSrc, setLogoSrc] = useState<string | null>(initialLogo);
-  useEffect(() => {
-    setLogoSrc(initialLogo);
-  }, [initialLogo]);
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
