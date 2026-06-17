@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "exclude": ["node_modules", "__tests__"],
   "compilerOptions": {
-    "tsBuildInfoFile": ".tsbuildinfo-typecheck"
+    "tsBuildInfoFile": ".tsbuildinfo-typecheck",
+    "ignoreDeprecations": "5.0"
   }
 }
