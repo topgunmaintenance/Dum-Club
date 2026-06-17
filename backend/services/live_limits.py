@@ -12,10 +12,12 @@ from collections import defaultdict
 
 MAX_STREAM_DURATION_MINUTES = int(os.getenv("MAX_STREAM_DURATION_MINUTES", "60"))
 # Per-user/day go-live cap (in-memory; resets midnight UTC or on restart).
-# Default raised off the Phase-1 "3" throttle, which was low enough to block a
-# real merchant going live more than 3x/day. Still env-overridable so ops can
-# tune the AWS-IVS cost ceiling per environment without a code change.
-MAX_STREAMS_PER_DAY = int(os.getenv("MAX_STREAMS_PER_DAY", "50"))
+# Held at 3 deliberately as a launch cost guardrail: every go-live provisions a
+# billable AWS IVS stream, so this bounds worst-case IVS spend per host per day
+# (3 starts x the MAX_STREAM_DURATION_MINUTES cap). Env-overridable, so a host
+# who legitimately needs more can be raised per environment without a deploy —
+# note a dropped-connection reconnect counts as a new go-live against this.
+MAX_STREAMS_PER_DAY = int(os.getenv("MAX_STREAMS_PER_DAY", "3"))
 MAX_VIEWERS_PER_STREAM = int(os.getenv("MAX_VIEWERS_PER_STREAM", "50"))
 MAX_CHAT_PER_MINUTE = int(os.getenv("MAX_CHAT_PER_MINUTE", "20"))
 MAX_JOIN_PER_MINUTE = int(os.getenv("MAX_JOIN_PER_MINUTE", "10"))
