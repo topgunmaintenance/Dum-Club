@@ -672,7 +672,18 @@ export default function EmbedShellPage() {
   }, [project?.pinned_until]);
   const pinSecondsLeft = useMemo<number | null>(() => {
     if (!project?.pinned_until) return null;
-    const end = Date.parse(project.pinned_until);
+    // Normalize Postgres/PostgREST timestamptz before Date.parse. It can
+    // arrive space-separated with a 2-digit offset (e.g.
+    // "2026-06-17 03:04:59.074081+00") — which strict engines (Safari)
+    // reject as Invalid Date (countdown vanishes) and lenient ones can
+    // mis-zone (wrong remaining time). Convert to ISO 8601: space -> "T",
+    // trim microseconds to milliseconds, pad a bare "+HH"/"-HH" offset to
+    // "+HH:00". Already-ISO ("...T...+00:00" / "...Z") strings pass through.
+    const iso = project.pinned_until
+      .replace(" ", "T")
+      .replace(/(\.\d{3})\d+/, "$1")
+      .replace(/([+-]\d{2})$/, "$1:00");
+    const end = Date.parse(iso);
     if (Number.isNaN(end)) return null;
     const s = Math.floor((end - pinNow) / 1000);
     return s > 0 ? s : 0;
