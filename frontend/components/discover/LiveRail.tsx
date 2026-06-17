@@ -29,7 +29,7 @@ import dynamic from "next/dynamic";
 import type { Project } from "../../lib/discover/types";
 import { cleanLogoUrl } from "../../lib/imageSrc";
 import { getProjectEmoji, getAccent, lowestOfferPrice } from "../../lib/discover/filters";
-import { classifyProject } from "../../lib/categories";
+import { classifyProject, CATEGORIES } from "../../lib/categories";
 
 // Browser-only: pulls in amazon-ivs-web-broadcast (WebRTC).
 const IVSStageViewer = dynamic(
@@ -79,6 +79,8 @@ export function LiveRail({ projects }: { projects: Project[] }) {
         {visibleProjects.map((project, index) => {
           const emoji = getProjectEmoji(project, index);
           const category = classifyProject(project);
+          const categoryLabel =
+            CATEGORIES.find((c) => c.key === category)?.label ?? null;
           const accent = getAccent(index);
           const price = lowestOfferPrice(project);
           const rawLogo = cleanLogoUrl(project.business_profile?.logo_url);
@@ -92,23 +94,53 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           const businessName = project.title || project.name || "Untitled";
           const description = project.description?.trim() || "";
           const hasDescription = description.length > 0;
-          const cardTitle = hasDescription ? description : businessName;
 
           return (
             <Link
               key={project.id}
               href={`/project/${project.slug || project.id}?live=1`}
-              className="flex w-[280px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--state-live)]/30 bg-surface-card transition hover:border-[var(--state-live)]/50"
+              className="group flex w-[280px] flex-shrink-0 flex-col"
               style={{ scrollSnapAlign: "start" }}
             >
+              {/* ── Host row above the thumbnail (Whatnot anatomy) ──
+                  Avatar + seller name. The name is the seller label and
+                  always shows here; the show title (description) sits
+                  below the thumbnail, so the two never duplicate. Reuses
+                  logo_url with the emoji fallback. */}
+              <div className="mb-2 flex items-center gap-2">
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={logoUrl}
+                    alt={`${businessName} logo`}
+                    loading="lazy"
+                    onError={() => {
+                      setFailedLogos((prev) => {
+                        if (prev.has(project.id)) return prev;
+                        const next = new Set(prev);
+                        next.add(project.id);
+                        return next;
+                      });
+                    }}
+                    className="h-6 w-6 flex-shrink-0 rounded-full border border-default object-cover"
+                  />
+                ) : (
+                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-surface-muted text-sm">
+                    {emoji}
+                  </span>
+                )}
+                <span className="truncate text-xs font-semibold text-primary">
+                  {businessName}
+                </span>
+              </div>
+
               {/* ── Thumbnail with overlaid LIVE pill ──
                   The actual show plays muted on the first
                   MAX_AUTOPLAY_PREVIEWS cards (pointer-events-none so every
                   tap falls through to the Link and lands on the storefront
                   watch view); the rest show a static logo/emoji thumbnail.
-                  Autoplay behavior + the cap are unchanged — this only
-                  wraps the preview so the pill can overlay it. */}
-              <div className="relative">
+                  Autoplay behavior + the cap are unchanged. */}
+              <div className="relative overflow-hidden rounded-xl">
                 {index < MAX_AUTOPLAY_PREVIEWS ? (
                   <div className="pointer-events-none">
                     <IVSStageViewer projectId={project.id} userId="" preview />
@@ -129,7 +161,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                             return next;
                           });
                         }}
-                        className="h-full w-full object-cover opacity-90"
+                        className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100"
                       />
                     ) : (
                       <span className="text-5xl">{emoji}</span>
@@ -137,14 +169,16 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                   </div>
                 )}
 
-                {/* LIVE pill — single solid red pill, top-left over the
-                    thumbnail. Built as a flex row (dot + LIVE) so a live
-                    viewer count can drop in later as a "• {count}" span
-                    without restructuring.
-                    TODO(viewer-count): once a live viewer count is on the
-                    project data, append here:
-                      <span className="text-[10px] font-bold text-white">• {count}</span> */}
-                <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-red-500 px-2 py-0.5 shadow-sm">
+                {/* LIVE pill — solid red pill (state-live token), top-left
+                    over the thumbnail. Built as a flex row (dot + LIVE) so a
+                    REAL concurrent-viewer count can drop in as a "· {count}"
+                    span without restructuring.
+                    TODO(viewer-count): once a real viewer count is on the
+                    project data (AWS IVS, Phase 1), append after LIVE:
+                      <span className="text-[10px] font-bold text-white">· {count}</span>
+                    Never render a placeholder number — doctrine Rule #2
+                    (no fake data). */}
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-[var(--state-live)] px-2 py-0.5 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
                   <span className="text-[10px] font-bold uppercase tracking-wide text-white">
                     LIVE
@@ -152,58 +186,29 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                 </div>
               </div>
 
-              {/* ── Card body ── */}
-              <div className="flex flex-1 flex-col p-3">
-                {/* Bold title — prominent, max two lines. */}
-                <h3 className="line-clamp-2 text-sm font-bold leading-snug text-primary">
-                  {cardTitle}
-                </h3>
-
-                {/* Host row — avatar + seller name (Whatnot shows the
-                    seller under the thumbnail). The name renders only when a
-                    description is serving as the title above; with no
-                    description the business name IS the title, so we show
-                    the avatar alone and never stack the name twice. Reuses
-                    logo_url with the emoji fallback. */}
-                <div className="mt-2 flex items-center gap-2">
-                  {logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={logoUrl}
-                      alt={`${project.title || project.name || "Business"} logo`}
-                      loading="lazy"
-                      onError={() => {
-                        setFailedLogos((prev) => {
-                          if (prev.has(project.id)) return prev;
-                          const next = new Set(prev);
-                          next.add(project.id);
-                          return next;
-                        });
-                      }}
-                      className="h-6 w-6 flex-shrink-0 rounded-full border border-default object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-surface-muted text-sm">
-                      {emoji}
+              {/* ── Title + meta below the thumbnail ── */}
+              <div className="mt-2 flex flex-col">
+                {hasDescription && (
+                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-primary transition group-hover:text-brand-teal">
+                    {description}
+                  </h3>
+                )}
+                {/* Meta row — category in an accent color, price beside it
+                    (Whatnot's "Watches · $1 Starts" line). */}
+                <div className="mt-1 flex items-center gap-1.5 text-xs">
+                  {categoryLabel && (
+                    <span className="font-semibold text-brand-teal">
+                      {categoryLabel}
                     </span>
                   )}
-                  {hasDescription && (
-                    <span className="truncate text-xs font-medium text-secondary">
-                      {businessName}
-                    </span>
+                  {categoryLabel && price != null && (
+                    <span className="text-muted">·</span>
                   )}
-                </div>
-
-                {/* Footer — price + watch CTA */}
-                <div className="mt-auto flex items-center justify-between pt-3">
                   {price != null && (
-                    <span className="text-xs font-bold text-brand-teal">
+                    <span className="font-medium text-secondary">
                       From ${price < 1 ? price.toFixed(2) : Math.round(price)}
                     </span>
                   )}
-                  <span className="ml-auto text-[10px] font-medium text-red-400">
-                    Watch live →
-                  </span>
                 </div>
               </div>
             </Link>
@@ -213,15 +218,19 @@ export function LiveRail({ projects }: { projects: Project[] }) {
         {overflowCount > 0 && (
           <Link
             href="/discover?live=1"
-            className="flex w-[280px] flex-shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-[var(--state-live)]/30 bg-surface-card p-4 transition hover:border-[var(--state-live)]/30"
+            className="group flex w-[280px] flex-shrink-0 flex-col"
             style={{ scrollSnapAlign: "start" }}
           >
-            <span className="text-lg font-bold text-primary">
-              +{overflowCount} more live
-            </span>
-            <span className="text-[10px] font-medium text-red-400">
-              See all live →
-            </span>
+            {/* spacer to align the tile with the host row above each card */}
+            <div className="mb-2 h-6" />
+            <div className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-xl border border-[var(--state-live)]/30 bg-surface-card transition group-hover:border-[var(--state-live)]/50">
+              <span className="text-lg font-bold text-primary">
+                +{overflowCount} more
+              </span>
+              <span className="text-[10px] font-medium text-[var(--state-live)]">
+                See all live →
+              </span>
+            </div>
           </Link>
         )}
       </div>
