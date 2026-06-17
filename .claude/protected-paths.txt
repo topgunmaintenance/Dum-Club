@@ -1,0 +1,7 @@
+# Crown-jewel paths the agent may NEVER edit. Only Julian edits this file.
+# Keep it minimal — over-broad patterns create friction.
+*/migrations/*
+# Suggested additions (uncomment to activate):
+# *stripe*connect*
+# *commission*
+# *privy*

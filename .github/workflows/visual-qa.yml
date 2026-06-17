@@ -57,6 +57,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+
       - name: Check referenced storefront images exist on disk
         # Scans rendered frontend code for /images/<dir>/<file>
         # paths and fails fast if any are missing from
