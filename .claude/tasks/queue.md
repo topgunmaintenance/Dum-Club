@@ -28,7 +28,7 @@ System in CLAUDE.md.
 11. [x] merchant-light-and-square-cleanup — `feature/merchant-light-and-square-cleanup` · 2026-05-10
 12. [x] dashboard-and-hub-light          — `feature/dashboard-and-hub-light` · 2026-05-10
 13. [x] homepage-live-rail               — `feature/homepage-live-rail` · 2026-06-12
-14. [ ] live-started-at
+14. [x] live-started-at                  — `feature/live-started-at` · 2026-06-18 (migration 084 authored by operator)
 
 ## Notes
 
