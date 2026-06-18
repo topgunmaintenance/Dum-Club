@@ -105,6 +105,10 @@ type Project = {
     | string
     | null;
   is_live?: boolean;
+  // Real broadcast start (migration 084), UTC ISO 8601. Powers the storefront
+  // "Live for H:MM" banner timer. NULL/absent on pre-column streams -> no
+  // timer, exactly as before.
+  live_started_at?: string | null;
   stream_url?: string | null;
   pinned_offer_id?: string | null;
   active_auction_id?: string | null;
@@ -637,6 +641,10 @@ export default function ProjectPage() {
   }, []);
 
   const [project, setProject] = useState<Project | null>(null);
+  // "Live for H:MM" — elapsed since the broadcast started (migration 084),
+  // computed from project.live_started_at and ticked client-side. Null when
+  // not live or the column is absent (pre-084 stream) -> the banner omits it.
+  const [liveFor, setLiveFor] = useState<string | null>(null);
   const [projectName, setProjectName] = useState("DUM Club Business");
   // Pin-offer feedback state. pinningOfferId tracks which chip is
   // currently in flight (or "__unpin__" when clearing); pinError
@@ -2656,6 +2664,29 @@ export default function ProjectPage() {
     return () => clearInterval(iv);
   }, [auction?.id, auction?.status, auction?.ends_at]);
 
+  // "Live for H:MM" banner timer. Elapsed since project.live_started_at
+  // (migration 084), recomputed every second. live_started_at can arrive
+  // space-separated with a 2-digit offset from PostgREST, so normalize to
+  // ISO 8601 before Date.parse (same care as the pin countdown) or strict
+  // engines read it as NaN. No live_started_at (pre-084 stream) clears the
+  // label so the banner renders exactly as before.
+  useEffect(() => {
+    if (!project?.is_live || !project?.live_started_at) { setLiveFor(null); return; }
+    const iso = project.live_started_at
+      .replace(" ", "T")
+      .replace(/(\.\d{3})\d+/, "$1")
+      .replace(/([+-]\d{2})$/, "$1:00");
+    const startMs = Date.parse(iso);
+    if (Number.isNaN(startMs)) { setLiveFor(null); return; }
+    function tick() {
+      const mins = Math.max(0, Math.floor((Date.now() - startMs) / 60000));
+      setLiveFor(`${Math.floor(mins / 60)}:${(mins % 60).toString().padStart(2, "0")}`);
+    }
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [project?.is_live, project?.live_started_at]);
+
   // Poll auction state every 3 seconds while active
   useEffect(() => {
     if (!auction || auction.status !== "active") return;
@@ -4307,10 +4338,9 @@ return (
                (Q1, was buried inside the bouncing toast), the viewer
                count (Q2, was scoped to LiveChatIVS), and the rewards
                pill (Q8, was zinc-on-zinc and easy to miss). All real
-               data; nothing fabricated. The Q3 "Live for HH:MM"
-               since-timer is intentionally absent. it requires a
-               backend `live_started_at` field; client-side approx.
-               would mislead late-joiners. */}
+               data; nothing fabricated. The Q3 "Live for H:MM" timer
+               is now real too — computed from projects.live_started_at
+               (migration 084), not a client-side approximation. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-[var(--state-live)]/30 bg-state-live/[0.06] px-4 py-2.5 sm:px-5 sm:py-3">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="relative flex h-3 w-3">
@@ -4319,6 +4349,14 @@ return (
               </span>
               <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-state-live">Live</span>
               <span className="text-xs sm:text-sm text-secondary truncate">{projectName}</span>
+              {/* Q3. "Live for H:MM" — real elapsed since live_started_at
+                  (migration 084). Hidden until the field exists so a
+                  pre-084 stream looks exactly as before. */}
+              {liveFor && (
+                <span className="rounded-full border border-default bg-surface-card px-2 py-0.5 text-[10px] font-mono text-secondary">
+                  Live for {liveFor}
+                </span>
+              )}
               {/* Q2. viewer count (real, from existing WebSocket) */}
               {liveViewerCount > 0 && (
                 <span className="rounded-full border border-default bg-surface-card px-2 py-0.5 text-[10px] font-mono text-secondary">

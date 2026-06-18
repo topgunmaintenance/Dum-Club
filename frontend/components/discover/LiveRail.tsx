@@ -17,10 +17,10 @@
  *
  * Card cap: at most MAX_LIVE_CARDS cards render; past that, one
  * overflow card links to /discover?live=1 (the discover page
- * already reads live=1 and switches to live-only). Ordering
- * inherits the projects prop as-is; most-recently-live-first
- * needs projects.live_started_at and ships with the queued
- * live-started-at task, not here.
+ * already reads live=1 and switches to live-only). Ordering is
+ * most-recently-live-first by projects.live_started_at DESC
+ * (migration 084); rows with no live_started_at (went live before
+ * the column existed) sort last, keeping their feed-order position.
  */
 
 import { useState } from "react";
@@ -44,8 +44,29 @@ const MAX_LIVE_CARDS = 12;
 // are live.
 const MAX_AUTOPLAY_PREVIEWS = 2;
 
+// Parse projects.live_started_at (Postgres timestamptz) to epoch ms for
+// ordering. Normalizes the space-separated / 2-digit-offset form PostgREST
+// can return (e.g. "2026-06-17 03:04:59.07+00") to ISO 8601 before Date.parse
+// — strict engines (Safari) otherwise read it as NaN. Missing or unparseable
+// sorts last (-Infinity, so a DESC sort drops it to the bottom).
+function liveStartedMs(p: Project): number {
+  const raw = p.live_started_at;
+  if (!raw) return -Infinity;
+  const iso = raw
+    .replace(" ", "T")
+    .replace(/(\.\d{3})\d+/, "$1")
+    .replace(/([+-]\d{2})$/, "$1:00");
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? -Infinity : ms;
+}
+
 export function LiveRail({ projects }: { projects: Project[] }) {
-  const liveProjects = projects.filter((p) => p.is_live === true);
+  // Most-recently-live first (migration 084). Null-safe: a missing
+  // live_started_at resolves to -Infinity, so pre-column live rows sort to
+  // the bottom and keep their relative feed-order.
+  const liveProjects = projects
+    .filter((p) => p.is_live === true)
+    .sort((a, b) => liveStartedMs(b) - liveStartedMs(a));
   const visibleProjects = liveProjects.slice(0, MAX_LIVE_CARDS);
   const overflowCount = liveProjects.length - visibleProjects.length;
   // Project IDs whose <img> failed to load. We keep this at the rail

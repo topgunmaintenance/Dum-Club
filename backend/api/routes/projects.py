@@ -2502,6 +2502,10 @@ async def go_live(
     update_fields: dict = {
         "is_live": True,
         "live_provider": body.provider,
+        # Real broadcast start (migration 084) — same field ivs.py sets on the
+        # IVS path. Drives LiveRail most-recently-live ordering + the storefront
+        # "Live for H:MM" timer. Not cleared on end (next go-live overwrites).
+        "live_started_at": datetime.now(timezone.utc).isoformat(),
         # Bump updated_at so the Phase 0 startup sweep's NULL-heartbeat /
         # old-updated_at heuristic doesn't clip this brand-new stream
         # before the first /api/ivs/heartbeat poll writes last_heartbeat_at.

@@ -34,6 +34,10 @@ export type Project = {
   profile_strength?: number | null;
   sort_order?: number | null;
   is_live?: boolean;
+  // UTC timestamp set when a broadcast starts (migration 084). Powers the
+  // LiveRail most-recently-live-first ordering. NULL/absent on streams that
+  // went live before the column existed — those sort last (feed-order kept).
+  live_started_at?: string | null;
   live_playback_id?: string | null;
   live_provider?: string | null;
   // Canonical category from the seeded `categories` table

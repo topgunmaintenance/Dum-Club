@@ -357,6 +357,10 @@ async def api_create_stage(
         "ivs_stage_id": fresh_id,
         "live_provider": "ivs_realtime",
         "is_live": True,
+        # Real broadcast start (migration 084) — drives LiveRail most-recently-
+        # live ordering + the storefront "Live for H:MM" timer. Set on every
+        # go-live; not cleared on end (the next go-live overwrites it).
+        "live_started_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", project_uuid).execute()
     print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
