@@ -6,7 +6,7 @@
  * Pass 1 strict rules:
  * - No profile strength, no rankings, no Top N
  * - No ratings, sold counts, distances, or DUM points
- * - No Mux autoplay (thumbnail + badge only)
+ * - No Mux autoplay (image-forward cover banner + badge only)
  * - Card does not render if offersCount === 0
  */
 
@@ -91,6 +91,16 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   useEffect(() => {
     setLogoSrc(initialLogo);
   }, [initialLogo]);
+  // coverSrc mirrors business_profile.cover_image_url (already on the
+  // /api/projects/public feed). It leads the card banner when present; a
+  // failed load resets to null and the banner falls back to the logo, then
+  // the emoji+gradient — same recycle-safe pattern as logoSrc, and same
+  // Rules-of-Hooks reason for living above the early-return guard.
+  const initialCover = cleanLogoUrl(project.business_profile?.cover_image_url);
+  const [coverSrc, setCoverSrc] = useState<string | null>(initialCover);
+  useEffect(() => {
+    setCoverSrc(initialCover);
+  }, [initialCover]);
 
   // Card should not render without offers (filtered upstream by
   // filterProjects + isDiscoverable, but kept as a defensive guard).
@@ -143,15 +153,26 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
             : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
-        {/* Thumbnail area — merchant logo when supplied, gradient + emoji
-            fallback for every existing merchant who hasn't uploaded one.
-            Backwards-compat: a null logo_url renders the exact same
-            avatar this card showed before P3. */}
+        {/* Cover banner (P1.1) — image-forward, full-bleed 16:9 at the top of
+            the card like a Whatnot listing. Source priority: merchant cover
+            photo -> logo -> gradient + emoji. Each <img> resets to null on
+            error so a broken/missing CDN asset degrades to the next source;
+            a merchant with neither a cover nor a logo renders the exact same
+            gradient + emoji this card showed before — backwards compatible. */}
         <div
-          className="mb-4 flex h-20 items-center justify-center overflow-hidden rounded-lg"
-          style={logoSrc ? undefined : { background: idGradient(project.id) }}
+          className="relative -mx-5 -mt-5 mb-4 aspect-video overflow-hidden rounded-t-xl sm:-mx-6 sm:-mt-6"
+          style={!coverSrc && !logoSrc ? { background: idGradient(project.id) } : undefined}
         >
-          {logoSrc ? (
+          {coverSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverSrc}
+              alt={`${project.title || project.name || "Business"} cover`}
+              loading="lazy"
+              onError={() => setCoverSrc(null)}
+              className="block h-full w-full object-cover"
+            />
+          ) : logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoSrc}
@@ -161,7 +182,27 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
               className="block h-full w-full object-cover"
             />
           ) : (
-            <span className="text-3xl">{emoji}</span>
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-5xl">{emoji}</span>
+            </div>
+          )}
+
+          {/* Seller avatar chip — shown only when a cover photo leads the
+              banner, so the seller's logo stays visible over a product/hero
+              image (Whatnot seller identity). Skipped when the logo IS the
+              banner so it never renders twice. onError clears logoSrc, which
+              also hides this chip. */}
+          {coverSrc && logoSrc && (
+            <span className="absolute bottom-2 left-2 inline-flex h-9 w-9 overflow-hidden rounded-full border-2 border-surface-card bg-surface-card shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoSrc}
+                alt=""
+                loading="lazy"
+                onError={() => setLogoSrc(null)}
+                className="h-full w-full object-cover"
+              />
+            </span>
           )}
         </div>
 
