@@ -292,22 +292,28 @@ export default function DiscoverPage() {
           onReset={resetFilters}
         />
 
-        {/* Location filter: Near me + city. Degrades gracefully — the city
-            select only appears when storefronts have shared a city, and
-            Near me shows a note when none have coordinates yet. */}
-        <div className="mb-6 flex flex-wrap items-center gap-2">
+        {/* Local-near-you bar — local-first framing (our edge over Whatnot,
+            which has no local angle). Real browser geolocation + the existing
+            city filter; degrades to "showing everything" when no storefront has
+            shared a location yet. A ZIP-radius input waits on merchant location
+            data (mig 079 columns exist but are unpopulated) — no dead input. */}
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-default bg-surface-card px-4 py-3">
+          <span className="flex items-center gap-1.5 text-sm font-bold text-primary">
+            <span aria-hidden="true" className="text-base">📍</span>
+            Local near you
+          </span>
           <button
             type="button"
             onClick={toggleNearMe}
             aria-pressed={nearMe}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
               nearMe
-                ? "border-brand-teal/40 bg-brand-teal-soft text-brand-teal"
-                : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
+                ? "border-brand-teal bg-brand-teal text-black"
+                : "border-brand-teal/40 bg-brand-teal-soft text-brand-teal hover:bg-brand-teal hover:text-black"
             }`}
           >
             <span aria-hidden="true">📍</span>
-            {nearMe ? `Near me · ${NEAR_ME_RADIUS_MILES} mi` : "Near me"}
+            {nearMe ? `Near me · ${NEAR_ME_RADIUS_MILES} mi` : "Use my location"}
           </button>
 
           {cities.length > 0 && (
