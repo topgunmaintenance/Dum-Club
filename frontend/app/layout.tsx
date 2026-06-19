@@ -5,6 +5,7 @@ import { Caveat } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "../components/AppProviders";
 import { SiteChrome } from "../components/SiteChrome";
+import { FoundingModal } from "../components/FoundingModal";
 
 // Caveat is loaded for the founder-note signature line only. Subset
 // kept to "latin", weights 400 + 600, swap display so the page never
@@ -61,6 +62,9 @@ export default function RootLayout({
               current pathname. /embed/* routes get a bare shell so
               the merchant's iframe shows pure DUM Club content. */}
           <SiteChrome>{children}</SiteChrome>
+          {/* First-visit merchant-recruitment pop; self-gates to "/" and shows
+              once per visitor (see FoundingModal). */}
+          <FoundingModal />
         </AppProviders>
       </body>
     </html>
