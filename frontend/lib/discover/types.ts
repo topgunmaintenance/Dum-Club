@@ -40,6 +40,10 @@ export type Project = {
   live_started_at?: string | null;
   live_playback_id?: string | null;
   live_provider?: string | null;
+  // Scheduled go-live (migration 064), UTC ISO 8601. Powers the Discover
+  // "Upcoming Live" rail countdown. NULL/absent = no scheduled show; rides the
+  // existing SELECT * feed, no backend change.
+  scheduled_live_at?: string | null;
   // Canonical category from the seeded `categories` table
   // (migration 035). NULL on every pre-mig project; the discover
   // and storefront UIs fall back to keyword classification when
