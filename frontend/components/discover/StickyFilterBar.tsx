@@ -9,8 +9,8 @@
  * "Nearest" sort hidden in Pass 1 (no geo).
  */
 
-import { DISCOVER_CATEGORIES } from "../../lib/discover/filters";
 import type { DiscoverCategoryId, DiscoverSortId, PriceFilter } from "../../lib/discover/types";
+import { CategoryTabs } from "./CategoryTabs";
 
 type StickyFilterBarProps = {
   searchQuery: string;
@@ -45,42 +45,12 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
         />
       </div>
 
-      {/* Category chips (mobile) / dropdown (desktop) + filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Category. chips on mobile, dropdown on desktop. */}
-        <div className="flex w-full min-w-0 gap-1 overflow-x-auto sm:hidden sm:w-auto [&::-webkit-scrollbar]:hidden">
-          {DISCOVER_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => props.setActiveCategory(cat.id)}
-              className={`flex flex-shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] transition ${
-                props.activeCategory === cat.id
-                  ? "bg-brand-teal text-brand-navy"
-                  : "text-secondary hover:text-primary"
-              }`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
-        </div>
+      {/* Category tabs — horizontal, scrollable, all viewports (Whatnot-style),
+          replacing the old mobile chip row + desktop dropdown. */}
+      <CategoryTabs active={props.activeCategory} onSelect={props.setActiveCategory} />
 
-        {/* Category dropdown (desktop) */}
-        <label className="hidden items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-secondary sm:flex">
-          Category
-          <select
-            value={props.activeCategory}
-            onChange={(e) => props.setActiveCategory(e.target.value as DiscoverCategoryId)}
-            className="rounded-lg border border-default bg-surface-card px-2 py-1.5 text-[11px] text-primary outline-none transition hover:border-strong focus:border-brand-teal"
-          >
-            {DISCOVER_CATEGORIES.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.icon} {cat.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
+      {/* Filters row: sort, price, live, deals, reset */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {/* Sort */}
         <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-secondary">
           Sort
