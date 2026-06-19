@@ -122,17 +122,21 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
               ? "cursor-not-allowed border-default text-muted"
               : props.liveOnly
                 ? "border-[var(--state-live)]/40 bg-[var(--state-live)]/10 text-state-live"
-                : "border-default text-secondary hover:border-strong hover:text-primary"
+                : "border-[var(--state-live)]/30 text-state-live hover:border-[var(--state-live)]/50"
           }`}
         >
           <span className="relative flex h-1.5 w-1.5">
-            {props.liveOnly && props.hasAnyLive ? (
+            {/* Pulse red whenever live content exists (real hasAnyLive), not
+                only when the filter is active — so the live signal draws the
+                eye and invites the click, Whatnot-style. Greys out only when
+                nothing is actually live (never a fabricated pulse). */}
+            {props.hasAnyLive ? (
               <>
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-state-live" />
               </>
             ) : (
-              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${props.hasAnyLive ? "bg-secondary" : "bg-muted"}`} />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-muted" />
             )}
           </span>
           Live now
