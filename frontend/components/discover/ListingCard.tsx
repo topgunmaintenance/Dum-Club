@@ -6,7 +6,7 @@
  * Pass 1 strict rules:
  * - No profile strength, no rankings, no Top N
  * - No ratings, sold counts, distances, or DUM points
- * - No Mux autoplay (image-forward cover banner + badge only)
+ * - Portrait, seller-led media card (no Mux autoplay on the grid)
  * - Card does not render if offersCount === 0
  */
 
@@ -92,8 +92,8 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
     setLogoSrc(initialLogo);
   }, [initialLogo]);
   // coverSrc mirrors business_profile.cover_image_url (already on the
-  // /api/projects/public feed). It leads the card banner when present; a
-  // failed load resets to null and the banner falls back to the logo, then
+  // /api/projects/public feed). It leads the portrait media when present; a
+  // failed load resets to null and the media falls back to the logo, then
   // the emoji+gradient — same recycle-safe pattern as logoSrc, and same
   // Rules-of-Hooks reason for living above the early-return guard.
   const initialCover = cleanLogoUrl(project.business_profile?.cover_image_url);
@@ -113,22 +113,21 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   const emoji = getProjectEmoji(project, index);
   const accent = getAccent(index);
   // categoryId still drives the CTA branch below (auto/home/beauty/etc).
-  // categoryLabel is now the SOURCE-OF-TRUTH human label: prefers the
-  // canonical seeded category_id, falls back to the keyword classifier
-  // so pre-mig-035 projects keep their existing badge.
+  // categoryLabel is the SOURCE-OF-TRUTH human label: prefers the canonical
+  // seeded category_id, falls back to the keyword classifier so pre-mig-035
+  // projects keep their existing badge.
   const categoryId = classifyProject(project);
   const categoryLabel = resolveCategoryLabel(project);
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
+  const businessName = project.title || project.name || "Untitled";
 
   // Context-aware CTA per Phase 1 DC-2 of the Discover plan. Service
   // categories prompt for a quote; restaurants get an order CTA;
   // entertainment maps to tickets; everything else lands on the
-  // generic shop-now. The live CTA/badge moved to LiveRail — the
-  // single live surface — so a live seller no longer renders twice
-  // with live treatment (rail + grid). The card still deep-links
-  // into the stream via the ?live=1 href above.
+  // generic shop-now. The live CTA/badge lives in LiveRail — the single
+  // live surface — so a live seller never renders twice with live treatment.
   const ctaLabel = categoryId === "restaurants"
       ? "Order now →"
       : categoryId === "entertainment"
@@ -147,54 +146,19 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
   return (
     <Link href={href} className="group block">
       <div
-        className={`flex h-full flex-col rounded-xl border bg-surface-card p-5 shadow-sm transition-all duration-200 sm:p-6 ${
+        className={`flex h-full flex-col rounded-xl border bg-surface-card p-3 shadow-sm transition-all duration-200 sm:p-3.5 ${
           isPulsing
             ? "border-brand-teal shadow-[0_0_16px_rgba(20,184,154,0.18)]"
             : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
-        {/* Cover banner (P1.1) — image-forward, full-bleed 16:9 at the top of
-            the card like a Whatnot listing. Source priority: merchant cover
-            photo -> logo -> gradient + emoji. Each <img> resets to null on
-            error so a broken/missing CDN asset degrades to the next source;
-            a merchant with neither a cover nor a logo renders the exact same
-            gradient + emoji this card showed before — backwards compatible. */}
-        <div
-          className="relative -mx-5 -mt-5 mb-4 aspect-video overflow-hidden rounded-t-xl sm:-mx-6 sm:-mt-6"
-          style={!coverSrc && !logoSrc ? { background: idGradient(project.id) } : undefined}
-        >
-          {coverSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coverSrc}
-              alt={`${project.title || project.name || "Business"} cover`}
-              loading="lazy"
-              onError={() => setCoverSrc(null)}
-              className="block h-full w-full object-cover"
-            />
-          ) : logoSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoSrc}
-              alt={`${project.title || project.name || "Business"} logo`}
-              loading="lazy"
-              onError={() => setLogoSrc(null)}
-              className="block h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="text-5xl">{emoji}</span>
-            </div>
-          )}
-
-          {/* Seller avatar chip — shown only when a cover photo leads the
-              banner, so the seller's logo stays visible over a product/hero
-              image (Whatnot seller identity). Skipped when the logo IS the
-              banner so it never renders twice. onError clears logoSrc, which
-              also hides this chip. */}
-          {coverSrc && logoSrc && (
-            <span className="absolute bottom-2 left-2 inline-flex h-9 w-9 overflow-hidden rounded-full border-2 border-surface-card bg-surface-card shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* Seller row — avatar + business name + verified, ABOVE the media
+            (Whatnot seller identity; folds in the deferred P2.5). Avatar reuses
+            logoSrc with the emoji fallback; onError clears it. */}
+        <div className="mb-2.5 flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-surface-muted">
+            {logoSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoSrc}
                 alt=""
@@ -202,35 +166,16 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
                 onError={() => setLogoSrc(null)}
                 className="h-full w-full object-cover"
               />
-            </span>
-          )}
-        </div>
-
-        {/* Header: category pill. resolveCategoryLabel() always returns
-            a string, so the pill always renders — no more
-            "BUSINESS · BUSINESS" generic dead-end. The LIVE NOW badge
-            that rendered alongside it moved to LiveRail (the single
-            live surface) — see the CTA comment above. */}
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <span
-            className="rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.08em]"
-            style={{ borderColor: accent, color: accent }}
-          >
-            {categoryLabel}
+            ) : (
+              <span className="text-sm">{emoji}</span>
+            )}
           </span>
-        </div>
-
-        {/* Title — verified merchants get the brand-teal check pill.
-            line-clamp-2 instead of truncate so multi-word names like
-            "Topgun Maintenance" wrap to a second line rather than
-            getting chopped mid-word in the marketplace grid. */}
-        <div className="flex items-start gap-1.5">
-          <h3 className="line-clamp-2 text-base font-bold text-primary sm:text-lg">
-            {project.title || project.name || "Untitled"}
-          </h3>
+          <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-primary">
+            {businessName}
+          </span>
           {project.verified && (
             <span
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-default bg-brand-teal-soft px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-brand-navy"
+              className="inline-flex flex-shrink-0 items-center gap-0.5 rounded-full border border-default bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-brand-navy"
               title="Verified merchant"
               aria-label="Verified merchant"
             >
@@ -242,39 +187,82 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
           )}
         </div>
 
-        {/* Description */}
-        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-secondary">
-          {project.description || "No description yet."}
-        </p>
+        {/* Portrait media tile (4:5) — cover photo -> logo -> gradient + emoji.
+            Bigger and more immersive than the prior 16:9 (Whatnot tiles are
+            portrait). Each <img> degrades to the next source on error; a
+            merchant with neither a cover nor a logo renders the gradient + emoji
+            exactly as before. */}
+        <div
+          className="relative mb-2.5 aspect-[4/5] overflow-hidden rounded-lg"
+          style={!coverSrc && !logoSrc ? { background: idGradient(project.id) } : undefined}
+        >
+          {coverSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverSrc}
+              alt={`${businessName} cover`}
+              loading="lazy"
+              onError={() => setCoverSrc(null)}
+              className="block h-full w-full object-cover"
+            />
+          ) : logoSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoSrc}
+              alt={`${businessName} logo`}
+              loading="lazy"
+              onError={() => setLogoSrc(null)}
+              className="block h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-6xl">{emoji}</span>
+            </div>
+          )}
 
-        {/* Badges */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {offers > 0 && (
-            <span className="rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
-              {offers} offer{offers > 1 ? "s" : ""}
-            </span>
-          )}
-          {hasSubscription(project) && (
-            <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
-              Subscription
-            </span>
-          )}
+          {/* Deal ribbon — real promo_copy only (urgency, Whatnot-style). */}
           {project.promo_copy && (
-            <span className="rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
-              Promo
+            <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-navy shadow-sm">
+              Deal
             </span>
           )}
         </div>
 
+        {/* Category eyebrow (colored) */}
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: accent }}>
+          {categoryLabel}
+        </span>
+
+        {/* Description — the "what they do" line */}
+        <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-secondary">
+          {project.description || "No description yet."}
+        </p>
+
+        {/* Secondary signals — offers count + subscription (kept, compact) */}
+        {(offers > 0 || hasSubscription(project)) && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {offers > 0 && (
+              <span className="rounded-full border border-default bg-surface-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
+                {offers} offer{offers > 1 ? "s" : ""}
+              </span>
+            )}
+            {hasSubscription(project) && (
+              <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-brand-navy">
+                Subscription
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Footer: price (primary) + CTA / timestamp (secondary). */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-default pt-4 mt-4">
+        <div className="mt-4 flex items-end justify-between gap-3 border-t border-default pt-3">
           <div className="flex flex-col">
             {price != null ? (
               <>
                 <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary">
                   From
                 </span>
-                <span className="font-mono text-lg font-extrabold text-brand-navy">
+                <span className="font-mono text-base font-extrabold text-brand-navy">
                   ${price < 1 ? price.toFixed(2) : Math.round(price)}
                 </span>
               </>
