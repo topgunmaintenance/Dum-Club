@@ -23,7 +23,7 @@
  * the column existed) sort last, keeping their feed-order position.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Project } from "../../lib/discover/types";
@@ -60,6 +60,17 @@ function liveStartedMs(p: Project): number {
   return Number.isNaN(ms) ? -Infinity : ms;
 }
 
+// "H:MM" elapsed since the broadcast started, for the LIVE pill (migration
+// 084). Reuses liveStartedMs for the same Safari-safe timestamp parsing.
+// Returns null when live_started_at is absent/unparseable (pre-column stream)
+// so the pill simply shows "LIVE" with no timer — never a fabricated time.
+function liveForLabel(p: Project, nowMs: number): string | null {
+  const startMs = liveStartedMs(p);
+  if (!Number.isFinite(startMs)) return null;
+  const mins = Math.max(0, Math.floor((nowMs - startMs) / 60000));
+  return `${Math.floor(mins / 60)}:${(mins % 60).toString().padStart(2, "0")}`;
+}
+
 export function LiveRail({ projects }: { projects: Project[] }) {
   // Most-recently-live first (migration 084). Null-safe: a missing
   // live_started_at resolves to -Infinity, so pre-column live rows sort to
@@ -76,6 +87,15 @@ export function LiveRail({ projects }: { projects: Project[] }) {
   // card flips back to the emoji avatar — same backwards-compat
   // behavior as ListingCard's per-card state.
   const [failedLogos, setFailedLogos] = useState<Set<string>>(() => new Set());
+  // Ticking clock for the "LIVE · H:MM" pill timers. One interval for the
+  // whole rail (not per card); only armed while something is live. Must sit
+  // above the early return below to keep hook order stable (Rules of Hooks).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (liveProjects.length === 0) return;
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [liveProjects.length]);
   if (liveProjects.length === 0) return null;
 
   return (
@@ -114,6 +134,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
           const description = project.description?.trim() || "";
           const hasDescription = description.length > 0;
           const cardTitle = hasDescription ? description : businessName;
+          const liveFor = liveForLabel(project, now);
 
           return (
             <Link
@@ -170,6 +191,17 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                   <span className="text-[10px] font-bold uppercase tracking-wide text-white">
                     LIVE
                   </span>
+                  {/* Real elapsed since go-live (migration 084). Hidden when
+                      live_started_at is absent so a pre-column stream shows a
+                      plain "LIVE" pill — never a fabricated time. */}
+                  {liveFor && (
+                    <span
+                      className="text-[10px] font-bold text-white/90"
+                      title={`Live for ${liveFor}`}
+                    >
+                      · {liveFor}
+                    </span>
+                  )}
                 </div>
               </div>
 
