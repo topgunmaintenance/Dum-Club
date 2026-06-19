@@ -45,6 +45,7 @@ import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
 import { LiveRail } from "../../components/discover/LiveRail";
+import { UpcomingRail } from "../../components/discover/UpcomingRail";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 import { EmptyState } from "../../components/discover/EmptyState";
 import { MerchantStrip } from "../../components/discover/MerchantStrip";
@@ -335,6 +336,10 @@ export default function DiscoverPage() {
 
         {/* Live Rail */}
         <LiveRail projects={discoverable} />
+
+        {/* Upcoming Live rail — scheduled shows (real scheduled_live_at).
+            Renders only when a merchant has a future show booked. */}
+        <UpcomingRail projects={discoverable} />
 
         {/* Main grid */}
         <div id="grid">
