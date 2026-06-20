@@ -55,6 +55,12 @@ export type Project = {
   business_profile?: {
     logo_url?: string | null;
     cover_image_url?: string | null;
+    // Storefront location (migration 079), now selected onto the feed so the
+    // Discover "Near me" + city filter can read it. NULL until a merchant has
+    // shared a location — the filter degrades gracefully (lib/discover/location).
+    city?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
 };
 

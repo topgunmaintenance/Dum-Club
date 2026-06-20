@@ -11,11 +11,20 @@
 
 export type LatLng = { lat: number; lng: number };
 
+// Location lives on the joined business_profile (migration 079), but older
+// callers/shapes may carry it top-level — read either, preferring the nested
+// business_profile the /api/projects/public feed now selects.
+function bp(p: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
+  const v = (p as { business_profile?: unknown } | null | undefined)?.business_profile;
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+}
+
 /** Read validated coordinates off a project, or null when absent/invalid. */
 export function getCoords(p: Record<string, unknown> | null | undefined): LatLng | null {
   if (!p) return null;
-  const lat = Number((p as { latitude?: unknown }).latitude);
-  const lng = Number((p as { longitude?: unknown }).longitude);
+  const b = bp(p);
+  const lat = Number((p as { latitude?: unknown }).latitude ?? (b?.latitude as unknown));
+  const lng = Number((p as { longitude?: unknown }).longitude ?? (b?.longitude as unknown));
   if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
     return { lat, lng };
   }
@@ -24,7 +33,8 @@ export function getCoords(p: Record<string, unknown> | null | undefined): LatLng
 
 /** Read a non-empty city string off a project, or null. */
 export function getCity(p: Record<string, unknown> | null | undefined): string | null {
-  const c = String((p as { city?: unknown })?.city ?? "").trim();
+  const b = bp(p);
+  const c = String((p as { city?: unknown })?.city ?? (b?.city as unknown) ?? "").trim();
   return c.length ? c : null;
 }
 
