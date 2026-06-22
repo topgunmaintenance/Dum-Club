@@ -553,6 +553,26 @@ def send_payment_failed_notice(merchant_email: str, business_name: str, grace_en
     return _send(merchant_email, subject, html)
 
 
+_LEGAL_SUFFIXES = {"llc": "LLC", "llp": "LLP", "inc": "Inc", "ltd": "Ltd", "co": "Co", "corp": "Corp"}
+
+
+def _display_business_name(raw: str) -> str:
+    """Tidy a business name for display: capitalize all-lowercase words and
+    uppercase legal suffixes (llc -> LLC), leaving already-cased brand words
+    (iPhone, McName) untouched. Cosmetic best-effort for merchant-facing email
+    so a stored "topgun maintenance llc" reads "Topgun Maintenance LLC"."""
+    out = []
+    for w in raw.split():
+        low = w.lower()
+        if low in _LEGAL_SUFFIXES:
+            out.append(_LEGAL_SUFFIXES[low])
+        elif w == low:  # entirely lowercase -> capitalize
+            out.append(w.capitalize())
+        else:  # already has caps (brand / mixed) -> leave as-is
+            out.append(w)
+    return " ".join(out)
+
+
 def send_weekly_merchant_recap(
     merchant_email: str,
     business_name: str,
@@ -582,7 +602,8 @@ def send_weekly_merchant_recap(
     """
     if not merchant_email:
         return False
-    name = (business_name or "there").strip() or "there"
+    raw_name = (business_name or "").strip()
+    name = _display_business_name(raw_name) if raw_name else "there"
     subject = f"Your week on DUM Club ({week_label})"
 
     # Build the bullet list of last week's numbers. Each row is opt-in
@@ -600,7 +621,7 @@ def send_weekly_merchant_recap(
     if sales_count > 0:
         plural = "sale" if sales_count == 1 else "sales"
         lines.append(
-            f"<strong>{sales_count}</strong> {plural} totalling "
+            f"<strong>{sales_count}</strong> {plural} totaling "
             f"<strong>${gmv_usd:,.2f}</strong>"
         )
     if top_offer_title:
@@ -626,7 +647,7 @@ def send_weekly_merchant_recap(
     # "had a slow week" so the email never feels tone-deaf.
     if sales_count > 0:
         close = (
-            "Nice work. Keep the weekly rhythm going — customers who "
+            "Nice work. Keep the weekly rhythm going. Customers who "
             "tap Remind me come back on their own."
         )
     elif lives_count > 0:
