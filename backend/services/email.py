@@ -125,7 +125,7 @@ def send_seller_new_order(seller_email: str, offer_title: str, amount_usd: float
     if not seller_email:
         print("[email] No seller email, skipping seller notification")
         return
-    subject = f"You made a sale 🔥 — {offer_title}"
+    subject = f"You made a sale 🔥 {offer_title}"
     html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
@@ -183,7 +183,7 @@ def send_buyer_fulfilled(buyer_email: str, offer_title: str):
     if not buyer_email:
         print("[email] No buyer email, skipping fulfillment notification")
         return
-    subject = f"Order fulfilled — {offer_title}"
+    subject = f"Order fulfilled: {offer_title}"
     html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
@@ -280,12 +280,12 @@ OUTREACH_TEMPLATES: dict = {
         "body": (
             "Hi {business_name},\n\n"
             "How much are you losing in fees every month?\n\n"
-            "We built DUM Club — a platform where you pay a flat monthly "
+            "We built DUM Club, a platform where you pay a flat monthly "
             "subscription plus just a 1.5% sales fee per order. Whatnot takes "
             "8% per sale; DoorDash takes 15-30%. DUM Club is industry-low, "
             "with customer loyalty rewards built in automatically.\n\n"
             "We already set up a store page for you. Want access?\n\n"
-            "We're onboarding our first 100 founding merchants — 60 days "
+            "We're onboarding our first 100 founding merchants. 60 days "
             "free, then locked-in founding pricing for life. Spots are "
             "filling fast.\n\n"
             "Check what we built for you:\n"
@@ -299,7 +299,7 @@ OUTREACH_TEMPLATES: dict = {
         "body": (
             "Hi {business_name},\n\n"
             "Just circling back on your DUM Club store. Two days ago I "
-            "mentioned we already set one up for you — free forever as a "
+            "mentioned we already set one up for you, ready when you are, as a "
             "founding merchant.\n\n"
             "No credit card today. 60 days free, then a flat subscription "
             "plus a 1.5% sales fee per order (Whatnot takes 8%). Want a look?\n\n"
@@ -315,7 +315,7 @@ OUTREACH_TEMPLATES: dict = {
             "Hi {business_name},\n\n"
             "Your founding-merchant spot is still open. Once the 100 "
             "founding slots are filled, the plan shifts to the standard "
-            "tier — but founding members are free forever.\n\n"
+            "tier, but founding members keep founding pricing for life.\n\n"
             "Takes 60 seconds to claim.\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
@@ -324,7 +324,7 @@ OUTREACH_TEMPLATES: dict = {
         ),
     },
     "followup_day10": {
-        "subject": "Last ping — your DUM Club store",
+        "subject": "Last ping on your DUM Club store",
         "body": (
             "Hi {business_name},\n\n"
             "Last note from me on this. Your founding spot is still "
@@ -470,11 +470,11 @@ def send_trial_t_minus_14(merchant_email: str, business_name: str, plan_price_us
         return False
     subject = "Your free trial ends in 2 weeks"
     html = _trial_reminder_html(
-        headline=f"Hey {business_name or 'there'} — two weeks left in your free trial",
+        headline=f"Hey {business_name or 'there'}, two weeks left in your free trial",
         body_paragraphs=[
             f"Your 60-day free trial of DUM Club ends on <strong>{trial_end_date}</strong>.",
             f"After that, your plan will be <strong>${plan_price_usd}/month</strong> plus a 1.5% sales fee per order (industry-low; Whatnot takes 8%).",
-            "Add a payment method any time before then to keep your shop running with no break. If you do nothing, your plan pauses automatically — no surprise charges.",
+            "Add a payment method any time before then to keep your shop running with no break. If you do nothing, your plan pauses automatically. No surprise charges.",
         ],
         cta_label="Open my dashboard",
         cta_href=f"{_PLATFORM_URL}/dashboard",
@@ -503,7 +503,7 @@ def send_trial_t_minus_1(merchant_email: str, business_name: str, plan_price_usd
     """Sent 1 day before trial_ends_at."""
     if not merchant_email:
         return False
-    subject = "Your trial ends tomorrow — payment starts in 24 hours"
+    subject = "Your trial ends tomorrow. Payment starts in 24 hours"
     html = _trial_reminder_html(
         headline="Your trial ends tomorrow",
         body_paragraphs=[
@@ -525,7 +525,7 @@ def send_trial_conversion_confirmed(merchant_email: str, business_name: str, pla
         headline="You're in. Plan is active.",
         body_paragraphs=[
             f"Your free trial is over and your <strong>${plan_price_usd}/month</strong> plan is now running.",
-            "1.5% sales fee per paid order, deducted from your Stripe payout (industry-low — Whatnot takes 8%). Money still goes straight to your bank.",
+            "1.5% sales fee per paid order, deducted from your Stripe payout (industry-low; Whatnot takes 8%). Money still goes straight to your bank.",
             "Thanks for building with us.",
         ],
         cta_label="Open my dashboard",
