@@ -77,6 +77,7 @@ export default function MerchantPage() {
   const [bizDescription, setBizDescription] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
   // Tier selected on /pricing or /upgrade (CTA hrefs carry `?tier=`).
   // Empty string when the user landed on /merchant directly — backend
   // defaults to growth in that case. Read once on mount from the URL.
@@ -378,6 +379,7 @@ export default function MerchantPage() {
           description: bizDescription.trim(),
           location_city: city.trim() || null,
           location_state: state.trim() || null,
+          location_postal_code: zip.trim() || null,
           // Only include tier when one was selected via /pricing or
           // /upgrade. Omitting (null) lets the backend keep its
           // existing growth default for direct /merchant arrivals.
@@ -697,6 +699,34 @@ export default function MerchantPage() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-secondary">
+                  Where are you located? <span className="text-muted">(optional, helps local customers find you)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="City"
+                    className="min-w-0 flex-1 rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  />
+                  <input
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="ST"
+                    maxLength={2}
+                    className="w-16 rounded-xl border border-default bg-surface-card px-3 py-3 text-base uppercase text-primary placeholder:normal-case placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  />
+                  <input
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    placeholder="ZIP"
+                    inputMode="numeric"
+                    maxLength={5}
+                    className="w-24 rounded-xl border border-default bg-surface-card px-3 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  />
+                </div>
+              </div>
               <button
                 onClick={handleSignup}
                 disabled={saving || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
@@ -709,7 +739,7 @@ export default function MerchantPage() {
                   : "Create Merchant Account →"}
               </button>
               <p className="text-center text-[11px] text-secondary">
-                You can add your location and offers on the next step.
+                You can add your offers and go live on the next step.
               </p>
             </div>
           </div>
