@@ -640,6 +640,26 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             detail="We couldn't set up your account just now. Please try again in a moment, or contact support if it keeps happening.",
         )
 
+    # ── Business-profile location sync ────────────────────────────
+    # Mirror the merchant's city onto their linked business_profile so the
+    # Discover "Near me" / city filter (which reads business_profiles, not the
+    # merchants row) sees it, plus a geocoded centroid for distance ranking.
+    # Best-effort + wrapped + AFTER the critical insert, so a geocode/DB hiccup
+    # can never block signup. The static geocoder is a pure dict lookup (no
+    # network), so this stays instant.
+    try:
+        loc_city = (body.location_city or "").strip()
+        if bp_id and loc_city:
+            from services.geocode import geocode
+            bp_update: dict = {"city": loc_city}
+            coords = geocode(loc_city, body.location_state)
+            if coords:
+                bp_update["latitude"] = coords[0]
+                bp_update["longitude"] = coords[1]
+            supabase.table("business_profiles").update(bp_update).eq("id", bp_id).execute()
+    except Exception as exc:
+        print(f"[merchant/signup] business_profile location sync skipped: {exc!r}")
+
     # ── Storefront project auto-create ────────────────────────────
     # The /merchant launch checklist ("Add your first offer", "Paste the
     # snippet", "Go Live") all need a project row to attach to. Without
