@@ -69,6 +69,16 @@ GRACE_BEHIND = timedelta(minutes=15)
 # cron cadence so a single missed tick doesn't lose a reminder.
 WINDOW_AHEAD = timedelta(minutes=6)
 
+# "Follow this shop, ping me every time they go live" subscriptions are
+# stored under a far-future sentinel scheduled_for (see the live-reminders
+# route's GENERAL_SENTINEL = "9999-12-31..."). Unlike a one-shot reminder
+# for a specific scheduled show, a follow is a standing relationship: the
+# follower should be notified on EVERY go-live, not just the first. We
+# detect these by the 9999 year prefix, which survives whatever timestamp
+# format PostgREST hands back (ISO "9999-12-31T..." or "9999-12-31 ...").
+def _is_follow_subscription(scheduled_for) -> bool:
+    return bool(scheduled_for) and str(scheduled_for).startswith("9999")
+
 
 def _format_for_email(iso_str: str) -> str:
     """Format the snapshotted scheduled_for ISO string into something
@@ -192,6 +202,12 @@ def notify_project_live_now(project_id: str, supabase=None) -> dict:
     Unlike the cron, this ignores scheduled_for and notifies every unsent
     subscriber for the project — the show is literally starting now.
 
+    Recurring follows: a "follow this shop" subscription (stored under the
+    far-future GENERAL_SENTINEL scheduled_for) is re-armed after each send —
+    its sent_at is cleared so the follower is notified again on the next
+    go-live. One-shot reminders for a specific scheduled show keep their
+    stamp and fire at most once.
+
     Best-effort and exception-safe by contract: the caller is a live
     go-live request, which must never fail because of an email hiccup.
     Returns a counts dict for logging.
@@ -206,7 +222,7 @@ def notify_project_live_now(project_id: str, supabase=None) -> dict:
     try:
         subs = (
             sb.table("live_reminders")
-            .select("id, customer_email")
+            .select("id, customer_email, scheduled_for")
             .eq("project_id", project_id)
             .is_("sent_at", "null")
             .limit(1000)
@@ -269,6 +285,19 @@ def notify_project_live_now(project_id: str, supabase=None) -> dict:
             )
             if ok:
                 counts["sent"] += 1
+
+            # Follow subscriptions are recurring: clear the sent_at stamp so
+            # this follower is pinged again on the merchant's NEXT go-live.
+            # One-shot reminders for a specific scheduled show keep their
+            # stamp (at-most-once). We reset after the send regardless of
+            # success — a follower who missed this ping (Resend down) is
+            # simply re-eligible for the next show, which matches the
+            # standing-relationship semantics of a follow.
+            if _is_follow_subscription(row.get("scheduled_for")):
+                try:
+                    sb.table("live_reminders").update({"sent_at": None}).eq("id", rid).execute()
+                except Exception as exc:
+                    print(f"[live-reminders:now] follow re-arm failed row {rid}: {exc!r}")
         except Exception as exc:
             counts["errored"] += 1
             print(f"[live-reminders:now] row {rid} failed: {exc!r}")

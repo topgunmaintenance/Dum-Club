@@ -13,6 +13,8 @@ type ListingGridProps = {
   projects: Project[];
   marketByProject: Record<string, MarketSnapshot>;
   pulseId: string | null;
+  followerCounts?: Record<string, number>;
+  followingSet?: Set<string>;
 };
 
 function SkeletonCard() {
@@ -43,7 +45,7 @@ export function LoadingGrid({ count = 6 }: { count?: number }) {
   );
 }
 
-export function ListingGrid({ projects, marketByProject, pulseId }: ListingGridProps) {
+export function ListingGrid({ projects, marketByProject, pulseId, followerCounts, followingSet }: ListingGridProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map((project, index) => (
@@ -53,6 +55,8 @@ export function ListingGrid({ projects, marketByProject, pulseId }: ListingGridP
           index={index}
           marketSnapshot={marketByProject[project.id]}
           isPulsing={pulseId === project.id}
+          followerCount={followerCounts?.[project.id] ?? 0}
+          isFollowing={followingSet?.has(project.id) ?? false}
         />
       ))}
     </div>
