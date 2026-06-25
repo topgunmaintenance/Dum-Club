@@ -45,6 +45,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
+import { FollowedRail } from "../../components/discover/FollowedRail";
 import { LiveRail } from "../../components/discover/LiveRail";
 import { UpcomingRail } from "../../components/discover/UpcomingRail";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
@@ -291,6 +292,13 @@ export default function DiscoverPage() {
     })();
     return () => { cancelled = true; };
   }, [user, getToken]);
+  // The viewer's followed shops, drawn from the same feed (no extra fetch).
+  // Powers the "From shops you follow" strip atop the feed; empty for
+  // signed-out visitors, so the rail self-hides.
+  const followedProjects = useMemo(
+    () => (followingSet.size ? discoverable.filter((p) => followingSet.has(p.id)) : []),
+    [discoverable, followingSet],
+  );
   const hasAnyLive = useMemo(() => discoverable.some((p) => p.is_live === true), [discoverable]);
   const hasAnyPromo = useMemo(() => discoverable.some((p) => !!p.promo_copy), [discoverable]);
   const isFiltered =
@@ -385,6 +393,11 @@ export default function DiscoverPage() {
             </span>
           )}
         </div>
+
+        {/* From shops you follow — personalised strip, signed-in viewers with
+            at least one follow only (self-hides otherwise). Sits above the
+            global Live rail so a viewer's own shops lead the feed. */}
+        <FollowedRail projects={followedProjects} />
 
         {/* Live Rail */}
         <LiveRail projects={discoverable} />
