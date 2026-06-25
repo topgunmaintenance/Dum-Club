@@ -35,6 +35,7 @@ export type LiveRoomOffer = {
   id: string;
   title: string;
   price_usd: number;
+  compare_at_price?: number | null;
   primary_image_url: string | null;
   quantity_available: number | null;
   quantity_sold: number;
@@ -295,6 +296,12 @@ export function LiveRoom({
                   <span className="font-mono text-base font-extrabold text-white">
                     ${Number(pinnedOffer.price_usd).toFixed(2)}
                   </span>
+                  {pinnedOffer.compare_at_price != null &&
+                    pinnedOffer.compare_at_price > pinnedOffer.price_usd && (
+                      <span className="font-mono text-xs text-white/50 line-through">
+                        ${Number(pinnedOffer.compare_at_price).toFixed(2)}
+                      </span>
+                    )}
                   {typeof remaining === "number" && remaining > 0 && (
                     <span className="rounded-full bg-state-live/20 px-1.5 py-0.5 text-[10px] font-bold text-state-live">
                       {remaining} left

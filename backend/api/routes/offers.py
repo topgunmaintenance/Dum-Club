@@ -42,6 +42,11 @@ class OfferCreate(BaseModel):
     title: str
     description: Optional[str] = None
     price_usd: float = Field(gt=0)
+    # Optional "was" price for a strikethrough on the live/offer card. Only
+    # meaningful when greater than price_usd; the UI hides it otherwise.
+    # Requires the offers.compare_at_price column (added by hand-applied
+    # migration); only persisted when set, so this is safe before that lands.
+    compare_at_price: Optional[float] = Field(default=None, gt=0)
     offer_type: str  # 'digital_service' | 'physical_product'
     delivery_info: Optional[str] = None
     token_discount_percent: int = Field(default=0, ge=0, le=100)
@@ -60,6 +65,9 @@ class OfferUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     price_usd: Optional[float] = Field(default=None, gt=0)
+    # See OfferCreate.compare_at_price. Picked up by the `if v is not None`
+    # update filter below, so it only writes when the merchant set a value.
+    compare_at_price: Optional[float] = Field(default=None, gt=0)
     offer_type: Optional[str] = None
     delivery_info: Optional[str] = None
     token_discount_percent: Optional[int] = Field(default=None, ge=0, le=100)
@@ -227,6 +235,10 @@ async def create_offer(
         # so a NULL-category offer still renders a meaningful pill.
         "category_id": body.category_id,
     }
+    # Only reference compare_at_price when the merchant set one, so offers
+    # created before the column-adding migration lands never touch it.
+    if body.compare_at_price is not None:
+        insert["compare_at_price"] = float(body.compare_at_price)
 
     try:
         res = supabase.table("offers").insert(insert).execute()
