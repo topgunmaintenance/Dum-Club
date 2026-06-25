@@ -4953,13 +4953,14 @@ return (
                   type="button"
                   onClick={(e) => { e.preventDefault(); toggleFavorite(); }}
                   disabled={togglingFavorite}
-                  className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${
+                  className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-semibold transition ${
                     isFavorited
-                      ? "border-rose-400/30 bg-rose-400/10 text-rose-400"
+                      ? "border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
                       : "border-default text-secondary hover:border-strong hover:text-primary"
                   }`}
                 >
-                  {isFavorited ? "♥" : "♡"} {favoriteCount > 0 ? favoriteCount : "Save"}
+                  {isFavorited ? "Following" : "Follow"}
+                  {favoriteCount > 0 && <span className="opacity-70">· {favoriteCount}</span>}
                 </button>
               </div>
 

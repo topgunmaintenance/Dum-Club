@@ -92,6 +92,31 @@ def favorite_count(project_id: str):
         return {"project_id": project_id, "count": 0}
 
 
+class FavoriteCounts(BaseModel):
+    project_ids: list[str]
+
+
+@router.post("/counts")
+def favorite_counts(body: FavoriteCounts):
+    """Follower counts for many projects in one request (the Discover grid).
+    Counts in Python since PostgREST has no group-by; capped + best-effort."""
+    ids = [i for i in (body.project_ids or []) if i][:300]
+    if not ids:
+        return {"counts": {}}
+    try:
+        sb = get_client()
+        res = sb.table("favorites").select("project_id").in_("project_id", ids).execute()
+        counts: dict[str, int] = {}
+        for row in (res.data or []):
+            pid = row.get("project_id")
+            if pid:
+                counts[pid] = counts.get(pid, 0) + 1
+        return {"counts": counts}
+    except Exception:
+        _log_once()
+        return {"counts": {}}
+
+
 @router.get("/check/{project_id}")
 def check_favorite(project_id: str, user: dict = Depends(get_current_user)):
     privy_id = user.get("sub")

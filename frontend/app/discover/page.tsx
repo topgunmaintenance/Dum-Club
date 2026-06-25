@@ -40,6 +40,7 @@ import type {
 } from "../../lib/discover/types";
 import { API_BASE } from "../../lib/apiBase";
 import { resolveOfferCategoryLabel } from "../../lib/categories";
+import { useAuth } from "../../lib/auth/AuthContext";
 
 import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
@@ -53,6 +54,11 @@ import { MerchantStrip } from "../../components/discover/MerchantStrip";
 export default function DiscoverPage() {
   /* ─── Data ─── */
   const { projects, marketByProject, loading, error, marketLoaded, hasMore, loadMore, loadingMore } = useProjects();
+  const { user, getToken } = useAuth();
+
+  /* ─── Follow: follower counts (batch) + the viewer's followed set ─── */
+  const [followerCounts, setFollowerCounts] = useState<Record<string, number>>({});
+  const [followingSet, setFollowingSet] = useState<Set<string>>(() => new Set());
 
   /* ─── Filter state ─── */
   const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("all");
@@ -245,6 +251,46 @@ export default function DiscoverPage() {
 
   /* ─── Derived flags ─── */
   const discoverable = useMemo(() => projects.filter(isDiscoverable), [projects]);
+
+  /* Follower counts for every visible shop, one batched request. */
+  useEffect(() => {
+    const ids = discoverable.map((p) => p.id).filter(Boolean);
+    if (ids.length === 0) { setFollowerCounts({}); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/favorites/counts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_ids: ids }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data?.counts) setFollowerCounts(data.counts);
+      } catch { /* best-effort: cards just show no count */ }
+    })();
+    return () => { cancelled = true; };
+  }, [discoverable]);
+
+  /* The signed-in viewer's followed shops (so cards render Following state). */
+  useEffect(() => {
+    if (!user) { setFollowingSet(new Set()); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE}/api/favorites/mine`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data?.favorites)) {
+          setFollowingSet(new Set(data.favorites.map((f: { project_id: string }) => f.project_id)));
+        }
+      } catch { /* best-effort */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user, getToken]);
   const hasAnyLive = useMemo(() => discoverable.some((p) => p.is_live === true), [discoverable]);
   const hasAnyPromo = useMemo(() => discoverable.some((p) => !!p.promo_copy), [discoverable]);
   const isFiltered =
@@ -412,6 +458,8 @@ export default function DiscoverPage() {
                     projects={liveResults}
                     marketByProject={marketByProject}
                     pulseId={pulseId}
+                    followerCounts={followerCounts}
+                    followingSet={followingSet}
                   />
                 </section>
               )}
@@ -428,6 +476,8 @@ export default function DiscoverPage() {
                     projects={businessResults}
                     marketByProject={marketByProject}
                     pulseId={pulseId}
+                    followerCounts={followerCounts}
+                    followingSet={followingSet}
                   />
                 </section>
               )}

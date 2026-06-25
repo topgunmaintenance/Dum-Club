@@ -23,6 +23,7 @@ import {
   offerCount,
 } from "../../lib/discover/filters";
 import { classifyProject, resolveCategoryLabel } from "../../lib/categories";
+import { FollowButton } from "../FollowButton";
 
 function RelativeTime({ dateStr }: { dateStr?: string | null }) {
   const [label, setLabel] = useState("—");
@@ -67,9 +68,11 @@ type ListingCardProps = {
   index: number;
   marketSnapshot?: MarketSnapshot;
   isPulsing?: boolean;
+  followerCount?: number;
+  isFollowing?: boolean;
 };
 
-export function ListingCard({ project, index, marketSnapshot, isPulsing }: ListingCardProps) {
+export function ListingCard({ project, index, marketSnapshot, isPulsing, followerCount = 0, isFollowing = false }: ListingCardProps) {
   const offers = offerCount(project);
 
   // logoSrc mirrors business_profile.logo_url on load and resets to
@@ -185,6 +188,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing }: Listi
               Verified
             </span>
           )}
+          <FollowButton projectId={project.id} initialCount={followerCount} initialFollowing={isFollowing} />
         </div>
 
         {/* Portrait media tile (4:5) — cover photo -> logo -> gradient + emoji.
