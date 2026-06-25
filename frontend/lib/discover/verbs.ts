@@ -74,7 +74,12 @@ export const VERBS: readonly VerbDef[] = [
   },
 ];
 
-export const DEFAULT_VERB: VerbId = "eat";
+// Default-selected verb on /discover. Set to FIX (not EAT) for now: the
+// founding/flagship merchant (Topgun, aviation) lives under FIX and there
+// are no food merchants yet, so EAT-first would open Discover on an empty
+// grid. EAT stays the leftmost tab; flip this back to "eat" once food
+// sellers onboard.
+export const DEFAULT_VERB: VerbId = "fix";
 
 export const VERB_IDS: readonly VerbId[] = VERBS.map((v) => v.id);
 
