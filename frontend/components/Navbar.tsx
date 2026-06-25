@@ -180,6 +180,15 @@ export function Navbar() {
     ? `/project/${latestProjectId}?golive=1`
     : "/merchant";
 
+  // "Your Clubs" is a signed-in-only destination (the viewer's followed
+  // shops). Gated on `mounted && user` so the server / first client render
+  // stays the base list (no hydration mismatch) and the link only appears
+  // once auth resolves.
+  const primaryLinks =
+    mounted && user
+      ? [...PRIMARY_LINKS, { href: "/clubs", label: "Your Clubs" }]
+      : PRIMARY_LINKS;
+
   return (
     <>
       {/* ── Fixed header bar ──────────────────────────────────── */}
@@ -209,7 +218,7 @@ export function Navbar() {
         <div className="hidden h-20 items-center gap-6 px-6 lg:flex lg:px-8">
           <BrandMark size="desktop" />
           <div className="flex flex-1 items-center justify-center gap-2">
-            {PRIMARY_LINKS.map((l) => {
+            {primaryLinks.map((l) => {
               const active = path === l.href;
               return (
                 <Link
@@ -297,7 +306,7 @@ export function Navbar() {
           className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-surface-card lg:hidden"
         >
           <div className="border-b border-default">
-            {PRIMARY_LINKS.map((l) => {
+            {primaryLinks.map((l) => {
               const active = path === l.href;
               return (
                 <Link
