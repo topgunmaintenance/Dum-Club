@@ -43,6 +43,8 @@ import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
+import { LiveRoom } from "../../../components/LiveRoom";
+import { verbLabelForProject } from "../../../lib/discover/verbs";
 import { JsonLd } from "../../../components/JsonLd";
 import {
   buildLocalBusinessSchema,
@@ -764,6 +766,10 @@ export default function ProjectPage() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
+  // Immersive live room: a non-owner viewing a live IVS shop gets the
+  // full-bleed LiveRoom overlay. Dismissing (✕) reveals the normal
+  // storefront underneath (which re-mounts the inline video/chat).
+  const [immersiveDismissed, setImmersiveDismissed] = useState(false);
   const [backendReviews, setBackendReviews] = useState<{ id: number; rating: number; comment: string; created_at: string }[]>([]);
   const [backendAvgRating, setBackendAvgRating] = useState(0);
   const [backendReviewCount, setBackendReviewCount] = useState(0);
@@ -2610,6 +2616,14 @@ export default function ProjectPage() {
   }
 
   const pinnedOffer = offers.find((o) => o.id === project?.pinned_offer_id) || null;
+  // Show the immersive live room for non-owner visitors of a live IVS shop
+  // (same gate as the inline IVS viewer), until they dismiss it.
+  const immersiveLive =
+    !!project?.is_live &&
+    isIVSSession(project) &&
+    !!project?.ivs_stage_arn &&
+    !isOwner &&
+    !immersiveDismissed;
   const auctionOffer = auction ? offers.find((o) => o.id === auction.offer_id) || null : null;
   const isAuctionActive = auction?.status === "active";
   const isAuctionWinner = auction?.status === "ended" && auction.current_bidder === authUser?.privyId;
@@ -3673,6 +3687,44 @@ const heroUtility =
 
 return (
   <div className="relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8">
+    {/* Immersive live room — full-bleed overlay for non-owner visitors of a
+        live IVS shop. Reuses the storefront's IVS viewer, chat, follow state,
+        and buyOffer() checkout. The inline video/chat/buy-bar below are
+        suppressed while this is up (`!immersiveLive`) so nothing double-mounts.
+        Rendered before the checkout-success pill so that pill stays on top. */}
+    {immersiveLive && project && (
+      <LiveRoom
+        projectId={id as string}
+        userId={authUser?.privyId || ""}
+        userName={authUser?.email || "Viewer"}
+        isOwner={isOwner}
+        shop={{
+          name: project.title || project.name || "Shop",
+          logoUrl: cleanLogoUrl(project.business_profile?.logo_url) || null,
+          verbLabel: verbLabelForProject(project),
+        }}
+        isFollowing={isFavorited}
+        followerCount={favoriteCount}
+        onToggleFollow={toggleFavorite}
+        pinnedOffer={pinnedOffer}
+        buyingOfferId={buyingOfferId}
+        onBuy={() => { if (pinnedOffer) buyOffer(pinnedOffer); }}
+        resolveImageUrl={resolveImageUrl}
+        viewerCount={liveViewerCount}
+        salesCount={liveSalesCount}
+        getToken={getToken}
+        onRequestSignIn={login}
+        onCommentBuy={handleCommentBuy}
+        onViewerCountChange={setLiveViewerCount}
+        onItemSold={() => { loadOffers(); setLiveSalesCount((c) => c + 1); }}
+        onItemUpdate={(data) =>
+          setOffers((prev) =>
+            prev.map((o) => (o.id === data.offer_id ? { ...o, quantity_sold: data.quantity_sold } : o)),
+          )
+        }
+        onClose={() => setImmersiveDismissed(true)}
+      />
+    )}
     {/* Instant checkout-success acknowledgment — fixed-position pill
         anchored to the top of the viewport so the customer sees
         confirmation the moment ?checkout=success lands, before the
@@ -3700,7 +3752,7 @@ return (
         controls separately). The Buy Now button calls the same
         buyOffer handler the inline card uses, so checkout behavior
         is unchanged. */}
-    {project?.is_live && pinnedOffer && !isOwner && (() => {
+    {project?.is_live && pinnedOffer && !isOwner && !immersiveLive && (() => {
       const hasCap = !pinnedOffer.unlimited_inventory && (pinnedOffer.quantity_available || 0) > 0;
       const remaining = hasCap
         ? Math.max(0, (pinnedOffer.quantity_available || 0) - (pinnedOffer.quantity_sold || 0))
@@ -4330,7 +4382,7 @@ return (
       })()}
 
       {/* ── LIVE NOW Banner + Stream ────────────────── */}
-      {project?.is_live && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
+      {project?.is_live && !immersiveLive && (project.stream_url || project.live_playback_id || project.ivs_stage_arn || isIVSSession(project)) && (
         <div className="mb-6">
           {/* ── LIVE banner. always full width above the grid ──
                Audit #4 Phase 1 surfaces three real-data signals that

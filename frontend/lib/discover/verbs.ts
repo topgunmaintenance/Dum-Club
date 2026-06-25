@@ -109,3 +109,15 @@ export function projectMatchesVerb(project: Project, verb: VerbId): boolean {
   if (mapped) return mapped === verb;
   return VERBS_BY_ID[verb].buckets.includes(classifyProject(project));
 }
+
+/**
+ * Human verb label for a project-like object ("Fix", "Eat", …). Used by the
+ * live room's shop chip. Accepts a loose shape (the storefront's project type
+ * differs from the Discover Project type) — resolution reuses
+ * projectMatchesVerb, so it honors category_id first, classifier second.
+ * Returns "" when nothing matches.
+ */
+export function verbLabelForProject(project: any): string {
+  const match = VERBS.find((v) => projectMatchesVerb(project, v.id));
+  return match ? match.label : "";
+}
