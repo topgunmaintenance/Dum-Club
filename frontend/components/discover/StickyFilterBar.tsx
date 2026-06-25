@@ -9,14 +9,15 @@
  * "Nearest" sort hidden in Pass 1 (no geo).
  */
 
-import type { DiscoverCategoryId, DiscoverSortId, PriceFilter } from "../../lib/discover/types";
-import { CategoryTabs } from "./CategoryTabs";
+import type { DiscoverSortId, PriceFilter } from "../../lib/discover/types";
+import type { VerbId } from "../../lib/discover/verbs";
+import { VerbTabs } from "./VerbTabs";
 
 type StickyFilterBarProps = {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  activeCategory: DiscoverCategoryId;
-  setActiveCategory: (id: DiscoverCategoryId) => void;
+  activeVerb: VerbId;
+  setActiveVerb: (id: VerbId) => void;
   sortBy: DiscoverSortId;
   setSortBy: (id: DiscoverSortId) => void;
   liveOnly: boolean;
@@ -45,9 +46,9 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
         />
       </div>
 
-      {/* Category tabs — horizontal, scrollable, all viewports (Whatnot-style),
-          replacing the old mobile chip row + desktop dropdown. */}
-      <CategoryTabs active={props.activeCategory} onSelect={props.setActiveCategory} />
+      {/* Verb tabs — EAT / FIX / MOVE / SHOP / BOOK. The primary category
+          control: plain-English verbs over the existing category system. */}
+      <VerbTabs active={props.activeVerb} onSelect={props.setActiveVerb} />
 
       {/* Filters row: sort, price, live, deals, reset */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
