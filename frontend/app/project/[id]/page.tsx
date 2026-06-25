@@ -910,6 +910,7 @@ export default function ProjectPage() {
     title: string;
     description: string | null;
     price_usd: number;
+    compare_at_price?: number | null;
     offer_type: string;
     delivery_info: string | null;
     token_discount_percent: number;
@@ -1414,6 +1415,12 @@ export default function ProjectPage() {
         title: offerEditing.title?.trim() || "",
         description: offerEditing.description?.trim() || null,
         price_usd: priceNum,
+        // Only send a positive compare-at above the price (a "was" price);
+        // otherwise omit so the backend's not-None filter leaves it unset.
+        compare_at_price:
+          offerEditing.compare_at_price && offerEditing.compare_at_price > priceNum
+            ? Number(offerEditing.compare_at_price)
+            : null,
         offer_type: offerEditing.offer_type || "digital_service",
         delivery_info: offerEditing.delivery_info?.trim() || null,
         token_discount_percent: Number(offerEditing.token_discount_percent) || 0,
@@ -6532,6 +6539,22 @@ return (
                     {offerAiField === "price" ? "..." : "$?"}
                   </button>
                 </div>
+                {/* Optional compare-at ("was") price — drives the strikethrough
+                    on the live room offer card. Only applied when above the
+                    actual price. */}
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Compare-at price (optional)"
+                  value={offerEditing.compare_at_price ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    setOfferEditing({ ...offerEditing, compare_at_price: v === "" ? null : Number(v) });
+                  }}
+                  className="mt-2 w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                />
+                <p className="mt-1 text-[10px] text-muted">Shown struck-through when higher than the price.</p>
               </div>
               <select
                 value={offerEditing.offer_type || "digital_service"}

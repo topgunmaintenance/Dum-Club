@@ -78,6 +78,8 @@ export type OfferPayload = {
   title: string;
   description?: string | null;
   price_usd: number;
+  // Optional "was" price for a strikethrough; null/omitted = no compare-at.
+  compare_at_price?: number | null;
   offer_type?: string;
   delivery_info?: string | null;
   token_discount_percent?: number;
