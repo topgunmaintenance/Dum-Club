@@ -82,8 +82,8 @@ export function FollowButton({
       aria-pressed={following}
       className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full border font-bold uppercase tracking-[0.06em] transition ${pad} ${
         following
-          ? "border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
-          : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
+          ? "border-mint-text bg-transparent text-mint-text hover:bg-mint-text/5"
+          : "border-transparent bg-mint-fill text-mint-fill-ink hover:opacity-90"
       }`}
     >
       {following ? "Following" : "Follow"}

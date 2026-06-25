@@ -88,7 +88,7 @@ export function FollowedRail({ projects }: { projects: Project[] }) {
             >
               <span
                 className={`relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 bg-surface-muted ${
-                  isLive ? "border-red-500" : "border-default"
+                  isLive ? "border-state-live" : "border-default"
                 }`}
               >
                 {logoUrl ? (
@@ -103,7 +103,7 @@ export function FollowedRail({ projects }: { projects: Project[] }) {
                   <span className="text-xl">{emoji}</span>
                 )}
                 {isLive && (
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-full bg-red-500 px-1.5 py-px text-[8px] font-bold uppercase tracking-wide text-white shadow-sm">
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-full bg-state-live px-1.5 py-px text-[8px] font-bold uppercase tracking-wide text-white shadow-sm">
                     Live
                   </span>
                 )}

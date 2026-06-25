@@ -673,8 +673,27 @@ Payments: Stripe Connect ONLY
     `application_fee_amount` on the PaymentIntent.
 Auth: Privy
 Live streaming: AWS IVS (dormant — activating Phase 1)
-Font: Geist (GeistSans + GeistMono)
-Colors: Dark bg (#060606) + Emerald (#00FFA3)
+Font: Geist (GeistSans for UI, GeistMono for prices/counts/timers)
+Colors: LIGHT theme is what ships (the old "dark #060606 +
+  #00FFA3" line was stale — do not drift back to dark). Tokens
+  live in frontend/app/globals.css + frontend/tailwind.config.js:
+  - Surfaces: --surface-page #F7F8FA (page),
+    --surface-card #FFFFFF (cards, hairline border + soft shadow),
+    --surface-muted #EEF1F5
+  - Text: --text-primary #0B1220, --text-secondary #475467,
+    --text-muted #6B7280
+  - Brand mint, TWO values (legibility split — bright mint is
+    illegible as text on white):
+      --mint-fill #00E592  button FILLS only (Follow, BUY, active
+        tab), always paired with --mint-fill-ink #04130D text
+      --mint-text #00A36C  mint used as TEXT / icons / prices on
+        white
+  - Coral --state-live #FF2D55: live status + urgency ONLY (LIVE
+    badges, the pulsing live dot, low-stock "N left"). Never an
+    action color, never decorative — that's mint's job.
+  Legacy --brand-teal #14B89A / --brand-navy still exist for
+  non-buyer chrome (dashboard/admin); buyer surfaces (Discover,
+  Clubs, Follow, the live room) use the mint split + coral above.
 Blockchain: Solana (future, optional, never consumer-facing)
 
 ---

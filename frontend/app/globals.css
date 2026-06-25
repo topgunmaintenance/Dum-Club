@@ -64,7 +64,24 @@
   --border-default: #E5E7EB;
   --border-strong: #D1D5DB;
 
-  --state-live: #E63946;
+  /* ── Buyer-surface mint palette (two-mint legibility split) ──────
+     The bright brand mint is gorgeous as a button FILL but illegible
+     as text on white, so the buyer surfaces (Discover, Clubs, Follow,
+     the live room) use two values. See CLAUDE.md §8.
+       --mint-fill     bright mint, FILLS ONLY (Follow, BUY, active tab),
+                       always paired with --mint-fill-ink near-black text
+       --mint-fill-ink near-black ink that sits on a --mint-fill button
+       --mint-text     darker mint for mint-as-TEXT / icons / prices on
+                       white, where the bright fill can't be read */
+  --mint-fill: #00E592;
+  --mint-fill-ink: #04130D;
+  --mint-text: #00A36C;
+
+  /* Coral — live status + urgency ONLY (LIVE badges, the pulsing live
+     dot, low-stock "N left" warnings). Never decorative; never an
+     action color (that's mint). Brightened from the prior #E63946 to
+     the brief's #FF2D55 so it reads unmistakably as "live now". */
+  --state-live: #FF2D55;
 }
 
 /* ── Soft gradient mesh ───────────────────────────────────────────
