@@ -15,6 +15,9 @@ interface ChatMessage {
   sender_role: "host" | "viewer";
   body: string;
   created_at: number;
+  // Locally-synthesized sale line (overlay/live-room only) — rendered as a
+  // mint "just sold" pill instead of a normal chat message.
+  kind?: "sold";
 }
 
 interface ItemUpdateEvent {
@@ -169,6 +172,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
               sender_role: "host" as const,
               body: `${msg.data.title || "Item"} just sold! 🎉`,
               created_at: Date.now() / 1000,
+              kind: "sold" as const,
             }]);
           } else if (msg.type === "claim") {
             // Live "X just claimed!" feed (comment-to-buy). System line in
@@ -182,6 +186,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
               sender_role: "host" as const,
               body: `🛒 ${d.display_name || "Someone"} just claimed ${d.title || "the item"}!${left}`,
               created_at: Date.now() / 1000,
+              kind: "sold" as const,
             }]);
           }
         } catch {}
@@ -319,6 +324,29 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           </div>
         )}
         {messages.map((msg) => {
+          // Sale / claim lines render as a mint "just sold" pill (the live
+          // room's social-proof signal). Comment-to-buy claims carry the
+          // buyer's display name; direct Stripe sales show the item only.
+          if (msg.kind === "sold") {
+            return (
+              <div key={msg.id} style={{ margin: "5px 0" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "rgba(0,229,146,0.18)",
+                    color: "#00E592",
+                    borderRadius: 9999,
+                    padding: "3px 10px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textShadow: "none",
+                  }}
+                >
+                  {msg.body}
+                </span>
+              </div>
+            );
+          }
           // Hide anyone the host has banned (server broadcasts user_banned).
           if (bannedIds.has(msg.sender_id)) return null;
           const guest =
