@@ -32,6 +32,7 @@ import {
   lowestOfferPrice,
   withoutLive,
 } from "../../lib/discover/filters";
+import { DEFAULT_VERB, VERBS, isVerbId, projectMatchesVerb, type VerbId } from "../../lib/discover/verbs";
 import type {
   DiscoverCategoryId,
   DiscoverSortId,
@@ -62,6 +63,10 @@ export default function DiscoverPage() {
   const [followingSet, setFollowingSet] = useState<Set<string>>(() => new Set());
 
   /* ─── Filter state ─── */
+  // Verb tabs (EAT/FIX/MOVE/SHOP/BOOK) are the primary category control;
+  // EAT is the default-selected verb. activeCategory stays as a secondary,
+  // URL-only filter (defaults to "all" / no-op) for back-compat.
+  const [activeVerb, setActiveVerb] = useState<VerbId>(DEFAULT_VERB);
   const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("all");
   const [sortBy, setSortBy] = useState<DiscoverSortId>("newest");
   const [liveOnly, setLiveOnly] = useState(false);
@@ -88,6 +93,8 @@ export default function DiscoverPage() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
+    const verb = params.get("verb");
+    if (isVerbId(verb)) setActiveVerb(verb);
     const cat = params.get("category") as DiscoverCategoryId | null;
     const sort = params.get("sort");
     const price = params.get("price");
@@ -189,21 +196,28 @@ export default function DiscoverPage() {
     return sortProjects(filtered, sortBy, marketByProject);
   }, [projects, activeCategory, sortBy, liveOnly, dealsOnly, priceFilter, searchQuery, marketByProject]);
 
+  /* ─── Verb filter (EAT/FIX/MOVE/SHOP/BOOK) — the primary category cut ─── */
+  const verbProjects = useMemo(
+    () => filteredProjects.filter((p) => projectMatchesVerb(p, activeVerb)),
+    [filteredProjects, activeVerb],
+  );
+  const activeVerbLabel = VERBS.find((v) => v.id === activeVerb)?.label ?? "";
+
   /* ─── Location filter (city + "near me"), applied on top of the rest ───
      Reads optional city/lat/lng off each project; degrades to a no-op when
      that data is absent (today: storefronts have no coordinates yet). */
   const cities = useMemo(() => availableCities(projects as Array<Record<string, unknown>>), [projects]);
   const noCoordsAnywhere = useMemo(
-    () => nearMe && countWithCoords(filteredProjects as Array<Record<string, unknown>>) === 0,
-    [nearMe, filteredProjects],
+    () => nearMe && countWithCoords(verbProjects as Array<Record<string, unknown>>) === 0,
+    [nearMe, verbProjects],
   );
   const locatedProjects = useMemo(
     () =>
-      applyLocationFilter(filteredProjects, {
+      applyLocationFilter(verbProjects, {
         city: cityFilter || null,
         near: nearMe && coords ? { center: coords, radiusMiles: NEAR_ME_RADIUS_MILES } : null,
       }),
-    [filteredProjects, cityFilter, nearMe, coords],
+    [verbProjects, cityFilter, nearMe, coords],
   );
 
   const toggleNearMe = useCallback(() => {
@@ -330,8 +344,8 @@ export default function DiscoverPage() {
         <StickyFilterBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
+          activeVerb={activeVerb}
+          setActiveVerb={setActiveVerb}
           sortBy={sortBy}
           setSortBy={setSortBy}
           liveOnly={liveOnly}
@@ -431,9 +445,19 @@ export default function DiscoverPage() {
             )
           ) : (
             <>
-              {/* Location filter removed everything (but other filters still
-                  match) — tell the user instead of showing a blank grid. */}
-              {locatedProjects.length === 0 && (
+              {/* Empty grid — distinguish a verb with no merchants yet from a
+                  location filter that removed everything, so the message and
+                  the action actually help. */}
+              {verbProjects.length === 0 ? (
+                <div className="rounded-2xl border border-default bg-surface-card p-8 text-center">
+                  <p className="text-sm font-semibold text-primary">
+                    No {activeVerbLabel} shops here yet.
+                  </p>
+                  <p className="mx-auto mt-1 max-w-md text-sm text-secondary">
+                    Try another tab above to see what local sellers are up to.
+                  </p>
+                </div>
+              ) : locatedProjects.length === 0 ? (
                 <div className="rounded-2xl border border-default bg-surface-card p-6 text-center">
                   <p className="text-sm text-secondary">
                     No storefronts match your location filter.
@@ -450,7 +474,7 @@ export default function DiscoverPage() {
                     Clear location filter
                   </button>
                 </div>
-              )}
+              ) : null}
 
               {/* Live section — rendered ONLY when the live-only
                   filter is active (the LiveRail overflow's
