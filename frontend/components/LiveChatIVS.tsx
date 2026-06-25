@@ -57,6 +57,11 @@ interface LiveChatIVSProps {
   // instead of a disabled input. Wire it to the Privy login modal. When
   // omitted, the signed-out state falls back to the disabled input.
   onRequestSignIn?: () => void;
+  // overlay mode: transparent chrome for the immersive live room — no card
+  // background/border/header, white text with a drop-shadow for legibility
+  // over video, and a translucent input. Default false keeps every existing
+  // call site (storefront, embed bubble) pixel-identical.
+  overlay?: boolean;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -79,7 +84,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn, overlay = false }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -268,12 +273,12 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
         // floor so the box exactly fills its cell (the messages area below
         // absorbs the squeeze and scrolls), keeping the input always visible.
         // Non-fillHeight callers (the 480px box) are unchanged.
-        minHeight: fillHeight ? 0 : 480,
-        height: fillHeight ? "100%" : 480,
-        maxHeight: fillHeight ? "none" : "70vh",
-        border: "1px solid #27272a",
-        borderRadius: 16,
-        background: "#0a0a0a",
+        minHeight: overlay ? 0 : fillHeight ? 0 : 480,
+        height: overlay ? "auto" : fillHeight ? "100%" : 480,
+        maxHeight: overlay ? "44vh" : fillHeight ? "none" : "70vh",
+        border: overlay ? "none" : "1px solid #27272a",
+        borderRadius: overlay ? 0 : 16,
+        background: overlay ? "transparent" : "#0a0a0a",
         position: "relative",
         zIndex: 10,
         opacity: 1,
@@ -282,17 +287,30 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
         flexDirection: "column",
       }}
     >
-      {/* Header */}
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>LIVE CHAT</span>
-          {connected && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />}
+      {/* Header — hidden in overlay mode (the live room's top bar already
+          shows LIVE + the viewer count). */}
+      {!overlay && (
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #27272a", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>LIVE CHAT</span>
+            {connected && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />}
+          </div>
+          <span style={{ fontSize: 11, color: "#71717a" }}>{viewerCount} watching</span>
         </div>
-        <span style={{ fontSize: 11, color: "#71717a" }}>{viewerCount} watching</span>
-      </div>
+      )}
 
       {/* Messages */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "8px 12px", minHeight: fillHeight ? 0 : 260 }}>
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "8px 12px",
+          minHeight: overlay ? 0 : fillHeight ? 0 : 260,
+          // Drop-shadow keeps white chat text readable over any video frame.
+          textShadow: overlay ? "0 1px 3px rgba(0,0,0,0.85)" : undefined,
+        }}
+      >
         {messages.length === 0 && (
           <div style={{ display: "flex", height: "100%", minHeight: 200, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "#a1a1aa", lineHeight: 1.5 }}>
@@ -337,7 +355,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
                   }}>guest</span>
                 )}
               </span>
-              <span style={{ color: "#d4d4d8" }}>{msg.body}</span>
+              <span style={{ color: overlay ? "#ffffff" : "#d4d4d8" }}>{msg.body}</span>
               {canBan && (
                 <button
                   type="button"
@@ -367,7 +385,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           provided (e.g. the embed bubble), fall back to the disabled
           input so nothing breaks. */}
       {!userId && onRequestSignIn ? (
-        <div style={{ borderTop: "1px solid #27272a", padding: 8 }}>
+        <div style={{ borderTop: overlay ? "none" : "1px solid #27272a", padding: 8 }}>
           <button
             type="button"
             onClick={onRequestSignIn}
@@ -388,7 +406,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           </button>
         </div>
       ) : (
-        <form onSubmit={sendMessage} style={{ borderTop: "1px solid #27272a", padding: 8 }}>
+        <form onSubmit={sendMessage} style={{ borderTop: overlay ? "none" : "1px solid #27272a", padding: 8 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               value={input}
@@ -403,10 +421,10 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
               style={{
                 flex: 1,
                 minHeight: 44,
-                borderRadius: 8,
-                border: "1px solid #27272a",
-                background: "#18181b",
-                padding: "10px 12px",
+                borderRadius: overlay ? 9999 : 8,
+                border: overlay ? "1px solid rgba(255,255,255,0.25)" : "1px solid #27272a",
+                background: overlay ? "rgba(0,0,0,0.45)" : "#18181b",
+                padding: "10px 14px",
                 fontSize: 14,
                 color: "#fff",
                 outline: "none",

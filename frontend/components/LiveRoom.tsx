@@ -157,30 +157,32 @@ export function LiveRoom({
           <span className="text-[11px] font-bold uppercase tracking-wide">Live</span>
         </span>
         {viewerCount > 0 && (
-          <span className="rounded-full bg-black/50 px-2.5 py-1 font-mono text-[11px] text-white/90 backdrop-blur-sm">
-            {viewerCount} watching
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
+            <span aria-hidden="true">👀</span>
+            {viewerCount.toLocaleString()}
           </span>
         )}
         {salesCount > 0 && (
-          <span className="rounded-full bg-black/50 px-2.5 py-1 font-mono text-[11px] text-mint-text backdrop-blur-sm">
-            {salesCount} sold
+          <span className="rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-mint-text backdrop-blur-sm">
+            {salesCount.toLocaleString()} sold
           </span>
         )}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close live room"
-          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] transition hover:text-white"
         >
-          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </div>
 
-      {/* ── Shop chip ── */}
-      <div className="absolute left-4 top-16 z-20 flex items-center gap-2.5 rounded-full bg-black/45 py-1.5 pl-1.5 pr-3 backdrop-blur-sm">
-        <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10">
+      {/* ── Shop chip — sits on the video over the top scrim (no pill), text
+           carries its own drop-shadow for legibility. ── */}
+      <div className="absolute left-4 top-16 z-20 flex items-center gap-2.5 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
+        <span className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/30 bg-white/10">
           {shop.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={shop.logoUrl} alt="" className="h-full w-full object-cover" />
@@ -190,10 +192,9 @@ export function LiveRoom({
         </span>
         <span className="min-w-0">
           <span className="block max-w-[44vw] truncate text-sm font-bold leading-tight">{shop.name}</span>
-          <span className="block text-[10px] uppercase tracking-[0.12em] text-white/60">
-            {[shop.verbLabel, followerCount > 0 ? `${followerCount} follower${followerCount === 1 ? "" : "s"}` : null]
-              .filter(Boolean)
-              .join(" · ")}
+          <span className="block text-[10px] tracking-[0.08em] text-white/75">
+            <span className="uppercase">{shop.verbLabel}</span>
+            {followerCount > 0 && <> · {followerCount.toLocaleString()} followers</>}
           </span>
         </span>
         {!isOwner && (
@@ -214,7 +215,11 @@ export function LiveRoom({
 
       {/* ── Right action rail ── */}
       <div className="absolute bottom-44 right-3 z-20 flex flex-col items-center gap-5">
-        <RailButton label={likeCount > 0 ? String(likeCount) : "Like"} onClick={popHeart} aria-label="Like">
+        <RailButton
+          label={likeCount > 0 ? <span className="text-mint-text">{likeCount.toLocaleString()}</span> : "Like"}
+          onClick={popHeart}
+          aria-label="Like"
+        >
           <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 21s-7.2-4.6-9.6-9.2C.9 8.7 2.3 5.5 5.3 5.1c1.8-.2 3.4.7 4.7 2.2C11.3 5.8 12.9 4.9 14.7 5.1c3 .4 4.4 3.6 2.9 6.7C19.2 16.4 12 21 12 21z" />
           </svg>
@@ -248,13 +253,14 @@ export function LiveRoom({
       {/* ── Live chat (overlaid, bottom-left) ── */}
       <div
         ref={chatWrapRef}
-        className="absolute bottom-44 left-3 z-20 w-[68vw] max-w-sm sm:bottom-40"
+        className="absolute bottom-40 left-2 z-20 w-[72vw] max-w-sm"
       >
         <LiveChatIVS
           projectId={projectId}
           userId={userId}
           userName={userName}
           isHost={isOwner}
+          overlay
           onRequestSignIn={onRequestSignIn}
           getToken={getToken}
           onCommentBuy={onCommentBuy}
@@ -268,8 +274,8 @@ export function LiveRoom({
       {pinnedOffer && (
         <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
-            {/* Glassy offer card */}
-            <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.96] p-2.5 text-[var(--text-primary)] shadow-lg backdrop-blur-md">
+            {/* Dark glassy offer card (the video shows through). */}
+            <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 text-white shadow-lg backdrop-blur-md">
               {pinnedOffer.primary_image_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -280,17 +286,17 @@ export function LiveRoom({
               )}
               <div className="min-w-0 flex-1">
                 {pinnedOffer.promo_copy && (
-                  <span className="mb-0.5 inline-block rounded-full bg-[var(--mint-fill)]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-mint-text">
-                    Flash deal
+                  <span className="mb-0.5 inline-block rounded-full bg-mint-text/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-mint-text">
+                    Slow hour flash deal
                   </span>
                 )}
-                <div className="truncate text-sm font-bold">{pinnedOffer.title}</div>
+                <div className="truncate text-sm font-bold text-white">{pinnedOffer.title}</div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-base font-extrabold text-mint-text">
+                  <span className="font-mono text-base font-extrabold text-white">
                     ${Number(pinnedOffer.price_usd).toFixed(2)}
                   </span>
                   {typeof remaining === "number" && remaining > 0 && (
-                    <span className="rounded-full bg-[var(--state-live)]/12 px-1.5 py-0.5 text-[10px] font-bold text-state-live">
+                    <span className="rounded-full bg-state-live/20 px-1.5 py-0.5 text-[10px] font-bold text-state-live">
                       {remaining} left
                     </span>
                   )}
@@ -314,7 +320,15 @@ export function LiveRoom({
                   {buying ? "Opening…" : `Buy now · $${Number(pinnedOffer.price_usd).toFixed(2)}`}
                 </button>
               )}
-              <span className="hidden text-[10px] text-white/60 sm:block">or type “buy” in chat</span>
+              {/* Browse-all-offers — drops to the full storefront. */}
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Browse all offers"
+                className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center rounded-2xl bg-mint-fill/15 text-xl text-mint-text transition hover:bg-mint-fill/25"
+              >
+                🛍️
+              </button>
             </div>
           </div>
         </div>
@@ -330,20 +344,18 @@ function RailButton({
   ...rest
 }: {
   children: React.ReactNode;
-  label: string;
+  label: React.ReactNode;
   onClick: () => void;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-1 text-white transition active:scale-90"
+      className="flex flex-col items-center gap-1 text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.6)] transition active:scale-90"
       {...rest}
     >
-      <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
-        {children}
-      </span>
-      <span className="text-[10px] font-semibold">{label}</span>
+      {children}
+      <span className="text-[11px] font-bold">{label}</span>
     </button>
   );
 }
