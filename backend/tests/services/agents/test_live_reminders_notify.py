@@ -90,7 +90,11 @@ class FakeDB:
     def _run(self, q):
         if q._table == "live_reminders" and q._op == "select":
             rows = [
-                {"id": r["id"], "customer_email": r["customer_email"]}
+                {
+                    "id": r["id"],
+                    "customer_email": r["customer_email"],
+                    "scheduled_for": r.get("scheduled_for"),
+                }
                 for r in self.reminders.values()
                 if r["sent_at"] is None
             ]
@@ -100,11 +104,21 @@ class FakeDB:
         if q._table == "live_reminders" and q._op == "update":
             rid = next((v for (c, v) in q._filters if c == "id"), None)
             row = self.reminders.get(rid)
-            if row and row["sent_at"] is None:
-                row["sent_at"] = q._payload["sent_at"]
-                self.claimed_ids.append(rid)
-                return SimpleNamespace(data=[{"id": rid}])
-            return SimpleNamespace(data=[])  # lost the claim race
+            if row is None:
+                return SimpleNamespace(data=[])
+            # The atomic claim carries an is_("sent_at", "null") filter; the
+            # follow re-arm is an unconditional sent_at -> None update with no
+            # such filter. Distinguish the two by the filter's presence.
+            wants_unsent = ("sent_at", "is:null") in q._filters
+            if wants_unsent:
+                if row["sent_at"] is None:
+                    row["sent_at"] = q._payload["sent_at"]
+                    self.claimed_ids.append(rid)
+                    return SimpleNamespace(data=[{"id": rid}])
+                return SimpleNamespace(data=[])  # lost the claim race
+            # Unconditional update (the recurring-follow re-arm).
+            row["sent_at"] = q._payload.get("sent_at")
+            return SimpleNamespace(data=[{"id": rid}])
         return SimpleNamespace(data=[])
 
 
@@ -167,6 +181,51 @@ class TestNotifyProjectLiveNow(unittest.TestCase):
         counts = lr.notify_project_live_now("proj-1", supabase=db)
         self.assertEqual(counts, {"scanned": 0, "claimed": 0, "sent": 0, "errored": 0})
         self.assertEqual(len(self._sent), 0)
+
+    def test_follow_subscription_refires_on_next_golive(self):
+        # A follow (GENERAL_SENTINEL scheduled_for) is a standing relationship:
+        # it re-arms after each send so the follower is pinged every go-live.
+        db = FakeDB(
+            reminders=[
+                {
+                    "id": "r1",
+                    "customer_email": "a@x.com",
+                    "sent_at": None,
+                    "scheduled_for": "9999-12-31T00:00:00+00:00",
+                },
+            ],
+            project=PROJECT,
+        )
+        first = lr.notify_project_live_now("proj-1", supabase=db)
+        self.assertEqual(first["sent"], 1)
+        # Re-armed: sent_at cleared so the next go-live notifies again.
+        self.assertIsNone(db.reminders["r1"]["sent_at"])
+
+        self._sent.clear()
+        second = lr.notify_project_live_now("proj-1", supabase=db)
+        self.assertEqual(second["scanned"], 1)
+        self.assertEqual(second["sent"], 1)
+        self.assertEqual(len(self._sent), 1)
+
+    def test_scheduled_one_shot_does_not_refire(self):
+        # A reminder for a specific scheduled show keeps at-most-once delivery.
+        db = FakeDB(
+            reminders=[
+                {
+                    "id": "r1",
+                    "customer_email": "a@x.com",
+                    "sent_at": None,
+                    "scheduled_for": "2026-07-01T17:00:00+00:00",
+                },
+            ],
+            project=PROJECT,
+        )
+        lr.notify_project_live_now("proj-1", supabase=db)
+        self.assertIsNotNone(db.reminders["r1"]["sent_at"])  # stays stamped
+        self._sent.clear()
+        again = lr.notify_project_live_now("proj-1", supabase=db)
+        self.assertEqual(again["scanned"], 0)
+        self.assertEqual(again["sent"], 0)
 
     def test_send_failure_still_stamps_and_does_not_raise(self):
         lr.send_live_reminder = lambda **kw: False  # simulate Resend down
