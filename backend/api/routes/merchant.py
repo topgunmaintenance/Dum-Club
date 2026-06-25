@@ -236,6 +236,7 @@ class MerchantSignup(BaseModel):
     description: Optional[str] = None
     location_city: Optional[str] = None
     location_state: Optional[str] = None
+    location_postal_code: Optional[str] = None
     # Tier selected on /pricing or /upgrade. Optional; defaults to "growth"
     # when absent or unrecognised. Validated against the allowed set at
     # signup time (any value outside {starter, growth, pro} falls back to
@@ -649,14 +650,20 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
     # network), so this stays instant.
     try:
         loc_city = (body.location_city or "").strip()
-        if bp_id and loc_city:
+        loc_zip = (body.location_postal_code or "").strip()
+        if bp_id and (loc_city or loc_zip):
             from services.geocode import geocode
-            bp_update: dict = {"city": loc_city}
-            coords = geocode(loc_city, body.location_state)
+            bp_update: dict = {}
+            if loc_city:
+                bp_update["city"] = loc_city
+            if loc_zip:
+                bp_update["postal_code"] = loc_zip
+            coords = geocode(loc_city or None, body.location_state, loc_zip or None)
             if coords:
                 bp_update["latitude"] = coords[0]
                 bp_update["longitude"] = coords[1]
-            supabase.table("business_profiles").update(bp_update).eq("id", bp_id).execute()
+            if bp_update:
+                supabase.table("business_profiles").update(bp_update).eq("id", bp_id).execute()
     except Exception as exc:
         print(f"[merchant/signup] business_profile location sync skipped: {exc!r}")
 
