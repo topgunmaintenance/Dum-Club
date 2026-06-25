@@ -266,7 +266,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
                 <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary">
                   From
                 </span>
-                <span className="font-mono text-base font-extrabold text-brand-navy">
+                <span className="font-mono text-base font-extrabold text-mint-text">
                   ${price < 1 ? price.toFixed(2) : Math.round(price)}
                 </span>
               </>

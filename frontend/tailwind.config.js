@@ -48,6 +48,15 @@ module.exports = {
           "teal-soft": "var(--brand-teal-soft)",
           navy: "var(--brand-navy)",
         },
+        // Two-mint buyer-surface palette (legibility split — see
+        // globals.css + CLAUDE.md §8). bg-mint-fill pairs with
+        // text-mint-fill-ink on buttons; text-mint-text is mint used as
+        // text/icons/prices on white.
+        mint: {
+          fill: "var(--mint-fill)",
+          "fill-ink": "var(--mint-fill-ink)",
+          text: "var(--mint-text)",
+        },
         surface: {
           page: "var(--surface-page)",
           card: "var(--surface-card)",

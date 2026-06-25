@@ -102,13 +102,13 @@ export function LiveRail({ projects }: { projects: Project[] }) {
     <section className="mb-8">
       <div className="mb-3 flex items-center gap-2">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-state-live" />
         </span>
         <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-primary">
           Live Now
         </h2>
-        <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400">
+        <span className="rounded-full bg-state-live/15 px-2 py-0.5 text-[10px] font-bold text-state-live">
           {liveProjects.length}
         </span>
       </div>
@@ -186,7 +186,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                     TODO(viewer-count): once a live viewer count is on the
                     project data, append here:
                       <span className="text-[10px] font-bold text-white">• {count}</span> */}
-                <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-red-500 px-2 py-0.5 shadow-sm">
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 rounded-full bg-state-live px-2 py-0.5 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
                   <span className="text-[10px] font-bold uppercase tracking-wide text-white">
                     LIVE
@@ -250,11 +250,11 @@ export function LiveRail({ projects }: { projects: Project[] }) {
                 {/* Footer — price + watch CTA */}
                 <div className="mt-auto flex items-center justify-between pt-3">
                   {price != null && (
-                    <span className="text-xs font-bold text-brand-teal">
+                    <span className="font-mono text-xs font-bold text-mint-text">
                       From ${price < 1 ? price.toFixed(2) : Math.round(price)}
                     </span>
                   )}
-                  <span className="ml-auto text-[10px] font-medium text-red-400">
+                  <span className="ml-auto text-[10px] font-medium text-state-live">
                     Watch live →
                   </span>
                 </div>
@@ -272,7 +272,7 @@ export function LiveRail({ projects }: { projects: Project[] }) {
             <span className="text-lg font-bold text-primary">
               +{overflowCount} more live
             </span>
-            <span className="text-[10px] font-medium text-red-400">
+            <span className="text-[10px] font-medium text-state-live">
               See all live →
             </span>
           </Link>

@@ -228,7 +228,7 @@ export function Navbar() {
                     "relative px-3 py-2 text-sm font-medium transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] rounded-md",
                     active
-                      ? "text-brand-teal"
+                      ? "text-mint-text"
                       : "text-secondary hover:text-primary",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
@@ -236,7 +236,7 @@ export function Navbar() {
                   {l.label}
                   {active && (
                     <span
-                      className="absolute inset-x-3 -bottom-1 h-0.5 rounded-full bg-brand-teal"
+                      className="absolute inset-x-3 -bottom-1 h-0.5 rounded-full bg-mint-text"
                       aria-hidden="true"
                     />
                   )}

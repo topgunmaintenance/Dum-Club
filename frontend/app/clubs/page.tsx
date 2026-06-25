@@ -118,7 +118,7 @@ export default function ClubsPage() {
             <button
               type="button"
               onClick={login}
-              className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-black transition hover:opacity-90"
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
             >
               Sign in
             </button>
@@ -154,7 +154,7 @@ export default function ClubsPage() {
             </p>
             <Link
               href="/discover"
-              className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-black transition hover:opacity-90"
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
             >
               Find shops to follow
             </Link>
