@@ -22,9 +22,10 @@
  * brief; a brand mock can refine the exact spacing/scrims later.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { LiveChatIVS } from "./LiveChatIVS";
+import { API_BASE } from "../lib/apiBase";
 
 const IVSStageViewer = dynamic(
   () => import("./IVSStageViewer").then((m) => ({ default: m.IVSStageViewer })),
@@ -43,11 +44,29 @@ export type LiveRoomOffer = {
   promo_copy?: string | null;
 };
 
+export type LiveRoomAuction = {
+  id: string;
+  status: string;
+  current_bid: number | null;
+  current_bidder: string | null;
+  current_bidder_display: string | null;
+  starting_price: number;
+  ends_at: string;
+  bid_count: number;
+};
+
 type LiveRoomProps = {
   projectId: string;
   userId: string;
   userName: string;
   isOwner: boolean;
+  // Live auction (optional). When present + active, the room shows a Bid bar
+  // instead of the Buy bar. Seeded from the page; LiveRoom polls for realtime
+  // current-bid sync and posts bids itself (auctions API, user_id header).
+  auction: LiveRoomAuction | null;
+  auctionItem: { title: string; image: string | null } | null;
+  upNext: { id: string; title: string; image: string | null }[];
+  onBidPlaced?: (displayName: string, amount: number) => void;
   shop: { name: string; logoUrl: string | null; verbLabel: string };
   // Follow (favorites) — driven by the page so counts stay in sync.
   isFollowing: boolean;
@@ -77,6 +96,10 @@ export function LiveRoom({
   userId,
   userName,
   isOwner,
+  auction,
+  auctionItem,
+  upNext,
+  onBidPlaced,
   shop,
   isFollowing,
   followerCount,
@@ -125,6 +148,71 @@ export function LiveRoom({
       }
     } catch {
       /* user cancelled the share sheet — nothing to do */
+    }
+  }
+
+  // ── Live auction ──
+  const [auc, setAuc] = useState<LiveRoomAuction | null>(auction);
+  useEffect(() => { setAuc(auction); }, [auction]);
+  const [bidding, setBidding] = useState(false);
+  const [bidError, setBidError] = useState<string | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const aucActive = !!auc && auc.status === "active";
+  const aucId = auc?.id;
+
+  // While the auction is active: a 250ms tick for the countdown and a 2.5s
+  // poll of the auction endpoint so another buyer's bid shows up in realtime
+  // (place_bid doesn't broadcast over the chat socket server-side).
+  useEffect(() => {
+    if (!aucActive || !aucId) return;
+    const tick = setInterval(() => setNowMs(Date.now()), 250);
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auctions/${aucId}`);
+        if (res.ok) { const d = await res.json(); if (d?.id) setAuc(d); }
+      } catch { /* transient — next tick retries */ }
+    }, 2500);
+    return () => { clearInterval(tick); clearInterval(poll); };
+  }, [aucActive, aucId]);
+
+  const aucEndMs = auc
+    ? Date.parse(auc.ends_at.replace(" ", "T").replace(/([+-]\d{2})$/, "$1:00"))
+    : NaN;
+  const secsLeft = Number.isFinite(aucEndMs) ? Math.max(0, Math.ceil((aucEndMs - nowMs) / 1000)) : null;
+  const countdown = secsLeft != null ? `${Math.floor(secsLeft / 60)}:${String(secsLeft % 60).padStart(2, "0")}` : "";
+  const currentBid = auc?.current_bid != null ? Number(auc.current_bid) : null;
+  const isTopBidder = !!auc?.current_bidder && auc.current_bidder === userId;
+  const nextBid = (currentBid != null ? currentBid : auc ? Number(auc.starting_price) : 0) + 1;
+
+  async function placeBid() {
+    if (!auc || bidding) return;
+    if (!userId) { onRequestSignIn(); return; }
+    setBidding(true);
+    setBidError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auctions/${auc.id}/bid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: userId },
+        body: JSON.stringify({ amount: nextBid }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.auction) setAuc(data.auction);
+        onBidPlaced?.(data?.your_display_name || "You", nextBid);
+      } else {
+        const e = await res.json().catch(() => ({}));
+        setBidError(typeof e.detail === "string" ? e.detail : "Bid failed");
+        // Re-sync so the bid we lost to shows.
+        try {
+          const r = await fetch(`${API_BASE}/api/auctions/${auc.id}`);
+          if (r.ok) { const d = await r.json(); if (d?.id) setAuc(d); }
+        } catch { /* ignore */ }
+      }
+    } catch {
+      setBidError("Network error. Try again.");
+    } finally {
+      setBidding(false);
     }
   }
 
@@ -271,8 +359,81 @@ export function LiveRoom({
         />
       </div>
 
-      {/* ── Offer card + BUY bar ── */}
-      {pinnedOffer && (
+      {/* ── Auction Bid bar (when a live auction is active) OR Offer + BUY bar ── */}
+      {aucActive && auc ? (
+        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto max-w-md">
+            {/* Up next — the shop's other items, real catalog (no fake queue). */}
+            {upNext.length > 0 && (
+              <div className="mb-2">
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/60">
+                  Up next · {upNext.length}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
+                  {upNext.map((it) => (
+                    <span
+                      key={it.id}
+                      title={it.title}
+                      className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/15 bg-black/40"
+                    >
+                      {it.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={resolveImageUrl(it.image)} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-[11px] font-bold text-white/70">
+                          {(it.title.trim().charAt(0) || "•").toUpperCase()}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Current item + current bid + countdown */}
+            <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 text-white shadow-lg backdrop-blur-md">
+              {auctionItem?.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={resolveImageUrl(auctionItem.image)} alt="" className="h-14 w-14 flex-shrink-0 rounded-xl object-cover" />
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="mb-0.5 inline-block rounded-full bg-state-live/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-state-live">
+                  Live auction
+                </span>
+                <div className="truncate text-sm font-bold text-white">{auctionItem?.title || "Current item"}</div>
+                <div className="flex flex-wrap items-center gap-x-2 text-[11px]">
+                  <span className="text-white/60">current bid</span>
+                  <span className="font-mono text-base font-extrabold text-white">
+                    ${(currentBid != null ? currentBid : Number(auc.starting_price)).toFixed(0)}
+                  </span>
+                  {isTopBidder ? (
+                    <span className="font-bold text-mint-text">· you&apos;re top</span>
+                  ) : auc.current_bidder_display ? (
+                    <span className="truncate text-white/60">· {auc.current_bidder_display}</span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className={`font-mono text-xl font-extrabold ${secsLeft != null && secsLeft <= 10 ? "text-state-live" : "text-white"}`}>
+                  {countdown}
+                </div>
+                <div className="text-[9px] uppercase tracking-wide text-white/50">ending</div>
+              </div>
+            </div>
+
+            {/* Bid bar (coral — auction urgency) */}
+            <button
+              type="button"
+              onClick={placeBid}
+              disabled={bidding || secsLeft === 0}
+              className="w-full rounded-2xl bg-state-live py-3.5 text-center text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:opacity-90 disabled:opacity-50"
+            >
+              {secsLeft === 0 ? "Auction ended" : bidding ? "Placing…" : `Bid $${nextBid.toFixed(0)}`}
+            </button>
+            {bidError && <p className="mt-1 text-center text-[11px] text-state-live">{bidError}</p>}
+          </div>
+        </div>
+      ) : pinnedOffer ? (
         <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
             {/* Dark glassy offer card (the video shows through). */}
@@ -339,7 +500,7 @@ export function LiveRoom({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

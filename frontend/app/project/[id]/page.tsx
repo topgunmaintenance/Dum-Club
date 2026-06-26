@@ -3705,6 +3705,21 @@ return (
         userId={authUser?.privyId || ""}
         userName={authUser?.email || "Viewer"}
         isOwner={isOwner}
+        auction={auction}
+        auctionItem={auctionOffer ? { title: auctionOffer.title, image: auctionOffer.primary_image_url } : null}
+        upNext={offers
+          .filter((o) => o.id !== auction?.offer_id)
+          .slice(0, 6)
+          .map((o) => ({ id: o.id, title: o.title, image: o.primary_image_url }))}
+        onBidPlaced={(displayName, amount) => {
+          if (id) {
+            broadcastLiveEvent(id as string, {
+              user: displayName,
+              text: `placed a bid: $${amount.toFixed(0)}`,
+              type: "purchase",
+            });
+          }
+        }}
         shop={{
           name: project.title || project.name || "Shop",
           logoUrl: cleanLogoUrl(project.business_profile?.logo_url) || null,
