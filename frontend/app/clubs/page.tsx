@@ -23,7 +23,7 @@ import { isDiscoverable, withoutLive } from "../../lib/discover/filters";
 import { API_BASE } from "../../lib/apiBase";
 import { useAuth } from "../../lib/auth/AuthContext";
 
-import { LiveRail } from "../../components/discover/LiveRail";
+import { LiveNowGrid } from "../../components/discover/LiveNowGrid";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 
 export default function ClubsPage() {
@@ -161,8 +161,9 @@ export default function ClubsPage() {
           </div>
         ) : (
           <>
-            {/* Live followed shows lead (LiveRail self-hides if none live). */}
-            <LiveRail projects={followed} />
+            {/* Live followed shows lead (self-hides if none live), in the same
+                2-up Club style as /discover. */}
+            <LiveNowGrid projects={followed} />
 
             {/* The rest of the followed shops. */}
             {followedNonLive.length > 0 && (
