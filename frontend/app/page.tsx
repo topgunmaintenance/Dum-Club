@@ -1572,7 +1572,7 @@ function DealsSection({ projects }: { projects: Project[] }) {
   return (
     <div className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20">
       <div className="mb-6 flex items-center gap-3">
-        <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
+        <h2 className="text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
           Deals
         </h2>
         <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-secondary">
@@ -1616,7 +1616,7 @@ function RetentionSection() {
     <div className="mx-auto mt-20 max-w-6xl px-4">
       <div className="rounded-2xl border border-default bg-surface-card p-6 sm:p-10">
         <div className="mb-2 text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Customer Retention</div>
-        <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
+        <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
           Stop losing customers.{" "}
           <span className="text-brand-teal">Automate repeat business.</span>
         </h2>
@@ -1734,7 +1734,7 @@ function PricingTiers() {
   return (
     <div className="mx-auto mt-20 max-w-5xl px-4">
       <div className="mb-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-brand-teal">Pricing</div>
-      <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-brand-navy sm:text-3xl">
+      <h2 className="mb-2 text-center text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
         Flat fee. <span className="text-brand-teal">1.5% sales fee. That&apos;s it.</span>
       </h2>
       <p className="mx-auto mb-10 max-w-md text-center text-sm text-secondary">
@@ -1798,7 +1798,7 @@ function WhatnotPitch() {
           {/* Left: The problem */}
           <div className="border-b border-default/40 p-8 sm:border-b-0 sm:border-r">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-state-live">The Whatnot tax</div>
-            <h3 className="mb-4 text-xl font-extrabold text-brand-navy sm:text-2xl">
+            <h3 className="mb-4 text-xl font-extrabold text-primary sm:text-2xl">
               You sell $10,000/mo on Whatnot.
               <br />
               <span className="text-state-live">They keep $1,150.</span>
@@ -1822,7 +1822,7 @@ function WhatnotPitch() {
           {/* Right: The solution */}
           <div className="p-8">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">The DUM Club way</div>
-            <h3 className="mb-4 text-xl font-extrabold text-brand-navy sm:text-2xl">
+            <h3 className="mb-4 text-xl font-extrabold text-primary sm:text-2xl">
               Same $10,000/mo.
               <br />
               <span className="text-brand-teal">You keep $9,901.</span>
@@ -2611,7 +2611,7 @@ export default function Home() {
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowUpgradeModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-default bg-surface-card p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 text-3xl">🚀</div>
-            <h2 className="text-xl font-extrabold text-brand-navy">You&apos;ve used your free businesses</h2>
+            <h2 className="text-xl font-extrabold text-primary">You&apos;ve used your free businesses</h2>
             <p className="mt-3 text-sm leading-relaxed text-secondary">
               You&apos;ve started {FREE_LAUNCH_LIMIT} businesses for free. Earn DUM Points for unlimited businesses, priority placement, and more.
             </p>
@@ -2659,37 +2659,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── BUSINESSES ON DUM CLUB ── homepage marketplace rail.
-             Reuses /discover's ListingGrid + ListingCard verbatim so
-             buyers see image-forward, category-pilled merchant cards
-             below the Live Now rail. One presence per merchant: live
-             sellers are EXCLUDED here (they render only in the rail
-             above) and return to the grid when the show ends. Honest
-             count — exactly how many cards the grid shows (CLAUDE.md
-             §12.2: no fake inflation). Section hides entirely when
-             the list is empty. Topgun (NULL category) renders via the
-             existing classifier + emoji + onError fallback chains
-             shipped in #341 / #344. */}
-        {gridProjects.length > 0 && (
-          <div className="mb-12">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
-                Businesses on DUM Club · {gridProjects.length}
-              </h2>
-              <Link
-                href="/discover"
-                className="shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal transition hover:text-brand-teal-hover"
-              >
-                See all on Discover →
-              </Link>
-            </div>
-            <ListingGrid
-              projects={gridProjects}
-              marketByProject={marketByProject}
-              pulseId={null}
-            />
-          </div>
-        )}
+        {/* BUSINESSES ON DUM CLUB grid moved BELOW the hero (placeholder /
+             emoji-fallback tiles shouldn't be the first thing a visitor sees).
+             Rendered just after #section-hero. The Live Now rail still leads. */}
 
         {/* ── HERO. light-theme migration (Phase 1) ──
              Switched from the dark glassmorphism panel to a clean
@@ -2702,7 +2674,7 @@ export default function Home() {
              preserved. */}
         <div
           id="section-hero"
-          className="relative overflow-hidden rounded-2xl border border-default bg-surface-card shadow-sm"
+          className="relative overflow-hidden"
         >
           {/* Ambient hero glow. single soft brand-teal radial behind the
                headline. Low opacity (~8%) + heavy blur means it reads as
@@ -2735,13 +2707,13 @@ export default function Home() {
                   Brand recognition is carried by the navbar
                   wordmark and the founder note directly below. */}
               <h1 className="text-[clamp(44px,8vw,72px)] font-extrabold leading-[1.04] tracking-[-0.025em] text-primary">
-                Sell Live. <span className="text-brand-navy">Keep More of Every Dollar.</span>
+                Sell Live. <span className="text-primary">Keep More of Every Dollar.</span>
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
                 Live selling on your own website. Flat monthly subscription plus a 1.5% sales fee. Industry-low.
               </p>
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
-                <span className="font-bold text-brand-navy">60 days free. Plans start at $39/month + 1.5% sales fee.</span> Keep more of every dollar.
+                <span className="font-bold text-primary">60 days free. Plans start at $39/month + 1.5% sales fee.</span> Keep more of every dollar.
               </p>
 
               {/* Founder trust row. Personal phone + email were
@@ -2750,7 +2722,7 @@ export default function Home() {
                   the merchant inquiry form. */}
               <p className="mx-auto mt-4 text-[13px] text-secondary">
                 Questions?{" "}
-                <Link href="/merchant" className="font-medium text-brand-navy transition hover:text-brand-teal">
+                <Link href="/merchant" className="font-medium text-primary transition hover:text-brand-teal">
                   Contact us through the business inquiry form.
                 </Link>
               </p>
@@ -2767,7 +2739,7 @@ export default function Home() {
                   <div className="flex flex-col items-center gap-1.5">
                     <Link
                       href="/merchant"
-                      className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white sm:w-auto"
+                      className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand-teal px-6 text-[13px] font-bold uppercase tracking-[0.12em] text-primary transition hover:bg-brand-teal-hover hover:text-white sm:w-auto"
                     >
                       Start free for 60 days →
                     </Link>
@@ -2803,6 +2775,32 @@ export default function Home() {
           </div>
         </div>
 
+        {/* ── BUSINESSES ON DUM CLUB ── homepage marketplace grid, now BELOW
+             the hero so the pitch leads and emoji-fallback tiles never open the
+             page. Reuses /discover's ListingGrid + ListingCard verbatim; live
+             sellers are excluded (they render in the Live Now rail above the
+             hero). Honest count; hides entirely when empty. */}
+        {gridProjects.length > 0 && (
+          <div className="mt-12">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
+                Businesses on DUM Club · {gridProjects.length}
+              </h2>
+              <Link
+                href="/discover"
+                className="shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal transition hover:text-brand-teal-hover"
+              >
+                See all on Discover →
+              </Link>
+            </div>
+            <ListingGrid
+              projects={gridProjects}
+              marketByProject={marketByProject}
+              pulseId={null}
+            />
+          </div>
+        )}
+
         {/* ── SEARCH RESULTS + DEALS removed. the homepage no longer
              has a customer search surface; buyer-side search lives at
              /discover. Founder note + pricing summary moved down to
@@ -2835,7 +2833,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               What it looks like on your site
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
               A live storefront, embedded right where your customers already are.
             </h2>
           </div>
@@ -2880,7 +2878,7 @@ export default function Home() {
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                   Now showing
                 </div>
-                <h3 className="text-lg font-semibold leading-tight text-brand-navy">
+                <h3 className="text-lg font-semibold leading-tight text-primary">
                   Slow Hour Flash Deal
                 </h3>
                 <p className="mt-1 text-sm text-secondary">
@@ -2961,7 +2959,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               How it works
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
               Three steps. No developer required.
             </h2>
           </div>
@@ -3008,7 +3006,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               One flat fee instead of five
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
               Stop paying for five things that don&apos;t talk to each other.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-secondary">
@@ -3060,7 +3058,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               Built for local business
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
               What you can sell live.
             </h2>
           </div>
@@ -3101,7 +3099,7 @@ export default function Home() {
             <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">
               90-second walkthrough
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
               See DUM Club in motion.
             </h2>
           </div>
@@ -3155,7 +3153,7 @@ export default function Home() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-teal">
                   {tier.name}
                 </div>
-                <div className="mt-3 text-3xl font-extrabold text-brand-navy">
+                <div className="mt-3 text-3xl font-extrabold text-primary">
                   ${tier.price}
                   <span className="text-base font-medium text-secondary">/month</span>
                 </div>
@@ -3186,7 +3184,7 @@ export default function Home() {
             <div className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-brand-teal">
               You already paid for your website
             </div>
-            <h2 className="text-4xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
+            <h2 className="text-4xl font-extrabold tracking-tight text-primary sm:text-5xl">
               Ready to turn your website into a{" "}
               <span className="text-brand-teal">live storefront?</span>
             </h2>
