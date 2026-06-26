@@ -66,7 +66,9 @@ export function DumPill() {
         />
       )}
 
-      <div className="fixed bottom-4 right-4 z-[100]">
+      {/* bottom-24 on mobile clears the fixed BottomTabNav (h-16 + safe area);
+          drops to bottom-4 on lg where there's no bottom nav. */}
+      <div className="fixed bottom-24 right-4 z-[100] lg:bottom-4">
         {/* Expanded panel */}
         {expanded && (
           <div className="mb-2 w-64 rounded-2xl border border-default bg-surface-card p-5 shadow-[0_16px_48px_rgba(11,18,32,0.18)] backdrop-blur-md">

@@ -33,7 +33,10 @@ const TABS: Tab[] = [
   { href: "/", label: "Home", Icon: Home, match: (p) => p === "/" },
   { href: "/discover", label: "Live", Icon: Radio, match: (p) => p.startsWith("/discover") },
   { href: "/orders", label: "Bag", Icon: ShoppingBag, match: (p) => p.startsWith("/orders") },
-  { href: "/dashboard", label: "You", Icon: User, match: (p) => p.startsWith("/dashboard") },
+  // "You" → the buyer's own surface (followed shops), not the merchant
+  // dashboard. Signed-out lands on /clubs' sign-in prompt. Merchants reach
+  // their dashboard from the top navbar.
+  { href: "/clubs", label: "You", Icon: User, match: (p) => p.startsWith("/clubs") },
 ];
 
 export function BottomTabNav() {
