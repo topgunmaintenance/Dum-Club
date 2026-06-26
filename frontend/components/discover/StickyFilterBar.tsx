@@ -9,6 +9,7 @@
  * "Nearest" sort hidden in Pass 1 (no geo).
  */
 
+import { useState } from "react";
 import type { DiscoverSortId, PriceFilter } from "../../lib/discover/types";
 import { VerbTabs, type VerbTabId } from "./VerbTabs";
 
@@ -32,24 +33,45 @@ type StickyFilterBarProps = {
 };
 
 export function StickyFilterBar(props: StickyFilterBarProps) {
+  // The secondary filters (sort / price / live / deals) collapse behind a
+  // Filters toggle so the home leads pills-clean like the mock.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   return (
     <div className="sticky top-16 z-30 -mx-4 mb-6 border-b border-default bg-surface-card/95 px-4 pb-3 pt-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:top-20">
-      {/* Search */}
-      <div className="mb-3">
+      {/* Compact search */}
+      <div className="mb-3 flex items-center gap-2 rounded-full border border-default bg-surface-muted px-3.5 py-2 sm:max-w-sm">
+        <span aria-hidden="true" className="text-sm text-muted">🔍</span>
         <input
           type="text"
           value={props.searchQuery}
           onChange={(e) => props.setSearchQuery(e.target.value)}
-          placeholder="Search local businesses, services, live shows..."
-          className="w-full rounded-lg border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30 sm:max-w-md"
+          placeholder="Search shops, services, live shows…"
+          className="w-full bg-transparent text-sm text-primary placeholder:text-muted outline-none"
         />
       </div>
 
-      {/* Verb tabs — EAT / FIX / MOVE / SHOP / BOOK. The primary category
-          control: plain-English verbs over the existing category system. */}
-      <VerbTabs active={props.activeVerb} onSelect={props.setActiveVerb} />
+      {/* Category pills (primary control) + a Filters toggle on the right. */}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <VerbTabs active={props.activeVerb} onSelect={props.setActiveVerb} />
+        </div>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+          className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
+            filtersOpen || props.isFiltered
+              ? "border-strong text-primary"
+              : "border-default text-secondary hover:border-strong hover:text-primary"
+          }`}
+        >
+          Filters
+          {props.isFiltered && <span className="h-1.5 w-1.5 rounded-full bg-mint-text" aria-hidden="true" />}
+        </button>
+      </div>
 
-      {/* Filters row: sort, price, live, deals, reset */}
+      {/* Collapsible filters row: sort, price, live, deals, reset */}
+      {filtersOpen && (
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {/* Sort */}
         <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-secondary">
@@ -136,6 +158,7 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }
