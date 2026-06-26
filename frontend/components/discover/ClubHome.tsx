@@ -44,8 +44,6 @@ import { API_BASE } from "../../lib/apiBase";
 import { resolveOfferCategoryLabel } from "../../lib/categories";
 import { useAuth } from "../../lib/auth/AuthContext";
 
-import { DiscoverHero } from "../../components/discover/DiscoverHero";
-import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
 import { CategoryFollowButton } from "../../components/discover/CategoryFollowButton";
 import { FollowedRail } from "../../components/discover/FollowedRail";
@@ -352,12 +350,9 @@ export function ClubHome() {
   /* ─── Render ─── */
   return (
     <main className="relative min-h-screen bg-surface-page text-primary">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        {/* Hero — hidden for authenticated users (placeholder: always show in Pass 1) */}
-        <DiscoverHero />
-
-        {/* Trust strip */}
-        <TrustStrip />
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {/* The Club home leads straight with the category pills (mock-style) —
+            no marketing hero / trust strip here. The pitch lives at /welcome. */}
 
         {/* Sticky filter bar */}
         <StickyFilterBar
