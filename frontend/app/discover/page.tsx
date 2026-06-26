@@ -48,6 +48,7 @@ import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
 import { FollowedRail } from "../../components/discover/FollowedRail";
+import { FeaturedLive } from "../../components/discover/FeaturedLive";
 import { LiveNowGrid } from "../../components/discover/LiveNowGrid";
 import { StartingSoon } from "../../components/discover/StartingSoon";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
@@ -318,6 +319,19 @@ export default function DiscoverPage() {
     [discoverable, followingSet],
   );
   const hasAnyLive = useMemo(() => discoverable.some((p) => p.is_live === true), [discoverable]);
+  // Most-recently-live show drives the desktop FeaturedLive banner; it's
+  // de-duped out of the LiveNowGrid on lg via its id.
+  const featuredLive = useMemo(() => {
+    const liveOnes = discoverable.filter((p) => p.is_live === true);
+    if (!liveOnes.length) return null;
+    const ms = (p: typeof liveOnes[number]) => {
+      const raw = p.live_started_at;
+      if (!raw) return -Infinity;
+      const t = Date.parse(raw.replace(" ", "T").replace(/(\.\d{3})\d+/, "$1").replace(/([+-]\d{2})$/, "$1:00"));
+      return Number.isNaN(t) ? -Infinity : t;
+    };
+    return [...liveOnes].sort((a, b) => ms(b) - ms(a))[0];
+  }, [discoverable]);
   const hasAnyPromo = useMemo(() => discoverable.some((p) => !!p.promo_copy), [discoverable]);
   const isFiltered =
     activeCategory !== "all" || sortBy !== "newest" || priceFilter !== "any" || liveOnly || dealsOnly || searchQuery.trim() !== "" || nearMe || cityFilter !== "";
@@ -417,8 +431,12 @@ export default function DiscoverPage() {
             global Live rail so a viewer's own shops lead the feed. */}
         <FollowedRail projects={followedProjects} />
 
-        {/* Live now — 2-up portrait grid (the Club home take). */}
-        <LiveNowGrid projects={discoverable} />
+        {/* Featured live — desktop-only wide banner of the top live show. */}
+        <FeaturedLive project={featuredLive} />
+
+        {/* Live now — 2-up portrait grid (the Club home take). The featured
+            show is hidden here on lg (it's the banner above). */}
+        <LiveNowGrid projects={discoverable} hideOnDesktopId={featuredLive?.id} />
 
         {/* Starting soon — scheduled shows (real scheduled_live_at) as a list
             with inline Remind buttons. Renders only when something's booked. */}

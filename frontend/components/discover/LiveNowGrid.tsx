@@ -31,7 +31,15 @@ function liveStartedMs(p: Project): number {
   return Number.isNaN(ms) ? -Infinity : ms;
 }
 
-export function LiveNowGrid({ projects }: { projects: Project[] }) {
+export function LiveNowGrid({
+  projects,
+  hideOnDesktopId,
+}: {
+  projects: Project[];
+  // When set, this card is hidden on lg+ (it's shown as the FeaturedLive
+  // banner there) but still shows in the mobile grid.
+  hideOnDesktopId?: string;
+}) {
   const live = projects
     .filter((p) => p.is_live === true)
     .sort((a, b) => liveStartedMs(b) - liveStartedMs(a))
@@ -65,7 +73,7 @@ export function LiveNowGrid({ projects }: { projects: Project[] }) {
             <Link
               key={p.id}
               href={`/project/${p.slug || p.id}?live=1`}
-              className="group flex flex-col"
+              className={`group flex flex-col ${p.id === hideOnDesktopId ? "lg:hidden" : ""}`}
             >
               <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-default bg-brand-teal-soft">
                 {img ? (
