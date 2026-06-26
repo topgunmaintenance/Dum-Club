@@ -385,28 +385,22 @@ export function ClubHome() {
           </div>
         )}
 
-        {/* Local-near-you bar — local-first framing (our edge over Whatnot,
-            which has no local angle). Real browser geolocation + the existing
-            city filter; degrades to "showing everything" when no storefront has
-            shared a location yet. A ZIP-radius input waits on merchant location
-            data (mig 079 columns exist but are unpopulated) — no dead input. */}
-        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-default bg-surface-card px-4 py-3">
-          <span className="flex items-center gap-1.5 text-sm font-bold text-primary">
-            <span aria-hidden="true" className="text-base">📍</span>
-            Local near you
-          </span>
+        {/* Compact location control (our local-biz edge) — a single Near-me
+            pill + optional city select, no big card, so the home stays
+            pills-clean like the mock. */}
+        <div className="mb-5 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={toggleNearMe}
             aria-pressed={nearMe}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
               nearMe
-                ? "border-brand-teal bg-brand-teal text-black"
-                : "border-brand-teal/40 bg-brand-teal-soft text-brand-teal hover:bg-brand-teal hover:text-black"
+                ? "border-mint-text bg-transparent text-mint-text"
+                : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
             }`}
           >
             <span aria-hidden="true">📍</span>
-            {nearMe ? `Near me · ${NEAR_ME_RADIUS_MILES} mi` : "Use my location"}
+            {nearMe ? `Near me · ${NEAR_ME_RADIUS_MILES} mi` : "Near me"}
           </button>
 
           {cities.length > 0 && (
@@ -425,12 +419,8 @@ export function ClubHome() {
             </select>
           )}
 
-          {geoError && <span className="text-xs text-rose-300">{geoError}</span>}
-          {noCoordsAnywhere && (
-            <span className="text-xs text-muted">
-              No storefronts have shared a location yet, so we're showing everything.
-            </span>
-          )}
+          {geoError && <span className="text-xs text-state-live">{geoError}</span>}
+          {noCoordsAnywhere && <span className="text-[11px] text-muted">Showing everywhere</span>}
         </div>
 
         {/* From shops you follow — personalised strip, signed-in viewers with
