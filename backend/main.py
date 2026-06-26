@@ -44,6 +44,7 @@ from api.routes import (
     dum_points,
     business,
     favorites,
+    category_follows,
     reviews,
     referrals,
     ai_chat,
@@ -331,6 +332,7 @@ app.include_router(token.router, tags=["Token"])
 
 # Phase 4: Growth & Social
 app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
+app.include_router(category_follows.router, prefix="/api/category-follows", tags=["Category Follows"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["Reviews"])
 app.include_router(referrals.router, prefix="/api/referrals", tags=["Referrals"])
 
