@@ -10,14 +10,13 @@
  */
 
 import type { DiscoverSortId, PriceFilter } from "../../lib/discover/types";
-import type { VerbId } from "../../lib/discover/verbs";
-import { VerbTabs } from "./VerbTabs";
+import { VerbTabs, type VerbTabId } from "./VerbTabs";
 
 type StickyFilterBarProps = {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
-  activeVerb: VerbId;
-  setActiveVerb: (id: VerbId) => void;
+  activeVerb: VerbTabId;
+  setActiveVerb: (id: VerbTabId) => void;
   sortBy: DiscoverSortId;
   setSortBy: (id: DiscoverSortId) => void;
   liveOnly: boolean;
