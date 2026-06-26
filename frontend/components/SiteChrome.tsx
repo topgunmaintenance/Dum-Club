@@ -7,6 +7,7 @@ import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
 import { SiteFooter } from "./SiteFooter";
 import { FloatingGoLive } from "./FloatingGoLive";
+import { BottomTabNav } from "./BottomTabNav";
 
 const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
 // VERCEL_ENV / NEXT_PUBLIC_VERCEL_ENV: only the NEXT_PUBLIC_-prefixed form
@@ -124,6 +125,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       {pathname === "/discover" && <LiveActivityTicker />}
       {children}
       {!hideFooter && <SiteFooter pathname={pathname} />}
+      {/* Mobile app-shell tab bar (Home/Live/+/Bag/You). Self-hides on the
+          storefront, embed, and admin/dashboard surfaces; renders a spacer so
+          content + footer clear it. Desktop keeps the top navbar. */}
+      <BottomTabNav />
       <DumPill />
       <FloatingGoLive />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in
