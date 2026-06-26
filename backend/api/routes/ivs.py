@@ -373,9 +373,16 @@ async def api_create_stage(
     # failure is logged inside the helper, never raised into go-live.
     try:
         import threading
-        from services.agents.live_reminders import notify_project_live_now
+        from services.agents.live_reminders import notify_project_live_now, notify_category_followers
         threading.Thread(
             target=notify_project_live_now,
+            args=(project_uuid,),
+            daemon=True,
+        ).start()
+        # Also ping followers of this shop's category (best-effort; no-ops if
+        # the category_follows table isn't applied yet).
+        threading.Thread(
+            target=notify_category_followers,
             args=(project_uuid,),
             daemon=True,
         ).start()

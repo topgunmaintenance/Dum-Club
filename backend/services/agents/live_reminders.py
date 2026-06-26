@@ -311,6 +311,105 @@ def notify_project_live_now(project_id: str, supabase=None) -> dict:
     return counts
 
 
+# Mirror of the frontend verb model (lib/discover/verbs.ts): which verb a
+# seeded category_id (mig 035 + 074) belongs to. Used to ping category
+# followers when a shop in their verb goes live. NULL/unmapped category_id
+# can't be classified server-side (no keyword classifier here), so those
+# shops simply don't trigger a category ping.
+_CATEGORY_ID_TO_VERB = {
+    "restaurants": "eat", "food-trucks": "eat", "coffee-shops": "eat", "bars": "eat",
+    "auto-services": "fix", "home-services": "fix", "aviation": "fix",
+    "fitness": "move",
+    "retail": "shop", "art-handcraft": "shop",
+    "beauty-services": "book", "professional-services": "book",
+    "events": "book", "pets": "book", "entertainment": "book",
+}
+
+
+def notify_category_followers(project_id: str, supabase=None) -> dict:
+    """Email everyone who follows this shop's category that a show in it just
+    started. Fired from the instant Go Live paths alongside
+    notify_project_live_now.
+
+    Resolves the project's category_id -> verb, then emails each
+    category_follows row for that verb (using the snapshotted email). Unlike
+    live_reminders there's no sent_at throttle — a category follow is a
+    standing "ping me when my club goes live" relationship, so it fires on
+    each go-live. Best-effort and exception-safe: a missing category_follows
+    table (migration pending) or any DB hiccup is swallowed and returns zeros.
+    """
+    counts = {"verb": None, "followers": 0, "sent": 0, "errored": 0}
+    try:
+        sb = supabase or get_client()
+    except Exception as exc:
+        print(f"[category-follows:now] no client for project={project_id}: {exc!r}")
+        return counts
+
+    # Resolve the shop + its verb.
+    business_name = "A business on DUM Club"
+    slug_or_id = project_id
+    verb = None
+    try:
+        pr = (
+            sb.table("projects")
+            .select("id, slug, name, title, category_id")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if pr.data:
+            p = pr.data[0]
+            business_name = (
+                (p.get("title") or "").strip()
+                or (p.get("name") or "").strip()
+                or business_name
+            )
+            slug_or_id = p.get("slug") or p["id"]
+            verb = _CATEGORY_ID_TO_VERB.get((p.get("category_id") or "").strip())
+    except Exception as exc:
+        print(f"[category-follows:now] project lookup failed {project_id}: {exc!r}")
+        return counts
+
+    counts["verb"] = verb
+    if not verb:
+        return counts
+
+    # Fetch followers of that verb (table may not exist yet — caught).
+    try:
+        subs = (
+            sb.table("category_follows")
+            .select("email")
+            .eq("category", verb)
+            .limit(2000)
+            .execute()
+        )
+    except Exception as exc:
+        print(f"[category-follows:now] scan failed verb={verb}: {exc!r}")
+        return counts
+
+    emails = sorted({(r.get("email") or "").strip().lower() for r in (subs.data or []) if r.get("email")})
+    counts["followers"] = len(emails)
+    for email in emails:
+        try:
+            ok = send_live_reminder(
+                customer_email=email,
+                business_name=business_name,
+                project_slug_or_id=slug_or_id,
+                scheduled_for_label="now",
+            )
+            if ok:
+                counts["sent"] += 1
+        except Exception as exc:
+            counts["errored"] += 1
+            print(f"[category-follows:now] send failed {email}: {exc!r}")
+
+    print(
+        f"[category-follows:now] project={project_id} verb={verb} "
+        f"followers={counts['followers']} sent={counts['sent']} errored={counts['errored']}"
+    )
+    return counts
+
+
 if __name__ == "__main__":
     if not EMAIL_ENABLED:
         print("[live-reminders] EMAIL disabled (no RESEND_API_KEY). Worker will scan and claim but won't actually send. Set RESEND_API_KEY in Railway env to enable.")

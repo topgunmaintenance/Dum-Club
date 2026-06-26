@@ -47,6 +47,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
+import { CategoryFollowButton } from "../../components/discover/CategoryFollowButton";
 import { FollowedRail } from "../../components/discover/FollowedRail";
 import { FeaturedLive } from "../../components/discover/FeaturedLive";
 import { LiveNowGrid } from "../../components/discover/LiveNowGrid";
@@ -377,6 +378,17 @@ export default function DiscoverPage() {
           isFiltered={isFiltered}
           onReset={resetFilters}
         />
+
+        {/* Follow-a-category — "get pinged when a <verb> shop goes live".
+            Shown only when a real verb is selected (not "For you"). */}
+        {activeVerb !== "all" && activeVerbLabel && (
+          <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-sm text-secondary">
+              Get pinged when a {activeVerbLabel} shop goes live.
+            </span>
+            <CategoryFollowButton category={activeVerb} label={activeVerbLabel} />
+          </div>
+        )}
 
         {/* Local-near-you bar — local-first framing (our edge over Whatnot,
             which has no local angle). Real browser geolocation + the existing
