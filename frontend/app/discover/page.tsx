@@ -32,7 +32,8 @@ import {
   lowestOfferPrice,
   withoutLive,
 } from "../../lib/discover/filters";
-import { DEFAULT_VERB, VERBS, isVerbId, projectMatchesVerb, type VerbId } from "../../lib/discover/verbs";
+import { VERBS, isVerbId, projectMatchesVerb } from "../../lib/discover/verbs";
+import type { VerbTabId } from "../../components/discover/VerbTabs";
 import type {
   DiscoverCategoryId,
   DiscoverSortId,
@@ -47,8 +48,8 @@ import { DiscoverHero } from "../../components/discover/DiscoverHero";
 import { TrustStrip } from "../../components/discover/TrustStrip";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
 import { FollowedRail } from "../../components/discover/FollowedRail";
-import { LiveRail } from "../../components/discover/LiveRail";
-import { UpcomingRail } from "../../components/discover/UpcomingRail";
+import { LiveNowGrid } from "../../components/discover/LiveNowGrid";
+import { StartingSoon } from "../../components/discover/StartingSoon";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 import { EmptyState } from "../../components/discover/EmptyState";
 import { MerchantStrip } from "../../components/discover/MerchantStrip";
@@ -63,10 +64,10 @@ export default function DiscoverPage() {
   const [followingSet, setFollowingSet] = useState<Set<string>>(() => new Set());
 
   /* ─── Filter state ─── */
-  // Verb tabs (EAT/FIX/MOVE/SHOP/BOOK) are the primary category control;
-  // EAT is the default-selected verb. activeCategory stays as a secondary,
-  // URL-only filter (defaults to "all" / no-op) for back-compat.
-  const [activeVerb, setActiveVerb] = useState<VerbId>(DEFAULT_VERB);
+  // Category pills: "For you" (all) leads, then the verbs (EAT/FIX/MOVE/SHOP/
+  // BOOK). "For you" is the default so the home opens populated. activeCategory
+  // stays as a secondary, URL-only filter (defaults to "all" / no-op).
+  const [activeVerb, setActiveVerb] = useState<VerbTabId>("all");
   const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("all");
   const [sortBy, setSortBy] = useState<DiscoverSortId>("newest");
   const [liveOnly, setLiveOnly] = useState(false);
@@ -94,7 +95,7 @@ export default function DiscoverPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
     const verb = params.get("verb");
-    if (isVerbId(verb)) setActiveVerb(verb);
+    if (verb === "all" || isVerbId(verb)) setActiveVerb(verb as VerbTabId);
     const cat = params.get("category") as DiscoverCategoryId | null;
     const sort = params.get("sort");
     const price = params.get("price");
@@ -198,7 +199,10 @@ export default function DiscoverPage() {
 
   /* ─── Verb filter (EAT/FIX/MOVE/SHOP/BOOK) — the primary category cut ─── */
   const verbProjects = useMemo(
-    () => filteredProjects.filter((p) => projectMatchesVerb(p, activeVerb)),
+    () =>
+      activeVerb === "all"
+        ? filteredProjects
+        : filteredProjects.filter((p) => projectMatchesVerb(p, activeVerb)),
     [filteredProjects, activeVerb],
   );
   const activeVerbLabel = VERBS.find((v) => v.id === activeVerb)?.label ?? "";
@@ -413,12 +417,12 @@ export default function DiscoverPage() {
             global Live rail so a viewer's own shops lead the feed. */}
         <FollowedRail projects={followedProjects} />
 
-        {/* Live Rail */}
-        <LiveRail projects={discoverable} />
+        {/* Live now — 2-up portrait grid (the Club home take). */}
+        <LiveNowGrid projects={discoverable} />
 
-        {/* Upcoming Live rail — scheduled shows (real scheduled_live_at).
-            Renders only when a merchant has a future show booked. */}
-        <UpcomingRail projects={discoverable} />
+        {/* Starting soon — scheduled shows (real scheduled_live_at) as a list
+            with inline Remind buttons. Renders only when something's booked. */}
+        <StartingSoon projects={discoverable} />
 
         {/* Main grid */}
         <div id="grid">

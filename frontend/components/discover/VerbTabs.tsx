@@ -1,43 +1,52 @@
 "use client";
 
 /**
- * VerbTabs — the five plain-English category verbs for /discover:
- * EAT / FIX / MOVE / SHOP / BOOK. Replaces the old 8-category pill strip.
+ * VerbTabs — the category pill row for "The Club" home: a leading "For you"
+ * (everything) pill followed by the five plain-English verbs
+ * (EAT / FIX / MOVE / SHOP / BOOK).
  *
- * Active tab = --mint-fill pill with ink text; inactive = muted chip with
- * a hairline border and secondary text (the brief's chip treatment).
- * Horizontal, scrollable on every viewport — same pattern as the rail it
- * replaces; a leading glyph fronts each verb.
+ * Mock styling: the active pill is a near-black fill with white text; inactive
+ * pills are white with a hairline border. (Mint stays reserved for actions
+ * like Follow/Buy — a category selector isn't an action, so it goes neutral.)
+ * Horizontal, scrollable on every viewport.
  */
 
 import { VERBS, type VerbId } from "../../lib/discover/verbs";
+
+// "all" = the "For you" pill (no verb filter). Everything else is a verb.
+export type VerbTabId = VerbId | "all";
+
+const PILLS: { id: VerbTabId; label: string; glyph?: string }[] = [
+  { id: "all", label: "For you" },
+  ...VERBS.map((v) => ({ id: v.id as VerbTabId, label: v.label, glyph: v.glyph })),
+];
 
 export function VerbTabs({
   active,
   onSelect,
 }: {
-  active: VerbId;
-  onSelect: (id: VerbId) => void;
+  active: VerbTabId;
+  onSelect: (id: VerbTabId) => void;
 }) {
   return (
     <div className="-mx-4 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
       <div className="flex w-max items-center gap-2">
-        {VERBS.map((verb) => {
-          const isActive = active === verb.id;
+        {PILLS.map((pill) => {
+          const isActive = active === pill.id;
           return (
             <button
-              key={verb.id}
+              key={pill.id}
               type="button"
-              onClick={() => onSelect(verb.id)}
+              onClick={() => onSelect(pill.id)}
               aria-pressed={isActive}
               className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] transition ${
                 isActive
-                  ? "border-transparent bg-mint-fill text-mint-fill-ink"
-                  : "border-default bg-surface-muted text-secondary hover:border-strong hover:text-primary"
+                  ? "border-transparent bg-surface-inverse text-white"
+                  : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
               }`}
             >
-              <span aria-hidden="true" className="text-sm">{verb.glyph}</span>
-              <span>{verb.label}</span>
+              {pill.glyph && <span aria-hidden="true" className="text-sm">{pill.glyph}</span>}
+              <span>{pill.label}</span>
             </button>
           );
         })}
