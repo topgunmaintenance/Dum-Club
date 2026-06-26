@@ -2776,11 +2776,12 @@ export default function Home() {
         </div>
 
         {/* ── BUSINESSES ON DUM CLUB ── homepage marketplace grid, now BELOW
-             the hero so the pitch leads and emoji-fallback tiles never open the
-             page. Reuses /discover's ListingGrid + ListingCard verbatim; live
-             sellers are excluded (they render in the Live Now rail above the
-             hero). Honest count; hides entirely when empty. */}
-        {gridProjects.length > 0 && (
+             the hero so the pitch leads. Cards use real logo/cover images with
+             a mint monogram fallback (ListingCard) — no emoji tiles. Gated at
+             >= 3 merchants so a thin 1-2 card row never ships; it fills in as
+             shops onboard. Live sellers are excluded (Live Now rail above the
+             hero). Honest count; hides entirely below the threshold. */}
+        {gridProjects.length >= 3 && (
           <div className="mt-12">
             <div className="mb-3 flex items-baseline justify-between gap-3">
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">

@@ -15,7 +15,6 @@ import Link from "next/link";
 import { cleanLogoUrl } from "../../lib/imageSrc";
 import type { Project, MarketSnapshot } from "../../lib/discover/types";
 import {
-  getProjectEmoji,
   getAccent,
   lowestOfferPrice,
   hasOffers,
@@ -49,19 +48,6 @@ function RelativeTime({ dateStr }: { dateStr?: string | null }) {
   return <span className="font-mono text-[9px] text-secondary">{label}</span>;
 }
 
-/**
- * Deterministic gradient from project ID hash.
- * Used when no thumbnail exists (most projects in Pass 1).
- */
-function idGradient(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h1 = Math.abs(hash % 360);
-  const h2 = (h1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${h1},40%,15%), hsl(${h2},30%,10%))`;
-}
 
 type ListingCardProps = {
   project: Project;
@@ -113,7 +99,6 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
   // the verified badge always renders even on a zero-offer card.
   if (!hasOffers(project) && !project.verified) return null;
 
-  const emoji = getProjectEmoji(project, index);
   const accent = getAccent(index);
   // categoryId still drives the CTA branch below (auto/home/beauty/etc).
   // categoryLabel is the SOURCE-OF-TRUTH human label: prefers the canonical
@@ -125,6 +110,9 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
   const isLive = project.is_live === true;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
   const businessName = project.title || project.name || "Untitled";
+  // Monogram fallback for merchants with no logo/cover — their initial on a
+  // soft-mint tile, never a random emoji.
+  const monogram = (businessName.trim().charAt(0) || "•").toUpperCase();
 
   // Context-aware CTA per Phase 1 DC-2 of the Discover plan. Service
   // categories prompt for a quote; restaurants get an order CTA;
@@ -157,9 +145,9 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
       >
         {/* Seller row — avatar + business name + verified, ABOVE the media
             (Whatnot seller identity; folds in the deferred P2.5). Avatar reuses
-            logoSrc with the emoji fallback; onError clears it. */}
+            logoSrc with the mint monogram fallback; onError clears it. */}
         <div className="mb-2.5 flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-surface-muted">
+          <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
             {logoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -170,7 +158,7 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-sm">{emoji}</span>
+              <span className="text-[11px] font-bold text-mint-text">{monogram}</span>
             )}
           </span>
           <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-primary">
@@ -191,15 +179,12 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
           <FollowButton projectId={project.id} initialCount={followerCount} initialFollowing={isFollowing} />
         </div>
 
-        {/* Portrait media tile (4:5) — cover photo -> logo -> gradient + emoji.
+        {/* Portrait media tile (4:5) — cover photo -> logo -> mint monogram.
             Bigger and more immersive than the prior 16:9 (Whatnot tiles are
             portrait). Each <img> degrades to the next source on error; a
-            merchant with neither a cover nor a logo renders the gradient + emoji
-            exactly as before. */}
-        <div
-          className="relative mb-2.5 aspect-[4/5] overflow-hidden rounded-lg"
-          style={!coverSrc && !logoSrc ? { background: idGradient(project.id) } : undefined}
-        >
+            merchant with neither a cover nor a logo renders their initial on a
+            soft-mint tile (never a random emoji). */}
+        <div className="relative mb-2.5 aspect-[4/5] overflow-hidden rounded-lg">
           {coverSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -219,8 +204,8 @@ export function ListingCard({ project, index, marketSnapshot, isPulsing, followe
               className="block h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="text-6xl">{emoji}</span>
+            <div className="flex h-full w-full items-center justify-center bg-brand-teal-soft">
+              <span className="text-5xl font-extrabold text-mint-text">{monogram}</span>
             </div>
           )}
 
