@@ -179,39 +179,49 @@ Things that aren't Claude-solvable and need a human decision or action.
 Last 15 commits on `main`, newest first. Regenerate via `git log main --oneline -15`.
 
 ```
-c3c700e  feat(retention): recurring weekly auto-roll for scheduled_live_at (#292)
-f07274a  feat(admin): operations overview dashboard for live ops visibility (#291)
-73b3fd0  fix(live): tap-to-retry recovery on the customer-side ended state (#290)
-428ab81  feat(retention): replay-share affordance + OG enrichment (#289)
-6a566e5  feat(retention): customer "remind me when live" loop, complete (#288)
-3a15644  feat(retention): scheduled_live_at — weekly merchant retention keystone (#287)
-116df9d  fix(mobile): safe-area-inset-bottom on two unhandled sticky bottom bars (#286)
-56b3194  fix(embed): cache last-known bubble live state in sessionStorage (#285)
-52e4183  fix(storefront): sticky pinned-offer strip during mobile livestream (#284)
-b18b843  fix(storefront): instant top-of-viewport toast on ?checkout=success (#283)
-b75440f  fix(embed): clearer "Watch live →" affordance on the live bubble (#282)
-b945706  fix(live): hide FloatingGoLive when Stripe is not verified (#281)
-3afa8ea  fix(dashboard): "Preview as customer" link on each project card (#280)
-9a95d9e  fix(onboarding): add "Pin a featured item" row to GetLiveSteps (#279)
-343fec0  fix(merchant): set Stripe expectations before the Connect Stripe click (#278)
+c1e1d0d  Merge #468: live room — host chat under camera, real share + likes, Discover preview
+5a9abdd  feat(live): real preview frame on the Discover "Live now" card
+dfe0955  feat(live): real shared likes over the chat socket
+a045793  fix(live): mount the host chat directly under the owner's camera
+ccdccff  feat(live): real share targets in the live room (Facebook / X / WhatsApp)
+ce60dc4  Merge #467: storefront header cleanup + city/region location chip
+318012a  feat(storefront): return city/region so the header location chip can render
+57104dd  fix(storefront): clean buyer header + light "Powered by DUM Club" footer
+ab99e7e  Merge #466: live-room overlay chat empty-state fix
+4881551  fix(live): hide chat empty-state in the overlay room (overlapped the video)
+52a2a75  Merge #465: live-first Club home — Live-now rail, offer-forward cards
+0306c38  fix(points): mark DUM Points as beta — cross-business spend not live yet
+fa4f576  fix(home): pills-clean — collapse filters, compact search, slim location
+f18f22d  Merge #447: Follow / "Your Clubs" network layer (3a + 3b)
+4f1c251  feat(live-reminders): ping followers on every go-live, not just the first
 ```
 
-### In flight on `claude/adoring-fermat-uEfs0` (pending merge)
+### Shipped this window — buyer "Club" experience + live room (PRs #461–#468)
 
-```
-fix(onboarding): drop .select() chain on profile upsert (supabase-py 2.5.1)
-fix(admin): correct Stripe fees column names on operations overview
-feat(retention): weekly merchant recap email (cron + log)
-feat(acquisition): /why-dum-club comparison surface for outreach
-docs(smoke): pre-outreach operator checklist (browser end-to-end)
-docs(email): RESEND_API_KEY pipeline audit + safe test recipe
-docs(cron): production setup for live_reminders + schedule_rollforward
-```
+The Discover/storefront surfaces were reworked into the Whatnot-style
+"Club" buyer experience (Option B, on the local-business model), and the
+live room got four real-feature fixes off Julian's screenshots:
 
-These ship together as the pre-outreach readiness bundle: three
-operator docs (cron / email / smoke), one merchant-acquisition
-surface, one retention cron, and two production bug fixes
-surfaced while writing the docs.
+- **Club home** — `/` and `/discover` now render the shared `ClubHome`
+  (Live-now rail, offer-forward cards, pills-clean header). Marketing
+  homepage preserved at `/welcome`. DUM Points marked beta.
+- **Public storefront cleanup (#467)** — buyer-facing header (cover /
+  avatar / category / location chip / Verified / Follow), removed the
+  "From $X" placeholder, light "Powered by DUM Club" footer. Confirmed
+  the Orders ledger + owner tools are owner-gated (no public leak).
+  Added `business_profiles.city` / `region` (applied by hand) so the
+  header location chip can render; Topgun set to Morristown, NJ.
+- **Live room (#468)** — host chat now sits under the host's own camera;
+  real share menu (Facebook / X / WhatsApp / Copy); real shared likes
+  over the chat socket (per-show server total, not a local animation);
+  and a real preview frame on the Discover "Live now" card (host uploads
+  a ~320px snapshot every ~10s to `offers/live-thumbs/<id>.jpg`, no
+  migration). The snapshot path touches `IVSStageHost` — verify on a
+  real broadcast.
+
+**Still open (separate backlog, not blocking 0B):** migration 079 (geo
+columns for the "Near me" distance filter) is drafted, not applied;
+per-feed live viewer counts wait on migration 077 (`live_viewer_count`).
 
 ### Older shipped (kept for diff context)
 
