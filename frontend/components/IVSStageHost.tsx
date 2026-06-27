@@ -98,6 +98,13 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   // this, viewers landed on /embed/* and saw "Waiting for host
   // video..." indefinitely after a host crash.
   const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Live preview snapshots: while broadcasting, grab a small JPEG frame
+  // from the local camera every ~10s and upload it so the Discover "Live
+  // now" card can show a real preview instead of a monogram. Entirely
+  // additive + fire-and-forget — it reads the existing preview <video>,
+  // never touches the broadcast pipeline, and any failure is swallowed.
+  const snapshotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const snapshotKickRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Reliable go-live bookkeeping:
   //  - connectTimerRef: fires if CONNECTED never lands after join()
   //  - connectedRef: true once the stage has reached CONNECTED
@@ -137,6 +144,62 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     };
     send(); // immediate first beat so the freshly-live state is recorded
     heartbeatTimerRef.current = setInterval(send, 5000);
+  }
+
+  function stopSnapshots() {
+    if (snapshotTimerRef.current) {
+      clearInterval(snapshotTimerRef.current);
+      snapshotTimerRef.current = null;
+    }
+    if (snapshotKickRef.current) {
+      clearTimeout(snapshotKickRef.current);
+      snapshotKickRef.current = null;
+    }
+  }
+
+  function startSnapshots() {
+    stopSnapshots();
+    const capture = () => {
+      const video = previewRef.current;
+      // Need a playing frame with real dimensions; bail quietly otherwise.
+      if (!video || video.readyState < 2 || !video.videoWidth) return;
+      try {
+        const W = 320;
+        const H = Math.round((video.videoHeight / video.videoWidth) * W) || 180;
+        const canvas = document.createElement("canvas");
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        // getUserMedia frames are same-origin, so the canvas isn't tainted
+        // and toBlob() is allowed.
+        ctx.drawImage(video, 0, 0, W, H);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const form = new FormData();
+            form.append("project_id", projectId);
+            form.append("file", blob, "live.jpg");
+            // No Content-Type header — the browser sets the multipart
+            // boundary. Fire-and-forget; a failed upload never affects air.
+            fetch(`${API_BASE}/api/ivs/live-thumb`, {
+              method: "POST",
+              headers: { user_id: userId },
+              body: form,
+              keepalive: true,
+            }).catch(() => {});
+          },
+          "image/jpeg",
+          0.6,
+        );
+      } catch {
+        /* canvas / security errors are non-fatal — skip this frame */
+      }
+    };
+    // Kick once shortly after going live so the card lights up fast, then
+    // every 10s.
+    snapshotKickRef.current = setTimeout(capture, 2000);
+    snapshotTimerRef.current = setInterval(capture, 10000);
   }
 
   // Defensive: only treat it as pinned when it's a non-empty string.
@@ -360,6 +423,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           clearConnectTimer();
           setStatus("live");
           startHeartbeat();
+          startSnapshots();
           onLive();
         } else if (state === ConnectionState.DISCONNECTED) {
           // The host's own End Stream triggers a disconnect via leave() —
@@ -372,6 +436,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           console.error("[ivs-host] stage disconnected unexpectedly");
           clearConnectTimer();
           stopHeartbeat();
+          stopSnapshots();
           _stageInstance = null;
           _localStreams = [];
           setErrorMsg(
@@ -397,6 +462,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         _stageInstance = null;
         _localStreams = [];
         stopHeartbeat();
+        stopSnapshots();
         setErrorMsg("Couldn't reach the live server. Check your internet and tap Try Again.");
         setErrorKind("generic");
         setStatus("error");
@@ -429,6 +495,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     // Stop heartbeat first so the explicit end isn't accompanied
     // by stray heartbeats racing the /end-stage call.
     stopHeartbeat();
+    stopSnapshots();
 
     if (_stageInstance) {
       try { _stageInstance.leave(); } catch {}
@@ -469,6 +536,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       // bubble + Discover will flip to offline within seconds —
       // exactly the auto-end-stale behaviour we want.
       stopHeartbeat();
+      stopSnapshots();
       clearConnectTimer();
     };
   }, []);
