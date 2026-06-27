@@ -9,7 +9,7 @@ import Link from "next/link";
  * components should NOT render their own <footer> — SiteChrome
  * handles placement so spacing stays consistent across routes.
  *
- * The wordmark uses text-zinc-100 (visually indistinguishable from
+ * The wordmark uses text-primary (visually indistinguishable from
  * pure white) so the stray-white guard stays green. Default link
  * colour is text-secondary; hover lifts to brand-teal per the
  * design system.
@@ -21,12 +21,12 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
   // carry crypto-flavoured legalese.
   const showFullLegal = pathname === "/technology" || pathname === "/investors";
   return (
-    <footer className="border-t border-default bg-base px-4 py-16">
+    <footer className="border-t border-default bg-surface-muted px-4 py-16">
       <div className="mx-auto max-w-5xl">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <div className="mb-3 flex items-center gap-2">
-              <span className="text-xl font-black tracking-tight text-zinc-100">
+              <span className="text-xl font-black tracking-tight text-primary">
                 DUM<span className="text-brand-teal">CLUB</span>
               </span>
             </div>
@@ -146,7 +146,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto" />
               <span className="text-[12px] font-bold tracking-tight">
-                <span className="text-zinc-100">DUM </span><span className="text-brand-teal">CLUB</span>
+                <span className="text-primary">DUM </span><span className="text-brand-teal">CLUB</span>
               </span>
               <span className="text-[10px] text-muted">© 2026 · All rights reserved</span>
             </div>

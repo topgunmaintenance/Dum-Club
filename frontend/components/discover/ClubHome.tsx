@@ -31,6 +31,7 @@ import {
   isDiscoverable,
   lowestOfferPrice,
   withoutLive,
+  hasOffers,
 } from "../../lib/discover/filters";
 import { VERBS, isVerbId, projectMatchesVerb } from "../../lib/discover/verbs";
 import type { VerbTabId } from "../../components/discover/VerbTabs";
@@ -47,8 +48,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { StickyFilterBar } from "../../components/discover/StickyFilterBar";
 import { CategoryFollowButton } from "../../components/discover/CategoryFollowButton";
 import { FollowedRail } from "../../components/discover/FollowedRail";
-import { FeaturedLive } from "../../components/discover/FeaturedLive";
-import { LiveNowGrid } from "../../components/discover/LiveNowGrid";
+import { LiveNowRail } from "../../components/discover/LiveNowRail";
 import { StartingSoon } from "../../components/discover/StartingSoon";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 import { EmptyState } from "../../components/discover/EmptyState";
@@ -253,7 +253,13 @@ export function ClubHome() {
   // sellers render only in the LiveRail above; the grid's "Live Now"
   // section below renders solely when the live-only filter is active
   // (the rail's "+N more live" overflow target).
-  const businessResults = useMemo(() => withoutLive(locatedProjects), [locatedProjects]);
+  // Lead with populated shops: a current deal first, then shops with offers,
+  // then the rest — so the grid never opens on bare/quiet listings.
+  const businessResults = useMemo(() => {
+    const rank = (p: typeof locatedProjects[number]) =>
+      (p.promo_copy ? 2 : 0) + (hasOffers(p) ? 1 : 0);
+    return [...withoutLive(locatedProjects)].sort((a, b) => rank(b) - rank(a));
+  }, [locatedProjects]);
 
   /* ─── Filter item results by price ─── */
   const filteredItems = useMemo(() => {
@@ -318,19 +324,6 @@ export function ClubHome() {
     [discoverable, followingSet],
   );
   const hasAnyLive = useMemo(() => discoverable.some((p) => p.is_live === true), [discoverable]);
-  // Most-recently-live show drives the desktop FeaturedLive banner; it's
-  // de-duped out of the LiveNowGrid on lg via its id.
-  const featuredLive = useMemo(() => {
-    const liveOnes = discoverable.filter((p) => p.is_live === true);
-    if (!liveOnes.length) return null;
-    const ms = (p: typeof liveOnes[number]) => {
-      const raw = p.live_started_at;
-      if (!raw) return -Infinity;
-      const t = Date.parse(raw.replace(" ", "T").replace(/(\.\d{3})\d+/, "$1").replace(/([+-]\d{2})$/, "$1:00"));
-      return Number.isNaN(t) ? -Infinity : t;
-    };
-    return [...liveOnes].sort((a, b) => ms(b) - ms(a))[0];
-  }, [discoverable]);
   const hasAnyPromo = useMemo(() => discoverable.some((p) => !!p.promo_copy), [discoverable]);
   const isFiltered =
     activeCategory !== "all" || sortBy !== "newest" || priceFilter !== "any" || liveOnly || dealsOnly || searchQuery.trim() !== "" || nearMe || cityFilter !== "";
@@ -423,17 +416,13 @@ export function ClubHome() {
           {noCoordsAnywhere && <span className="text-[11px] text-muted">Showing everywhere</span>}
         </div>
 
+        {/* Live now — the signature rail: shops broadcasting right now lead the
+            feed (Option B). Self-hides when nothing is live. */}
+        <LiveNowRail projects={discoverable} />
+
         {/* From shops you follow — personalised strip, signed-in viewers with
-            at least one follow only (self-hides otherwise). Sits above the
-            global Live rail so a viewer's own shops lead the feed. */}
+            at least one follow only (self-hides otherwise). */}
         <FollowedRail projects={followedProjects} />
-
-        {/* Featured live — desktop-only wide banner of the top live show. */}
-        <FeaturedLive project={featuredLive} />
-
-        {/* Live now — 2-up portrait grid (the Club home take). The featured
-            show is hidden here on lg (it's the banner above). */}
-        <LiveNowGrid projects={discoverable} hideOnDesktopId={featuredLive?.id} />
 
         {/* Starting soon — scheduled shows (real scheduled_live_at) as a list
             with inline Remind buttons. Renders only when something's booked. */}
