@@ -787,6 +787,14 @@ export default function ProjectPage() {
     // when null, preserving every existing merchant's render.
     logo_url?: string | null;
     cover_image_url?: string | null;
+    // Location, surfaced as a "City, ST" chip in the storefront header
+    // when present. Populated by the discover/storefront endpoints once
+    // a merchant sets a location; absent fields render nothing (graceful
+    // for every storefront that hasn't set one yet).
+    city?: string | null;
+    region?: string | null;
+    location_city?: string | null;
+    location_state?: string | null;
   } | null>(null);
   const [embedExpanded, setEmbedExpanded] = useState(false);
   const [dumDiscountApplied, setDumDiscountApplied] = useState<Record<string, boolean>>({});
@@ -5017,6 +5025,23 @@ return (
                 >
                   {category}
                 </span>
+                {(() => {
+                  // "City, ST" chip — shows only when the merchant has set a
+                  // location. Absent fields render nothing, so storefronts
+                  // without a location look exactly as before.
+                  const loc = [
+                    ownerBizProfile?.city || ownerBizProfile?.location_city,
+                    ownerBizProfile?.region || ownerBizProfile?.location_state,
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
+                  return loc ? (
+                    <span className="flex items-center gap-1 text-xs text-secondary">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                      {loc}
+                    </span>
+                  ) : null;
+                })()}
                 {backendReviewCount > 0 && (
                   <span className="flex items-center gap-1 text-xs text-secondary">
                     <span className="text-amber-400">{"★".repeat(Math.round(backendAvgRating))}</span>
@@ -5100,15 +5125,10 @@ return (
                   </div>
                 )}
 
-                {/* Price anchor. show cheapest offer */}
-                {offers.length > 0 && (
-                  <div className="mb-4 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-brand-navy">
-                      From ${Math.min(...offers.map(o => Number(o.price_usd))).toFixed(0)}
-                    </span>
-                    <span className="text-sm text-secondary">USD</span>
-                  </div>
-                )}
+                {/* Price anchor removed (storefront fix): the "From $X"
+                    placeholder undersold the shop and read as the whole
+                    business's price. Pricing lives on each offer card in
+                    the grid below. */}
 
                 <div className="flex flex-col gap-2">
                   <button type="button" onClick={() => scrollToSection("offers-section")} className="flex items-center justify-center rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:">
@@ -7870,6 +7890,12 @@ return (
   {!showOwnerInlineUi && (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-2 text-center sm:px-6 lg:pb-6">
       <ReportButton projectId={id as string} />
+      <Link
+        href="/"
+        className="mt-3 block text-[11px] tracking-wide text-muted transition hover:text-brand-teal"
+      >
+        Powered by DUM Club
+      </Link>
     </div>
   )}
 
