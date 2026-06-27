@@ -3700,6 +3700,287 @@ const heroUtility =
       ? formatNumber(Number(tokenMeta.supply), 0)
       : "—";
 
+  // ── Clean offline buyer storefront ──────────────────────────────
+  // Focused, mock-matching render for the most common case: a non-owner
+  // visitor on a shop that isn't broadcasting. It owns its own layout
+  // (header -> offline lead -> offers grid) and short-circuits the big
+  // owner/live storefront tree below, which stays untouched for owners,
+  // live viewers, loading, pitch mode, and the checkout-success flow.
+  const offlineBuyerView =
+    !loadingProject &&
+    !!project &&
+    !isOwner &&
+    !project.is_live &&
+    !pitchMode &&
+    checkoutResult !== "success";
+
+  if (offlineBuyerView && project) {
+    const proj = project;
+    const money = (n: number | null | undefined) => {
+      const v = Number(n || 0);
+      return v % 1 === 0 ? `$${v}` : `$${v.toFixed(2)}`;
+    };
+    const loc = [
+      ownerBizProfile?.city || ownerBizProfile?.location_city,
+      ownerBizProfile?.region || ownerBizProfile?.location_state,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const verb = verbLabelForProject(proj);
+    const activeOffers = offers.filter((o) => o.is_active);
+    const featured = pinnedOffer && pinnedOffer.is_active ? pinnedOffer : activeOffers[0] || null;
+    const gridOffers = activeOffers.filter((o) => o.id !== featured?.id);
+    const cover = cleanLogoUrl(ownerBizProfile?.cover_image_url);
+    const monogram = (projectName.trim().charAt(0) || "•").toUpperCase();
+    const verified = ownerBizProfile?.verification_status === "verified";
+    const aboutRaw = (proj.description || "").trim();
+    const about =
+      aboutRaw && aboutRaw !== "Auto-created from dashboard." && !aboutRaw.startsWith("Project workspace for ")
+        ? aboutRaw
+        : "";
+    const isSoldOut = (o: Offer) =>
+      !o.unlimited_inventory &&
+      (o.quantity_available || 0) > 0 &&
+      (o.quantity_available || 0) - (o.quantity_sold || 0) <= 0;
+
+    const buyBtn = (o: Offer, variant: "featured" | "grid") => {
+      const soldOut = isSoldOut(o);
+      const busy = buyingOfferId === o.id;
+      if (soldOut) {
+        return (
+          <span className={`inline-flex items-center justify-center rounded-xl border border-default px-4 py-2 text-xs font-bold text-secondary ${variant === "featured" ? "w-full py-3 text-sm" : ""}`}>
+            Sold out
+          </span>
+        );
+      }
+      return (
+        <button
+          type="button"
+          onClick={() => buyOffer(o)}
+          disabled={busy}
+          className={
+            variant === "featured"
+              ? "w-full rounded-xl bg-mint-fill px-6 py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 disabled:opacity-50"
+              : "rounded-lg bg-brand-navy px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+          }
+        >
+          {busy ? "Opening checkout…" : variant === "featured" ? `Buy now · ${money(o.price_usd)}` : "Buy now"}
+        </button>
+      );
+    };
+
+    return (
+      <div className="min-h-screen bg-surface-page text-primary">
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+          {/* Back link + canonical URL */}
+          <div className="flex items-center justify-between text-[11px] text-muted">
+            <Link href="/discover" className="font-semibold transition hover:text-primary">
+              ← Back to Discover
+            </Link>
+            <span className="font-mono">dum.club/{proj.slug}</span>
+          </div>
+
+          {/* ── Header card: cover + avatar + identity + actions ── */}
+          <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
+            <div
+              className="relative h-36 w-full sm:h-52"
+              style={
+                cover
+                  ? { backgroundImage: `url(${cover})`, backgroundSize: "cover", backgroundPosition: "center" }
+                  : { background: "linear-gradient(135deg, #0B1220 0%, #14323b 60%, #0d2730 100%)" }
+              }
+            >
+              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                Offline
+              </span>
+            </div>
+
+            <div className="px-5 pb-6 sm:px-7">
+              <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex items-end gap-4">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-card text-3xl font-extrabold text-mint-text shadow-md sm:h-24 sm:w-24">
+                    {logoSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoSrc} alt={`${projectName} logo`} className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
+                    ) : (
+                      monogram
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new Event("dum:message-shop"))}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong"
+                  >
+                    💬 Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite()}
+                    disabled={togglingFavorite}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
+                      isFavorited
+                        ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
+                        : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
+                    }`}
+                  >
+                    {isFavorited ? "Following" : "+ Follow"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">{projectName}</h1>
+                {verified && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-teal">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
+                    Verified
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-secondary">
+                <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 uppercase tracking-[0.14em]" style={{ borderColor: accent, color: accent }}>
+                  🔧 {verb} · {category}
+                </span>
+                {loc && (
+                  <span className="inline-flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                    {loc}
+                  </span>
+                )}
+                <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
+                <span><span className="font-bold text-primary">{activeOffers.length}</span> offers</span>
+              </div>
+
+              {about && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">{about}</p>}
+            </div>
+          </div>
+
+          {/* ── Offline lead block: next live + notify ── */}
+          <div className="mt-4 rounded-2xl border border-default bg-brand-navy px-5 py-4 text-white">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/50" />
+              Not live right now
+            </div>
+            <p className="mt-1.5 text-sm text-white/80">
+              {proj.scheduled_live_at
+                ? "The next show is scheduled. Get pinged the moment it starts and catch flash-deal pricing."
+                : "Get pinged the moment this shop goes live and catch flash-deal pricing."}
+            </p>
+          </div>
+          <div className="mt-3 space-y-3">
+            {proj.scheduled_live_at && (
+              <ScheduledLiveBanner scheduledIso={proj.scheduled_live_at} projectId={id as string} />
+            )}
+            <LiveAlertSignup projectId={id as string} businessName={projectName} defaultEmail={authUser?.email || undefined} />
+          </div>
+
+          {/* ── What's for sale ── */}
+          {activeOffers.length > 0 ? (
+            <div className="mt-8">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-mint-text">What&apos;s for sale</div>
+                  <h2 className="mt-1 text-xl font-bold text-brand-navy sm:text-2xl">
+                    {activeOffers.length} offer{activeOffers.length === 1 ? "" : "s"} · Stripe checkout · earn DUM Points
+                  </h2>
+                </div>
+                <span className="hidden shrink-0 items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-secondary sm:inline-flex">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/60"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                  Secure checkout
+                </span>
+              </div>
+
+              {/* Featured offer */}
+              {featured && (
+                <div className="mt-4 overflow-hidden rounded-3xl border border-mint-text/30 bg-surface-card shadow-sm sm:grid sm:grid-cols-2">
+                  <div className="relative aspect-[16/10] w-full bg-surface-muted sm:aspect-auto sm:h-full">
+                    {featured.primary_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={resolveImageUrl(featured.primary_image_url)} alt={featured.title} className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm text-muted">{featured.title}</div>
+                    )}
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">★ Featured</span>
+                  </div>
+                  <div className="p-5 sm:p-7">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
+                      Now showing{featured.compare_at_price ? " · Live deal" : ""}
+                    </div>
+                    <h3 className="mt-1.5 text-xl font-bold text-brand-navy">{featured.title}</h3>
+                    {featured.description && <p className="mt-1.5 text-sm leading-relaxed text-secondary line-clamp-3">{featured.description}</p>}
+                    <div className="mt-4 flex items-baseline gap-2">
+                      <span className="font-mono text-3xl font-black text-brand-navy">{money(featured.price_usd)}</span>
+                      {featured.compare_at_price && Number(featured.compare_at_price) > Number(featured.price_usd) && (
+                        <>
+                          <span className="font-mono text-base text-muted line-through">{money(featured.compare_at_price)}</span>
+                          <span className="rounded-full bg-state-live/10 px-2 py-0.5 text-[10px] font-bold uppercase text-state-live">Deal</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div className="flex-1">{buyBtn(featured, "featured")}</div>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-default text-lg" title="Earn DUM Points on this purchase">🛍️</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Offers grid */}
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {gridOffers.map((o) => (
+                  <div key={o.id} id={`offer-${o.id}`} className="flex flex-col overflow-hidden rounded-2xl border border-default bg-surface-card shadow-sm transition hover:shadow-md">
+                    <div className="relative aspect-[4/3] w-full bg-surface-muted">
+                      {o.primary_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={resolveImageUrl(o.primary_image_url)} alt={o.title} loading="lazy" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-muted">{o.title}</div>
+                      )}
+                      {o.compare_at_price && Number(o.compare_at_price) > Number(o.price_usd) && (
+                        <span className="absolute left-2 top-2 rounded-full bg-state-live px-2 py-0.5 text-[9px] font-bold uppercase text-white">Deal</span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-4">
+                      <h3 className="text-sm font-bold text-brand-navy">{o.title}</h3>
+                      {o.description && <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-secondary">{o.description}</p>}
+                      <div className="mt-auto flex items-center justify-between pt-3">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="font-mono text-lg font-black text-brand-navy">{money(o.price_usd)}</span>
+                          {o.compare_at_price && Number(o.compare_at_price) > Number(o.price_usd) && (
+                            <span className="font-mono text-xs text-muted line-through">{money(o.compare_at_price)}</span>
+                          )}
+                        </div>
+                        {buyBtn(o, "grid")}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Loyalty tile */}
+                <div className="flex flex-col justify-center rounded-2xl border border-dashed border-default bg-surface-card p-5 text-center">
+                  <div className="text-sm font-bold text-brand-navy">Every purchase earns DUM Points</div>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-secondary">Redeem for 10% off at {projectName} or any shop on the network.</p>
+                  <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">Loyalty that follows you</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-dashed border-default bg-surface-card p-10 text-center text-sm text-muted">
+              No offers listed yet. Follow to hear when this shop posts something.
+            </div>
+          )}
+        </div>
+
+        {/* Private DM to the host — opened by the Message button above. */}
+        <GuestChat projectId={id} businessName={projectName} />
+      </div>
+    );
+  }
+
 return (
   <div className="relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8">
     {/* Immersive live room — full-bleed overlay for non-owner visitors of a
