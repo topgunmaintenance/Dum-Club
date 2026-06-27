@@ -476,7 +476,7 @@ async def get_business_by_owner(owner_privy_id: str):
     supabase = get_client()
     res = (
         supabase.table("business_profiles")
-        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, created_at")
+        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, city, region, created_at")
         .eq("owner_privy_id", owner_privy_id)
         .limit(1)
         .execute()
@@ -493,7 +493,7 @@ async def get_business(business_id: str):
     supabase = get_client()
     res = (
         supabase.table("business_profiles")
-        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, created_at")
+        .select("id, business_name, category, short_description, logo_url, cover_image_url, website, verification_status, city, region, created_at")
         .eq("id", business_id)
         .limit(1)
         .execute()
