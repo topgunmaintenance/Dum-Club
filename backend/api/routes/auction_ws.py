@@ -24,6 +24,15 @@ _connections: Dict[str, Set[WebSocket]] = {}
 _auction_timers: Dict[str, asyncio.Task] = {}
 # Rate limit: track last message time per connection
 _last_chat: Dict[int, float] = {}
+# Tap-to-like, per show. _like_counts is a running total of likes for the
+# current live session, broadcast to every viewer so the heart count is
+# real and shared (not a per-screen local animation). In-memory like
+# _connections: it counts "likes this show" and resets when the last
+# client for a project disconnects. _last_like throttles each connection
+# so a held tap can't flood the broadcast.
+_like_counts: Dict[str, int] = {}
+_last_like: Dict[int, float] = {}
+LIKE_COOLDOWN = 0.2  # seconds between likes per connection
 # Per-connection authenticated identity: ws_id -> {"privy_id", "is_host"}.
 # Set on connect from a verified ?token=. Anonymous viewers (no/invalid
 # token) are absent → they can watch + receive events but cannot send chat.
@@ -236,6 +245,14 @@ async def auction_events(websocket: WebSocket, project_id: str):
         "timestamp": time.time(),
     })
 
+    # Send the running like total so a late joiner sees the real count
+    # (no heart animation for this initial sync — that's a live-only thing).
+    await websocket.send_text(json.dumps({
+        "type": "like_count",
+        "data": {"count": _like_counts.get(project_id, 0)},
+        "timestamp": time.time(),
+    }))
+
     ws_id = id(websocket)
 
     # Authenticate this connection (optional). A valid Privy token in the
@@ -266,6 +283,24 @@ async def auction_events(websocket: WebSocket, project_id: str):
 
                 if msg_type == "ping":
                     await websocket.send_text(json.dumps({"type": "pong", "timestamp": time.time()}))
+
+                elif msg_type == "like":
+                    # Tap-to-like. Open to everyone watching (no auth gate —
+                    # it's an engagement signal, not a moderated message), with
+                    # a light per-connection cooldown so a held tap can't flood
+                    # the broadcast. The running total is server-authoritative
+                    # and pushed to all clients, so the heart count is real and
+                    # shared across viewers.
+                    now = time.time()
+                    if now - _last_like.get(ws_id, 0.0) < LIKE_COOLDOWN:
+                        continue
+                    _last_like[ws_id] = now
+                    _like_counts[project_id] = _like_counts.get(project_id, 0) + 1
+                    await _broadcast(project_id, {
+                        "type": "like",
+                        "data": {"count": _like_counts[project_id]},
+                        "timestamp": now,
+                    })
 
                 elif msg_type == "chat":
                     # Auth gate: only signed-in users can SEND. Identity is
@@ -349,8 +384,13 @@ async def auction_events(websocket: WebSocket, project_id: str):
     finally:
         _connections.get(project_id, set()).discard(websocket)
         _last_chat.pop(ws_id, None)
+        _last_like.pop(ws_id, None)
         _ws_auth.pop(ws_id, None)
         remaining = len(_connections.get(project_id, set()))
+        # Last client gone → the show is over; reset the per-show like total
+        # so the next broadcast starts from zero.
+        if remaining == 0:
+            _like_counts.pop(project_id, None)
         print(f"[live-ws] Client disconnected (project {project_id}, {remaining} remaining)")
         # Broadcast updated viewer count
         await _broadcast(project_id, {

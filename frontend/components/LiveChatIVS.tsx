@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { API_BASE } from "../lib/apiBase";
 
 // Dev-only debug log — silenced in production so the demo recording
@@ -65,6 +65,14 @@ interface LiveChatIVSProps {
   // over video, and a translucent input. Default false keeps every existing
   // call site (storefront, embed bubble) pixel-identical.
   overlay?: boolean;
+  // Tap-to-like passthrough (immersive live room only). onLikeCount fires
+  // with the server-authoritative running total whenever a like event
+  // arrives; `animate` is true for live likes (float a heart) and false for
+  // the initial count sync on connect. likeSenderRef is filled with a
+  // function the parent calls to send a like over this same socket — no
+  // second connection. Both optional; every existing call site is unchanged.
+  onLikeCount?: (count: number, animate: boolean) => void;
+  likeSenderRef?: MutableRefObject<(() => void) | null>;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -87,7 +95,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn, overlay = false }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn, overlay = false, onLikeCount, likeSenderRef }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -146,6 +154,13 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
             onViewerCountChange?.(msg.data.count);
+          } else if (msg.type === "like" && onLikeCount) {
+            // A like from any viewer (including our own, echoed back). Float
+            // a heart + update the shared count.
+            onLikeCount(Number(msg.data?.count ?? 0), true);
+          } else if (msg.type === "like_count" && onLikeCount) {
+            // Initial running-total sync on connect — count only, no heart.
+            onLikeCount(Number(msg.data?.count ?? 0), false);
           } else if (msg.type === "item_updated" && onItemUpdate) {
             __debug && console.log("[live-chat] Item updated:", msg.data);
             onItemUpdate(msg.data as ItemUpdateEvent);
@@ -218,6 +233,22 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       }
     };
   }, [projectId]);
+
+  // Expose a "send a like" function to the parent (the immersive live room
+  // owns the heart button). Reads wsRef at call time, so it always uses the
+  // live socket even across reconnects. No-ops when the socket isn't open.
+  useEffect(() => {
+    if (!likeSenderRef) return;
+    likeSenderRef.current = () => {
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "like" }));
+      }
+    };
+    return () => {
+      likeSenderRef.current = null;
+    };
+  }, [likeSenderRef]);
 
   // Auto-scroll on new messages
   useEffect(() => {

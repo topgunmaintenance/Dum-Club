@@ -124,15 +124,26 @@ export function LiveRoom({
   const chatWrapRef = useRef<HTMLDivElement | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  // Filled by LiveChatIVS with a function that sends a like over the live
+  // socket, so likes are real + shared across viewers (not a local-only
+  // animation). The displayed count comes back from the server.
+  const likeSenderRef = useRef<(() => void) | null>(null);
 
-  function popHeart() {
+  function spawnHeart() {
     // Sequential id (not Math.random) keeps keys stable; drift varies the
     // sideways travel so a rapid tap-stream fans out instead of stacking.
     heartSeq.current += 1;
     const id = heartSeq.current;
     const drift = ((id * 37) % 60) - 30; // deterministic spread, -30..29px
     setHearts((h) => [...h, { id, drift }]);
-    setLikeCount((c) => c + 1);
+  }
+
+  function popHeart() {
+    // Instant local heart for snappy feedback, then broadcast the like. The
+    // count updates from the server's authoritative total (via onLikeCount),
+    // and every other viewer floats a heart when our like echoes back.
+    spawnHeart();
+    likeSenderRef.current?.();
   }
 
   function focusChat() {
@@ -446,6 +457,13 @@ export function LiveRoom({
           onViewerCountChange={onViewerCountChange}
           onItemSold={onItemSold}
           onItemUpdate={onItemUpdate}
+          likeSenderRef={likeSenderRef}
+          onLikeCount={(count, animate) => {
+            setLikeCount(count);
+            // Float a heart for likes from other viewers (our own already
+            // floated instantly in popHeart); skip the initial count sync.
+            if (animate) spawnHeart();
+          }}
         />
       </div>
 
