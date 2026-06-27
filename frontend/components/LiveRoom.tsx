@@ -357,11 +357,17 @@ export function LiveRoom({
             <path d="M12 21s-7.2-4.6-9.6-9.2C.9 8.7 2.3 5.5 5.3 5.1c1.8-.2 3.4.7 4.7 2.2C11.3 5.8 12.9 4.9 14.7 5.1c3 .4 4.4 3.6 2.9 6.7C19.2 16.4 12 21 12 21z" />
           </svg>
         </RailButton>
-        <RailButton label="Chat" onClick={focusChat} aria-label="Comment">
-          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.3A8 8 0 1 1 21 12z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-          </svg>
-        </RailButton>
+        {/* Chat toggle is a mobile pattern — on desktop the public chat is
+            already docked open at bottom-left, so this icon would toggle
+            something already visible. Hide it on lg+; keep it on
+            mobile/portrait where the chat isn't always docked. */}
+        <div className="lg:hidden">
+          <RailButton label="Chat" onClick={focusChat} aria-label="Comment">
+            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.3A8 8 0 1 1 21 12z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
+          </RailButton>
+        </div>
         <div className="relative">
           <RailButton
             label={shareCopied ? <span className="text-mint-text">Copied</span> : "Share"}
@@ -400,6 +406,21 @@ export function LiveRoom({
                     {t.label}
                   </a>
                 ))}
+                {/* Instagram + TikTok have no web share link, so these copy
+                    the link for the user to paste in the app. */}
+                {["Instagram", "TikTok"].map((appName) => (
+                  <button
+                    key={appName}
+                    type="button"
+                    onClick={() => {
+                      copyShareLink();
+                      setShareOpen(false);
+                    }}
+                    className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    {appName}
+                  </button>
+                ))}
                 <button
                   type="button"
                   onClick={() => {
@@ -418,7 +439,7 @@ export function LiveRoom({
                   More options
                 </button>
                 <p className="px-3 pb-1 pt-1.5 text-[10px] leading-snug text-white/55">
-                  For Instagram or TikTok, copy the link and paste it in the app.
+                  Instagram and TikTok have no web link, so those copy it for you to paste in the app.
                 </p>
               </div>
             </>
@@ -445,6 +466,12 @@ export function LiveRoom({
         ref={chatWrapRef}
         className="absolute bottom-40 left-2 z-20 w-[72vw] max-w-sm"
       >
+        {/* Label so the public broadcast chat reads as distinct from the
+            private "Message the shop" DM bubble docked below it. */}
+        <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85 backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-state-live" />
+          Live chat · everyone sees this
+        </div>
         <LiveChatIVS
           projectId={projectId}
           userId={userId}
