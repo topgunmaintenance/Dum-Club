@@ -4546,8 +4546,13 @@ return (
               {/* ── Live chat. Sits directly below the video so the page
                    mirrors the customer live window (video, then chat, then
                    offers) and stays simple to use. Fixed-height box like the
-                   customer view (no fillHeight). ── */}
-              {isIVSSession(project) && (
+                   customer view (no fillHeight). ──
+                   Owners are excluded here: their real camera is the
+                   IVSStageHost panel further down, so the host gets a chat
+                   box mounted directly under THAT camera instead (see the
+                   host column below). Gating on !isOwner keeps a single
+                   LiveChatIVS mounted per role — no double WebSocket. */}
+              {isIVSSession(project) && !isOwner && (
                 <div className="pb-2">
                   <LiveChatIVS
                     projectId={id as string}
@@ -5524,6 +5529,49 @@ return (
                 this keeps host errors visible instead of set-and-lost. */}
             {goLiveError && (
               <div className="mt-3 rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">{goLiveError}</div>
+            )}
+
+            {/* ── Host live chat. Mounted directly under the host's own
+                 camera so the merchant can read and reply to viewers
+                 without scrolling back up to the top of the page. Only
+                 while actually live + on an IVS session; the non-owner
+                 chat above is gated to !isOwner, so exactly one
+                 LiveChatIVS is mounted for the host. */}
+            {project?.is_live && isIVSSession(project) && (
+              <div className="mt-4">
+                <LiveChatIVS
+                  projectId={id as string}
+                  userId={authUser?.privyId || ""}
+                  userName={authUser?.email || "Host"}
+                  isHost={true}
+                  onRequestSignIn={login}
+                  getToken={getToken}
+                  onCommentBuy={handleCommentBuy}
+                  onViewerCountChange={setLiveViewerCount}
+                  onItemUpdate={(data) => {
+                    setOffers((prev) => prev.map((o) =>
+                      o.id === data.offer_id
+                        ? { ...o, quantity_sold: data.quantity_sold }
+                        : o
+                    ));
+                  }}
+                  onItemSold={(data) => {
+                    loadOffers();
+                    setLiveSalesCount((c) => {
+                      const next = c + 1;
+                      const toastId = `${data.offer_id}-${Date.now()}`;
+                      setSaleToasts((prev) => [
+                        ...prev.slice(-2),
+                        { id: toastId, title: data.title || "Item", count: next },
+                      ]);
+                      setTimeout(() => {
+                        setSaleToasts((prev) => prev.filter((t) => t.id !== toastId));
+                      }, 4000);
+                      return next;
+                    });
+                  }}
+                />
+              </div>
             )}
           </div>
         )}

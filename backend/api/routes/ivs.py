@@ -10,7 +10,7 @@ Endpoints:
 import asyncio
 import time as _time
 
-from fastapi import APIRouter, HTTPException, Header, Request
+from fastapi import APIRouter, HTTPException, Header, Request, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 
@@ -130,6 +130,70 @@ async def api_heartbeat(
     except Exception as exc:
         print(f"[ivs] heartbeat DB persist failed for {project_id}: {exc!r}")
     return {"status": "ok"}
+
+
+# ── Live preview snapshot ────────────────────────────────────
+
+# Cap the snapshot upload. The host sends a ~320px JPEG, which is a few
+# tens of KB; 1MB is a generous ceiling that still rejects anything that
+# isn't a small preview frame.
+_MAX_LIVE_THUMB_BYTES = 1_000_000
+
+
+@router.post("/live-thumb")
+async def api_live_thumb(
+    project_id: str = Form(...),
+    file: UploadFile = File(...),
+    user_id: str = Header(default="", convert_underscores=False),
+):
+    """Host posts a small JPEG frame of the live camera every ~10s.
+
+    Stored at a deterministic path (live-thumbs/<project_id>.jpg) in the
+    existing public `offers` bucket, so the Discover "Live now" card can
+    show a real preview frame WITHOUT subscribing to the WebRTC stage and
+    WITHOUT a new DB column / migration — the path is derived from the
+    project id and the card cache-busts on its own. Upsert keeps a single
+    current frame per shop.
+
+    Owner-gated like the rest of /api/ivs/*, and only accepted while the
+    project is actually live so a stray upload after End Stream can't
+    resurrect a preview.
+    """
+    project = _verify_owner(project_id, user_id)
+    pid = project["id"]
+    if not project.get("is_live"):
+        raise HTTPException(status_code=409, detail="Project is not live")
+
+    content_type = (file.content_type or "").lower()
+    if content_type not in ("image/jpeg", "image/jpg", "image/webp", "image/png"):
+        raise HTTPException(status_code=400, detail="Snapshot must be a JPEG, PNG, or WebP image")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty snapshot")
+    if len(contents) > _MAX_LIVE_THUMB_BYTES:
+        raise HTTPException(status_code=413, detail="Snapshot too large")
+
+    supabase = get_client()
+    path = f"live-thumbs/{pid}.jpg"
+    try:
+        supabase.storage.from_("offers").upload(
+            path=path,
+            file=contents,
+            file_options={
+                "content-type": content_type,
+                # Short cache so the refreshing preview doesn't get pinned
+                # stale at the CDN; the card also cache-busts with a query.
+                "cache-control": "5",
+                "upsert": "true",
+            },
+        )
+    except Exception as exc:
+        print(f"[ivs] live-thumb upload failed for {pid}: {type(exc).__name__}: {exc}")
+        raise HTTPException(status_code=500, detail="Snapshot upload failed")
+
+    public_url = supabase.storage.from_("offers").get_public_url(path)
+    return {"public_url": public_url, "path": path}
 
 
 # ── Create Stage ─────────────────────────────────────────────

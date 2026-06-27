@@ -122,15 +122,28 @@ export function LiveRoom({
   const [likeCount, setLikeCount] = useState(0);
   const heartSeq = useRef(0);
   const chatWrapRef = useRef<HTMLDivElement | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  // Filled by LiveChatIVS with a function that sends a like over the live
+  // socket, so likes are real + shared across viewers (not a local-only
+  // animation). The displayed count comes back from the server.
+  const likeSenderRef = useRef<(() => void) | null>(null);
 
-  function popHeart() {
+  function spawnHeart() {
     // Sequential id (not Math.random) keeps keys stable; drift varies the
     // sideways travel so a rapid tap-stream fans out instead of stacking.
     heartSeq.current += 1;
     const id = heartSeq.current;
     const drift = ((id * 37) % 60) - 30; // deterministic spread, -30..29px
     setHearts((h) => [...h, { id, drift }]);
-    setLikeCount((c) => c + 1);
+  }
+
+  function popHeart() {
+    // Instant local heart for snappy feedback, then broadcast the like. The
+    // count updates from the server's authoritative total (via onLikeCount),
+    // and every other viewer floats a heart when our like echoes back.
+    spawnHeart();
+    likeSenderRef.current?.();
   }
 
   function focusChat() {
@@ -138,16 +151,47 @@ export function LiveRoom({
     el?.focus();
   }
 
-  async function share() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
+  // Share targets. Facebook / X / WhatsApp expose real web-share URLs we can
+  // link straight to. Instagram and TikTok do NOT — neither lets a website
+  // pre-fill a post or DM — so for those the honest path is "copy the link,
+  // open the app, paste," which the Copy link button + note below cover.
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareText = `Watch ${shop.name} live on DUM Club`;
+  const shareTargets = [
+    {
+      label: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+    },
+    {
+      label: "X",
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
+    },
+    {
+      label: "WhatsApp",
+      href: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`,
+    },
+  ];
+
+  async function copyShareLink() {
     try {
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: shop.name, url });
-      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
       }
     } catch {
-      /* user cancelled the share sheet — nothing to do */
+      /* clipboard blocked — nothing to do */
+    }
+  }
+
+  async function nativeShare() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: shop.name, text: shareText, url: shareUrl });
+        setShareOpen(false);
+      }
+    } catch {
+      /* user cancelled the OS share sheet — nothing to do */
     }
   }
 
@@ -318,11 +362,68 @@ export function LiveRoom({
             <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.3A8 8 0 1 1 21 12z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
           </svg>
         </RailButton>
-        <RailButton label="Share" onClick={share} aria-label="Share">
-          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </RailButton>
+        <div className="relative">
+          <RailButton
+            label={shareCopied ? <span className="text-mint-text">Copied</span> : "Share"}
+            onClick={() => setShareOpen((o) => !o)}
+            aria-label="Share"
+            aria-haspopup="menu"
+            aria-expanded={shareOpen}
+          >
+            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </RailButton>
+          {shareOpen && (
+            <>
+              {/* Click-away backdrop. Earlier in DOM order than the menu so the
+                  menu paints on top and its links stay clickable. */}
+              <button
+                type="button"
+                aria-label="Close share menu"
+                onClick={() => setShareOpen(false)}
+                className="fixed inset-0 cursor-default"
+              />
+              <div
+                role="menu"
+                className="absolute bottom-0 right-full mr-3 w-44 rounded-2xl border border-white/15 bg-black/85 p-1.5 text-left shadow-xl backdrop-blur-md"
+              >
+                {shareTargets.map((t) => (
+                  <a
+                    key={t.label}
+                    href={t.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setShareOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    {t.label}
+                  </a>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyShareLink();
+                    setShareOpen(false);
+                  }}
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={nativeShare}
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  More options
+                </button>
+                <p className="px-3 pb-1 pt-1.5 text-[10px] leading-snug text-white/55">
+                  For Instagram or TikTok, copy the link and paste it in the app.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Floating hearts rise out of the like button. */}
         <div className="pointer-events-none absolute bottom-16 right-2 h-72 w-16">
@@ -356,6 +457,13 @@ export function LiveRoom({
           onViewerCountChange={onViewerCountChange}
           onItemSold={onItemSold}
           onItemUpdate={onItemUpdate}
+          likeSenderRef={likeSenderRef}
+          onLikeCount={(count, animate) => {
+            setLikeCount(count);
+            // Float a heart for likes from other viewers (our own already
+            // floated instantly in popHeart); skip the initial count sync.
+            if (animate) spawnHeart();
+          }}
         />
       </div>
 

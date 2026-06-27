@@ -13,12 +13,68 @@
  * badge shows LIVE without a number rather than a made-up one.
  */
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Project } from "../../lib/discover/types";
 import { cleanLogoUrl } from "../../lib/imageSrc";
 import { lowestOfferPrice } from "../../lib/discover/filters";
 
 const MAX = 12;
+
+// Public base for the deterministic live-snapshot path the host uploads
+// every ~10s (offers/live-thumbs/<projectId>.jpg). Same Supabase project
+// the offer images already come from.
+const SUPABASE_PUBLIC = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+/**
+ * LiveThumb — shows the real live preview frame when one exists, layered
+ * over the cover/logo/monogram fallback. The snapshot <img> fades in only
+ * once it actually loads (onLoad); if there's no frame yet (a 404 before
+ * the host's first capture) it stays hidden and the fallback shows. No
+ * flicker, and it recovers on its own once frames start landing.
+ */
+function LiveThumb({
+  projectId,
+  name,
+  monogram,
+  fallbackImg,
+  bust,
+}: {
+  projectId: string;
+  name: string;
+  monogram: string;
+  fallbackImg: string | null;
+  bust: number;
+}) {
+  const base = SUPABASE_PUBLIC
+    ? `${SUPABASE_PUBLIC}/storage/v1/object/public/offers/live-thumbs/${projectId}.jpg`
+    : null;
+  const [shown, setShown] = useState(false);
+  return (
+    <>
+      {fallbackImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={fallbackImg} alt={`${name} live`} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <span className="text-3xl font-extrabold text-mint-text">{monogram}</span>
+        </div>
+      )}
+      {base && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`${base}?t=${bust}`}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          onLoad={() => setShown(true)}
+          onError={() => setShown(false)}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 group-hover:scale-[1.02] ${shown ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+    </>
+  );
+}
 
 function liveStartedMs(p: Project): number {
   const raw = p.live_started_at;
@@ -39,6 +95,14 @@ export function LiveNowRail({ projects }: { projects: Project[] }) {
     .filter((p) => p.is_live === true)
     .sort((a, b) => liveStartedMs(b) - liveStartedMs(a))
     .slice(0, MAX);
+
+  // Cache-bust the live snapshots on an interval so the card preview
+  // refreshes while a shop is broadcasting (the host re-uploads ~every 10s).
+  const [bust, setBust] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setBust((b) => b + 1), 12000);
+    return () => clearInterval(t);
+  }, []);
 
   if (live.length === 0) return null;
 
@@ -68,14 +132,7 @@ export function LiveNowRail({ projects }: { projects: Project[] }) {
               style={{ scrollSnapAlign: "start" }}
             >
               <div className="relative aspect-video overflow-hidden bg-brand-teal-soft">
-                {img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img} alt={`${name} live`} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <span className="text-3xl font-extrabold text-mint-text">{monogram}</span>
-                  </div>
-                )}
+                <LiveThumb projectId={p.id} name={name} monogram={monogram} fallbackImg={img} bust={bust} />
                 <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-state-live px-2 py-0.5 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
                   <span className="text-[9px] font-bold uppercase tracking-wide text-white">Live</span>
