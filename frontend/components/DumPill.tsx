@@ -72,8 +72,13 @@ export function DumPill() {
         {/* Expanded panel */}
         {expanded && (
           <div className="mb-2 w-64 rounded-2xl border border-default bg-surface-card p-5 shadow-[0_16px_48px_rgba(11,18,32,0.18)] backdrop-blur-md">
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-              DUM Points
+            <div className="mb-1 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+                DUM Points
+              </span>
+              <span className="rounded-full bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em] text-brand-teal">
+                Beta
+              </span>
             </div>
             <div className="mb-2 flex items-baseline gap-2">
               <span className="text-3xl font-black text-brand-navy">{balance}</span>
@@ -95,10 +100,17 @@ export function DumPill() {
                 <span className="text-[12px] text-primary">Off any offer with 10 points</span>
               </div>
               <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 text-brand-teal text-xs">◆</span>
-                <span className="text-[12px] text-primary">Works at every DUM Club business</span>
+                <span className="mt-0.5 text-secondary text-xs">◆</span>
+                <span className="text-[12px] text-secondary">Soon: spend across every DUM Club business</span>
               </div>
             </div>
+
+            {/* Beta status — earning is live, but cross-business redemption is
+                a Phase 2 feature (CLAUDE.md §5), so be clear it's not usable
+                elsewhere yet. */}
+            <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-[11px] leading-snug text-secondary">
+              Beta: you&apos;re earning points now. Spending them at other businesses is coming soon.
+            </p>
 
             <Link
               href="/hub"
@@ -114,8 +126,8 @@ export function DumPill() {
             without needing JS or a new dependency. */}
         <button
           onClick={() => setExpanded(!expanded)}
-          title="1 DUM = $0.10 · use for discounts at participating businesses"
-          aria-label={`${balance} DUM Points · 1 DUM = $0.10 · use for discounts at participating businesses`}
+          title="DUM Points (beta) · 1 DUM = $0.10 · spending across businesses is coming soon"
+          aria-label={`${balance} DUM Points, beta · 1 DUM = $0.10 · spending across businesses is coming soon`}
           className="flex items-center gap-2 rounded-full border border-default bg-surface-card px-4 py-2.5 shadow-[0_8px_24px_rgba(11,18,32,0.12)] backdrop-blur-md transition-all duration-200 hover:border-brand-teal hover:shadow-[0_8px_32px_rgba(11,18,32,0.18)]"
         >
           <span className="relative flex h-2 w-2">
@@ -123,6 +135,9 @@ export function DumPill() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
           </span>
           <span className="text-[12px] font-bold text-brand-teal">◆ {balance} DUM</span>
+          <span className="rounded-full bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-brand-teal">
+            Beta
+          </span>
         </button>
       </div>
     </>
