@@ -3701,15 +3701,20 @@ const heroUtility =
       : "—";
 
   // ── Clean offline buyer storefront ──────────────────────────────
-  // Focused, mock-matching render for the most common case: a non-owner
-  // visitor on a shop that isn't broadcasting. It owns its own layout
-  // (header -> offline lead -> offers grid) and short-circuits the big
-  // owner/live storefront tree below, which stays untouched for owners,
-  // live viewers, loading, pitch mode, and the checkout-success flow.
+  // Focused, mock-matching render for the most common case: a visitor on
+  // a shop that isn't broadcasting. It owns its own layout (header ->
+  // offline lead -> offers grid) and short-circuits the big owner/live
+  // storefront tree below, which stays untouched for the owner managing
+  // their shop, live viewers, loading, pitch mode, and checkout-success.
+  //
+  // Gated on !showOwnerInlineUi (not bare !isOwner) so the owner's
+  // "View as customer" toggle renders this exact buyer view too — that's
+  // how the merchant previews their own public storefront. A signed-in
+  // owner NOT in preview keeps their management tree.
   const offlineBuyerView =
     !loadingProject &&
     !!project &&
-    !isOwner &&
+    !showOwnerInlineUi &&
     !project.is_live &&
     !pitchMode &&
     checkoutResult !== "success";
