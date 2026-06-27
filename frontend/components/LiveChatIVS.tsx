@@ -316,7 +316,11 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           textShadow: overlay ? "0 1px 3px rgba(0,0,0,0.85)" : undefined,
         }}
       >
-        {messages.length === 0 && (
+        {/* Empty-state: only in the boxed (non-overlay) chat. In the live
+            room's overlay chat a big centered placeholder sits on top of the
+            video ("Waiting for host video…"), so we suppress it there and let
+            the transparent overlay simply stay empty until a message lands. */}
+        {messages.length === 0 && !overlay && (
           <div style={{ display: "flex", height: "100%", minHeight: 200, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "#a1a1aa", lineHeight: 1.5 }}>
               {connected ? "Be the first to say something." : "Connecting to live chat..."}
