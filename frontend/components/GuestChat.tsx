@@ -12,7 +12,7 @@
  * Positioned bottom-LEFT so it never overlaps AiSalesChat (bottom-right).
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
 
 type Sent = { sender: "guest" | "merchant"; body: string };
@@ -40,6 +40,14 @@ export function GuestChat({
     setError(null);
     if (!openedAt.current) openedAt.current = Date.now();
   }
+
+  // Let other surfaces (e.g. the storefront header's "Message" button)
+  // open this panel without prop-drilling — they dispatch a window event.
+  useEffect(() => {
+    const handler = () => openPanel();
+    window.addEventListener("dum:message-shop", handler);
+    return () => window.removeEventListener("dum:message-shop", handler);
+  }, []);
 
   async function send() {
     const text = message.trim();

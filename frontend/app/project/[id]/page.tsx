@@ -5028,7 +5028,7 @@ return (
                   className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
                   style={{ borderColor: accent, color: accent }}
                 >
-                  {category}
+                  {project ? `${verbLabelForProject(project)} · ${category}` : category}
                 </span>
                 {(() => {
                   // "City, ST" chip — shows only when the merchant has set a
@@ -5066,6 +5066,21 @@ return (
                   {isFavorited ? "Following" : "Follow"}
                   {favoriteCount > 0 && <span className="opacity-70">· {favoriteCount}</span>}
                 </button>
+                {/* Message the shop — opens the existing GuestChat bubble via
+                    a window event so a buyer can DM the host without
+                    scrolling to the floating button. */}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event("dum:message-shop")); }}
+                  className="flex items-center gap-1.5 rounded-full border border-default px-3.5 py-1 text-xs font-semibold text-secondary transition hover:border-strong hover:text-primary"
+                >
+                  Message
+                </button>
+                {offers.length > 0 && (
+                  <span className="text-xs text-secondary">
+                    {offers.length} offer{offers.length === 1 ? "" : "s"}
+                  </span>
+                )}
               </div>
 
             </div>
