@@ -5631,7 +5631,7 @@ return (
         </div>
       </div>
 
-      {(() => {
+      {!(isOwner && ownerManage) && (() => {
         // While the project loads we can't tell whether a description
         // exists — keep the skeleton (and the #section-about anchor) so
         // the section doesn't flash hidden then reappear.
@@ -7889,15 +7889,13 @@ return (
       {showOwnerInlineUi && (
         <details
           id="section-orders"
-          // Open by default when there are orders to show OR when
-          // the merchant navigated here via the AdminBar's
-          // Orders link — scrolling to a collapsed section reads
-          // as a broken link. Empty-state remains collapsed so
-          // brand-new merchants aren't faced with an empty box.
+          // Collapsed by default so the (often long) ledger doesn't
+          // dominate the Manage view. Opens only when the merchant
+          // navigated here via the AdminBar's Orders link, which would
+          // otherwise scroll to a collapsed section and read as broken.
           open={
-            sellerOrders.length > 0 ||
-            (typeof window !== "undefined" &&
-              window.location.hash === "#section-orders")
+            typeof window !== "undefined" &&
+            window.location.hash === "#section-orders"
           }
           className="scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8"
         >
