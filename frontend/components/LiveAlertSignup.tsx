@@ -25,9 +25,14 @@ type Props = {
   businessName?: string;
   /** Optional prefill (e.g. the signed-in viewer's email). */
   defaultEmail?: string;
+  /** Offline-hero style: when set, the card leads with this headline +
+   *  subtext (and a neutral status dot) instead of the default bell /
+   *  "Live alerts" block. Used by the storefront offline lead. */
+  headline?: string;
+  subtext?: string;
 };
 
-export function LiveAlertSignup({ projectId, businessName, defaultEmail }: Props) {
+export function LiveAlertSignup({ projectId, businessName, defaultEmail, headline, subtext }: Props) {
   const [email, setEmail] = useState(defaultEmail || "");
   const [state, setState] = useState<"idle" | "saving" | "ok" | "err">("idle");
   const [errMsg, setErrMsg] = useState<string>("");
@@ -68,17 +73,27 @@ export function LiveAlertSignup({ projectId, businessName, defaultEmail }: Props
   return (
     <div className="mb-6 rounded-2xl border border-default bg-surface-card px-5 py-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xl" aria-hidden="true">🔔</span>
-          <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-teal">
-              Live alerts
-            </div>
-            <div className="mt-0.5 text-sm font-semibold text-primary">
-              Get an email when {name} goes live.
+        {headline ? (
+          <div className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-primary">{headline}</div>
+              {subtext && <div className="mt-0.5 text-[13px] leading-relaxed text-secondary">{subtext}</div>}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-xl" aria-hidden="true">🔔</span>
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-teal">
+                Live alerts
+              </div>
+              <div className="mt-0.5 text-sm font-semibold text-primary">
+                Get an email when {name} goes live.
+              </div>
+            </div>
+          </div>
+        )}
         {state === "ok" ? (
           <div className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-bold text-brand-navy">
             ✓ We&apos;ll email you when they go live.
@@ -104,9 +119,9 @@ export function LiveAlertSignup({ projectId, businessName, defaultEmail }: Props
             <button
               type="submit"
               disabled={!email.trim() || state === "saving"}
-              className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-navy px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              {state === "saving" ? "Saving..." : "Notify me"}
+              {state === "saving" ? "Saving..." : <><span aria-hidden="true">🔔</span> Notify me</>}
             </button>
           </form>
         )}
