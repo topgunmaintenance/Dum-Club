@@ -5289,91 +5289,191 @@ return (
           uploaded one (business_profiles.cover_image_url, mig 072).
           Renders nothing when absent → existing storefronts continue to
           look exactly as before this PR. */}
-      {/* ── Management header (Manage shop) — the SAME green storefront
-           header skin so the back office matches the front, with owner
-           actions (Go live / Add offer / Copy link) in place of
-           Message/Follow. Shown only when the owner opened "Manage shop"
-           on an offline shop; the public header + founder card below are
-           hidden in that case. */}
+      {/* ── Owner console (Manage shop) ── light dashboard: header, KPIs,
+           offers list, recent orders, and quick actions, all on real data.
+           Reuses the existing offer form, embed wizard, go-live host, and
+           publish toggle (still mounted below this block). Shown only when
+           the owner opened Manage shop on an offline shop. */}
       {isOwner && ownerManage && !project?.is_live && (() => {
-        const mCover = cleanLogoUrl(ownerBizProfile?.cover_image_url);
-        const mVerified = ownerBizProfile?.verification_status === "verified";
-        const mVerb = verbLabelForProject(project);
-        const mLoc = [
+        const cMono = (projectName.trim().charAt(0) || "•").toUpperCase();
+        const cLoc = [
           ownerBizProfile?.city || ownerBizProfile?.location_city,
           ownerBizProfile?.region || ownerBizProfile?.location_state,
         ].filter(Boolean).join(", ");
-        const mMono = (projectName.trim().charAt(0) || "•").toUpperCase();
-        const mActive = offers.filter((o) => o.is_active).length;
+        const cActive = offers.filter((o) => o.is_active);
+        const featuredId = project?.pinned_offer_id || null;
+        const nowMs = Date.now();
+        const WEEK = 7 * 24 * 60 * 60 * 1000;
+        const within = (iso: string) => nowMs - new Date(iso).getTime() < WEEK;
+        const ordersWk = sellerOrders.filter((o) => within(o.created_at)).length;
+        const revenue = sellerOrders.reduce((s, o) => s + Number(o.amount_paid_usd || 0), 0);
+        const revenueWk = sellerOrders.filter((o) => within(o.created_at)).reduce((s, o) => s + Number(o.amount_paid_usd || 0), 0);
+        const fmtK = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${Math.round(n)}`);
+        const ago = (iso: string) => {
+          const d = nowMs - new Date(iso).getTime();
+          const m = Math.floor(d / 60000);
+          if (m < 1) return "just now";
+          if (m < 60) return `${m}m ago`;
+          const h = Math.floor(m / 60);
+          if (h < 24) return `${h}h ago`;
+          return `${Math.floor(h / 24)}d ago`;
+        };
+        const ordersFor = (oid: string) => sellerOrders.filter((o) => o.offer_id === oid);
+        const recent = [...sellerOrders]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 4);
+        const published = project?.status === "live";
+        const Kpi = ({ label, value, sub }: { label: string; value: string | number; sub?: string | null }) => (
+          <div className="rounded-2xl border border-default bg-surface-card p-4 shadow-sm sm:p-5">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">{label}</div>
+            <div className="mt-1.5 text-2xl font-black text-brand-navy sm:text-3xl">{value}</div>
+            {sub ? <div className="mt-1 text-[11px] font-semibold text-mint-text">{sub}</div> : <div className="mt-1 text-[11px] text-transparent">·</div>}
+          </div>
+        );
         return (
-          <div className="mb-6 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
-            <div
-              className="relative h-32 w-full overflow-hidden sm:h-44"
-              style={mCover
-                ? { backgroundImage: `url(${mCover})`, backgroundSize: "cover", backgroundPosition: "center" }
-                : { background: "linear-gradient(135deg, #0b3a29 0%, #145239 55%, #07271c 100%)" }}
-            >
-              {!mCover && (
-                <svg className="pointer-events-none absolute -right-8 -top-8 h-56 w-56 text-white/[0.06]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
-                  <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
-                </svg>
-              )}
-              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
-                ⚙ Managing your shop
-              </span>
-              <button type="button" onClick={() => setOwnerManage(false)} className="absolute right-4 top-4 rounded-lg bg-surface-card/90 px-3 py-1.5 text-[11px] font-bold text-brand-navy backdrop-blur-sm transition hover:bg-surface-card">
-                View storefront
-              </button>
-            </div>
-
-            <div className="px-5 pb-5 sm:px-7">
-              <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="flex items-end gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-card text-3xl font-extrabold text-mint-text shadow-md sm:h-24 sm:w-24">
+          <div className="mb-8 space-y-5">
+            {/* Header */}
+            <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-muted text-2xl font-extrabold text-mint-text">
                     {logoSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoSrc} alt={`${projectName} logo`} className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
+                      <img src={logoSrc} alt="" className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
                     ) : (
-                      mMono
+                      cMono
                     )}
                   </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl font-bold text-brand-navy sm:text-2xl">{projectName}</h1>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${published ? "bg-brand-teal-soft text-brand-teal" : "bg-surface-muted text-secondary"}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${published ? "bg-mint-text" : "bg-muted"}`} />
+                        {published ? "Live & accepting orders" : "Draft"}
+                      </span>
+                    </div>
+                    <div className="mt-1 font-mono text-xs text-secondary">dum.club/{project.slug}{cLoc ? ` · ${cLoc}` : ""}</div>
+                  </div>
                 </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
+                <div className="flex shrink-0 gap-2">
                   <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go live
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go Live
                   </button>
-                  <button type="button" onClick={() => openOfferForm()} className="rounded-xl bg-mint-fill px-4 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90">
+                  <button type="button" onClick={() => setOwnerManage(false)} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+                    👁 View as customer
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* KPIs (real data) */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <Kpi label="Orders" value={sellerOrders.length} sub={ordersWk > 0 ? `▲ ${ordersWk} this week` : null} />
+              <Kpi label="Revenue" value={fmtK(revenue)} sub={revenueWk > 0 ? `▲ ${fmtK(revenueWk)} this week` : null} />
+              <Kpi label="Followers" value={favoriteCount} sub={null} />
+              <Kpi label="Live offers" value={cActive.length} sub={featuredId ? "1 featured" : null} />
+            </div>
+
+            {/* Offers + right column */}
+            <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
+              <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-lg font-bold text-brand-navy">Your offers</h2>
+                    <span className="text-xs text-secondary">{cActive.length} live</span>
+                  </div>
+                  <button type="button" onClick={() => openOfferForm()} className="rounded-xl bg-mint-fill px-4 py-2 text-sm font-bold text-mint-fill-ink transition hover:opacity-90">
                     + Add offer
                   </button>
-                  <button type="button" onClick={() => { const u = window.location.href.split("?")[0]; navigator.clipboard?.writeText(u); }} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
-                    Copy link
+                </div>
+                {cActive.length === 0 ? (
+                  <p className="mt-6 text-center text-sm text-muted">No offers yet. Add your first one.</p>
+                ) : (
+                  <div className="mt-4">
+                    {cActive.map((o) => {
+                      const os = ordersFor(o.id);
+                      const last = os.length ? Math.max(...os.map((x) => new Date(x.created_at).getTime())) : null;
+                      const pinned = o.id === featuredId;
+                      return (
+                        <div key={o.id} className="flex items-center gap-3 border-t border-default py-3 first:border-t-0">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-surface-muted">
+                            {o.primary_image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={resolveImageUrl(o.primary_image_url)} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
+                            ) : (
+                              <span className="text-base text-brand-navy/40">🔧</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate text-sm font-bold text-brand-navy">{o.title}</span>
+                              {pinned && <span className="shrink-0 rounded-full bg-state-live/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-state-live">★ Featured</span>}
+                            </div>
+                            <div className="text-[11px] text-secondary">
+                              {os.length} order{os.length === 1 ? "" : "s"}{last ? ` · last sold ${ago(new Date(last).toISOString())}` : ""}
+                            </div>
+                          </div>
+                          <div className="shrink-0 font-mono text-sm font-bold text-brand-navy">${Number(o.price_usd).toFixed(0)}</div>
+                          <button type="button" onClick={() => openOfferForm(o)} className="shrink-0 rounded-lg border border-default px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-strong">
+                            Edit
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-5">
+                {/* Recent orders */}
+                <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-brand-navy">Recent orders</h2>
+                    <button type="button" onClick={() => scrollToSection("section-orders")} className="text-xs font-semibold text-mint-text hover:underline">View all</button>
+                  </div>
+                  {recent.length === 0 ? (
+                    <p className="mt-4 text-sm text-muted">No orders yet.</p>
+                  ) : (
+                    <div className="mt-3 space-y-3">
+                      {recent.map((o) => (
+                        <div key={o.id} className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-bold text-secondary">
+                            {(o.buyer_email || "?").trim().charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold text-brand-navy">{o.offers?.title || "Offer"}</div>
+                            <div className="truncate text-[11px] text-secondary">{(o.buyer_email || "Customer").split("@")[0]} · {ago(o.created_at)}</div>
+                          </div>
+                          <div className="shrink-0 font-mono text-sm font-bold text-brand-navy">${Number(o.amount_paid_usd).toFixed(0)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Add DUM Live to your site */}
+                <div className="rounded-3xl border border-default p-5 text-white shadow-sm sm:p-6" style={{ background: "linear-gradient(135deg,#0b3a29,#07271c)" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-mint-fill/40 text-mint-fill">◎</span>
+                    <h2 className="text-base font-bold text-white">Add DUM Live to your site</h2>
+                  </div>
+                  <p className="mt-2 text-[12px] leading-relaxed text-white/70">Embed live video, flash offers, Stripe checkout, and loyalty on your own site. Setup under 5 minutes.</p>
+                  <button type="button" onClick={() => { setEmbedActivePath("guided"); setEmbedModalOpen(true); }} className="mt-3 w-full rounded-xl bg-mint-fill px-4 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90">
+                    Activate DUM Live
                   </button>
                 </div>
-              </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">{projectName}</h1>
-                {mVerified && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-teal">
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
-                    Verified
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-secondary">
-                <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 uppercase tracking-[0.14em]" style={{ borderColor: accent, color: accent }}>
-                  🔧 {mVerb} · {categoryLabel}
-                </span>
-                <span><span className="font-bold text-primary">{mActive}</span> offers</span>
-                <span><span className="font-bold text-primary">{sellerOrders.length}</span> orders</span>
-                <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
-                {mLoc && (
-                  <span className="inline-flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                    {mLoc}
-                  </span>
-                )}
+                {/* Store link */}
+                <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Store link</div>
+                  <button type="button" onClick={() => { const u = window.location.href.split("?")[0]; navigator.clipboard?.writeText(u); }} className="mt-3 w-full rounded-xl border border-default bg-surface-muted px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+                    🔗 Copy store link
+                  </button>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Link href="/dashboard" className="rounded-xl border border-default px-4 py-2.5 text-center text-sm font-semibold text-primary transition hover:border-strong">Edit project</Link>
+                    <button type="button" onClick={() => togglePublish()} className="rounded-xl border border-default px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">{published ? "Unpublish" : "Publish"}</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -6023,6 +6123,7 @@ return (
            Side-by-side with the host block above for owners;
            single column otherwise. */}
       <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+        {!ownerManage && (<>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-mint-text">
@@ -6063,6 +6164,7 @@ return (
         <p className="mt-2 text-sm text-secondary">
           {isOwner ? "Products, services, and subscriptions for your customers" : "Browse what this business has to offer"}
         </p>
+        </>)}
 
         {/* Owner-only: pin the offer that appears as "Now showing" in the
             embed and on the live storefront. Mirrors the existing in-stream
@@ -6072,7 +6174,7 @@ return (
             this surface is mobile-first and the in-stream version's
             10%-opacity emerald was too subtle to read on a phone screen
             in daylight. */}
-        {isOwner && offers.filter((o) => o.is_active).length > 0 && (
+        {isOwner && !ownerManage && offers.filter((o) => o.is_active).length > 0 && (
           <div className="mt-4 space-y-3 rounded-2xl border border-default bg-surface-card p-4">
             <div className="flex items-center justify-between">
               <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Featured offer</div>
@@ -6344,8 +6446,10 @@ return (
             <>
               {/* Compact activation card. the only thing visible by
                   default. Replaces the previous developer-first panel
-                  that exposed code immediately. */}
-              <div className="mt-4 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5 sm:p-6">
+                  that exposed code immediately. Hidden in the owner console
+                  (which has its own "Activate DUM Live"); the wizard modal
+                  below stays mounted so the console button still opens it. */}
+              <div className={`mt-4 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-5 sm:p-6 ${ownerManage ? "hidden" : ""}`}>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-primary sm:text-xl">
@@ -8139,7 +8243,7 @@ return (
           flow is gone: review never published a store and only confused
           merchants. showOwnerInlineUi (isOwner && !viewAsCustomer) keeps
           this off the public/customer storefront. */}
-      {showOwnerInlineUi && (() => {
+      {showOwnerInlineUi && !ownerManage && (() => {
         const hasOffer = offers.length > 0;
         // Store "live" here means the storefront is PUBLISHED and shoppable
         // (status === "live") — the publication signal. This is deliberately
