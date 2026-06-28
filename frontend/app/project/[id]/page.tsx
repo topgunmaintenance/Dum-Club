@@ -5289,10 +5289,55 @@ return (
           uploaded one (business_profiles.cover_image_url, mig 072).
           Renders nothing when absent → existing storefronts continue to
           look exactly as before this PR. */}
+      {/* ── Modern management header (Manage shop) — mirrors the storefront's
+           clean look so the back office matches the front. Shown only when
+           the owner opened "Manage shop" on an offline shop; the public
+           header + founder card below are hidden in that case. */}
+      {isOwner && ownerManage && !project?.is_live && (
+        <div className="mb-6 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-card text-2xl font-extrabold text-mint-text shadow-sm">
+                {logoSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logoSrc} alt="" className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
+                ) : (
+                  (projectName.trim().charAt(0) || "•").toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-mint-text">Managing your shop</div>
+                <h1 className="truncate text-xl font-bold text-brand-navy sm:text-2xl">{projectName}</h1>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-secondary">
+                  <span><span className="font-bold text-primary">{offers.filter((o) => o.is_active).length}</span> offers</span>
+                  <span><span className="font-bold text-primary">{sellerOrders.length}</span> orders</span>
+                  <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className={`h-1.5 w-1.5 rounded-full ${project?.is_live ? "bg-state-live" : "bg-muted"}`} />
+                    {project?.is_live ? "Live" : "Offline"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setOwnerManage(false)} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+                View storefront
+              </button>
+              <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go live
+              </button>
+              <button type="button" onClick={() => { const u = window.location.href.split("?")[0]; navigator.clipboard?.writeText(u); }} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {ownerBizProfile?.cover_image_url && (
         <div
           id="section-top-cover"
-          className={`mb-6 h-32 w-full overflow-hidden rounded-3xl border border-default bg-surface-card sm:h-48 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
+          className={`mb-6 h-32 w-full overflow-hidden rounded-3xl border border-default bg-surface-card sm:h-48 ${project?.is_live && isIVSSession(project) ? "hidden" : ""} ${isOwner && ownerManage ? "hidden" : ""}`}
           style={{
             backgroundImage: `url(${ownerBizProfile.cover_image_url})`,
             backgroundSize: "cover",
@@ -5305,7 +5350,7 @@ return (
 
       <div
         id="section-top"
-        className={`mb-8 rounded-3xl border border-default bg-surface-page p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}
+        className={`mb-8 rounded-3xl border border-default bg-surface-page p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""} ${isOwner && ownerManage ? "hidden" : ""}`}
         style={{
           borderTop: `3px solid ${accent}`,
           boxShadow: `0 0 1px rgba(255,255,255,0.02), 0 0 40px rgba(0,255,178,0.06)`,
@@ -5646,8 +5691,9 @@ return (
         );
       })()}
 
-      {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ── */}
-      {project?.slug === "topgun-maintenance" && (
+      {/* ── FOUNDER CARD. Topgun Maintenance only (Phase 0B pilot) ──
+           Hidden in Manage-shop mode (it's public storefront flavor). */}
+      {project?.slug === "topgun-maintenance" && !(isOwner && ownerManage) && (
         <div className="mb-8 rounded-3xl border border-default border-l-2 border-l-brand-teal bg-surface-card p-6 backdrop-blur-sm">
           <div className="mb-4 text-xs uppercase tracking-[0.3em] text-secondary">Founding Merchant</div>
           <div className="flex items-start gap-5">
