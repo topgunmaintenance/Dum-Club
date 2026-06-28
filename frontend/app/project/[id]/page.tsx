@@ -3808,17 +3808,31 @@ const heroUtility =
           {/* ── Header card: cover + avatar + identity + actions ── */}
           <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
             <div
-              className="relative h-36 w-full sm:h-52"
+              className="relative h-36 w-full overflow-hidden sm:h-52"
               style={
                 cover
                   ? { backgroundImage: `url(${cover})`, backgroundSize: "cover", backgroundPosition: "center" }
-                  : { background: "linear-gradient(135deg, #0B1220 0%, #14323b 60%, #0d2730 100%)" }
+                  : { background: "linear-gradient(135deg, #0b3a29 0%, #145239 55%, #07271c 100%)" }
               }
             >
+              {!cover && (
+                <svg className="pointer-events-none absolute -right-8 -top-8 h-56 w-56 text-white/[0.06]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
+                  <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
+                </svg>
+              )}
               <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-white" />
                 Offline
               </span>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setOwnerManage(true)}
+                  className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-navy/90 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-sm transition hover:bg-brand-navy"
+                >
+                  ⚙ Manage shop
+                </button>
+              )}
             </div>
 
             <div className="px-5 pb-6 sm:px-7">
@@ -3834,37 +3848,25 @@ const heroUtility =
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  {isOwner ? (
-                    <button
-                      type="button"
-                      onClick={() => setOwnerManage(true)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-brand-navy px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-                    >
-                      ⚙ Manage shop
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => window.dispatchEvent(new Event("dum:message-shop"))}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong"
-                      >
-                        💬 Message
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleFavorite()}
-                        disabled={togglingFavorite}
-                        className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
-                          isFavorited
-                            ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
-                            : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
-                        }`}
-                      >
-                        {isFavorited ? "Following" : "+ Follow"}
-                      </button>
-                    </>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new Event("dum:message-shop"))}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong"
+                  >
+                    💬 Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite()}
+                    disabled={togglingFavorite}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
+                      isFavorited
+                        ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
+                        : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
+                    }`}
+                  >
+                    {isFavorited ? "Following" : "+ Follow"}
+                  </button>
                 </div>
               </div>
 
@@ -3880,39 +3882,34 @@ const heroUtility =
 
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-secondary">
                 <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 uppercase tracking-[0.14em]" style={{ borderColor: accent, color: accent }}>
-                  🔧 {verb} · {category}
+                  🔧 {verb} · {categoryLabel}
                 </span>
+                <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
+                <span><span className="font-bold text-primary">{activeOffers.length}</span> offers</span>
                 {loc && (
                   <span className="inline-flex items-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                     {loc}
                   </span>
                 )}
-                <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
-                <span><span className="font-bold text-primary">{activeOffers.length}</span> offers</span>
               </div>
 
               {about && <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">{about}</p>}
             </div>
           </div>
 
-          {/* ── Offline lead block: next live + notify ── */}
-          <div className="mt-4 rounded-2xl border border-default bg-brand-navy px-5 py-4 text-white">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
-              <span className="h-1.5 w-1.5 rounded-full bg-white/50" />
-              Not live right now
-            </div>
-            <p className="mt-1.5 text-sm text-white/80">
-              {proj.scheduled_live_at
-                ? "The next show is scheduled. Get pinged the moment it starts and catch flash-deal pricing."
-                : "Get pinged the moment this shop goes live and catch flash-deal pricing."}
-            </p>
-          </div>
-          <div className="mt-3 space-y-3">
+          {/* ── Offline lead: one clean card with inline notify ── */}
+          <div className="mt-4 space-y-3">
             {proj.scheduled_live_at && (
               <ScheduledLiveBanner scheduledIso={proj.scheduled_live_at} projectId={id as string} />
             )}
-            <LiveAlertSignup projectId={id as string} businessName={projectName} defaultEmail={authUser?.email || undefined} />
+            <LiveAlertSignup
+              projectId={id as string}
+              businessName={projectName}
+              defaultEmail={authUser?.email || undefined}
+              headline={`${projectName} is offline right now`}
+              subtext="Drop your email and we'll ping you the moment they go live, with first dibs on flash-deal pricing."
+            />
           </div>
 
           {/* ── What's for sale ── */}
@@ -3939,7 +3936,10 @@ const heroUtility =
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={resolveImageUrl(featured.primary_image_url)} alt={featured.title} className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-sm text-muted">{featured.title}</div>
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center" style={{ background: "linear-gradient(135deg,#0b1220,#14323b)" }}>
+                        <svg className="h-10 w-10 text-white/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" strokeLinecap="round" /></svg>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{featured.title}</span>
+                      </div>
                     )}
                     <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">★ Featured</span>
                   </div>
@@ -3949,7 +3949,8 @@ const heroUtility =
                     </div>
                     <h3 className="mt-1.5 text-xl font-bold text-brand-navy">{featured.title}</h3>
                     {featured.description && <p className="mt-1.5 text-sm leading-relaxed text-secondary line-clamp-3">{featured.description}</p>}
-                    <div className="mt-4 flex items-baseline gap-2">
+                    <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-secondary">Starting at</div>
+                    <div className="mt-0.5 flex items-baseline gap-2">
                       <span className="font-mono text-3xl font-black text-brand-navy">{money(featured.price_usd)}</span>
                       {featured.compare_at_price && Number(featured.compare_at_price) > Number(featured.price_usd) && (
                         <>
@@ -3975,7 +3976,10 @@ const heroUtility =
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={resolveImageUrl(o.primary_image_url)} alt={o.title} loading="lazy" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs text-muted">{o.title}</div>
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center" style={{ background: "linear-gradient(135deg,#eef2f0,#e4ece8)" }}>
+                          <svg className="h-6 w-6 text-brand-navy/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-brand-navy/40">{o.title}</span>
+                        </div>
                       )}
                       {o.compare_at_price && Number(o.compare_at_price) > Number(o.price_usd) && (
                         <span className="absolute left-2 top-2 rounded-full bg-state-live px-2 py-0.5 text-[9px] font-bold uppercase text-white">Deal</span>
@@ -3997,10 +4001,11 @@ const heroUtility =
                   </div>
                 ))}
 
-                {/* Loyalty tile */}
-                <div className="flex flex-col justify-center rounded-2xl border border-dashed border-default bg-surface-card p-5 text-center">
-                  <div className="text-sm font-bold text-brand-navy">Every purchase earns DUM Points</div>
-                  <p className="mt-1.5 text-[12px] leading-relaxed text-secondary">Redeem for 10% off at {projectName} or any shop on the network.</p>
+                {/* Loyalty tile — dark, brand green */}
+                <div className="flex flex-col items-center justify-center rounded-2xl p-6 text-center text-white" style={{ background: "linear-gradient(135deg,#0b3a29,#07271c)" }}>
+                  <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-mint-fill/40 text-xl text-mint-fill">◎</span>
+                  <div className="text-sm font-bold text-white">Every purchase earns DUM Points</div>
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/70">Redeem for 10% off at {projectName} or any shop on the network.</p>
                   <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">Loyalty that follows you</div>
                 </div>
               </div>
