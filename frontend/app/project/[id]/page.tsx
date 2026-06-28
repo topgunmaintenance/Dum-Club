@@ -5979,8 +5979,8 @@ return (
       <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.3em] text-brand-teal/50">
-              Offers
+            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-mint-text">
+              Your offers
             </span>
             {isDemo && (
               <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[9px] font-semibold uppercase text-brand-teal/60">
@@ -6041,11 +6041,11 @@ return (
               )}
             </div>
             {/* Pin timer picker — how long the on-screen urgency countdown
-                runs for viewers when this offer is featured. Display only:
-                at zero the countdown clears, price/availability unchanged.
-                Governs the next pin; changing it does not re-time an
-                already-featured offer until it's re-pinned. */}
-            <div className="space-y-1.5">
+                runs for viewers when this offer is featured. Hidden in the
+                simplified offline Manage view (it only matters during a live
+                stream, where the in-stream pin control offers the same
+                picker); shown when live or in the non-manage view. */}
+            <div className={`space-y-1.5 ${ownerManage && !project?.is_live ? "hidden" : ""}`}>
               <div className="text-[10px] uppercase tracking-wider text-muted">
                 Countdown shown to viewers
               </div>
@@ -6329,7 +6329,7 @@ return (
                         setEmbedPlatform(isMobile ? "custom" : null);
                         setEmbedModalOpen(true);
                       }}
-                      className="w-full rounded-xl bg-brand-teal px-5 py-3 text-sm font-bold text-black transition hover:bg-brand-teal sm:w-auto"
+                      className="w-full rounded-xl bg-mint-fill px-5 py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 sm:w-auto"
                     >
                       Activate DUM Live
                     </button>
