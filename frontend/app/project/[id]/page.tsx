@@ -770,6 +770,11 @@ export default function ProjectPage() {
   // full-bleed LiveRoom overlay. Dismissing (✕) reveals the normal
   // storefront underneath (which re-mounts the inline video/chat).
   const [immersiveDismissed, setImmersiveDismissed] = useState(false);
+  // Owner's own view of their offline shop now DEFAULTS to the clean buyer
+  // storefront (so the merchant sees the modern page, like visitors do).
+  // "Manage shop" flips this on to reveal the management tree; the
+  // storefront carries a "View storefront" control to flip back.
+  const [ownerManage, setOwnerManage] = useState(false);
   const [backendReviews, setBackendReviews] = useState<{ id: number; rating: number; comment: string; created_at: string }[]>([]);
   const [backendAvgRating, setBackendAvgRating] = useState(0);
   const [backendReviewCount, setBackendReviewCount] = useState(0);
@@ -3707,14 +3712,13 @@ const heroUtility =
   // storefront tree below, which stays untouched for the owner managing
   // their shop, live viewers, loading, pitch mode, and checkout-success.
   //
-  // Gated on !showOwnerInlineUi (not bare !isOwner) so the owner's
-  // "View as customer" toggle renders this exact buyer view too — that's
-  // how the merchant previews their own public storefront. A signed-in
-  // owner NOT in preview keeps their management tree.
+  // Owners get this same clean storefront BY DEFAULT (so their own shop
+  // looks modern when they open it); "Manage shop" flips ownerManage on to
+  // drop into the management tree. Buyers always get it when offline.
   const offlineBuyerView =
     !loadingProject &&
     !!project &&
-    !showOwnerInlineUi &&
+    (!isOwner || !ownerManage) &&
     !project.is_live &&
     !pitchMode &&
     checkoutResult !== "success";
@@ -3785,6 +3789,22 @@ const heroUtility =
             <span className="font-mono">dum.club/{proj.slug}</span>
           </div>
 
+          {/* Owner hint — this IS the public storefront; tools are one tap away. */}
+          {isOwner && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-teal/30 bg-brand-teal-soft px-4 py-2.5">
+              <span className="text-xs font-semibold text-brand-navy">
+                👁 This is your public storefront. Customers see exactly this.
+              </span>
+              <button
+                type="button"
+                onClick={() => setOwnerManage(true)}
+                className="rounded-lg bg-brand-navy px-3 py-1.5 text-[11px] font-bold text-white transition hover:opacity-90"
+              >
+                ⚙ Manage shop
+              </button>
+            </div>
+          )}
+
           {/* ── Header card: cover + avatar + identity + actions ── */}
           <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
             <div
@@ -3814,25 +3834,37 @@ const heroUtility =
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => window.dispatchEvent(new Event("dum:message-shop"))}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong"
-                  >
-                    💬 Message
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleFavorite()}
-                    disabled={togglingFavorite}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
-                      isFavorited
-                        ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
-                        : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
-                    }`}
-                  >
-                    {isFavorited ? "Following" : "+ Follow"}
-                  </button>
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => setOwnerManage(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-brand-navy px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                    >
+                      ⚙ Manage shop
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event("dum:message-shop"))}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong"
+                      >
+                        💬 Message
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite()}
+                        disabled={togglingFavorite}
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
+                          isFavorited
+                            ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
+                            : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
+                        }`}
+                      >
+                        {isFavorited ? "Following" : "+ Follow"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -3980,14 +4012,27 @@ const heroUtility =
           )}
         </div>
 
-        {/* Private DM to the host — opened by the Message button above. */}
-        <GuestChat projectId={id} businessName={projectName} />
+        {/* Private DM to the host — opened by the Message button above.
+            Not shown to the owner viewing their own storefront. */}
+        {!isOwner && <GuestChat projectId={id} businessName={projectName} />}
       </div>
     );
   }
 
 return (
   <div className="relative min-h-screen bg-surface-page px-4 py-8 text-primary sm:px-6 lg:px-8">
+    {/* Back to the clean storefront from the management tree. Only when the
+        owner opened "Manage shop" on an offline shop — live/loading paths
+        never set ownerManage. */}
+    {isOwner && ownerManage && !project?.is_live && (
+      <button
+        type="button"
+        onClick={() => setOwnerManage(false)}
+        className="fixed bottom-4 left-4 z-[70] inline-flex items-center gap-1.5 rounded-full bg-brand-navy px-4 py-2.5 text-xs font-bold text-white shadow-lg transition hover:opacity-90"
+      >
+        ← View storefront
+      </button>
+    )}
     {/* Immersive live room — full-bleed overlay for non-owner visitors of a
         live IVS shop. Reuses the storefront's IVS viewer, chat, follow state,
         and buyOffer() checkout. The inline video/chat/buy-bar below are
