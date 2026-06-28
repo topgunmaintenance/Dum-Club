@@ -5289,50 +5289,96 @@ return (
           uploaded one (business_profiles.cover_image_url, mig 072).
           Renders nothing when absent → existing storefronts continue to
           look exactly as before this PR. */}
-      {/* ── Modern management header (Manage shop) — mirrors the storefront's
-           clean look so the back office matches the front. Shown only when
-           the owner opened "Manage shop" on an offline shop; the public
-           header + founder card below are hidden in that case. */}
-      {isOwner && ownerManage && !project?.is_live && (
-        <div className="mb-6 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
-          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-card text-2xl font-extrabold text-mint-text shadow-sm">
-                {logoSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoSrc} alt="" className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
-                ) : (
-                  (projectName.trim().charAt(0) || "•").toUpperCase()
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-mint-text">Managing your shop</div>
-                <h1 className="truncate text-xl font-bold text-brand-navy sm:text-2xl">{projectName}</h1>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-secondary">
-                  <span><span className="font-bold text-primary">{offers.filter((o) => o.is_active).length}</span> offers</span>
-                  <span><span className="font-bold text-primary">{sellerOrders.length}</span> orders</span>
-                  <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className={`h-1.5 w-1.5 rounded-full ${project?.is_live ? "bg-state-live" : "bg-muted"}`} />
-                    {project?.is_live ? "Live" : "Offline"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setOwnerManage(false)} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+      {/* ── Management header (Manage shop) — the SAME green storefront
+           header skin so the back office matches the front, with owner
+           actions (Go live / Add offer / Copy link) in place of
+           Message/Follow. Shown only when the owner opened "Manage shop"
+           on an offline shop; the public header + founder card below are
+           hidden in that case. */}
+      {isOwner && ownerManage && !project?.is_live && (() => {
+        const mCover = cleanLogoUrl(ownerBizProfile?.cover_image_url);
+        const mVerified = ownerBizProfile?.verification_status === "verified";
+        const mVerb = verbLabelForProject(project);
+        const mLoc = [
+          ownerBizProfile?.city || ownerBizProfile?.location_city,
+          ownerBizProfile?.region || ownerBizProfile?.location_state,
+        ].filter(Boolean).join(", ");
+        const mMono = (projectName.trim().charAt(0) || "•").toUpperCase();
+        const mActive = offers.filter((o) => o.is_active).length;
+        return (
+          <div className="mb-6 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
+            <div
+              className="relative h-32 w-full overflow-hidden sm:h-44"
+              style={mCover
+                ? { backgroundImage: `url(${mCover})`, backgroundSize: "cover", backgroundPosition: "center" }
+                : { background: "linear-gradient(135deg, #0b3a29 0%, #145239 55%, #07271c 100%)" }}
+            >
+              {!mCover && (
+                <svg className="pointer-events-none absolute -right-8 -top-8 h-56 w-56 text-white/[0.06]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
+                  <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
+                </svg>
+              )}
+              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                ⚙ Managing your shop
+              </span>
+              <button type="button" onClick={() => setOwnerManage(false)} className="absolute right-4 top-4 rounded-lg bg-surface-card/90 px-3 py-1.5 text-[11px] font-bold text-brand-navy backdrop-blur-sm transition hover:bg-surface-card">
                 View storefront
               </button>
-              <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
-                <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go live
-              </button>
-              <button type="button" onClick={() => { const u = window.location.href.split("?")[0]; navigator.clipboard?.writeText(u); }} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
-                Copy link
-              </button>
+            </div>
+
+            <div className="px-5 pb-5 sm:px-7">
+              <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex items-end gap-4">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-default bg-surface-card text-3xl font-extrabold text-mint-text shadow-md sm:h-24 sm:w-24">
+                    {logoSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoSrc} alt={`${projectName} logo`} className="h-full w-full object-cover" onError={() => setLogoSrc(null)} />
+                    ) : (
+                      mMono
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go live
+                  </button>
+                  <button type="button" onClick={() => openOfferForm()} className="rounded-xl bg-mint-fill px-4 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90">
+                    + Add offer
+                  </button>
+                  <button type="button" onClick={() => { const u = window.location.href.split("?")[0]; navigator.clipboard?.writeText(u); }} className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-strong">
+                    Copy link
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">{projectName}</h1>
+                {mVerified && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-teal">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
+                    Verified
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-secondary">
+                <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 uppercase tracking-[0.14em]" style={{ borderColor: accent, color: accent }}>
+                  🔧 {mVerb} · {categoryLabel}
+                </span>
+                <span><span className="font-bold text-primary">{mActive}</span> offers</span>
+                <span><span className="font-bold text-primary">{sellerOrders.length}</span> orders</span>
+                <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
+                {mLoc && (
+                  <span className="inline-flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                    {mLoc}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {ownerBizProfile?.cover_image_url && (
         <div
