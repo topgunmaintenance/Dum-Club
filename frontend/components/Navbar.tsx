@@ -228,7 +228,7 @@ export function Navbar() {
                     "relative px-3 py-2 text-sm font-medium transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] rounded-md",
                     active
-                      ? "text-mint-text"
+                      ? "text-primary font-semibold"
                       : "text-secondary hover:text-primary",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
@@ -253,7 +253,7 @@ export function Navbar() {
                     href={goLiveHref}
                     variant="danger"
                     size="sm"
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap rounded-full shadow-dum-coral"
                   >
                     <span
                       className="relative inline-flex h-2.5 w-2.5"
@@ -316,8 +316,8 @@ export function Navbar() {
                   className={[
                     "block border-b border-default px-5 py-4 text-base font-medium transition-colors",
                     active
-                      ? "bg-brand-teal-soft text-brand-navy"
-                      : "text-primary hover:bg-surface-muted hover:text-brand-teal focus-visible:text-brand-teal",
+                      ? "bg-mint-card text-primary"
+                      : "text-primary hover:bg-surface-muted hover:text-mint-text focus-visible:text-mint-text",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
                 >
@@ -334,6 +334,7 @@ export function Navbar() {
                 variant="danger"
                 size="lg"
                 fullWidth
+                className="rounded-full shadow-dum-coral"
                 onClick={() => setMenuOpen(false)}
               >
                 <span
@@ -364,8 +365,8 @@ export function Navbar() {
                       className={[
                         "block border-b border-default px-4 py-3 text-sm font-medium transition-colors last:border-b-0",
                         active
-                          ? "bg-brand-teal-soft text-brand-navy"
-                          : "text-primary hover:bg-surface-muted hover:text-brand-teal focus-visible:text-brand-teal",
+                          ? "bg-mint-card text-primary"
+                          : "text-primary hover:bg-surface-muted hover:text-mint-text focus-visible:text-mint-text",
                       ].join(" ")}
                       aria-current={active ? "page" : undefined}
                     >
@@ -450,11 +451,11 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
           ].join(" ")}
         >
           <span className="text-primary">DUM </span>
-          <span className="text-brand-teal">CLUB</span>
+          <span className="text-mint-text">CLUB</span>
         </span>
         <span
           className={[
-            "font-medium uppercase text-brand-teal animate-[fadeIn_400ms_ease-out]",
+            "font-medium uppercase text-mint-text animate-[fadeIn_400ms_ease-out]",
             // Tighter on mobile so the lockup tucks under the
             // 18px wordmark without poking into the hamburger
             // / user menu on small viewports.
@@ -526,7 +527,7 @@ function UserMenu({
                   className={[
                     "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     active
-                      ? "bg-brand-teal-soft text-brand-navy"
+                      ? "bg-mint-card text-primary"
                       : "text-primary hover:bg-surface-muted",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
