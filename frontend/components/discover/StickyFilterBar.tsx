@@ -38,8 +38,8 @@ export function StickyFilterBar(props: StickyFilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   return (
     <div className="sticky top-16 z-30 -mx-4 mb-6 border-b border-default bg-surface-card/95 px-4 pb-3 pt-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:top-20">
-      {/* Compact search */}
-      <div className="mb-3 flex items-center gap-2 rounded-full border border-default bg-surface-muted px-3.5 py-2 sm:max-w-sm">
+      {/* Search field — full-width pill on the muted surface (handoff). */}
+      <div className="mb-3 flex items-center gap-2.5 rounded-full bg-surface-muted px-4 py-3">
         <span aria-hidden="true" className="text-sm text-muted">🔍</span>
         <input
           type="text"
