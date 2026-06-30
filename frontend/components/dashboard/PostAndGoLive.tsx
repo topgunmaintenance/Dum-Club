@@ -278,9 +278,12 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="block w-full overflow-hidden rounded-2xl border border-dashed border-default bg-surface-card transition hover:border-strong"
+        className="relative block w-full overflow-hidden rounded-[18px] border border-white/10 bg-dum-video shadow-dum-dark transition hover:border-white/20"
         style={{ aspectRatio: "4/3" }}
       >
+        <span className="pointer-events-none absolute left-3 top-3 z-10 font-mono text-[10px] uppercase tracking-[0.14em] text-white/40">
+          Cam preview
+        </span>
         {imagePreview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -289,17 +292,22 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center text-secondary">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
             <span className="text-3xl" aria-hidden="true">📷</span>
-            <span className="text-sm font-medium text-primary">Tap to take a photo</span>
-            <span className="text-xs text-secondary">or upload an image/video</span>
+            <span className="text-sm font-semibold text-white">Tap to take a photo</span>
+            <span className="text-xs text-white/60">or upload an image/video</span>
           </div>
         )}
       </button>
 
       {/* Title */}
-      <div className="mt-4">
-        <label htmlFor="post-title" className="sr-only">Item title</label>
+      <div className="mt-5">
+        <label
+          htmlFor="post-title"
+          className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-muted"
+        >
+          Show title
+        </label>
         <input
           id="post-title"
           ref={titleInputRef}
@@ -373,9 +381,9 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
               aria-pressed={active}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition ${
                 active
-                  ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
+                  ? "border-mint-text bg-mint-card text-mint-text"
                   : hasValue
-                  ? "border-default bg-brand-teal-soft text-brand-teal"
+                  ? "border-mint-card-border bg-mint-card text-mint-text"
                   : "border-default bg-surface-card text-secondary hover:text-primary"
               }`}
             >
@@ -431,15 +439,25 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
           onClick={handleSubmit}
           disabled={stripeVerified ? !canPost || submitting : false}
           aria-label={ctaLabel}
-          className={`w-full rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-[0.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 ${
+          className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-[0.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
             stripeVerified
-              ? "bg-brand-teal text-brand-navy hover:bg-brand-teal-hover hover:text-white disabled:opacity-40"
-              : "bg-brand-teal-soft text-brand-teal hover:bg-brand-teal hover:text-white"
+              ? "bg-coral text-white shadow-dum-coral hover:opacity-90 disabled:opacity-40"
+              : "bg-coral-bg text-coral hover:bg-coral hover:text-white"
           }`}
         >
+          {stripeVerified && (
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-white"
+              aria-hidden="true"
+            />
+          )}
           {ctaLabel} {stripeVerified && !submitting && canPost && "→"}
         </button>
-        {!stripeVerified && (
+        {stripeVerified ? (
+          <p className="mt-2 text-center text-[11px] text-secondary">
+            Your followers get notified the moment you start.
+          </p>
+        ) : (
           <p className="mt-2 text-center text-[11px] text-secondary">
             You can post once Stripe is connected. Takes about 60 seconds.
           </p>

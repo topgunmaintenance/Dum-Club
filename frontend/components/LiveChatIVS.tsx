@@ -368,8 +368,8 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
                 <span
                   style={{
                     display: "inline-block",
-                    background: "rgba(0,229,146,0.18)",
-                    color: "#00E592",
+                    background: "rgba(127,233,192,0.16)",
+                    color: "#7FE9C0",
                     borderRadius: 9999,
                     padding: "3px 10px",
                     fontSize: 12,
@@ -401,7 +401,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
                 fontWeight: 600,
                 color: msg.sender_role === "host"
                   ? "#f87171"
-                  : guest ? "#8a8a92" : "#a1a1aa",
+                  : guest ? "#8a8a92" : "#7FE9C0",
                 marginRight: 6,
               }}>
                 {msg.sender_name}

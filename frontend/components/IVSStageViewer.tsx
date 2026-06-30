@@ -460,7 +460,7 @@ export function IVSStageViewer({ projectId, userId, preview = false, fit = "cove
       {!hasVideo && (status === "loading" || status === "connecting" || status === "reconnecting" || status === "watching") && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="h-3 w-3 animate-ping rounded-full bg-red-500 mx-auto mb-3" />
+            <div className="h-3 w-3 animate-ping rounded-full bg-coral mx-auto mb-3" />
             <p className="text-sm text-zinc-400">
               {status === "watching"
                 ? "Waiting for host video..."
@@ -475,7 +475,7 @@ export function IVSStageViewer({ projectId, userId, preview = false, fit = "cove
       {status === "error" && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
           <div className="text-center px-6">
-            <p className="text-sm text-red-400">{errorMsg || "Stream connection failed."}</p>
+            <p className="text-sm text-coral">{errorMsg || "Stream connection failed."}</p>
             {/* Re-runs the join effect via manualRetry. The previous
                 handler only flipped status, so the button never
                 actually reconnected. */}
