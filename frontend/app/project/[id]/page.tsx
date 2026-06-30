@@ -5396,10 +5396,10 @@ return (
                         {published ? "Live & accepting orders" : "Draft"}
                       </span>
                     </div>
-                    <div className="mt-1 font-mono text-xs text-secondary">dum.club/{project.slug}{cLoc ? ` · ${cLoc}` : ""}</div>
+                    <div className="mt-1 truncate font-mono text-xs text-secondary">dum.club/{project.slug}{cLoc ? ` · ${cLoc}` : ""}</div>
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
                   <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
                     <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go Live
                   </button>

@@ -148,6 +148,14 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
+  /* Guard against horizontal overflow on mobile: a single too-wide
+     element otherwise makes the whole page "zoom out" / scroll sideways.
+     overflow-x: clip is sticky-safe (unlike hidden it doesn't create a
+     scroll container), with a hidden fallback for older engines. Inner
+     overflow-x-auto rails (Discover live rail, category chips, code
+     snippets) keep their own horizontal scroll. */
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ── Premium grain overlay ────────────────────────────────────────
