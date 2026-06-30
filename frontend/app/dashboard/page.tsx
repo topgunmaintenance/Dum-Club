@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Check, Copy, Calendar } from "lucide-react";
+import { Eyebrow, Badge } from "../../components/ui";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { getTier } from "../../lib/dumTiers";
 import { hasAnalyticsAccess } from "../../lib/merchantTier";
@@ -75,17 +77,13 @@ type Project = {
 import { API_BASE } from "../../lib/apiBase";
 import { DB_CATEGORIES } from "../../lib/categories";
 
-function statusLabel(project: Project): { text: string; color: string } {
-  const s = project.status || "draft";
-  if (s === "live") return { text: "Live", color: "text-brand-teal border-default bg-brand-teal-soft" };
-  // Pre-sale merchants shouldn't see review / approval / publication
-  // states on their dashboard — "In Review" / "Approved" / "pending"
-  // read like a gatekeeping process and confuse a brand-new merchant
-  // who just wants to set up and sell. Everything that isn't live is a
-  // simple "Draft". The submit-for-review/publish path still lives on
-  // the storefront page itself.
-  return { text: "Draft", color: "text-secondary border-default bg-surface-muted" };
-}
+// Storefront status on the dashboard collapses to two merchant-facing
+// states: a published storefront reads LIVE, everything else reads
+// OFFLINE. We deliberately don't surface review / approval / pending
+// states here — they read like a gatekeeping process to a brand-new
+// merchant. The submit-for-review / publish path lives on the
+// storefront page itself. Rendered via the LIVE/OFFLINE <Badge> on
+// each business card below.
 
 export default function DashboardPage() {
   const { user, getToken, loading: authLoading } = useAuth();
@@ -443,16 +441,13 @@ export default function DashboardPage() {
     }
   }
 
-  // LIVE counter = published storefronts (status === "live"), NOT
-  // currently-broadcasting projects (is_live === true). #231 briefly
-  // switched this to is_live and got it wrong — what merchants call
-  // "my live storefront" is the published/discoverable state, not the
-  // "camera-on, IVS session running" state. Same canonical source as
-  // the project page's storefront status badge and /discover
-  // discoverability. is_live remains the right field for the host
-  // card's broadcast indicator (e.g. line 698 below) — different
-  // concept, different consumer.
-  const liveCount = projects.filter((p) => p.status === "live").length;
+  // LIVE vs broadcasting: a storefront reads "LIVE" to a merchant when
+  // status === "live" (published / discoverable), NOT when is_live is
+  // true (camera-on, IVS session running). #231 briefly conflated the
+  // two and got it wrong. The per-business cards below surface this via
+  // the LIVE/OFFLINE badge off project.status; is_live stays the right
+  // field for the host card's broadcast indicator — different concept,
+  // different consumer.
 
   // "Fully onboarded" = merchant has finished the three setup steps the
   // dashboard's other cards prompt for. Used to hide the "Become a
@@ -548,10 +543,8 @@ export default function DashboardPage() {
 
         {/* Header */}
         <div className="mb-6">
-          <div className="text-[10px] uppercase tracking-[0.35em] text-muted">
-            Dashboard
-          </div>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+          <Eyebrow tone="muted">Dashboard</Eyebrow>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-primary sm:text-4xl">
             Your DUM Club shop
           </h1>
           <p className="mt-2 text-sm text-secondary">Everything you sold, paid, and have left to set up.</p>
@@ -569,6 +562,112 @@ export default function DashboardPage() {
             stripeConnectStatus={merchant?.stripe_connect_status}
           />
         )}
+
+        {/* Two-column hero row — the "go live, front and center" surface
+            from the streamlined-dashboard handoff. LEFT is the dark navy
+            Go-Live card (the single obvious entry point, replacing the
+            buried go-live links); RIGHT is a condensed setup checklist
+            mirroring the four pre-merchant onboarding gates. Both are
+            wired to existing entry points / derived state — no new data,
+            no new endpoints. Renders once core merchant data settles so
+            the checklist and the Go-Live target are accurate. */}
+        {user && coreLoaded && (() => {
+          const primary = projects.find((p) => p.status === "live") ?? projects[0] ?? null;
+          const primaryRef = primary ? (primary.slug || primary.id?.toString() || "") : "";
+          // Go Live routes to the existing per-project go-live entry
+          // (?golive=1) when a storefront exists; otherwise it points the
+          // brand-new merchant at the offer composer so there's something
+          // to sell before broadcasting.
+          const goLiveHref = primaryRef ? `/project/${primaryRef}?golive=1` : "/dashboard/post";
+          // Setup checklist mirrors deriveMerchantState's pre-merchant
+          // gates so it never disagrees with the Next-Step card below.
+          const rawDesc = (primary?.description || "").trim();
+          const hasDescription =
+            !!rawDesc &&
+            rawDesc !== "Auto-created from dashboard." &&
+            !rawDesc.startsWith("Project workspace for ");
+          const hasCategory = Boolean((merchant?.business_type || "").trim());
+          const stripeOk = merchant?.stripe_connect_status === "verified";
+          const setup = [
+            { label: "Sign in", done: true },
+            { label: "Create your shop", done: Boolean(merchant) },
+            { label: "Connect Stripe", done: stripeOk },
+            {
+              label: "Tell customers about your business",
+              done: Boolean(bizProfile) && hasDescription && hasCategory,
+            },
+          ];
+          const setupDone = setup.filter((s) => s.done).length;
+          const setupComplete = setupDone === setup.length;
+          return (
+            <div className="mb-8 grid gap-4 lg:grid-cols-2">
+              {/* LEFT — dark navy Go-Live card */}
+              <div className="rounded-2xl bg-dum-navy-card p-6 text-white shadow-dum-dark sm:p-7">
+                <Eyebrow tone="live" className="text-dum-live-accent">
+                  Ready when you are
+                </Eyebrow>
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                  Go live and start selling.
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-dum-navy-body">
+                  Feature your offers, talk to customers, and take orders in real time. Your followers get notified the moment you start.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Link
+                    href={goLiveHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-coral px-5 py-3 text-sm font-bold text-white shadow-dum-coral transition hover:opacity-90"
+                  >
+                    <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                    </span>
+                    Go Live now
+                  </Link>
+                  <Link
+                    href="#storefront-tools"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                  >
+                    <Calendar className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                    Schedule a show
+                  </Link>
+                </div>
+              </div>
+
+              {/* RIGHT — condensed setup checklist */}
+              <div className="flex flex-col rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card sm:p-7">
+                <div className="flex items-baseline justify-between gap-3">
+                  <Eyebrow tone="brand">Setup</Eyebrow>
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">
+                    {setupDone} of {setup.length} done
+                  </span>
+                </div>
+                <ul className="mt-4 space-y-3">
+                  {setup.map((s) => (
+                    <li key={s.label} className="flex items-center gap-2.5 text-sm">
+                      {s.done ? (
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-card text-mint-text" aria-hidden="true">
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        </span>
+                      ) : (
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-default" aria-hidden="true" />
+                      )}
+                      <span className={s.done ? "font-medium text-mint-text" : "font-semibold text-primary"}>
+                        {s.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/merchant#profile"
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-mint-fill px-5 py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
+                >
+                  {setupComplete ? "Manage profile" : "Complete profile"}
+                  <span aria-hidden="true" className="ml-1.5">&rarr;</span>
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Next Step card — state-driven primary action. Replaces the
             previous Post-&-Go-Live card. The headline, subhead, primary
@@ -616,72 +715,69 @@ export default function DashboardPage() {
           );
         })()}
 
-        {/* Stats + Wallet + CTA row */}
-        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Your Storefronts (renamed from "Total Projects" — clearer
-              language for non-technical merchants and matches the
-              user-facing terminology elsewhere). */}
-          <div className="rounded-2xl border border-default bg-surface-card p-6">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
-              Your Storefronts
-            </div>
-            <div className="mt-2 font-mono text-3xl font-bold text-brand-navy">
-              {projects.length}
-            </div>
-            {user && projects.length === 0 && (
-              <p className="mt-2 text-[11px] leading-snug text-muted">
-                Don&apos;t see your shop? It might be linked to a different account. Sign in with the same email or Google you used at signup.
-              </p>
-            )}
-          </div>
-
-          {/* Live count — only shown once the merchant has at least
-              one project AND there's something to count (live now OR
-              has gone live before). Teaching "Live" as a primary
-              concept to a brand-new merchant who hasn't created an
-              offer is backwards: selling comes first, going live
-              comes after. The Live stat surfaces only when relevant. */}
-          {projects.length > 0 && (liveCount > 0 || projects.some(p => p.status === "live")) && (
-            <div className="rounded-2xl border border-default bg-surface-card p-6">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
-                Live
-              </div>
-              <div className="mt-2 font-mono text-3xl font-bold text-brand-teal">
-                {liveCount}
-              </div>
-            </div>
-          )}
-
-          {/* Account — spans the remaining row width on both breakpoints
-              (sm: 2 cols, lg: 4 cols) so the dashboard never shows an empty
-              cell beside it. */}
-          <div className="rounded-2xl border border-default bg-surface-card p-6 sm:col-span-2 lg:col-span-2">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">
-              Account
-            </div>
-            {user ? (
-              <div className="mt-2 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-brand-teal" />
-                  <span className="text-sm font-medium text-brand-teal">Signed in</span>
+        {/* Stat row — the streamlined dashboard's at-a-glance tiles
+            (mono labels + big numbers). Storefronts / Orders / Sales,
+            replacing the scattered "2 / Live / Signed in" tiles. Orders
+            and Sales read from the analytics roll-up the page already
+            loads; both fall back to 0 until that settles, so the tiles
+            never block render. Auth / Stripe state now lives in the
+            SubscriptionStatusBar above. */}
+        {(() => {
+          const ordersCount =
+            typeof analytics?.total_orders === "number" ? analytics.total_orders : 0;
+          const salesUsd =
+            typeof analytics?.total_revenue_usd === "number" ? analytics.total_revenue_usd : 0;
+          const salesLabel =
+            salesUsd >= 1000
+              ? `$${(salesUsd / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
+              : `$${salesUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+          return (
+            <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Storefronts (the published / draft shops the merchant owns). */}
+              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
+                <Eyebrow tone="muted">Storefronts</Eyebrow>
+                <div className="mt-2 font-mono text-3xl font-bold text-primary">
+                  {projects.length}
                 </div>
-                <div className="mt-1 text-[11px] text-muted">
-                  {user.email || "Account active"}
-                </div>
+                {user && projects.length === 0 ? (
+                  <p className="mt-2 text-[11px] leading-snug text-muted">
+                    Don&apos;t see your shop? It might be linked to a different account. Sign in with the same email or Google you used at signup.
+                  </p>
+                ) : (
+                  <div className="mt-1 text-[11px] text-muted">live &amp; ready</div>
+                )}
               </div>
-            ) : (
-              <div className="mt-2 text-sm text-muted">Not signed in</div>
-            )}
-          </div>
-        </div>
+
+              {/* Orders — completed purchases across all storefronts. */}
+              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
+                <Eyebrow tone="muted">Orders</Eyebrow>
+                <div className="mt-2 font-mono text-3xl font-bold text-primary">
+                  {ordersCount.toLocaleString()}
+                </div>
+                <div className="mt-1 text-[11px] text-muted">all time</div>
+              </div>
+
+              {/* Sales — total earned, emerald per the handoff. */}
+              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
+                <Eyebrow tone="muted">Sales</Eyebrow>
+                <div className="mt-2 font-mono text-3xl font-bold text-mint-text">
+                  {salesLabel}
+                </div>
+                <div className="mt-1 text-[11px] text-muted">total earned</div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* DUM Points — HIDDEN per CLAUDE.md §12 rule 4: "Never show
             DUM Points in navbar until Phase 2." Same rule applies to
-            merchant dashboard surfaces. Phase 2 unlock conditions
-            (10+ verified sellers AND $1k+ GMV AND legal review of
-            purchase flow) are NOT met. The /hub page still exists at
-            its direct URL; this is only hiding the dashboard surface.
-            Re-enable when Phase 2 unlocks. */}
+            merchant dashboard surfaces (and the streamlined-dashboard
+            handoff's 4th "DUM POINTS" stat tile is intentionally NOT
+            rendered for this reason — doctrine wins over the visual
+            spec). Phase 2 unlock conditions (10+ verified sellers AND
+            $1k+ GMV AND legal review of purchase flow) are NOT met. The
+            /hub page still exists at its direct URL; this is only hiding
+            the dashboard surface. Re-enable when Phase 2 unlocks. */}
 
         {/* Business Profile */}
         {user && (
@@ -1025,8 +1121,8 @@ export default function DashboardPage() {
              reads as the page's focus. Pop-In + Embed-Display Mode
              content is unchanged inside the drawer — one click to
              expand. */}
-        <details className="group mb-6 rounded-2xl border border-default bg-surface-card">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-primary hover:text-brand-teal">
+        <details id="storefront-tools" className="group mb-6 scroll-mt-24 rounded-2xl border border-default bg-surface-card open:shadow-dum-card">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-primary hover:text-mint-text">
             <span>Customize your storefront widget</span>
             <span
               className="text-secondary transition-transform group-open:rotate-45"
@@ -1331,9 +1427,7 @@ export default function DashboardPage() {
           return (
         <div>
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-xs uppercase tracking-[0.3em] text-muted">
-              Your Businesses
-            </h2>
+            <Eyebrow tone="muted">Your businesses</Eyebrow>
             <div className="flex items-center gap-3">
               {/* Add a storefront for the selected business (multi-business). */}
               {multiBiz && bizProfile?.id && (
@@ -1341,13 +1435,13 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => createStorefrontForBusiness(bizProfile.id)}
                   disabled={creatingStorefront}
-                  className="rounded-lg border border-default bg-brand-teal/5 px-3 py-1.5 text-[11px] font-bold text-brand-teal transition hover:border-brand-teal hover:bg-brand-teal-soft disabled:opacity-50"
+                  className="rounded-lg border border-default bg-mint-card px-3 py-1.5 text-[11px] font-bold text-mint-text transition hover:border-mint-card-border disabled:opacity-50"
                 >
                   {creatingStorefront ? "Adding…" : `Add a storefront for ${bizProfile.business_name}`}
                 </button>
               )}
               <span className="text-xs text-muted">
-                {projectsLoaded ? `${visibleProjects.length} project${visibleProjects.length !== 1 ? "s" : ""}` : ""}
+                {projectsLoaded ? `${visibleProjects.length} shop${visibleProjects.length !== 1 ? "s" : ""}` : ""}
               </span>
             </div>
           </div>
@@ -1369,7 +1463,7 @@ export default function DashboardPage() {
               </p>
               <Link
                 href="/dashboard/post"
-                className="mt-5 inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:text-white"
+                className="mt-5 inline-flex items-center rounded-xl bg-mint-fill px-6 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
               >
                 Post your first offer →
               </Link>
@@ -1377,7 +1471,6 @@ export default function DashboardPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {visibleProjects.map((project) => {
-                const st = statusLabel(project);
                 const bizLabel = project.business_profile_id
                   ? bizNameById[project.business_profile_id]
                   : null;
@@ -1394,16 +1487,22 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={project.id}
-                    className="group relative rounded-2xl border border-default bg-surface-card transition hover:border-default hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                    className="group relative rounded-2xl border border-default bg-surface-card shadow-dum-card transition hover:border-strong hover:-translate-y-0.5 hover:shadow-dum-elev"
                   >
                     <Link href={`/project/${project.id}`} className="block p-6">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold text-primary group-hover:text-brand-teal">
+                        <h3 className="text-base font-semibold text-primary group-hover:text-mint-text">
                           {project.title || project.name || "Untitled Shop"}
                         </h3>
-                        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${st.color}`}>
-                          {st.text}
-                        </span>
+                        {project.status === "live" ? (
+                          <Badge variant="live" size="sm" dot className="shrink-0">
+                            Live
+                          </Badge>
+                        ) : (
+                          <Badge variant="muted" size="sm" className="shrink-0">
+                            Offline
+                          </Badge>
+                        )}
                       </div>
 
 
@@ -1455,20 +1554,17 @@ export default function DashboardPage() {
                       </select>
                     </div>
 
-                    {/* Copy storefront link — primary post-publish action.
-                        Disabled until status='live' so a brand-new
-                        merchant can't accidentally share a draft URL
-                        with a customer. The disabled state explains
-                        what unlocks it instead of pretending the link
-                        is dead. */}
+                    {/* Storefront URL + inline Copy — primary post-publish
+                        action. The URL is surfaced so the merchant can see
+                        and share their link, not just copy it blind.
+                        Disabled until status='live' so a brand-new merchant
+                        can't accidentally share a draft URL with a customer;
+                        the disabled state explains what unlocks it. */}
                     {isShareable ? (
-                      <>
-                        {/* 1F: surface the actual storefront URL so the
-                            merchant can see and share their link, not just
-                            copy it blind. */}
-                        <div className="mx-4 mb-2 truncate rounded-lg border border-default bg-surface-page px-3 py-2 text-center font-mono text-[11px] text-secondary">
+                      <div className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-default bg-surface-page px-3 py-2">
+                        <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-secondary">
                           dum.club/{project.slug || project.id}
-                        </div>
+                        </span>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1476,47 +1572,48 @@ export default function DashboardPage() {
                             e.stopPropagation();
                             if (typeof navigator !== "undefined" && navigator.clipboard) {
                               navigator.clipboard.writeText(storefrontUrl).catch(() => {});
+                              showNotice("success", "Link copied. Share it with your audience.");
                             }
                           }}
-                          className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-brand-teal-soft hover:text-brand-teal"
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-bold text-mint-text transition hover:bg-mint-card"
                         >
-                          📋 Copy storefront link
+                          <Copy className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                          Copy
                         </button>
-                      </>
+                      </div>
                     ) : (
                       <div className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-default bg-surface-muted px-4 py-2.5 text-xs text-muted">
                         Publish your first offer to unlock sharing
                       </div>
                     )}
 
-                    {/* Go Live — only useful once the merchant has at
-                        least one offer to actually sell during the
-                        stream. Hidden on draft projects so the dashboard
-                        doesn't push "Live" before there's something to
-                        sell. Once the project is live, the button is
-                        available on the storefront page itself. */}
-                    {isShareable && (
+                    {/* Action row — coral Go Live + outline Preview shop.
+                        Go Live only renders once the storefront is live
+                        (there's something to sell during the stream) and
+                        routes to the existing per-project go-live entry
+                        (?golive=1). Preview shop flips the project page's
+                        view-as-customer flag so the merchant sees the
+                        storefront the way a buyer would. */}
+                    <div className="mx-4 mb-4 flex items-center gap-2">
+                      {isShareable && (
+                        <Link
+                          href={`/project/${project.id}?golive=1`}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-coral px-4 py-2.5 text-sm font-bold text-white shadow-dum-coral transition hover:opacity-90"
+                        >
+                          <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                          </span>
+                          Go Live
+                        </Link>
+                      )}
                       <Link
-                        href={`/project/${project.id}?golive=1`}
-                        className="mx-4 mb-3 flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+                        href={`/project/${project.id}?viewAsCustomer=1`}
+                        className={`flex items-center justify-center rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:border-strong hover:bg-surface-muted ${isShareable ? "flex-1" : "w-full"}`}
                       >
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-navy opacity-75" />
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-navy" />
-                        </span>
-                        Go Live
+                        Preview shop
                       </Link>
-                    )}
-                    {/* Preview-as-customer — flips the project page's
-                        sessionStorage flag so the merchant sees the
-                        storefront the way a buyer would, without the
-                        AdminBar / Business Status / Manage controls. */}
-                    <Link
-                      href={`/project/${project.id}?viewAsCustomer=1`}
-                      className="mx-4 mb-4 block text-center text-xs text-muted transition hover:text-primary"
-                    >
-                      Preview as customer →
-                    </Link>
+                    </div>
 
                     <button
                       type="button"
