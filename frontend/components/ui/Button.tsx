@@ -50,15 +50,18 @@ export type ButtonProps = ButtonAsButton | ButtonAsAnchor;
 // Tailwind class strings literal in source so the JIT picks them up.
 // Don't refactor into bracket-notation lookups — Tailwind's content
 // scanner reads strings, not runtime values.
+// primary is the handoff emerald fill with near-black ink (the two-mint
+// legibility split, CLAUDE.md §8); danger is the coral Go Live / urgency
+// fill. Both resolve through the design tokens repointed in globals.css.
 const VARIANT: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-hover",
+    "bg-mint-fill text-mint-fill-ink hover:opacity-90 active:opacity-80",
   secondary:
     "bg-surface-card text-primary border border-default hover:border-strong hover:bg-surface-muted",
   ghost:
     "bg-transparent text-secondary hover:text-primary hover:bg-surface-muted",
   danger: "bg-state-live text-white hover:opacity-90 active:opacity-80",
-  link: "bg-transparent text-brand-teal hover:underline underline-offset-4 px-0",
+  link: "bg-transparent text-mint-text hover:underline underline-offset-4 px-0",
 };
 
 const SIZE: Record<ButtonSize, string> = {

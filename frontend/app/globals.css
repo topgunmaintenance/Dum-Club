@@ -13,8 +13,8 @@
      --color-bg-base / --color-text-primary for any embed surface
      that still wants the old dark chrome (e.g. /embed/[businessId]
      iframes that render against arbitrary merchant pages). */
-  --background: #F7F8FA;
-  --foreground: #0B1220;
+  --background: #F7F9FA;
+  --foreground: #0C1B2A;
 
   /* DUM Club color system */
   --color-bg-base: #0A0A0F;
@@ -52,36 +52,75 @@
   --brand-teal-soft: #E6F8F3;
   --brand-navy: #0B2545;
 
-  --surface-page: #F7F8FA;
+  /* ── Surfaces / text / borders ──
+     Repointed to the June 2026 handoff palette (design-tokens.css) so
+     the whole site adopts the streamlined look. Values track the
+     handoff's in-app body / surface / slate / border tokens. */
+  --surface-page: #F7F9FA;
   --surface-card: #FFFFFF;
-  --surface-muted: #EEF1F5;
-  --surface-inverse: #0B1220;
+  --surface-muted: #EEF1F3;
+  --surface-inverse: #0C1B2A;
 
-  --text-primary: #0B1220;
-  --text-secondary: #475467;
-  --text-muted: #6B7280;
+  --text-primary: #0C1B2A;
+  --text-secondary: #5A6B7B;
+  --text-muted: #8090A0;
 
-  --border-default: #E5E7EB;
-  --border-strong: #D1D5DB;
+  --border-default: #E4E9ED;
+  --border-strong: #D1D9DF;
+
+  /* ════════════════════════════════════════════════════════════════
+     DUM Club design tokens — canonical handoff palette (June 2026).
+     Source of truth: design_handoff_live_selling/design-tokens.css.
+     Buyer / live / merchant surfaces consume these. The semantic
+     tokens above and the mint/coral split below alias into them, so
+     components that already use bg-mint-fill / text-mint-text /
+     bg-state-live / surface-* adopt the new look with no class churn.
+     ════════════════════════════════════════════════════════════════ */
+  /* Brand: emerald (primary) — fill-vs-text legibility split (CLAUDE.md §8) */
+  --dum-emerald: #10B981;       /* primary button FILLS, active tabs, "CLUB" */
+  --dum-emerald-700: #0E9E72;   /* emerald as TEXT / icons / prices on white */
+  --dum-on-emerald: #04130D;    /* near-black ink that sits on an emerald fill */
+  --dum-mint: #E9F9F1;          /* mint card / status-bar background */
+  --dum-mint-border: #C7EEDD;   /* mint card border */
+  /* Brand: coral — Go Live + LIVE / urgency */
+  --dum-live: #FB2C58;
+  --dum-live-bg: #FEE9EE;       /* "LIVE NOW" pill background */
+  /* Logo accent only */
+  --dum-indigo: #6D5EF6;
+  /* Secondary fixed accents (small palette — don't free-pick) */
+  --dum-amber: #E08A2B;         /* pro-services tag, pending-order chip */
+  --dum-amber-bg: #FCEFD9;      /* amber chip background */
+  /* Dark / video surfaces (live screens, navy hero card) */
+  --dum-navy-card: #0C1B2A;     /* dark dashboard hero card */
+  --dum-navy-body: #9FB2C0;     /* body text on the navy card */
+  --dum-video-1: #16241C;       /* video gradient start (green-dark) */
+  --dum-video-2: #0A1410;       /* video gradient end */
+  --dum-dark-panel: #0F1A15;    /* overlay panels on video */
+  --dum-live-accent: #7FE9C0;   /* mint accent text on dark */
+  /* Radius / shadow scales */
+  --dum-r-chip: 8px;
+  --dum-r-btn: 12px;
+  --dum-r-card: 14px;
+  --dum-r-card-lg: 16px;
+  --dum-r-phone: 34px;
+  --dum-shadow-card: 0 18px 30px -26px rgba(12,27,42,.40);
+  --dum-shadow-elev: 0 30px 60px -40px rgba(12,27,42,.40);
+  --dum-shadow-dark: 0 16px 30px -14px rgba(0,0,0,.50);
+  --dum-shadow-coral: 0 14px 26px -12px rgba(251,44,88,.60);
 
   /* ── Buyer-surface mint palette (two-mint legibility split) ──────
-     The bright brand mint is gorgeous as a button FILL but illegible
-     as text on white, so the buyer surfaces (Discover, Clubs, Follow,
-     the live room) use two values. See CLAUDE.md §8.
-       --mint-fill     bright mint, FILLS ONLY (Follow, BUY, active tab),
-                       always paired with --mint-fill-ink near-black text
+     Aliased onto the handoff emerald so buyer surfaces (Discover,
+     Clubs, Follow, the live room) adopt the streamlined palette while
+     keeping the fill-vs-text legibility split. See CLAUDE.md §8.
+       --mint-fill     emerald, FILLS ONLY, paired with --mint-fill-ink
        --mint-fill-ink near-black ink that sits on a --mint-fill button
-       --mint-text     darker mint for mint-as-TEXT / icons / prices on
-                       white, where the bright fill can't be read */
-  --mint-fill: #00E592;
-  --mint-fill-ink: #04130D;
-  --mint-text: #00A36C;
+       --mint-text     darker emerald for mint-as-TEXT / prices on white */
+  --mint-fill: var(--dum-emerald);
+  --mint-fill-ink: var(--dum-on-emerald);
+  --mint-text: var(--dum-emerald-700);
 
-  /* Coral — live status + urgency ONLY (LIVE badges, the pulsing live
-     dot, low-stock "N left" warnings). Never decorative; never an
-     action color (that's mint). Brightened from the prior #E63946 to
-     the brief's #FF2D55 so it reads unmistakably as "live now". */
-  --state-live: #FF2D55;
+  /* Coral — live status + Go Live. Aliased onto the handoff coral. */
+  --state-live: var(--dum-live);
 }
 
 /* ── Soft gradient mesh ───────────────────────────────────────────

@@ -20,7 +20,14 @@
 
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 
-type BadgeVariant = "verified" | "live" | "muted" | "accent" | "navy";
+type BadgeVariant =
+  | "verified"
+  | "live"
+  | "muted"
+  | "accent"
+  | "navy"
+  | "founding"
+  | "dum";
 type BadgeSize = "sm" | "md";
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
@@ -30,12 +37,16 @@ export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children?: ReactNode;
 };
 
+// Mapped to the June 2026 handoff badge kit: VERIFIED (emerald on mint),
+// LIVE (coral on pale coral), FOUNDING (mono on muted), DUM (dark pill).
 const VARIANT: Record<BadgeVariant, string> = {
-  verified: "bg-brand-teal-soft text-brand-navy border border-default",
-  live: "bg-[var(--state-live)]/10 text-state-live border border-[var(--state-live)]/30",
+  verified: "bg-mint-card text-mint-text border border-mint-card-border",
+  live: "bg-coral-bg text-coral border border-transparent",
   muted: "bg-surface-muted text-secondary border border-default",
-  accent: "bg-brand-teal text-white border border-transparent",
+  accent: "bg-mint-fill text-mint-fill-ink border border-transparent",
   navy: "bg-brand-navy text-white border border-transparent",
+  founding: "bg-surface-muted text-secondary border border-default",
+  dum: "bg-dum-navy-card text-white border border-transparent",
 };
 
 const SIZE: Record<BadgeSize, string> = {
@@ -44,11 +55,13 @@ const SIZE: Record<BadgeSize, string> = {
 };
 
 const DOT_BG: Record<BadgeVariant, string> = {
-  verified: "bg-brand-teal",
-  live: "bg-state-live",
+  verified: "bg-mint-fill",
+  live: "bg-coral",
   muted: "bg-secondary",
-  accent: "bg-white",
+  accent: "bg-mint-fill-ink",
   navy: "bg-white",
+  founding: "bg-secondary",
+  dum: "bg-dum-live-accent",
 };
 
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
