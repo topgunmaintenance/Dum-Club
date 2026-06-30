@@ -228,20 +228,22 @@ export function AdminBar({ projectSlug, orderCount, isLive }: AdminBarProps) {
       }}
       data-dum-admin-bar
     >
-      {/* ── Primary: GO LIVE ────────────────────────────────────── */}
+      {/* ── Primary: GO LIVE ──────────────────────────────────────
+           Coral pill (handoff Go Live / LIVE color). Anchor + route
+           behavior unchanged — still scrolls to #project-live-host. */}
       <a
         href={goLiveHref}
         aria-label={isLive ? "Scroll to live broadcast" : "Start a live broadcast"}
-        className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-teal px-3.5 text-xs font-bold uppercase tracking-[0.06em] text-brand-navy transition hover:bg-brand-teal-hover sm:h-7 sm:px-3 sm:py-1.5"
+        className="inline-flex h-10 items-center gap-2 rounded-full bg-coral px-3.5 text-xs font-bold uppercase tracking-[0.06em] text-white shadow-dum-coral transition hover:opacity-90 sm:h-7 sm:px-3 sm:py-1.5"
       >
         <span
           className={`relative inline-flex h-2 w-2 ${isLive ? "" : "opacity-70"}`}
           aria-hidden="true"
         >
           {isLive && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-navy/60" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60" />
           )}
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-navy" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
         </span>
         {isLive ? "Live now" : "Go Live"}
       </a>

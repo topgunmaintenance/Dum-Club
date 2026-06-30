@@ -3791,7 +3791,7 @@ const heroUtility =
 
           {/* Owner hint — this IS the public storefront; tools are one tap away. */}
           {isOwner && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-teal/30 bg-brand-teal-soft px-4 py-2.5">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-mint-card-border bg-mint-card px-4 py-2.5">
               <span className="text-xs font-semibold text-brand-navy">
                 👁 This is your public storefront. Customers see exactly this.
               </span>
@@ -3805,14 +3805,21 @@ const heroUtility =
             </div>
           )}
 
-          {/* ── Header card: cover + avatar + identity + actions ── */}
-          <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-sm">
+          {/* ── Header card: cover + avatar + identity + actions ──
+               Cover has two states driven by shop live status (handoff
+               Storefront spec). LIVE → coral "LIVE · N watching" pill +
+               "Watch the live show" / "Join live →"; OFFLINE → same dark
+               cover, muted OFFLINE chip, "Notify me" strip below. This
+               clean view only mounts for an offline shop, so the LIVE
+               branch is defensive — an actively-broadcasting shop renders
+               the live tree (inline IVS viewer) below. */}
+          <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-dum-card">
             <div
-              className="relative h-36 w-full overflow-hidden sm:h-52"
+              className="relative h-36 w-full overflow-hidden bg-dum-video sm:h-52"
               style={
                 cover
                   ? { backgroundImage: `url(${cover})`, backgroundSize: "cover", backgroundPosition: "center" }
-                  : { background: "linear-gradient(135deg, #0b3a29 0%, #145239 55%, #07271c 100%)" }
+                  : undefined
               }
             >
               {!cover && (
@@ -3820,10 +3827,20 @@ const heroUtility =
                   <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
                 </svg>
               )}
-              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                Offline
-              </span>
+              {proj.is_live ? (
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-coral px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white shadow-dum-coral">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                  </span>
+                  LIVE{liveViewerCount > 0 ? ` · ${liveViewerCount} watching` : ""}
+                </span>
+              ) : (
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-surface-card/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                  Offline
+                </span>
+              )}
               {isOwner && (
                 <button
                   type="button"
@@ -3832,6 +3849,21 @@ const heroUtility =
                 >
                   ⚙ Manage shop
                 </button>
+              )}
+              {proj.is_live && (
+                <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 text-sm font-bold text-white">
+                    <span aria-hidden="true">▶</span>
+                    Watch the live show
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOwnerManage(false)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-mint-fill px-4 py-2 text-sm font-bold text-mint-fill-ink shadow-dum-card transition hover:opacity-90"
+                  >
+                    Join live →
+                  </button>
+                </div>
               )}
             </div>
 
@@ -3861,7 +3893,7 @@ const heroUtility =
                     disabled={togglingFavorite}
                     className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
                       isFavorited
-                        ? "border border-brand-teal/40 bg-brand-teal-soft text-brand-navy"
+                        ? "border border-mint-card-border bg-mint-card text-mint-text"
                         : "bg-mint-fill text-mint-fill-ink hover:opacity-90"
                     }`}
                   >
@@ -3873,22 +3905,22 @@ const heroUtility =
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1 className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">{projectName}</h1>
                 {verified && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-teal">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-mint-card-border bg-mint-card px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-mint-text">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
                     Verified
                   </span>
                 )}
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-secondary">
-                <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 uppercase tracking-[0.14em]" style={{ borderColor: accent, color: accent }}>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-xs text-secondary">
+                <span className="inline-flex items-center gap-1 uppercase tracking-[0.14em] text-mint-text">
                   🔧 {verb} · {categoryLabel}
                 </span>
                 <span><span className="font-bold text-primary">{favoriteCount}</span> followers</span>
                 <span><span className="font-bold text-primary">{activeOffers.length}</span> offers</span>
                 {loc && (
                   <span className="inline-flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mint-text/70"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                     {loc}
                   </span>
                 )}
@@ -3917,13 +3949,13 @@ const heroUtility =
             <div className="mt-8">
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-mint-text">What&apos;s for sale</div>
+                  <div className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-mint-text">What&apos;s for sale</div>
                   <h2 className="mt-1 text-xl font-bold text-brand-navy sm:text-2xl">
                     {activeOffers.length} offer{activeOffers.length === 1 ? "" : "s"} · Stripe checkout · earn DUM Points
                   </h2>
                 </div>
-                <span className="hidden shrink-0 items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-secondary sm:inline-flex">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-teal/60"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                <span className="hidden shrink-0 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-secondary sm:inline-flex">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mint-text"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                   Secure checkout
                 </span>
               </div>
@@ -3941,7 +3973,7 @@ const heroUtility =
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">{featured.title}</span>
                       </div>
                     )}
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-state-live px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">★ Featured</span>
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dum-navy-card px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-dum-live-accent shadow-dum-card">★ Featured</span>
                   </div>
                   <div className="p-5 sm:p-7">
                     <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
@@ -4000,14 +4032,24 @@ const heroUtility =
                     </div>
                   </div>
                 ))}
+              </div>
 
-                {/* Loyalty tile — dark, brand green */}
-                <div className="flex flex-col items-center justify-center rounded-2xl p-6 text-center text-white" style={{ background: "linear-gradient(135deg,#0b3a29,#07271c)" }}>
-                  <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-mint-fill/40 text-xl text-mint-fill">◎</span>
-                  <div className="text-sm font-bold text-white">Every purchase earns DUM Points</div>
-                  <p className="mt-1.5 text-[12px] leading-relaxed text-white/70">Redeem for 10% off at {projectName} or any shop on the network.</p>
-                  <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">Loyalty that follows you</div>
+              {/* ── DUM Points band — full-width dark green, exact handoff
+                   copy (uses a middot, never a dash — the dashed variant is
+                   a banned phrase). ── */}
+              <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl bg-dum-navy-card px-6 py-5 text-center text-white shadow-dum-dark sm:flex-row sm:justify-between sm:text-left">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-mint-fill/40 text-xl text-dum-live-accent">◎</span>
+                  <div>
+                    <div className="text-sm font-bold text-white">Every purchase earns DUM Points</div>
+                    <p className="mt-1 text-[13px] leading-relaxed text-dum-navy-body">
+                      Redeem for 10% off here or any shop on the network.
+                    </p>
+                  </div>
                 </div>
+                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-dum-live-accent">
+                  Loyalty that follows you
+                </span>
               </div>
             </div>
           ) : (
@@ -4765,7 +4807,7 @@ return (
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-state-live" />
               </span>
-              <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-state-live">Live</span>
+              <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-coral">Live</span>
               <span className="text-xs sm:text-sm text-secondary truncate">{projectName}</span>
               {/* Q3. "Live for H:MM" — real elapsed since live_started_at
                   (migration 084). Hidden until the field exists so a
@@ -4777,7 +4819,7 @@ return (
               )}
               {/* Q2. viewer count (real, from existing WebSocket) */}
               {liveViewerCount > 0 && (
-                <span className="rounded-full border border-default bg-surface-card px-2 py-0.5 text-[10px] font-mono text-secondary">
+                <span className="rounded-full bg-coral-bg px-2 py-0.5 text-[10px] font-mono font-bold text-coral">
                   {liveViewerCount} watching
                 </span>
               )}
@@ -4786,7 +4828,7 @@ return (
                   every `item_sold` WebSocket event). Hidden until
                   the first sale to avoid a sad "0 sold" pill. */}
               {liveSalesCount > 0 && (
-                <span className="rounded-full border border-default bg-brand-teal-soft px-2 py-0.5 text-[10px] font-mono font-bold text-brand-teal">
+                <span className="rounded-full border border-mint-card-border bg-mint-card px-2 py-0.5 text-[10px] font-mono font-bold text-mint-text">
                   {liveSalesCount} sold this show
                 </span>
               )}
@@ -4795,7 +4837,7 @@ return (
                  emerald so the buyer's biggest reward signal isn't
                  whispered. Same visual weight as the founding-100
                  pill on /merchant. */}
-            <span className="rounded-full border border-default bg-brand-teal-soft px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-brand-teal">
+            <span className="rounded-full border border-mint-card-border bg-mint-card px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-mint-text">
               Earn DUM Points
             </span>
           </div>
