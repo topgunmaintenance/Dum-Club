@@ -141,7 +141,7 @@ export function FloatingGoLive() {
       href={target}
       data-dum-floating-go-live
       aria-label={isLive ? "Go to your live broadcast" : "Open your project to go live"}
-      className="fixed bottom-5 left-5 z-[55] inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white shadow-[0_14px_32px_rgba(239,68,68,0.35),0_0_0_4px_rgba(239,68,68,0.18)] transition hover:translate-y-[-1px] hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:bottom-6 sm:left-6"
+      className="fixed bottom-5 left-5 z-[55] inline-flex items-center gap-2 rounded-full bg-coral px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white shadow-dum-coral transition hover:translate-y-[-1px] hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:bottom-6 sm:left-6"
     >
       <span className="relative inline-flex h-2.5 w-2.5">
         {/* Pulse only when actually streaming — the previous version

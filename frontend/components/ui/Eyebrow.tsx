@@ -23,13 +23,15 @@ export type EyebrowProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const TONE: Record<EyebrowTone, string> = {
-  brand: "text-brand-teal",
-  muted: "text-secondary",
+  brand: "text-mint-text",
+  muted: "text-muted",
   navy: "text-brand-navy",
-  live: "text-state-live",
+  live: "text-coral",
 };
 
-const BASE = "text-[11px] font-bold uppercase tracking-[0.2em]";
+// Mono uppercase eyebrow — the handoff's section-label treatment
+// (Space Mono on the prototype; Geist Mono here, per CLAUDE.md §8).
+const BASE = "font-mono text-[11px] font-bold uppercase tracking-[0.14em]";
 
 export const Eyebrow = forwardRef<HTMLDivElement, EyebrowProps>(
   function Eyebrow({ tone = "brand", className, children, ...rest }, ref) {

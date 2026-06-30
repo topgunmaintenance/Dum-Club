@@ -73,15 +73,15 @@ export function DumPill() {
         {expanded && (
           <div className="mb-2 w-64 rounded-2xl border border-default bg-surface-card p-5 shadow-[0_16px_48px_rgba(11,18,32,0.18)] backdrop-blur-md">
             <div className="mb-1 flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-mint-text">
                 DUM Points
               </span>
-              <span className="rounded-full bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em] text-brand-teal">
+              <span className="rounded-full bg-mint-card px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.15em] text-mint-text">
                 Beta
               </span>
             </div>
             <div className="mb-2 flex items-baseline gap-2">
-              <span className="text-3xl font-black text-brand-navy">{balance}</span>
+              <span className="text-3xl font-black text-primary">{balance}</span>
               <span className="text-sm text-secondary">points</span>
             </div>
             {/* Human conversion line — Phase 0A. The whole point of this
@@ -92,11 +92,11 @@ export function DumPill() {
 
             <div className="space-y-2.5 border-t border-default pt-3">
               <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 text-brand-teal text-xs">+2</span>
+                <span className="mt-0.5 text-mint-text text-xs">+2</span>
                 <span className="text-[12px] text-primary">Earn with every purchase</span>
               </div>
               <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 text-brand-teal text-xs">10%</span>
+                <span className="mt-0.5 text-mint-text text-xs">10%</span>
                 <span className="text-[12px] text-primary">Off any offer with 10 points</span>
               </div>
               <div className="flex items-start gap-2.5">
@@ -115,7 +115,7 @@ export function DumPill() {
             <Link
               href="/hub"
               onClick={() => setExpanded(false)}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-default bg-brand-teal-soft px-4 py-2.5 text-[12px] font-bold text-brand-teal transition hover:bg-brand-teal hover:text-white"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-default bg-mint-card px-4 py-2.5 text-[12px] font-bold text-mint-text transition hover:bg-mint-fill hover:text-white"
             >
               View DUM Hub →
             </Link>
@@ -128,14 +128,14 @@ export function DumPill() {
           onClick={() => setExpanded(!expanded)}
           title="DUM Points (beta) · 1 DUM = $0.10 · spending across businesses is coming soon"
           aria-label={`${balance} DUM Points, beta · 1 DUM = $0.10 · spending across businesses is coming soon`}
-          className="flex items-center gap-2 rounded-full border border-default bg-surface-card px-4 py-2.5 shadow-[0_8px_24px_rgba(11,18,32,0.12)] backdrop-blur-md transition-all duration-200 hover:border-brand-teal hover:shadow-[0_8px_32px_rgba(11,18,32,0.18)]"
+          className="flex items-center gap-2 rounded-full border border-default bg-surface-card px-4 py-2.5 shadow-[0_8px_24px_rgba(11,18,32,0.12)] backdrop-blur-md transition-all duration-200 hover:border-mint-text hover:shadow-[0_8px_32px_rgba(11,18,32,0.18)]"
         >
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-teal opacity-40" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint-fill opacity-40" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-fill" />
           </span>
-          <span className="text-[12px] font-bold text-brand-teal">◆ {balance} DUM</span>
-          <span className="rounded-full bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-brand-teal">
+          <span className="font-mono text-[12px] font-bold text-mint-text">◆ {balance} DUM</span>
+          <span className="rounded-full bg-mint-card px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-mint-text">
             Beta
           </span>
         </button>

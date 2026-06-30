@@ -58,12 +58,16 @@ export function BottomTabNav() {
             <TabLink key={t.href} tab={t} active={t.match(path)} />
           ))}
 
+          {/* Center "Sell" — raised coral + button (the handoff's tab bar). */}
           <Link
             href="/merchant"
             aria-label="Start selling"
-            className="relative -top-3 inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-surface-inverse text-white shadow-lg transition active:scale-90"
+            className="relative -top-3 flex flex-1 flex-col items-center gap-0.5"
           >
-            <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-coral text-white shadow-dum-coral transition active:scale-90">
+              <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
+            </span>
+            <span className="text-[10px] font-semibold text-secondary">Sell</span>
           </Link>
 
           {TABS.slice(2).map((t) => (
@@ -82,7 +86,7 @@ function TabLink({ tab, active }: { tab: Tab; active: boolean }) {
       href={tab.href}
       aria-current={active ? "page" : undefined}
       className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold transition ${
-        active ? "text-mint-text" : "text-secondary hover:text-primary"
+        active ? "text-primary" : "text-secondary hover:text-primary"
       }`}
     >
       <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} aria-hidden="true" />

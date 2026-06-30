@@ -558,7 +558,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           </p>
           <a
             href="/dashboard"
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
           >
             Open Dashboard →
           </a>
@@ -583,7 +583,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           </div>
           <a
             href="#offers-section"
-            className="inline-flex items-center justify-center rounded-2xl bg-brand-teal px-10 py-4 text-lg font-bold text-brand-navy shadow-lg transition hover:bg-brand-teal-hover hover:text-white active:scale-[0.98]"
+            className="inline-flex items-center justify-center rounded-2xl bg-mint-fill px-10 py-4 text-lg font-bold text-mint-fill-ink shadow-dum-card transition hover:opacity-90 active:scale-[0.98]"
           >
             Pin a featured item →
           </a>
@@ -598,7 +598,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
             <li><span className="font-bold text-zinc-200">2.</span> Allow camera and microphone.</li>
             <li><span className="font-bold text-zinc-200">3.</span> Customers see you on your website.</li>
           </ol>
-          <button onClick={startPreview} className="rounded-2xl bg-red-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-400 active:scale-[0.98]">
+          <button onClick={startPreview} className="rounded-2xl bg-coral px-10 py-4 text-lg font-bold text-white shadow-dum-coral transition hover:opacity-90 active:scale-[0.98]">
             Start camera
           </button>
           <p className="mt-3 text-sm text-zinc-500">Start selling in seconds.</p>
@@ -614,14 +614,14 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
       {status === "previewing" && (
         <div className="flex gap-3">
-          <button onClick={goLive} className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-bold text-white transition hover:bg-red-400">Start Live</button>
+          <button onClick={goLive} className="flex-1 rounded-xl bg-coral py-3 text-sm font-bold text-white transition hover:opacity-90">Start Live</button>
           <button onClick={() => { endStream(); setStatus("idle"); }} className="rounded-xl border border-zinc-800 px-5 py-3 text-sm text-zinc-400 hover:text-white">Cancel</button>
         </div>
       )}
 
       {status === "connecting" && (
         <div className="text-center py-4">
-          <div className="h-3 w-3 animate-ping rounded-full bg-red-500 mx-auto mb-3" />
+          <div className="h-3 w-3 animate-ping rounded-full bg-coral mx-auto mb-3" />
           <p className="text-sm text-zinc-400">Connecting...</p>
         </div>
       )}
@@ -630,12 +630,12 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-coral" />
             </span>
-            <span className="text-sm font-bold text-red-400">LIVE</span>
+            <span className="text-sm font-bold text-coral">LIVE</span>
           </div>
-          <button onClick={endStream} className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/20">End Stream</button>
+          <button onClick={endStream} className="rounded-lg border border-[rgba(251,44,88,0.35)] bg-[rgba(251,44,88,0.12)] px-4 py-2 text-xs font-semibold text-coral hover:bg-[rgba(251,44,88,0.2)]">End Stream</button>
         </div>
       )}
 

@@ -39,10 +39,10 @@ export function VerbTabs({
               type="button"
               onClick={() => onSelect(pill.id)}
               aria-pressed={isActive}
-              className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] transition ${
+              className={`flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-4 py-2 text-[13px] font-semibold transition ${
                 isActive
                   ? "border-transparent bg-surface-inverse text-white"
-                  : "border-default bg-surface-card text-secondary hover:border-strong hover:text-primary"
+                  : "border-default bg-surface-card text-primary hover:border-strong"
               }`}
             >
               {pill.glyph && <span aria-hidden="true" className="text-sm">{pill.glyph}</span>}

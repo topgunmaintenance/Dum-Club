@@ -495,7 +495,7 @@ export function ClubHome() {
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
                     </span>
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
+                    <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-coral">
                       Live Now · {liveResults.length}
                     </h2>
                   </div>
@@ -512,8 +512,8 @@ export function ClubHome() {
               {/* Business grid */}
               {businessResults.length > 0 && (
                 <section>
-                  <div className="mb-3">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
+                  <div className="mb-3.5">
+                    <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
                       Services & Businesses · {businessResults.length}
                     </h2>
                   </div>
@@ -530,8 +530,8 @@ export function ClubHome() {
               {/* Items for Sale (offer search results) */}
               {filteredItems.length > 0 && (
                 <section className="mt-10">
-                  <div className="mb-3">
-                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">
+                  <div className="mb-3.5">
+                    <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-muted">
                       Items for Sale · {filteredItems.length}
                     </h2>
                   </div>

@@ -28,6 +28,26 @@ module.exports = {
         dum: {
           green: "var(--color-green)",
           violet: "var(--color-violet)",
+          // Handoff palette (June 2026) — emerald + dark/video surfaces.
+          emerald: "var(--dum-emerald)",
+          "emerald-700": "var(--dum-emerald-700)",
+          "on-emerald": "var(--dum-on-emerald)",
+          indigo: "var(--dum-indigo)",
+          amber: "var(--dum-amber)",
+          "amber-bg": "var(--dum-amber-bg)",
+          "navy-card": "var(--dum-navy-card)",
+          "navy-body": "var(--dum-navy-body)",
+          "dark-panel": "var(--dum-dark-panel)",
+          "live-accent": "var(--dum-live-accent)",
+          "video-1": "var(--dum-video-1)",
+          "video-2": "var(--dum-video-2)",
+        },
+        // Coral — Go Live + LIVE. coral = action/badge fill, coral-bg =
+        // the pale "LIVE NOW" pill background. (Tailwind has no built-in
+        // `coral`, so this is collision-free.)
+        coral: {
+          DEFAULT: "var(--dum-live)",
+          bg: "var(--dum-live-bg)",
         },
         purple: {
           400: "#c084fc",
@@ -56,6 +76,10 @@ module.exports = {
           fill: "var(--mint-fill)",
           "fill-ink": "var(--mint-fill-ink)",
           text: "var(--mint-text)",
+          // Mint card / status-bar surface (e.g. founding-merchant bar,
+          // VERIFIED badge) — pale mint fill with its own hairline border.
+          card: "var(--dum-mint)",
+          "card-border": "var(--dum-mint-border)",
         },
         surface: {
           page: "var(--surface-page)",
@@ -84,6 +108,22 @@ module.exports = {
       borderColor: {
         default: "var(--border-default)",
         strong: "var(--border-strong)",
+      },
+      borderRadius: {
+        // Phone-screen inner radius for the mobile-first live screens.
+        phone: "var(--dum-r-phone)",
+      },
+      boxShadow: {
+        // Handoff shadow scale (design-tokens.css).
+        "dum-card": "var(--dum-shadow-card)",
+        "dum-elev": "var(--dum-shadow-elev)",
+        "dum-dark": "var(--dum-shadow-dark)",
+        "dum-coral": "var(--dum-shadow-coral)",
+      },
+      backgroundImage: {
+        // Dark green-tinted gradient behind live camera previews / video.
+        "dum-video":
+          "radial-gradient(circle at 50% 35%, var(--dum-video-1), var(--dum-video-2))",
       },
       keyframes: {
         fadeSlideDown: {

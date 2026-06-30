@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../lib/auth/AuthContext";
 
 import { API_BASE } from "../../lib/apiBase";
+import { Card } from "../../components/ui/Card";
 
 interface Order {
   id: string;
@@ -22,17 +24,21 @@ interface Order {
   offers?: { title: string; offer_type: string; price_usd: number } | null;
 }
 
+// Chip styling maps to the handoff status palette: PAID / fulfilled read
+// mint (emerald-on-pale-mint), the abandoned-checkout state reads amber
+// (#E08A2B on #FCEFD9), and the rest stay neutral. UI-only; no schema
+// change — these are the EXISTING order.status values from the API.
 function statusBadge(status: string) {
-  if (status === "fulfilled" || status === "delivered") return { label: "Fulfilled", cls: "border-default text-brand-teal bg-brand-teal-soft" };
-  if (status === "refunded") return { label: "Refunded", cls: "border-default text-secondary bg-surface-muted" };
-  if (status === "partially_refunded") return { label: "Partially refunded", cls: "border-default text-secondary bg-surface-muted" };
-  if (status === "paid") return { label: "Paid", cls: "border-sky-400/30 text-sky-400 bg-sky-400/10" };
+  if (status === "fulfilled" || status === "delivered") return { label: "Fulfilled", cls: "bg-mint-card text-mint-text border-mint-card-border" };
+  if (status === "refunded") return { label: "Refunded", cls: "bg-surface-muted text-secondary border-default" };
+  if (status === "partially_refunded") return { label: "Partially refunded", cls: "bg-surface-muted text-secondary border-default" };
+  if (status === "paid") return { label: "Paid", cls: "bg-mint-card text-mint-text border-mint-card-border" };
   // "Checkout not completed" is more honest than "Awaiting Payment" —
   // these rows are the buyer's abandoned/expired Stripe Checkout
-  // sessions, not unpaid completed orders in flight. Amber pill kept
-  // (right "neutral attention" tone). UI-only; no schema change.
-  if (status === "pending_payment") return { label: "Checkout not completed", cls: "border-amber-400/40 text-amber-400 bg-amber-400/15" };
-  return { label: status, cls: "border-default text-secondary bg-surface-muted" };
+  // sessions, not unpaid completed orders in flight. Amber pill (the
+  // right "neutral attention" tone).
+  if (status === "pending_payment") return { label: "Checkout not completed", cls: "bg-dum-amber-bg text-dum-amber border-transparent" };
+  return { label: status, cls: "bg-surface-muted text-secondary border-default" };
 }
 
 export default function OrdersPage() {
@@ -65,26 +71,27 @@ export default function OrdersPage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href="/dashboard"
-          className="mb-8 inline-flex rounded-full border border-default bg-surface-card px-4 py-2 text-xs uppercase tracking-[0.25em] text-secondary transition hover:bg-surface-muted hover:text-primary"
+          className="mb-8 inline-flex h-9 w-9 items-center justify-center rounded-full border border-default bg-surface-card text-secondary transition hover:bg-surface-muted hover:text-primary"
+          aria-label="Back to dashboard"
         >
-          ← Dashboard
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </Link>
 
-        <div className="mb-2 text-xs uppercase tracking-[0.35em] text-muted">
-          Purchases
+        <div className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-muted">
+          Purchases{orders.length > 0 ? ` · ${orders.length}` : ""}
         </div>
-        <h1 className="font-mono text-3xl font-bold text-brand-navy sm:text-4xl">
+        <h1 className="font-mono text-3xl font-bold text-primary sm:text-4xl">
           My Orders
         </h1>
 
         {loading ? (
-          <div className="mt-8 rounded-2xl border border-default bg-surface-card p-8 text-center text-secondary">
+          <Card padding="lg" className="mt-8 text-center text-secondary">
             Loading orders...
-          </div>
+          </Card>
         ) : !user ? (
-          <div className="mt-8 rounded-2xl border border-default bg-surface-card p-8 text-center text-secondary">
+          <Card padding="lg" className="mt-8 text-center text-secondary">
             Sign in to view your orders.
-          </div>
+          </Card>
         ) : orders.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed border-default p-10 text-center">
             <div className="text-2xl mb-3 opacity-30">📦</div>
@@ -96,7 +103,7 @@ export default function OrdersPage() {
             {orders.map((order) => {
               const badge = statusBadge(order.status);
               return (
-                <div key={order.id} className="rounded-2xl border border-default bg-surface-card p-5">
+                <Card key={order.id} padding="none" className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-primary truncate">
@@ -109,10 +116,10 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="font-mono text-lg font-bold text-brand-navy">
+                      <div className="font-mono text-lg font-bold text-primary">
                         ${Number(order.amount_paid_usd).toFixed(2)}
                       </div>
-                      <span className={`inline-block mt-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${badge.cls}`}>
+                      <span className={`mt-1 inline-block rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] ${badge.cls}`}>
                         {badge.label}
                       </span>
                     </div>
@@ -145,12 +152,12 @@ export default function OrdersPage() {
                   <div className="mt-3 flex items-center gap-2">
                     <Link
                       href={`/project/${order.project_id}`}
-                      className="text-xs text-muted transition hover:text-brand-teal"
+                      className="text-xs text-muted transition hover:text-mint-text"
                     >
-                      View project →
+                      View project
                     </Link>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

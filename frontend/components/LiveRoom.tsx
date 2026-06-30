@@ -633,6 +633,20 @@ export function LiveRoom({
                 🛍️
               </button>
             </div>
+
+            {/* DUM Points earn line — display only (CLAUDE.md §5: no purchase
+                flow surfaced). Mirrors the award rule min(50, 10 + floor($/5))
+                so the number matches what the webhook actually grants. */}
+            {!isSoldOut && (
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-white/65">
+                <span className="h-1.5 w-1.5 rounded-full bg-dum-live-accent" aria-hidden="true" />
+                Earn{" "}
+                <span className="font-semibold text-dum-live-accent">
+                  +{Math.min(50, 10 + Math.floor(Number(pinnedOffer.price_usd) / 5))} DUM Points
+                </span>{" "}
+                on this order
+              </p>
+            )}
           </div>
         </div>
       ) : null}

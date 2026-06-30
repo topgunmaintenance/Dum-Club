@@ -27,10 +27,10 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
           <div>
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl font-black tracking-tight text-primary">
-                DUM<span className="text-brand-teal">CLUB</span>
+                DUM<span className="text-mint-text">CLUB</span>
               </span>
             </div>
-            <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-brand-teal">
+            <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-mint-text">
               Drive Ur Market
             </p>
             <p className="max-w-xs text-sm leading-relaxed text-secondary">
@@ -38,10 +38,10 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
             </p>
             <div className="mt-6 flex items-center gap-3">
               <span className="relative flex h-2 w-2">
-                <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-teal" />
+                <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-mint-fill opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-fill" />
               </span>
-              <span className="font-mono text-[10px] text-brand-teal">
+              <span className="font-mono text-[10px] text-mint-text">
                 EARLY ACCESS · MORRISTOWN, NJ
               </span>
             </div>
@@ -49,7 +49,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               href="https://instagram.com/julez_future"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-block text-sm text-secondary transition hover:text-brand-teal"
+              className="mt-4 inline-block text-sm text-secondary transition hover:text-mint-text"
             >
               Instagram @julez_future
             </a>
@@ -67,7 +67,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-brand-teal"
+                    className="text-sm text-secondary transition hover:text-mint-text"
                   >
                     {link.label}
                   </Link>
@@ -91,7 +91,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-brand-teal"
+                    className="text-sm text-secondary transition hover:text-mint-text"
                   >
                     {link.label}
                   </a>
@@ -112,7 +112,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-brand-teal"
+                    className="text-sm text-secondary transition hover:text-mint-text"
                   >
                     {link.label}
                   </Link>
@@ -131,7 +131,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               participating merchants. They are not an investment, with no secondary market and no
               expectation of price appreciation. For technical details on how the platform
               is built, see the{" "}
-              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-brand-teal hover:underline">
+              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-mint-text hover:underline">
                 Technology page
               </Link>
               .
@@ -146,16 +146,16 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto" />
               <span className="text-[12px] font-bold tracking-tight">
-                <span className="text-primary">DUM </span><span className="text-brand-teal">CLUB</span>
+                <span className="text-primary">DUM </span><span className="text-mint-text">CLUB</span>
               </span>
               <span className="text-[10px] text-muted">© 2026 · All rights reserved</span>
             </div>
             <div className="flex gap-6">
               <div className="flex gap-6">
-                <Link href="/terms" className="text-[10px] text-muted transition hover:text-brand-teal">
+                <Link href="/terms" className="text-[10px] text-muted transition hover:text-mint-text">
                   Terms of Use
                 </Link>
-                <Link href="/privacy" className="text-[10px] text-muted transition hover:text-brand-teal">
+                <Link href="/privacy" className="text-[10px] text-muted transition hover:text-mint-text">
                   Privacy Policy
                 </Link>
               </div>

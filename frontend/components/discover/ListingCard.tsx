@@ -3,19 +3,21 @@
 /**
  * ListingCard — buyer-facing shop card for the Club home / discover grid.
  *
- * Offer-forward (Option B): a small avatar + shop name header, then the card
- * body is the shop's featured offer — image (or a clean mint tile, never a
- * full-card letter), offer title, and price — with the LIVE / DEAL state on
- * the thumbnail. CTA reflects state: Watch live → / Shop the deal → / Shop
- * now →, and "Ask for a price" only when the shop has no priced offer.
+ * Business-card layout (handoff "Services & Businesses"): header row of a
+ * rounded-square avatar + shop name + VERIFIED badge + Follow button, then a
+ * featured image (or a clean mint tile, never a full-card letter), a mono
+ * category tag, the shop's offer/description blurb, and a footer with "ASK FOR
+ * A PRICE" (or a price) and a state-aware CTA: Watch live → / Shop the deal →
+ * / Shop now → / Ask for a price →.
  */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cleanLogoUrl } from "../../lib/imageSrc";
 import type { Project, MarketSnapshot } from "../../lib/discover/types";
-import { getAccent, lowestOfferPrice, hasOffers, offerCount } from "../../lib/discover/filters";
+import { lowestOfferPrice, hasOffers, offerCount } from "../../lib/discover/filters";
 import { resolveCategoryLabel } from "../../lib/categories";
+import { projectMatchesVerb } from "../../lib/discover/verbs";
 import { FollowButton } from "../FollowButton";
 
 type ListingCardProps = {
@@ -27,6 +29,16 @@ type ListingCardProps = {
   isFollowing?: boolean;
 };
 
+/**
+ * Category tag accent — fixed two-color palette from the handoff
+ * (aviation/services green, pro-services amber). Never a free-picked color:
+ * professional-services-style shops ("Book" verb) read amber, everything else
+ * reads emerald, matching the design's tag treatment.
+ */
+function categoryTagClass(project: Project): string {
+  return projectMatchesVerb(project, "book") ? "text-dum-amber" : "text-mint-text";
+}
+
 export function ListingCard({ project, index, isPulsing, followerCount = 0, isFollowing = false }: ListingCardProps) {
   const offers = offerCount(project);
 
@@ -35,7 +47,7 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
   const [logoSrc, setLogoSrc] = useState<string | null>(initialLogo);
   useEffect(() => { setLogoSrc(initialLogo); }, [initialLogo]);
 
-  // Featured offer (store_items JSONB) drives the card body. Prefer a priced
+  // Featured offer (store_items JSONB) drives the card image. Prefer a priced
   // item; fall back to the first. Image cascades offer-image -> shop cover ->
   // clean mint tile.
   const featuredOffer: Record<string, unknown> | null =
@@ -54,17 +66,19 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
   // Hooks must stay above this guard (Rules of Hooks).
   if (!hasOffers(project) && !project.verified) return null;
 
-  const accent = getAccent(index);
   const categoryLabel = resolveCategoryLabel(project);
+  const tagClass = categoryTagClass(project);
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
   const hasDeal = !!project.promo_copy;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
   const businessName = project.title || project.name || "Untitled";
   const monogram = (businessName.trim().charAt(0) || "•").toUpperCase();
-  const offerTitle =
-    ((featuredOffer?.title as string) || (featuredOffer?.name as string) || "").trim() ||
+  // Blurb under the tag — the shop's own description, falling back to its
+  // featured offer title so the card never reads empty.
+  const blurb =
     project.description?.trim() ||
+    ((featuredOffer?.title as string) || (featuredOffer?.name as string) || "").trim() ||
     "";
 
   const cta = isLive
@@ -78,26 +92,26 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
   return (
     <Link href={href} className="group block">
       <div
-        className={`flex h-full flex-col overflow-hidden rounded-xl border bg-surface-card shadow-sm transition-all duration-200 ${
+        className={`flex h-full flex-col rounded-2xl border bg-surface-card p-4 transition-all duration-200 ${
           isPulsing
-            ? "border-brand-teal shadow-[0_0_16px_rgba(20,184,154,0.18)]"
-            : "border-default hover:border-strong hover:-translate-y-0.5 hover:shadow-md"
+            ? "border-mint-text shadow-dum-elev"
+            : "border-default shadow-dum-card hover:border-strong hover:-translate-y-0.5 hover:shadow-dum-elev"
         }`}
       >
-        {/* Seller row — small avatar + name + verified + Follow */}
-        <div className="flex items-center gap-2 px-3 pt-3">
-          <span className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-brand-teal-soft">
+        {/* Header row — rounded-square avatar + name + VERIFIED + Follow */}
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-default bg-mint-card">
             {logoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoSrc} alt="" loading="lazy" onError={() => setLogoSrc(null)} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-[11px] font-bold text-mint-text">{monogram}</span>
+              <span className="text-[13px] font-bold text-mint-text">{monogram}</span>
             )}
           </span>
-          <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-primary">{businessName}</span>
+          <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-primary">{businessName}</span>
           {project.verified && (
             <span
-              className="inline-flex flex-shrink-0 items-center gap-0.5 rounded-full border border-default bg-brand-teal-soft px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-mint-text"
+              className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-mint-card px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-mint-text"
               title="Verified merchant"
               aria-label="Verified merchant"
             >
@@ -112,18 +126,18 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
 
         {/* Media — featured offer image / shop cover, else a clean mint tile
             (small monogram + name, never a full-card letter). */}
-        <div className="relative mx-3 mt-2.5 aspect-[4/3] overflow-hidden rounded-lg">
+        <div className="relative mt-3 h-[150px] overflow-hidden rounded-xl">
           {mediaSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={mediaSrc}
-              alt={offerTitle || businessName}
+              alt={blurb || businessName}
               loading="lazy"
               onError={() => setMediaSrc(null)}
               className="block h-full w-full object-cover transition group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-brand-teal-soft to-surface-muted">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-mint-card to-surface-muted">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-card text-base font-extrabold text-mint-text shadow-sm">
                 {monogram}
               </span>
@@ -133,40 +147,36 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
 
           {/* LIVE / DEAL state on the thumbnail */}
           {isLive ? (
-            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-state-live px-2 py-0.5 shadow-sm">
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-coral px-2 py-0.5 shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-white">Live</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-white">Live</span>
             </span>
           ) : hasDeal ? (
-            <span className="absolute left-2 top-2 rounded-full bg-mint-fill px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-mint-fill-ink shadow-sm">
+            <span className="absolute left-2.5 top-2.5 rounded-md bg-mint-fill px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-mint-fill-ink shadow-sm">
               Deal
             </span>
           ) : null}
         </div>
 
-        {/* Body — category eyebrow + featured offer title + price/CTA */}
-        <div className="flex flex-1 flex-col px-3 pb-3 pt-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: accent }}>
+        {/* Body — mono category tag + blurb */}
+        <div className="mt-3 flex flex-1 flex-col">
+          <span className={`font-mono text-[11px] font-medium uppercase tracking-[0.06em] ${tagClass}`}>
             {categoryLabel}
           </span>
-          <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-snug text-primary">
-            {offerTitle || "Tap to see what they offer"}
+          <p className="mt-1.5 line-clamp-3 text-[14px] font-semibold leading-snug text-primary">
+            {blurb || "Tap to see what they offer"}
           </p>
 
-          <div className="mt-auto flex items-end justify-between gap-3 pt-3">
-            <div className="flex flex-col">
-              {price != null ? (
-                <>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-secondary">From</span>
-                  <span className="font-mono text-base font-extrabold text-mint-text">
-                    ${price < 1 ? price.toFixed(2) : Math.round(price)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-[10px] uppercase tracking-[0.12em] text-secondary">Ask for a price</span>
-              )}
-            </div>
-            <span className={`text-[11px] font-bold transition ${isLive ? "text-state-live" : "text-secondary group-hover:text-mint-text"}`}>
+          {/* Footer — ASK FOR A PRICE (or price) + state-aware CTA */}
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-default pt-3.5">
+            {price != null ? (
+              <span className="font-mono text-[15px] font-extrabold text-mint-text">
+                ${price < 1 ? price.toFixed(2) : Math.round(price)}
+              </span>
+            ) : (
+              <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">Ask for a price</span>
+            )}
+            <span className={`text-[14px] font-bold transition ${isLive ? "text-coral" : "text-primary group-hover:text-mint-text"}`}>
               {cta}
             </span>
           </div>

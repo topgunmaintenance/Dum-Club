@@ -57,7 +57,7 @@ function LiveThumb({
         <img src={fallbackImg} alt={`${name} live`} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
-          <span className="text-3xl font-extrabold text-mint-text">{monogram}</span>
+          <span className="text-3xl font-extrabold text-dum-live-accent">{monogram}</span>
         </div>
       )}
       {base && (
@@ -107,49 +107,84 @@ export function LiveNowRail({ projects }: { projects: Project[] }) {
   if (live.length === 0) return null;
 
   return (
-    <section className="mb-8">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-state-live opacity-75" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-state-live" />
+    <section className="mb-10">
+      {/* Section header — coral mono "LIVE NOW · N" pill on the left, "See all"
+          on the right (links into the live-only filtered grid). */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-coral-bg px-2.5 py-1 font-mono text-[12px] font-bold uppercase tracking-[0.04em] text-coral">
+          <span className="h-1.5 w-1.5 rounded-full bg-coral" />
+          Live now · {live.length}
         </span>
-        <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-primary">Live now</h2>
-        <span className="rounded-full bg-state-live/15 px-2 py-0.5 text-[10px] font-bold text-state-live">{live.length}</span>
+        <Link
+          href="/discover?live=1"
+          className="text-[13px] font-bold text-mint-text transition hover:text-primary"
+        >
+          See all →
+        </Link>
       </div>
 
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0" style={{ scrollSnapType: "x mandatory" }}>
+      {/* 4-up grid of live-shop cards. Horizontally scrollable on mobile
+          (~152px cards), settles into a 4-column grid from sm up. */}
+      <div
+        className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
         {live.map((p) => {
           const name = p.title || p.name || "Untitled";
           const monogram = (name.trim().charAt(0) || "•").toUpperCase();
           const img = cleanLogoUrl(p.business_profile?.cover_image_url) || cleanLogoUrl(p.business_profile?.logo_url);
           const price = lowestOfferPrice(p);
           const offerTitle = featuredOfferTitle(p);
+          // Real concurrent-viewer count only — never fabricated. Absent on
+          // the feed today (pending migration 077), so the eye-count slot
+          // stays hidden until the number is real.
+          const viewers = (p as { live_viewer_count?: number | null }).live_viewer_count;
+          const showViewers = typeof viewers === "number" && viewers > 0;
           return (
             <Link
               key={p.id}
               href={`/project/${p.slug || p.id}?live=1`}
-              className="group flex w-[240px] flex-shrink-0 flex-col overflow-hidden rounded-xl border border-default bg-surface-card shadow-sm transition hover:border-strong hover:shadow-md"
+              className="group flex w-[152px] flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-default bg-surface-card shadow-dum-card transition hover:border-strong hover:shadow-dum-elev sm:w-auto"
               style={{ scrollSnapAlign: "start" }}
             >
-              <div className="relative aspect-video overflow-hidden bg-brand-teal-soft">
+              {/* Dark video thumb (~128px tall) with LIVE badge top-left and
+                  eye-count top-right. */}
+              <div className="relative h-32 overflow-hidden bg-dum-video">
                 <LiveThumb projectId={p.id} name={name} monogram={monogram} fallbackImg={img} bust={bust} />
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-state-live px-2 py-0.5 shadow-sm">
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-coral px-2 py-0.5 shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                  <span className="text-[9px] font-bold uppercase tracking-wide text-white">Live</span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-white">Live</span>
                 </span>
+                {showViewers && (
+                  <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-black/45 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white backdrop-blur-sm">
+                    <span aria-hidden="true">👁</span>
+                    {viewers}
+                  </span>
+                )}
               </div>
-              <div className="flex flex-1 flex-col p-3">
-                <span className="truncate text-[13px] font-bold text-primary">{name}</span>
-                {offerTitle && <span className="mt-0.5 line-clamp-1 text-[11px] text-secondary">{offerTitle}</span>}
-                <div className="mt-auto flex items-center justify-between pt-2">
-                  {price != null ? (
-                    <span className="font-mono text-sm font-extrabold text-mint-text">
+
+              {/* Body — avatar (26px) + shop name row, then current item + price. */}
+              <div className="flex flex-1 flex-col gap-2 p-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-default bg-dum-video">
+                    {img ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-[11px] font-extrabold text-dum-live-accent">{monogram}</span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-primary">{name}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-secondary">
+                    {offerTitle || "Live now"}
+                  </span>
+                  {price != null && (
+                    <span className="flex-shrink-0 font-mono text-[13px] font-bold text-mint-text">
                       ${price < 1 ? price.toFixed(2) : Math.round(price)}
                     </span>
-                  ) : (
-                    <span className="text-[10px] uppercase tracking-[0.1em] text-secondary">Live deals</span>
                   )}
-                  <span className="text-[10px] font-bold text-state-live">Watch live →</span>
                 </div>
               </div>
             </Link>
