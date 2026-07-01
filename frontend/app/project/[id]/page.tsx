@@ -3976,8 +3976,23 @@ const heroUtility =
                     <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dum-navy-card px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-dum-live-accent shadow-dum-card">★ Featured</span>
                   </div>
                   <div className="p-5 sm:p-7">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
-                      Now showing{featured.compare_at_price ? " · Live deal" : ""}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
+                        Now showing{featured.compare_at_price ? " · Live deal" : ""}
+                      </div>
+                      {/* Owner-only: only offer Unpin when this is genuinely
+                          pinned (not just the arbitrary first-active fallback),
+                          so tapping it always does something meaningful. */}
+                      {isOwner && project?.pinned_offer_id === featured.id && (
+                        <button
+                          type="button"
+                          onClick={() => handlePinOffer(null)}
+                          disabled={pinningOfferId !== null}
+                          className="text-[10px] font-semibold text-secondary underline-offset-2 transition hover:text-primary hover:underline disabled:opacity-50"
+                        >
+                          {pinningOfferId === "__unpin__" ? "Unpinning…" : "Unpin"}
+                        </button>
+                      )}
                     </div>
                     <h3 className="mt-1.5 text-xl font-bold text-brand-navy">{featured.title}</h3>
                     {featured.description && <p className="mt-1.5 text-sm leading-relaxed text-secondary line-clamp-3">{featured.description}</p>}
@@ -4029,10 +4044,27 @@ const heroUtility =
                         </div>
                         {buyBtn(o, "grid")}
                       </div>
+                      {/* Owner-only: pin this offer to the featured slot above.
+                          Simple one-tap version of the same handlePinOffer used
+                          in Manage shop, right where the owner is already
+                          looking at their offers. */}
+                      {isOwner && (
+                        <button
+                          type="button"
+                          onClick={() => handlePinOffer(o.id)}
+                          disabled={pinningOfferId !== null}
+                          className="mt-2 w-full rounded-lg border border-dashed border-default py-1.5 text-[11px] font-semibold text-secondary transition hover:border-mint-text hover:text-mint-text disabled:opacity-50"
+                        >
+                          {pinningOfferId === o.id ? "Pinning…" : "★ Pin as featured"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
+              {isOwner && pinError && (
+                <p className="mt-3 text-center text-[12px] text-coral">{pinError}</p>
+              )}
 
               {/* ── DUM Points band — full-width dark green, exact handoff
                    copy (uses a middot, never a dash — the dashed variant is
