@@ -895,6 +895,12 @@ export default function ProjectPage() {
   // (orders, market etc) that the visitor never sees.
   const showOwnerInlineUi = isOwner && !viewAsCustomer;
 
+  // Whatnot-style focused seller studio: while the owner is actually
+  // broadcasting via IVS, the live+offers grid below adds a desktop shop
+  // rail (pin any active offer) and moves chat into its own column,
+  // instead of the plain 2-col camera|catalog split used off-air.
+  const liveStudioMode = isOwner && IVS_REALTIME_ENABLED && !!project?.is_live && isIVSSession(project);
+
   // AI Builder state
   const [builderAction, setBuilderAction] = useState<string | null>(null);
   const [builderLoading, setBuilderLoading] = useState(false);
@@ -6146,9 +6152,11 @@ return (
            card below already surfaces the pinned offer with
            a Buy button. */}
       <div className={
-        isOwner
-          ? "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start"
-          : ""
+        liveStudioMode
+          ? "mb-8 grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px] lg:items-start"
+          : isOwner
+            ? "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start"
+            : ""
       }>
         {/* LEFT — IVS Host (must stay mounted across the live
             session. The component carries module-level state,
@@ -6168,7 +6176,7 @@ return (
             // a pin exists OR the stream is live, so it never remounts
             // mid-broadcast.
             key={(project?.pinned_offer_id || project?.is_live) ? "host-ready" : "host-empty"}
-            className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"}`}
+            className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"} ${liveStudioMode ? "lg:order-2" : ""}`}
           >
             <IVSStageHost
               projectId={id as string}
@@ -6208,8 +6216,11 @@ return (
                  without scrolling back up to the top of the page. Only
                  while actually live + on an IVS session; the non-owner
                  chat above is gated to !isOwner, so exactly one
-                 LiveChatIVS is mounted for the host. */}
-            {project?.is_live && isIVSSession(project) && (
+                 LiveChatIVS is mounted for the host.
+                 Excluded when liveStudioMode is on — that layout mounts
+                 chat as its own grid column below instead, so exactly
+                 one LiveChatIVS instance exists either way. */}
+            {project?.is_live && isIVSSession(project) && !liveStudioMode && (
               <div className="mt-4">
                 <LiveChatIVS
                   projectId={id as string}
@@ -6245,6 +6256,100 @@ return (
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Live Studio shop rail (desktop only) — tap any active offer
+             to feature it live via the same handlePinOffer the storefront
+             and Manage console use. Purely additive: a new grid sibling,
+             not a relocation of the host column above, so IVSStageHost's
+             mount position (and its module-level broadcast state) never
+             changes when liveStudioMode toggles on/off. */}
+        {liveStudioMode && (
+          <div className="hidden max-h-[70vh] overflow-y-auto rounded-2xl border border-default bg-surface-card p-3 lg:order-1 lg:block">
+            <div className="mb-2 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+              Your shop
+            </div>
+            <div className="space-y-1.5">
+              {offers.filter((o) => o.is_active).map((o) => {
+                const pinned = o.id === project?.pinned_offer_id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => handlePinOffer(pinned ? null : o.id)}
+                    disabled={pinningOfferId !== null}
+                    className={`flex w-full items-center gap-2.5 rounded-xl border p-2 text-left transition disabled:opacity-50 ${
+                      pinned
+                        ? "border-mint-fill bg-mint-card"
+                        : "border-transparent hover:border-default hover:bg-surface-muted"
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
+                      {o.primary_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={resolveImageUrl(o.primary_image_url)} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xs text-muted">·</span>
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-semibold text-primary">{o.title}</span>
+                      <span className="block font-mono text-[12px] text-mint-text">${Number(o.price_usd).toFixed(0)}</span>
+                    </span>
+                    {pinned && (
+                      <span className="shrink-0 font-mono text-[9px] font-bold uppercase text-mint-text">Live</span>
+                    )}
+                  </button>
+                );
+              })}
+              {offers.filter((o) => o.is_active).length === 0 && (
+                <p className="px-1 text-[12px] text-muted">No offers yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Live Studio chat column — the one LiveChatIVS instance for
+             the host while liveStudioMode is on (the nested copy inside
+             the host column above is gated off in that case, so exactly
+             one is ever mounted). Safe to remount here: unlike
+             IVSStageHost, LiveChatIVS holds no module-level broadcast
+             state, so moving it doesn't risk the live session. */}
+        {liveStudioMode && (
+          <div className="lg:order-3 lg:max-h-[70vh]">
+            <LiveChatIVS
+              projectId={id as string}
+              userId={authUser?.privyId || ""}
+              userName={authUser?.email || "Host"}
+              isHost={true}
+              onRequestSignIn={login}
+              getToken={getToken}
+              onCommentBuy={handleCommentBuy}
+              onViewerCountChange={setLiveViewerCount}
+              onItemUpdate={(data) => {
+                setOffers((prev) => prev.map((o) =>
+                  o.id === data.offer_id
+                    ? { ...o, quantity_sold: data.quantity_sold }
+                    : o
+                ));
+              }}
+              onItemSold={(data) => {
+                loadOffers();
+                setLiveSalesCount((c) => {
+                  const next = c + 1;
+                  const toastId = `${data.offer_id}-${Date.now()}`;
+                  setSaleToasts((prev) => [
+                    ...prev.slice(-2),
+                    { id: toastId, title: data.title || "Item", count: next },
+                  ]);
+                  setTimeout(() => {
+                    setSaleToasts((prev) => prev.filter((t) => t.id !== toastId));
+                  }, 4000);
+                  return next;
+                });
+              }}
+            />
           </div>
         )}
 
