@@ -32,6 +32,7 @@ import { LiveRail } from "../../components/discover/LiveRail";
 import { VerbTabs, type VerbTabId } from "../../components/discover/VerbTabs";
 import { projectMatchesVerb } from "../../lib/discover/verbs";
 import { GoLiveDemoPhone } from "../../components/homepage/GoLiveDemoPhone";
+import { LiveNowDemoTile } from "../../components/homepage/LiveNowDemoTile";
 // Shared one-presence rule with /discover: live sellers leave the
 // businesses grid while they're broadcasting (LiveRail is their
 // single surface) and return when the show ends.
@@ -2669,7 +2670,14 @@ export default function Home() {
              LiveRail so the homepage and discover live cards are one
              component: same /project/{slug}?live=1 link target, same
              cap-12 + "+N more live" overflow. */}
-        {liveNowProjects.length > 0 && (
+        {/* Bridge measure: while there are zero real live businesses,
+            show one clearly-labeled demo tile instead of leaving the
+            section (and the search/filter chrome) rendering nothing on a
+            visitor's first impression. Data-driven, not a manual flag —
+            disappears the instant a real business goes live. See
+            CLAUDE.md §12 rule 2's narrow exception and
+            components/homepage/LiveNowDemoTile.tsx. */}
+        {(liveNowProjects.length > 0 || !loadingProjects) && (
           <div className="mb-12">
             {/* Search bar — visual only for now (not wired to real search
                 yet; matches /discover's placeholder copy). Category pills
@@ -2686,7 +2694,11 @@ export default function Home() {
             <div className="mb-4">
               <VerbTabs active={liveNowCategory} onSelect={setLiveNowCategory} />
             </div>
-            <LiveRail projects={filteredLiveNowProjects} />
+            {liveNowProjects.length === 0 ? (
+              <LiveNowDemoTile />
+            ) : (
+              <LiveRail projects={filteredLiveNowProjects} />
+            )}
           </div>
         )}
 
