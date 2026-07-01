@@ -90,7 +90,7 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
       : "Ask for a price →";
 
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block min-w-0">
       <div
         className={`flex h-full flex-col rounded-2xl border bg-surface-card p-4 transition-all duration-200 ${
           isPulsing

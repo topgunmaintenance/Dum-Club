@@ -4227,8 +4227,9 @@ return (
     )}
     {/* 2J: the right-rail section dot-nav is power-user chrome. Hide it
         for owners until their first sale (clean early-stage page);
-        customers and STATE_3+ owners keep it. */}
-    {(!showOwnerInlineUi || ownerHasSales) && (
+        customers and STATE_3+ owners keep it. Also hidden on the owner
+        Manage console, where it listed hidden sections as stray chrome. */}
+    {(!showOwnerInlineUi || ownerHasSales) && !(isOwner && ownerManage) && (
       <SectionNav refreshKey={loadingProject ? "loading" : "loaded"} />
     )}
     {statusToast}
@@ -5344,6 +5345,7 @@ return (
         ].filter(Boolean).join(", ");
         const cActive = offers.filter((o) => o.is_active);
         const featuredId = project?.pinned_offer_id || null;
+        const featuredOffer = cActive.find((o) => o.id === featuredId) || null;
         const nowMs = Date.now();
         const WEEK = 7 * 24 * 60 * 60 * 1000;
         const within = (iso: string) => nowMs - new Date(iso).getTime() < WEEK;
@@ -5394,10 +5396,10 @@ return (
                         {published ? "Live & accepting orders" : "Draft"}
                       </span>
                     </div>
-                    <div className="mt-1 font-mono text-xs text-secondary">dum.club/{project.slug}{cLoc ? ` · ${cLoc}` : ""}</div>
+                    <div className="mt-1 truncate font-mono text-xs text-secondary">dum.club/{project.slug}{cLoc ? ` · ${cLoc}` : ""}</div>
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
                   <button type="button" onClick={() => scrollToSection("project-live-host")} className="inline-flex items-center gap-1.5 rounded-xl bg-state-live px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90">
                     <span className="h-1.5 w-1.5 rounded-full bg-white" /> Go Live
                   </button>
@@ -5416,9 +5418,48 @@ return (
               <Kpi label="Live offers" value={cActive.length} sub={featuredId ? "1 featured" : null} />
             </div>
 
+            {/* Featured band — the pinned offer that shows first the moment
+                the merchant goes live (ties to handlePinOffer + the Live Flow
+                "Now featuring" card). */}
+            <div className="rounded-3xl border border-default bg-dum-navy-card p-5 text-white shadow-sm sm:p-6">
+              {featuredOffer ? (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                      {featuredOffer.primary_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={resolveImageUrl(featuredOffer.primary_image_url)} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
+                      ) : (
+                        <span className="text-lg text-dum-live-accent">★</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-dum-live-accent">★ Featured in your live shows</div>
+                      <div className="mt-1 truncate text-base font-bold text-white">{featuredOffer.title}</div>
+                      <div className="mt-0.5 text-[12px] text-white/60">${Number(featuredOffer.price_usd).toFixed(0)} · pinned · shows first when you go live</div>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" onClick={() => scrollToSection("manage-offers")} className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15">Change</button>
+                    <button type="button" disabled={pinningOfferId !== null} onClick={() => handlePinOffer(null)} className="rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50">{pinningOfferId === "__unpin__" ? "Unpinning…" : "Unpin"}</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-dum-live-accent">★ Featured in your live shows</div>
+                    <div className="mt-1 text-base font-bold text-white">Pin a featured item</div>
+                    <div className="mt-0.5 text-[12px] text-white/60">Pick one offer to feature. It shows first the moment you go live.</div>
+                  </div>
+                  <button type="button" onClick={() => scrollToSection("manage-offers")} className="rounded-xl bg-mint-fill px-4 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 sm:shrink-0">Choose an offer</button>
+                </div>
+              )}
+              {pinError && <p className="mt-3 text-[12px] text-coral">{pinError}</p>}
+            </div>
+
             {/* Offers + right column */}
             <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
-              <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
+              <div id="manage-offers" className="scroll-mt-28 rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-lg font-bold text-brand-navy">Your offers</h2>
@@ -5431,34 +5472,48 @@ return (
                 {cActive.length === 0 ? (
                   <p className="mt-6 text-center text-sm text-muted">No offers yet. Add your first one.</p>
                 ) : (
-                  <div className="mt-4">
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {cActive.map((o) => {
                       const os = ordersFor(o.id);
-                      const last = os.length ? Math.max(...os.map((x) => new Date(x.created_at).getTime())) : null;
                       const pinned = o.id === featuredId;
+                      const inFlight = pinningOfferId === o.id;
+                      const typeLabel = o.offer_type === "physical_product" ? "Product" : "Service";
                       return (
-                        <div key={o.id} className="flex items-center gap-3 border-t border-default py-3 first:border-t-0">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-default bg-surface-muted">
-                            {o.primary_image_url ? (
+                        <div key={o.id} className={`flex flex-col overflow-hidden rounded-2xl border bg-surface-card transition ${pinned ? "border-mint-fill" : "border-default"}`}>
+                          {/* Image area — every card has one (gradient placeholder when no photo). */}
+                          <div className="relative h-32 w-full bg-gradient-to-br from-surface-muted to-mint-card">
+                            {o.primary_image_url && (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={resolveImageUrl(o.primary_image_url)} alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = STOREFRONT_PLACEHOLDER; }} />
-                            ) : (
-                              <span className="text-base text-brand-navy/40">🔧</span>
                             )}
+                            {pinned && (
+                              <span className="absolute left-2 top-2 rounded-full bg-dum-navy-card px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-dum-live-accent">★ Pinned</span>
+                            )}
+                            <span className="absolute right-2 top-2 rounded-full bg-surface-card/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-secondary">{typeLabel}</span>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate text-sm font-bold text-brand-navy">{o.title}</span>
-                              {pinned && <span className="shrink-0 rounded-full bg-state-live/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-state-live">★ Featured</span>}
+                          {/* Body — flex-1 so cards in a row stay equal height. */}
+                          <div className="flex flex-1 flex-col p-4">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="line-clamp-1 text-sm font-bold text-brand-navy">{o.title}</span>
+                              <span className="shrink-0 font-mono text-sm font-bold text-brand-navy">${Number(o.price_usd).toFixed(0)}</span>
                             </div>
-                            <div className="text-[11px] text-secondary">
-                              {os.length} order{os.length === 1 ? "" : "s"}{last ? ` · last sold ${ago(new Date(last).toISOString())}` : ""}
+                            <div className="mt-1 text-[11px] text-secondary">{os.length} order{os.length === 1 ? "" : "s"}</div>
+                            {/* Actions — two equal buttons: Pin (Pinned ✓ when active) + Edit. */}
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                disabled={pinningOfferId !== null}
+                                onClick={() => handlePinOffer(pinned ? null : o.id)}
+                                aria-pressed={pinned}
+                                className={`rounded-lg px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${pinned ? "bg-mint-card text-mint-text" : "bg-mint-fill text-mint-fill-ink hover:opacity-90"}`}
+                              >
+                                {inFlight ? "…" : pinned ? "Pinned ✓" : "Pin"}
+                              </button>
+                              <button type="button" onClick={() => openOfferForm(o)} className="rounded-lg border border-default px-3 py-2 text-xs font-semibold text-primary transition hover:border-strong">
+                                Edit
+                              </button>
                             </div>
                           </div>
-                          <div className="shrink-0 font-mono text-sm font-bold text-brand-navy">${Number(o.price_usd).toFixed(0)}</div>
-                          <button type="button" onClick={() => openOfferForm(o)} className="shrink-0 rounded-lg border border-default px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-strong">
-                            Edit
-                          </button>
                         </div>
                       );
                     })}
