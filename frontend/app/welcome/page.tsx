@@ -27,6 +27,11 @@ import { ListingGrid } from "../../components/discover/ListingGrid";
 // /discover page renders, so live cards look and link identically
 // on both surfaces (/project/{slug}?live=1, cap 12 + overflow).
 import { LiveRail } from "../../components/discover/LiveRail";
+// Category filter for the Live Now rail — same pill row and matching
+// logic /discover uses, so "Fix" means the same thing on both surfaces.
+import { VerbTabs, type VerbTabId } from "../../components/discover/VerbTabs";
+import { projectMatchesVerb } from "../../lib/discover/verbs";
+import { GoLiveDemoPhone } from "../../components/homepage/GoLiveDemoPhone";
 // Shared one-presence rule with /discover: live sellers leave the
 // businesses grid while they're broadcasting (LiveRail is their
 // single surface) and return when the show ends.
@@ -2425,6 +2430,17 @@ export default function Home() {
     [allPublicProjects]
   );
 
+  // Category filter above the Live Now rail. Client-side only, over the
+  // same real liveNowProjects list above — no fabricated listings.
+  const [liveNowCategory, setLiveNowCategory] = useState<VerbTabId>("all");
+  const filteredLiveNowProjects = useMemo(
+    () =>
+      liveNowCategory === "all"
+        ? liveNowProjects
+        : liveNowProjects.filter((p) => projectMatchesVerb(p, liveNowCategory)),
+    [liveNowProjects, liveNowCategory],
+  );
+
   // One presence per merchant: live sellers render ONLY in the
   // LiveRail above; the businesses grid shows everyone else. Shared
   // helper with /discover (lib/discover/filters.withoutLive) so the
@@ -2655,7 +2671,22 @@ export default function Home() {
              cap-12 + "+N more live" overflow. */}
         {liveNowProjects.length > 0 && (
           <div className="mb-12">
-            <LiveRail projects={liveNowProjects} />
+            {/* Search bar — visual only for now (not wired to real search
+                yet; matches /discover's placeholder copy). Category pills
+                below genuinely filter the real liveNowProjects list. */}
+            <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-default bg-surface-card px-4 py-3 shadow-sm">
+              <span aria-hidden="true" className="text-sm text-muted">🔍</span>
+              <input
+                type="text"
+                placeholder="Search shops, services, live shows…"
+                disabled
+                className="w-full bg-transparent text-sm text-primary placeholder:text-muted outline-none disabled:cursor-default"
+              />
+            </div>
+            <div className="mb-4">
+              <VerbTabs active={liveNowCategory} onSelect={setLiveNowCategory} />
+            </div>
+            <LiveRail projects={filteredLiveNowProjects} />
           </div>
         )}
 
@@ -2715,6 +2746,24 @@ export default function Home() {
               <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-primary sm:text-base">
                 <span className="font-bold text-primary">60 days free. Plans start at $39/month + 1.5% sales fee.</span> Keep more of every dollar.
               </p>
+
+              {/* Compact stat row — the "prove it's simple" numbers up
+                  front, mirrored later in the interactive go-live demo. */}
+              <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-6 border-t border-default pt-8">
+                {[
+                  { n: "1.5%", label: "flat fee" },
+                  { n: "$39/mo", label: "flat" },
+                  { n: "3 taps", label: "to go live" },
+                ].map((stat, i) => (
+                  <div key={stat.label} className="flex items-center gap-6">
+                    {i > 0 && <span className="h-4 w-px bg-border-default" aria-hidden="true" />}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-brand-teal">{stat.n}</div>
+                      <div className="text-[13px] text-secondary">{stat.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* Founder trust row. Personal phone + email were
                   removed before public launch to avoid spam-bot
@@ -3089,6 +3138,17 @@ export default function Home() {
             ))}
           </div>
         </ScrollReveal>
+
+        {/* ── INTERACTIVE GO-LIVE DEMO ──────────────────────────────
+             Dark block (surface-inverse — see globals.css, added for
+             exactly this kind of dark-product-preview section) with the
+             phone-frame walkthrough. Every step is simulated (timers,
+             static demo data) — a marketing device to prove the flow is
+             simple before a visitor commits, not the real onboarding.
+             The real flow lives at /merchant + the IVS Go Live components. */}
+        <section id="demo" className="mt-20 rounded-3xl bg-surface-inverse px-6 py-16 sm:px-10 sm:py-20">
+          <GoLiveDemoPhone />
+        </section>
 
         {/* ── EXPLAINER VIDEO ──────────────────────────────────────
              Loom walkthrough sits right above the How-It-Works
