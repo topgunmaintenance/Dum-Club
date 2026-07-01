@@ -4607,7 +4607,7 @@ return (
            phones. Desktop continues to render the chip grid inline as a
            merchant-facing nudge — there's no floating bubble equivalent
            visual real-estate cost on a 1280px+ screen. */}
-      {ENABLE_AI_FEATURES && showOwnerInlineUi && ownerHasSales && (
+      {ENABLE_AI_FEATURES && showOwnerInlineUi && ownerHasSales && !project?.is_live && (
         <div className="mb-6 hidden rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/[0.04] to-surface-card p-5 sm:block">
           <div className="mb-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-brand-teal text-[9px] font-extrabold text-black">D</div>
@@ -6251,7 +6251,11 @@ return (
       {/* ── Offers (Public Storefront + Owner Tools) ──
            Side-by-side with the host block above for owners;
            single column otherwise. */}
-      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!isOwner && project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      {/* Also hidden for the OWNER during an active IVS broadcast (not just
+          other visitors) — a Whatnot-style live view keeps the camera, chat,
+          and the "Sell a Product" picker front and center instead of the
+          full catalog-management grid underneath it. */}
+      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
         {!ownerManage && (<>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -7947,7 +7951,7 @@ return (
           for the owner until their first sale so a new merchant's page
           stays focused. Customers always see it; STATE_3+ owners keep
           it because the growth-AI chips above target #ai-workspace. */}
-      {ENABLE_AI_FEATURES && (!showOwnerInlineUi || ownerHasSales) && (
+      {ENABLE_AI_FEATURES && (!showOwnerInlineUi || ownerHasSales) && !project?.is_live && (
       <details
         id="ai-workspace"
         className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
@@ -8041,7 +8045,10 @@ return (
 
 
       {/* ── OWNER TOOLS ──────────────────────────── */}
-      {showOwnerInlineUi && (
+      {/* Hidden while actively live — the LIVE banner + camera already say
+          everything "Shop status" would; a simplified broadcast view
+          shouldn't repeat it underneath the offers grid. */}
+      {showOwnerInlineUi && !project?.is_live && (
         <div className="mb-6 mt-2 flex items-center gap-4">
           <div className="h-px flex-1 bg-surface-muted" />
           <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted">Owner Tools</span>
@@ -8049,7 +8056,7 @@ return (
         </div>
       )}
 
-      {showOwnerInlineUi && (
+      {showOwnerInlineUi && !project?.is_live && (
         <div className="mb-8 rounded-2xl border border-default bg-surface-card p-4 text-sm text-primary">
           <span className="uppercase tracking-[0.18em] text-secondary">
             Shop status
@@ -8165,7 +8172,8 @@ return (
       )}
 
       {/* ── Seller Sales (Owner Only) ──────────────── */}
-      {showOwnerInlineUi && (
+      {/* Hidden while live — the orders ledger is a post-show task. */}
+      {showOwnerInlineUi && !project?.is_live && (
         <details
           id="section-orders"
           // Collapsed by default so the (often long) ledger doesn't
@@ -8372,7 +8380,7 @@ return (
           flow is gone: review never published a store and only confused
           merchants. showOwnerInlineUi (isOwner && !viewAsCustomer) keeps
           this off the public/customer storefront. */}
-      {showOwnerInlineUi && !ownerManage && (() => {
+      {showOwnerInlineUi && !ownerManage && !project?.is_live && (() => {
         const hasOffer = offers.length > 0;
         // Store "live" here means the storefront is PUBLISHED and shoppable
         // (status === "live") — the publication signal. This is deliberately
@@ -8496,7 +8504,7 @@ return (
         {/* Business Blueprint is advanced/curiosity tooling — irrelevant to
             a merchant chasing their first sale. Hidden until first sale,
             then it returns as a reference. */}
-        {showOwnerInlineUi && ownerHasSales && (
+        {showOwnerInlineUi && ownerHasSales && !project?.is_live && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-muted hover:text-secondary">
             <span>Business Blueprint</span>
