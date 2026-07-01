@@ -93,7 +93,11 @@ type MarketSnapshot = {
 
 import { API_BASE } from "../../lib/apiBase";
 import { createClient } from "../../lib/supabase/client";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+// @supabase/supabase-js 2.99.x does not re-export RealtimeChannel from the
+// package root; import the type from @supabase/realtime-js (its own pinned
+// dependency) instead. Type-only import — runtime unaffected. Vercel builds
+// passed only via restored build cache; any fresh install + build failed here.
+import type { RealtimeChannel } from "@supabase/realtime-js";
 
 // Feature flag: use backend search endpoint instead of client-side filtering.
 // Set to false to roll back to the previous client-side behaviour.
