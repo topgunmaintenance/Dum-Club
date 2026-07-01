@@ -53,8 +53,19 @@ import { StartingSoon } from "../../components/discover/StartingSoon";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 import { EmptyState } from "../../components/discover/EmptyState";
 import { MerchantStrip } from "../../components/discover/MerchantStrip";
+import { LiveNowDemoTile } from "../../components/homepage/LiveNowDemoTile";
+import { HomeSellPitch } from "../../components/homepage/HomeSellPitch";
 
-export function ClubHome() {
+/**
+ * homeVariant: true only when rendered as the root (/) homepage.
+ * - Live Now empty state shows the single labeled LiveNowDemoTile
+ *   (CLAUDE.md §12 rule 2's narrow homepage-only exception — it must
+ *   NOT render on /discover, hence the prop gate).
+ * - The bottom merchant CTA becomes the full HomeSellPitch (headline,
+ *   founding offer, stat row, interactive go-live demo) instead of the
+ *   compact MerchantStrip that /discover keeps.
+ */
+export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}) {
   /* ─── Data ─── */
   const { projects, marketByProject, loading, error, marketLoaded, hasMore, loadMore, loadingMore } = useProjects();
   const { user, getToken } = useAuth();
@@ -345,7 +356,8 @@ export function ClubHome() {
     <main className="relative min-h-screen bg-surface-page text-primary">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         {/* The Club home leads straight with the category pills (mock-style) —
-            no marketing hero / trust strip here. The pitch lives at /welcome. */}
+            no marketing hero above the feed. On / the pitch renders below the
+            feed (HomeSellPitch via homeVariant); /discover stays feed-only. */}
 
         {/* Sticky filter bar */}
         <StickyFilterBar
@@ -419,6 +431,16 @@ export function ClubHome() {
         {/* Live now — the signature rail: shops broadcasting right now lead the
             feed (Option B). Self-hides when nothing is live. */}
         <LiveNowRail projects={discoverable} />
+
+        {/* Homepage-only bridge measure: when zero real businesses are live,
+            show the single clearly-labeled demo tile so the live-commerce
+            story doesn't render blank. Data-driven — disappears the instant
+            anything real goes live. Never on /discover. */}
+        {homeVariant && !loading && !hasAnyLive && (
+          <div className="mb-8">
+            <LiveNowDemoTile />
+          </div>
+        )}
 
         {/* From shops you follow — personalised strip, signed-in viewers with
             at least one follow only (self-hides otherwise). */}
@@ -624,8 +646,9 @@ export function ClubHome() {
           Earn DUM Points on every purchase. Loyalty rewards across the network.
         </p>
 
-        {/* Merchant recruitment strip */}
-        <MerchantStrip />
+        {/* Merchant recruitment: the root homepage gets the full pitch +
+            interactive go-live demo; /discover keeps the compact strip. */}
+        {homeVariant ? <HomeSellPitch /> : <MerchantStrip />}
       </div>
     </main>
   );

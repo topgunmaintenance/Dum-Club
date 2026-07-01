@@ -66,6 +66,10 @@ const nextConfig = {
       { source: "/contact", destination: "/about#contact", permanent: false },
       { source: "/for-business", destination: "/business", permanent: true },
       { source: "/become-a-merchant", destination: "/merchant", permanent: true },
+      // /welcome was the standalone merchant marketing page. Removed
+      // 2026-07-01: its pitch + interactive go-live demo now render on
+      // the root homepage (ClubHome homeVariant), so old links land there.
+      { source: "/welcome", destination: "/", permanent: true },
       // Signup aliases. /signup and /register previously 404'd, so any
       // ad, email, or referral link using those common paths dead-ended.
       // Merchant signup lives at /merchant. 308 permanent so the redirect

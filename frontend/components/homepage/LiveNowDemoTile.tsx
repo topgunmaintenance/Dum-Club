@@ -8,7 +8,8 @@
  * Data-driven, not a manual toggle: the parent only renders this when the
  * real live-projects list is empty, so it disappears on its own the moment
  * an actual business goes live. Delete this file + its one usage in
- * app/welcome/page.tsx once real live sellers are consistently present.
+ * components/discover/ClubHome.tsx (homeVariant gate) once real live
+ * sellers are consistently present.
  */
 
 import Link from "next/link";
