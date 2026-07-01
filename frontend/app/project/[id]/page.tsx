@@ -44,6 +44,7 @@ import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
 import { LiveChat, broadcastLiveEvent } from "../../../components/LiveChat";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
 import { LiveRoom } from "../../../components/LiveRoom";
+import { LiveRoomDesktop } from "../../../components/LiveRoomDesktop";
 import { verbLabelForProject } from "../../../lib/discover/verbs";
 import { JsonLd } from "../../../components/JsonLd";
 import {
@@ -770,6 +771,23 @@ export default function ProjectPage() {
   // full-bleed LiveRoom overlay. Dismissing (✕) reveals the normal
   // storefront underneath (which re-mounts the inline video/chat).
   const [immersiveDismissed, setImmersiveDismissed] = useState(false);
+  // Whatnot-style desktop live room: a wide-viewport variant of the
+  // immersive overlay (shop rail + separate chat column instead of the
+  // mobile full-bleed layout). Detected client-side only, defaulting to
+  // false so the very first render always matches the mobile overlay
+  // (no hydration mismatch); corrects a moment after mount on desktop
+  // widths. The render site below picks exactly one of the two — never
+  // both — so IVSStageViewer's per-project claim/wait dedup never has to
+  // arbitrate two simultaneous live mounts.
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktopViewport(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktopViewport(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
   // Owner's own view of their offline shop now DEFAULTS to the clean buyer
   // storefront (so the merchant sees the modern page, like visitors do).
   // "Manage shop" flips this on to reveal the management tree; the
@@ -4122,8 +4140,54 @@ return (
         live IVS shop. Reuses the storefront's IVS viewer, chat, follow state,
         and buyOffer() checkout. The inline video/chat/buy-bar below are
         suppressed while this is up (`!immersiveLive`) so nothing double-mounts.
-        Rendered before the checkout-success pill so that pill stays on top. */}
-    {immersiveLive && project && (
+        Rendered before the checkout-success pill so that pill stays on top.
+
+        On desktop widths (and only when there's no active auction — that
+        bidding UI isn't built for the desktop layout yet), LiveRoomDesktop's
+        3-column shop-rail/video/chat layout replaces the mobile-style
+        overlay. Exactly one of the two ever mounts (never both), so
+        IVSStageViewer's per-project claim/wait dedup never has to
+        arbitrate simultaneous live mounts. */}
+    {immersiveLive && project && isDesktopViewport && !isAuctionActive && (
+      <LiveRoomDesktop
+        projectId={id as string}
+        userId={authUser?.privyId || ""}
+        userName={authUser?.email || "Viewer"}
+        shop={{
+          name: project.title || project.name || "Shop",
+          logoUrl: cleanLogoUrl(project.business_profile?.logo_url) || null,
+          verbLabel: verbLabelForProject(project),
+        }}
+        isFollowing={isFavorited}
+        followerCount={favoriteCount}
+        onToggleFollow={toggleFavorite}
+        offers={offers.filter((o) => o.is_active)}
+        pinnedOffer={pinnedOffer}
+        buyingOfferId={buyingOfferId}
+        onBuyOffer={(offer) => {
+          // offer here is the narrower LiveRoomOffer shape the desktop
+          // component works with; look up the full Offer by id so
+          // buyOffer() gets every field it needs.
+          const full = offers.find((o) => o.id === offer.id);
+          if (full) buyOffer(full);
+        }}
+        resolveImageUrl={resolveImageUrl}
+        viewerCount={liveViewerCount}
+        salesCount={liveSalesCount}
+        getToken={getToken}
+        onRequestSignIn={login}
+        onCommentBuy={handleCommentBuy}
+        onViewerCountChange={setLiveViewerCount}
+        onItemSold={() => { loadOffers(); setLiveSalesCount((c) => c + 1); }}
+        onItemUpdate={(data) =>
+          setOffers((prev) =>
+            prev.map((o) => (o.id === data.offer_id ? { ...o, quantity_sold: data.quantity_sold } : o)),
+          )
+        }
+        onClose={() => setImmersiveDismissed(true)}
+      />
+    )}
+    {immersiveLive && project && !(isDesktopViewport && !isAuctionActive) && (
       <LiveRoom
         projectId={id as string}
         userId={authUser?.privyId || ""}
