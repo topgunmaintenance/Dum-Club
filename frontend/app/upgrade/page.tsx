@@ -125,7 +125,7 @@ export default function PricingPage() {
             >
               {tier.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-brand-teal px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
+                  <span className="whitespace-nowrap rounded-full bg-brand-teal px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
                     Limited · 100 spots
                   </span>
                 </div>

@@ -3912,6 +3912,11 @@ const heroUtility =
                     )}
                   </div>
                 </div>
+                {/* Buyer actions — hidden on the owner's own view (a
+                    merchant doesn't Follow or Message themselves; page-
+                    polish pass 2026-07-02). "View as customer" still
+                    shows them via showOwnerInlineUi. */}
+                {!showOwnerInlineUi && (
                 <div className="flex shrink-0 gap-2">
                   <button
                     type="button"
@@ -3933,6 +3938,7 @@ const heroUtility =
                     {isFavorited ? "Following" : "+ Follow"}
                   </button>
                 </div>
+                )}
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -3963,11 +3969,15 @@ const heroUtility =
             </div>
           </div>
 
-          {/* ── Offline lead: one clean card with inline notify ── */}
+          {/* ── Offline lead: one clean card with inline notify ──
+              Owner view excluded (page-polish pass 2026-07-02): asking a
+              merchant for their email to be notified when THEY go live
+              read as broken. Visitors and view-as-customer still get it. */}
           <div className="mt-4 space-y-3">
             {proj.scheduled_live_at && (
               <ScheduledLiveBanner scheduledIso={proj.scheduled_live_at} projectId={id as string} />
             )}
+            {!showOwnerInlineUi && (
             <LiveAlertSignup
               projectId={id as string}
               businessName={projectName}
@@ -3975,6 +3985,7 @@ const heroUtility =
               headline={`${projectName} is offline right now`}
               subtext="Drop your email and we'll ping you the moment they go live, with first dibs on flash-deal pricing."
             />
+            )}
           </div>
 
           {/* ── What's for sale ── */}

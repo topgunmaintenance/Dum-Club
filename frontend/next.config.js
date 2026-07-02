@@ -47,7 +47,10 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/explore", destination: "/discover", permanent: true },
-      { source: "/ai-chat", destination: "/chat", permanent: true },
+      // /chat no longer exists (the standalone AI-chat page was retired);
+      // both old paths land on the homepage instead of a 404.
+      { source: "/ai-chat", destination: "/", permanent: true },
+      { source: "/chat", destination: "/", permanent: true },
       // Merchant short-URL alias. /m/<slug> is a public-facing
       // shorthand for the storefront page at /project/<slug>. The
       // canonical URL stays /project/<slug>, but any printed
