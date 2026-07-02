@@ -1219,6 +1219,69 @@ def is_merchant_suspended(privy_id: Optional[str]) -> bool:
         return False
 
 
+@router.get("/usage")
+async def merchant_usage(current_user: dict = Depends(get_current_user)):
+    """Host-facing viewer-hour usage meter.
+
+    The platform enforces per-tier caps (viewer cap per show, monthly
+    viewer-hour hard block at included × multiplier) but until this
+    endpoint the merchant had NO way to see the meter running — they'd
+    discover the limit by being blocked (owner feedback 2026-07-02).
+    Pure read: resolved plan caps + this month's metered viewer_seconds.
+    """
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+
+    sb = get_client()
+    from services.merchant_limits import (
+        resolve_merchant_limits_by_privy_did,
+        MerchantLimitsUnresolved,
+        _current_yyyymm_utc,
+    )
+
+    try:
+        limits = resolve_merchant_limits_by_privy_did(privy_id, supabase=sb)
+    except MerchantLimitsUnresolved:
+        return {"has_merchant": False}
+
+    yyyymm = _current_yyyymm_utc()
+    seconds = 0
+    try:
+        res = (
+            sb.table("merchant_monthly_usage")
+            .select("viewer_seconds")
+            .eq("merchant_id", limits.merchant_id)
+            .eq("yyyymm", yyyymm)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            seconds = int(res.data[0].get("viewer_seconds") or 0)
+    except Exception as exc:
+        # Read failure degrades to "0 used" rather than erroring the
+        # dashboard — enforcement reads its own copy, so this is
+        # display-only.
+        print(f"[merchant/usage] telemetry read failed: {exc!r}")
+
+    used_vh = round(seconds / 3600, 2)
+    included = float(limits.max_monthly_viewer_hours)
+    hard_cap = float(limits.max_monthly_viewer_hours * limits.hard_block_multiplier)
+    return {
+        "has_merchant": True,
+        "month": yyyymm,
+        "plan_id": limits.plan_id,
+        "included_viewer_hours": included,
+        "used_viewer_hours": used_vh,
+        "remaining_included_viewer_hours": max(0.0, round(included - used_vh, 2)),
+        "overage_rate_usd": float(limits.overage_rate),
+        "hard_block_viewer_hours": hard_cap,
+        "percent_of_included": round((used_vh / included) * 100, 1) if included else 0.0,
+        "max_concurrent_viewers": limits.max_concurrent_viewers,
+        "max_concurrent_streams": limits.max_concurrent_streams,
+    }
+
+
 @router.post("/cancel-trial")
 async def cancel_trial(current_user: dict = Depends(get_current_user)):
     """

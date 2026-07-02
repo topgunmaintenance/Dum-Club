@@ -39,6 +39,7 @@ import { ReviewsSection } from "../../../components/ReviewsSection";
 import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
+import { UsageMeter } from "../../../components/UsageMeter";
 import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
@@ -5595,6 +5596,10 @@ return (
               <Kpi label="Followers" value={favoriteCount} sub={null} />
               <Kpi label="Live offers" value={cActive.length} sub={featuredId ? "1 featured" : null} />
             </div>
+
+            {/* Viewer-hour meter — the host sees the limit coming instead
+                of discovering it when the cap blocks them. */}
+            <UsageMeter getToken={getToken} />
 
             {/* Featured band — the pinned offer that shows first the moment
                 the merchant goes live (ties to handlePinOffer + the Live Flow
