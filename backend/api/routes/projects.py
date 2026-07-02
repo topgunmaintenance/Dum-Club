@@ -764,26 +764,52 @@ async def list_public_projects():
     # aggregated in Python so no Postgres function is needed.
     project_ids = [p["id"] for p in projects if p.get("id")]
     active_offer_counts: dict[str, int] = {}
+    # featured_offer_image: the card image for /discover and the Club home.
+    # store_items JSONB is empty for modern-flow storefronts (offers live in
+    # the offers table), which left real merchants rendering as blank mint
+    # tiles. Pick the cheapest-priced active offer that has an image
+    # (deterministic), so the card shows a real product photo without a
+    # second round trip. Same bulk SELECT as the count — just two more
+    # columns.
+    featured_offer_images: dict[str, tuple[float, str]] = {}
     if project_ids:
         try:
             offer_rows = (
                 supabase.table("offers")
-                .select("project_id")
+                .select("project_id, primary_image_url, price_usd")
                 .eq("is_active", True)
                 .in_("project_id", project_ids)
                 .execute()
             )
             for row in (offer_rows.data or []):
                 pid = row.get("project_id")
-                if pid:
-                    active_offer_counts[pid] = active_offer_counts.get(pid, 0) + 1
+                if not pid:
+                    continue
+                active_offer_counts[pid] = active_offer_counts.get(pid, 0) + 1
+                img = (row.get("primary_image_url") or "").strip()
+                if img:
+                    try:
+                        price = float(row.get("price_usd") or 0)
+                    except (TypeError, ValueError):
+                        price = 0.0
+                    # Prefer the cheapest PRICED offer with an image; a
+                    # zero-priced image only holds the slot until a priced
+                    # one appears.
+                    current = featured_offer_images.get(pid)
+                    if current is None or (
+                        price > 0 and (current[0] == 0 or price < current[0])
+                    ):
+                        featured_offer_images[pid] = (price, img)
         except Exception as exc:
             # Non-fatal: failure to enrich falls back to active_offer_count=0
             # for all rows. Frontend gate then uses store_items only (today's
             # behavior). Logged so the operator sees the regression.
             print(f"[projects] active_offer_count enrichment failed: {exc!r}")
     for p in projects:
-        p["active_offer_count"] = active_offer_counts.get(p.get("id", ""), 0)
+        pid = p.get("id", "")
+        p["active_offer_count"] = active_offer_counts.get(pid, 0)
+        entry = featured_offer_images.get(pid)
+        p["featured_offer_image"] = entry[1] if entry else None
 
     # Stripe-verified gate (owner policy: only real businesses that can
     # take payment are publicly discoverable). Mirrors the publish-gate

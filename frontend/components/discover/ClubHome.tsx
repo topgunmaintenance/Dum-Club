@@ -359,6 +359,24 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
             no marketing hero above the feed. On / the pitch renders below the
             feed (HomeSellPitch via homeVariant); /discover stays feed-only. */}
 
+        {/* One-line identity strip, homepage only — a stranger should know
+            what DUM Club is before the first scroll. Deliberately small so
+            the search-and-pills-first layout from the mock stays intact. */}
+        {homeVariant && (
+          <div className="mb-4">
+            <h1 className="text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
+              Your local shops, selling live.
+            </h1>
+            <p className="mt-0.5 text-sm text-secondary">
+              Watch nearby businesses go live, buy direct, and earn points at
+              every shop on DUM Club.{" "}
+              <a href="#demo" className="font-semibold text-mint-text hover:underline">
+                Own a business? See how it works ↓
+              </a>
+            </p>
+          </div>
+        )}
+
         {/* Sticky filter bar */}
         <StickyFilterBar
           searchQuery={searchQuery}

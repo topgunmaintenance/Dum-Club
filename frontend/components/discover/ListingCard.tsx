@@ -55,10 +55,17 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
       ? (project.store_items.find((i: Record<string, unknown>) => Number(i?.price_usd ?? i?.price ?? 0) > 0) || project.store_items[0])
       : null;
   const offerImage = cleanLogoUrl(
-    (featuredOffer?.image as string) ||
+    // Server-computed featured image first — offers-table storefronts have
+    // empty store_items JSONB, so this is the field that actually fills
+    // real merchants' cards. Then the legacy JSONB cascade, the shop
+    // cover, and finally the logo: founding shops often uploaded a real
+    // photo as their "logo", and any photo beats a blank mint tile.
+    project.featured_offer_image ||
+      (featuredOffer?.image as string) ||
       (featuredOffer?.primary_image_url as string) ||
       (featuredOffer?.image_url as string) ||
-      project.business_profile?.cover_image_url,
+      project.business_profile?.cover_image_url ||
+      project.business_profile?.logo_url,
   );
   const [mediaSrc, setMediaSrc] = useState<string | null>(offerImage);
   useEffect(() => { setMediaSrc(offerImage); }, [offerImage]);

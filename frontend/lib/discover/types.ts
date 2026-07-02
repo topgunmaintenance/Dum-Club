@@ -49,6 +49,11 @@ export type Project = {
   // and storefront UIs fall back to keyword classification when
   // absent, so backwards-compat is preserved.
   category_id?: string | null;
+  // Server-computed card image: cheapest active offer with a photo
+  // (offers table, /api/projects/public enrichment). NULL when the
+  // merchant has no offer photos — the card cascade then tries the
+  // cover/logo below.
+  featured_offer_image?: string | null;
   // Embedded merchant logo/cover (joined via projects.business_profile_id
   // by /api/projects/public). Optional on both axes — a merchant that
   // hasn't supplied an image still renders the existing emoji avatar.
