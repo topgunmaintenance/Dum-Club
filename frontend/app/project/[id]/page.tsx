@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -6884,8 +6885,15 @@ return (
 
               {/* Activation wizard modal. Closes on backdrop click and
                   on the X button. Body scroll is not locked because the
-                  surrounding page already has its own scroll context. */}
-              {embedModalOpen && (
+                  surrounding page already has its own scroll context.
+                  Rendered through a PORTAL to document.body: this JSX
+                  lives inside #offers-section, which Manage mode hides
+                  with display:none — which also swallowed the fixed-
+                  position modal, so the console's "Activate DUM Live"
+                  button looked dead (reported 2026-07-02). The portal
+                  escapes the hidden ancestor while the button keeps
+                  driving the same embedModalOpen state. */}
+              {embedModalOpen && typeof document !== "undefined" && createPortal(
                 <div
                   className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-4"
                   onClick={() => setEmbedModalOpen(false)}
@@ -7456,7 +7464,7 @@ return (
                     </div>
                   </div>
                 </div>
-              )}
+              , document.body)}
             </>
           );
         })()}
