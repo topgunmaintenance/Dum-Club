@@ -779,27 +779,33 @@ those are different categories that confuse the pitch.
    not a billing-config change.
 2. Never fake data — no simulated tickers, no demo
    storefronts visible in Discover.
-   **Narrow, explicit exception — homepage Live Now empty state
-   (bridge measure, Phase 0/1 only):** when zero real businesses
-   are currently live, the homepage's Live Now rail may show
-   exactly ONE placeholder tile so the section doesn't render
-   blank on a visitor's first impression. That tile must:
+   **Explicit exception — homepage Live Now empty state (bridge
+   measure, Phase 0/1 only):** when zero real businesses are
+   currently live, the homepage's Live Now slot may show a grid
+   of example-shop tiles (the DemoStoreRail, styled after the
+   June 2026 handoff's tile design) so a first-time visitor sees
+   what live local commerce looks like instead of a blank page.
+   Founder decision 2026-07-01 ("fake it till you make it"):
+   this supersedes the earlier one-tile-only ruling from the
+   June 2026 handoff review — a full example grid is approved.
+   The honesty rules are unchanged and non-negotiable. Every
+   example tile must:
      - Never say "LIVE" or use the coral live-status color/dot —
-       those are reserved for real broadcasts only.
-     - Carry an unmistakable "DEMO" or "EXAMPLE" label distinct
-       from real listing chrome, plus honest copy (e.g. "This is
-       what it looks like when a shop goes live") — never framed
-       as an actual seller or actual viewer count.
-     - Disappear automatically the instant any real business goes
-       live — this is a data-driven fallback (renders only when
-       the real live-projects list is empty), not a manual toggle,
-       so it self-removes without needing a follow-up change.
-     - Stay to exactly one tile — never a fabricated grid of
-       multiple fake businesses (that was the rejected direction
-       from the homepage redesign handoff, June 2026).
+       those are reserved for real broadcasts only. Tiles carry
+       an "EXAMPLE" badge instead.
+     - Never show a viewer count or any other fabricated live
+       metric, and the rail's header must say these are example
+       shops — never framed as actual sellers.
+     - Disappear automatically as real businesses go live — this
+       is a data-driven fallback (renders only when the real
+       live-projects list is empty), not a manual toggle, so it
+       self-removes without needing a follow-up change.
+     - Link to /merchant so the illustration converts visitors
+       into founding merchants.
    This exception does not extend to Discover, the businesses
    grid, or any other surface — those stay real-data-only, no
-   exceptions.
+   exceptions. Simulated activity tickers and fictional customer
+   testimonials remain banned everywhere.
 3. Never show Solana/blockchain on consumer pages
 4. Never show DUM Points in navbar until Phase 2
 5. Never show DUM Points purchase flow until legal review

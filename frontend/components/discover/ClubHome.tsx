@@ -53,14 +53,14 @@ import { StartingSoon } from "../../components/discover/StartingSoon";
 import { ListingGrid, LoadingGrid } from "../../components/discover/ListingGrid";
 import { EmptyState } from "../../components/discover/EmptyState";
 import { MerchantStrip } from "../../components/discover/MerchantStrip";
-import { LiveNowDemoTile } from "../../components/homepage/LiveNowDemoTile";
+import { DemoStoreRail } from "../../components/homepage/DemoStoreRail";
 import { HomeSellPitch } from "../../components/homepage/HomeSellPitch";
 
 /**
  * homeVariant: true only when rendered as the root (/) homepage.
- * - Live Now empty state shows the single labeled LiveNowDemoTile
- *   (CLAUDE.md §12 rule 2's narrow homepage-only exception — it must
- *   NOT render on /discover, hence the prop gate).
+ * - Live Now empty state shows the DemoStoreRail example-shop grid
+ *   (CLAUDE.md §12 rule 2's homepage-only exception, founder-approved
+ *   2026-07-01 — it must NOT render on /discover, hence the prop gate).
  * - The bottom merchant CTA becomes the full HomeSellPitch (headline,
  *   founding offer, stat row, interactive go-live demo) instead of the
  *   compact MerchantStrip that /discover keeps.
@@ -433,14 +433,11 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
         <LiveNowRail projects={discoverable} />
 
         {/* Homepage-only bridge measure: when zero real businesses are live,
-            show the single clearly-labeled demo tile so the live-commerce
-            story doesn't render blank. Data-driven — disappears the instant
-            anything real goes live. Never on /discover. */}
-        {homeVariant && !loading && !hasAnyLive && (
-          <div className="mb-8">
-            <LiveNowDemoTile />
-          </div>
-        )}
+            show the labeled example-shop grid so the live-commerce story
+            doesn't render blank (founder decision 2026-07-01, CLAUDE.md §12
+            rule 2). Data-driven — real live shows replace it automatically.
+            Never on /discover. */}
+        {homeVariant && !loading && !hasAnyLive && <DemoStoreRail />}
 
         {/* From shops you follow — personalised strip, signed-in viewers with
             at least one follow only (self-hides otherwise). */}
