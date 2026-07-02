@@ -691,16 +691,26 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         print(f"[merchant/signup] storefront project create raised: {exc!r}")
 
     # ── 60-day trial provisioning ─────────────────────────────────
-    # Founding-100 merchants are grandfathered into $0-forever pricing per
-    # CLAUDE.md doctrine and skip the trial flow entirely. Non-founding
-    # signups get a Stripe Subscription with trial_period_days=60 and
-    # pause-on-missing-payment-method, so no card is required at signup.
+    # EVERY signup — founding included — gets a Stripe Subscription with a
+    # 60-day trial and pause-on-missing-payment-method, so no card is
+    # required at signup and nobody is ever charged silently.
+    #
+    # Doctrine correction (2026-07-02): this branch previously grandfathered
+    # founding merchants into "$0 forever" and skipped billing entirely,
+    # which contradicts CLAUDE.md §3 — the founding offer is "60 days free,
+    # then founding-tier pricing locked for life" (Starter base $39/mo).
+    # The founding lock is on the PRICE, not an exemption from paying.
+    # Without this, the trial clock never started for founders: no
+    # countdown banner, no conversion, no revenue.
     #
     # Best-effort: a Stripe outage here doesn't fail the signup. The merchant
     # lands in the dashboard, the trial banner shows "Setting up your trial.."
     # state, and a follow-up dashboard load can call this code path again
     # (gated by stripe_subscription_id IS NULL) to retry.
-    if not inserted.get("founding_merchant"):
+    #
+    # `if True:` keeps the block's indentation so this doctrine fix stays a
+    # reviewable two-line diff instead of a 60-line whitespace change.
+    if True:
         # Email was already resolved for the trial-identity gate above.
         user_email: Optional[str] = trial_gate_email
 
@@ -710,7 +720,11 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         # default). Validation here is generous on purpose — a UI typo
         # shouldn't fail signup, it should just land on growth.
         requested_tier = (body.tier or "").strip().lower()
-        resolved_tier = requested_tier if requested_tier in _ALLOWED_SIGNUP_TIERS else "growth"
+        # Founding merchants default to Starter — that's the tier whose
+        # founding price is locked for life (CLAUDE.md §3/§10). Everyone
+        # else keeps the historical growth default.
+        default_tier = "starter" if inserted.get("founding_merchant") else "growth"
+        resolved_tier = requested_tier if requested_tier in _ALLOWED_SIGNUP_TIERS else default_tier
         if requested_tier and requested_tier != resolved_tier:
             print(
                 f"[merchant/signup] ignoring unrecognised tier={requested_tier!r}, "
@@ -758,15 +772,6 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
                 print(f"[merchant/signup] trial write-through failed: {exc!r}")
         else:
             print(f"[merchant/signup] trial provisioning skipped: {trial.get('error')}")
-    else:
-        # Grandfather founding rows so the cron + dashboard banner skip them.
-        try:
-            supabase.table("merchants").update({"grandfathered": True}).eq(
-                "id", inserted["id"]
-            ).execute()
-            inserted["grandfathered"] = True
-        except Exception as exc:
-            print(f"[merchant/signup] grandfather write failed: {exc!r}")
 
     return {"merchant": inserted, "created": True}
 
