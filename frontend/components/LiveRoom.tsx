@@ -641,9 +641,19 @@ export function LiveRoom({
               </div>
             </div>
 
-            {/* BUY bar */}
+            {/* BUY bar. Flash-sale enforcement (founder decision
+                2026-07-02): when the host set a timer and it hit zero, the
+                sale STOPS — the bar disables until the host re-pins (same
+                offer or another, any timer). The regular storefront catalog
+                is unaffected; only the live flash window closes. The page's
+                live-state poll refreshes pinned_until, so a re-pin re-arms
+                every viewer within seconds. */}
             <div className="flex items-center gap-2">
-              {isSoldOut ? (
+              {flashSecondsLeft === 0 ? (
+                <span className="flex-1 rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
+                  Sale ended · watch for the next drop
+                </span>
+              ) : isSoldOut ? (
                 <span className="flex-1 rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
                   Sold out
                 </span>
@@ -671,7 +681,7 @@ export function LiveRoom({
             {/* DUM Points earn line — display only (CLAUDE.md §5: no purchase
                 flow surfaced). Mirrors the award rule min(50, 10 + floor($/5))
                 so the number matches what the webhook actually grants. */}
-            {!isSoldOut && (
+            {!isSoldOut && flashSecondsLeft !== 0 && (
               <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-white/65">
                 <span className="h-1.5 w-1.5 rounded-full bg-dum-live-accent" aria-hidden="true" />
                 Earn{" "}
