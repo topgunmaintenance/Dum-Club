@@ -69,7 +69,7 @@ function shouldHideFooter(pathname: string | null | undefined): boolean {
  *
  * The SiteFooter is mounted here too so every public marketing /
  * informational page (home, discover, merchant, pricing, about,
- * technology, investors, terms, privacy, hub, leaderboard, etc.)
+ * technology, investors, terms, privacy, hub, etc.)
  * gets the same canonical footer without each page rendering its
  * own copy. A small exclusion list strips it from dashboards,
  * admin tooling, auth callbacks, the verify-code surface, the

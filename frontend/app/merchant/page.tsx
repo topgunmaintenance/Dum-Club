@@ -909,6 +909,19 @@ export default function MerchantPage() {
 
   const stepSnippet = installSeen || stepInstall;
   const stepLiveEver = stepLive || stepFirstSale;
+
+  // All-green hub state (merchant-hub consolidation, 2026-07-02): when the
+  // shop is founding + published + Stripe-verified, the four separate
+  // status cards (Founding badge, Storefront published, business info,
+  // Payment connections) collapse into ONE identity strip — the Whatnot
+  // rule: say each thing once. Any not-green state keeps its actionable
+  // card exactly as before.
+  const hubStripeOk =
+    stripeStatus?.status === "verified" ||
+    merchant?.stripe_connect_status === "verified";
+  const hubPublished =
+    firstProject?.status === "live" && firstProject?.review_status === "approved";
+  const hubAllGreen = !!merchant && hubPublished && hubStripeOk;
   const completedSteps = [
     stepStripe,
     hasOffer,
@@ -1052,8 +1065,39 @@ export default function MerchantPage() {
           </div>
         )}
 
-        {/* Founding badge */}
-        {merchant.founding_merchant && (
+        {/* ── Consolidated identity strip (all-green hub) ── */}
+        {hubAllGreen && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-default bg-surface-card px-5 py-4 shadow-sm">
+            <div className="min-w-0">
+              <div className="truncate text-base font-bold text-primary">{merchant.business_name}</div>
+              {merchant.location_city && (
+                <div className="text-xs text-secondary">
+                  {merchant.location_city}{merchant.location_state ? `, ${merchant.location_state}` : ""}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {merchant.founding_merchant && (
+                <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Founding</span>
+              )}
+              <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Published ✓</span>
+              <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Stripe ✓</span>
+              <button
+                onClick={unpublishStorefront}
+                disabled={publishing}
+                className="text-[11px] font-medium text-secondary underline-offset-4 transition hover:text-primary hover:underline disabled:opacity-50"
+              >
+                Move to draft
+              </button>
+            </div>
+          </div>
+        )}
+        {hubAllGreen && publishError && (
+          <p className="text-xs text-state-live">{publishError}</p>
+        )}
+
+        {/* Founding badge (kept for any not-all-green state) */}
+        {merchant.founding_merchant && !hubAllGreen && (
           <div className="rounded-2xl border border-default bg-brand-teal-soft px-5 py-4">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
@@ -1083,8 +1127,11 @@ export default function MerchantPage() {
             stripeStatus?.status === "verified" ||
             merchant?.stripe_connect_status === "verified";
 
-          // Published AND Stripe-verified: truly on Discover.
-          if (isPubliclyLive && stripeVerified) {
+          // Published AND Stripe-verified: the consolidated identity strip
+          // above already says this (with Move to draft) — skip the card.
+          if (isPubliclyLive && stripeVerified) return null;
+          // (unreachable legacy card kept out of the tree)
+          if (false) {
             return (
               <div className="rounded-2xl border border-brand-teal bg-brand-teal-soft px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1421,7 +1468,8 @@ export default function MerchantPage() {
           </div>
         )}
 
-        {/* Business info */}
+        {/* Business info — folded into the identity strip when all green */}
+        {!hubAllGreen && (
         <div className="rounded-2xl border border-default bg-surface-muted p-5">
           <h2 className="text-lg font-bold text-primary">{merchant.business_name}</h2>
           <div className="mt-1 flex items-center gap-2 text-sm text-secondary">
@@ -1438,13 +1486,15 @@ export default function MerchantPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Connections. once onboarding is done this is the durable
             surface for managing the Stripe connection. While onboarding
             is in progress the checklist above is the primary CTA, so we
             only render this card when Stripe is already connected (to
-            avoid duplicate "Connect" buttons). */}
-        {stepStripe && (
+            avoid duplicate "Connect" buttons). All-green hub: the strip's
+            "Stripe ✓" chip covers it, so the card folds away too. */}
+        {stepStripe && !hubAllGreen && (
         <div className="rounded-2xl border border-default bg-surface-muted p-5">
           <h3 className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Payment Connections</h3>
           <div className="space-y-3">
