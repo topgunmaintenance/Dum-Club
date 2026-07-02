@@ -19,7 +19,7 @@
  * `!isAuctionActive` check where this component is mounted.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { LiveChatIVS } from "./LiveChatIVS";
 import type { LiveRoomOffer } from "./LiveRoom";
@@ -42,6 +42,10 @@ type LiveRoomDesktopProps = {
   // the rail can buy any offer, not just the featured one.
   offers: LiveRoomOffer[];
   pinnedOffer: LiveRoomOffer | null;
+  // Host-set flash-timer deadline (projects.pinned_until, ISO). Drives the
+  // coral "Ends in M:SS" chip and, at zero, closes the flash window (Buy
+  // disabled until the host re-pins) — same rules as the mobile LiveRoom.
+  pinnedUntil?: string | null;
   buyingOfferId: string | null;
   onBuyOffer: (offer: LiveRoomOffer) => void;
   resolveImageUrl: (url: string | null | undefined) => string;
@@ -66,6 +70,7 @@ export function LiveRoomDesktop({
   onToggleFollow,
   offers,
   pinnedOffer,
+  pinnedUntil,
   buyingOfferId,
   onBuyOffer,
   resolveImageUrl,
@@ -89,6 +94,27 @@ export function LiveRoomDesktop({
   const likeSenderRef = useRef<(() => void) | null>(null);
   const [hearts, setHearts] = useState<{ id: number; drift: number }[]>([]);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // Flash-timer countdown — identical normalization to LiveRoom/storefront
+  // so every surface agrees on the remaining time.
+  const [flashNow, setFlashNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!pinnedUntil) return;
+    setFlashNow(Date.now());
+    const t = window.setInterval(() => setFlashNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [pinnedUntil]);
+  const flashSecondsLeft = useMemo<number | null>(() => {
+    if (!pinnedUntil) return null;
+    const iso = pinnedUntil
+      .replace(" ", "T")
+      .replace(/(\.\d{3})\d+/, "$1")
+      .replace(/([+-]\d{2})$/, "$1:00");
+    const end = Date.parse(iso);
+    if (Number.isNaN(end)) return null;
+    const sLeft = Math.floor((end - flashNow) / 1000);
+    return sLeft > 0 ? sLeft : 0;
+  }, [pinnedUntil, flashNow]);
 
   const isSoldOut = (o: LiveRoomOffer) =>
     !o.unlimited_inventory &&
@@ -284,11 +310,22 @@ export function LiveRoomDesktop({
                   Now showing
                 </div>
                 <div className="truncate text-sm font-bold text-primary">{pinnedOffer.title}</div>
-                <div className="font-mono text-base font-extrabold text-primary">
-                  ${Number(pinnedOffer.price_usd).toFixed(2)}
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-base font-extrabold text-primary">
+                    ${Number(pinnedOffer.price_usd).toFixed(2)}
+                  </span>
+                  {flashSecondsLeft !== null && flashSecondsLeft > 0 && (
+                    <span className="rounded-full bg-state-live/15 px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums text-state-live">
+                      Ends in {Math.floor(flashSecondsLeft / 60)}:{String(flashSecondsLeft % 60).padStart(2, "0")}
+                    </span>
+                  )}
                 </div>
               </div>
-              {isSoldOut(pinnedOffer) ? (
+              {flashSecondsLeft === 0 ? (
+                <span className="shrink-0 rounded-xl bg-surface-muted px-6 py-3 text-sm font-bold text-secondary">
+                  Sale ended · watch for the next drop
+                </span>
+              ) : isSoldOut(pinnedOffer) ? (
                 <span className="shrink-0 rounded-xl bg-surface-muted px-6 py-3 text-sm font-bold text-secondary">
                   Sold out
                 </span>

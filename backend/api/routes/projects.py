@@ -2349,14 +2349,16 @@ class PinOfferRequest(BaseModel):
     # picks how long the on-screen urgency timer runs. None = pin with no
     # timer (indefinite). Only the allowed values are honored; anything
     # else is treated as no-timer rather than rejected, so a stale client
-    # can't 422 a pin. Nothing about price/availability changes at zero.
-    duration_minutes: Optional[int] = None
+    # can't 422 a pin. The LIVE room enforces expiry: at zero the Buy bar
+    # disables until the host re-pins (storefront catalog is unaffected).
+    duration_minutes: Optional[float] = None
 
 
 # Seller-selectable pin durations (minutes). Mirrored in the frontend
 # picker; the backend is the gate so an out-of-range value can't set an
 # arbitrary deadline.
-PIN_DURATION_CHOICES = {1, 2, 5, 10, 30, 60}
+# 0.5 = a 30-second flash window (founder request 2026-07-02).
+PIN_DURATION_CHOICES = {0.5, 1, 2, 5, 10, 30, 60}
 
 
 @router.post("/{project_id}/go-live")

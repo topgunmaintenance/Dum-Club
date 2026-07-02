@@ -666,7 +666,7 @@ export default function ProjectPage() {
   // an on-screen urgency countdown to viewers for this many minutes. Display
   // only — nothing about price/availability changes at zero. Must stay in
   // sync with PIN_DURATION_CHOICES on the backend (the gate of record).
-  const PIN_DURATION_CHOICES = [1, 2, 5, 10, 30, 60] as const;
+  const PIN_DURATION_CHOICES = [0.5, 1, 2, 5, 10, 30, 60] as const;
   const [pinDurationMinutes, setPinDurationMinutes] = useState<number>(5);
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
@@ -4239,6 +4239,7 @@ return (
         onToggleFollow={toggleFavorite}
         offers={offers.filter((o) => o.is_active)}
         pinnedOffer={pinnedOffer}
+        pinnedUntil={project?.pinned_until ?? null}
         buyingOfferId={buyingOfferId}
         onBuyOffer={(offer) => {
           // offer here is the narrower LiveRoomOffer shape the desktop
@@ -6615,7 +6616,7 @@ return (
                           : "border-default text-secondary hover:border-strong hover:text-white"
                       }`}
                     >
-                      {mins} min
+                      {mins === 0.5 ? "30 sec" : `${mins} min`}
                     </button>
                   );
                 })}
