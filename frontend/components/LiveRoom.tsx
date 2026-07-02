@@ -22,7 +22,7 @@
  * brief; a brand mock can refine the exact spacing/scrims later.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { LiveChatIVS } from "./LiveChatIVS";
 import { API_BASE } from "../lib/apiBase";
@@ -74,6 +74,10 @@ type LiveRoomProps = {
   onToggleFollow: () => void;
   // Pinned offer + checkout.
   pinnedOffer: LiveRoomOffer | null;
+  // Host-set flash-timer deadline (projects.pinned_until, ISO). Drives the
+  // coral "Ends in M:SS" urgency chip on the offer card. Kept fresh by the
+  // page's live-state poll, so a mid-show re-pin updates every viewer.
+  pinnedUntil?: string | null;
   buyingOfferId: string | null;
   onBuy: (offer: LiveRoomOffer) => void;
   resolveImageUrl: (url: string | null | undefined) => string;
@@ -105,6 +109,7 @@ export function LiveRoom({
   followerCount,
   onToggleFollow,
   pinnedOffer,
+  pinnedUntil,
   buyingOfferId,
   onBuy,
   resolveImageUrl,
@@ -119,6 +124,28 @@ export function LiveRoom({
   onClose,
 }: LiveRoomProps) {
   const [hearts, setHearts] = useState<Heart[]>([]);
+
+  // Flash-timer countdown (host-set pinned_until). Same Postgres-to-ISO
+  // normalization as the storefront/embed countdowns so all three surfaces
+  // agree on the remaining time. Ticks only while a future deadline exists.
+  const [flashNow, setFlashNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!pinnedUntil) return;
+    setFlashNow(Date.now());
+    const t = window.setInterval(() => setFlashNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [pinnedUntil]);
+  const flashSecondsLeft = useMemo<number | null>(() => {
+    if (!pinnedUntil) return null;
+    const iso = pinnedUntil
+      .replace(" ", "T")
+      .replace(/(\.\d{3})\d+/, "$1")
+      .replace(/([+-]\d{2})$/, "$1:00");
+    const end = Date.parse(iso);
+    if (Number.isNaN(end)) return null;
+    const s = Math.floor((end - flashNow) / 1000);
+    return s > 0 ? s : 0;
+  }, [pinnedUntil, flashNow]);
   const [likeCount, setLikeCount] = useState(0);
   const heartSeq = useRef(0);
   const chatWrapRef = useRef<HTMLDivElement | null>(null);
@@ -360,17 +387,9 @@ export function LiveRoom({
             <path d="M12 21s-7.2-4.6-9.6-9.2C.9 8.7 2.3 5.5 5.3 5.1c1.8-.2 3.4.7 4.7 2.2C11.3 5.8 12.9 4.9 14.7 5.1c3 .4 4.4 3.6 2.9 6.7C19.2 16.4 12 21 12 21z" />
           </svg>
         </RailButton>
-        {/* Chat toggle is a mobile pattern — on desktop the public chat is
-            already docked open at bottom-left, so this icon would toggle
-            something already visible. Hide it on lg+; keep it on
-            mobile/portrait where the chat isn't always docked. */}
-        <div className="lg:hidden">
-          <RailButton label="Chat" onClick={focusChat} aria-label="Comment">
-            <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.3A8 8 0 1 1 21 12z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-            </svg>
-          </RailButton>
-        </div>
+        {/* Chat rail icon removed (owner decision 2026-07-02): the public
+            chat + input are always visible bottom-left, so the icon only
+            duplicated something already on screen. Rail is Like + Share. */}
         <div className="relative">
           <RailButton
             label={shareCopied ? <span className="text-mint-text">Copied</span> : "Share"}
@@ -609,6 +628,13 @@ export function LiveRoom({
                   {typeof remaining === "number" && remaining > 0 && (
                     <span className="rounded-full bg-state-live/20 px-1.5 py-0.5 text-[10px] font-bold text-state-live">
                       {remaining} left
+                    </span>
+                  )}
+                  {/* Host-set flash timer — coral urgency (doctrine: coral is
+                      live status + urgency only, and this is exactly that). */}
+                  {flashSecondsLeft !== null && flashSecondsLeft > 0 && (
+                    <span className="rounded-full bg-state-live/20 px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-state-live">
+                      Ends in {Math.floor(flashSecondsLeft / 60)}:{String(flashSecondsLeft % 60).padStart(2, "0")}
                     </span>
                   )}
                 </div>
