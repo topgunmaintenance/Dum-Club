@@ -114,6 +114,10 @@ type Project = {
   live_started_at?: string | null;
   stream_url?: string | null;
   pinned_offer_id?: string | null;
+  // Seller-picked featured-pin deadline (TIMESTAMPTZ). Drives the same
+  // display-only "Featured · M:SS" countdown the embed shows, so the
+  // storefront and any website embed always agree on remaining time.
+  pinned_until?: string | null;
   active_auction_id?: string | null;
   live_provider?: string | null;
   ivs_stage_arn?: string | null;
@@ -1269,6 +1273,10 @@ export default function ProjectPage() {
         ...prev,
         is_live: fresh.is_live,
         pinned_offer_id: fresh.pinned_offer_id ?? null,
+        // Keep the pin-countdown deadline fresh too — a re-pin with a new
+        // timer mid-session must update the storefront's pill, not just
+        // the embed's.
+        pinned_until: fresh.pinned_until ?? null,
         active_auction_id: fresh.active_auction_id ?? null,
         live_provider: fresh.live_provider ?? null,
         // ivs_stage_arn MUST be merged: the live IVS player only mounts
@@ -2694,6 +2702,34 @@ export default function ProjectPage() {
   // redundant requests for a single close.
   const autoCloseFiredRef = useRef<string | null>(null);
 
+  // Pin countdown — IDENTICAL source (project.pinned_until) and timestamp
+  // normalization as the embed's countdown, so the storefront and any
+  // website embed always show the same remaining time (they previously
+  // desynced because only the embed rendered this at all; fix 2026-07-02).
+  // Display-only: nothing about price or availability changes at zero.
+  const [pinNow, setPinNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!project?.pinned_until) return;
+    setPinNow(Date.now());
+    const t = window.setInterval(() => setPinNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [project?.pinned_until]);
+  const pinSecondsLeft = useMemo<number | null>(() => {
+    const raw = project?.pinned_until;
+    if (!raw) return null;
+    // Normalize Postgres timestamptz to strict ISO 8601 (space -> "T",
+    // microseconds -> milliseconds, bare "+HH" offset -> "+HH:00") —
+    // same normalization the embed applies, for the same Safari reasons.
+    const iso = raw
+      .replace(" ", "T")
+      .replace(/(\.\d{3})\d+/, "$1")
+      .replace(/([+-]\d{2})$/, "$1:00");
+    const end = Date.parse(iso);
+    if (Number.isNaN(end)) return null;
+    const s = Math.floor((end - pinNow) / 1000);
+    return s > 0 ? s : 0;
+  }, [project?.pinned_until, pinNow]);
+
   // Countdown timer
   useEffect(() => {
     if (!auction || auction.status !== "active") { setAuctionCountdown(""); return; }
@@ -4021,8 +4057,22 @@ const heroUtility =
                   </div>
                   <div className="p-5 sm:p-7">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
-                        Now showing{featured.compare_at_price ? " · Live deal" : ""}
+                      <div className="flex items-center gap-2">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-mint-text">
+                          Now showing{featured.compare_at_price ? " · Live deal" : ""}
+                        </div>
+                        {/* Same display-only countdown the embed shows —
+                            honest copy ("Featured", not "deal ends"),
+                            same deadline, so both surfaces stay in sync. */}
+                        {project?.pinned_offer_id === featured.id && pinSecondsLeft !== null && pinSecondsLeft > 0 && (
+                          <span
+                            aria-live="off"
+                            className="inline-flex items-center gap-1 rounded-full border border-mint-card-border bg-mint-card px-2 py-0.5 text-[10px] font-bold tabular-nums text-mint-text"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" aria-hidden />
+                            Featured · {Math.floor(pinSecondsLeft / 60)}:{String(pinSecondsLeft % 60).padStart(2, "0")}
+                          </span>
+                        )}
                       </div>
                       {/* Owner-only: only offer Unpin when this is genuinely
                           pinned (not just the arbitrary first-active fallback),
