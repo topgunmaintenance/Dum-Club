@@ -51,6 +51,9 @@ const nextConfig = {
       // both old paths land on the homepage instead of a 404.
       { source: "/ai-chat", destination: "/", permanent: true },
       { source: "/chat", destination: "/", permanent: true },
+      // /leaderboard retired (founder decision 2026-07-02) — ranking two
+      // shops was noise; revisit when there are shops to rank.
+      { source: "/leaderboard", destination: "/discover", permanent: false },
       // Merchant short-URL alias. /m/<slug> is a public-facing
       // shorthand for the storefront page at /project/<slug>. The
       // canonical URL stays /project/<slug>, but any printed
