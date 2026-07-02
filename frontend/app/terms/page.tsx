@@ -28,7 +28,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-2 text-lg font-bold text-white">2. Platform Description</h2>
             <p>
-              DUM Club (Digital Utility Market) is a platform that enables users to create business storefronts, list offers, and accept payments. The platform uses AI to generate storefront content and integrates with Stripe for payment processing. DUM Club does not guarantee any sales, revenue, or business outcomes.
+              DUM Club (Drive Ur Market) is a live-commerce platform for local businesses: merchants create storefronts, list offers, sell live on camera, and accept payments. Payments are processed through Stripe. Buyers can earn DUM Points loyalty rewards on purchases. DUM Club does not guarantee any sales, revenue, or business outcomes.
             </p>
           </section>
 
