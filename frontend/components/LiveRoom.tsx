@@ -275,7 +275,10 @@ export function LiveRoom({
     <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
       {/* ── Full-bleed video ── */}
       <div className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full">
-        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" />
+        {/* soundPromptClass lifts "Tap for sound" above the offer card +
+            Buy bar + points stack docked to the overlay's bottom edge
+            (mobile spacing audit, 2026-07-02). */}
+        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" soundPromptClass="bottom-52" />
       </div>
 
       {/* Scrims — top + bottom gradients so the chrome stays legible over any
@@ -461,10 +464,13 @@ export function LiveRoom({
         </div>
       </div>
 
-      {/* ── Live chat (overlaid, bottom-left) ── */}
+      {/* ── Live chat (overlaid, bottom-left) ──
+          Width leaves ~6.75rem clear on the right for the Like/Chat/Share
+          rail so the Send button never renders underneath it (72vw alone
+          overlapped the rail on narrow phones; spacing audit 2026-07-02). */}
       <div
         ref={chatWrapRef}
-        className="absolute bottom-40 left-2 z-20 w-[72vw] max-w-sm"
+        className="absolute bottom-40 left-2 z-20 w-[min(72vw,calc(100vw-6.75rem))] max-w-sm"
       >
         {/* Label so the public broadcast chat reads as distinct from the
             private "Message the shop" DM bubble docked below it. */}
@@ -569,7 +575,9 @@ export function LiveRoom({
           </div>
         </div>
       ) : pinnedOffer ? (
-        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        // Extra bottom padding keeps the DUM Points line clear of the
+        // phone's gesture bar (safe-area + breathing room).
+        <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.5rem))]">
           <div className="mx-auto max-w-md">
             {/* Dark glassy offer card (the video shows through). */}
             <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 text-white shadow-lg backdrop-blur-md">

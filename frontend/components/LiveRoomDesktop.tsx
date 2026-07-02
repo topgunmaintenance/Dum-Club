@@ -19,7 +19,7 @@
  * `!isAuctionActive` check where this component is mounted.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { LiveChatIVS } from "./LiveChatIVS";
 import type { LiveRoomOffer } from "./LiveRoom";
@@ -80,6 +80,15 @@ export function LiveRoomDesktop({
   onClose,
 }: LiveRoomDesktopProps) {
   const [imgFallback, setImgFallback] = useState<Record<string, boolean>>({});
+
+  // Like + Share over the video — desktop parity with the mobile rail
+  // (owner request 2026-07-02, matching Whatnot's desktop room; its
+  // third button, Wallet, is skipped on purpose: DUM Points stays held
+  // until Phase 2). likeSenderRef is filled by LiveChatIVS so likes ride
+  // the same realtime channel as mobile.
+  const likeSenderRef = useRef<(() => void) | null>(null);
+  const [hearts, setHearts] = useState<{ id: number; drift: number }[]>([]);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const isSoldOut = (o: LiveRoomOffer) =>
     !o.unlimited_inventory &&
@@ -201,6 +210,64 @@ export function LiveRoomDesktop({
             <div className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full">
               <IVSStageViewer projectId={projectId} userId={userId} fit="cover" />
             </div>
+
+            {/* Like + Share rail over the video (desktop parity with mobile). */}
+            <div className="absolute bottom-4 right-4 z-10 flex flex-col items-center gap-3">
+              <div className="pointer-events-none absolute bottom-12 right-1 h-56 w-12">
+                {hearts.map((h) => (
+                  <span
+                    key={h.id}
+                    className="float-heart absolute bottom-0 right-2 text-2xl"
+                    style={{ ["--drift" as string]: `${h.drift}px` }}
+                    onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
+                  >
+                    ❤️
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                aria-label="Like"
+                onClick={() => {
+                  likeSenderRef.current?.();
+                  setHearts((list) => [
+                    ...list,
+                    { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20) },
+                  ]);
+                }}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-xl backdrop-blur-sm transition hover:bg-black/70"
+              >
+                ❤️
+              </button>
+              <button
+                type="button"
+                aria-label="Share this live show"
+                onClick={async () => {
+                  const url = typeof window !== "undefined" ? window.location.href.split("?")[0] : "";
+                  try {
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      await navigator.share({ title: shop.name, url });
+                    } else {
+                      await navigator.clipboard.writeText(url);
+                      setShareCopied(true);
+                      setTimeout(() => setShareCopied(false), 2000);
+                    }
+                  } catch {
+                    /* user dismissed the share sheet */
+                  }
+                }}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/70"
+              >
+                {shareCopied ? (
+                  <span className="text-[9px] font-bold uppercase leading-none">Copied</span>
+                ) : (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <path d="M12 3v13M12 3l-4 4M12 3l4 4" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" strokeLinecap="round" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           {pinnedOffer && (
             <div className="flex shrink-0 items-center gap-4 border-t border-default bg-surface-card p-4">
@@ -255,6 +322,16 @@ export function LiveRoomDesktop({
             onViewerCountChange={onViewerCountChange}
             onItemSold={onItemSold}
             onItemUpdate={onItemUpdate}
+            likeSenderRef={likeSenderRef}
+            onLikeCount={(_count, animate) => {
+              // Float a heart when someone ELSE likes, same as mobile.
+              if (animate) {
+                setHearts((list) => [
+                  ...list,
+                  { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20) },
+                ]);
+              }
+            }}
           />
         </div>
       </div>
