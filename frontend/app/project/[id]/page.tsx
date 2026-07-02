@@ -4188,8 +4188,11 @@ const heroUtility =
         </div>
 
         {/* Private DM to the host — opened by the Message button above.
-            Not shown to the owner viewing their own storefront. */}
-        {!isOwner && <GuestChat projectId={id} businessName={projectName} />}
+            Not shown to the owner viewing their own storefront, and hidden
+            while the fullscreen live overlay is up: its fixed z-[80] pill
+            floated OVER the overlay's Buy bar on phones (spacing audit,
+            2026-07-02). The live room has its own public chat. */}
+        {!isOwner && !immersiveLive && <GuestChat projectId={id} businessName={projectName} />}
       </div>
     );
   }
@@ -8886,8 +8889,10 @@ return (
   )}
 
   {/* Guest chat: storefront visitor -> merchant inbox. Customer view only,
-      bottom-left so it clears the AiSalesChat bubble on the right. */}
-  {!showOwnerInlineUi && (
+      bottom-left so it clears the AiSalesChat bubble on the right. Hidden
+      while the fullscreen live overlay is up — its fixed z-[80] pill sat
+      on top of the overlay's Buy bar on phones (spacing audit 2026-07-02). */}
+  {!showOwnerInlineUi && !immersiveLive && (
     <GuestChat projectId={id} businessName={projectName} />
   )}
 

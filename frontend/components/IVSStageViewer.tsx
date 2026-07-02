@@ -23,6 +23,11 @@ interface IVSStageViewerProps {
   // centered (letterboxed on the black bg) instead of cover-cropping
   // their chin/forehead.
   fit?: "cover" | "contain";
+  // Position class for the big "Tap for sound" pill (storefront/overlay
+  // variant). Default keeps the historical bottom-center; the fullscreen
+  // LiveRoom overlay passes a higher position so the pill doesn't land on
+  // the offer card + Buy bar stack (mobile spacing audit, 2026-07-02).
+  soundPromptClass?: string;
 }
 
 // Module-level dedup: at most one active stage subscription per project
@@ -35,7 +40,7 @@ interface IVSStageViewerProps {
 let _claimSeq = 0;
 const _activeClaims = new Map<string, number>(); // projectId -> claim owner
 
-export function IVSStageViewer({ projectId, userId, preview = false, fit = "cover" }: IVSStageViewerProps) {
+export function IVSStageViewer({ projectId, userId, preview = false, fit = "cover", soundPromptClass = "bottom-4" }: IVSStageViewerProps) {
   const [status, setStatus] = useState<ViewerStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -555,7 +560,7 @@ export function IVSStageViewer({ projectId, userId, preview = false, fit = "cove
             type="button"
             aria-label="Tap for sound"
             onClick={claimAudio}
-            className="pointer-events-auto absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-400/50 bg-black/85 px-5 py-3 text-sm font-bold text-white shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(0,255,163,0.15)] backdrop-blur-md transition hover:border-emerald-400/80 hover:bg-black/95"
+            className={`pointer-events-auto absolute ${soundPromptClass} left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-400/50 bg-black/85 px-5 py-3 text-sm font-bold text-white shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_16px_rgba(0,255,163,0.15)] backdrop-blur-md transition hover:border-emerald-400/80 hover:bg-black/95`}
             style={{ minHeight: 44, minWidth: 44 }}
           >
             <span className="text-base leading-none">🔊</span>
