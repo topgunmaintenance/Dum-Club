@@ -32,7 +32,15 @@ type DemoBusiness = {
   startViewers: number;
   chatSenderName: string;
   chatMessage: string;
+  photoId: string; // Unsplash photo path, matched to the business type
 };
+
+/* Hotlinked from Unsplash's CDN (license allows commercial use, no
+   attribution required); IDs hand-picked to match each demo business.
+   Used for the camera viewfinder, the listing preview, and the live-video
+   backdrop so the demo reads like a real show instead of a striped box. */
+const unsplashUrl = (photoId: string, w = 640) =>
+  `https://images.unsplash.com/${photoId}?w=${w}&q=60&auto=format&fit=crop`;
 
 const BUSINESSES: Record<BusinessKey, DemoBusiness> = {
   food: {
@@ -45,6 +53,7 @@ const BUSINESSES: Record<BusinessKey, DemoBusiness> = {
     startViewers: 64,
     chatSenderName: "jenna_m",
     chatMessage: "is there a gluten-free option?",
+    photoId: "photo-1613396874083-2d5fbe59ae79",
   },
   services: {
     label: "Services",
@@ -56,6 +65,7 @@ const BUSINESSES: Record<BusinessKey, DemoBusiness> = {
     startViewers: 31,
     chatSenderName: "dave.k",
     chatMessage: "do you cover apartments too?",
+    photoId: "photo-1581578949510-fa7315c4c350",
   },
   moving: {
     label: "Moving",
@@ -67,6 +77,7 @@ const BUSINESSES: Record<BusinessKey, DemoBusiness> = {
     startViewers: 22,
     chatSenderName: "priya_r",
     chatMessage: "how far in advance should I book?",
+    photoId: "photo-1616432043562-3671ea2e5242",
   },
 };
 
@@ -381,11 +392,8 @@ function StepSnap({
       <div className="px-6 pt-2">
         <p className="text-sm text-secondary">Point, shoot, done. We&apos;ll fill in the rest.</p>
         <div
-          className="mt-5 flex h-36 items-center justify-center rounded-2xl border border-default text-muted"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, var(--surface-muted), var(--surface-muted) 8px, var(--surface-page) 8px, var(--surface-page) 16px)",
-          }}
+          className="mt-5 flex h-36 items-center justify-center rounded-2xl border border-default bg-cover bg-center text-muted"
+          style={{ backgroundImage: `url(${unsplashUrl(business.photoId)})` }}
         >
           {snapping && (
             <span className="rounded-full bg-surface-card px-3 py-1 text-[11px] font-semibold text-secondary shadow-sm">
@@ -460,7 +468,10 @@ function StepResultPost({
       </span>
       <h3 className="mt-4 text-lg font-bold text-primary">You&apos;re live, well, listed!</h3>
       <div className="mt-4 rounded-2xl border border-default bg-surface-card p-4">
-        <div className="h-24 rounded-xl bg-surface-muted" />
+        <div
+          className="h-24 rounded-xl bg-surface-muted bg-cover bg-center"
+          style={{ backgroundImage: `url(${unsplashUrl(business.photoId)})` }}
+        />
         <div className="mt-3 text-sm font-bold text-primary">{business.itemName}</div>
         <div className="font-mono text-sm text-mint-text">${business.price}</div>
         <div className="mt-1 text-[12px] text-secondary">{business.shopName}</div>
@@ -490,7 +501,14 @@ function StepResultLive({
   onRestart: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col bg-dum-video text-white">
+    <div
+      className="flex h-full flex-col bg-dum-video bg-cover bg-center text-white"
+      style={{
+        // Photo backdrop with a dark wash so the chat/overlay chrome stays
+        // readable — reads like a paused camera frame, not a striped box.
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.65)), url(${unsplashUrl(business.photoId)})`,
+      }}
+    >
       <div className="flex items-center justify-between px-4 pt-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-coral px-2.5 py-1">
           <span className="h-1.5 w-1.5 rounded-full bg-white" />
