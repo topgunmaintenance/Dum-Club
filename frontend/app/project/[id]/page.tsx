@@ -6180,7 +6180,9 @@ return (
       })()}
 
       {/* ── DUM Hub Card ── */}
-      <div className="mb-6 rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5">
+      {/* Buyer-facing trust strip — hidden in Manage mode (owner-simplicity
+          pass): it's checkout reassurance copy, noise on the owner console. */}
+      <div className={`mb-6 rounded-2xl border border-default bg-gradient-to-r from-brand-teal-soft to-surface-card p-5 ${showOwnerInlineUi && ownerManage && !project?.is_live ? "hidden" : ""}`}>
         <div className="flex flex-wrap items-center gap-4 text-[11px] text-secondary">
           <span className="flex items-center gap-1.5">💳 Stripe checkout</span>
           <span className="text-muted">·</span>
@@ -6219,7 +6221,12 @@ return (
         liveStudioMode
           ? "mb-8 grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px] lg:items-start"
           : isOwner
-            ? "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start"
+            // Manage mode off-air: the offers column is hidden (see
+            // offers-section below), so drop the 2-col grid and let the
+            // live-host panel breathe full width under the console.
+            ? (showOwnerInlineUi && ownerManage && !project?.is_live
+                ? "mb-8"
+                : "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start")
             : ""
       }>
         {/* LEFT — IVS Host (must stay mounted across the live
@@ -6424,7 +6431,12 @@ return (
           other visitors) — a Whatnot-style live view keeps the camera, chat,
           and the "Sell a Product" picker front and center instead of the
           full catalog-management grid underneath it. */}
-      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${project?.is_live && isIVSSession(project) ? "hidden" : ""}`}>
+      {/* Also hidden in Manage mode off-air (owner-simplicity pass,
+          2026-07-01): the manage console above already lists every offer
+          with Pin/Edit, so rendering the full public catalog again below
+          it duplicated the whole page. Owners preview the real catalog
+          via "View as customer"; visitors are unaffected. */}
+      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${(project?.is_live && isIVSSession(project)) || (showOwnerInlineUi && ownerManage && !project?.is_live) ? "hidden" : ""}`}>
         {!ownerManage && (<>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -8217,7 +8229,10 @@ return (
       {/* Hidden while actively live — the LIVE banner + camera already say
           everything "Shop status" would; a simplified broadcast view
           shouldn't repeat it underneath the offers grid. */}
-      {showOwnerInlineUi && !project?.is_live && (
+      {/* Also hidden in Manage mode (owner-simplicity pass, 2026-07-01):
+          the console header's status badge already covers "Shop status",
+          so the divider + card only render on the clean owner storefront. */}
+      {showOwnerInlineUi && !ownerManage && !project?.is_live && (
         <div className="mb-6 mt-2 flex items-center gap-4">
           <div className="h-px flex-1 bg-surface-muted" />
           <span className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted">Owner Tools</span>
@@ -8225,7 +8240,7 @@ return (
         </div>
       )}
 
-      {showOwnerInlineUi && !project?.is_live && (
+      {showOwnerInlineUi && !ownerManage && !project?.is_live && (
         <div className="mb-8 rounded-2xl border border-default bg-surface-card p-4 text-sm text-primary">
           <span className="uppercase tracking-[0.18em] text-secondary">
             Shop status
@@ -8673,7 +8688,9 @@ return (
         {/* Business Blueprint is advanced/curiosity tooling — irrelevant to
             a merchant chasing their first sale. Hidden until first sale,
             then it returns as a reference. */}
-        {showOwnerInlineUi && ownerHasSales && !project?.is_live && (
+        {/* Hidden in Manage mode too (owner-simplicity pass, 2026-07-01) —
+            legacy curiosity tooling, not part of the day-to-day console. */}
+        {showOwnerInlineUi && !ownerManage && ownerHasSales && !project?.is_live && (
         <details className="mb-8 rounded-3xl border border-default bg-surface-card p-6">
           <summary className="flex cursor-pointer items-center justify-between text-xs uppercase tracking-[0.3em] text-muted hover:text-secondary">
             <span>Business Blueprint</span>
