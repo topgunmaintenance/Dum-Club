@@ -1425,7 +1425,14 @@ export default function MerchantPage() {
         <div className="rounded-2xl border border-default bg-surface-muted p-5">
           <h2 className="text-lg font-bold text-primary">{merchant.business_name}</h2>
           <div className="mt-1 flex items-center gap-2 text-sm text-secondary">
-            {merchant.business_type && <span>{merchant.business_type}</span>}
+            {/* Some merchant rows carry the business NAME in business_type
+                (signup prefill quirk), which printed the name twice back to
+                back and read as a rendering bug (owner feedback,
+                2026-07-02). Only show the type when it's a real type. */}
+            {merchant.business_type &&
+              merchant.business_type.trim().toLowerCase() !== (merchant.business_name || "").trim().toLowerCase() && (
+                <span>{merchant.business_type}</span>
+              )}
             {merchant.location_city && (
               <span>{merchant.location_city}{merchant.location_state ? `, ${merchant.location_state}` : ""}</span>
             )}
@@ -1501,6 +1508,15 @@ export default function MerchantPage() {
           // checklist already conveys the success state and a
           // "Verified" pill on its own is noise.
           if (isVerified && !hasRetrieveError) return null;
+
+          // Also skip when the live status check merely failed but the
+          // cached merchant row already says Stripe is connected. The
+          // "Payment connections · CONNECTED" card right above is the
+          // truth the merchant needs; an amber "Couldn't reach Stripe
+          // just now" box directly under a green CONNECTED badge read
+          // as a contradiction and made the page feel broken (owner
+          // feedback, 2026-07-02). The next visit re-checks quietly.
+          if (hasRetrieveError && !stripeStatus && merchant?.stripe_connect_status === "connected") return null;
 
           return (
             <div className="rounded-2xl border border-default bg-surface-muted p-5">
