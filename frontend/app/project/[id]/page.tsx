@@ -40,6 +40,7 @@ import { ReportButton } from "../../../components/ReportButton";
 import { ScheduledLiveBanner } from "../../../components/ScheduledLiveBanner";
 import { LiveAlertSignup } from "../../../components/LiveAlertSignup";
 import { UsageMeter } from "../../../components/UsageMeter";
+import { chatDisplayName } from "../../../lib/chatDisplayName";
 import { ReplayCard } from "../../../components/ReplayCard";
 import { isSimulatedToken } from "../../../lib/tokenMode";
 import { SimulatedTokenBanner } from "../../../components/SimulatedTokenBanner";
@@ -1583,13 +1584,13 @@ export default function ProjectPage() {
       if (project?.is_live && id) {
         setLiveSalesCount((c) => c + 1);
         broadcastLiveEvent(id, {
-          user: authUser?.email || "Viewer",
+          user: chatDisplayName(authUser),
           text: `purchased ${offer.title}. +10 DUM`,
           type: "purchase",
         });
         broadcastLiveEvent(id, {
           user: "System",
-          text: `${authUser?.email || "A viewer"} earned +10 DUM Points`,
+          text: `${chatDisplayName(authUser, "A viewer")} earned +10 DUM Points`,
           type: "reward",
         });
       }
@@ -4227,7 +4228,7 @@ return (
       <LiveRoomDesktop
         projectId={id as string}
         userId={authUser?.privyId || ""}
-        userName={authUser?.email || "Viewer"}
+        userName={chatDisplayName(authUser)}
         shop={{
           name: project.title || project.name || "Shop",
           logoUrl: cleanLogoUrl(project.business_profile?.logo_url) || null,
@@ -4266,7 +4267,7 @@ return (
       <LiveRoom
         projectId={id as string}
         userId={authUser?.privyId || ""}
-        userName={authUser?.email || "Viewer"}
+        userName={chatDisplayName(authUser)}
         isOwner={isOwner}
         auction={auction}
         auctionItem={auctionOffer ? { title: auctionOffer.title, image: auctionOffer.primary_image_url } : null}
@@ -5118,7 +5119,7 @@ return (
                   <LiveChatIVS
                     projectId={id as string}
                     userId={authUser?.privyId || ""}
-                    userName={authUser?.email || "Viewer"}
+                    userName={chatDisplayName(authUser)}
                     isHost={isOwner}
                     onRequestSignIn={login}
                     getToken={getToken}
@@ -6383,7 +6384,7 @@ return (
                 <LiveChatIVS
                   projectId={id as string}
                   userId={authUser?.privyId || ""}
-                  userName={authUser?.email || "Host"}
+                  userName={chatDisplayName(authUser, "Host")}
                   isHost={true}
                   onRequestSignIn={login}
                   getToken={getToken}
@@ -6479,7 +6480,7 @@ return (
             <LiveChatIVS
               projectId={id as string}
               userId={authUser?.privyId || ""}
-              userName={authUser?.email || "Host"}
+              userName={chatDisplayName(authUser, "Host")}
               isHost={true}
               onRequestSignIn={login}
               getToken={getToken}
