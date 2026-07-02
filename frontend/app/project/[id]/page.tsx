@@ -666,7 +666,7 @@ export default function ProjectPage() {
   // an on-screen urgency countdown to viewers for this many minutes. Display
   // only — nothing about price/availability changes at zero. Must stay in
   // sync with PIN_DURATION_CHOICES on the backend (the gate of record).
-  const PIN_DURATION_CHOICES = [2, 5, 10, 30, 60] as const;
+  const PIN_DURATION_CHOICES = [1, 2, 5, 10, 30, 60] as const;
   const [pinDurationMinutes, setPinDurationMinutes] = useState<number>(5);
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
@@ -4293,6 +4293,7 @@ return (
         followerCount={favoriteCount}
         onToggleFollow={toggleFavorite}
         pinnedOffer={pinnedOffer}
+        pinnedUntil={project?.pinned_until ?? null}
         buyingOfferId={buyingOfferId}
         onBuy={() => { if (pinnedOffer) buyOffer(pinnedOffer); }}
         resolveImageUrl={resolveImageUrl}

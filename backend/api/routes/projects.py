@@ -2356,7 +2356,7 @@ class PinOfferRequest(BaseModel):
 # Seller-selectable pin durations (minutes). Mirrored in the frontend
 # picker; the backend is the gate so an out-of-range value can't set an
 # arbitrary deadline.
-PIN_DURATION_CHOICES = {2, 5, 10, 30, 60}
+PIN_DURATION_CHOICES = {1, 2, 5, 10, 30, 60}
 
 
 @router.post("/{project_id}/go-live")

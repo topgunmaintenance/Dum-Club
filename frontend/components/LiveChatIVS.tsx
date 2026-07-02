@@ -18,6 +18,11 @@ interface ChatMessage {
   // Locally-synthesized sale line (overlay/live-room only) — rendered as a
   // mint "just sold" pill instead of a normal chat message.
   kind?: "sold";
+  // True for the sender's own optimistic echo, appended the instant they
+  // hit Send so their message shows immediately (owner feedback from the
+  // first real broadcast, 2026-07-02: "when I say anything it should come
+  // up above"). Replaced in place when the server copy arrives.
+  _localEcho?: boolean;
 }
 
 interface ItemUpdateEvent {
@@ -146,11 +151,22 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             const incoming = msg.data as ChatMessage;
             // Dedup by id so a reconnect that replays recent history
             // can't double-post a message (or collide React keys).
-            setMessages((prev) =>
-              incoming?.id && prev.some((m) => m.id === incoming.id)
-                ? prev
-                : [...prev.slice(-199), incoming],
-            );
+            setMessages((prev) => {
+              if (incoming?.id && prev.some((m) => m.id === incoming.id)) return prev;
+              // Our own message coming back from the server: swap it into
+              // the optimistic echo's slot instead of double-posting.
+              if (incoming.sender_id === userId) {
+                const i = prev.findIndex(
+                  (m) => m._localEcho && m.body === incoming.body && m.sender_id === userId,
+                );
+                if (i !== -1) {
+                  const copy = [...prev];
+                  copy[i] = incoming;
+                  return copy;
+                }
+              }
+              return [...prev.slice(-199), incoming];
+            });
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
             onViewerCountChange?.(msg.data.count);
@@ -293,6 +309,17 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
       sender_role: isHost ? "host" : "viewer",
       body,
     }));
+    // Optimistic echo: show the sender their own message immediately —
+    // the server copy replaces this entry in place when it arrives.
+    setMessages((prev) => [...prev.slice(-199), {
+      id: `local-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      sender_id: userId,
+      sender_name: userName || (isHost ? "Host" : "Viewer"),
+      sender_role: isHost ? "host" : "viewer",
+      body,
+      created_at: now,
+      _localEcho: true,
+    }]);
     setInput("");
   }
 
