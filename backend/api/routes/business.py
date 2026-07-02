@@ -115,6 +115,38 @@ class VerificationRequest(BaseModel):
 
 # ── Get my business profile ──
 
+def _profile_ids_via_owned_projects(supabase, privy_id: str) -> list[str]:
+    """business_profiles reachable through projects the caller owns.
+
+    Ownership across the app is fragmented over multiple Privy DIDs (a
+    merchant who signed in with email one day and Google the next gets two
+    DIDs). The storefront's isOwner check accepts a project privy_id match,
+    so a merchant can own a project whose business_profile row carries a
+    DIFFERENT owner_privy_id — and the strict owner_privy_id match below
+    then returns no profile. That is exactly what broke /dashboard for
+    founding merchant #1 (2026-07-02): $0 stats and a 'Create Business
+    Profile' prompt while their verified profile existed. Any login that
+    owns the project should see (and manage) that project's profile.
+    """
+    try:
+        res = (
+            supabase.table("projects")
+            .select("business_profile_id")
+            .eq("privy_id", privy_id)
+            .eq("is_deleted", False)
+            .not_.is_("business_profile_id", "null")
+            .execute()
+        )
+        seen: list[str] = []
+        for row in (res.data or []):
+            bpid = row.get("business_profile_id")
+            if bpid and bpid not in seen:
+                seen.append(bpid)
+        return seen
+    except Exception:
+        return []
+
+
 @router.get("/me")
 async def get_my_business(
     business_id: Optional[str] = Query(None),
@@ -135,9 +167,27 @@ async def get_my_business(
     if business_id:
         q = q.eq("id", business_id)
     res = q.order("created_at").limit(1).execute()
-    if not res.data:
-        return {"profile": None}
-    return {"profile": res.data[0]}
+    if res.data:
+        return {"profile": res.data[0]}
+
+    # Fallback: profiles linked to projects this login owns (see helper
+    # docstring — multi-DID merchants). Respect business_id scoping.
+    linked_ids = _profile_ids_via_owned_projects(supabase, privy_id)
+    if business_id:
+        linked_ids = [i for i in linked_ids if i == business_id]
+    if linked_ids:
+        fres = (
+            supabase.table("business_profiles")
+            .select("*")
+            .in_("id", linked_ids)
+            .order("created_at")
+            .limit(1)
+            .execute()
+        )
+        if fres.data:
+            return {"profile": fres.data[0]}
+
+    return {"profile": None}
 
 
 # ── List all my business profiles (multi-business switcher) ──
@@ -156,7 +206,23 @@ async def list_my_businesses(current_user: dict = Depends(get_current_user)):
         .order("created_at")
         .execute()
     )
-    return {"businesses": res.data or []}
+    businesses = list(res.data or [])
+
+    # Also include profiles linked to projects this login owns (multi-DID
+    # merchants — see _profile_ids_via_owned_projects). Dedupe by id.
+    have = {b.get("id") for b in businesses}
+    linked_ids = [i for i in _profile_ids_via_owned_projects(supabase, privy_id) if i not in have]
+    if linked_ids:
+        lres = (
+            supabase.table("business_profiles")
+            .select("id, business_name, category, logo_url, cover_image_url, verification_status, created_at")
+            .in_("id", linked_ids)
+            .order("created_at")
+            .execute()
+        )
+        businesses.extend(lres.data or [])
+
+    return {"businesses": businesses}
 
 
 # ── Business analytics (owner only) ──
