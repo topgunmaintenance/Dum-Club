@@ -1,13 +1,12 @@
 /**
  * / (root) IS the Club home — the buyer discovery + live experience (the same
  * ClubHome rendered at /discover): category pills, Live now, Starting soon, the
- * businesses grid, and the merchant CTA strip at the bottom.
- *
- * The previous merchant marketing homepage now lives at /welcome (reachable
- * via the For Business / Pricing nav links + the MerchantStrip CTA).
+ * businesses grid — followed by the merchant pitch + interactive go-live demo
+ * (homeVariant). The old standalone marketing page at /welcome was removed
+ * 2026-07-01; /welcome now 308-redirects here (see next.config.js).
  */
 import { ClubHome } from "../components/discover/ClubHome";
 
 export default function Home() {
-  return <ClubHome />;
+  return <ClubHome homeVariant />;
 }
