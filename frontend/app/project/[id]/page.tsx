@@ -4428,7 +4428,12 @@ return (
         instead of hiding behind it. No effect for visitors / for
         owners in view-as-customer mode (AdminBar is hidden in those
         cases, so we don't reserve space). */}
-    <div className={`relative z-[1] mx-auto w-full max-w-6xl min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8${showOwnerInlineUi ? " pt-12 sm:pt-11" : ""}`}>
+    {/* Manage mode off-air becomes a flex column so the camera/pin panel
+        can be VISUALLY reordered above the console (owner request,
+        2026-07-02) without moving IVSStageHost's JSX position — moving
+        the node would remount the broadcast component. order utilities
+        on the children are inert outside this flex context. */}
+    <div className={`relative z-[1] mx-auto w-full max-w-6xl min-w-0 overflow-x-hidden px-4 sm:px-6 lg:px-8${showOwnerInlineUi ? " pt-12 sm:pt-11" : ""}${showOwnerInlineUi && ownerManage && !project?.is_live ? " flex flex-col" : ""}`}>
 
       {/* ── Presentation / Pitch Mode ──────────────── */}
       {pitchMode && (
@@ -5547,7 +5552,7 @@ return (
           </div>
         );
         return (
-          <div className="mb-8 space-y-5">
+          <div className="order-3 mb-8 space-y-5">
             {/* Header */}
             <div className="rounded-3xl border border-default bg-surface-card p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -6295,7 +6300,10 @@ return (
             // offers-section below), so drop the 2-col grid and let the
             // live-host panel breathe full width under the console.
             ? (showOwnerInlineUi && ownerManage && !project?.is_live
-                ? "mb-8"
+                // order-2: in the manage flex column this lifts the pin/
+                // camera panel above the console (order-3) while the
+                // back-to-feed strip (order 0) stays on top.
+                ? "order-2 mb-8"
                 : "mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start")
             : ""
       }>
@@ -8205,7 +8213,7 @@ return (
       {ENABLE_AI_FEATURES && (!showOwnerInlineUi || ownerHasSales) && !project?.is_live && (
       <details
         id="ai-workspace"
-        className="group mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
+        className="group order-4 mb-8 hidden rounded-3xl border border-default bg-surface-card p-6 sm:block"
       >
         <summary className="flex cursor-pointer list-none items-center justify-between text-base font-bold text-primary hover:text-brand-teal">
           <span>Ask AI about this business</span>
@@ -8438,7 +8446,7 @@ return (
             typeof window !== "undefined" &&
             window.location.hash === "#section-orders"
           }
-          className="scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8"
+          className="order-4 scroll-mt-28 mb-8 rounded-3xl border border-default bg-surface-card p-6 sm:p-8"
         >
           <summary className="flex cursor-pointer items-start justify-between gap-4 hover:text-primary">
             <div>
