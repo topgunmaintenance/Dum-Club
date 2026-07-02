@@ -133,7 +133,12 @@ export function FloatingGoLive() {
     pathname === "/dashboard" || (pathname?.startsWith("/dashboard/") ?? false);
   if (!onDashboard) return null;
 
-  const target = `/project/${project.slug || project.id}#project-live-host`;
+  // ?golive=1 (not the bare #project-live-host anchor): the host panel
+  // only mounts in Manage mode, and the project page's golive deep-link
+  // handler flips Manage on, arms the camera, and scrolls to it. The
+  // plain anchor pointed at an element that doesn't exist on the clean
+  // owner storefront, so this pill scrolled nowhere (audit 2026-07-02).
+  const target = `/project/${project.slug || project.id}?golive=1`;
   const isLive = !!project.is_live;
 
   return (

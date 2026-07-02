@@ -1732,10 +1732,22 @@ async def seller_orders(
 
     # Bound the result set so a busy storefront never pulls an unbounded
     # list. Newest first; page with limit/offset. Default 50.
+    #
+    # Exclude pending checkout sessions: an order row is created the moment
+    # a buyer opens Stripe Checkout, BEFORE any payment. Returning those
+    # rows made the owner console count abandoned checkouts as orders and
+    # sum their amounts into "Revenue" — fabricated earnings the merchant
+    # never received (found 2026-07-02: a $350 unpaid test session showed
+    # up as +$350 revenue). Only rows that got past payment (paid,
+    # fulfilled, refund/dispute states) belong in the seller's ledger;
+    # webhooks flip pending_payment -> paid, so real sales still appear
+    # the moment they complete.
     res = (
         supabase.table("orders")
         .select("*, offers(title, offer_type, price_usd)")
         .eq("project_id", project_id)
+        .neq("status", "pending_payment")
+        .neq("status", "pending")
         .order("created_at", desc=True)
         .range(offset, offset + limit - 1)
         .execute()

@@ -3381,6 +3381,15 @@ export default function ProjectPage() {
     // Arm the host the moment the deep-link is seen (idempotent — a
     // repeat setAutoGoLive(true) is a no-op).
     if (IVS_REALTIME_ENABLED) setAutoGoLive(true);
+    // The IVS host panel only mounts in the owner's Manage view — on the
+    // clean "customers see exactly this" storefront it doesn't exist, so
+    // every Go Live button (navbar, dashboard, floating pill) dead-ended
+    // at the top of the page with no camera (host-simplicity audit,
+    // 2026-07-02). Flip Manage mode on so the panel mounts and the
+    // scroll below actually lands on a camera. No-op when already in
+    // Manage or while isOwner is still resolving (the dep-less effect
+    // re-runs each render, so it catches the flip).
+    if (isOwner && !ownerManage) setOwnerManage(true);
     // Wait for the owner host panel to mount before scrolling and
     // stripping the param, so a fresh load (isOwner still resolving)
     // still lands on the panel instead of cleaning the URL too early.
