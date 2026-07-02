@@ -13,12 +13,17 @@
  * lives at /merchant and the real broadcast is the IVS Go Live flow
  * (components/IVSStageHost.tsx, components/LiveRoom.tsx).
  *
- * Autoplay defaults OFF (the handoff's own instruction: the design tool's
- * autoplay-on-loop default is a demo-booth/investor-deck aid, not meant to
- * ship — a real visitor should drive the flow themselves).
+ * Autoplay: ON while the section is in view, until the visitor touches
+ * the demo — then it stops for good and they drive. Founder decision
+ * 2026-07-02 (supersedes the handoff's autoplay-off note): a static
+ * phone read as a screenshot; nobody knew it was interactive. The loop
+ * walks sign up -> verify -> snap -> choose (alternating the Post and
+ * Live endings each pass), pauses on the result, restarts. Any tap or
+ * pill click cancels it permanently for the session.
  */
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type BusinessKey = "food" | "services" | "moving";
 
@@ -97,9 +102,78 @@ export function GoLiveDemoPhone() {
   const business = BUSINESSES[businessKey];
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Autoplay ──────────────────────────────────────────────────
+  // Plays only while the section is on screen and stops forever on the
+  // visitor's first touch. Uses its OWN timer (autoRef) so it never
+  // clobbers timerRef, which verifyNow/snapPhoto use for their brief
+  // confirmation states.
+  const [autoPlaying, setAutoPlaying] = useState(false);
+  const interactedRef = useRef(false);
+  const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const altEndingRef = useRef<"live" | "post">("live");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  function stopAutoPlay() {
+    interactedRef.current = true;
+    setAutoPlaying(false);
+    if (autoRef.current) clearTimeout(autoRef.current);
+  }
+
+  // Start/pause with visibility: in view -> play (unless the visitor
+  // already took over), out of view -> pause so nothing churns offscreen.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries[0]?.isIntersecting ?? false;
+        if (interactedRef.current) return;
+        setAutoPlaying(visible);
+      },
+      { threshold: 0.35 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // The driver: schedule the next demo action for the current step.
+  useEffect(() => {
+    if (!autoPlaying) return;
+    if (autoRef.current) clearTimeout(autoRef.current);
+    let delay = 0;
+    let action: (() => void) | null = null;
+    if (step === 0) {
+      delay = 1600;
+      action = () => next();
+    } else if (step === 1 && !verifying && !verified) {
+      delay = 1100;
+      action = () => verifyNow();
+    } else if (step === 2 && !snapping && !photoTaken) {
+      delay = 1100;
+      action = () => snapPhoto();
+    } else if (step === 3) {
+      delay = 1300;
+      const ending = altEndingRef.current;
+      action = () => choose(ending);
+    } else if (step === 4) {
+      delay = 2600;
+      action = () => {
+        altEndingRef.current = altEndingRef.current === "live" ? "post" : "live";
+        restart();
+      };
+    }
+    if (!action) return;
+    autoRef.current = setTimeout(action, delay);
+    return () => {
+      if (autoRef.current) clearTimeout(autoRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlaying, step, verifying, verified, snapping, photoTaken]);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (autoRef.current) clearTimeout(autoRef.current);
     };
   }, []);
 
@@ -166,7 +240,11 @@ export function GoLiveDemoPhone() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center">
+    <div
+      ref={rootRef}
+      onPointerDownCapture={stopAutoPlay}
+      className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center"
+    >
       {/* ── Phone frame ── */}
       <div className="relative mx-auto w-[280px] shrink-0 rounded-[36px] border border-white/10 bg-black p-2.5 shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
         <div className="h-[560px] overflow-hidden rounded-[28px] bg-surface-page">
@@ -246,6 +324,29 @@ export function GoLiveDemoPhone() {
 
         <p className="mt-3 text-sm text-white/45">
           Currently demoing: {business.tagline}
+        </p>
+
+        {/* Play state + honesty line. The pulsing dot tells the visitor
+            the phone is alive; the copy tells them they can take over,
+            and that this is sample data, not a real broadcast. */}
+        <p className="mt-4 flex items-center gap-2 text-[13px] font-semibold text-white/70">
+          {autoPlaying ? (
+            <>
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint-fill opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-fill" />
+              </span>
+              Demo playing. Tap the phone to try it yourself.
+            </>
+          ) : (
+            <>You&apos;re driving. Tap through the flow on the phone.</>
+          )}
+        </p>
+        <p className="mt-1.5 text-[12px] text-white/40">
+          Interactive demo with sample data.{" "}
+          <Link href="/merchant" className="font-semibold text-white/70 underline underline-offset-2 hover:text-white">
+            Ready for real? Claim your founding spot →
+          </Link>
         </p>
       </div>
     </div>
