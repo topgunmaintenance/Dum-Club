@@ -1059,6 +1059,22 @@ export default function ProjectPage() {
   // second WebSocket connection. Stays 0 until the first
   // `viewer_count` event arrives over the existing chat socket.
   const [liveViewerCount, setLiveViewerCount] = useState(0);
+  // Host-side floating hearts (owner request 2026-07-03): viewers' taps
+  // already broadcast over the chat socket as server-counted like events;
+  // the host screen just never rendered them. Count + hearts here mirror
+  // the viewer live room so both sides see the same love in realtime.
+  const [hostLikeCount, setHostLikeCount] = useState(0);
+  const [hostHearts, setHostHearts] = useState<{ id: number; drift: number }[]>([]);
+  const hostHeartSeq = useRef(0);
+  const handleHostLikeCount = (count: number, animate: boolean) => {
+    setHostLikeCount(count);
+    if (animate) {
+      hostHeartSeq.current += 1;
+      const hid = hostHeartSeq.current;
+      const drift = ((hid * 37) % 60) - 30;
+      setHostHearts((h) => [...h.slice(-30), { id: hid, drift }]);
+    }
+  };
   // Audit #4 Phase 1 (Q11). when the host ends a stream during
   // the same page session, hold a "Show ended" banner for ~30s so
   // the buyer who was watching gets acknowledgement instead of a
@@ -6379,6 +6395,7 @@ return (
             key={(project?.pinned_offer_id || project?.is_live) ? "host-ready" : "host-empty"}
             className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"} ${liveStudioMode ? "lg:order-2" : ""}`}
           >
+            <div className="relative">
             <IVSStageHost
               projectId={id as string}
               userId={authUser?.privyId || ""}
@@ -6404,6 +6421,30 @@ return (
               }}
               onError={(msg) => setGoLiveError(msg)}
             />
+            {/* Viewers' hearts, floating over the host camera. */}
+            {project?.is_live && (
+              <>
+                {hostLikeCount > 0 && (
+                  <span className="pointer-events-none absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
+                    <span aria-hidden="true">❤️</span>
+                    {hostLikeCount.toLocaleString()}
+                  </span>
+                )}
+                <div className="pointer-events-none absolute bottom-6 right-4 z-10 h-64 w-16">
+                  {hostHearts.map((h) => (
+                    <span
+                      key={h.id}
+                      className="float-heart absolute bottom-0 right-2 text-2xl"
+                      style={{ ["--drift" as string]: `${h.drift}px` }}
+                      onAnimationEnd={() => setHostHearts((list) => list.filter((x) => x.id !== h.id))}
+                    >
+                      ❤️
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+            </div>
             {/* Error surface for the onError callback above. The legacy
                 Mux/camera panel used to be the only place goLiveError
                 rendered; with that panel removed in the Mux isolation,
@@ -6434,6 +6475,7 @@ return (
                     (projectName || "").trim() || chatDisplayName(authUser, "Host")
                   }
                   isHost={true}
+              onLikeCount={handleHostLikeCount}
                   onRequestSignIn={login}
                   getToken={getToken}
                   onCommentBuy={handleCommentBuy}
@@ -6536,6 +6578,7 @@ return (
                     (projectName || "").trim() || chatDisplayName(authUser, "Host")
                   }
               isHost={true}
+              onLikeCount={handleHostLikeCount}
               onRequestSignIn={login}
               getToken={getToken}
               onCommentBuy={handleCommentBuy}
@@ -8490,7 +8533,7 @@ return (
                 {/* Sale timer — the host picks how long each drop runs BEFORE
                     tapping a product (owner request 2026-07-02). The next pin uses
                     this window; No timer = the sale stays open until unpinned. */}
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="mb-3 flex flex-wrap items-center gap-1.5">
                   <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-secondary">Sale timer</span>
                   <button
                     type="button"
