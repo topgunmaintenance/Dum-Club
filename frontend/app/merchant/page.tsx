@@ -802,7 +802,7 @@ export default function MerchantPage() {
               <button
                 onClick={handleSignup}
                 disabled={saving || !entityType || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
-                className="w-full rounded-xl bg-brand-teal py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover: disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-mint-fill py-4 text-sm font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
                   ? "Claiming your spot..."
@@ -1343,7 +1343,7 @@ export default function MerchantPage() {
                   {completedSteps} of {totalSteps} complete.{" "}
                   <span className="text-brand-teal">
                     {!stepStripe
-                      ? "Connect Stripe to start getting paid"
+                      ? "Connect Stripe to start getting paid (bank + ID, about 5 minutes, verifies fast)"
                       : !hasOffer
                         ? "Add your first offer"
                         : !stepLiveEver
