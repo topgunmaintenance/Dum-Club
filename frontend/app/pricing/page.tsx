@@ -31,7 +31,7 @@ import {
 export const metadata: Metadata = {
   title: "Pricing | DUM Club",
   description:
-    "Starting at $39/month plus a 1.5% sales fee. Industry-low (Whatnot takes 8%). Lock in founding pricing for life.",
+    "Starting at $39/month plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Lock in founding pricing for life.",
   openGraph: {
     title: "Pricing | DUM Club",
     description:
@@ -119,7 +119,7 @@ const TIERS: Tier[] = [
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Do you take a percentage of my sales?",
-    a: "Yes. 1.5% per paid order, deducted from your Stripe payout. That's industry-low: Whatnot takes 8%, DoorDash takes 15-30%, Etsy takes 6.5%. The 1.5% is your only per-sale fee on DUM Club. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout, not by you.",
+    a: "Yes. 1.5% per paid order, deducted from your Stripe payout. That's industry-low: Whatnot takes up to 8%, DoorDash takes 15-30%, Etsy takes 6.5%. The 1.5% is your only per-sale fee on DUM Club. Stripe's standard processing fees (2.9% + $0.30) are paid by the buyer at checkout, not by you.",
   },
   {
     q: "What does 'founding merchant' actually get me?",
@@ -356,7 +356,7 @@ export default function PricingPage() {
               <ul className="space-y-2 text-[13px] text-primary">
                 <li className="flex items-start gap-2">
                   <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-state-live" aria-hidden />
-                  <span>8% commission on $10,000 = $800</span>
+                  <span>Commission at their 8% top rate on $10,000 = $800</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-state-live" aria-hidden />
@@ -404,7 +404,7 @@ export default function PricingPage() {
               Lowest per-sale fee, period
             </div>
             <ul className="space-y-1.5 text-[13px] text-primary">
-              <li className="flex items-center justify-between gap-3"><span>Whatnot</span><span className="font-mono text-secondary">8% + 2.9% + $0.30 / sale</span></li>
+              <li className="flex items-center justify-between gap-3"><span>Whatnot</span><span className="font-mono text-secondary">up to 8% + 2.9% + $0.30 / sale</span></li>
               <li className="flex items-center justify-between gap-3"><span>eBay Live</span><span className="font-mono text-secondary">10-15% / sale</span></li>
               <li className="flex items-center justify-between gap-3"><span>TikTok Shop Live</span><span className="font-mono text-secondary">6% + processing</span></li>
               <li className="flex items-center justify-between gap-3"><span>Facebook Live</span><span className="font-mono text-secondary">~5% + processing</span></li>

@@ -71,7 +71,7 @@ export default function AboutPage() {
               </p>
               <p className="mt-4 text-[15px] leading-relaxed text-primary sm:text-base">
                 DUM Club is the platform I wished existed: flat monthly
-                fee plus just 1.5% per sale (Whatnot takes 8%), every tool
+                fee plus just 1.5% per sale (Whatnot takes up to 8%), every tool
                 included. Built for the shop owner who already paid for
                 the website and just wants more customers walking in.
               </p>
@@ -97,7 +97,7 @@ export default function AboutPage() {
             {[
               {
                 title: "The math problem",
-                body: "Delivery apps take 15 to 30%. Live-selling platforms take 8% + 2.9%. The fees never stop.",
+                body: "Delivery apps take 15 to 30%. Live-selling platforms take up to 8% + 2.9%. The fees never stop.",
               },
               {
                 title: "The customer-ownership problem",
@@ -132,7 +132,7 @@ export default function AboutPage() {
             {[
               {
                 label: "Live selling on your own page",
-                body: "Add live shopping to any business website with a single script tag. No marketplace; just 1.5% per sale (vs Whatnot's 8%).",
+                body: "Add live shopping to any business website with a single script tag. No marketplace; just 1.5% per sale (vs Whatnot's up to 8%).",
               },
               {
                 label: "DUM Points loyalty across the network",

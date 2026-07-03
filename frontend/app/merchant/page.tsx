@@ -521,7 +521,7 @@ export default function MerchantPage() {
             <span className="text-brand-teal">Lock in founding pricing for life.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
-            Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes 8%). No credit card.
+            Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). No credit card.
           </p>
           <p className="mx-auto mt-2 max-w-sm text-[13px] font-semibold text-secondary">
             Plans start at $39/month after your trial. Cancel anytime.
@@ -624,7 +624,7 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
-                ? "Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes 8%). No credit card."
+                ? "Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). No credit card."
                 : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month plus a 1.5% sales fee per order. Loyalty rewards built in. No card today.`}
             </p>
           </div>
@@ -769,7 +769,7 @@ export default function MerchantPage() {
             <div className="grid grid-cols-2 gap-2.5">
               {[
                 { name: "Delivery apps", fees: "15 to 30%", detail: "of every order" },
-                { name: "Live selling", fees: "8% + fees", detail: "per sale" },
+                { name: "Live selling", fees: "up to 8% + fees", detail: "per sale" },
                 { name: "Loyalty software", fees: "$50 to $300", detail: "per month" },
                 { name: "SMS retention", fees: "$20 to $200", detail: "per month" },
               ].map((p) => (
@@ -807,7 +807,7 @@ export default function MerchantPage() {
           <div className="mb-6 rounded-2xl border border-default bg-surface-muted p-5 sm:p-6">
             <ul className="space-y-3">
               {[
-                "Just a 1.5% sales fee per order (Whatnot takes 8%, DoorDash takes 15-30%)",
+                "Just a 1.5% sales fee per order (Whatnot takes up to 8%, DoorDash takes 15-30%)",
                 "Built-in loyalty rewards bring customers back to your shop and every DUM Club business, so you keep them without paying for ads",
                 "Get 60 days free and lock in founding pricing for life when you join the first 100 merchants",
               ].map((line) => (
