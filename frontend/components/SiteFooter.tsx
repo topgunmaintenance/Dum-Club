@@ -144,7 +144,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/dum-logo-icon.png" alt="DUM Club" className="h-5 w-auto" />
+              <img src="/logo/dum-club-D-mark.png" alt="DUM Club" className="h-5 w-auto" />
               <span className="text-[12px] font-bold tracking-tight">
                 <span className="text-primary">DUM </span><span className="text-mint-text">CLUB</span>
               </span>
