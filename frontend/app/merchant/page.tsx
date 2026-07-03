@@ -74,6 +74,9 @@ export default function MerchantPage() {
   // Signup form
   const [bizName, setBizName] = useState("");
   const [bizType, setBizType] = useState("");
+  // Self-identity (Whatnot-style two-card selector): individual or
+  // registered business. Required - two taps max, no typing.
+  const [entityType, setEntityType] = useState<"" | "individual" | "registered_business">("");
   const [bizDescription, setBizDescription] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -378,6 +381,7 @@ export default function MerchantPage() {
 
   async function handleSignup() {
     if (!bizName.trim()) { setError("Business name required"); return; }
+    if (!entityType) { setError("Tell us if you sell as an individual or a registered business"); return; }
     if (!bizType) { setError("Pick a category"); return; }
     if (bizDescription.trim().length < 20) {
       setError("Add a short description (at least 20 characters) so people know what you do.");
@@ -396,6 +400,7 @@ export default function MerchantPage() {
         body: JSON.stringify({
           business_name: bizName.trim(),
           business_type: bizType.trim() || null,
+          entity_type: entityType || null,
           description: bizDescription.trim(),
           location_city: city.trim() || null,
           location_state: state.trim() || null,
@@ -693,6 +698,30 @@ export default function MerchantPage() {
 
             <div className="space-y-4">
               <div>
+                <label className="mb-1.5 block text-xs font-medium text-secondary">You&apos;re selling as</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ["individual", "Individual", "Just me, selling under my own name"],
+                    ["registered_business", "Registered business", "LLC, corporation, or registered trade name"],
+                  ] as const).map(([val, title, body]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setEntityType(val)}
+                      aria-pressed={entityType === val}
+                      className={`rounded-xl border p-3.5 text-left transition ${
+                        entityType === val
+                          ? "border-brand-teal bg-surface-card ring-2 ring-brand-teal/30"
+                          : "border-default bg-surface-card hover:border-strong"
+                      }`}
+                    >
+                      <span className="block text-sm font-bold text-primary">{title}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-secondary">{body}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <label className="mb-1.5 block text-xs font-medium text-secondary">Business Name</label>
                 <input
                   value={bizName}
@@ -772,7 +801,7 @@ export default function MerchantPage() {
               </div>
               <button
                 onClick={handleSignup}
-                disabled={saving || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
+                disabled={saving || !entityType || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
                 className="w-full rounded-xl bg-brand-teal py-4 text-sm font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover: disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
