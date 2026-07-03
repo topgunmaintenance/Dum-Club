@@ -1569,7 +1569,12 @@ export default function MerchantPage() {
           // just now" box directly under a green CONNECTED badge read
           // as a contradiction and made the page feel broken (owner
           // feedback, 2026-07-02). The next visit re-checks quietly.
-          if (hasRetrieveError && !stripeStatus && merchant?.stripe_connect_status === "connected") return null;
+          if (
+            hasRetrieveError &&
+            !stripeStatus &&
+            (merchant?.stripe_connect_status === "connected" ||
+              merchant?.stripe_connect_status === "verified")
+          ) return null;
 
           return (
             <div className="rounded-2xl border border-default bg-surface-muted p-5">
