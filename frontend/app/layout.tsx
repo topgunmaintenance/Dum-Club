@@ -30,6 +30,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.dum.club"),
   title: "DUM Club. Drive Ur Market. Live Selling. 1.5% Sales Fee.",
   description:
     "Drive Ur Market. The loyalty network for local business. Live selling, local deals, and rewards that bring customers back. Merchants pay one flat monthly subscription starting at $39/month plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%).",
@@ -39,12 +40,21 @@ export const metadata: Metadata = {
       "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1.5% instead of up to 8%.",
     siteName: "DUM Club",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DUM Club. Your local shops, selling live.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "DUM Club. Drive Ur Market. Live Selling. 1.5% Sales Fee.",
     description:
       "Drive Ur Market. Watch live sellers, discover local deals, earn rewards everywhere. Sellers keep more of every dollar. Flat monthly subscription plus a 1.5% sales fee. The Whatnot alternative that takes 1.5% instead of up to 8%.",
+    images: ["/og-image.png"],
   },
 };
 
