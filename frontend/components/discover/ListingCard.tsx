@@ -77,6 +77,7 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
   const tagClass = categoryTagClass(project);
   const price = lowestOfferPrice(project);
   const isLive = project.is_live === true;
+  const watching = isLive ? Number(project.viewer_count || 0) : 0;
   const hasDeal = !!project.promo_copy;
   const href = `/project/${project.slug || project.id}${isLive ? "?live=1" : ""}`;
   const businessName = project.title || project.name || "Untitled";
@@ -154,10 +155,20 @@ export function ListingCard({ project, index, isPulsing, followerCount = 0, isFo
 
           {/* LIVE / DEAL state on the thumbnail */}
           {isLive ? (
-            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-coral px-2 py-0.5 shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-white" />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-white">Live</span>
-            </span>
+            <>
+              <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-coral px-2 py-0.5 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wide text-white">Live</span>
+              </span>
+              {/* Real watcher count from the live room - Whatnot-style
+                  proof of activity. Only real broadcasts ever get this
+                  (doctrine: no fabricated live metrics, anywhere). */}
+              {watching > 0 && (
+                <span className="absolute right-2.5 top-2.5 rounded-full bg-black/60 px-2 py-0.5 font-mono text-[10px] font-bold text-white backdrop-blur-sm">
+                  {watching.toLocaleString()} watching
+                </span>
+              )}
+            </>
           ) : hasDeal ? (
             <span className="absolute left-2.5 top-2.5 rounded-md bg-mint-fill px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-mint-fill-ink shadow-sm">
               Deal

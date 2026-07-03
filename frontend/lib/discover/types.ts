@@ -34,6 +34,10 @@ export type Project = {
   profile_strength?: number | null;
   sort_order?: number | null;
   is_live?: boolean;
+  /** Realtime watcher count, attached server-side for live projects
+   *  (backend list_public_projects <- auction_ws in-memory rooms).
+   *  Real numbers only - never rendered for example/demo tiles. */
+  viewer_count?: number | null;
   // UTC timestamp set when a broadcast starts (migration 084). Powers the
   // LiveRail most-recently-live-first ordering. NULL/absent on streams that
   // went live before the column existed — those sort last (feed-order kept).
