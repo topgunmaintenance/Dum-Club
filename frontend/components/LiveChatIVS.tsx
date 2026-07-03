@@ -523,13 +523,16 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
             />
             <button
               type="submit"
+              aria-label="Send message"
               disabled={!userId || !connected || !input.trim() || sendCooldown}
               style={{
                 minHeight: 44,
-                borderRadius: 8,
+                minWidth: overlay ? 44 : undefined,
+                flexShrink: 0,
+                borderRadius: overlay ? 9999 : 8,
                 background: "#10b981",
-                padding: "10px 18px",
-                fontSize: 13,
+                padding: overlay ? "10px 0" : "10px 18px",
+                fontSize: overlay ? 18 : 13,
                 fontWeight: 700,
                 color: "#000",
                 border: "none",
@@ -537,7 +540,7 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
                 opacity: (!userId || !connected || !input.trim() || sendCooldown) ? 0.3 : 1,
               }}
             >
-              Send
+              {overlay ? "\u2191" : "Send"}
             </button>
           </div>
         </form>
