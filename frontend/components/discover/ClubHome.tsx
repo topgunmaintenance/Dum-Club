@@ -455,7 +455,7 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
             doesn't render blank (founder decision 2026-07-01, CLAUDE.md §12
             rule 2). Data-driven — real live shows replace it automatically.
             Never on /discover. */}
-        {homeVariant && !loading && !hasAnyLive && <DemoStoreRail />}
+        {homeVariant && !hasAnyLive && <DemoStoreRail />}
 
         {/* From shops you follow — personalised strip, signed-in viewers with
             at least one follow only (self-hides otherwise). */}
