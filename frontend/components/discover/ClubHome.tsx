@@ -363,17 +363,28 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
             what DUM Club is before the first scroll. Deliberately small so
             the search-and-pills-first layout from the mock stays intact. */}
         {homeVariant && (
-          <div className="mb-4">
-            <h1 className="text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
-              Your local shops, selling live.
-            </h1>
-            <p className="mt-0.5 text-sm text-secondary">
-              Watch nearby businesses go live, buy direct, and earn points at
-              every shop on DUM Club.{" "}
-              <a href="#demo" className="font-semibold text-mint-text hover:underline">
-                Own a business? See how it works ↓
-              </a>
-            </p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
+                Your local shops, selling live.
+              </h1>
+              <p className="mt-0.5 text-sm text-secondary">
+                Watch nearby businesses go live, buy direct, and earn points at
+                every shop on DUM Club.{" "}
+                <a href="#demo" className="font-semibold text-mint-text hover:underline">
+                  See how it works ↓
+                </a>
+              </p>
+            </div>
+            {/* Merchants, not shoppers, are the scarce input right now —
+                one prominent, unmissable path to /merchant above the fold
+                (browser audit 2026-07-02). */}
+            <Link
+              href="/merchant"
+              className="shrink-0 rounded-full bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink shadow-sm transition hover:opacity-90"
+            >
+              List your business
+            </Link>
           </div>
         )}
 
