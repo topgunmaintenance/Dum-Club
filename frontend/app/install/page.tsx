@@ -92,7 +92,7 @@ export default function InstallPage() {
   // origin (which also flips the step true via isLive).
   useEffect(() => {
     try {
-      window.sessionStorage.setItem("dum-install-seen", "1");
+      window.localStorage.setItem("dum-install-seen", "1");
     } catch {
       // ignore
     }

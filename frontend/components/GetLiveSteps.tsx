@@ -94,7 +94,8 @@ export function GetLiveSteps({
   useEffect(() => {
     try {
       setInstallSeen(
-        window.sessionStorage.getItem("dum-install-seen") === "1",
+        window.localStorage.getItem("dum-install-seen") === "1" ||
+          window.sessionStorage.getItem("dum-install-seen") === "1",
       );
     } catch {
       // Private mode or disabled storage — keep false; relying

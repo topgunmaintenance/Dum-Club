@@ -154,6 +154,11 @@ export default function MerchantPage() {
   // checklist JSX downstream actually renders. The JSX itself
   // still gates on merchant + firstProject + offer-fetch state.
   const [hasOffer, setHasOffer] = useState(false);
+  // True once the async checklist signals (first project -> offers +
+  // live-status) have settled. Until then the checklist shows a
+  // "checking" line instead of a false low count - a fresh session
+  // used to flash "1 of 5" while the fetches were still in flight.
+  const [signalsReady, setSignalsReady] = useState(false);
   const [installSeen, setInstallSeen] = useState(false);
   const [qrPrinted, setQrPrinted] = useState(false);
   const [stepLive, setStepLive] = useState(false);
@@ -207,8 +212,18 @@ export default function MerchantPage() {
   // branch the early returns below ultimately pick.
   useEffect(() => {
     try {
-      setInstallSeen(window.sessionStorage.getItem("dum-install-seen") === "1");
-      setQrPrinted(window.sessionStorage.getItem("dum-qr-seen") === "1");
+      // localStorage so the one-time onboarding flags survive new
+      // browser sessions (they used to reset the checklist to 1/5 on
+      // every fresh session). sessionStorage read kept for sessions
+      // that set the flag before this change deployed.
+      setInstallSeen(
+        window.localStorage.getItem("dum-install-seen") === "1" ||
+          window.sessionStorage.getItem("dum-install-seen") === "1",
+      );
+      setQrPrinted(
+        window.localStorage.getItem("dum-qr-seen") === "1" ||
+          window.sessionStorage.getItem("dum-qr-seen") === "1",
+      );
     } catch {
       // private mode — both stay false; non-blocking
     }
@@ -241,6 +256,7 @@ export default function MerchantPage() {
       } catch {
         // soft fail
       }
+      if (!cancelled) setSignalsReady(true);
     })();
     return () => {
       cancelled = true;
@@ -304,6 +320,10 @@ export default function MerchantPage() {
       }
     } catch {
       // non-fatal. checklist still renders, just lands on /dashboard
+    } finally {
+      // No project found -> the offers effect never runs; the
+      // checklist signals are as settled as they will get.
+      setTimeout(() => setSignalsReady(true), 0);
     }
   }
 
@@ -1267,6 +1287,10 @@ export default function MerchantPage() {
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Your Launch Checklist</div>
                 <div className="mt-1 text-sm font-semibold text-primary">
+                  {!signalsReady ? (
+                    <span className="text-secondary">Checking your setup…</span>
+                  ) : (
+                  <>
                   {completedSteps} of {totalSteps} complete.{" "}
                   <span className="text-brand-teal">
                     {!stepStripe
@@ -1281,10 +1305,12 @@ export default function MerchantPage() {
                               ? "Print your QR"
                               : "You are set. Go live and start selling."}
                   </span>
+                  </>
+                  )}
                 </div>
               </div>
               <div className="text-xs font-mono text-brand-teal">
-                {Math.round((completedSteps / totalSteps) * 100)}%
+                {signalsReady ? `${Math.round((completedSteps / totalSteps) * 100)}%` : ""}
               </div>
             </div>
 
