@@ -8533,7 +8533,7 @@ return (
                 {/* Sale timer — the host picks how long each drop runs BEFORE
                     tapping a product (owner request 2026-07-02). The next pin uses
                     this window; No timer = the sale stays open until unpinned. */}
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="mb-3 flex flex-wrap items-center gap-1.5">
                   <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-secondary">Sale timer</span>
                   <button
                     type="button"

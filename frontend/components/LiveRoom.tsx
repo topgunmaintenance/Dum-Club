@@ -305,7 +305,7 @@ export function LiveRoom({
         {/* soundPromptClass lifts "Tap for sound" above the offer card +
             Buy bar + points stack docked to the overlay's bottom edge
             (mobile spacing audit, 2026-07-02). */}
-        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" soundPromptClass="bottom-52" />
+        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" soundPromptClass={aucActive ? "bottom-64" : "bottom-52"} />
       </div>
 
       {/* Scrims — top + bottom gradients so the chrome stays legible over any
@@ -377,7 +377,7 @@ export function LiveRoom({
       </div>
 
       {/* ── Right action rail ── */}
-      <div className="absolute bottom-44 right-3 z-20 flex flex-col items-center gap-5">
+      <div className={`absolute right-3 z-20 flex flex-col items-center gap-5 ${aucActive ? "bottom-[16.5rem]" : pinnedOffer ? "bottom-[14.5rem]" : "bottom-28"}`}>
         <RailButton
           label={likeCount > 0 ? <span className="text-mint-text">{likeCount.toLocaleString()}</span> : "Like"}
           onClick={popHeart}
@@ -489,7 +489,7 @@ export function LiveRoom({
           overlapped the rail on narrow phones; spacing audit 2026-07-02). */}
       <div
         ref={chatWrapRef}
-        className="absolute bottom-40 left-2 z-20 w-[min(72vw,calc(100vw-6.75rem))] max-w-sm"
+        className={`absolute left-2 z-20 w-[min(72vw,calc(100vw-6.75rem))] max-w-sm ${aucActive ? "bottom-[16rem]" : pinnedOffer ? "bottom-[14rem]" : "bottom-24"}`}
       >
         {/* Label so the public broadcast chat reads as distinct from the
             private "Message the shop" DM bubble docked below it. */}
