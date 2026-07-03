@@ -273,13 +273,13 @@ local business already pays to sell online.
 
 What we replace, in one bill:
 - Delivery-app commissions (15-30% of every order)
-- Live-selling commissions (8% + processing on every sale)
+- Live-selling commissions (up to 8% + processing on every sale)
 - Loyalty software ($50-$300/month)
 - SMS / email retention tools ($20-$200/month)
 - Local-deal and review platforms (pay-to-rank ad spend)
 
 DUM Club charges a flat $39-$2,000+/month subscription plus
-a 1.5% sales fee — industry-low (vs Whatnot 8%, DoorDash 15-30%,
+a 1.5% sales fee — industry-low (vs Whatnot up to 8%, DoorDash 15-30%,
 CommentSold 2-3% plus subscription). The combined model
 includes tier-based viewer-hour limits, overage above the
 included viewer-hours, and the 1.5% sales fee on every paid
@@ -301,12 +301,12 @@ We are NOT:
 - A crypto app (Solana is future, optional, legal-pending)
 - An AI business launcher (deprecated — v1 positioning)
 - Taking Whatnot-scale percentages (we charge 1.5%; Whatnot
-  charges 8%; DoorDash charges 15-30%)
+  charges up to 8%; DoorDash charges 15-30%)
 
 We ARE positioned against (in expense-replacement context):
 - Delivery apps (15-30% per order vs our subscription
   $39-$299/month + 1.5% sales fee)
-- Whatnot (8% + 2.9% per sale vs our subscription
+- Whatnot (up to 8% + 2.9% per sale vs our subscription
   $39-$299/month + 1.5% sales fee)
 - Commonsold (2-3% + $499-$1,499/month vs our subscription
   $39-$299/month + 1.5% sales fee)
@@ -364,7 +364,7 @@ account.
 
 **Supporting line** (always pairs with the long form):
 > "Flat monthly subscription + 1.5% sales fee. Industry-low
-> (Whatnot takes 8%). Keep more of every sale."
+> (Whatnot takes up to 8%). Keep more of every sale."
 
 **Short form / scarcity pill / banner**:
 > "60 days free · Lock in founding pricing for life"
@@ -740,7 +740,7 @@ takedowns.
 | Expense line | What businesses pay today | DUM Club |
 |---|---|---|
 | Delivery-app commissions | 15-30% of every order | $39-$299/mo + 1.5% sales fee |
-| Live-selling commissions (Whatnot) | 8% + 2.9% per sale | $39-$299/mo + 1.5% sales fee |
+| Live-selling commissions (Whatnot) | up to 8% + 2.9% per sale | $39-$299/mo + 1.5% sales fee |
 | Live-selling commissions (Commonsold) | 2-3% per sale + $499-$1,499/mo | $39-$299/mo + 1.5% sales fee |
 | Loyalty software (Yotpo, Smile.io) | $50-$999/mo | Included every tier |
 | SMS / email retention | $20-$200/mo | Included Growth+ |
@@ -751,7 +751,7 @@ takedowns.
 
 | | Live-selling competitors | Loyalty / retention SaaS | Delivery apps | DUM Club |
 |---|---|---|---|---|
-| Fee model | 8%+ per sale | Monthly per tool | 15-30% per order | $39-$2,000+/mo + 1.5% sales fee |
+| Fee model | up to 8% + processing per sale | Monthly per tool | 15-30% per order | $39-$2,000+/mo + 1.5% sales fee |
 | Loyalty | None / basic | Their only product | None | Every tier |
 | AI retention | None | Add-on | None | Growth+ |
 | Local discovery | No | No | Listing only | Free + deals |

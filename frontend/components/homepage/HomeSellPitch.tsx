@@ -33,7 +33,7 @@ export function HomeSellPitch() {
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-relaxed text-secondary sm:text-base">
           Flat monthly subscription + 1.5% sales fee. Industry-low (Whatnot
-          takes 8%). Keep more of every sale.
+          takes up to 8%). Keep more of every sale.
         </p>
 
         {/* Stat row — the prove-it's-simple numbers, mirrored in the demo. */}

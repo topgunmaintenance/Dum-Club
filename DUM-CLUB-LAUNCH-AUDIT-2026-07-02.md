@@ -7,10 +7,14 @@
 The core loop is real and competitive: a business owner can sign up,
 connect Stripe, list offers, go live with one tap, run timed drops that
 actually close, chat with named customers as their shop, and take card
-payment at 1.5%. Whatnot's marketing site can't show any of that — it
-funnels consumers to an app download and sellers to an application
-queue with days of review. DUM Club's wedge is intact: **instant
-self-serve seller onboarding, flat pricing, own-your-customers.**
+payment at 1.5%. Correction from live verification of whatnot.com
+(2026-07-02): Whatnot now advertises instant, free, self-serve seller
+signup and fees of "up to 8% (varies by category), no monthly costs."
+So speed-to-signup is NOT a wedge, and flat-8% framing is not
+defensible. The durable wedges are: **flat cost at real volume**
+(1.5% + subscription beats up-to-8% + processing well before $10k/mo)
+and **own-your-customer** (QR at the register, embed on their own
+site, direct Stripe payouts, win-back, network-wide loyalty).
 
 ## Page grades (all verified this session)
 
@@ -50,24 +54,25 @@ trial auto-created → checklist (Stripe Connect → first offer → share
    until confirmed, the form's fine print should say "use the same
    sign-in method every time."
 3. **Stripe Connect is the heaviest step** (SSN/bank — Stripe's
-   requirement, unavoidable). The checklist frames it well. Whatnot
-   makes sellers wait days for approval; DUM Club's Stripe Express is
-   minutes. This is a selling point — outreach copy should say so.
+   requirement, unavoidable). The checklist frames it well. Note:
+   Whatnot also advertises instant free signup now, so onboarding
+   speed is parity, not a wedge — don't pitch it as one.
 4. Trial provisioning is best-effort: a Stripe outage doesn't fail
    signup (good), retried on next dashboard load (good).
 5. Repeat-trial identity gate exists (can't farm 60-day trials). Good.
 
 ## Whatnot comparison — where each side wins
 
-**DUM Club wins:** self-serve onboarding (minutes vs days of review),
-pricing (1.5% vs 8%+2.9%), merchant owns the customer (QR, embed on
-their own site, win-back), services sell as easily as products,
-transparent usage meter + caps.
+**DUM Club wins:** total cost at volume (flat subscription + 1.5%
+vs up to 8% + 2.9% processing), merchant owns the customer (QR, embed
+on their own site, direct Stripe payouts, win-back, network loyalty),
+services sell as easily as products, transparent usage meter + caps.
 
 **Whatnot still wins:** native mobile apps (DUM is mobile-web — fine
 at this stage), buyer network scale, giveaways/auctions polish
-(auctions exist in DUM; giveaways don't), seller analytics depth.
-None of these block launch; all are post-traction work.
+(auctions exist in DUM; giveaways don't), seller analytics depth,
+and onboarding speed is now a tie (their signup is instant and free
+too). None of these block launch; all are post-traction work.
 
 ## Ranked remaining items
 
@@ -82,5 +87,6 @@ None of these block launch; all are post-traction work.
 ## Bottom line
 
 Nothing in this audit blocks a business owner from signing up cleanly
-today, and the seller experience now beats Whatnot's on speed-to-live
-and cost. The site is launch-grade. The scarce input is merchants.
+today. The pitch that survives fact-checking: flat cost at volume and
+owning your customers — not signup speed, not a flat 8% strawman.
+The site is launch-grade. The scarce input is merchants.

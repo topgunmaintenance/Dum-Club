@@ -109,7 +109,7 @@ export default function PricingPage() {
 
         {/* Competitor context */}
         <div className="mx-auto mt-8 max-w-xl rounded-xl border border-[var(--state-live)]/30 bg-[var(--state-live)]/10 px-5 py-3 text-center text-sm text-secondary">
-          <span className="text-red-400 font-semibold">Whatnot charges 8% + 2.9% per sale.</span>{" "}
+          <span className="text-red-400 font-semibold">Whatnot charges up to 8% + 2.9% per sale.</span>{" "}
           Sell $10k/month and you lose $1,090.
           <span className="text-brand-teal font-semibold"> On DUM Club, you&apos;d pay $39/month + 1.5% ($189 at $10k).</span>
         </div>
@@ -177,7 +177,7 @@ export default function PricingPage() {
         {/* How it compares */}
         <div className="mt-10 grid gap-3 sm:grid-cols-4">
           {[
-            { icon: "💸", title: "Whatnot", desc: "8% + 2.9% per sale", bad: true },
+            { icon: "💸", title: "Whatnot", desc: "up to 8% + 2.9% per sale", bad: true },
             { icon: "💰", title: "Commonsold", desc: "% per sale + monthly", bad: true },
             { icon: "📍", title: "Google Maps", desc: "Pay to rank in ads", bad: true },
             { icon: "◆", title: "DUM Club", desc: "From $39/mo + 1.5%", bad: false },

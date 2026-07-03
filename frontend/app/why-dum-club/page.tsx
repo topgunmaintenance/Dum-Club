@@ -3,7 +3,7 @@
  *
  * Targeted at local business owners who already pay for Instagram
  * Live (no checkout, customers get rented to IG), DoorDash (15-30%
- * commission), or Whatnot (8% per sale). The page makes the
+ * commission), or Whatnot (up to 8% per sale). The page makes the
  * comparison concrete by trade: pizza shop, mechanic, boutique,
  * food truck, barber, gym, salon. Each trade has one specific
  * line of why DUM Club helps that exact business fill slow hours,
@@ -60,14 +60,14 @@ const COMPARE_ROWS: CompareRow[] = [
     label: "Who gets paid",
     ig: "You. But no checkout. Customers DM you and you handle it.",
     doordash: "DoorDash. Cut goes to them. You see net after commission.",
-    whatnot: "Whatnot. Cut goes to them. You see net after 8% + processing.",
+    whatnot: "Whatnot. Cut goes to them. You see net after up to 8% + processing.",
     dum: "You. Stripe sends every sale straight to your bank.",
   },
   {
     label: "Per-sale cut",
     ig: "0% (no checkout). You lose the customer data to the platform.",
     doordash: "15 to 30% of every order.",
-    whatnot: "8% per sale + 2.9% processing.",
+    whatnot: "Up to 8% per sale + 2.9% processing.",
     dum: "1.5% per sale. Stripe processing paid by the buyer.",
   },
   {
@@ -320,8 +320,8 @@ export default function WhyDumClubPage() {
 
           <p className="mt-6 text-center text-[12px] text-muted">
             Fees referenced are public list rates. DoorDash 15-30% range is
-            their published partnership tiers; Whatnot 8% is their standard
-            commission; Stripe processing 2.9% + $0.30 applies on every
+            their published partnership tiers; Whatnot&apos;s published rate is up to 8%, varying
+            by category; Stripe processing 2.9% + $0.30 applies on every
             platform but is paid by the buyer at checkout on DUM Club.
           </p>
         </Container>
@@ -418,7 +418,7 @@ export default function WhyDumClubPage() {
           <p className="mx-auto mt-4 max-w-xl text-secondary">
             Get 60 days free and lock in founding pricing for life. Flat
             monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot
-            takes 8%). Keep more of every sale.
+            takes up to 8%). Keep more of every sale.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

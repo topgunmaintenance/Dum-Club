@@ -4,12 +4,12 @@
  * FoundingModal — first-visit merchant-recruitment "pop".
  *
  * Shows once per visitor on the homepage ("/") only, after a short delay,
- * leading with the always-true fee hook (Whatnot 8% vs DUM Club 1.5%) and the
+ * leading with the always-true fee hook (Whatnot up to 8% vs DUM Club 1.5%) and the
  * canonical founding offer, with a "Claim Your Founding Spot" CTA to /merchant.
  *
  * Doctrine: canonical founding copy only (CLAUDE.md §3) — 60 days free + lock
  * in founding pricing for life; NEVER a live "X of 100" counter; "Whatnot takes
- * 8%" is the competitor's published fee. Dismissible (X / backdrop / Esc /
+ * 8%" is the competitor's top published fee (their site says ≤8%). Dismissible (X / backdrop / Esc /
  * "Maybe later"); the localStorage flag stops it nagging on return visits.
  * Self-gates so the giant homepage file needs no edit — mounted once in the
  * root layout.
@@ -94,7 +94,7 @@ export function FoundingModal() {
           <div className="mt-4 flex items-stretch gap-2 rounded-xl border border-default bg-surface-muted p-3">
             <div className="flex-1 text-center">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-secondary">Whatnot</div>
-              <div className="text-xl font-extrabold text-primary">8%</div>
+              <div className="text-xl font-extrabold text-primary">up to 8%</div>
             </div>
             <div className="flex items-center text-xs font-bold text-secondary">vs</div>
             <div className="flex-1 text-center">

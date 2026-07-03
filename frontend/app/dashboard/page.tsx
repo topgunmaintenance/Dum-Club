@@ -1353,7 +1353,7 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
                 <div className="mb-1 text-base font-bold text-primary">Start selling on DUM Club</div>
-                <p className="mb-4 text-sm text-secondary">Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1.5% sales fee per order (industry-low; Whatnot takes 8%).</p>
+                <p className="mb-4 text-sm text-secondary">Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1.5% sales fee per order (industry-low; Whatnot takes up to 8%).</p>
                 <Link
                   href="/merchant"
                   className="inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"

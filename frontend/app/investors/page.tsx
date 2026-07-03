@@ -96,7 +96,7 @@ const HIGHLIGHTS: Array<{
   {
     icon: ShieldCheck,
     title: "1.5% platform sales fee",
-    body: "Industry-low per-sale fee (vs Whatnot's 8%, DoorDash's 15-30%). Deducted from seller payouts via Stripe application_fee_amount. Stripe processing fees are paid by the buyer at checkout, not the seller.",
+    body: "Industry-low per-sale fee (vs Whatnot's up to 8%, DoorDash's 15-30%). Deducted from seller payouts via Stripe application_fee_amount. Stripe processing fees are paid by the buyer at checkout, not the seller.",
   },
   {
     icon: Radio,
