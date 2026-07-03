@@ -661,6 +661,26 @@ export default function MerchantPage() {
                / sell content sits below the form for hesitant
                readers; merchants who already know they want in see
                the form immediately. */}
+          {/* The deal, stated BEFORE any field (borrowed from Whatnot's
+              onboarding: expectations first, data second). Four plain
+              lines, no surprises later. The form itself is unchanged -
+              our one-page 60-second signup converts better than a
+              multi-screen wizard at this stage (founder call
+              2026-07-03), so the wizard idea was reduced to this. */}
+          <div className="mb-4 grid gap-2 rounded-2xl border border-default bg-surface-card p-4 sm:grid-cols-2 sm:p-5">
+            {[
+              ["💵", "One flat monthly fee + 1.5% per sale. Never more."],
+              ["🎁", "60 days free. Founding pricing locked for life."],
+              ["🏦", "Payouts straight to your bank. Buyers cover card fees."],
+              ["🤝", "Your customers stay yours. QR, your own site, win-back."],
+            ].map(([icon, line]) => (
+              <div key={line} className="flex items-start gap-2.5">
+                <span className="text-base" aria-hidden="true">{icon}</span>
+                <span className="text-[13px] font-medium leading-snug text-primary">{line}</span>
+              </div>
+            ))}
+          </div>
+
           <div className="mb-6 rounded-2xl border border-default bg-brand-teal-soft p-6 sm:p-8">
             <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
               {programOpen ? "Claim your founding spot" : "Start a merchant account"}
