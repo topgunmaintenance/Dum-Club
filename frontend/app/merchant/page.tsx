@@ -529,13 +529,16 @@ export default function MerchantPage() {
 
           <button
             onClick={() => login()}
-            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover hover:"
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
           >
             Claim Your Founding Spot →
           </button>
 
           <p className="mt-2 text-[11px] text-secondary">
             Sign in with email or Google · Takes 30 seconds
+          </p>
+          <p className="mt-1 text-[11px] text-muted">
+            Tip: pick one sign-in method and stick with it, so your shop is always under one account.
           </p>
         </div>
 
@@ -547,7 +550,7 @@ export default function MerchantPage() {
           <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {[
               { n: "1", title: "Sign in", body: "Use your email or Google. No password to remember." },
-              { n: "2", title: "Enter business name", body: "One field. That's the whole signup." },
+              { n: "2", title: "Tell us about your shop", body: "Name, category, and one sentence about what you do. About a minute." },
               { n: "3", title: "Connect Stripe", body: "When you're ready to take payments. Money goes straight to your bank." },
               { n: "4", title: "Create your first offer", body: "Add a photo, set a price. Takes 30 seconds." },
               { n: "5", title: "You're live", body: "Share your link. Customers can buy immediately." },
