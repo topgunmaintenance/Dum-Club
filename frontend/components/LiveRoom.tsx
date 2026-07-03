@@ -302,10 +302,11 @@ export function LiveRoom({
     <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
       {/* ── Full-bleed video ── */}
       <div className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full">
-        {/* soundPromptClass lifts "Tap for sound" above the offer card +
-            Buy bar + points stack docked to the overlay's bottom edge
-            (mobile spacing audit, 2026-07-02). */}
-        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" soundPromptClass={aucActive ? "bottom-64" : "bottom-52"} />
+        {/* "Tap for sound" lives at the TOP of the video (TikTok-style),
+            clear of the chat input, action rail, offer card, and Buy bar
+            that all stack at the bottom (on-air mobile audit 2026-07-03:
+            the bottom positions kept colliding as the stack grew). */}
+        <IVSStageViewer projectId={projectId} userId={userId} fit="cover" soundPromptClass="top-28" />
       </div>
 
       {/* Scrims — top + bottom gradients so the chrome stays legible over any
