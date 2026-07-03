@@ -116,14 +116,17 @@ export function SubscriptionStatusBar({ getToken, stripeConnectStatus }: Props) 
   const stripe = stripeLabel(stripeConnectStatus);
 
   // ── Variant selection ───────────────────────────────────────
-  // Founder: grandfathered=true → $0/mo locked in for life.
+  // Founder: grandfathered=true -> founding pricing locked for life.
+  // Doctrine (CLAUDE.md §3): never quote a specific dollar amount as
+  // locked - the founding lock is on the TIER, and $0 implied the
+  // platform is free forever.
   if (status?.grandfathered) {
     return (
       <div className="mb-6 rounded-2xl border border-brand-teal/40 bg-brand-teal-soft px-4 py-3 sm:px-5">
         <div className="flex flex-col gap-y-1 text-xs font-semibold text-brand-navy sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:text-sm">
           <span className="font-bold text-brand-teal">◆ FOUNDING MERCHANT</span>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span>$0/mo locked in</span>
+            <span>Founding pricing locked for life</span>
             <span className="text-secondary">·</span>
             <span>1.5% sales fee</span>
             <span className="text-secondary">·</span>
