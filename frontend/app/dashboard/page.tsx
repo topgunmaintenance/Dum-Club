@@ -483,7 +483,22 @@ export default function DashboardPage() {
     analytics && Array.isArray(analytics.top_offers) && analytics.top_offers.length > 0
   );
   const hasMadeSale = Boolean(analytics && (analytics.total_orders || 0) > 0);
+
   const isPreSelling = Boolean(merchant) && Boolean(analytics) && !hasPostedOffer && !hasMadeSale;
+
+  // ── Dashboard tabs (simplification pass, 2026-07-03) ──
+  // One action-focused Overview; depth behind Storefronts / Orders /
+  // Analytics. Tabs only activate for a real merchant with at least one
+  // storefront — brand-new visitors keep the single guided flow.
+  const [dashTab, setDashTab] = useState<"overview" | "storefronts" | "orders" | "analytics">("overview");
+  // Also requires a business profile and post-first-sale state: a
+  // pre-selling merchant would land on empty Orders/Analytics tabs,
+  // so they keep the guided single-scroll flow until data exists.
+  const tabsActive = Boolean(user && merchant && projects.length > 0 && bizProfile && !isPreSelling);
+  const showOverview = !tabsActive || dashTab === "overview";
+  const showStorefronts = !tabsActive || dashTab === "storefronts";
+  const showOrders = !tabsActive || dashTab === "orders";
+  const showAnalytics = !tabsActive || dashTab === "analytics";
 
   // Core merchant data needed before the next-step card can show an
   // ACCURATE step. Until merchant + business profile + projects settle,
@@ -563,6 +578,33 @@ export default function DashboardPage() {
           />
         )}
 
+        {/* Tab bar — Whatnot-style seller hub: Overview is the action
+            surface; everything deeper lives one tap away. */}
+        {tabsActive && (
+          <div className="mb-6 flex flex-wrap gap-1 rounded-full border border-default bg-surface-card p-1 shadow-dum-card sm:inline-flex">
+            {([
+              ["overview", "Overview"],
+              ["storefronts", "Storefronts"],
+              ["orders", "Orders"],
+              ["analytics", "Analytics"],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setDashTab(id)}
+                aria-pressed={dashTab === id}
+                className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                  dashTab === id
+                    ? "bg-mint-fill text-mint-fill-ink shadow-sm"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Two-column hero row — the "go live, front and center" surface
             from the streamlined-dashboard handoff. LEFT is the dark navy
             Go-Live card (the single obvious entry point, replacing the
@@ -571,7 +613,7 @@ export default function DashboardPage() {
             wired to existing entry points / derived state — no new data,
             no new endpoints. Renders once core merchant data settles so
             the checklist and the Go-Live target are accurate. */}
-        {user && coreLoaded && (() => {
+        {showOverview && user && coreLoaded && (() => {
           const primary = projects.find((p) => p.status === "live") ?? projects[0] ?? null;
           const primaryRef = primary ? (primary.slug || primary.id?.toString() || "") : "";
           // Go Live routes to the existing per-project go-live entry
@@ -599,6 +641,63 @@ export default function DashboardPage() {
           ];
           const setupDone = setup.filter((s) => s.done).length;
           const setupComplete = setupDone === setup.length;
+          const shareable = primary?.status === "live";
+          // Fully set up: ONE primary card, one dominant CTA. The
+          // completed checklist is noise once everything is green
+          // (dashboard simplification, browser audit 2026-07-03), and
+          // Share-your-shop merges in as the single secondary action.
+          if (setupComplete) {
+            return (
+              <div className="mb-8 rounded-2xl bg-dum-navy-card p-6 text-white shadow-dum-dark sm:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Eyebrow tone="live" className="text-dum-live-accent">
+                    Ready when you are
+                  </Eyebrow>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white/50">
+                    Setup complete
+                  </span>
+                </div>
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
+                  Go live and start selling.
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-dum-navy-body">
+                  Feature your offers, talk to customers, and take orders in real time. Your followers get notified the moment you start.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Link
+                    href={goLiveHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-coral px-6 py-3 text-sm font-bold text-white shadow-dum-coral transition hover:opacity-90"
+                  >
+                    <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+                    </span>
+                    Go Live now
+                  </Link>
+                  {shareable && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${window.location.origin}/project/${primaryRef}`;
+                        navigator.clipboard.writeText(url).catch(() => {});
+                        showNotice("success", "Link copied. Share it with your audience.");
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                    >
+                      <Copy className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                      Share your shop
+                    </button>
+                  )}
+                  <Link
+                    href="/orders"
+                    className="text-sm font-semibold text-white/70 underline-offset-4 transition hover:text-white hover:underline"
+                  >
+                    View orders
+                  </Link>
+                </div>
+              </div>
+            );
+          }
           return (
             <div className="mb-8 grid gap-4 lg:grid-cols-2">
               {/* LEFT — dark navy Go-Live card */}
@@ -675,11 +774,23 @@ export default function DashboardPage() {
             merchant's lifecycle state via deriveMerchantState. Single
             source of truth shared with /merchant and /project/[id]
             owner-view. */}
-        {user && !coreLoaded && (
+        {showOverview && user && !coreLoaded && (
           <div className="mb-8 h-28 w-full animate-pulse rounded-3xl bg-surface-card" aria-busy="true" />
         )}
-        {user && coreLoaded && (() => {
+        {showOverview && user && coreLoaded && (() => {
           const primary = projects.find((p) => p.status === "live") ?? projects[0] ?? null;
+          const rawDescNS = (primary?.description || "").trim();
+          const setupCompleteNS =
+            Boolean(merchant) &&
+            merchant?.stripe_connect_status === "verified" &&
+            Boolean(bizProfile) &&
+            !!rawDescNS &&
+            rawDescNS !== "Auto-created from dashboard." &&
+            !rawDescNS.startsWith("Project workspace for ") &&
+            Boolean((merchant?.business_type || "").trim());
+          // Fully set up -> the merged hero above is the one ask on
+          // screen; a second next-step card would repeat it.
+          if (setupCompleteNS) return null;
           const offerCount = Array.isArray(analytics?.top_offers)
             ? analytics.top_offers.length
             : 0;
@@ -715,59 +826,10 @@ export default function DashboardPage() {
           );
         })()}
 
-        {/* Stat row — the streamlined dashboard's at-a-glance tiles
-            (mono labels + big numbers). Storefronts / Orders / Sales,
-            replacing the scattered "2 / Live / Signed in" tiles. Orders
-            and Sales read from the analytics roll-up the page already
-            loads; both fall back to 0 until that settles, so the tiles
-            never block render. Auth / Stripe state now lives in the
-            SubscriptionStatusBar above. */}
-        {(() => {
-          const ordersCount =
-            typeof analytics?.total_orders === "number" ? analytics.total_orders : 0;
-          const salesUsd =
-            typeof analytics?.total_revenue_usd === "number" ? analytics.total_revenue_usd : 0;
-          const salesLabel =
-            salesUsd >= 1000
-              ? `$${(salesUsd / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
-              : `$${salesUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-          return (
-            <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Storefronts (the published / draft shops the merchant owns). */}
-              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
-                <Eyebrow tone="muted">Storefronts</Eyebrow>
-                <div className="mt-2 font-mono text-3xl font-bold text-primary">
-                  {projects.length}
-                </div>
-                {user && projects.length === 0 ? (
-                  <p className="mt-2 text-[11px] leading-snug text-muted">
-                    Don&apos;t see your shop? It might be linked to a different account. Sign in with the same email or Google you used at signup.
-                  </p>
-                ) : (
-                  <div className="mt-1 text-[11px] text-muted">live &amp; ready</div>
-                )}
-              </div>
-
-              {/* Orders — completed purchases across all storefronts. */}
-              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
-                <Eyebrow tone="muted">Orders</Eyebrow>
-                <div className="mt-2 font-mono text-3xl font-bold text-primary">
-                  {ordersCount.toLocaleString()}
-                </div>
-                <div className="mt-1 text-[11px] text-muted">all time</div>
-              </div>
-
-              {/* Sales — total earned, emerald per the handoff. */}
-              <div className="rounded-2xl border border-default bg-surface-card p-6 shadow-dum-card">
-                <Eyebrow tone="muted">Sales</Eyebrow>
-                <div className="mt-2 font-mono text-3xl font-bold text-mint-text">
-                  {salesLabel}
-                </div>
-                <div className="mt-1 text-[11px] text-muted">total earned</div>
-              </div>
-            </div>
-          );
-        })()}
+        {/* (Old Storefronts/Orders/Sales tile row removed — it repeated
+            Sales/Revenue from Business Performance below. One stat strip
+            now, per the dashboard simplification 2026-07-03. Storefront
+            count lives in the Storefronts tab header.) */}
 
         {/* DUM Points — HIDDEN per CLAUDE.md §12 rule 4: "Never show
             DUM Points in navbar until Phase 2." Same rule applies to
@@ -780,7 +842,7 @@ export default function DashboardPage() {
             the dashboard surface. Re-enable when Phase 2 unlocks. */}
 
         {/* Business Profile */}
-        {user && (
+        {showStorefronts && user && (
           <div className="mb-6">
             {/* Business switcher — only when the owner has more than one.
                 Single-business owners never see this. */}
@@ -959,7 +1021,7 @@ export default function DashboardPage() {
 
         {/* Business Analytics. Hidden in STATE_1 (pre-selling) — an all-
             zero performance panel only confuses a brand-new merchant. */}
-        {bizProfile && analytics && !isPreSelling && (
+        {showOverview && bizProfile && analytics && !isPreSelling && (
           <div className="mb-6">
             <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">Business Performance</div>
 
@@ -998,7 +1060,15 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
 
+        {/* Analytics depth — per-project + top offers (Analytics tab). */}
+        {showAnalytics && bizProfile && analytics && !isPreSelling && (
+          <div className="mb-6">
+            {tabsActive && (
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">Analytics</div>
+            )}
             {/* Per-project breakdown */}
             {analytics.projects && analytics.projects.length > 0 && (
               <div className="mb-4 rounded-2xl border border-default bg-surface-card p-5">
@@ -1046,6 +1116,27 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Empty state */}
+            {analytics.total_orders === 0 && analytics.total_views === 0 && (
+              <div className="rounded-2xl border border-dashed border-default bg-surface-card p-6 text-center">
+                <div className="text-sm font-medium text-secondary">No activity yet</div>
+                <p className="mt-1 text-xs text-muted">Share your storefront links to start getting views and sales</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Orders tab — recent sales + the full orders page. */}
+        {showOrders && bizProfile && analytics && !isPreSelling && (
+          <div className="mb-6">
+            {tabsActive && (
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">Orders</div>
+                <Link href="/orders" className="text-xs font-bold text-mint-text transition hover:opacity-80">
+                  All orders &rarr;
+                </Link>
+              </div>
+            )}
             {/* Recent orders */}
             {analytics.recent_orders && analytics.recent_orders.length > 0 && (
               <div className="rounded-2xl border border-default bg-surface-card p-5">
@@ -1069,11 +1160,10 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Empty state */}
-            {analytics.total_orders === 0 && analytics.total_views === 0 && (
+            {tabsActive && (!analytics.recent_orders || analytics.recent_orders.length === 0) && (
               <div className="rounded-2xl border border-dashed border-default bg-surface-card p-6 text-center">
-                <div className="text-sm font-medium text-secondary">No activity yet</div>
-                <p className="mt-1 text-xs text-muted">Share your storefront links to start getting views and sales</p>
+                <div className="text-sm font-medium text-secondary">No orders yet</div>
+                <p className="mt-1 text-xs text-muted">Share your storefront link to land the first one</p>
               </div>
             )}
           </div>
@@ -1084,7 +1174,7 @@ export default function DashboardPage() {
              Business / Enterprise; renders an upgrade card otherwise.
              Both states only render once the merchant record has loaded
              (so we don't flash the locked card to a Pro merchant). */}
-        {bizProfile && merchant && (
+        {showAnalytics && bizProfile && merchant && (
           hasAnalyticsAccess(merchant) ? (
             analytics?.drive_your_market ? (
               <DriveYourMarketAnalytics
@@ -1098,7 +1188,7 @@ export default function DashboardPage() {
         )}
 
         {/* Guest-chat inbox: messages from storefront visitors. */}
-        {projects.length > 0 && (
+        {showOverview && projects.length > 0 && (
           <div className="mt-8">
             <MerchantInbox
               projects={projects.map((p) => ({
@@ -1121,6 +1211,7 @@ export default function DashboardPage() {
              reads as the page's focus. Pop-In + Embed-Display Mode
              content is unchanged inside the drawer — one click to
              expand. */}
+        {showStorefronts && (
         <details id="storefront-tools" className="group mb-6 scroll-mt-24 rounded-2xl border border-default bg-surface-card open:shadow-dum-card">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-primary hover:text-mint-text">
             <span>Customize your storefront widget</span>
@@ -1250,8 +1341,9 @@ export default function DashboardPage() {
         })()}
           </div>
         </details>
+        )}
 
-        {bizProfile && analyticsLoading && !analytics && (
+        {showOverview && bizProfile && analyticsLoading && !analytics && (
           <div className="mb-6 rounded-2xl border border-default bg-surface-card p-6 text-center">
             <div className="text-sm text-secondary">Loading analytics...</div>
           </div>
@@ -1260,7 +1352,7 @@ export default function DashboardPage() {
         {/* Next best action — hidden when needsFirstOffer is true so the
             primary "Post your first offer" card above is the only thing
             asking for the merchant's attention. */}
-        {!needsFirstOffer &&
+        {!tabsActive && !needsFirstOffer &&
          (projects.length === 0 || projects.some((p) => p.status === "live") || hasMadeSale) && (
         <div className="mb-6 rounded-2xl border border-default bg-surface-muted/20 p-5">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">What to do next</div>
@@ -1322,7 +1414,7 @@ export default function DashboardPage() {
         {/* Hidden for STATE_1 merchants — a brand-new merchant has no
             orders yet, so the My Orders card is just noise. Non-merchants
             still see the Become a Merchant card. */}
-        {!(merchant && isPreSelling) && (
+        {!merchant && (
         <div className={`mb-10 grid gap-4 ${merchant ? "" : "sm:grid-cols-2"}`}>
           {!merchant && (
             <Link
@@ -1347,7 +1439,7 @@ export default function DashboardPage() {
             those Share/Manage/View-orders cards all assume offers
             already exist, and we want the primary "Post your first
             offer" card to be the only ask on screen for that state. */}
-        {user && !needsFirstOffer && (
+        {!tabsActive && user && !needsFirstOffer && (
           <div className="mb-10">
             {projects.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
@@ -1411,7 +1503,7 @@ export default function DashboardPage() {
         )}
 
         {/* Projects list */}
-        {(() => {
+        {showStorefronts && (() => {
           // Business-name lookup for the per-storefront pill.
           const bizNameById: Record<string, string> = {};
           for (const b of businesses) bizNameById[b.id] = b.business_name;
