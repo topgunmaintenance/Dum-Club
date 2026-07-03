@@ -375,6 +375,28 @@ async def update_offer(
     supabase = get_client()
     privy_id = current_user.get("sub")
 
+    # Platform takedown guard (mig 086): an admin-removed offer cannot
+    # be reactivated by the merchant. Everything else about it stays
+    # editable so they can fix and appeal.
+    if body.is_active is True:
+        try:
+            flagged = (
+                supabase.table("offers")
+                .select("admin_removed")
+                .eq("id", offer_id)
+                .limit(1)
+                .execute()
+            )
+            if flagged.data and flagged.data[0].get("admin_removed"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="This offer was removed by DUM Club and can't be relisted. Contact support.",
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            print(f"[offers] admin_removed check failed for {offer_id}: {exc!r}")
+
     # Fetch the offer to find its project
     offer_res = (
         supabase.table("offers")

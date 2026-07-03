@@ -11,6 +11,14 @@ class RejectBody(BaseModel):
     reason: str
 
 
+class SuspendBody(BaseModel):
+    reason: str
+
+
+class TakedownBody(BaseModel):
+    reason: str
+
+
 @router.get("/projects/pending")
 async def get_pending_projects(_admin=Depends(require_admin)):
     supabase = get_client()
@@ -42,6 +50,98 @@ async def reject_project(project_id: str, body: RejectBody, _admin=Depends(requi
             "rejection_reason": body.reason,
         }
     ).eq("id", project_id).execute()
+    return {"success": True}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Enforcement (mig 086) — kick out a merchant or take down one offer.
+# ─────────────────────────────────────────────────────────────────────
+
+@router.post("/merchants/{merchant_id}/suspend")
+async def suspend_merchant(merchant_id: str, body: SuspendBody, _admin=Depends(require_admin)):
+    """Platform suspension: blocks Go Live + checkout (both already gate
+    on is_merchant_suspended) and unpublishes the merchant's storefronts
+    so they leave Discover. Reversible via /unsuspend; storefronts stay
+    draft until the merchant republishes."""
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .update({
+            "admin_suspended": True,
+            "admin_suspended_reason": body.reason,
+            "admin_suspended_at": "now()",
+        })
+        .eq("id", merchant_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    privy_id = res.data[0].get("owner_privy_id")
+    unpublished = 0
+    if privy_id:
+        proj = (
+            supabase.table("projects")
+            .update({"status": "draft", "is_live": False})
+            .eq("privy_id", privy_id)
+            .eq("is_deleted", False)
+            .execute()
+        )
+        unpublished = len(proj.data or [])
+    print(f"[admin] suspended merchant {merchant_id} ({unpublished} storefronts unpublished): {body.reason}")
+    return {"success": True, "storefronts_unpublished": unpublished}
+
+
+@router.post("/merchants/{merchant_id}/unsuspend")
+async def unsuspend_merchant(merchant_id: str, _admin=Depends(require_admin)):
+    """Clears platform suspension. Storefronts stay draft - the merchant
+    republishes themselves, which doubles as their acknowledgement."""
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .update({"admin_suspended": False})
+        .eq("id", merchant_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    return {"success": True}
+
+
+@router.post("/offers/{offer_id}/takedown")
+async def takedown_offer(offer_id: str, body: TakedownBody, _admin=Depends(require_admin)):
+    """Single-offer removal: deactivates the offer and flags it so the
+    merchant cannot relist it (the offers PATCH refuses is_active=true
+    while admin_removed). The rest of the shop is untouched."""
+    supabase = get_client()
+    res = (
+        supabase.table("offers")
+        .update({
+            "is_active": False,
+            "admin_removed": True,
+            "admin_removed_reason": body.reason,
+        })
+        .eq("id", offer_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    print(f"[admin] took down offer {offer_id}: {body.reason}")
+    return {"success": True}
+
+
+@router.post("/offers/{offer_id}/restore")
+async def restore_offer(offer_id: str, _admin=Depends(require_admin)):
+    """Clears a takedown. Leaves is_active=false - the merchant flips it
+    back on themselves."""
+    supabase = get_client()
+    res = (
+        supabase.table("offers")
+        .update({"admin_removed": False, "admin_removed_reason": None})
+        .eq("id", offer_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Offer not found")
     return {"success": True}
 
 
