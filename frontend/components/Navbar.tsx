@@ -436,7 +436,7 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/dum-logo-icon.png"
+        src="/logo/dum-club-D-mark.png"
         alt=""
         className={isMobile ? "h-7 w-auto" : "h-8 w-auto"}
         aria-hidden="true"
