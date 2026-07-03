@@ -214,7 +214,12 @@ async def create_offer(
     _verify_project_owner(supabase, project_uuid, privy_id)
     print(f"[offers] CREATE: owner verified for project={project_uuid}")
 
-    _assert_merchant_stripe_verified(supabase, privy_id)
+    # Stripe gate REMOVED from creation (browser audit 2026-07-03):
+    # requiring SSN/bank before the first offer was the heaviest ask at
+    # the most fragile moment, and Whatnot sequences it after. Merchants
+    # now build + preview their whole catalog first. Publishing the
+    # storefront and checkout both still require verified Stripe, so a
+    # buyer can never reach an unpayable shop.
 
     insert = {
         "project_id": project_uuid,
@@ -411,8 +416,8 @@ async def update_offer(
     project_id = offer_res.data[0]["project_id"]
     _verify_project_owner(supabase, project_id, privy_id)
 
-    if body.is_active is True:
-        _assert_merchant_stripe_verified(supabase, privy_id)
+    # (Stripe assert removed here too - see create_offer. Publish +
+    # checkout carry the gate.)
 
     if body.offer_type and body.offer_type not in VALID_OFFER_TYPES:
         raise HTTPException(

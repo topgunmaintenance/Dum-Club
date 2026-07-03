@@ -1352,10 +1352,10 @@ export default function MerchantPage() {
                   <>
                   {completedSteps} of {totalSteps} complete.{" "}
                   <span className="text-brand-teal">
-                    {!stepStripe
-                      ? "Connect Stripe to start getting paid (bank + ID, about 5 minutes, verifies fast)"
-                      : !hasOffer
-                        ? "Add your first offer"
+                    {!hasOffer
+                      ? "Add your first offer"
+                      : !stepStripe
+                        ? "Connect Stripe to start getting paid (bank + ID, about 5 minutes, verifies fast)"
                         : !stepLiveEver
                           ? "Go live for the first time"
                           : !stepSnippet
@@ -1382,7 +1382,43 @@ export default function MerchantPage() {
             </div>
 
             <ul className="space-y-3">
-              {/* Step 1 — Connect Stripe */}
+              {/* Step 1 — Add your first offer */}
+              <li className="flex items-start gap-3">
+                {hasOffer ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
+                ) : stepStripe ? (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                ) : (
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
+                )}
+                <div className="flex-1">
+                  <div className={`text-sm font-semibold ${hasOffer ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                    Add your first offer
+                  </div>
+                  <div className="text-xs text-secondary">
+                    {hasOffer
+                      ? "You have a live product or service customers can buy."
+                      : "Pick one thing you sell and set a price."}
+                  </div>
+                  {!hasOffer && (
+                    // Always route through /dashboard/post — the composer
+                    // that calls /api/merchant/storefront/ensure on load,
+                    // so the shop is created-or-found before the offer is
+                    // added. The old `firstProject ? .../manage#offers`
+                    // branch sent merchants who already had a storefront to
+                    // the manage page, which has no offer form (settings /
+                    // availability / bookings only) — a dead-end.
+                    <Link
+                      href="/dashboard/post"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                    >
+                      Add offer →
+                    </Link>
+                  )}
+                </div>
+              </li>
+
+              {/* Step 2 — Connect Stripe (after the fun part: offers first, SSN second) */}
               <li className="flex items-start gap-3">
                 {stepStripe ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
@@ -1426,42 +1462,6 @@ export default function MerchantPage() {
                         </p>
                       )}
                     </>
-                  )}
-                </div>
-              </li>
-
-              {/* Step 2 — Add your first offer */}
-              <li className="flex items-start gap-3">
-                {hasOffer ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
-                ) : stepStripe ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
-                ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
-                )}
-                <div className="flex-1">
-                  <div className={`text-sm font-semibold ${hasOffer ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
-                    Add your first offer
-                  </div>
-                  <div className="text-xs text-secondary">
-                    {hasOffer
-                      ? "You have a live product or service customers can buy."
-                      : "Pick one thing you sell and set a price."}
-                  </div>
-                  {!hasOffer && (
-                    // Always route through /dashboard/post — the composer
-                    // that calls /api/merchant/storefront/ensure on load,
-                    // so the shop is created-or-found before the offer is
-                    // added. The old `firstProject ? .../manage#offers`
-                    // branch sent merchants who already had a storefront to
-                    // the manage page, which has no offer form (settings /
-                    // availability / bookings only) — a dead-end.
-                    <Link
-                      href="/dashboard/post"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
-                    >
-                      Add offer →
-                    </Link>
                   )}
                 </div>
               </li>
