@@ -114,6 +114,42 @@ vendors already in the tracker: Jersey Girl Cheese, Pickle-Licious,
 Bucha Booch, Bussin Butters, Oldwick Soup Co., Alstede Farms, and
 more. One Sunday = 20 pitches, in person, to pre-qualified sellers.
 
+---
+
+## The fact-check-proof comparison block (verified vs whatnot.com 2026-07-02)
+
+Every number below survives a prospect checking Whatnot's own site.
+Their seller page says "up to 8% (varies by category), no monthly
+costs" and signup is instant and free. So never pitch signup speed
+and never say "flat 8%." Pitch these two things only:
+
+**1. Flat cost at real volume.**
+> Whatnot takes up to 8% of every sale, plus 2.9% + $0.30 processing.
+> DUM Club is a flat monthly fee plus 1.5% per sale, and the buyer
+> covers card processing at checkout.
+>
+> At $10,000/month in sales: Whatnot at their top rate is about
+> $1,090 in fees. DUM Club on the $99 Growth tier is about $249.
+> That's roughly $841/month back in your pocket, every month.
+
+**2. You own your customers.**
+> On Whatnot, the buyers belong to Whatnot's feed. On DUM Club they
+> buy on YOUR page: your QR at the register, your link in bio, live
+> selling embedded on your own website, payouts straight to your
+> bank through Stripe, and automatic win-back texts that bring your
+> customers back to you, not to an app's algorithm.
+
+**If they say "but Whatnot is free to join":**
+> True, and so are we for the first 100 shops (60 days free, founding
+> pricing locked for life). The difference shows up when you sell:
+> their cut grows with every sale, ours stays flat.
+
+**If they say "Whatnot has way more buyers":**
+> Also true, for collectibles. Whatnot is cards, sneakers, coins.
+> Nobody is live-selling bread, cheese, or car detailing there. DUM
+> Club is built for local shops selling to local people, and your
+> existing customers are the first audience, not strangers.
+
 ## Tracker
 
 `outreach-tracker.csv` sits next to this file — now pre-loaded with
