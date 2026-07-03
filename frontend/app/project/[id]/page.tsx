@@ -1322,6 +1322,10 @@ export default function ProjectPage() {
     setOfferFormOpen(true);
     setOfferImageFile(null);
     setOfferImagePreview(null);
+    // The form lives inside #offers-section, which is hidden in the
+    // owner manage view until offerFormOpen flips true. Wait a frame
+    // for it to un-hide, then bring it on screen.
+    setTimeout(() => scrollToSection("offer-form"), 60);
   }
 
   function convertStoreItemToOffer(item: StoreItem) {
@@ -6578,7 +6582,7 @@ return (
           with Pin/Edit, so rendering the full public catalog again below
           it duplicated the whole page. Owners preview the real catalog
           via "View as customer"; visitors are unaffected. */}
-      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${(project?.is_live && isIVSSession(project)) || (showOwnerInlineUi && ownerManage && !project?.is_live) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!offerFormOpen && ((project?.is_live && isIVSSession(project)) || (showOwnerInlineUi && ownerManage && !project?.is_live)) ? "hidden" : ""}`}>
         {!ownerManage && (<>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -7566,7 +7570,7 @@ return (
 
         {/* Owner: create/edit offer form (backend offers) */}
         {isOwner && offerFormOpen && offerEditing && (
-          <div className="mt-5 rounded-2xl border border-default bg-surface-muted p-4 sm:p-5 space-y-4">
+          <div id="offer-form" className="mt-5 scroll-mt-28 rounded-2xl border border-default bg-surface-muted p-4 sm:p-5 space-y-4">
             <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
               {offerEditing.id ? "Edit Offer" : "New Offer"}
             </div>
