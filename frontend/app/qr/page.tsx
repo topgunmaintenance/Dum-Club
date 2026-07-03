@@ -35,7 +35,7 @@ export default function QrPage() {
   // seen + can print their code.
   useEffect(() => {
     try {
-      window.sessionStorage.setItem("dum-qr-seen", "1");
+      window.localStorage.setItem("dum-qr-seen", "1");
     } catch {
       // ignore
     }
