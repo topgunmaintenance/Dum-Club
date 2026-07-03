@@ -6412,7 +6412,13 @@ return (
                 <LiveChatIVS
                   projectId={id as string}
                   userId={authUser?.privyId || ""}
-                  userName={chatDisplayName(authUser, "Host")}
+                  userName={
+                    // The host speaks AS THE SHOP (owner request 2026-07-02):
+                    // viewers should see "Topgun Maintenance LLC", not an
+                    // account tag. Falls back to the account name only if
+                    // the project title is somehow empty.
+                    (projectName || "").trim() || chatDisplayName(authUser, "Host")
+                  }
                   isHost={true}
                   onRequestSignIn={login}
                   getToken={getToken}
@@ -6508,7 +6514,13 @@ return (
             <LiveChatIVS
               projectId={id as string}
               userId={authUser?.privyId || ""}
-              userName={chatDisplayName(authUser, "Host")}
+              userName={
+                    // The host speaks AS THE SHOP (owner request 2026-07-02):
+                    // viewers should see "Topgun Maintenance LLC", not an
+                    // account tag. Falls back to the account name only if
+                    // the project title is somehow empty.
+                    (projectName || "").trim() || chatDisplayName(authUser, "Host")
+                  }
               isHost={true}
               onRequestSignIn={login}
               getToken={getToken}
