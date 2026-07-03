@@ -16,6 +16,8 @@ import httpx
 import stripe
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from pydantic import BaseModel
+
+from services.account_link import ensure_account_link
 from typing import Optional
 from db.supabase import get_client
 from auth.privy import get_current_user
@@ -494,6 +496,13 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
 
     supabase = get_client()
 
+    # Link this DID to its canonical account BEFORE creating anything,
+    # so a returning owner who signed in with a different method lands
+    # on their existing account instead of forking a new identity
+    # (multi-DID fragmentation - bit founding merchant #1). Best-effort;
+    # returns None when PRIVY_APP_SECRET isn't configured.
+    ensure_account_link(supabase, privy_id)
+
     # Check if merchant already exists
     existing = (
         supabase.table("merchants")
@@ -870,6 +879,10 @@ async def get_my_merchant(current_user: dict = Depends(get_current_user)):
         maybe_claim_seed_profiles(privy_id)
     except Exception as claim_exc:
         print(f"[merchant/me] auto-claim failed: {claim_exc!r}")
+
+    # Runtime account linking: map this DID to its canonical account
+    # by server-verified email (idempotent; single select once linked).
+    ensure_account_link(get_client(), privy_id)
 
     supabase = get_client()
     res = (
