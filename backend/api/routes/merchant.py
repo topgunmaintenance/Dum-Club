@@ -226,6 +226,10 @@ FOUNDING_CAP = 100
 class MerchantSignup(BaseModel):
     business_name: str
     business_type: Optional[str] = None
+    # Self-identity: 'individual' | 'registered_business' (migration 085).
+    # Optional - older clients omit it; anything outside the allowed set
+    # is dropped rather than failing the signup.
+    entity_type: Optional[str] = None
     # Merchant-supplied "what we do" string. Stored on the auto-created
     # project row. The /merchant signup form gates client-side at >=20
     # chars; the backend stores whatever it receives (any length, or
@@ -547,6 +551,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
         "business_profile_id": bp_id,
         "business_name": body.business_name,
         "business_type": body.business_type,
+        "entity_type": body.entity_type if body.entity_type in ("individual", "registered_business") else None,
         "location_city": body.location_city,
         "location_state": body.location_state,
         "subscription_price_usd": 0,
