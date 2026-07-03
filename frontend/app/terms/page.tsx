@@ -37,6 +37,12 @@ export default function TermsPage() {
             <p>
               You are responsible for the accuracy of your business information, the legality of your offers, and compliance with applicable laws. You must not use DUM Club for fraudulent, illegal, or harmful purposes.
             </p>
+            <p className="mt-3">
+              The following may not be sold or promoted on DUM Club: weapons, ammunition, and explosives; illegal drugs and drug paraphernalia; counterfeit or stolen goods; recalled products; live animals; adult content; and any age-restricted product (including alcohol, tobacco, and vaping products) sold without the legally required verification. Sellers must actually deliver what they show on camera.
+            </p>
+            <p className="mt-3">
+              DUM Club may remove any offer, unpublish any storefront, or suspend any account that violates these rules or misrepresents itself at signup, with or without notice. Suspended accounts cannot broadcast or accept new orders. Payment-related restrictions from Stripe apply in addition to these rules.
+            </p>
           </section>
 
           <section>

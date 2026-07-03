@@ -1219,7 +1219,7 @@ def is_merchant_suspended(privy_id: Optional[str]) -> bool:
         sb = get_client()
         res = (
             sb.table("merchants")
-            .select("subscription_status, grandfathered")
+            .select("subscription_status, grandfathered, admin_suspended")
             .eq("owner_privy_id", privy_id)
             .limit(1)
             .execute()
@@ -1227,6 +1227,11 @@ def is_merchant_suspended(privy_id: Optional[str]) -> bool:
         if not res.data:
             return False
         row = res.data[0]
+        # Platform enforcement (mig 086) trumps everything - including
+        # grandfathering. An admin-suspended merchant cannot go live or
+        # take orders no matter what their billing state says.
+        if row.get("admin_suspended"):
+            return True
         if row.get("grandfathered"):
             return False
         return row.get("subscription_status") == "suspended"
