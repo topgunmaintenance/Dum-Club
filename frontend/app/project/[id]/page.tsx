@@ -809,6 +809,10 @@ export default function ProjectPage() {
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const [loadingProject, setLoadingProject] = useState(true);
+  // True once the first offers fetch has resolved. Gates the "Coming
+  // soon" empty state so a first-time visitor never sees placeholder
+  // copy flash before the real offers paint (browser audit 2026-07-02).
+  const [offersLoaded, setOffersLoaded] = useState(false);
   const [ownerBizProfile, setOwnerBizProfile] = useState<{
     business_name?: string;
     verification_status?: string;
@@ -1256,6 +1260,8 @@ export default function ProjectPage() {
     } catch (err) {
       console.error(err);
       setOffers([]);
+    } finally {
+      setOffersLoaded(true);
     }
   }
 
@@ -3982,7 +3988,11 @@ const heroUtility =
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {loadingProject ? (
+                  <div aria-hidden="true" className="h-8 w-56 animate-pulse rounded-lg bg-surface-muted sm:h-9" />
+                ) : (
                 <h1 className="text-2xl font-bold leading-tight text-brand-navy sm:text-3xl">{projectName}</h1>
+                )}
                 {verified && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-mint-card-border bg-mint-card px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-mint-text">
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l3.5 3.5L13 4" /></svg>
@@ -4481,9 +4491,13 @@ return (
                 </span>
               </div>
 
+              {loadingProject ? (
+                <div aria-hidden="true" className="mx-auto h-11 w-72 animate-pulse rounded-lg bg-surface-muted sm:h-16" />
+              ) : (
               <h1 className="text-4xl font-bold leading-tight text-brand-navy sm:text-6xl">
                 {projectName}
               </h1>
+              )}
 
               <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
                 {parsedAiOutput?.description || project?.description || ""}
@@ -8208,7 +8222,13 @@ return (
         {/* Empty state. For visitors, a clean "Coming soon" with a way
             to reach the merchant — never blank gray bars. For the owner,
             a prompt to create their first offer. */}
-        {offers.length === 0 && storeItems.length === 0 && (
+        {(loadingProject || !offersLoaded) && offers.length === 0 && storeItems.length === 0 && (
+          <div aria-hidden="true" className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="h-40 animate-pulse rounded-2xl bg-surface-muted" />
+            <div className="h-40 animate-pulse rounded-2xl bg-surface-muted" />
+          </div>
+        )}
+        {!loadingProject && offersLoaded && offers.length === 0 && storeItems.length === 0 && (
           <div className="mt-6 rounded-2xl border border-dashed border-default p-10 text-center">
             {isOwner ? (
               <>

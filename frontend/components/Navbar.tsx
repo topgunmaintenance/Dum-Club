@@ -267,9 +267,10 @@ export function Navbar() {
                 )}
 
                 {loading ? (
-                  <Button variant="secondary" size="md" disabled>
-                    Loading…
-                  </Button>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-10 w-24 animate-pulse rounded-full bg-surface-muted"
+                  />
                 ) : user ? (
                   <UserMenu
                     open={userMenuOpen}
@@ -381,9 +382,10 @@ export function Navbar() {
           {mounted && (
             <div className="px-5 py-6">
               {loading ? (
-                <Button variant="secondary" size="md" fullWidth disabled>
-                  Loading…
-                </Button>
+                <span
+                  aria-hidden="true"
+                  className="block h-11 w-full animate-pulse rounded-xl bg-surface-muted"
+                />
               ) : user ? (
                 <Button
                   variant="secondary"
