@@ -1020,6 +1020,16 @@ export default function MerchantPage() {
       case "missing_state":
         return "The secure connection token was lost between Stripe and this page. Try connecting again, and don't use a back-button or stale link.";
       case "stripe_denied":
+        // access_denied is Stripe's generic "the OAuth flow was exited
+        // before finishing" - closing the tab, hitting back, hesitating
+        // at the SSN/EIN screen. It is NOT a decline of the merchant
+        // (verified by walking the flow, 2026-07-03), so don't scare
+        // them: invite them to resume. Individuals are fully supported -
+        // Stripe's form has an Individual/Sole-proprietor option that
+        // takes an SSN instead of an EIN.
+        if ((detail || "").toLowerCase() === "access_denied") {
+          return "Looks like the Stripe window closed before finishing. Nothing went wrong - hit Connect Stripe to pick up where you left off. Individuals are welcome: choose Individual on Stripe's form and use your SSN (no EIN needed).";
+        }
         return detail
           ? `Stripe declined the connection (${detail}). Try again or contact support.`
           : "Stripe declined the connection. Try again or contact support.";
