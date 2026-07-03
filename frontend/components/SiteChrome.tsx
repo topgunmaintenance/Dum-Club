@@ -6,7 +6,6 @@ import { Navbar } from "./Navbar";
 import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
 import { SiteFooter } from "./SiteFooter";
-import { FloatingGoLive } from "./FloatingGoLive";
 import { BottomTabNav } from "./BottomTabNav";
 
 const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || "";
@@ -130,7 +129,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           content + footer clear it. Desktop keeps the top navbar. */}
       <BottomTabNav />
       <DumPill />
-      <FloatingGoLive />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in
           production. Gated on `mounted` so SSR + first client paint
           stay identical and React hydration doesn't disagree about
