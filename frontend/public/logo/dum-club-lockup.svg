@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 56" width="224" height="56" role="img" aria-label="DUM Club">
   
-  <rect x="9" y="9" width="38" height="38" rx="10" fill="none" stroke="#E14F2A" stroke-width="2.5"></rect>
+  <rect x="9" y="9" width="38" height="38" rx="10" fill="none" stroke="#00A36C" stroke-width="2.5"></rect>
   <text x="28" y="28.5" text-anchor="middle" dominant-baseline="central" font-family="&#39;Space Grotesk&#39;,&#39;Trebuchet MS&#39;,system-ui,sans-serif" font-weight="700" font-size="19" fill="#1A1613">D</text>
   <text x="60" y="28.5" dominant-baseline="central" font-family="&#39;Space Grotesk&#39;,&#39;Trebuchet MS&#39;,system-ui,sans-serif" font-weight="700" font-size="21" letter-spacing="0.4" fill="#1A1613">DUM CLUB</text>
 </svg>
