@@ -70,12 +70,12 @@ type Project = {
   business_profile_id?: string | null;
 };
 
-// DB_CATEGORIES is imported from lib/categories.ts — single source of
+// VERB_GROUPED_CATEGORIES comes from lib/discover/verbs.ts — the same
 // truth shared with the offer composer's category select (#349). See
 // the FK-safety note over there.
 
 import { API_BASE } from "../../lib/apiBase";
-import { DB_CATEGORIES } from "../../lib/categories";
+import { VERB_GROUPED_CATEGORIES } from "../../lib/discover/verbs";
 
 // Storefront status on the dashboard collapses to two merchant-facing
 // states: a published storefront reads LIVE, everything else reads
@@ -1546,10 +1546,14 @@ export default function DashboardPage() {
                         <option value="" disabled>
                           Uncategorized
                         </option>
-                        {DB_CATEGORIES.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.label}
-                          </option>
+                        {VERB_GROUPED_CATEGORIES.map((g) => (
+                          <optgroup key={g.id} label={`${g.glyph} ${g.label}`}>
+                            {g.options.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>
