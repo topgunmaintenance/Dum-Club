@@ -1322,10 +1322,6 @@ export default function ProjectPage() {
     setOfferFormOpen(true);
     setOfferImageFile(null);
     setOfferImagePreview(null);
-    // The form lives inside #offers-section, which is hidden in the
-    // owner manage view until offerFormOpen flips true. Wait a frame
-    // for it to un-hide, then bring it on screen.
-    setTimeout(() => scrollToSection("offer-form"), 60);
   }
 
   function convertStoreItemToOffer(item: StoreItem) {
@@ -6582,7 +6578,7 @@ return (
           with Pin/Edit, so rendering the full public catalog again below
           it duplicated the whole page. Owners preview the real catalog
           via "View as customer"; visitors are unaffected. */}
-      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${!offerFormOpen && ((project?.is_live && isIVSSession(project)) || (showOwnerInlineUi && ownerManage && !project?.is_live)) ? "hidden" : ""}`}>
+      <div id="offers-section" className={`scroll-mt-28 rounded-3xl border border-default bg-surface-card p-6 backdrop-blur-sm sm:p-8 ${(project?.is_live && isIVSSession(project)) || (showOwnerInlineUi && ownerManage && !project?.is_live) ? "hidden" : ""}`}>
         {!ownerManage && (<>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -7568,143 +7564,40 @@ return (
           </div>
         )}
 
-        {/* Owner: create/edit offer form (backend offers) */}
-        {isOwner && offerFormOpen && offerEditing && (
-          <div id="offer-form" className="mt-5 scroll-mt-28 rounded-2xl border border-default bg-surface-muted p-4 sm:p-5 space-y-4">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-brand-teal">
-              {offerEditing.id ? "Edit Offer" : "New Offer"}
-            </div>
-            {!offerEditing.id && (
-              <ol className="rounded-xl border border-default bg-surface-card p-3 text-sm text-secondary space-y-1">
-                <li><span className="font-bold text-primary">1.</span> Name what you sell.</li>
-                <li><span className="font-bold text-primary">2.</span> Set a price.</li>
-                <li><span className="font-bold text-primary">3.</span> Save. It goes live on your page.</li>
-              </ol>
-            )}
-            <div>
-              <input
-                type="text"
-                placeholder="Offer title"
-                value={offerEditing.title || ""}
-                onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-              />
-              <button
-                type="button"
-                onClick={() => offerAiAssist("title")}
-                disabled={offerAiField === "title"}
-                className="mt-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
-              >
-                {offerAiField === "title" ? "Generating..." : "✨ AI Title"}
-              </button>
-            </div>
-            <div>
-              <textarea
-                placeholder="Description"
-                value={offerEditing.description || ""}
-                onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
-                rows={3}
-                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40 resize-none"
-              />
-              <button
-                type="button"
-                onClick={() => offerAiAssist("description")}
-                disabled={offerAiField === "description"}
-                className="mt-2 rounded-lg border border-default bg-brand-teal-soft px-3 py-1.5 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
-              >
-                {offerAiField === "description" ? "Generating..." : "✨ AI Copy"}
-              </button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.50"
-                    placeholder="Price (USD)"
-                    value={offerEditing.price_usd || ""}
-                    onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
-                    className="flex-1 min-w-0 rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => offerAiAssist("price")}
-                    disabled={offerAiField === "price"}
-                    className="shrink-0 rounded-xl border border-default bg-brand-teal-soft px-3 py-3 text-[10px] font-medium text-brand-teal transition hover:border-default hover:text-brand-teal disabled:opacity-40"
-                  >
-                    {offerAiField === "price" ? "..." : "$?"}
-                  </button>
+        {/* Owner: create/edit offer modal. Rendered through a portal to
+            document.body so it works regardless of which page sections the
+            owner manage view hides (the old inline form lived inside the
+            hidden offers-section, which also made the offers list render
+            twice while the form was open). */}
+        {isOwner && offerFormOpen && offerEditing && typeof document !== "undefined" && createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-6"
+            onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
+          >
+            <div
+              className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface-card shadow-2xl sm:rounded-3xl"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label={offerEditing.id ? "Edit offer" : "New offer"}
+            >
+              <div className="flex items-center justify-between border-b border-default px-5 py-4">
+                <div>
+                  <div className="text-base font-bold text-primary">{offerEditing.id ? "Edit offer" : "New offer"}</div>
+                  <div className="mt-0.5 text-xs text-secondary">Name it, price it, done. It goes live on your page.</div>
                 </div>
-                {/* Optional compare-at ("was") price — drives the strikethrough
-                    on the live room offer card. Only applied when above the
-                    actual price. */}
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Compare-at price (optional)"
-                  value={offerEditing.compare_at_price ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value.trim();
-                    setOfferEditing({ ...offerEditing, compare_at_price: v === "" ? null : Number(v) });
-                  }}
-                  className="mt-2 w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-                />
-                <p className="mt-1 text-[10px] text-muted">Shown struck-through when higher than the price.</p>
+                <button
+                  type="button"
+                  onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
+                  className="rounded-full p-2 text-secondary transition hover:bg-surface-muted hover:text-primary"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
               </div>
-              <select
-                value={offerEditing.offer_type || "digital_service"}
-                onChange={(e) => setOfferEditing({ ...offerEditing, offer_type: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-              >
-                <option value="digital_service">Digital Service</option>
-                <option value="physical_product">Physical Product</option>
-              </select>
-            </div>
-            <input
-              type="text"
-              placeholder="Delivery info (e.g. Delivered via email within 24h)"
-              value={offerEditing.delivery_info || ""}
-              onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
-              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-            />
-            <input
-              type="number"
-              min="0"
-              max="100"
-              placeholder="Supporter discount % (0-100)"
-              value={offerEditing.token_discount_percent || ""}
-              onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
-              className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-            />
-            <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-secondary">Inventory</div>
-              <label className="flex items-center gap-2 text-sm text-secondary">
-                <input
-                  type="checkbox"
-                  checked={offerEditing.unlimited_inventory ?? true}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, unlimited_inventory: e.target.checked })}
-                  className="rounded border-default"
-                />
-                Unlimited inventory
-              </label>
-              {!offerEditing.unlimited_inventory && (
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Quantity available"
-                  value={offerEditing.quantity_available || ""}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-                />
-              )}
-            </div>
-            <div className="rounded-xl border border-default bg-surface-muted p-3 space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-secondary">Media (optional)</div>
 
-              {/* Image upload */}
-              <div>
+              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                {/* Photo first: it does the selling */}
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -7717,121 +7610,269 @@ return (
                       setOfferImagePreview(URL.createObjectURL(file));
                       setOfferEditing({ ...offerEditing, primary_image_url: "" });
                     }
-                    // Reset so same file can be re-selected
                     e.target.value = "";
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-default bg-surface-page px-4 py-4 text-sm text-secondary transition hover:border-default hover:text-primary active:scale-[0.98]"
-                >
-                  <span className="text-lg">📷</span>
-                  <span className="text-left">
-                    {offerImageFile ? offerImageFile.name : "Tap to upload image or take photo"}
-                  </span>
-                </button>
-              </div>
+                {(offerImagePreview || offerEditing.primary_image_url?.trim()) ? (
+                  <div className="relative overflow-hidden rounded-2xl border border-default">
+                    <img
+                      src={offerImagePreview || offerEditing.primary_image_url || ""}
+                      alt="Offer preview"
+                      className="h-40 w-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <div className="absolute bottom-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        className="rounded-full bg-surface-card/90 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition hover:bg-surface-card"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setOfferImageFile(null); setOfferImagePreview(null); setOfferEditing({ ...offerEditing, primary_image_url: "" }); }}
+                        className="rounded-full bg-surface-card/90 px-3 py-1.5 text-xs font-semibold text-secondary shadow-sm transition hover:bg-surface-card hover:text-primary"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="flex h-28 w-full flex-col items-center justify-center gap-0.5 rounded-2xl border border-dashed border-default bg-surface-muted text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
+                  >
+                    <span className="text-xl" aria-hidden="true">📷</span>
+                    Add a photo
+                    <span className="text-[11px] font-normal text-muted">Offers with photos sell better</span>
+                  </button>
+                )}
 
-              {/* Image preview (upload or existing URL) */}
-              {(offerImagePreview || offerEditing.primary_image_url?.trim()) && (
-                <div className="relative rounded-lg overflow-hidden border border-default">
-                  <img
-                    src={offerImagePreview || offerEditing.primary_image_url || ""}
-                    alt="Preview"
-                    className="w-full max-h-48 object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">What you sell</label>
+                    <button
+                      type="button"
+                      onClick={() => offerAiAssist("title")}
+                      disabled={offerAiField === "title"}
+                      className="text-[11px] font-semibold text-mint-text transition hover:opacity-80 disabled:opacity-40"
+                    >
+                      {offerAiField === "title" ? "Writing..." : "✨ Write it for me"}
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="e.g. Annual Inspection"
+                    value={offerEditing.title || ""}
+                    onChange={(e) => setOfferEditing({ ...offerEditing, title: e.target.value })}
+                    className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOfferImageFile(null);
-                      setOfferImagePreview(null);
-                      setOfferEditing({ ...offerEditing, primary_image_url: "" });
-                    }}
-                    className="absolute top-2 right-2 rounded-full bg-surface-page/70 px-2 py-0.5 text-xs text-secondary hover:text-white"
-                  >
-                    ✕
-                  </button>
                 </div>
-              )}
 
-              {/* Fallback: paste URL */}
-              {!offerImageFile && (
-                <input
-                  type="url"
-                  placeholder="Or paste image URL"
-                  value={offerEditing.primary_image_url || ""}
-                  onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-                />
-              )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Price</label>
+                    <div className="flex items-center rounded-xl border border-default bg-surface-card focus-within:border-strong focus-within:ring-2 focus-within:ring-brand-teal/40">
+                      <span className="pl-4 text-sm font-semibold text-secondary" aria-hidden="true">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.50"
+                        placeholder="0.00"
+                        value={offerEditing.price_usd || ""}
+                        onChange={(e) => setOfferEditing({ ...offerEditing, price_usd: Number(e.target.value) })}
+                        className="w-full min-w-0 bg-transparent px-2 py-3 text-sm text-primary placeholder:text-muted outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Type</label>
+                    <div className="grid grid-cols-2 gap-1 rounded-xl border border-default bg-surface-muted p-1">
+                      {([["digital_service", "Service"], ["physical_product", "Product"]] as const).map(([val, label]) => {
+                        const active = (offerEditing.offer_type || "digital_service") === val;
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setOfferEditing({ ...offerEditing, offer_type: val })}
+                            className={`rounded-lg px-2 py-2 text-xs font-semibold transition ${active ? "bg-surface-card text-primary shadow-sm" : "text-secondary hover:text-primary"}`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
 
-              {/* Video URL */}
-              <input
-                type="url"
-                placeholder="Video URL (YouTube, Loom, etc.)"
-                value={offerEditing.video_url || ""}
-                onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
-                className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
-              />
-            </div>
-            {offerSaveError && (
-              <div className="rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">
-                {offerSaveError}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">
+                      Description <span className="font-normal normal-case tracking-normal text-muted">(optional)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => offerAiAssist("description")}
+                      disabled={offerAiField === "description"}
+                      className="text-[11px] font-semibold text-mint-text transition hover:opacity-80 disabled:opacity-40"
+                    >
+                      {offerAiField === "description" ? "Writing..." : "✨ Write it for me"}
+                    </button>
+                  </div>
+                  <textarea
+                    placeholder="One or two sentences about what the customer gets."
+                    value={offerEditing.description || ""}
+                    onChange={(e) => setOfferEditing({ ...offerEditing, description: e.target.value })}
+                    rows={3}
+                    className="w-full resize-none rounded-xl border border-default bg-surface-card px-4 py-3 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                  />
+                </div>
+
+                <details className="rounded-2xl border border-default bg-surface-muted">
+                  <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-secondary transition hover:text-primary">
+                    More options
+                  </summary>
+                  <div className="space-y-3 px-4 pb-4">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Was-price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Shown struck through when higher than the price"
+                        value={offerEditing.compare_at_price ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value.trim();
+                          setOfferEditing({ ...offerEditing, compare_at_price: v === "" ? null : Number(v) });
+                        }}
+                        className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Delivery info</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Delivered via email within 24h"
+                        value={offerEditing.delivery_info || ""}
+                        onChange={(e) => setOfferEditing({ ...offerEditing, delivery_info: e.target.value })}
+                        className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Supporter discount %</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        value={offerEditing.token_discount_percent || ""}
+                        onChange={(e) => setOfferEditing({ ...offerEditing, token_discount_percent: Number(e.target.value) })}
+                        className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm text-secondary">
+                        <input
+                          type="checkbox"
+                          checked={offerEditing.unlimited_inventory ?? true}
+                          onChange={(e) => setOfferEditing({ ...offerEditing, unlimited_inventory: e.target.checked })}
+                          className="rounded border-default"
+                        />
+                        Unlimited inventory
+                      </label>
+                      {!offerEditing.unlimited_inventory && (
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Quantity available"
+                          value={offerEditing.quantity_available || ""}
+                          onChange={(e) => setOfferEditing({ ...offerEditing, quantity_available: Number(e.target.value) || null })}
+                          className="mt-2 w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                        />
+                      )}
+                    </div>
+                    {!offerImageFile && (
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Image URL</label>
+                        <input
+                          type="url"
+                          placeholder="Paste an image link instead of uploading"
+                          value={offerEditing.primary_image_url || ""}
+                          onChange={(e) => setOfferEditing({ ...offerEditing, primary_image_url: e.target.value })}
+                          className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">Video URL</label>
+                      <input
+                        type="url"
+                        placeholder="YouTube, Loom, etc."
+                        value={offerEditing.video_url || ""}
+                        onChange={(e) => setOfferEditing({ ...offerEditing, video_url: e.target.value })}
+                        className="w-full rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none focus:border-strong focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                      />
+                    </div>
+                  </div>
+                </details>
+
+                {offerSaveError && (
+                  <div className="rounded-xl border border-[var(--state-live)]/30 bg-state-live/5 px-4 py-3 text-sm text-state-live">
+                    {offerSaveError}
+                  </div>
+                )}
               </div>
-            )}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {(() => {
-                // Auth-readiness gate. Disable the submit until
-                // Privy has fully booted AND we have a signed-in
-                // user. Prevents the "TypeError: Failed to fetch"
-                // class of bug where saveOffer fires before
-                // getToken() can return a real string.
-                const authReady = !authLoading && !!authUser?.privyId;
-                const disabled =
-                  offerSaving ||
-                  !offerEditing.title?.trim() ||
-                  !offerEditing.price_usd ||
-                  !authReady;
-                const tooltip = !authReady
-                  ? authLoading
-                    ? "Signing you in. Try again in a moment."
-                    : "Sign in to create an offer."
-                  : undefined;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => { setOfferSaveError(null); saveOffer(); }}
-                    disabled={disabled}
-                    title={tooltip}
-                    aria-disabled={disabled}
-                    className="w-full sm:w-auto rounded-xl bg-brand-teal px-5 py-3 text-sm font-semibold text-black transition hover:bg-brand-teal disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {offerSaving
-                      ? "Saving..."
-                      : offerEditing.id
-                      ? "Save Changes"
-                      : "Create Offer"}
-                  </button>
-                );
-              })()}
-              <button
-                onClick={() => { setOfferFormOpen(false); setOfferEditing(null); setOfferImageFile(null); setOfferImagePreview(null); setOfferSaveError(null); }}
-                className="w-full sm:w-auto rounded-xl border border-default px-5 py-3 text-sm font-medium text-secondary transition hover:border-strong hover:text-primary"
-              >
-                Cancel
-              </button>
+
+              <div className="border-t border-default px-5 py-4">
+                {(() => {
+                  // Auth-readiness gate. Disable the submit until Privy has
+                  // fully booted AND we have a signed-in user. Prevents the
+                  // "TypeError: Failed to fetch" class of bug where saveOffer
+                  // fires before getToken() can return a real string.
+                  const authReady = !authLoading && !!authUser?.privyId;
+                  const disabled =
+                    offerSaving ||
+                    !offerEditing.title?.trim() ||
+                    !offerEditing.price_usd ||
+                    !authReady;
+                  const tooltip = !authReady
+                    ? authLoading
+                      ? "Signing you in. Try again in a moment."
+                      : "Sign in to create an offer."
+                    : undefined;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { setOfferSaveError(null); saveOffer(); }}
+                      disabled={disabled}
+                      title={tooltip}
+                      aria-disabled={disabled}
+                      className="w-full rounded-xl bg-mint-fill px-5 py-3.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {offerSaving
+                        ? "Saving..."
+                        : offerEditing.id
+                        ? "Save changes"
+                        : "Put it on my page"}
+                    </button>
+                  );
+                })()}
+              </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* Offer save success toast */}
-        {offerSaveSuccess && (
-          <div className="mt-4 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-brand-teal">Offer created successfully!</span>
-            <button onClick={() => setOfferSaveSuccess(false)} className="text-xs text-brand-teal/60 hover:text-brand-teal">Dismiss</button>
-          </div>
+        {/* Offer saved toast. Portal so it shows in the manage view too
+            (the old inline toast lived inside the hidden offers-section). */}
+        {offerSaveSuccess && typeof document !== "undefined" && createPortal(
+          <div className="fixed bottom-6 left-1/2 z-[110] flex -translate-x-1/2 items-center gap-3 rounded-full border border-default bg-surface-card px-5 py-3 shadow-2xl">
+            <span className="text-sm font-semibold text-mint-text">Offer saved. It is live on your page.</span>
+            <button onClick={() => setOfferSaveSuccess(false)} className="text-xs text-muted transition hover:text-primary">Dismiss</button>
+          </div>,
+          document.body
         )}
 
         {/* Owner: add/edit form */}
