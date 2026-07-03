@@ -1584,7 +1584,16 @@ export default function ProjectPage() {
     // guest:<token> buyer id; Stripe Checkout captures the real
     // email at the payment step. No Privy modal blocks the sale.
     if (isOwner) {
+      // Owner can't buy from themselves (Stripe direct charge to your
+      // own account). Say so - this used to set a state nothing
+      // rendered, so the button just silently did nothing (browser
+      // audit 2026-07-03).
       setBuyStep((p) => ({ ...p, [oid]: "blocked_owner" }));
+      setBuyError((p) => ({
+        ...p,
+        [oid]: "This is your shop, so checkout is off for you. Buyers see the real payment page here.",
+      }));
+      setTimeout(() => setBuyError((p) => ({ ...p, [oid]: "" })), 5000);
       return;
     }
     if (isDemo) {

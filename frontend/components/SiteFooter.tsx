@@ -152,7 +152,8 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
             </div>
             <div className="flex gap-6">
               <div className="flex gap-6">
-                <Link href="/terms" className="text-[10px] text-muted transition hover:text-mint-text">
+                <Link href="/help" className="text-[10px] text-muted transition hover:text-mint-text">Buyer Help</Link>
+              <Link href="/terms" className="text-[10px] text-muted transition hover:text-mint-text">
                   Terms of Use
                 </Link>
                 <Link href="/privacy" className="text-[10px] text-muted transition hover:text-mint-text">
