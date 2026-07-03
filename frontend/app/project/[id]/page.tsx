@@ -667,7 +667,8 @@ export default function ProjectPage() {
   // only — nothing about price/availability changes at zero. Must stay in
   // sync with PIN_DURATION_CHOICES on the backend (the gate of record).
   const PIN_DURATION_CHOICES = [0.5, 1, 2, 5, 10, 30, 60] as const;
-  const [pinDurationMinutes, setPinDurationMinutes] = useState<number>(5);
+  // null = "No timer": the pin (and its sale window) stays open until unpinned.
+  const [pinDurationMinutes, setPinDurationMinutes] = useState<number | null>(5);
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
   //                    was just clicked. Shared across all tabs.
@@ -5390,6 +5391,31 @@ return (
               {showOwnerInlineUi && isIVSSession(project) && (
                 <div className="space-y-3 rounded-2xl border border-default bg-surface-card p-4">
                   <div className="text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
+                  {/* Sale timer — the host picks how long each drop runs BEFORE
+                      tapping a product (owner request 2026-07-02). The next pin uses
+                      this window; No timer = the sale stays open until unpinned. */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-secondary">Sale timer</span>
+                    <button
+                      type="button"
+                      aria-pressed={pinDurationMinutes === null}
+                      onClick={() => setPinDurationMinutes(null)}
+                      className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === null ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
+                    >
+                      No timer
+                    </button>
+                    {PIN_DURATION_CHOICES.map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        aria-pressed={pinDurationMinutes === mins}
+                        onClick={() => setPinDurationMinutes(mins)}
+                        className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === mins ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
+                      >
+                        {mins === 0.5 ? "30 sec" : `${mins} min`}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {offers.filter((o) => o.is_active).map((offer) => (
                       <button
@@ -8384,6 +8410,31 @@ return (
               {/* Product selector. immediate access */}
               <div className="rounded-2xl border border-default bg-surface-muted p-4">
                 <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-secondary">Sell a Product</div>
+                {/* Sale timer — the host picks how long each drop runs BEFORE
+                    tapping a product (owner request 2026-07-02). The next pin uses
+                    this window; No timer = the sale stays open until unpinned. */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-secondary">Sale timer</span>
+                  <button
+                    type="button"
+                    aria-pressed={pinDurationMinutes === null}
+                    onClick={() => setPinDurationMinutes(null)}
+                    className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === null ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
+                  >
+                    No timer
+                  </button>
+                  {PIN_DURATION_CHOICES.map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      aria-pressed={pinDurationMinutes === mins}
+                      onClick={() => setPinDurationMinutes(mins)}
+                      className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === mins ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
+                    >
+                      {mins === 0.5 ? "30 sec" : `${mins} min`}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {offers.filter((o) => o.is_active).map((offer) => (
                     <button
