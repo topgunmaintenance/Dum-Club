@@ -20,7 +20,7 @@
  * category. Merchants with a real category_id route correctly.
  */
 
-import { classifyProject, type CategoryId } from "../categories";
+import { classifyProject, CATEGORY_LABEL_BY_ID, type CategoryId } from "../categories";
 import type { Project } from "./types";
 
 export type VerbId = "eat" | "fix" | "move" | "shop" | "book";
@@ -78,6 +78,28 @@ export const VERBS: readonly VerbDef[] = [
 // here anymore — the category pill row owns that (see VerbTabs).
 
 export const VERB_IDS: readonly VerbId[] = VERBS.map((v) => v.id);
+
+/**
+ * The category dropdown, grouped by the SAME five verbs customers browse
+ * with on the homepage (Eat / Fix / Move / Shop / Book). Values stay the
+ * canonical mig-035/074 category ids, so nothing changes server-side —
+ * the merchant just sees their pick through the customer's eyes.
+ * Covers all 15 seeded ids (4 eat + 3 fix + 1 move + 2 shop + 5 book).
+ */
+export const VERB_GROUPED_CATEGORIES: readonly {
+  id: VerbId;
+  label: string;
+  glyph: string;
+  options: readonly { id: string; label: string }[];
+}[] = VERBS.map((v) => ({
+  id: v.id,
+  label: v.label,
+  glyph: v.glyph,
+  options: v.categoryIds.map((cid) => ({
+    id: cid,
+    label: CATEGORY_LABEL_BY_ID[cid] ?? cid,
+  })),
+}));
 
 export function isVerbId(value: string | null | undefined): value is VerbId {
   return !!value && (VERB_IDS as readonly string[]).includes(value);

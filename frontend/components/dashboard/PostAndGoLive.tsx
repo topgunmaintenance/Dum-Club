@@ -33,7 +33,7 @@ import { useRouter } from "next/navigation";
 import { API_BASE } from "../../lib/apiBase";
 import { errorText } from "../../lib/errorText";
 import { sanitizeBearerToken } from "../../lib/offers";
-import { DB_CATEGORIES } from "../../lib/categories";
+import { VERB_GROUPED_CATEGORIES } from "../../lib/discover/verbs";
 
 type Project = {
   id: string;
@@ -359,8 +359,12 @@ export function PostAndGoLive({ project, stripeVerified, getToken, userId }: Pro
           className="rounded-lg border border-default bg-surface-page px-2 py-1.5 text-sm text-primary outline-none transition hover:border-strong focus:border-brand-teal"
         >
           <option value="" disabled>Uncategorized</option>
-          {DB_CATEGORIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.label}</option>
+          {VERB_GROUPED_CATEGORIES.map((g) => (
+            <optgroup key={g.id} label={`${g.glyph} ${g.label}`}>
+              {g.options.map((c) => (
+                <option key={c.id} value={c.id}>{c.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
