@@ -669,6 +669,10 @@ export default function ProjectPage() {
   const PIN_DURATION_CHOICES = [0.5, 1, 2, 5, 10, 30, 60] as const;
   // null = "No timer": the pin (and its sale window) stays open until unpinned.
   const [pinDurationMinutes, setPinDurationMinutes] = useState<number | null>(5);
+  // Per-offer timer overrides (owner request 2026-07-04: pick a timer
+  // for EACH object). Key = offer id; missing key falls back to the
+  // global pinDurationMinutes.
+  const [offerTimers, setOfferTimers] = useState<Record<string, number | null>>({});
   // Embed installer / activation state (owner-only).
   //   copiedSnippet . flashes "Copied ✓" on whichever copy button
   //                    was just clicked. Shared across all tabs.
@@ -2651,7 +2655,7 @@ export default function ProjectPage() {
     }
   }
 
-  async function handlePinOffer(offerId: string | null) {
+  async function handlePinOffer(offerId: string | null, durationOverride?: number | null) {
     // Debounce concurrent clicks: a pin request is already in flight, so
     // ignore further clicks until it settles. Not all call sites disable
     // their button, so this is the canonical guard against racing PATCHes
@@ -2676,7 +2680,9 @@ export default function ProjectPage() {
         // Only sent when pinning (offerId set); unpin clears it backend-side.
         body: JSON.stringify({
           offer_id: offerId,
-          duration_minutes: offerId ? pinDurationMinutes : null,
+          duration_minutes: offerId
+            ? (durationOverride !== undefined ? durationOverride : pinDurationMinutes)
+            : null,
         }),
       });
       if (!res.ok) {
@@ -5763,12 +5769,34 @@ return (
                               <span className="shrink-0 font-mono text-sm font-bold text-brand-navy">${Number(o.price_usd).toFixed(0)}</span>
                             </div>
                             <div className="mt-1 text-[11px] text-secondary">{os.length} order{os.length === 1 ? "" : "s"}</div>
+                            {/* Per-offer sale timer — this object's drop runs on
+                                this clock when pinned (falls back to the studio's
+                                global picker when untouched). */}
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <label htmlFor={`timer-${o.id}`} className="text-[10px] font-bold uppercase tracking-wide text-secondary">
+                                Sale timer
+                              </label>
+                              <select
+                                id={`timer-${o.id}`}
+                                value={String(offerTimers[o.id] !== undefined ? offerTimers[o.id] : pinDurationMinutes)}
+                                onChange={(e) => {
+                                  const v = e.target.value === "null" ? null : Number(e.target.value);
+                                  setOfferTimers((p) => ({ ...p, [o.id]: v }));
+                                }}
+                                className="rounded-lg border border-default bg-surface-page px-2 py-1 text-[11px] text-primary outline-none transition hover:border-strong"
+                              >
+                                <option value="null">No timer</option>
+                                {PIN_DURATION_CHOICES.map((m) => (
+                                  <option key={m} value={String(m)}>{m === 0.5 ? "30 sec" : `${m} min`}</option>
+                                ))}
+                              </select>
+                            </div>
                             {/* Actions — two equal buttons: Pin (Pinned ✓ when active) + Edit. */}
-                            <div className="mt-3 grid grid-cols-2 gap-2">
+                            <div className="mt-2 grid grid-cols-2 gap-2">
                               <button
                                 type="button"
                                 disabled={pinningOfferId !== null}
-                                onClick={() => handlePinOffer(pinned ? null : o.id)}
+                                onClick={() => handlePinOffer(pinned ? null : o.id, offerTimers[o.id] !== undefined ? offerTimers[o.id] : undefined)}
                                 aria-pressed={pinned}
                                 className={`rounded-lg px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${pinned ? "bg-mint-card text-mint-text" : "bg-mint-fill text-mint-fill-ink hover:opacity-90"}`}
                               >
