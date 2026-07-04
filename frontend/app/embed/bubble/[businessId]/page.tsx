@@ -366,6 +366,20 @@ export default function BubblePreviewPage() {
       if (!data || typeof data !== "object") return;
       if (data.type === "bubble-pause") setPaused(true);
       else if (data.type === "bubble-resume") setPaused(false);
+      else if (data.type === "bubble-unmute" || data.type === "bubble-mute") {
+        // Host-page sound toggle (owner request 2026-07-04): the tap
+        // on the bubble's speaker button is the user gesture, and the
+        // iframe's allow="autoplay" delegates playback permission, so
+        // flipping muted here is allowed by every major browser.
+        const unmute = data.type === "bubble-unmute";
+        document.querySelectorAll<HTMLVideoElement>("video").forEach((v) => {
+          v.muted = !unmute;
+          if (unmute) {
+            v.volume = 1;
+            v.play().catch(() => { /* still paused - fine */ });
+          }
+        });
+      }
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);

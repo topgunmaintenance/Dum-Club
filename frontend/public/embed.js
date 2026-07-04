@@ -420,7 +420,7 @@
         "  bottom: 20px;",
         "  right: 20px;",
         "  z-index: 2147483646;",
-        "  width: 140px; height: 140px;",
+        "  width: 176px; height: 176px;",
         "  padding: 0; margin: 0; border: 0;",
         "  background: transparent;",
         "  cursor: pointer;",
@@ -489,6 +489,22 @@
         "[data-dum-embed-bubble].is-live .dum-clip {",
         "  background: #060606;",
         "}",
+        // ── Sound toggle — one tap for audio WITHOUT expanding ──
+        // The tap is the user gesture browsers require before any
+        // unmuted playback; allow="autoplay" on the preview iframe
+        // delegates the permission so the unmute inside sticks.
+        "[data-dum-embed-bubble] .dum-sound {",
+        "  position: absolute; top: 0px; right: -6px; z-index: 3;",
+        "  width: 38px; height: 38px; border-radius: 9999px;",
+        "  border: 1px solid rgba(255,255,255,0.4);",
+        "  background: rgba(6,6,6,0.78); color: #ffffff;",
+        "  font-size: 16px; line-height: 1;",
+        "  display: none; align-items: center; justify-content: center;",
+        "  cursor: pointer; padding: 0;",
+        "  box-shadow: 0 4px 12px rgba(0,0,0,0.35);",
+        "}",
+        "[data-dum-embed-bubble].is-live .dum-sound { display: flex; }",
+        "[data-dum-embed-bubble] .dum-sound:hover { background: rgba(6,6,6,0.92); }",
         "[data-dum-embed-bubble] .dum-initials {",
         "  position: absolute; inset: 0;",
         "  display: flex; align-items: center; justify-content: center;",
@@ -831,7 +847,7 @@
         // at the viewport minus the safe-area gutters.
         "@media (max-width: 480px) {",
         "  [data-dum-embed-bubble] {",
-        "    width: 96px; height: 96px;",
+        "    width: 120px; height: 120px;",
         "    bottom: 16px; right: 16px;",
         "  }",
         "  [data-dum-embed-bubble] .dum-initials { font-size: 26px; }",
@@ -1180,6 +1196,34 @@
         "allow-scripts allow-same-origin"
       );
       clip.appendChild(bubbleLiveIframe);
+
+      // Sound toggle: muted preview by default (autoplay rules);
+      // one tap here unmutes IN PLACE - no overlay needed. The tap
+      // supplies the user gesture, the postMessage flips the
+      // preview's <video>. stopPropagation keeps the tap from also
+      // opening the overlay.
+      var soundBtn = document.createElement("button");
+      soundBtn.type = "button";
+      soundBtn.className = "dum-sound";
+      soundBtn.setAttribute("aria-label", "Turn sound on");
+      soundBtn.textContent = "\uD83D\uDD07"; // muted speaker
+      soundBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        var turningOn = soundBtn.getAttribute("data-on") !== "1";
+        soundBtn.setAttribute("data-on", turningOn ? "1" : "0");
+        soundBtn.textContent = turningOn ? "\uD83D\uDD0A" : "\uD83D\uDD07";
+        soundBtn.setAttribute("aria-label", turningOn ? "Mute" : "Turn sound on");
+        try {
+          if (bubbleLiveIframe && bubbleLiveIframe.contentWindow) {
+            bubbleLiveIframe.contentWindow.postMessage(
+              { type: turningOn ? "bubble-unmute" : "bubble-mute" },
+              "*"
+            );
+          }
+        } catch (e) { /* messaging hiccup - bubble stays muted */ }
+      });
+      bubble.appendChild(soundBtn);
     } else if (avatarUrl) {
       var img = document.createElement("img");
       img.src = avatarUrl;
