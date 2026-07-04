@@ -799,6 +799,10 @@ async def api_end_stage(
         "live_provider": None,
         "stream_url": None,
         "pinned_offer_id": None,
+        # pinned_until must die with the pin - leaving it behind
+        # produced a phantom "future timer with no offer" row that
+        # confused every countdown surface (found live 2026-07-04).
+        "pinned_until": None,
         "live_playback_id": None,
         "live_stream_id": None,
         "live_stream_key": None,

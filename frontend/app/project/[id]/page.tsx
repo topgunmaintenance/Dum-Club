@@ -5455,7 +5455,7 @@ return (
                     <button
                       type="button"
                       aria-pressed={pinDurationMinutes === null}
-                      onClick={() => setPinDurationMinutes(null)}
+                      onClick={() => { setPinDurationMinutes(null); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, null); }}
                       className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === null ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
                     >
                       No timer
@@ -5465,7 +5465,7 @@ return (
                         key={mins}
                         type="button"
                         aria-pressed={pinDurationMinutes === mins}
-                        onClick={() => setPinDurationMinutes(mins)}
+                        onClick={() => { setPinDurationMinutes(mins); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, mins); }}
                         className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === mins ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
                       >
                         {mins === 0.5 ? "30 sec" : `${mins} min`}
@@ -6752,7 +6752,7 @@ return (
                       key={mins}
                       type="button"
                       aria-pressed={active}
-                      onClick={() => setPinDurationMinutes(mins)}
+                      onClick={() => { setPinDurationMinutes(mins); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, mins); }}
                       className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                         active
                           ? "border-brand-teal bg-brand-teal-soft text-brand-teal"
@@ -8586,7 +8586,7 @@ return (
                   <button
                     type="button"
                     aria-pressed={pinDurationMinutes === null}
-                    onClick={() => setPinDurationMinutes(null)}
+                    onClick={() => { setPinDurationMinutes(null); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, null); }}
                     className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === null ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
                   >
                     No timer
@@ -8596,7 +8596,7 @@ return (
                       key={mins}
                       type="button"
                       aria-pressed={pinDurationMinutes === mins}
-                      onClick={() => setPinDurationMinutes(mins)}
+                      onClick={() => { setPinDurationMinutes(mins); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, mins); }}
                       className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === mins ? "border-brand-teal bg-brand-teal-soft text-brand-teal" : "border-default text-secondary hover:border-strong"}`}
                     >
                       {mins === 0.5 ? "30 sec" : `${mins} min`}
