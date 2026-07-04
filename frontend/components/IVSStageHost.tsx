@@ -19,6 +19,10 @@ const CONNECT_TIMEOUT_MS = 20000;
 type HostStatus = "idle" | "requesting_camera" | "previewing" | "connecting" | "live" | "error" | "ended";
 
 interface IVSStageHostProps {
+  // Immersive host room (2026-07-04): className/style-only transform so
+  // the broadcast tree never remounts. Video goes full-bleed; the LIVE +
+  // End Stream row docks over the video top edge.
+  immersive?: boolean;
   projectId: string;
   userId: string;
   autoStart?: boolean;
@@ -45,7 +49,7 @@ let _localStreams: any[] = [];
 let _videoTrackId: string | null = null;
 let _audioTrackId: string | null = null;
 
-export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId, getToken }: IVSStageHostProps) {
+export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId, getToken, immersive = false }: IVSStageHostProps) {
   const [status, setStatus] = useState<HostStatus>(() => {
     // If stage exists from a previous render, stay in live state
     return _stageInstance ? "live" : "idle";
@@ -543,8 +547,15 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
 
   return (
     <div className="space-y-4">
-      <div className={`overflow-hidden rounded-2xl border border-zinc-800 bg-black ${status === "previewing" || status === "live" ? "" : "hidden"}`}>
-        <video ref={previewRef} autoPlay muted playsInline className="w-full" style={{ aspectRatio: "16/9", objectFit: "cover" }} />
+      <div className={`overflow-hidden bg-black ${immersive && status === "live" ? "absolute inset-0 rounded-none border-0" : "rounded-2xl border border-zinc-800"} ${status === "previewing" || status === "live" ? "" : "hidden"}`}>
+        <video
+          ref={previewRef}
+          autoPlay
+          muted
+          playsInline
+          className={immersive && status === "live" ? "h-full w-full" : "w-full"}
+          style={immersive && status === "live" ? { objectFit: "cover" } : { aspectRatio: "16/9", objectFit: "cover" }}
+        />
       </div>
 
       {status === "idle" && isSuspended && (
@@ -638,7 +649,7 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
       )}
 
       {status === "live" && (
-        <div className="flex items-center justify-between">
+        <div className={immersive ? "absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))]" : "flex items-center justify-between"}>
           <div className="flex items-center gap-3">
             <span className="relative flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-75" />

@@ -6410,7 +6410,12 @@ return (
            a Buy button. */}
       <div className={
         liveStudioMode
-          ? "mb-8 grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px] lg:items-start"
+          // Immersive host room (founder request 2026-07-04): while ON AIR
+          // the studio is the same full-bleed room the customer sees -
+          // video edge to edge, chat overlaid, sale controls docked. The
+          // grid classes are swapped, but every child stays mounted in
+          // the same order so the broadcast never remounts.
+          ? "fixed inset-0 z-[70] overflow-hidden bg-black"
           : isOwner
             // Manage mode off-air: the offers column is hidden (see
             // offers-section below), so drop the 2-col grid and let the
@@ -6441,12 +6446,13 @@ return (
             // a pin exists OR the stream is live, so it never remounts
             // mid-broadcast.
             key={(project?.pinned_offer_id || project?.is_live) ? "host-ready" : "host-empty"}
-            className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"} ${liveStudioMode ? "lg:order-2" : ""}`}
+            className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"} ${liveStudioMode ? "absolute inset-0" : ""}`}
           >
             <div className="relative">
             <IVSStageHost
               projectId={id as string}
               userId={authUser?.privyId || ""}
+              immersive={liveStudioMode}
               autoStart={autoGoLive}
               // Advance to Start camera whenever a featured offer is set.
               // Prefer the resolved offer id, but fall back to the raw
@@ -6473,7 +6479,7 @@ return (
             {project?.is_live && (
               <>
                 {hostLikeCount > 0 && (
-                  <span className="pointer-events-none absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
+                  <span className="pointer-events-none absolute right-3 top-14 z-10 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
                     <span aria-hidden="true">❤️</span>
                     {hostLikeCount.toLocaleString()}
                   </span>
@@ -6563,7 +6569,7 @@ return (
              mount position (and its module-level broadcast state) never
              changes when liveStudioMode toggles on/off. */}
         {liveStudioMode && (
-          <div className="hidden max-h-[70vh] overflow-y-auto rounded-2xl border border-default bg-surface-card p-3 lg:order-1 lg:block">
+          <div className="hidden max-h-[70vh] overflow-y-auto rounded-2xl border border-default bg-surface-card p-3">
             <div className="mb-2 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
               Your shop
             </div>
@@ -6614,8 +6620,13 @@ return (
              IVSStageHost, LiveChatIVS holds no module-level broadcast
              state, so moving it doesn't risk the live session. */}
         {liveStudioMode && (
-          <div className="lg:order-3 lg:max-h-[70vh]">
+          <div className="absolute bottom-40 left-3 z-20 w-[min(78vw,20rem)]">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-state-live" />
+              Live chat · everyone sees this
+            </div>
             <LiveChatIVS
+              overlay
               projectId={id as string}
               userId={authUser?.privyId || ""}
               userName={
@@ -6656,6 +6667,70 @@ return (
             />
           </div>
         )}
+
+      {/* ── Host room dock — watching pill + timer chips + product chips.
+           Rendered only in the immersive studio; everything reuses the
+           existing pin plumbing (handlePinOffer retargets live). ── */}
+      {liveStudioMode && (
+        <>
+          <span className="pointer-events-none absolute left-4 top-14 z-30 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
+            {liveViewerCount > 0 ? `${liveViewerCount.toLocaleString()} watching` : (projectName || "")}
+          </span>
+          <div className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10">
+            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden">
+              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white/70">Timer</span>
+              <button
+                type="button"
+                aria-pressed={pinDurationMinutes === null}
+                onClick={() => { setPinDurationMinutes(null); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, null); }}
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === null ? "border-mint-fill bg-mint-fill/20 text-mint-fill" : "border-white/25 text-white/80 hover:border-white/50"}`}
+              >
+                None
+              </button>
+              {PIN_DURATION_CHOICES.map((mins) => (
+                <button
+                  key={mins}
+                  type="button"
+                  aria-pressed={pinDurationMinutes === mins}
+                  onClick={() => { setPinDurationMinutes(mins); if (project?.pinned_offer_id) handlePinOffer(project.pinned_offer_id, mins); }}
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${pinDurationMinutes === mins ? "border-mint-fill bg-mint-fill/20 text-mint-fill" : "border-white/25 text-white/80 hover:border-white/50"}`}
+                >
+                  {mins === 0.5 ? "30s" : `${mins}m`}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
+              {offers.filter((o) => o.is_active).map((o) => {
+                const isPinnedChip = o.id === project?.pinned_offer_id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    disabled={pinningOfferId !== null}
+                    onClick={() => handlePinOffer(isPinnedChip ? null : o.id)}
+                    className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition disabled:opacity-50 ${
+                      isPinnedChip
+                        ? "border-mint-fill bg-mint-fill/20"
+                        : "border-white/20 bg-black/45 hover:border-white/45"
+                    }`}
+                  >
+                    {o.primary_image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={resolveImageUrl(o.primary_image_url)} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                    )}
+                    <span className="min-w-0">
+                      <span className={`block max-w-[9rem] truncate text-[12px] font-bold ${isPinnedChip ? "text-mint-fill" : "text-white"}`}>{o.title}</span>
+                      <span className={`block font-mono text-[11px] ${isPinnedChip ? "text-mint-fill/90" : "text-white/70"}`}>
+                        ${Number(o.price_usd).toFixed(0)}{isPinnedChip ? " · showing" : ""}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Offers (Public Storefront + Owner Tools) ──
            Side-by-side with the host block above for owners;

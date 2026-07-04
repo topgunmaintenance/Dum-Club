@@ -209,6 +209,17 @@ export default function EmbedShellPage() {
   // Immersive live room (2026-07-04): watching count for the top bar,
   // reported by the overlay chat's socket.
   const [immersiveWatching, setImmersiveWatching] = useState<number>(0);
+  // Hearts (2026-07-04): real likes over the chat socket, same plumbing
+  // as the dum.club live room. likeSenderRef is filled by LiveChatIVS.
+  const [likeCount, setLikeCount] = useState<number>(0);
+  const [hearts, setHearts] = useState<{ id: number; drift: number }[]>([]);
+  const heartSeq = useRef(0);
+  const likeSenderRef = useRef<(() => void) | null>(null);
+  const spawnHeart = () => {
+    heartSeq.current += 1;
+    const hid = heartSeq.current;
+    setHearts((h) => [...h.slice(-30), { id: hid, drift: ((hid * 37) % 60) - 30 }]);
+  };
 
   // Mirror `offers` into a ref so WS callbacks can resolve fresh
   // titles without being trapped in a render-stale closure. The
@@ -1174,6 +1185,11 @@ export default function EmbedShellPage() {
               getToken={getToken}
               onRequestSignIn={login}
               onViewerCountChange={setImmersiveWatching}
+              likeSenderRef={likeSenderRef}
+              onLikeCount={(count, animate) => {
+                setLikeCount(count);
+                if (animate) spawnHeart();
+              }}
               onItemUpdate={(data) => {
                 setOffers((prev) =>
                   prev.map((o) =>
@@ -1189,6 +1205,36 @@ export default function EmbedShellPage() {
                 spawnEmojiBurst();
               }}
             />
+          </div>
+
+          {/* Like rail + floating hearts — right side, above the buy dock */}
+          <div className="absolute bottom-56 right-3 z-20 flex flex-col items-center">
+            <button
+              type="button"
+              aria-label="Like"
+              onClick={() => {
+                spawnHeart();
+                likeSenderRef.current?.();
+              }}
+              className="flex flex-col items-center gap-1 text-white drop-shadow-[0_1px_5px_rgba(0,0,0,0.6)] transition active:scale-90"
+            >
+              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 21s-7.2-4.6-9.6-9.2C.9 8.7 2.3 5.5 5.3 5.1c1.8-.2 3.4.7 4.7 2.2C11.3 5.8 12.9 4.9 14.7 5.1c3 .4 4.4 3.6 2.9 6.7C19.2 16.4 12 21 12 21z" />
+              </svg>
+              <span className="text-[11px] font-bold">{likeCount > 0 ? likeCount.toLocaleString() : "Like"}</span>
+            </button>
+            <div className="pointer-events-none absolute bottom-12 right-1 h-72 w-16">
+              {hearts.map((h) => (
+                <span
+                  key={h.id}
+                  className="float-heart absolute bottom-0 right-3 text-2xl"
+                  style={{ ["--drift" as string]: `${h.drift}px` }}
+                  onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
+                >
+                  ❤️
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Bottom dock — offer card + BUY, mirroring the dum.club room */}
