@@ -302,6 +302,25 @@ async def auction_events(websocket: WebSocket, project_id: str):
                         "timestamp": now,
                     })
 
+                elif msg_type == "reaction":
+                    # Emoji reactions (2026-07-04). Same open-to-everyone,
+                    # same cooldown as likes. Ephemeral broadcast - no
+                    # counter; the heart keeps the counted path. Emoji is
+                    # whitelisted server-side so clients can't float
+                    # arbitrary payloads onto other screens.
+                    emoji = str(msg.get("emoji", ""))
+                    if emoji not in ("🔥", "👏", "😂"):
+                        continue
+                    now = time.time()
+                    if now - _last_like.get(ws_id, 0.0) < LIKE_COOLDOWN:
+                        continue
+                    _last_like[ws_id] = now
+                    await _broadcast(project_id, {
+                        "type": "reaction",
+                        "data": {"emoji": emoji},
+                        "timestamp": now,
+                    })
+
                 elif msg_type == "chat":
                     # Auth gate: only signed-in users can SEND. Identity is
                     # taken from the verified token, never from the client —

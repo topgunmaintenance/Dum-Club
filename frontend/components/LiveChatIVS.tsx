@@ -78,6 +78,11 @@ interface LiveChatIVSProps {
   // second connection. Both optional; every existing call site is unchanged.
   onLikeCount?: (count: number, animate: boolean) => void;
   likeSenderRef?: MutableRefObject<(() => void) | null>;
+  // Emoji reactions (2026-07-04): sender filled like likeSenderRef;
+  // onReaction fires for every reaction from any viewer (own included,
+  // echoed back) so all screens float the same emoji.
+  reactionSenderRef?: MutableRefObject<((emoji: string) => void) | null>;
+  onReaction?: (emoji: string) => void;
 }
 
 // Comment-to-buy claim keywords. Matches "!buy", "buy", "!sold", "sold"
@@ -100,7 +105,7 @@ function isGuestSenderId(senderId: string | undefined | null): boolean {
 // scripted flooding obvious.
 const SEND_MIN_INTERVAL_MS = 1500;
 
-export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn, overlay = false, onLikeCount, likeSenderRef }: LiveChatIVSProps) {
+export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate, onItemSold, onViewerCountChange, getToken, onCommentBuy, fillHeight = false, onRequestSignIn, overlay = false, onLikeCount, likeSenderRef, reactionSenderRef, onReaction }: LiveChatIVSProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
   const [chatError, setChatError] = useState("");
@@ -170,6 +175,9 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           } else if (msg.type === "viewer_count") {
             setViewerCount(msg.data.count);
             onViewerCountChange?.(msg.data.count);
+          } else if (msg.type === "reaction" && onReaction) {
+            const em = msg?.data?.emoji;
+            if (typeof em === "string" && em) onReaction(em);
           } else if (msg.type === "like" && onLikeCount) {
             // A like from any viewer (including our own, echoed back). Float
             // a heart + update the shared count.
@@ -254,6 +262,14 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
   // owns the heart button). Reads wsRef at call time, so it always uses the
   // live socket even across reconnects. No-ops when the socket isn't open.
   useEffect(() => {
+    if (reactionSenderRef) {
+      reactionSenderRef.current = (emoji: string) => {
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "reaction", emoji }));
+        }
+      };
+    }
     if (!likeSenderRef) return;
     likeSenderRef.current = () => {
       const ws = wsRef.current;

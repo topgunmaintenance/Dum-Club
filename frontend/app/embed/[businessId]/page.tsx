@@ -212,13 +212,14 @@ export default function EmbedShellPage() {
   // Hearts (2026-07-04): real likes over the chat socket, same plumbing
   // as the dum.club live room. likeSenderRef is filled by LiveChatIVS.
   const [likeCount, setLikeCount] = useState<number>(0);
-  const [hearts, setHearts] = useState<{ id: number; drift: number }[]>([]);
+  const [hearts, setHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
   const heartSeq = useRef(0);
   const likeSenderRef = useRef<(() => void) | null>(null);
-  const spawnHeart = () => {
+  const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
+  const spawnHeart = (emoji = "❤️") => {
     heartSeq.current += 1;
     const hid = heartSeq.current;
-    setHearts((h) => [...h.slice(-30), { id: hid, drift: ((hid * 37) % 60) - 30 }]);
+    setHearts((h) => [...h.slice(-30), { id: hid, drift: ((hid * 37) % 60) - 30, emoji }]);
   };
 
   // Mirror `offers` into a ref so WS callbacks can resolve fresh
@@ -1150,7 +1151,7 @@ export default function EmbedShellPage() {
             </span>
             {immersiveWatching > 0 && (
               <span className="rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
-                {immersiveWatching.toLocaleString()} watching
+                <span aria-hidden="true">👀</span> {immersiveWatching.toLocaleString()} watching
               </span>
             )}
             <span className="min-w-0 flex-1 truncate text-sm font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
@@ -1186,6 +1187,8 @@ export default function EmbedShellPage() {
               onRequestSignIn={login}
               onViewerCountChange={setImmersiveWatching}
               likeSenderRef={likeSenderRef}
+              reactionSenderRef={reactionSenderRef}
+              onReaction={(emoji) => spawnHeart(emoji)}
               onLikeCount={(count, animate) => {
                 setLikeCount(count);
                 if (animate) spawnHeart();
@@ -1223,6 +1226,22 @@ export default function EmbedShellPage() {
               </svg>
               <span className="text-[11px] font-bold">{likeCount > 0 ? likeCount.toLocaleString() : "Like"}</span>
             </button>
+            <div className="mt-3 flex flex-col items-center gap-2.5">
+              {(["🔥", "👏", "😂"] as const).map((em) => (
+                <button
+                  key={em}
+                  type="button"
+                  aria-label={`React ${em}`}
+                  onClick={() => {
+                    spawnHeart(em);
+                    reactionSenderRef.current?.(em);
+                  }}
+                  className="text-2xl drop-shadow-[0_1px_5px_rgba(0,0,0,0.6)] transition active:scale-90"
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
             <div className="pointer-events-none absolute bottom-12 right-1 h-72 w-16">
               {hearts.map((h) => (
                 <span
@@ -1231,7 +1250,7 @@ export default function EmbedShellPage() {
                   style={{ ["--drift" as string]: `${h.drift}px` }}
                   onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
                 >
-                  ❤️
+                  {h.emoji}
                 </span>
               ))}
             </div>

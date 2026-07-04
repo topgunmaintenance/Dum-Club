@@ -1068,16 +1068,17 @@ export default function ProjectPage() {
   // the host screen just never rendered them. Count + hearts here mirror
   // the viewer live room so both sides see the same love in realtime.
   const [hostLikeCount, setHostLikeCount] = useState(0);
-  const [hostHearts, setHostHearts] = useState<{ id: number; drift: number }[]>([]);
+  const [hostHearts, setHostHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
   const hostHeartSeq = useRef(0);
+  const spawnHostHeart = (emoji = "❤️") => {
+    hostHeartSeq.current += 1;
+    const hid = hostHeartSeq.current;
+    const drift = ((hid * 37) % 60) - 30;
+    setHostHearts((h) => [...h.slice(-30), { id: hid, drift, emoji }]);
+  };
   const handleHostLikeCount = (count: number, animate: boolean) => {
     setHostLikeCount(count);
-    if (animate) {
-      hostHeartSeq.current += 1;
-      const hid = hostHeartSeq.current;
-      const drift = ((hid * 37) % 60) - 30;
-      setHostHearts((h) => [...h.slice(-30), { id: hid, drift }]);
-    }
+    if (animate) spawnHostHeart();
   };
   // Audit #4 Phase 1 (Q11). when the host ends a stream during
   // the same page session, hold a "Show ended" banner for ~30s so
@@ -6492,7 +6493,7 @@ return (
                       style={{ ["--drift" as string]: `${h.drift}px` }}
                       onAnimationEnd={() => setHostHearts((list) => list.filter((x) => x.id !== h.id))}
                     >
-                      ❤️
+                      {h.emoji}
                     </span>
                   ))}
                 </div>
@@ -6530,6 +6531,7 @@ return (
                   }
                   isHost={true}
               onLikeCount={handleHostLikeCount}
+              onReaction={(emoji) => spawnHostHeart(emoji)}
                   onRequestSignIn={login}
                   getToken={getToken}
                   onCommentBuy={handleCommentBuy}
@@ -6638,6 +6640,7 @@ return (
                   }
               isHost={true}
               onLikeCount={handleHostLikeCount}
+              onReaction={(emoji) => spawnHostHeart(emoji)}
               onRequestSignIn={login}
               getToken={getToken}
               onCommentBuy={handleCommentBuy}
@@ -6674,7 +6677,7 @@ return (
       {liveStudioMode && (
         <>
           <span className="pointer-events-none absolute left-4 top-14 z-30 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
-            {liveViewerCount > 0 ? `${liveViewerCount.toLocaleString()} watching` : (projectName || "")}
+            {liveViewerCount > 0 ? `👀 ${liveViewerCount.toLocaleString()} watching` : (projectName || "")}
           </span>
           <div className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10">
             <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden">

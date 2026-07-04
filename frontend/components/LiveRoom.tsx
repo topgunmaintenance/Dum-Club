@@ -93,7 +93,7 @@ type LiveRoomProps = {
   onClose: () => void;
 };
 
-type Heart = { id: number; drift: number };
+type Heart = { id: number; drift: number; emoji: string };
 
 export function LiveRoom({
   projectId,
@@ -156,13 +156,15 @@ export function LiveRoom({
   // animation). The displayed count comes back from the server.
   const likeSenderRef = useRef<(() => void) | null>(null);
 
-  function spawnHeart() {
+  const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
+
+  function spawnHeart(emoji = "❤️") {
     // Sequential id (not Math.random) keeps keys stable; drift varies the
     // sideways travel so a rapid tap-stream fans out instead of stacking.
     heartSeq.current += 1;
     const id = heartSeq.current;
     const drift = ((id * 37) % 60) - 30; // deterministic spread, -30..29px
-    setHearts((h) => [...h, { id, drift }]);
+    setHearts((h) => [...h, { id, drift, emoji }]);
   }
 
   function popHeart() {
@@ -388,6 +390,21 @@ export function LiveRoom({
             <path d="M12 21s-7.2-4.6-9.6-9.2C.9 8.7 2.3 5.5 5.3 5.1c1.8-.2 3.4.7 4.7 2.2C11.3 5.8 12.9 4.9 14.7 5.1c3 .4 4.4 3.6 2.9 6.7C19.2 16.4 12 21 12 21z" />
           </svg>
         </RailButton>
+        {/* Emoji reactions (2026-07-04) — ephemeral, socket-synced. */}
+        {(["🔥", "👏", "😂"] as const).map((em) => (
+          <button
+            key={em}
+            type="button"
+            aria-label={`React ${em}`}
+            onClick={() => {
+              spawnHeart(em);
+              reactionSenderRef.current?.(em);
+            }}
+            className="text-2xl drop-shadow-[0_1px_5px_rgba(0,0,0,0.6)] transition active:scale-90"
+          >
+            {em}
+          </button>
+        ))}
         {/* Chat rail icon removed (owner decision 2026-07-02): the public
             chat + input are always visible bottom-left, so the icon only
             duplicated something already on screen. Rail is Like + Share. */}
@@ -478,7 +495,7 @@ export function LiveRoom({
               style={{ ["--drift" as string]: `${h.drift}px` }}
               onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
             >
-              ❤️
+              {h.emoji}
             </span>
           ))}
         </div>
@@ -511,6 +528,8 @@ export function LiveRoom({
           onItemSold={onItemSold}
           onItemUpdate={onItemUpdate}
           likeSenderRef={likeSenderRef}
+          reactionSenderRef={reactionSenderRef}
+          onReaction={(emoji) => spawnHeart(emoji)}
           onLikeCount={(count, animate) => {
             setLikeCount(count);
             // Float a heart for likes from other viewers (our own already
