@@ -206,6 +206,9 @@ export default function EmbedShellPage() {
   // Modal "see all offers" sheet (used only in the ?display=modal
   // branch; the inline/direct embed never reads it).
   const [showAllOffers, setShowAllOffers] = useState<boolean>(false);
+  // Immersive live room (2026-07-04): watching count for the top bar,
+  // reported by the overlay chat's socket.
+  const [immersiveWatching, setImmersiveWatching] = useState<number>(0);
 
   // Mirror `offers` into a ref so WS callbacks can resolve fresh
   // titles without being trapped in a render-stale closure. The
@@ -522,6 +525,11 @@ export default function EmbedShellPage() {
   // no second viewer is created, the LIVE NOW affordance scrolls
   // the visitor here.
   const isLivePresent = !!project?.is_live && ivsActive;
+  // TikTok-style room for the bubble overlay (founder request
+  // 2026-07-04: the embed's boxed live layout looked nothing like
+  // the dum.club live room). Modal + live -> full-bleed immersive;
+  // everything else keeps the boxed layout.
+  const immersive = modal && isLivePresent && !!project?.id;
   const liveSectionRef = useRef<HTMLElement | null>(null);
   const handlePopInLiveClick = useCallback(() => {
     const el = liveSectionRef.current;
@@ -1099,6 +1107,140 @@ export default function EmbedShellPage() {
         </div>
       )}
 
+      {immersive && project?.id && (
+        <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
+          {/* Full-bleed video */}
+          <div className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full">
+            <IVSStageViewer
+              projectId={project.id}
+              userId={viewerUserId}
+              fit="cover"
+              soundPromptClass="top-24"
+            />
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/70 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/80 to-transparent" />
+
+          {/* Top bar — LIVE, watching, shop, close */}
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-state-live px-2.5 py-1 shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+              <span className="text-[11px] font-bold uppercase tracking-wide">Live</span>
+            </span>
+            {immersiveWatching > 0 && (
+              <span className="rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
+                {immersiveWatching.toLocaleString()} watching
+              </span>
+            )}
+            <span className="min-w-0 flex-1 truncate text-sm font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
+              {displayName}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  window.parent.postMessage({ type: "dum-embed-close" }, "*");
+                } catch { /* host missing - nothing to close into */ }
+              }}
+              aria-label="Close live room"
+              className="inline-flex h-9 w-9 items-center justify-center text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)] transition hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Overlay chat, bottom-left, clear of the buy stack */}
+          <div className="absolute bottom-[13rem] left-2 z-20 w-[min(76vw,calc(100vw-4rem))] max-w-sm">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-state-live" />
+              Live chat · everyone sees this
+            </div>
+            <LiveChatIVS
+              projectId={project.id}
+              userId={authUser?.privyId || ""}
+              userName={viewerName}
+              isHost={false}
+              overlay
+              getToken={getToken}
+              onRequestSignIn={login}
+              onViewerCountChange={setImmersiveWatching}
+              onItemUpdate={(data) => {
+                setOffers((prev) =>
+                  prev.map((o) =>
+                    o.id === data.offer_id
+                      ? { ...o, quantity_sold: data.quantity_sold }
+                      : o
+                  )
+                );
+              }}
+              onItemSold={(data) => {
+                const fresh = offersRef.current.find((o) => o.id === data.offer_id);
+                spawnSaleToast(fresh?.title || data.title || "Item");
+                spawnEmojiBurst();
+              }}
+            />
+          </div>
+
+          {/* Bottom dock — offer card + BUY, mirroring the dum.club room */}
+          <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))]">
+            <div className="mx-auto max-w-md">
+              {pinnedOffer ? (
+                <>
+                  <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 shadow-lg backdrop-blur-md">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold">{pinnedOffer.title}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-extrabold">
+                          ${Number(pinnedOffer.price_usd || 0).toFixed(2)}
+                        </span>
+                        {pinSecondsLeft !== null && pinSecondsLeft > 0 && (
+                          <span className="rounded-full bg-state-live/20 px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-state-live">
+                            Ends in {Math.floor(pinSecondsLeft / 60)}:{String(pinSecondsLeft % 60).padStart(2, "0")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {pinSecondsLeft === 0 ? (
+                    <span className="block w-full rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
+                      Sale ended · watch for the next drop
+                    </span>
+                  ) : soldOut ? (
+                    <span className="block w-full rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
+                      Sold out
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleBuy}
+                      disabled={buying}
+                      className="w-full rounded-2xl bg-mint-fill py-3.5 text-center text-sm font-extrabold uppercase tracking-[0.08em] text-mint-fill-ink transition hover:opacity-90 disabled:opacity-50"
+                    >
+                      {buying ? "Opening…" : `Buy now · $${Number(pinnedOffer.price_usd || 0).toFixed(2)}`}
+                    </button>
+                  )}
+                  {buyError && (
+                    <p className="mt-2 text-center text-[11px] font-semibold text-state-live">{buyError}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mb-2 text-center text-xs text-white/70">
+                  Watch for the next drop
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowAllOffers(true)}
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/15"
+              >
+                See all offers · {offers.length}
+                <span aria-hidden>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={shellCls}>
         {/* Header — name + slug + live + offer count, kept tight so the
             video and product card dominate the conversion area below.
@@ -1199,7 +1341,7 @@ export default function EmbedShellPage() {
             aria-label="Live video"
             className={videoSectionCls}
           >
-            {project?.id && ivsActive ? (
+            {project?.id && ivsActive && !immersive ? (
               <IVSStageViewer
                 projectId={project.id}
                 userId={viewerUserId}
@@ -1270,7 +1412,7 @@ export default function EmbedShellPage() {
                   bottom; the rest of the offers are one tap away via the
                   see-all sheet. The inline "full" embed and the direct
                   /embed/{slug} page render the untouched branch below. */}
-              {project?.id && isIVSSession(project) ? (
+              {project?.id && isIVSSession(project) && !immersive ? (
                 <section
                   aria-label="Live chat"
                   className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-default"
@@ -1763,7 +1905,7 @@ export default function EmbedShellPage() {
             in the inline/direct embed. shellCls adds `relative` in
             modal so this absolute sheet is anchored to the live window. */}
         {modal && showAllOffers && (
-          <div className="absolute inset-0 z-30 flex flex-col rounded-[20px] bg-surface-page">
+          <div className="fixed inset-0 z-[70] flex flex-col rounded-[20px] bg-surface-page">
             <div className="flex shrink-0 items-center justify-between border-b border-default px-4 py-3">
               <span className="text-sm font-bold">All offers</span>
               <button

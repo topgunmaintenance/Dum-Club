@@ -1115,6 +1115,14 @@
       document.body.style.overflow = "hidden";
       pauseBubbleStream();
     }
+    // The immersive room inside the overlay iframe posts this when
+    // its own X is tapped (2026-07-04) - the close control lives in
+    // the room's top bar now, matching the dum.club live layout.
+    window.addEventListener("message", function (ev) {
+      var d = ev && ev.data;
+      if (d && d.type === "dum-embed-close") closeOverlay();
+    });
+
     function closeOverlay() {
       overlay.classList.remove("is-open");
       document.body.style.overflow = "";
