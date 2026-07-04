@@ -6679,6 +6679,17 @@ return (
           <span className="pointer-events-none absolute left-4 top-14 z-30 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] font-semibold text-white backdrop-blur-sm">
             {liveViewerCount > 0 ? `👀 ${liveViewerCount.toLocaleString()} watching` : (projectName || "")}
           </span>
+          {saleToasts.length > 0 && (
+            <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center px-6">
+              <div className="animate-bounce rounded-2xl border border-mint-fill/60 bg-black/80 px-6 py-4 text-center shadow-2xl backdrop-blur-md" style={{ animationIterationCount: 2, animationDuration: "0.5s" }}>
+                <div className="text-2xl" aria-hidden="true">🎉</div>
+                <div className="mt-1 text-lg font-extrabold uppercase tracking-[0.14em] text-mint-fill">Sold!</div>
+                <div className="mt-0.5 max-w-[16rem] truncate text-sm font-semibold text-white">
+                  {saleToasts[saleToasts.length - 1].title} · {saleToasts[saleToasts.length - 1].count} this show
+                </div>
+              </div>
+            </div>
+          )}
           <div className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10">
             <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden">
               <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white/70">Timer</span>

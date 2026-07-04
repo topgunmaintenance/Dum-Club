@@ -215,6 +215,18 @@ export default function EmbedShellPage() {
   const [hearts, setHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
   const heartSeq = useRef(0);
   const likeSenderRef = useRef<(() => void) | null>(null);
+  // SOLD splash for the immersive room (2026-07-04) - the boxed layout
+  // already toasts + bursts; the room celebrates center-screen.
+  const [soldSplash, setSoldSplash] = useState<string | null>(null);
+  const soldSplashTimer = useRef<number | null>(null);
+  const celebrateSale = (title: string) => {
+    setSoldSplash(title || "Item");
+    for (let i = 0; i < 7; i++) {
+      window.setTimeout(() => spawnHeart("🎉"), i * 90);
+    }
+    if (soldSplashTimer.current) window.clearTimeout(soldSplashTimer.current);
+    soldSplashTimer.current = window.setTimeout(() => setSoldSplash(null), 2600);
+  };
   const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
   const spawnHeart = (emoji = "❤️") => {
     heartSeq.current += 1;
@@ -1206,9 +1218,21 @@ export default function EmbedShellPage() {
                 const fresh = offersRef.current.find((o) => o.id === data.offer_id);
                 spawnSaleToast(fresh?.title || data.title || "Item");
                 spawnEmojiBurst();
+                celebrateSale(fresh?.title || data.title || "Item");
               }}
             />
           </div>
+
+          {/* SOLD splash — center screen */}
+          {soldSplash && (
+            <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center px-6">
+              <div className="animate-bounce rounded-2xl border border-mint-fill/60 bg-black/80 px-6 py-4 text-center shadow-2xl backdrop-blur-md" style={{ animationIterationCount: 2, animationDuration: "0.5s" }}>
+                <div className="text-2xl" aria-hidden="true">🎉</div>
+                <div className="mt-1 text-lg font-extrabold uppercase tracking-[0.14em] text-mint-fill">Sold!</div>
+                <div className="mt-0.5 max-w-[16rem] truncate text-sm font-semibold text-white">{soldSplash}</div>
+              </div>
+            </div>
+          )}
 
           {/* Like rail + floating hearts — right side, above the buy dock */}
           <div className="absolute bottom-56 right-3 z-20 flex flex-col items-center">

@@ -147,6 +147,18 @@ export function LiveRoom({
     return s > 0 ? s : 0;
   }, [pinnedUntil, flashNow]);
   const [likeCount, setLikeCount] = useState(0);
+  // SOLD splash (Whatnot-parity, 2026-07-04): center-screen celebration
+  // when anything sells, driven by the existing item_sold socket event.
+  const [soldSplash, setSoldSplash] = useState<string | null>(null);
+  const soldTimerRef = useRef<number | null>(null);
+  function celebrateSale(title: string) {
+    setSoldSplash(title || "Item");
+    for (let i = 0; i < 7; i++) {
+      window.setTimeout(() => spawnHeart("🎉"), i * 90);
+    }
+    if (soldTimerRef.current) window.clearTimeout(soldTimerRef.current);
+    soldTimerRef.current = window.setTimeout(() => setSoldSplash(null), 2600);
+  }
   const heartSeq = useRef(0);
   const chatWrapRef = useRef<HTMLDivElement | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -531,7 +543,10 @@ export function LiveRoom({
           getToken={getToken}
           onCommentBuy={onCommentBuy}
           onViewerCountChange={onViewerCountChange}
-          onItemSold={onItemSold}
+          onItemSold={(data) => {
+            celebrateSale(data?.title || "Item");
+            onItemSold(data);
+          }}
           onItemUpdate={onItemUpdate}
           likeSenderRef={likeSenderRef}
           reactionSenderRef={reactionSenderRef}
@@ -544,6 +559,17 @@ export function LiveRoom({
           }}
         />
       </div>
+
+      {/* ── SOLD splash — center screen, everyone sees the win ── */}
+      {soldSplash && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center px-6">
+          <div className="animate-bounce rounded-2xl border border-mint-fill/60 bg-black/80 px-6 py-4 text-center shadow-2xl backdrop-blur-md" style={{ animationIterationCount: 2, animationDuration: "0.5s" }}>
+            <div className="text-2xl" aria-hidden="true">🎉</div>
+            <div className="mt-1 text-lg font-extrabold uppercase tracking-[0.14em] text-mint-fill">Sold!</div>
+            <div className="mt-0.5 max-w-[16rem] truncate text-sm font-semibold text-white">{soldSplash}</div>
+          </div>
+        </div>
+      )}
 
       {/* ── Auction Bid bar (when a live auction is active) OR Offer + BUY bar ── */}
       {aucActive && auc ? (
