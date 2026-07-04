@@ -229,6 +229,9 @@ export function LiveRoom({
   useEffect(() => { setAuc(auction); }, [auction]);
   const [bidding, setBidding] = useState(false);
   const [bidError, setBidError] = useState<string | null>(null);
+  // Custom bid entry (Whatnot-parity, 2026-07-04).
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customVal, setCustomVal] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const aucActive = !!auc && auc.status === "active";
@@ -258,21 +261,24 @@ export function LiveRoom({
   const isTopBidder = !!auc?.current_bidder && auc.current_bidder === userId;
   const nextBid = (currentBid != null ? currentBid : auc ? Number(auc.starting_price) : 0) + 1;
 
-  async function placeBid() {
+  async function placeBid(amountOverride?: number) {
     if (!auc || bidding) return;
     if (!userId) { onRequestSignIn(); return; }
+    const amount = amountOverride ?? nextBid;
     setBidding(true);
     setBidError(null);
     try {
       const res = await fetch(`${API_BASE}/api/auctions/${auc.id}/bid`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: userId },
-        body: JSON.stringify({ amount: nextBid }),
+        body: JSON.stringify({ amount }),
       });
       if (res.ok) {
         const data = await res.json();
         if (data?.auction) setAuc(data.auction);
-        onBidPlaced?.(data?.your_display_name || "You", nextBid);
+        onBidPlaced?.(data?.your_display_name || "You", amount);
+        setCustomOpen(false);
+        setCustomVal("");
       } else {
         const e = await res.json().catch(() => ({}));
         setBidError(typeof e.detail === "string" ? e.detail : "Bid failed");
@@ -597,19 +603,74 @@ export function LiveRoom({
                 <div className={`font-mono text-xl font-extrabold ${secsLeft != null && secsLeft <= 10 ? "text-state-live" : "text-white"}`}>
                   {countdown}
                 </div>
-                <div className="text-[9px] uppercase tracking-wide text-white/50">ending</div>
+                <div className="text-[9px] uppercase tracking-wide text-white/50">
+                  {auc.bid_count > 0 ? `${auc.bid_count} bid${auc.bid_count === 1 ? "" : "s"} · ending` : "ending"}
+                </div>
               </div>
             </div>
 
-            {/* Bid bar (coral — auction urgency) */}
-            <button
-              type="button"
-              onClick={placeBid}
-              disabled={bidding || secsLeft === 0}
-              className="w-full rounded-2xl bg-state-live py-3.5 text-center text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:opacity-90 disabled:opacity-50"
-            >
-              {secsLeft === 0 ? "Auction ended" : bidding ? "Placing…" : `Bid $${nextBid.toFixed(0)}`}
-            </button>
+            {/* Bid bar (coral — auction urgency) + custom amount entry */}
+            {customOpen && secsLeft !== 0 ? (
+              <div className="flex items-stretch gap-2">
+                <div className="flex flex-1 items-center rounded-2xl bg-white/15 px-3 backdrop-blur-sm">
+                  <span className="text-sm font-bold text-white/70">$</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={nextBid}
+                    step="1"
+                    autoFocus
+                    value={customVal}
+                    onChange={(e) => setCustomVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const v = Number(customVal);
+                        if (v >= nextBid) placeBid(v);
+                        else setBidError(`Bid at least $${nextBid.toFixed(0)}`);
+                      }
+                    }}
+                    placeholder={`${nextBid.toFixed(0)} or more`}
+                    className="w-full bg-transparent px-2 py-3.5 text-sm font-bold text-white placeholder:text-white/40 outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={bidding || Number(customVal) < nextBid}
+                  onClick={() => placeBid(Number(customVal))}
+                  className="rounded-2xl bg-state-live px-5 text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {bidding ? "…" : "Bid"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setCustomOpen(false); setCustomVal(""); setBidError(null); }}
+                  aria-label="Cancel custom bid"
+                  className="rounded-2xl bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-stretch gap-2">
+                <button
+                  type="button"
+                  onClick={() => placeBid()}
+                  disabled={bidding || secsLeft === 0}
+                  className="flex-1 rounded-2xl bg-state-live py-3.5 text-center text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {secsLeft === 0 ? "Auction ended" : bidding ? "Placing…" : `Bid $${nextBid.toFixed(0)}`}
+                </button>
+                {secsLeft !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomOpen(true)}
+                    className="rounded-2xl bg-white/15 px-4 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/25"
+                  >
+                    Custom
+                  </button>
+                )}
+              </div>
+            )}
             {bidError && <p className="mt-1 text-center text-[11px] text-state-live">{bidError}</p>}
           </div>
         </div>
