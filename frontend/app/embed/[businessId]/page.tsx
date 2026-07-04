@@ -529,7 +529,11 @@ export default function EmbedShellPage() {
   // 2026-07-04: the embed's boxed live layout looked nothing like
   // the dum.club live room). Modal + live -> full-bleed immersive;
   // everything else keeps the boxed layout.
-  const immersive = modal && isLivePresent && !!project?.id;
+  // Immersion keys on modal + is_live only: ivs_stage_arn can lag the
+  // live flag by a beat (or a poll merge), and requiring it let the
+  // room collapse back to the boxed layout. The video area inside the
+  // room handles not-ready itself.
+  const immersive = modal && !!project?.is_live && !!project?.id;
   const liveSectionRef = useRef<HTMLElement | null>(null);
   const handlePopInLiveClick = useCallback(() => {
     const el = liveSectionRef.current;
@@ -1111,12 +1115,18 @@ export default function EmbedShellPage() {
         <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
           {/* Full-bleed video */}
           <div className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover [&>div]:h-full">
-            <IVSStageViewer
-              projectId={project.id}
-              userId={viewerUserId}
-              fit="cover"
-              soundPromptClass="top-24"
-            />
+            {ivsActive ? (
+              <IVSStageViewer
+                projectId={project.id}
+                userId={viewerUserId}
+                fit="cover"
+                soundPromptClass="top-24"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-white/60">
+                Connecting to the live show…
+              </div>
+            )}
           </div>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/70 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/80 to-transparent" />
