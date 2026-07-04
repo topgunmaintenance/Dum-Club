@@ -2674,7 +2674,7 @@ async def get_live_status(project_id: str, response: Response):
     supabase = get_client()
     res = (
         supabase.table("projects")
-        .select("id, is_live, live_provider, live_playback_id, live_stream_id, stream_url")
+        .select("id, is_live, live_provider, live_playback_id, live_stream_id, stream_url, pinned_offer_id, pinned_until")
         .eq("id", project_id)
         .eq("is_deleted", False)
         .limit(1)
@@ -2729,6 +2729,27 @@ async def get_live_status(project_id: str, response: Response):
         "viewer_count": 0,
         "remaining_seconds": 0,
     }
+
+    # Pin state for the embed overlay's live poll (2026-07-04): the
+    # overlay used to load once, so a mid-stream pin never reached
+    # viewers already inside it. Read-side expiry only - no DB write
+    # on this hot cached path; /embed-config owns the persisted clear.
+    pinned_until = project.get("pinned_until")
+    pinned_offer_id = project.get("pinned_offer_id")
+    if pinned_until:
+        try:
+            from datetime import datetime, timezone
+            iso = str(pinned_until).replace(" ", "T")
+            expiry = datetime.fromisoformat(iso)
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=timezone.utc)
+            if expiry <= datetime.now(timezone.utc):
+                pinned_until = None
+                pinned_offer_id = None
+        except Exception:
+            pass
+    result["pinned_offer_id"] = pinned_offer_id
+    result["pinned_until"] = pinned_until
 
     try:
         from services.live_limits import (

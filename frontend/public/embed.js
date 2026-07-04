@@ -1403,10 +1403,26 @@
         topOffer && typeof topOffer.quantity_remaining === "number"
           ? topOffer.quantity_remaining
           : null;
-      var hasTimer =
-        sessionData &&
-        typeof sessionData.remaining_seconds === "number" &&
-        sessionData.remaining_seconds > 0;
+      // Sale-timer countdown (2026-07-04): the banner used to count
+      // live_session.remaining_seconds - the STREAM duration cap -
+      // which read as a 12-minute "deal" while the host had set a
+      // 30-second flash sale. The deal clock is the host-set pin
+      // window (embed-config pinned_until), or nothing.
+      var pinnedRemaining = null;
+      try {
+        if (embedConfig && embedConfig.pinned_until) {
+          var pinIso = String(embedConfig.pinned_until)
+            .replace(" ", "T")
+            .replace(/(\.\d{3})\d+/, "$1")
+            .replace(/([+-]\d{2})$/, "$1:00");
+          var pinEnd = Date.parse(pinIso);
+          if (!isNaN(pinEnd)) {
+            var pinSecs = Math.floor((pinEnd - Date.now()) / 1000);
+            if (pinSecs > 0) pinnedRemaining = pinSecs;
+          }
+        }
+      } catch (e) { /* unparseable timestamp - no timer banner */ }
+      var hasTimer = pinnedRemaining !== null;
       var hasStockUrgency = topQty !== null && topQty > 0 && topQty <= 5;
       if (hasTimer || hasStockUrgency) {
         var cd = document.createElement("div");
@@ -1423,7 +1439,7 @@
           cdLabel.textContent = "Live deal ends in";
           var cdDigits = document.createElement("span");
           cdDigits.className = "dum-cd-digits";
-          var initialRemaining = sessionData.remaining_seconds;
+          var initialRemaining = pinnedRemaining;
           cdDigits.textContent = formatCountdown(initialRemaining);
           cd.appendChild(cdLabel);
           cd.appendChild(cdDigits);
