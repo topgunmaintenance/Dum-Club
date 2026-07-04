@@ -1064,7 +1064,8 @@
       // off the bottom. The inline full-mode iframe (createIframe
       // below) deliberately omits the flag and keeps its natural,
       // auto-growing layout.
-      overlayIframe.src = embedUrl + "?display=modal";
+      overlayIframe.src =
+        embedUrl + "?display=modal&v=" + Date.now();
       overlayIframe.title = "DUM Club live storefront";
       overlayIframe.setAttribute("data-dum-embed", businessId);
       overlayIframe.setAttribute("frameborder", "0");
@@ -1110,6 +1111,16 @@
       }
     }
     function openOverlay() {
+      // Re-source the iframe on EVERY open (2026-07-04): the overlay
+      // was created once per page load and reused, so any tab opened
+      // before a deploy kept the old room forever - the "still showing
+      // the old version" class of bug. The v= stamp also defeats any
+      // intermediary HTML caching.
+      if (overlayIframe) {
+        try {
+          overlayIframe.src = embedUrl + "?display=modal&v=" + Date.now();
+        } catch (e) { /* keep the existing document */ }
+      }
       ensureOverlayIframe();
       overlay.classList.add("is-open");
       document.body.style.overflow = "hidden";
