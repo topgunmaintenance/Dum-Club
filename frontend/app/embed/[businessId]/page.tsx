@@ -533,6 +533,47 @@ export default function EmbedShellPage() {
     }
   }, []);
 
+  // Live poll (2026-07-04): the overlay loaded once, so a pin made
+  // mid-stream never reached viewers already inside it - they saw a
+  // ticking Featured chip with "No live offer pinned yet". Merge the
+  // live-status pin fields every 10s; refetch offers when a pinned id
+  // isn't in the list we have.
+  useEffect(() => {
+    if (!project?.id) return;
+    const pid = project.id;
+    const t = window.setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${pid}/live-status`, { cache: "no-store" });
+        if (!res.ok) return;
+        const d = await res.json();
+        if (!mountedRef.current) return;
+        setProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                is_live: typeof d.is_live === "boolean" ? d.is_live : prev.is_live,
+                pinned_offer_id: d.pinned_offer_id ?? null,
+                pinned_until: d.pinned_until ?? null,
+              }
+            : prev,
+        );
+        if (d.pinned_offer_id) {
+          setOffers((prev) => {
+            if (prev.some((o) => o.id === d.pinned_offer_id)) return prev;
+            fetch(`${API_BASE}/api/offers/${pid}`, { cache: "no-store" })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((list) => {
+                if (mountedRef.current && Array.isArray(list)) setOffers(list);
+              })
+              .catch(() => { /* next poll retries */ });
+            return prev;
+          });
+        }
+      } catch { /* transient - next poll retries */ }
+    }, 10000);
+    return () => window.clearInterval(t);
+  }, [project?.id]);
+
   // Pinned offer derivation — single source of truth for the card.
   const pinnedOffer = useMemo<Offer | null>(() => {
     if (!project?.pinned_offer_id) return null;
@@ -1290,7 +1331,7 @@ export default function EmbedShellPage() {
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-teal">
                     Now showing
                   </span>
-                  {pinSecondsLeft !== null && pinSecondsLeft > 0 && (
+                  {pinnedOffer && pinSecondsLeft !== null && pinSecondsLeft > 0 && (
                     <span
                       aria-live="off"
                       className="inline-flex items-center gap-1 rounded-full border border-brand-teal/40 bg-brand-teal-soft px-2 py-0.5 text-[10px] font-bold tabular-nums text-brand-teal"
