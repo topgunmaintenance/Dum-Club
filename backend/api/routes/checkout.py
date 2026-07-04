@@ -700,6 +700,37 @@ async def create_payment_intent(
     # cannot take new orders even if their Stripe Connect account is
     # otherwise verified — the platform plan they pay us for is paused.
     # Dashboard stays accessible so they can fix their card.
+    # Self-purchase block (founder decision 2026-07-03): an authenticated
+    # buyer whose canonical account owns this shop cannot buy from it.
+    # Self-purchases would count as real GMV toward the Phase gates
+    # (doctrine: never fake traction), and the UI-only owner block was
+    # bypassable from any of the owner's other sign-in identities.
+    # Guests are untouched - no identity to compare.
+    if buyer_user_id and not is_guest and seller_user_id:
+        try:
+            from api.routes.projects import _resolve_account_id
+            buyer_acct = _resolve_account_id(supabase, buyer_user_id)
+            seller_acct = _resolve_account_id(supabase, seller_user_id)
+            if buyer_user_id == seller_user_id or (
+                buyer_acct and seller_acct and buyer_acct == seller_acct
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "self_purchase_blocked",
+                        "message": (
+                            "This is your own shop, so checkout is off for "
+                            "you. Buyers see the real payment page here."
+                        ),
+                    },
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            # Account resolution hiccup - fail open; the exact-DID check
+            # above already caught the direct case.
+            print(f"[checkout] self-purchase check soft-failed: {exc!r}")
+
     from api.routes.merchant import is_merchant_suspended
     if is_merchant_suspended(seller_user_id):
         print(f"[checkout] Refusing session: seller {seller_user_id} is suspended (payment grace expired)")

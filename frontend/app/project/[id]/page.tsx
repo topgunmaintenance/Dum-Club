@@ -4260,6 +4260,17 @@ return (
         overlay. Exactly one of the two ever mounts (never both), so
         IVSStageViewer's per-project claim/wait dedup never has to
         arbitrate simultaneous live mounts. */}
+    {/* Checkout failure toast for the immersive live room - buyError
+        renders on the storefront cards but the fullscreen overlay had
+        no error surface at all, so a failed session creation looked
+        like a dead Buy button (browser audit 2026-07-03). */}
+    {immersiveLive && pinnedOffer && buyError[pinnedOffer.id] && typeof document !== "undefined" && createPortal(
+      <div className="fixed left-1/2 top-20 z-[80] w-[min(90vw,24rem)] -translate-x-1/2 rounded-2xl border border-[var(--state-live)]/40 bg-black/85 px-4 py-3 text-center text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
+        {buyError[pinnedOffer.id]}
+      </div>,
+      document.body
+    )}
+
     {immersiveLive && project && isDesktopViewport && !isAuctionActive && (
       <LiveRoomDesktop
         projectId={id as string}
