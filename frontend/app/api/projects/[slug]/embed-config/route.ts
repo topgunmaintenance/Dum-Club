@@ -110,6 +110,7 @@ function softFallback(slug: string, reason: string) {
       live_provider: null,
       ivs_stage_arn: null,
       pinned_offer_id: null,
+      pinned_until: null,
       // Commerce surface fields (mirror Railway's shape — v1.7).
       // Soft-degraded path emits empty/null values; the bubble
       // gracefully treats these as "no commerce surface" and
@@ -174,7 +175,7 @@ export async function GET(
         // The bubble falls back to the slug + a derived initial
         // when title is null/empty, so this select staying string-
         // shaped is correctness-preserving for older rows.
-        "id, slug, title, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, popin_config",
+        "id, slug, title, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, pinned_until, popin_config",
       )
       .eq("is_deleted", false)
       .limit(1);
@@ -397,6 +398,13 @@ export async function GET(
         live_provider: row.live_provider ?? null,
         ivs_stage_arn: row.ivs_stage_arn ?? null,
         pinned_offer_id: row.pinned_offer_id ?? null,
+        pinned_until: (() => {
+          const raw = row.pinned_until;
+          if (!raw) return null;
+          const t = Date.parse(String(raw).replace(" ", "T"));
+          if (Number.isNaN(t) || t <= Date.now()) return null;
+          return raw;
+        })(),
         // Commerce surface (v1.7) — mirrors Railway's shape so
         // embed.js consumes both origins identically.
         pinned_offer: pinnedOffer,
