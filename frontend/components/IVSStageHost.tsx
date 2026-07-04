@@ -581,12 +581,23 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
               the moment they join.
             </div>
           </div>
-          <a
-            href="#offers-section"
+          <button
+            type="button"
+            onClick={() => {
+              // The manage console's "Your offers" card (id=manage-offers)
+              // is what's actually on screen in the studio - the public
+              // #offers-section is hidden there, so the old anchor link
+              // scrolled nowhere (owner report 2026-07-04). Fall back to
+              // the public section for any layout where manage isn't on.
+              const el =
+                document.getElementById("manage-offers") ||
+                document.getElementById("offers-section");
+              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
             className="inline-flex items-center justify-center rounded-2xl bg-mint-fill px-10 py-4 text-lg font-bold text-mint-fill-ink shadow-dum-card transition hover:opacity-90 active:scale-[0.98]"
           >
             Pin a featured item →
-          </a>
+          </button>
           <p className="mt-3 text-sm text-zinc-500">Then you&apos;re one tap from live.</p>
         </div>
       )}
