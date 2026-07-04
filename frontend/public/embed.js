@@ -1378,6 +1378,86 @@
     // recovery path can build the same panel after initial render.
     // Idempotent: bails if productPanel or productChip is already
     // mounted, so a slow second source doesn't double-render.
+    // ── Live sale-timer sync (2026-07-04) ──
+    // The banner used to be built once per page load, so a 30-second
+    // sale froze at 00:00 forever and a re-pin never reached visitors
+    // already on the page. These helpers own the timer banner's whole
+    // lifecycle, driven by a 15s embed-config poll.
+    var saleCd = null;
+    var saleCdDigits = null;
+    var saleCdTimer = null;
+    var salePollTimer = null;
+
+    function saleRemainingSecs() {
+      try {
+        if (!embedConfig || !embedConfig.pinned_until) return null;
+        var iso = String(embedConfig.pinned_until)
+          .replace(" ", "T")
+          .replace(/(\.\d{3})\d+/, "$1")
+          .replace(/([+-]\d{2})$/, "$1:00");
+        var end = Date.parse(iso);
+        if (isNaN(end)) return null;
+        var secs = Math.floor((end - Date.now()) / 1000);
+        return secs > 0 ? secs : null;
+      } catch (e) { return null; }
+    }
+
+    function clearSaleCountdown() {
+      if (saleCdTimer) { window.clearInterval(saleCdTimer); saleCdTimer = null; }
+      if (saleCd && saleCd.parentNode) saleCd.parentNode.removeChild(saleCd);
+      saleCd = null;
+      saleCdDigits = null;
+    }
+
+    function syncSaleCountdown() {
+      if (!productPanel) return;
+      var remaining = saleRemainingSecs();
+      if (remaining === null) { clearSaleCountdown(); return; }
+      if (!saleCd) {
+        saleCd = document.createElement("div");
+        saleCd.setAttribute("data-dum-embed-product-countdown", "");
+        var sDot = document.createElement("span");
+        sDot.className = "dum-cd-dot";
+        saleCd.appendChild(sDot);
+        var sLabel = document.createElement("span");
+        sLabel.textContent = "Live deal ends in";
+        saleCd.appendChild(sLabel);
+        saleCdDigits = document.createElement("span");
+        saleCdDigits.className = "dum-cd-digits";
+        saleCd.appendChild(saleCdDigits);
+        productPanel.insertBefore(saleCd, productPanel.firstChild);
+      }
+      saleCdDigits.textContent = formatCountdown(remaining);
+      if (saleCdTimer) window.clearInterval(saleCdTimer);
+      var base = remaining;
+      var startedAt = Date.now();
+      saleCdTimer = window.setInterval(function () {
+        var left = base - Math.floor((Date.now() - startedAt) / 1000);
+        if (left <= 0) { clearSaleCountdown(); return; }
+        saleCdDigits.textContent = formatCountdown(left);
+      }, 1000);
+    }
+
+    function startSalePoll() {
+      if (salePollTimer || !window.fetch) return;
+      var pollUrl =
+        origin + "/api/projects/" + encodeURIComponent(businessId) + "/embed-config";
+      salePollTimer = window.setInterval(function () {
+        try {
+          window
+            .fetch(pollUrl, { method: "GET", credentials: "omit" })
+            .then(function (r) { return r && r.ok ? r.json() : null; })
+            .then(function (cfg) {
+              if (cfg) {
+                embedConfig = cfg;
+                syncSaleCountdown();
+              }
+            })
+            .catch(function () { /* next poll retries */ });
+        } catch (e) { /* next poll retries */ }
+      }, 15000);
+    }
+
     function buildProductPanel(offers, sessionData) {
       if (productPanel || productChip) return;
       if (!Array.isArray(offers) || offers.length === 0) return;
@@ -1390,78 +1470,29 @@
         merchantTitle + " live deals"
       );
 
-      // Urgency banner. Two honest sources:
-      //   (a) live_session.remaining_seconds — the per-stream
-      //       duration cap really exists, so "Live deal ends in
-      //       MM:SS" reflects a real product constraint.
-      //   (b) Stock urgency on the TOP offer — only painted when
-      //       quantity_remaining is a non-null small number.
-      // Prefer (a) when both apply (stream-end is the harder
-      // ceiling); fall back to (b); otherwise no banner.
+      // Urgency banner, two honest sources:
+      //   (a) SALE TIMER - the host-set pin window (pinned_until).
+      //       LIVE-SYNCED (2026-07-04): built, retargeted, and
+      //       removed by syncSaleCountdown() + the embed-config
+      //       poll, so a 30-second flash sale reads 30 seconds,
+      //       a re-pin mid-visit appears within ~15s, and expiry
+      //       removes the banner instead of freezing at 00:00.
+      //   (b) Stock urgency on the TOP offer - build-time, only
+      //       when quantity_remaining is a small number.
       var topOffer = offers[0];
       var topQty =
         topOffer && typeof topOffer.quantity_remaining === "number"
           ? topOffer.quantity_remaining
           : null;
-      // Sale-timer countdown (2026-07-04): the banner used to count
-      // live_session.remaining_seconds - the STREAM duration cap -
-      // which read as a 12-minute "deal" while the host had set a
-      // 30-second flash sale. The deal clock is the host-set pin
-      // window (embed-config pinned_until), or nothing.
-      var pinnedRemaining = null;
-      try {
-        if (embedConfig && embedConfig.pinned_until) {
-          var pinIso = String(embedConfig.pinned_until)
-            .replace(" ", "T")
-            .replace(/(\.\d{3})\d+/, "$1")
-            .replace(/([+-]\d{2})$/, "$1:00");
-          var pinEnd = Date.parse(pinIso);
-          if (!isNaN(pinEnd)) {
-            var pinSecs = Math.floor((pinEnd - Date.now()) / 1000);
-            if (pinSecs > 0) pinnedRemaining = pinSecs;
-          }
-        }
-      } catch (e) { /* unparseable timestamp - no timer banner */ }
-      var hasTimer = pinnedRemaining !== null;
       var hasStockUrgency = topQty !== null && topQty > 0 && topQty <= 5;
-      if (hasTimer || hasStockUrgency) {
+      if (hasStockUrgency) {
         var cd = document.createElement("div");
         cd.setAttribute("data-dum-embed-product-countdown", "");
-        if (!hasTimer && hasStockUrgency) {
-          cd.className = "is-stock";
-        }
+        cd.className = "is-stock";
         var cdDot = document.createElement("span");
         cdDot.className = "dum-cd-dot";
         cd.appendChild(cdDot);
-
-        if (hasTimer) {
-          var cdLabel = document.createElement("span");
-          cdLabel.textContent = "Live deal ends in";
-          var cdDigits = document.createElement("span");
-          cdDigits.className = "dum-cd-digits";
-          var initialRemaining = pinnedRemaining;
-          cdDigits.textContent = formatCountdown(initialRemaining);
-          cd.appendChild(cdLabel);
-          cd.appendChild(cdDigits);
-
-          // Client-side ticker. Anchored to wall-clock so we don't
-          // drift on tab throttle: every tick recomputes from the
-          // start timestamp instead of decrementing by 1.
-          var startedAt = Date.now();
-          countdownTimer = window.setInterval(function () {
-            var elapsed = Math.floor((Date.now() - startedAt) / 1000);
-            var remaining = initialRemaining - elapsed;
-            if (remaining <= 0) {
-              cdDigits.textContent = "00:00";
-              if (countdownTimer) {
-                window.clearInterval(countdownTimer);
-                countdownTimer = null;
-              }
-              return;
-            }
-            cdDigits.textContent = formatCountdown(remaining);
-          }, 1000);
-        } else {
+        {
           var stockLabel = document.createElement("span");
           stockLabel.textContent =
             topQty === 1 ? "Only 1 left" : "Only " + topQty + " left";
@@ -1568,6 +1599,8 @@
       }
 
       document.body.appendChild(productPanel);
+      syncSaleCountdown();
+      startSalePoll();
       // If the bubble is already on screen, fade the panel in
       // immediately. Otherwise the initial showBubble() will pick
       // it up when it runs.
