@@ -234,15 +234,26 @@ async def place_bid(
     }
     supabase.table("auction_bids").insert(bid_insert).execute()
 
+    # Anti-snipe (Whatnot-parity, 2026-07-04): a bid landing in the
+    # final 15 seconds pushes the clock back to 15 seconds, so a last-
+    # instant bid can always be answered - that's what makes bid wars.
+    # Clients poll the auction every 2.5s, so the extension propagates
+    # to every viewer without a push channel.
+    update_fields = {
+        "current_bid": body.amount,
+        "current_bidder": user_id,
+        "current_bidder_display": display_name,
+        "bid_count": bid_position,
+    }
+    remaining = (ends_at - _now()).total_seconds()
+    if remaining < 15:
+        from datetime import timedelta
+        update_fields["ends_at"] = (_now() + timedelta(seconds=15)).isoformat()
+
     # Atomically update auction — re-check current_bid to prevent race
     update_res = (
         supabase.table("auctions")
-        .update({
-            "current_bid": body.amount,
-            "current_bidder": user_id,
-            "current_bidder_display": display_name,
-            "bid_count": bid_position,
-        })
+        .update(update_fields)
         .eq("id", auction_id)
         .eq("status", "active")
         .execute()
