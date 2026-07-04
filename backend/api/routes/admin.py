@@ -418,6 +418,47 @@ def _merchant_view_primary_sort_key(p: dict):
     )
 
 
+@router.get("/merchants/{merchant_id}/offers")
+async def list_merchant_offers(merchant_id: str, _admin=Depends(require_admin)):
+    """Enforcement view: every offer belonging to one merchant's shops,
+    with takedown state, so the admin UI can act on a single listing."""
+    supabase = get_client()
+    m = (
+        supabase.table("merchants")
+        .select("owner_privy_id")
+        .eq("id", merchant_id)
+        .limit(1)
+        .execute()
+    )
+    if not m.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    privy_id = m.data[0].get("owner_privy_id")
+    projects = (
+        supabase.table("projects")
+        .select("id, title")
+        .eq("privy_id", privy_id)
+        .eq("is_deleted", False)
+        .execute()
+        .data
+        or []
+    )
+    if not projects:
+        return {"offers": []}
+    titles = {p["id"]: p.get("title") for p in projects}
+    offers = (
+        supabase.table("offers")
+        .select("id, project_id, title, price_usd, is_active, admin_removed, admin_removed_reason")
+        .in_("project_id", list(titles.keys()))
+        .order("created_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    for o in offers:
+        o["project_title"] = titles.get(o.get("project_id"))
+    return {"offers": offers}
+
+
 @router.get("/merchants")
 async def list_all_merchants(_admin=Depends(require_admin)):
     """Owner-only monitoring view: every merchant + their roll-up state.
@@ -454,7 +495,7 @@ async def list_all_merchants(_admin=Depends(require_admin)):
         .select(
             "id, owner_privy_id, business_name, stripe_connect_status, "
             "subscription_tier, subscription_status, founding_merchant, "
-            "created_at"
+            "created_at, admin_suspended, admin_suspended_reason"
         )
         .order("created_at", desc=True)
         .execute()
@@ -532,6 +573,8 @@ async def list_all_merchants(_admin=Depends(require_admin)):
                 "subscription_tier": m.get("subscription_tier"),
                 "subscription_status": m.get("subscription_status"),
                 "founding_merchant": m.get("founding_merchant"),
+                "admin_suspended": bool(m.get("admin_suspended")),
+                "admin_suspended_reason": m.get("admin_suspended_reason"),
                 "project_count": len(rows),
                 "primary_project": (
                     {

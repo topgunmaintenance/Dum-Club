@@ -16,7 +16,7 @@
  * sent to the homepage by AdminRoute before this page renders.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import AdminRoute from "../../../components/AdminRoute";
 import { useAuth } from "../../../lib/auth/AuthContext";
@@ -32,6 +32,8 @@ type MerchantRow = {
   subscription_tier: string | null;
   subscription_status: string | null;
   founding_merchant: boolean | null;
+  admin_suspended?: boolean;
+  admin_suspended_reason?: string | null;
   project_count: number;
   primary_project: {
     id: string | null;
@@ -101,6 +103,102 @@ function MerchantsPanel() {
   const [rows, setRows] = useState<MerchantRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Enforcement (2026-07-03): suspend/unsuspend per merchant, plus an
+  // expandable offers list per row for single-listing takedowns.
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [openOffersFor, setOpenOffersFor] = useState<string | null>(null);
+  const [offersByMerchant, setOffersByMerchant] = useState<Record<string, any[]>>({});
+
+  const authedFetch = useCallback(async (path: string, init?: RequestInit) => {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers || {}),
+      },
+    });
+  }, [getToken]);
+
+  const toggleSuspend = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    if (r.admin_suspended) {
+      if (!window.confirm(`Unsuspend ${r.business_name || "this merchant"}? Their shop stays unpublished until they republish it.`)) return;
+      setActingId(r.merchant_id);
+      try {
+        const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/unsuspend`, { method: "POST" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unsuspend failed");
+      } finally {
+        setActingId(null);
+      }
+      return;
+    }
+    const reason = window.prompt(`Suspend ${r.business_name || "this merchant"}?
+
+This blocks their broadcasts and ALL checkout immediately and hides their shops. Type the reason (they may see it):`);
+    if (!reason || !reason.trim()) return;
+    setActingId(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/suspend`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Suspend failed");
+    } finally {
+      setActingId(null);
+    }
+  }, [authedFetch]);
+
+  const toggleOffers = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    if (openOffersFor === r.merchant_id) {
+      setOpenOffersFor(null);
+      return;
+    }
+    setOpenOffersFor(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/offers`);
+      if (res.ok) {
+        const data = await res.json();
+        setOffersByMerchant((p) => ({ ...p, [r.merchant_id as string]: data.offers || [] }));
+      }
+    } catch { /* row shows loading dash */ }
+  }, [authedFetch, openOffersFor]);
+
+  const actOnOffer = useCallback(async (merchantId: string, offer: any) => {
+    if (offer.admin_removed) {
+      if (!window.confirm(`Restore "${offer.title}"? It stays inactive until the merchant relists it.`)) return;
+      const res = await authedFetch(`/api/admin/offers/${offer.id}/restore`, { method: "POST" });
+      if (res.ok) toggleOffersRefresh(merchantId);
+      return;
+    }
+    const reason = window.prompt(`Take down "${offer.title}"?
+
+The merchant cannot relist it until you restore it. Reason:`);
+    if (!reason || !reason.trim()) return;
+    const res = await authedFetch(`/api/admin/offers/${offer.id}/takedown`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason.trim() }),
+    });
+    if (res.ok) toggleOffersRefresh(merchantId);
+  }, [authedFetch]);
+
+  const toggleOffersRefresh = useCallback(async (merchantId: string) => {
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${merchantId}/offers`);
+      if (res.ok) {
+        const data = await res.json();
+        setOffersByMerchant((p) => ({ ...p, [merchantId]: data.offers || [] }));
+      }
+    } catch { /* keep stale list */ }
+  }, [authedFetch]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -186,6 +284,9 @@ function MerchantsPanel() {
               <th className="px-3 py-2 font-bold uppercase tracking-[0.08em] text-secondary">
                 Open shop
               </th>
+              <th className="px-3 py-2 font-bold uppercase tracking-[0.08em] text-secondary">
+                Enforcement
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -194,10 +295,12 @@ function MerchantsPanel() {
               const planLabel = r.subscription_tier
                 ? `${r.subscription_tier}${r.subscription_status ? ` · ${r.subscription_status}` : ""}`
                 : "—";
+              const offersOpen = openOffersFor === r.merchant_id;
+              const offers = r.merchant_id ? offersByMerchant[r.merchant_id] : undefined;
               return (
+                <React.Fragment key={r.merchant_id || r.owner_privy_id}>
                 <tr
-                  key={r.merchant_id || r.owner_privy_id}
-                  className="border-t border-default"
+                  className={`border-t border-default ${r.admin_suspended ? "bg-state-live/[0.04]" : ""}`}
                 >
                   <td className="px-3 py-2 font-medium text-primary">
                     {r.business_name || "—"}
@@ -243,13 +346,82 @@ function MerchantsPanel() {
                       <span className="text-muted">no shop yet</span>
                     )}
                   </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      {r.admin_suspended && (
+                        <StatusPill kind="live">Suspended</StatusPill>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleSuspend(r)}
+                        disabled={!r.merchant_id || actingId === r.merchant_id}
+                        title={r.admin_suspended_reason || undefined}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold transition disabled:opacity-50 ${
+                          r.admin_suspended
+                            ? "border-default text-secondary hover:border-strong hover:text-primary"
+                            : "border-state-live/40 text-state-live hover:bg-state-live/10"
+                        }`}
+                      >
+                        {actingId === r.merchant_id ? "…" : r.admin_suspended ? "Unsuspend" : "Suspend"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleOffers(r)}
+                        disabled={!r.merchant_id}
+                        className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-primary disabled:opacity-50"
+                      >
+                        {offersOpen ? "Hide offers" : "Offers"}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
+                {offersOpen && (
+                  <tr className="border-t border-default bg-surface-page">
+                    <td colSpan={10} className="px-3 py-3">
+                      {!offers ? (
+                        <span className="text-secondary">Loading offers…</span>
+                      ) : offers.length === 0 ? (
+                        <span className="text-secondary">No offers.</span>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {offers.map((o: any) => (
+                            <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-default bg-surface-card px-3 py-2">
+                              <span className="font-medium text-primary">{o.title}</span>
+                              <span className="font-mono text-secondary">${Number(o.price_usd || 0).toFixed(2)}</span>
+                              <span className="text-muted">{o.project_title}</span>
+                              {o.admin_removed ? (
+                                <StatusPill kind="live">Removed</StatusPill>
+                              ) : o.is_active ? (
+                                <StatusPill kind="ok">Active</StatusPill>
+                              ) : (
+                                <StatusPill kind="muted">Inactive</StatusPill>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => r.merchant_id && actOnOffer(r.merchant_id, o)}
+                                title={o.admin_removed_reason || undefined}
+                                className={`ml-auto rounded-lg border px-2.5 py-1 text-[11px] font-bold transition ${
+                                  o.admin_removed
+                                    ? "border-default text-secondary hover:border-strong hover:text-primary"
+                                    : "border-state-live/40 text-state-live hover:bg-state-live/10"
+                                }`}
+                              >
+                                {o.admin_removed ? "Restore" : "Take down"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               );
             })}
             {!loading && newestFirst.length === 0 && !error && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-3 py-6 text-center text-secondary"
                 >
                   No businesses have signed up yet.
