@@ -1068,6 +1068,14 @@ export default function ProjectPage() {
   // the host screen just never rendered them. Count + hearts here mirror
   // the viewer live room so both sides see the same love in realtime.
   const [hostLikeCount, setHostLikeCount] = useState(0);
+  // True only on the device whose camera is actually publishing this
+  // broadcast (set by IVSStageHost's onLive/onEnd). The owner can open
+  // the storefront on a second device while live from their phone;
+  // is_live is true there too, so liveStudioMode engages with no local
+  // camera and used to render a black void. When this is false while
+  // the studio is on, we mount an on-air monitor (IVSStageViewer) so
+  // the host sees exactly what customers see.
+  const [localPublishing, setLocalPublishing] = useState(false);
   const [hostHearts, setHostHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
   const hostHeartSeq = useRef(0);
   const spawnHostHeart = (emoji = "❤️") => {
@@ -6449,7 +6457,7 @@ return (
             key={(project?.pinned_offer_id || project?.is_live) ? "host-ready" : "host-empty"}
             className={`scroll-mt-28 ${project?.is_live ? "" : "rounded-3xl border border-default bg-surface-card p-6"} ${liveStudioMode ? "absolute inset-0" : ""}`}
           >
-            <div className="relative">
+            <div className={liveStudioMode ? "relative h-full" : "relative"}>
             <IVSStageHost
               projectId={id as string}
               userId={authUser?.privyId || ""}
@@ -6468,14 +6476,36 @@ return (
               // is suspended. The backend rejects with 402 either way.
               getToken={getToken}
               onLive={() => {
+                setLocalPublishing(true);
                 setProject((prev) => prev ? { ...prev, is_live: true, live_provider: "ivs_realtime" } : prev);
                 setLiveSalesCount(0);
               }}
               onEnd={() => {
+                setLocalPublishing(false);
                 setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
               }}
               onError={(msg) => setGoLiveError(msg)}
             />
+            {/* ── On-air monitor: the owner opened the studio on a device
+                 that is NOT the one publishing (phone carries the show,
+                 desktop shows the manage page). No local camera exists
+                 here, so instead of a black void we mount the same
+                 viewer the customers use, plus a banner saying so. The
+                 publishing device has localPublishing=true and never
+                 mounts this. ── */}
+            {liveStudioMode && !localPublishing && (
+              <div className="absolute inset-0 z-[5]">
+                <IVSStageViewer
+                  projectId={id as string}
+                  userId={authUser?.privyId || ""}
+                />
+                <div className="pointer-events-none absolute inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex justify-center px-4">
+                  <span className="rounded-full bg-black/60 px-3 py-1.5 text-center text-[11px] font-semibold text-white backdrop-blur-sm">
+                    Live from your other device · this screen shows what customers see
+                  </span>
+                </div>
+              </div>
+            )}
             {/* Viewers' hearts, floating over the host camera. */}
             {project?.is_live && (
               <>
