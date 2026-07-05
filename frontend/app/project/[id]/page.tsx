@@ -1076,6 +1076,28 @@ export default function ProjectPage() {
   // the studio is on, we mount an on-air monitor (IVSStageViewer) so
   // the host sees exactly what customers see.
   const [localPublishing, setLocalPublishing] = useState(false);
+  const [remoteEnding, setRemoteEnding] = useState(false);
+  // End the broadcast from a device that is NOT publishing (the
+  // monitor). Same owner-verified /end-stage call IVSStageHost makes;
+  // the publishing phone's SDK notices the stage deletion and drops.
+  // Without this, a host whose filming device died had no way to take
+  // the shop off air except waiting for the stale-heartbeat watchdog.
+  const endStreamRemote = async () => {
+    if (typeof window !== "undefined" && !window.confirm("End the live stream for everyone?")) return;
+    setRemoteEnding(true);
+    try {
+      await fetch(`${API_BASE}/api/ivs/end-stage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
+        body: JSON.stringify({ project_id: id }),
+      });
+      setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
+    } catch {
+      /* watchdog remains the fallback */
+    } finally {
+      setRemoteEnding(false);
+    }
+  };
   const [hostHearts, setHostHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
   const hostHeartSeq = useRef(0);
   const spawnHostHeart = (emoji = "❤️") => {
@@ -6499,10 +6521,17 @@ return (
                   projectId={id as string}
                   userId={authUser?.privyId || ""}
                 />
-                <div className="pointer-events-none absolute inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex justify-center px-4">
+                <div className="pointer-events-none absolute inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center justify-between gap-3 px-4">
                   <span className="rounded-full bg-black/60 px-3 py-1.5 text-center text-[11px] font-semibold text-white backdrop-blur-sm">
                     Live from your other device · this screen shows what customers see
                   </span>
+                  <button
+                    onClick={endStreamRemote}
+                    disabled={remoteEnding}
+                    className="pointer-events-auto whitespace-nowrap rounded-lg border border-[rgba(251,44,88,0.35)] bg-[rgba(251,44,88,0.12)] px-4 py-2 text-xs font-semibold text-coral hover:bg-[rgba(251,44,88,0.2)] disabled:opacity-60"
+                  >
+                    {remoteEnding ? "Ending..." : "End Stream"}
+                  </button>
                 </div>
               </div>
             )}
