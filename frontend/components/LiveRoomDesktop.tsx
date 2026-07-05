@@ -92,7 +92,16 @@ export function LiveRoomDesktop({
   // until Phase 2). likeSenderRef is filled by LiveChatIVS so likes ride
   // the same realtime channel as mobile.
   const likeSenderRef = useRef<(() => void) | null>(null);
-  const [hearts, setHearts] = useState<{ id: number; drift: number }[]>([]);
+  // Emoji reactions (2026-07-05): desktop parity with the mobile room —
+  // 🔥👏😂 senders under the heart, and floats carry whichever emoji
+  // arrived so desktop viewers see the same swarm everyone else does.
+  const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
+  const [hearts, setHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
+  const spawnFloat = (emoji: string) =>
+    setHearts((list) => [
+      ...list,
+      { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20), emoji },
+    ]);
   const [shareCopied, setShareCopied] = useState(false);
 
   // Flash-timer countdown — identical normalization to LiveRoom/storefront
@@ -247,7 +256,7 @@ export function LiveRoomDesktop({
                     style={{ ["--drift" as string]: `${h.drift}px` }}
                     onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
                   >
-                    ❤️
+                    {h.emoji}
                   </span>
                 ))}
               </div>
@@ -256,15 +265,26 @@ export function LiveRoomDesktop({
                 aria-label="Like"
                 onClick={() => {
                   likeSenderRef.current?.();
-                  setHearts((list) => [
-                    ...list,
-                    { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20) },
-                  ]);
+                  spawnFloat("❤️");
                 }}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-xl backdrop-blur-sm transition hover:bg-black/70"
               >
                 ❤️
               </button>
+              {(["🔥", "👏", "😂"] as const).map((em) => (
+                <button
+                  key={em}
+                  type="button"
+                  aria-label={`React ${em}`}
+                  onClick={() => {
+                    reactionSenderRef.current?.(em);
+                    spawnFloat(em);
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-base backdrop-blur-sm transition hover:bg-black/70"
+                >
+                  {em}
+                </button>
+              ))}
               <button
                 type="button"
                 aria-label="Share this live show"
@@ -360,14 +380,11 @@ export function LiveRoomDesktop({
             onItemSold={onItemSold}
             onItemUpdate={onItemUpdate}
             likeSenderRef={likeSenderRef}
+            reactionSenderRef={reactionSenderRef}
+            onReaction={(emoji) => spawnFloat(emoji)}
             onLikeCount={(_count, animate) => {
               // Float a heart when someone ELSE likes, same as mobile.
-              if (animate) {
-                setHearts((list) => [
-                  ...list,
-                  { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20) },
-                ]);
-              }
+              if (animate) spawnFloat("❤️");
             }}
           />
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type MutableRefObject } from "react";
 import { API_BASE } from "../lib/apiBase";
 import { errorText } from "../lib/errorText";
 
@@ -23,6 +23,12 @@ interface IVSStageHostProps {
   // the broadcast tree never remounts. Video goes full-bleed; the LIVE +
   // End Stream row docks over the video top edge.
   immersive?: boolean;
+  // Exposes endStream to the parent so the studio's bottom dock can
+  // carry an always-visible End Stream button. The in-video LIVE +
+  // End Stream row sits at the top edge, where the site navbar and
+  // the owner toolbar cover it on desktop (2026-07-05 two-browser
+  // live test: the host had no visible way off air).
+  endRef?: MutableRefObject<(() => void) | null>;
   projectId: string;
   userId: string;
   autoStart?: boolean;
@@ -49,7 +55,7 @@ let _localStreams: any[] = [];
 let _videoTrackId: string | null = null;
 let _audioTrackId: string | null = null;
 
-export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId, getToken, immersive = false }: IVSStageHostProps) {
+export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onError, pinnedOfferId, getToken, immersive = false, endRef }: IVSStageHostProps) {
   const [status, setStatus] = useState<HostStatus>(() => {
     // If stage exists from a previous render, stay in live state
     return _stageInstance ? "live" : "idle";
@@ -525,6 +531,15 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     setStatus("ended");
     onEnd();
   }, [projectId, userId, onEnd]);
+
+  // Hand endStream to the parent (studio dock End Stream button).
+  useEffect(() => {
+    if (!endRef) return;
+    endRef.current = endStream;
+    return () => {
+      endRef.current = null;
+    };
+  }, [endRef, endStream]);
 
   // Cleanup ONLY on true unmount (component removed from tree entirely)
   // Do NOT clean up on re-renders — stage must persist
