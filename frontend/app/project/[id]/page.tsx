@@ -1077,6 +1077,10 @@ export default function ProjectPage() {
   // the host sees exactly what customers see.
   const [localPublishing, setLocalPublishing] = useState(false);
   const [remoteEnding, setRemoteEnding] = useState(false);
+  // Filled by IVSStageHost with its endStream. The dock End Stream
+  // button uses this on the publishing device (clean SDK teardown);
+  // non-publishing devices fall back to the /end-stage API call.
+  const hostEndRef = useRef<(() => void) | null>(null);
   // End the broadcast from a device that is NOT publishing (the
   // monitor). Same owner-verified /end-stage call IVSStageHost makes;
   // the publishing phone's SDK notices the stage deletion and drops.
@@ -6484,6 +6488,7 @@ return (
               projectId={id as string}
               userId={authUser?.privyId || ""}
               immersive={liveStudioMode}
+              endRef={hostEndRef}
               autoStart={autoGoLive}
               // Advance to Start camera whenever a featured offer is set.
               // Prefer the resolved offer id, but fall back to the raw
@@ -6750,7 +6755,8 @@ return (
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10">
-            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden">
               <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-white/70">Timer</span>
               <button
                 type="button"
@@ -6771,6 +6777,24 @@ return (
                   {mins === 0.5 ? "30s" : `${mins}m`}
                 </button>
               ))}
+              </div>
+              {/* Always-visible way off air: the in-video End Stream row
+                  at the top edge is covered by the navbar + owner toolbar
+                  on desktop. The dock is never covered. */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (localPublishing && hostEndRef.current) {
+                    hostEndRef.current();
+                  } else {
+                    endStreamRemote();
+                  }
+                }}
+                disabled={remoteEnding}
+                className="shrink-0 rounded-lg border border-[rgba(251,44,88,0.5)] bg-[rgba(251,44,88,0.15)] px-3 py-1.5 text-[11px] font-bold text-coral transition hover:bg-[rgba(251,44,88,0.25)] disabled:opacity-60"
+              >
+                {remoteEnding ? "Ending..." : "End Stream"}
+              </button>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
               {offers.filter((o) => o.is_active).map((o) => {
