@@ -565,6 +565,12 @@ export default function MerchantPage() {
           <p className="mt-1 text-[11px] text-muted">
             Tip: pick one sign-in method and stick with it, so your shop is always under one account.
           </p>
+          <p className="mt-4 text-[13px] font-semibold text-secondary">
+            Want to see it first?{" "}
+            <Link href="/demo" className="text-mint-text underline underline-offset-2 hover:opacity-80">
+              Preview the live bubble on your own website
+            </Link>
+          </p>
         </div>
 
         {/* What happens after you sign up — 3 steps */}
