@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 /**
@@ -16,16 +16,47 @@ import Link from "next/link";
  * coral pill and real timers appear only on real broadcasts.
  *
  * Preview strategy: iframes get blocked by X-Frame-Options on many
- * sites, which would mean a blank window mid-pitch. Instead we show
- * a server-side screenshot of the prospect's homepage via thum.io
- * (keyless free tier, 1k captures/month) and overlay the bubble on
- * the image. A photo cannot be blocked, so this works for any
- * public website. If the capture errors, we fall back to the
- * sample shop.
+ * sites, and thum.io serves error pages AS images (an onload that
+ * lies), so live-tested 2026-07-04 the chain is:
+ *   1. WordPress mShots (keyless, free, WordPress.com infra).
+ *      While a capture is generating it serves a small placeholder,
+ *      so we poll until naturalWidth reaches the requested width.
+ *      Verified against fortepizzeria.com (Bentobox, heavy
+ *      slideshow) where thum.io and microlink both failed.
+ *   2. microlink.io JSON API (definitive success/fail, 50/day).
+ *   3. Sample shop fallback with an honest message.
  */
 
-const screenshotUrl = (target: string) =>
-  `https://image.thum.io/get/width/1000/${target}`;
+const mshotsUrl = (target: string) =>
+  `https://s.wordpress.com/mshots/v1/${encodeURIComponent(target)}?w=1000`;
+
+const probeImageWidth = (src: string) =>
+  new Promise<number>((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth);
+    img.onerror = () => resolve(0);
+    img.src = src;
+  });
+
+async function captureAnySite(target: string): Promise<string | null> {
+  const url = mshotsUrl(target);
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const width = await probeImageWidth(url);
+    if (width >= 900) return url;
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  try {
+    const res = await fetch(
+      `https://api.microlink.io/?url=${encodeURIComponent(target)}&screenshot=true`
+    );
+    const json = await res.json();
+    const shot = json?.data?.screenshot?.url;
+    if (json?.status === "success" && shot) return shot as string;
+  } catch {
+    /* fall through to sample shop */
+  }
+  return null;
+}
 
 function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -131,6 +162,8 @@ export default function DemoPage() {
   const [copied, setCopied] = useState(false);
   const [shotLoading, setShotLoading] = useState(false);
   const [shotFailed, setShotFailed] = useState(false);
+  const [shotUrl, setShotUrl] = useState<string | null>(null);
+  const seqRef = useRef(0);
 
   const displayHost = useMemo(() => {
     if (!previewUrl) return "sample shop";
@@ -149,8 +182,19 @@ export default function DemoPage() {
     }
     setInputError(false);
     setShotFailed(false);
+    setShotUrl(null);
     setShotLoading(true);
     setPreviewUrl(normalized);
+    const seq = ++seqRef.current;
+    captureAnySite(normalized).then((url) => {
+      if (seqRef.current !== seq) return;
+      setShotLoading(false);
+      if (url) {
+        setShotUrl(url);
+      } else {
+        setShotFailed(true);
+      }
+    });
   };
 
   const copySnippet = async () => {
@@ -219,17 +263,15 @@ export default function DemoPage() {
           <div className="relative h-[420px] w-full overflow-hidden bg-white">
             {previewUrl && !shotFailed ? (
               <>
-                <img
-                  key={previewUrl}
-                  src={screenshotUrl(previewUrl)}
-                  alt={`Preview of ${displayHost} with the DUM live bubble`}
-                  className="w-full object-cover object-top"
-                  onLoad={() => setShotLoading(false)}
-                  onError={() => {
-                    setShotLoading(false);
-                    setShotFailed(true);
-                  }}
-                />
+                {shotUrl && (
+                  <img
+                    key={shotUrl}
+                    src={shotUrl}
+                    alt={`Preview of ${displayHost} with the DUM live bubble`}
+                    className="w-full object-cover object-top"
+                    onError={() => setShotFailed(true)}
+                  />
+                )}
                 {shotLoading && (
                   <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-white">
                     <span className="h-6 w-6 animate-spin rounded-full border-2 border-mint-text border-t-transparent" />
@@ -237,7 +279,8 @@ export default function DemoPage() {
                       Taking a picture of {displayHost}...
                     </p>
                     <p className="text-[11px] text-muted">
-                      First look can take a few seconds
+                      A site&apos;s first picture can take up to half a
+                      minute. After that it is instant.
                     </p>
                   </div>
                 )}
@@ -258,7 +301,9 @@ export default function DemoPage() {
           {previewUrl && !shotFailed && (
             <button
               onClick={() => {
+                seqRef.current++;
                 setPreviewUrl(null);
+                setShotUrl(null);
                 setShotFailed(false);
                 setShotLoading(false);
               }}
