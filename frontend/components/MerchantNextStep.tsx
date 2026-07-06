@@ -55,7 +55,7 @@ function CompletedRow({ state }: { state: MerchantState }) {
     <ul className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-secondary">
       {state.completed.map((s) => (
         <li key={s} className="inline-flex items-center gap-1.5">
-          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-brand-teal/15 text-[9px] font-bold text-brand-teal">
+          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-mint-fill/15 text-[9px] font-bold text-mint-text">
             ✓
           </span>
           <span>{stepLabel(s)}</span>
@@ -93,7 +93,7 @@ export function MerchantNextStep({
       <div className="rounded-2xl border border-default bg-surface-card px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-teal/80">
+            <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-mint-text/80">
               {eyebrowFor(state, eyebrow)}
             </div>
             <div className="mt-0.5 truncate text-sm font-semibold text-primary">
@@ -113,7 +113,7 @@ export function MerchantNextStep({
           ) : (
             <Link
               href={state.nextAction.href}
-              className="shrink-0 rounded-lg bg-brand-teal px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+              className="shrink-0 rounded-lg bg-mint-fill px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-mint-fill-ink transition hover:opacity-90"
             >
               {state.nextAction.label} →
             </Link>
@@ -125,14 +125,14 @@ export function MerchantNextStep({
 
   // Card variant — default.
   return (
-    <div className="mb-8 rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-6 sm:p-8">
+    <div className="mb-8 rounded-3xl border border-default bg-gradient-to-br from-mint-card to-surface-card p-6 sm:p-8">
       {!hideCompleted && <CompletedRow state={state} />}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-mint-text">
             {eyebrowFor(state, eyebrow)}
           </div>
-          <div className="mt-2 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
+          <div className="mt-2 text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
             {state.headline}
           </div>
           <p className="mt-1 text-sm text-secondary">{state.subhead}</p>
@@ -141,7 +141,7 @@ export function MerchantNextStep({
           {state.secondaryAction && (
             <Link
               href={state.secondaryAction.href}
-              className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:border-brand-teal hover:text-brand-teal"
+              className="rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm font-bold text-primary transition hover:border-strong hover:text-mint-text"
             >
               {state.secondaryAction.label}
             </Link>
@@ -159,7 +159,7 @@ export function MerchantNextStep({
           ) : (
             <Link
               href={state.nextAction.href}
-              className="rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold uppercase tracking-[0.12em] text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
+              className="rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
             >
               {state.nextAction.label} →
             </Link>

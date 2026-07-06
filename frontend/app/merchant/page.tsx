@@ -543,7 +543,7 @@ export default function MerchantPage() {
 
           <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
             Join the first 100 merchants.{" "}
-            <span className="text-brand-teal">Lock in founding pricing for life.</span>
+            <span className="text-mint-text">Lock in founding pricing for life.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
             Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). No credit card.
@@ -554,7 +554,7 @@ export default function MerchantPage() {
 
           <button
             onClick={() => login()}
-            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-mint-fill px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
           >
             Claim Your Founding Spot →
           </button>
@@ -587,7 +587,7 @@ export default function MerchantPage() {
               { n: "5", title: "You're live", body: "Share your link. Customers can buy immediately." },
             ].map((step) => (
               <div key={step.n} className="rounded-2xl border border-default bg-surface-page p-5 text-center">
-                <div className="mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-default bg-brand-teal-soft font-mono text-sm font-extrabold text-brand-teal">
+                <div className="mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-default bg-mint-card font-mono text-sm font-extrabold text-mint-text">
                   {step.n}
                 </div>
                 <div className="mt-3 text-sm font-bold text-primary">{step.title}</div>
@@ -648,7 +648,7 @@ export default function MerchantPage() {
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-primary sm:text-5xl">
               Join the first{" "}
-              <span className="text-brand-teal" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
+              <span className="text-mint-text" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
                 100 merchants.
               </span>{" "}
               Lock in founding pricing for life.
@@ -692,8 +692,8 @@ export default function MerchantPage() {
             ))}
           </div>
 
-          <div className="mb-6 rounded-2xl border border-default bg-brand-teal-soft p-6 sm:p-8">
-            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
+          <div className="mb-6 rounded-2xl border border-default bg-mint-card p-6 sm:p-8">
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-mint-text">
               {programOpen ? "Claim your founding spot" : "Start a merchant account"}
             </div>
             <h2 className="mb-5 text-2xl font-extrabold text-primary">
@@ -717,7 +717,7 @@ export default function MerchantPage() {
                       aria-pressed={entityType === val}
                       className={`rounded-xl border p-3.5 text-left transition ${
                         entityType === val
-                          ? "border-brand-teal bg-surface-card ring-2 ring-brand-teal/30"
+                          ? "border-mint-fill bg-surface-card ring-2 ring-mint-fill/30"
                           : "border-default bg-surface-card hover:border-strong"
                       }`}
                     >
@@ -735,7 +735,7 @@ export default function MerchantPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") handleSignup(); }}
                   placeholder="e.g. Topgun Maintenance LLC"
                   autoFocus
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                 />
               </div>
               <div>
@@ -746,7 +746,7 @@ export default function MerchantPage() {
                   rows={3}
                   maxLength={500}
                   placeholder="e.g. Family-owned diner in Morristown serving classic American breakfast and lunch."
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                 />
                 <p
                   className={`mt-1.5 text-xs ${
@@ -769,7 +769,7 @@ export default function MerchantPage() {
                 <select
                   value={bizType}
                   onChange={(e) => setBizType(e.target.value)}
-                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                 >
                   <option value="" disabled>Pick a category</option>
                   {SHOP_CATEGORIES.map((c) => (
@@ -786,14 +786,14 @@ export default function MerchantPage() {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="City"
-                    className="min-w-0 flex-1 rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                    className="min-w-0 flex-1 rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                   />
                   <input
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder="ST"
                     maxLength={2}
-                    className="w-16 rounded-xl border border-default bg-surface-card px-3 py-3 text-base uppercase text-primary placeholder:normal-case placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                    className="w-16 rounded-xl border border-default bg-surface-card px-3 py-3 text-base uppercase text-primary placeholder:normal-case placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                   />
                   <input
                     value={zip}
@@ -801,7 +801,7 @@ export default function MerchantPage() {
                     placeholder="ZIP"
                     inputMode="numeric"
                     maxLength={5}
-                    className="w-24 rounded-xl border border-default bg-surface-card px-3 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/30"
+                    className="w-24 rounded-xl border border-default bg-surface-card px-3 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
                   />
                 </div>
               </div>
@@ -832,9 +832,9 @@ export default function MerchantPage() {
                audience this page is meant to convert. The five
                expense lines below are the bills a normal local
                business already pays today. */}
-          <div className="mb-6 rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5 sm:p-6">
+          <div className="mb-6 rounded-2xl border border-default bg-gradient-to-br from-mint-card to-surface-muted p-5 sm:p-6">
             <div className="mb-4 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-teal">
+              <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-mint-text">
                 One flat fee instead of five
               </div>
               <div className="mt-2 text-base font-bold text-primary">
@@ -861,20 +861,20 @@ export default function MerchantPage() {
                   <div className="text-[10px] text-secondary">{p.detail}</div>
                 </div>
               ))}
-              <div className="col-span-2 rounded-xl border-2 border-brand-teal bg-gradient-to-b from-brand-teal-soft to-surface-muted p-3 text-center">
-                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+              <div className="col-span-2 rounded-xl border-2 border-mint-fill bg-gradient-to-b from-mint-card to-surface-muted p-3 text-center">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-mint-text">
                   DUM Club
                 </div>
-                <div className="mt-1 font-mono text-base font-extrabold text-brand-teal">
+                <div className="mt-1 font-mono text-base font-extrabold text-mint-text">
                   From $39
                 </div>
-                <div className="text-[10px] text-brand-teal">
+                <div className="text-[10px] text-mint-text">
                   flat / month · 1.5% sales fee
                 </div>
               </div>
             </div>
             <div className="mt-4 text-center text-xs text-primary">
-              One bill. <span className="font-bold text-brand-teal">Keep your revenue.</span>
+              One bill. <span className="font-bold text-mint-text">Keep your revenue.</span>
             </div>
           </div>
 
@@ -890,7 +890,7 @@ export default function MerchantPage() {
                   key={line}
                   className="flex items-start gap-3 text-sm font-medium leading-relaxed text-primary"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-brand-teal">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-mint-text">
                     ✓
                   </span>
                   <span>{line}</span>
@@ -1068,13 +1068,13 @@ export default function MerchantPage() {
             that reads ?stripe=connected|error from the callback-page
             redirect, then auto-dismissible. */}
         {stripeBanner?.kind === "success" && (
-          <div className="rounded-2xl border border-default bg-brand-teal-soft px-5 py-4">
+          <div className="rounded-2xl border border-default bg-mint-card px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-bold text-brand-teal">
+                <div className="text-sm font-bold text-mint-text">
                   Stripe connected
                 </div>
-                <div className="mt-1 text-xs text-brand-teal">
+                <div className="mt-1 text-xs text-mint-text">
                   Stripe may take a few minutes to finish checking your
                   account. You show up on the Discover page once they say
                   you are ready to take payments. Tap Check status to see
@@ -1084,14 +1084,14 @@ export default function MerchantPage() {
                   type="button"
                   onClick={recheckStripeStatus}
                   disabled={checkingStripe}
-                  className="mt-3 inline-flex items-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover hover:text-white disabled:opacity-50"
+                  className="mt-3 inline-flex items-center rounded-lg bg-mint-fill px-4 py-2 text-xs font-bold text-mint-fill-ink transition hover:opacity-90 disabled:opacity-50"
                 >
                   {checkingStripe ? "Checking..." : "Check status"}
                 </button>
               </div>
               <button
                 onClick={() => setStripeBanner(null)}
-                className="text-xs text-brand-teal/60 hover:text-brand-teal"
+                className="text-xs text-mint-text/60 hover:text-mint-text"
                 aria-label="Dismiss"
               >
                 ✕
@@ -1123,7 +1123,7 @@ export default function MerchantPage() {
                     setStripeBanner(null);
                     connectStripe();
                   }}
-                  className="mt-3 inline-flex items-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-black transition hover:bg-brand-teal-hover hover:text-white"
+                  className="mt-3 inline-flex items-center rounded-lg bg-mint-fill px-4 py-2 text-xs font-bold text-mint-fill-ink transition hover:opacity-90"
                 >
                   Try connecting again →
                 </button>
@@ -1166,10 +1166,10 @@ export default function MerchantPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {merchant.founding_merchant && (
-                <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Founding</span>
+                <span className="rounded-full bg-mint-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-mint-text">Founding</span>
               )}
-              <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Published ✓</span>
-              <span className="rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-teal">Stripe ✓</span>
+              <span className="rounded-full bg-mint-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-mint-text">Published ✓</span>
+              <span className="rounded-full bg-mint-card px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-mint-text">Stripe ✓</span>
               <button
                 onClick={unpublishStorefront}
                 disabled={publishing}
@@ -1186,12 +1186,12 @@ export default function MerchantPage() {
 
         {/* Founding badge (kept for any not-all-green state) */}
         {merchant.founding_merchant && !hubAllGreen && (
-          <div className="rounded-2xl border border-default bg-brand-teal-soft px-5 py-4">
+          <div className="rounded-2xl border border-default bg-mint-card px-5 py-4">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
-                <div className="text-sm font-bold text-brand-teal">Founding Merchant</div>
-                <div className="text-xs text-brand-teal/60">60 days free · Lock in founding pricing for life · 1.5% sales fee</div>
+                <div className="text-sm font-bold text-mint-text">Founding Merchant</div>
+                <div className="text-xs text-mint-text/60">60 days free · Lock in founding pricing for life · 1.5% sales fee</div>
               </div>
             </div>
           </div>
@@ -1221,13 +1221,13 @@ export default function MerchantPage() {
           // (unreachable legacy card kept out of the tree)
           if (false) {
             return (
-              <div className="rounded-2xl border border-brand-teal bg-brand-teal-soft px-5 py-4">
+              <div className="rounded-2xl border border-mint-fill bg-mint-card px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">✓</span>
                     <div>
-                      <div className="text-sm font-bold text-brand-teal">Storefront published</div>
-                      <div className="text-xs text-brand-teal/60">
+                      <div className="text-sm font-bold text-mint-text">Storefront published</div>
+                      <div className="text-xs text-mint-text/60">
                         Customers can find you on Discover and buy from your shop.
                       </div>
                     </div>
@@ -1235,7 +1235,7 @@ export default function MerchantPage() {
                   <button
                     onClick={unpublishStorefront}
                     disabled={publishing}
-                    className="text-xs font-medium text-brand-teal/70 underline-offset-4 transition hover:text-brand-teal hover:underline disabled:opacity-50"
+                    className="text-xs font-medium text-mint-text/70 underline-offset-4 transition hover:text-mint-text hover:underline disabled:opacity-50"
                   >
                     Move to draft
                   </button>
@@ -1267,7 +1267,7 @@ export default function MerchantPage() {
                     type="button"
                     onClick={recheckStripeStatus}
                     disabled={checkingStripe}
-                    className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+                    className="rounded-xl bg-mint-fill px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:opacity-90 disabled:opacity-50"
                   >
                     {checkingStripe ? "Checking..." : "Check status"}
                   </button>
@@ -1290,7 +1290,7 @@ export default function MerchantPage() {
                 <button
                   onClick={publishStorefront}
                   disabled={publishing}
-                  className="rounded-xl bg-brand-teal px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover disabled:opacity-50"
+                  className="rounded-xl bg-mint-fill px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:opacity-90 disabled:opacity-50"
                 >
                   {publishing ? "Publishing..." : "Publish storefront"}
                 </button>
@@ -1352,17 +1352,17 @@ export default function MerchantPage() {
             /install, instead of the checklist disappearing once
             "complete". */}
         {(
-          <div className="rounded-2xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-muted p-5">
+          <div className="rounded-2xl border border-default bg-gradient-to-br from-mint-card to-surface-muted p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">Your Launch Checklist</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-mint-text">Your Launch Checklist</div>
                 <div className="mt-1 text-sm font-semibold text-primary">
                   {!signalsReady ? (
                     <span className="text-secondary">Checking your setup…</span>
                   ) : (
                   <>
                   {completedSteps} of {totalSteps} complete.{" "}
-                  <span className="text-brand-teal">
+                  <span className="text-mint-text">
                     {!hasOffer
                       ? "Add your first offer"
                       : !stepStripe
@@ -1379,7 +1379,7 @@ export default function MerchantPage() {
                   )}
                 </div>
               </div>
-              <div className="text-xs font-mono text-brand-teal">
+              <div className="text-xs font-mono text-mint-text">
                 {signalsReady ? `${Math.round((completedSteps / totalSteps) * 100)}%` : ""}
               </div>
             </div>
@@ -1387,7 +1387,7 @@ export default function MerchantPage() {
             {/* Progress bar */}
             <div className="mb-5 h-1.5 overflow-hidden rounded-full bg-surface-muted">
               <div
-                className="h-full rounded-full bg-brand-teal transition-all"
+                className="h-full rounded-full bg-mint-fill transition-all"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               />
             </div>
@@ -1398,12 +1398,12 @@ export default function MerchantPage() {
                 {hasOffer ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : stepStripe ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-mint-fill" />
                 ) : (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${hasOffer ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                  <div className={`text-sm font-semibold ${hasOffer ? "text-primary line-through decoration-mint-text" : "text-primary"}`}>
                     Add your first offer
                   </div>
                   <div className="text-xs text-secondary">
@@ -1421,7 +1421,7 @@ export default function MerchantPage() {
                     // availability / bookings only) — a dead-end.
                     <Link
                       href="/dashboard/post"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-mint-fill px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
                     >
                       Add offer →
                     </Link>
@@ -1434,10 +1434,10 @@ export default function MerchantPage() {
                 {stepStripe ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-mint-fill" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepStripe ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                  <div className={`text-sm font-semibold ${stepStripe ? "text-primary line-through decoration-mint-text" : "text-primary"}`}>
                     Connect Stripe
                   </div>
                   <div className="text-xs text-secondary">
@@ -1448,7 +1448,7 @@ export default function MerchantPage() {
                   {!stepStripe && (
                     <>
                       <div className="mt-3 rounded-xl border border-default bg-surface-muted/40 p-4">
-                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-teal">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-mint-text">
                           Have these handy before you start
                         </div>
                         <ul className="mt-2 space-y-1.5 text-xs text-primary">
@@ -1463,7 +1463,7 @@ export default function MerchantPage() {
                       <button
                         onClick={connectStripe}
                         disabled={connecting}
-                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 text-sm font-bold text-black transition hover:bg-brand-teal-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint-fill px-6 text-sm font-bold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         {connecting ? "Opening Stripe..." : "Connect Stripe →"}
                       </button>
@@ -1482,12 +1482,12 @@ export default function MerchantPage() {
                 {stepSnippet ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : hasOffer ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-mint-fill" />
                 ) : (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepSnippet ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                  <div className={`text-sm font-semibold ${stepSnippet ? "text-primary line-through decoration-mint-text" : "text-primary"}`}>
                     Add DUM Club to your website <span className="text-[11px] font-normal text-secondary">(optional)</span>
                   </div>
                   <div className="text-xs text-secondary">
@@ -1498,7 +1498,7 @@ export default function MerchantPage() {
                   {!stepSnippet && (
                     <Link
                       href="/install"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-mint-fill px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
                     >
                       Get my snippet →
                     </Link>
@@ -1511,12 +1511,12 @@ export default function MerchantPage() {
                 {qrPrinted ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : stepSnippet ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-mint-fill" />
                 ) : (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${qrPrinted ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                  <div className={`text-sm font-semibold ${qrPrinted ? "text-primary line-through decoration-mint-text" : "text-primary"}`}>
                     Print your QR
                   </div>
                   <div className="text-xs text-secondary">
@@ -1527,7 +1527,7 @@ export default function MerchantPage() {
                   {!qrPrinted && (
                     <Link
                       href="/qr"
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-mint-fill px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
                     >
                       Print my QR →
                     </Link>
@@ -1540,12 +1540,12 @@ export default function MerchantPage() {
                 {stepLiveEver ? (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-black">✓</span>
                 ) : qrPrinted ? (
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-teal" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-mint-fill" />
                 ) : (
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-default" />
                 )}
                 <div className="flex-1">
-                  <div className={`text-sm font-semibold ${stepLiveEver ? "text-primary line-through decoration-brand-teal" : "text-primary"}`}>
+                  <div className={`text-sm font-semibold ${stepLiveEver ? "text-primary line-through decoration-mint-text" : "text-primary"}`}>
                     Go live for the first time
                   </div>
                   <div className="text-xs text-secondary">
@@ -1556,7 +1556,7 @@ export default function MerchantPage() {
                   {!stepLiveEver && firstProject && (
                     <Link
                       href={`/project/${firstProject.slug || firstProject.id}#project-live-host`}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-mint-fill px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
                     >
                       Go Live →
                     </Link>
@@ -1607,7 +1607,7 @@ export default function MerchantPage() {
                 </div>
               </div>
               {merchant.stripe_connect_id ? (
-                <span className="rounded-full border border-default bg-brand-teal-soft px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-teal">Connected</span>
+                <span className="rounded-full border border-default bg-mint-card px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-mint-text">Connected</span>
               ) : (
                 <button onClick={connectStripe} disabled={connecting} className="rounded-lg border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-bold text-violet-400 transition hover:bg-violet-400/20 disabled:cursor-not-allowed disabled:opacity-60">
                   {connecting ? "Opening..." : "Connect"}
@@ -1679,7 +1679,7 @@ export default function MerchantPage() {
                 {stripeStatus && (
                   <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
                     stripeStatus.status === "verified"
-                      ? "border-default bg-brand-teal-soft text-brand-teal"
+                      ? "border-default bg-mint-card text-mint-text"
                       : stripeStatus.status === "restricted"
                         ? "border-red-400/30 bg-red-400/10 text-state-live"
                         : "border-amber-400/30 bg-amber-400/10 text-amber-400"
@@ -1756,7 +1756,7 @@ export default function MerchantPage() {
                       ] as const).map(([label, ok]) => (
                         <div key={label} className="rounded-lg border border-default bg-surface-card px-3 py-2">
                           <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-secondary">{label}</div>
-                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-brand-teal" : "text-secondary"}`}>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-mint-text" : "text-secondary"}`}>
                             {ok ? "✓ Ready" : "— Pending"}
                           </div>
                         </div>
@@ -1856,7 +1856,7 @@ export default function MerchantPage() {
                       ] as const).map(([label, ok]) => (
                         <div key={label} className="rounded-lg border border-default bg-surface-card px-3 py-2">
                           <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-secondary">{label}</div>
-                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-brand-teal" : "text-secondary"}`}>
+                          <div className={`mt-0.5 text-xs font-bold ${ok ? "text-mint-text" : "text-secondary"}`}>
                             {ok ? "✓ Ready" : "— Pending"}
                           </div>
                         </div>
@@ -1875,26 +1875,30 @@ export default function MerchantPage() {
             yet" panel and a concrete next-action CTA. The real grid
             only kicks in once there's something to measure. */}
         {stepFirstSale ? (
+          /* Stat tiles — handoff light system (merchant-hub-modern,
+             2026-07-06): white cards, hairline borders, soft shadow,
+             GeistMono numerals, mint for money. Replaces the four
+             mismatched gray boxes with legacy teal/amber accents. */
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+            <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Transactions</div>
-              <div className="mt-2 text-2xl font-bold text-primary">{analytics?.total_orders ?? 0}</div>
-              <div className="text-xs text-secondary">total</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-primary">{analytics?.total_orders ?? 0}</div>
+              <div className="text-xs text-muted">total</div>
             </div>
-            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+            <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Revenue</div>
-              <div className="mt-2 text-2xl font-bold text-brand-teal">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
-              <div className="text-xs text-secondary">you keep 98.5% · 1.5% sales fee</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-mint-text">${(analytics?.total_revenue_usd ?? 0).toFixed(2)}</div>
+              <div className="text-xs text-muted">you keep 98.5% · 1.5% sales fee</div>
             </div>
-            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+            <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">DUM Issued</div>
-              <div className="mt-2 text-2xl font-bold text-amber-400">{analytics?.total_dum_received ?? 0}</div>
-              <div className="text-xs text-secondary">to customers</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-primary">{analytics?.total_dum_received ?? 0}</div>
+              <div className="text-xs text-muted">to customers</div>
             </div>
-            <div className="rounded-2xl border border-default bg-surface-muted p-5">
+            <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Page Views</div>
-              <div className="mt-2 text-2xl font-bold text-primary">{analytics?.total_views ?? 0}</div>
-              <div className="text-xs text-secondary">total</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-primary">{analytics?.total_views ?? 0}</div>
+              <div className="text-xs text-muted">total</div>
             </div>
           </div>
         ) : (
@@ -1911,7 +1915,7 @@ export default function MerchantPage() {
             </p>
             <Link
               href="/dashboard"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-teal px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-black transition hover:bg-brand-teal-hover"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-mint-fill px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
             >
               Set Up My Listing →
             </Link>
@@ -1972,7 +1976,7 @@ export default function MerchantPage() {
         <div className="flex gap-3">
           <Link
             href={installLink}
-            className="flex-1 rounded-xl border border-default bg-brand-teal-soft px-4 py-3 text-center text-sm font-semibold text-brand-teal transition hover:bg-brand-teal-soft"
+            className="flex-1 rounded-xl border border-default bg-mint-card px-4 py-3 text-center text-sm font-semibold text-mint-text transition hover:bg-mint-card"
           >
             Add DUM Live to your website →
           </Link>
