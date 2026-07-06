@@ -32,7 +32,9 @@ System in CLAUDE.md.
 15. [x] hero-demo-button                 — `feature/hero-demo-button` · 2026-07-06
 16. [x] replay-recording-infra           — `feature/replay-recording-infra` · 2026-07-06
 17. [ ] replay-storefront-loop
-18. [ ] replay-viewer-hour-metering
+18. [ ] showcase-upload
+19. [ ] bubble-showcase
+20. [ ] replay-viewer-hour-metering
 
 ## Notes
 
