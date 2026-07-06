@@ -38,6 +38,18 @@ from api.routes import checkout  # noqa: E402
 from services import solana_verify  # noqa: E402
 
 
+def _fake_request():
+    """Minimal stand-in for fastapi.Request.
+
+    create_payment_intent grew a `request` parameter for per-IP checkout
+    throttling (rate-limit PR); these tests pass a signed-in buyer, so the
+    endpoint only reads the request when the identity is missing. A
+    SimpleNamespace with a client.host satisfies client_ip_from_request if
+    a future change reads it anyway.
+    """
+    return SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"), headers={})
+
+
 # ── Fake Supabase ────────────────────────────────────────────────
 
 
@@ -252,7 +264,7 @@ class StripeCheckoutCommissionTests(unittest.TestCase):
                 buyer_email="buyer@example.com",
                 source="normal",
             )
-            result = _run(checkout.create_payment_intent(body=body, current_user={"sub": BUYER}))
+            result = _run(checkout.create_payment_intent(body=body, request=_fake_request(), current_user={"sub": BUYER}))
 
         # Find the orders.insert call
         inserts = [c for c in fake_sb.calls if c["table"] == "orders" and c["action"] == "insert"]
@@ -347,7 +359,7 @@ class StripeCheckoutCommissionTests(unittest.TestCase):
 
             from fastapi import HTTPException
             with self.assertRaises(HTTPException) as ctx:
-                _run(checkout.create_payment_intent(body=body, current_user={"sub": BUYER}))
+                _run(checkout.create_payment_intent(body=body, request=_fake_request(), current_user={"sub": BUYER}))
 
             self.assertEqual(ctx.exception.status_code, 503)
             self.assertIn("commission_rate_unset", str(ctx.exception.detail))

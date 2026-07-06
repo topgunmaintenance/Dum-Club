@@ -130,7 +130,29 @@ async def lifespan(app: FastAPI):
             print("[startup] No orphaned live streams found")
     except Exception as exc:
         print(f"[startup] Stale stream sweep failed: {exc!r}")
-    yield
+
+    # Discover-feed cache warmer (visual audit 2026-07-06): keeps the
+    # default /api/projects/discover page precomputed so first visitors
+    # never wait out the ~1.2s server-side market loop. Re-warms just
+    # inside the cache TTL. Best-effort background task; cancelled
+    # cleanly on shutdown.
+    import asyncio
+
+    async def _discover_warm_loop():
+        from api.routes.projects import warm_discover_cache, _DISCOVER_TTL
+
+        while True:
+            try:
+                await warm_discover_cache()
+            except Exception as exc:
+                print(f"[warm] discover cache warm failed: {exc!r}")
+            await asyncio.sleep(max(5.0, _DISCOVER_TTL - 5.0))
+
+    warm_task = asyncio.create_task(_discover_warm_loop())
+    try:
+        yield
+    finally:
+        warm_task.cancel()
 
 
 # ── Sentry (optional) ─────────────────────────────────────────

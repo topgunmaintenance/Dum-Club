@@ -55,6 +55,7 @@ import { EmptyState } from "../../components/discover/EmptyState";
 import { MerchantStrip } from "../../components/discover/MerchantStrip";
 import { DemoStoreRail } from "../../components/homepage/DemoStoreRail";
 import { HomeSellPitch } from "../../components/homepage/HomeSellPitch";
+import { GoLiveDemoPhone } from "../../components/homepage/GoLiveDemoPhone";
 
 /**
  * homeVariant: true only when rendered as the root (/) homepage.
@@ -482,6 +483,20 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
             rule 2). Data-driven — real live shows replace it automatically.
             Never on /discover. */}
         {homeVariant && !hasAnyLive && <DemoStoreRail />}
+
+        {/* Interactive go-live demo — homepage second act (founder decision
+            2026-07-06): relocated from the bottom of HomeSellPitch so the
+            example tiles, hero button and dum.club/demo all land somewhere
+            a visitor actually reaches. The pitch section keeps the founding
+            offer at the bottom of the page. */}
+        {homeVariant && (
+          <section
+            id="demo"
+            className="mb-10 rounded-3xl bg-surface-inverse px-6 py-14 sm:px-10 sm:py-16"
+          >
+            <GoLiveDemoPhone />
+          </section>
+        )}
 
         {/* From shops you follow — personalised strip, signed-in viewers with
             at least one follow only (self-hides otherwise). */}
