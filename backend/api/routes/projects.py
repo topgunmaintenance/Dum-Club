@@ -1626,6 +1626,31 @@ async def get_project(project_id: str):
     except Exception:
         pass  # Never block page load for analytics
 
+    # Shop video (queue 17 + 19): attach the ACTIVE video — the one the
+    # merchant picked to play while offline (replay of a live show OR an
+    # uploaded showcase). Best-effort — a missing table/row just means no
+    # video block on the storefront/embed.
+    try:
+        replay_res = (
+            supabase.table("live_replays")
+            .select("playback_url, recorded_at, duration_seconds, source")
+            .eq("project_id", resolved_id)
+            .eq("is_active", True)
+            .not_.is_("playback_url", "null")
+            .limit(1)
+            .execute()
+        )
+        if replay_res.data:
+            r = replay_res.data[0]
+            resolved["replay"] = {
+                "playback_url": r["playback_url"],
+                "recorded_at": r.get("recorded_at"),
+                "duration_seconds": r.get("duration_seconds"),
+                "source": r.get("source") or "live_recording",
+            }
+    except Exception as exc:
+        print(f"[projects] replay attach failed (ignored): {exc!r}")
+
     return _attach_token_mode(resolved)
 
 
@@ -1683,9 +1708,10 @@ async def get_embed_config(project_id: str, response: Response):
         except Exception:
             pass
         return {
-            "schema_version": "v1.7",
+            "schema_version": "v1.8",
             "id": None,
             "slug": project_id,
+            "active_video": None,
             "embed_display_mode": "automatic",
             "is_live": False,
             "live_provider": None,
@@ -1912,14 +1938,39 @@ async def get_embed_config(project_id: str, response: Response):
         except Exception:
             live_session_payload = None
 
+    # Active shop video (bubble-showcase, queue 19): the bubble shows an
+    # honest "▶ video" state when the shop is offline but has a chosen
+    # replay/upload. Best-effort; the resilience contract holds — any
+    # failure just omits the key.
+    active_video_payload = None
+    try:
+        av = (
+            supabase.table("live_replays")
+            .select("playback_url, source, recorded_at")
+            .eq("project_id", row["id"])
+            .eq("is_active", True)
+            .not_.is_("playback_url", "null")
+            .limit(1)
+            .execute()
+        )
+        if av.data:
+            active_video_payload = {
+                "playback_url": av.data[0]["playback_url"],
+                "source": av.data[0].get("source") or "live_recording",
+                "recorded_at": av.data[0].get("recorded_at"),
+            }
+    except Exception:
+        active_video_payload = None
+
     return {
         # Bump on every shape change so a `curl ... | grep
         # schema_version` from the merchant side confirms which
         # backend code is actually serving the request — catches
         # stale Railway deploys without having to walk every key.
-        "schema_version": "v1.7",
+        "schema_version": "v1.8",
         "id": row["id"],
         "slug": row.get("slug"),
+        "active_video": active_video_payload,
         "embed_display_mode": row.get("embed_display_mode") or "automatic",
         # Effective is_live after heartbeat-staleness check —
         # not the raw DB value. Stale broadcasts auto-clear above.

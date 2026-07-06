@@ -994,6 +994,28 @@ export default function ProjectPage() {
   const [recommendedReason, setRecommendedReason] = useState<string | null>(null);
   const recommendedScrolled = useRef(false);
   const [shareCopied, setShareCopied] = useState(false);
+  // Replay loop (queue 17): sound state for the offline storefront's
+  // looping recording. Starts muted (autoplay policy); tap to unmute.
+  const [replayMuted, setReplayMuted] = useState(true);
+
+  // Replay metering (queue 20): one beat per 30s while the recorded
+  // video is on screen and the tab is visible. The server credits a
+  // fixed 30s per beat into the merchant's combined viewer-hours.
+  useEffect(() => {
+    const replay = (project as any)?.replay;
+    if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
+    const source = replay.source === "upload" ? "showcase" : "replay";
+    const t = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetch(`${API_BASE}/api/ivs/replay-beat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: (project as any).id, source }),
+      }).catch(() => {});
+    }, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(project as any)?.replay?.playback_url, (project as any)?.is_live, (project as any)?.id]);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
   const [buyError, setBuyError] = useState<Record<string, string>>({});
@@ -3980,9 +4002,26 @@ const heroUtility =
                   <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
                 </svg>
               )}
+              {/* Replay loop (queue 17): when the shop is offline and has an
+                  enabled recording, the cover slot PLAYS the last show —
+                  muted autoplay loop, tap for sound. Honesty rules
+                  (CLAUDE.md §12): REPLAY badge below, never LIVE, never
+                  coral, no viewer counts. Real live replaces this whole
+                  view via the live tree. */}
+              {(proj as any).replay?.playback_url && (
+                <video
+                  src={(proj as any).replay.playback_url}
+                  autoPlay
+                  muted={replayMuted}
+                  loop
+                  playsInline
+                  onClick={() => setReplayMuted((m) => !m)}
+                  className="absolute inset-0 h-full w-full cursor-pointer object-cover"
+                />
+              )}
               {/* Legibility scrim over photo covers so the OFFLINE/LIVE chips
                   and Manage button read against any image. */}
-              {cover && (
+              {(cover || (proj as any).replay?.playback_url) && (
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-black/25" aria-hidden="true" />
               )}
               {proj.is_live ? (
@@ -3992,6 +4031,14 @@ const heroUtility =
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                   </span>
                   LIVE{liveViewerCount > 0 ? ` · ${liveViewerCount} watching` : ""}
+                </span>
+              ) : (proj as any).replay?.playback_url ? (
+                /* Recorded show playing — labeled REPLAY in mint chrome,
+                   deliberately NOT the coral live treatment (doctrine §12:
+                   recorded video never wears LIVE). */
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
+                  {(proj as any).replay?.source === "upload" ? "Video" : "Replay"} · tap for sound
                 </span>
               ) : (
                 <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-surface-card/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">

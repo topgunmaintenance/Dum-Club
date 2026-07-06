@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { MerchantNextStep } from "../../components/MerchantNextStep";
@@ -165,6 +165,18 @@ export default function MerchantPage() {
   const [installSeen, setInstallSeen] = useState(false);
   const [qrPrinted, setQrPrinted] = useState(false);
   const [stepLive, setStepLive] = useState(false);
+  // Replay loop (queue 17): the merchant's "record my shows + loop the
+  // latest while I'm offline" switch, backed by /api/ivs/replay-status.
+  const [replayEnabled, setReplayEnabled] = useState<boolean | null>(null);
+  const [replayInfo, setReplayInfo] = useState<{ playback_url: string | null; recorded_at: string | null; recording_armed: boolean } | null>(null);
+  const [replaySaving, setReplaySaving] = useState(false);
+  // Showcase upload (queue 18): record/upload a video without going
+  // live. On phones the file input opens the camera (capture attr).
+  const [showcaseVideos, setShowcaseVideos] = useState<{ source: string; playback_url: string | null; recorded_at: string | null; is_active: boolean }[]>([]);
+  const [showcaseUploadEnabled, setShowcaseUploadEnabled] = useState(false);
+  const [showcaseUploading, setShowcaseUploading] = useState(false);
+  const [showcaseError, setShowcaseError] = useState<string | null>(null);
+  const showcaseFileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -427,6 +439,133 @@ export default function MerchantPage() {
       setError("Network error");
     }
     setSaving(false);
+  }
+
+  // Replay loop (queue 17): read the merchant's replay opt-in + latest
+  // recording once the first project is known.
+  useEffect(() => {
+    if (!firstProject?.id || !user?.privyId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/ivs/replay-status?project_id=${encodeURIComponent(firstProject.id)}`,
+          { headers: { user_id: user.privyId } },
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setReplayEnabled(!!data.enabled);
+        setReplayInfo({
+          playback_url: data.playback_url ?? null,
+          recorded_at: data.recorded_at ?? null,
+          recording_armed: !!data.recording_armed,
+        });
+        setShowcaseVideos(Array.isArray(data.videos) ? data.videos : []);
+        setShowcaseUploadEnabled(!!data.upload_enabled);
+      } catch {
+        /* leave null — card renders nothing until status loads */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [firstProject?.id, user?.privyId]);
+
+  async function toggleReplay() {
+    if (!firstProject?.id || !user?.privyId || replayEnabled === null) return;
+    const next = !replayEnabled;
+    setReplaySaving(true);
+    setReplayEnabled(next); // optimistic
+    try {
+      const res = await fetch(`${API_BASE}/api/ivs/replay-toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        body: JSON.stringify({ project_id: firstProject.id, enabled: next }),
+      });
+      if (!res.ok) setReplayEnabled(!next); // revert on failure
+    } catch {
+      setReplayEnabled(!next);
+    } finally {
+      setReplaySaving(false);
+    }
+  }
+
+  async function refreshShowcase() {
+    if (!firstProject?.id || !user?.privyId) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/ivs/replay-status?project_id=${encodeURIComponent(firstProject.id)}`,
+        { headers: { user_id: user.privyId } },
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setShowcaseVideos(Array.isArray(data.videos) ? data.videos : []);
+      setReplayInfo((prev) => ({
+        playback_url: data.playback_url ?? null,
+        recorded_at: data.recorded_at ?? null,
+        recording_armed: !!data.recording_armed,
+      }));
+    } catch {}
+  }
+
+  async function handleShowcaseFile(file: File | null) {
+    if (!file || !firstProject?.id || !user?.privyId) return;
+    setShowcaseError(null);
+    if (file.size > 500 * 1024 * 1024) {
+      setShowcaseError("That video is over 500MB. Aim for 5 minutes or less.");
+      return;
+    }
+    const contentType = file.type || "video/mp4";
+    setShowcaseUploading(true);
+    try {
+      const urlRes = await fetch(`${API_BASE}/api/ivs/showcase-upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        body: JSON.stringify({ project_id: firstProject.id, content_type: contentType }),
+      });
+      if (!urlRes.ok) {
+        const d = await urlRes.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : "Could not start the upload");
+      }
+      const { upload_url, key } = await urlRes.json();
+      const putRes = await fetch(upload_url, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload failed partway. Check your connection and retry.");
+      const confirmRes = await fetch(`${API_BASE}/api/ivs/showcase-uploaded`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        body: JSON.stringify({ project_id: firstProject.id, key }),
+      });
+      if (!confirmRes.ok) {
+        const d = await confirmRes.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : "Could not save the video");
+      }
+      await refreshShowcase();
+    } catch (e: any) {
+      setShowcaseError(e?.message || "Upload failed. Try again.");
+    } finally {
+      setShowcaseUploading(false);
+      if (showcaseFileRef.current) showcaseFileRef.current.value = "";
+    }
+  }
+
+  async function activateShowcase(source: string) {
+    if (!firstProject?.id || !user?.privyId) return;
+    // Optimistic flip
+    setShowcaseVideos((v) => v.map((x) => ({ ...x, is_active: x.source === source })));
+    try {
+      await fetch(`${API_BASE}/api/ivs/showcase-activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        body: JSON.stringify({ project_id: firstProject.id, source }),
+      });
+    } catch {
+      refreshShowcase();
+    }
   }
 
   async function publishStorefront() {
@@ -1919,6 +2058,96 @@ export default function MerchantPage() {
             >
               Set Up My Listing →
             </Link>
+          </div>
+        )}
+
+        {/* Replay loop (queue 17) — record shows, loop the latest while
+            offline. Renders once status loads; hides entirely when the
+            operator hasn't armed recording AND nothing is recorded, so
+            merchants never see a switch that can't do anything. */}
+        {replayEnabled !== null && (replayInfo?.recording_armed || replayInfo?.playback_url || showcaseUploadEnabled) && (
+          <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Your Shop Video</h3>
+                <p className="mt-1 text-sm font-semibold text-primary">
+                  Loop my last show while I&apos;m offline
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {replayInfo?.playback_url
+                    ? `Latest recording${replayInfo.recorded_at ? ` · ${new Date(replayInfo.recorded_at).toLocaleDateString()}` : ""} plays on your storefront when you're not live.`
+                    : "Your next live show records automatically and starts looping on your storefront."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleReplay}
+                disabled={replaySaving}
+                aria-pressed={replayEnabled}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition ${replayEnabled ? "bg-mint-fill" : "bg-surface-muted border border-default"} disabled:opacity-50`}
+              >
+                <span
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${replayEnabled ? "left-[1.4rem]" : "left-0.5"}`}
+                />
+              </button>
+            </div>
+
+            {/* Showcase upload (queue 18): video without going live. On a
+                phone this opens the camera; on desktop it's a file picker.
+                5-minute guidance, 500MB hard cap (also enforced server-side). */}
+            {showcaseUploadEnabled && (
+              <div className="mt-4 border-t border-default pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-primary">No time to go live?</p>
+                    <p className="text-xs text-muted">
+                      Film up to 5 minutes on your phone. It plays on your shop the same way.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showcaseFileRef.current?.click()}
+                    disabled={showcaseUploading}
+                    className="rounded-lg bg-mint-fill px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-mint-fill-ink transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {showcaseUploading ? "Uploading…" : "Record or upload"}
+                  </button>
+                  <input
+                    ref={showcaseFileRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    capture
+                    className="hidden"
+                    onChange={(e) => handleShowcaseFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+                {showcaseError && (
+                  <p className="mt-2 text-xs font-medium text-state-live">{showcaseError}</p>
+                )}
+                {/* Picker — only when BOTH sources exist (founder decision:
+                    the merchant chooses what plays). */}
+                {showcaseVideos.length > 1 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {showcaseVideos.map((v) => (
+                      <button
+                        key={v.source}
+                        type="button"
+                        onClick={() => activateShowcase(v.source)}
+                        aria-pressed={v.is_active}
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+                          v.is_active
+                            ? "border-mint-fill bg-mint-fill/15 text-mint-text"
+                            : "border-default bg-surface-card text-secondary hover:border-strong"
+                        }`}
+                      >
+                        {v.source === "upload" ? "My uploaded video" : "Last live show"}
+                        {v.is_active ? " · plays on your shop" : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

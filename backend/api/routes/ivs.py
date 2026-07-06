@@ -18,11 +18,18 @@ from db.supabase import get_client
 from services.ivs_realtime import (
     is_ivs_enabled,
     is_recording_enabled,
+    is_showcase_upload_enabled,
     create_stage,
     create_participant_token,
     delete_stage,
     find_latest_recording,
     delete_recording_prefix,
+    create_showcase_upload_url,
+    head_object_size,
+    delete_object,
+    public_url_for_key,
+    SHOWCASE_MAX_BYTES,
+    SHOWCASE_CONTENT_TYPES,
 )
 from services.live_limits import (
     register_stream_start,
@@ -840,12 +847,13 @@ async def api_end_stage(
                 sb.table("live_replays").upsert(
                     {
                         "project_id": pid,
+                        "source": "live_recording",
                         "playback_url": found["playback_url"],
                         "s3_prefix": found["s3_prefix"],
                         "recorded_at": found["recorded_at"],
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                     },
-                    on_conflict="project_id",
+                    on_conflict="project_id,source",
                 ).execute()
                 print(f"[ivs] replay saved for project={pid}: {found['playback_url']}")
                 if prev_prefix and prev_prefix != found["s3_prefix"]:
@@ -917,11 +925,34 @@ async def api_replay_toggle(
     supabase.table("live_replays").upsert(
         {
             "project_id": project_uuid,
+            "source": "live_recording",
             "enabled": body.enabled,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
-        on_conflict="project_id",
+        on_conflict="project_id,source",
     ).execute()
+    # Enabling the replay when the project has no active video yet makes
+    # the replay the active one (least-surprise); disabling clears it.
+    try:
+        if body.enabled:
+            active = (
+                supabase.table("live_replays")
+                .select("id")
+                .eq("project_id", project_uuid)
+                .eq("is_active", True)
+                .limit(1)
+                .execute()
+            )
+            if not active.data:
+                supabase.table("live_replays").update({"is_active": True}).eq(
+                    "project_id", project_uuid
+                ).eq("source", "live_recording").execute()
+        else:
+            supabase.table("live_replays").update({"is_active": False}).eq(
+                "project_id", project_uuid
+            ).eq("source", "live_recording").execute()
+    except Exception as exc:
+        print(f"[ivs] replay-toggle active sync failed (ignored): {exc!r}")
     return {
         "status": "success",
         "enabled": body.enabled,
@@ -937,22 +968,189 @@ async def api_replay_status(
     project_id: str,
     user_id: str = Header(default="demo-user", convert_underscores=False),
 ):
-    """Owner view of their replay: opt-in state + latest recording."""
+    """Owner view of their shop videos: replay opt-in, both sources,
+    and which one is active (showcase-upload, queue 18)."""
     project = _verify_owner(project_id, user_id)
     project_uuid = project["id"]
     supabase = get_client()
     res = (
         supabase.table("live_replays")
-        .select("enabled, playback_url, recorded_at, duration_seconds")
+        .select("source, enabled, playback_url, recorded_at, duration_seconds, is_active")
         .eq("project_id", project_uuid)
+        .execute()
+    )
+    rows = res.data or []
+    by_source = {r["source"]: r for r in rows}
+    replay = by_source.get("live_recording", {})
+    active = next((r["source"] for r in rows if r.get("is_active")), None)
+    return {
+        # Back-compat fields (the queue-17 card reads these):
+        "enabled": bool(replay.get("enabled")),
+        "playback_url": replay.get("playback_url"),
+        "recorded_at": replay.get("recorded_at"),
+        "duration_seconds": replay.get("duration_seconds"),
+        "recording_armed": is_recording_enabled(),
+        # Queue-18 additions:
+        "upload_enabled": is_showcase_upload_enabled(),
+        "active_source": active,
+        "videos": [
+            {
+                "source": r["source"],
+                "playback_url": r.get("playback_url"),
+                "recorded_at": r.get("recorded_at"),
+                "is_active": bool(r.get("is_active")),
+            }
+            for r in rows
+            if r.get("playback_url")
+        ],
+    }
+
+
+# ── Showcase upload (showcase-upload, queue 18) ─────────────────────
+# "Record or upload a showcase" — video on the shop WITHOUT going
+# live. On phones the dashboard's file input opens the camera, so
+# upload IS record. Caps: 5 min guidance, 500MB hard (checked at
+# confirm; oversize objects are deleted). One upload per project —
+# a new one replaces the old object, same cost stance as recordings.
+
+
+class ShowcaseUploadUrlRequest(BaseModel):
+    project_id: str
+    content_type: str
+
+
+@router.post("/showcase-upload-url")
+async def api_showcase_upload_url(
+    body: ShowcaseUploadUrlRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    project = _verify_owner(body.project_id, user_id)
+    project_uuid = project["id"]
+    if not is_showcase_upload_enabled():
+        raise HTTPException(status_code=503, detail="Showcase uploads are not available yet")
+    ext = SHOWCASE_CONTENT_TYPES.get(body.content_type)
+    if not ext:
+        raise HTTPException(status_code=400, detail="Use an mp4, mov, or webm video")
+    import time as _t
+    key = f"uploads/{project_uuid}/showcase-{int(_t.time())}.{ext}"
+    url = create_showcase_upload_url(key, body.content_type)
+    if not url:
+        raise HTTPException(status_code=502, detail="Could not prepare the upload")
+    return {"upload_url": url, "key": key, "max_bytes": SHOWCASE_MAX_BYTES}
+
+
+class ShowcaseUploadedRequest(BaseModel):
+    project_id: str
+    key: str
+
+
+@router.post("/showcase-uploaded")
+async def api_showcase_uploaded(
+    body: ShowcaseUploadedRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    project = _verify_owner(body.project_id, user_id)
+    project_uuid = project["id"]
+    # The key must be one we would have presigned for THIS project.
+    if not body.key.startswith(f"uploads/{project_uuid}/"):
+        raise HTTPException(status_code=400, detail="Key does not belong to this project")
+    size = head_object_size(body.key)
+    if size is None:
+        raise HTTPException(status_code=400, detail="Upload not found — did the transfer finish?")
+    if size > SHOWCASE_MAX_BYTES:
+        delete_object(body.key)
+        raise HTTPException(status_code=400, detail="Video is over 500MB — trim it and try again")
+
+    from datetime import datetime, timezone
+    supabase = get_client()
+    prev = (
+        supabase.table("live_replays")
+        .select("s3_prefix")
+        .eq("project_id", project_uuid)
+        .eq("source", "upload")
         .limit(1)
         .execute()
     )
-    row = res.data[0] if res.data else {}
-    return {
-        "enabled": bool(row.get("enabled")),
-        "playback_url": row.get("playback_url"),
-        "recorded_at": row.get("recorded_at"),
-        "duration_seconds": row.get("duration_seconds"),
-        "recording_armed": is_recording_enabled(),
-    }
+    prev_key = prev.data[0].get("s3_prefix") if prev.data else None
+    now_iso = datetime.now(timezone.utc).isoformat()
+    supabase.table("live_replays").upsert(
+        {
+            "project_id": project_uuid,
+            "source": "upload",
+            "enabled": True,
+            "playback_url": public_url_for_key(body.key),
+            "s3_prefix": body.key,
+            "recorded_at": now_iso,
+            "updated_at": now_iso,
+        },
+        on_conflict="project_id,source",
+    ).execute()
+    # First video on the shop becomes active automatically; otherwise
+    # the merchant's existing pick stands.
+    try:
+        active = (
+            supabase.table("live_replays")
+            .select("id")
+            .eq("project_id", project_uuid)
+            .eq("is_active", True)
+            .limit(1)
+            .execute()
+        )
+        if not active.data:
+            supabase.table("live_replays").update({"is_active": True}).eq(
+                "project_id", project_uuid
+            ).eq("source", "upload").execute()
+    except Exception as exc:
+        print(f"[ivs] showcase active sync failed (ignored): {exc!r}")
+    if prev_key and prev_key != body.key:
+        delete_object(prev_key)
+    return {"status": "success", "playback_url": public_url_for_key(body.key)}
+
+
+class ReplayBeatRequest(BaseModel):
+    project_id: str
+    source: str = "replay"
+
+
+@router.post("/replay-beat")
+async def api_replay_beat(body: ReplayBeatRequest):
+    """Recorded-video watch-time beat (replay-viewer-hour-metering,
+    queue 20). The storefront/embed player POSTs one beat per ~30s of
+    playback; each beat credits a SERVER-FIXED 30 seconds to the
+    merchant's combined monthly viewer-hours plus the replay split —
+    clients say 'still watching', never how long, so the meter can't
+    be inflated beyond the beat cadence. Public (viewers aren't
+    authenticated); best-effort and always 200 so a metering hiccup
+    never breaks playback."""
+    src = "showcase" if body.source == "showcase" else "replay"
+    try:
+        from services.stream_telemetry import record_replay_beat
+        record_replay_beat(get_client(), body.project_id, source=src, seconds=30)
+    except Exception as exc:
+        print(f"[ivs] replay-beat failed (ignored): {exc!r}")
+    return {"status": "ok"}
+
+
+class ShowcaseActivateRequest(BaseModel):
+    project_id: str
+    source: str
+
+
+@router.post("/showcase-activate")
+async def api_showcase_activate(
+    body: ShowcaseActivateRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    """The merchant's 'this one plays on my shop' picker."""
+    if body.source not in ("live_recording", "upload"):
+        raise HTTPException(status_code=400, detail="Unknown video source")
+    project = _verify_owner(body.project_id, user_id)
+    project_uuid = project["id"]
+    supabase = get_client()
+    supabase.table("live_replays").update({"is_active": False}).eq(
+        "project_id", project_uuid
+    ).execute()
+    supabase.table("live_replays").update({"is_active": True}).eq(
+        "project_id", project_uuid
+    ).eq("source", body.source).execute()
+    return {"status": "success", "active_source": body.source}

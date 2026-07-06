@@ -59,6 +59,83 @@ def _resolve_merchant_id(supabase, owner_privy_id: Optional[str]) -> Optional[st
     return None
 
 
+def record_replay_beat(supabase, project_id: str, source: str = "replay", seconds: int = 30) -> bool:
+    """Meter recorded-video watch time (replay-viewer-hour-metering, queue 20).
+
+    Founder decision 2026-07-06: replay/showcase hours meter against the
+    SAME monthly viewer-hour budget as live hours — same included
+    allowance, same overage rate, same no-double-bill netting — so we
+    add into merchant_monthly_usage.viewer_seconds (the column every
+    existing gate, meter, and biller reads) AND into
+    replay_viewer_seconds (the split, so merchants can see live vs
+    recorded on their meter; never surfaced publicly per the replay
+    honesty rules).
+
+    `seconds` is server-fixed per beat — the client only says "still
+    watching", never how long, so a hostile client can't inflate or
+    deflate the meter beyond the beat cadence. Best-effort: failures
+    log and return False without surfacing to the viewer.
+    """
+    try:
+        proj = (
+            supabase.table("projects")
+            .select("owner_id")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+        if not proj.data:
+            return False
+        owner_uuid = proj.data[0].get("owner_id")
+        if not owner_uuid:
+            return False
+        usr = (
+            supabase.table("users")
+            .select("privy_id")
+            .eq("id", owner_uuid)
+            .limit(1)
+            .execute()
+        )
+        owner_privy = usr.data[0].get("privy_id") if usr.data else None
+        merchant_id = _resolve_merchant_id(supabase, owner_privy)
+        if not merchant_id:
+            return False
+
+        now_iso = _now_iso()
+        yyyymm = now_iso[:7]
+        cur = (
+            supabase.table("merchant_monthly_usage")
+            .select("viewer_seconds, replay_viewer_seconds")
+            .eq("merchant_id", merchant_id)
+            .eq("yyyymm", yyyymm)
+            .limit(1)
+            .execute()
+        )
+        if cur.data:
+            row = cur.data[0]
+            supabase.table("merchant_monthly_usage").update(
+                {
+                    "viewer_seconds": int(row.get("viewer_seconds") or 0) + seconds,
+                    "replay_viewer_seconds": int(row.get("replay_viewer_seconds") or 0) + seconds,
+                    "updated_at": now_iso,
+                }
+            ).eq("merchant_id", merchant_id).eq("yyyymm", yyyymm).execute()
+        else:
+            supabase.table("merchant_monthly_usage").insert(
+                {
+                    "merchant_id": merchant_id,
+                    "yyyymm": yyyymm,
+                    "stream_count": 0,
+                    "viewer_seconds": seconds,
+                    "replay_viewer_seconds": seconds,
+                }
+            ).execute()
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print(f"[telemetry] record_replay_beat failed for {project_id}: {exc!r}")
+        return False
+
+
 def on_stream_start(
     supabase,
     project_id: str,

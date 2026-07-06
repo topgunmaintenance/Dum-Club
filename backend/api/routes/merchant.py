@@ -1270,10 +1270,11 @@ async def merchant_usage(current_user: dict = Depends(get_current_user)):
 
     yyyymm = _current_yyyymm_utc()
     seconds = 0
+    replay_seconds = 0
     try:
         res = (
             sb.table("merchant_monthly_usage")
-            .select("viewer_seconds")
+            .select("viewer_seconds, replay_viewer_seconds")
             .eq("merchant_id", limits.merchant_id)
             .eq("yyyymm", yyyymm)
             .limit(1)
@@ -1281,6 +1282,7 @@ async def merchant_usage(current_user: dict = Depends(get_current_user)):
         )
         if res.data:
             seconds = int(res.data[0].get("viewer_seconds") or 0)
+            replay_seconds = int(res.data[0].get("replay_viewer_seconds") or 0)
     except Exception as exc:
         # Read failure degrades to "0 used" rather than erroring the
         # dashboard — enforcement reads its own copy, so this is
@@ -1288,6 +1290,12 @@ async def merchant_usage(current_user: dict = Depends(get_current_user)):
         print(f"[merchant/usage] telemetry read failed: {exc!r}")
 
     used_vh = round(seconds / 3600, 2)
+    # Live/recorded split (replay-viewer-hour-metering, queue 20).
+    # viewer_seconds is the COMBINED total (replay beats add into it),
+    # so live = combined - replay. Display-only; every gate and the
+    # overage biller keep reading the combined number.
+    replay_vh = round(replay_seconds / 3600, 2)
+    live_vh = max(0.0, round(used_vh - replay_vh, 2))
     included = float(limits.max_monthly_viewer_hours)
     hard_cap = float(limits.max_monthly_viewer_hours * limits.hard_block_multiplier)
     return {
@@ -1296,6 +1304,8 @@ async def merchant_usage(current_user: dict = Depends(get_current_user)):
         "plan_id": limits.plan_id,
         "included_viewer_hours": included,
         "used_viewer_hours": used_vh,
+        "live_viewer_hours": live_vh,
+        "replay_viewer_hours": replay_vh,
         "remaining_included_viewer_hours": max(0.0, round(included - used_vh, 2)),
         "overage_rate_usd": float(limits.overage_rate),
         "hard_block_viewer_hours": hard_cap,

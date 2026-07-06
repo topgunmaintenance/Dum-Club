@@ -31,10 +31,10 @@ System in CLAUDE.md.
 14. [x] live-started-at                  — `feature/live-started-at` · 2026-06-18 (migration 084 authored by operator)
 15. [x] hero-demo-button                 — `feature/hero-demo-button` · 2026-07-06
 16. [x] replay-recording-infra           — `feature/replay-recording-infra` · 2026-07-06
-17. [ ] replay-storefront-loop
-18. [ ] showcase-upload
-19. [ ] bubble-showcase
-20. [ ] replay-viewer-hour-metering
+17. [x] replay-storefront-loop           — `feature/replay-storefront-loop` · 2026-07-06
+18. [x] showcase-upload                  — `feature/showcase-upload` · 2026-07-06
+19. [x] bubble-showcase                  — `feature/bubble-showcase` · 2026-07-06
+20. [x] replay-viewer-hour-metering      — `feature/replay-viewer-hour-metering` · 2026-07-06
 
 ## Notes
 

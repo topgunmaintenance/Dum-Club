@@ -159,6 +159,25 @@ export default function EmbedShellPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Replay metering (queue 20): one beat per 30s while the recorded
+  // video plays in the embed and the tab is visible. Server credits a
+  // fixed 30s per beat into the merchant's combined viewer-hours.
+  useEffect(() => {
+    const replay = (project as any)?.replay;
+    if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
+    const source = replay.source === "upload" ? "showcase" : "replay";
+    const t = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetch(`${API_BASE}/api/ivs/replay-beat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: (project as any).id, source }),
+      }).catch(() => {});
+    }, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(project as any)?.replay?.playback_url, (project as any)?.is_live, (project as any)?.id]);
+
   // Modal context. embed.js loads this page with ?display=modal when
   // it's inside the fixed-height (86vh) overlay rather than the inline
   // "full" wrapper that auto-grows to content. In modal context we
@@ -1450,6 +1469,30 @@ export default function EmbedShellPage() {
                 // default full-bleed cover.
                 fit={modal ? "contain" : "cover"}
               />
+            ) : (project as any)?.replay?.playback_url ? (
+              /* Active shop video (bubble-showcase, queue 19): offline +
+                 merchant-chosen replay/upload → play it. Native controls
+                 handle sound honestly; the tag says exactly what this is
+                 (doctrine §12: recorded video never wears LIVE/coral). */
+              <div
+                className={`relative w-full overflow-hidden rounded-2xl border border-default bg-black ${
+                  modal ? "h-full" : "aspect-video"
+                }`}
+              >
+                <video
+                  src={(project as any).replay.playback_url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  className="h-full w-full object-cover"
+                />
+                <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
+                  {(project as any).replay.source === "upload" ? "Video" : "Replay"}
+                </span>
+              </div>
             ) : (
               <div
                 // Aspect-ratio alone now sizes this — the prior

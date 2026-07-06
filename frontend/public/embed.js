@@ -305,6 +305,20 @@
                           bubbleEl.setAttribute("aria-label", newLabel);
                         }
                       }
+                      // VIDEO pill state (bubble-showcase): tracked every
+                      // poll — a merchant can activate/replace a video
+                      // without any live-state flip. CSS keeps live
+                      // dominant, so this is just a class toggle.
+                      var vBubbleEl = document.querySelector(
+                        "[data-dum-embed-bubble='" + businessId + "']"
+                      );
+                      if (vBubbleEl) {
+                        if (next.active_video && next.active_video.playback_url) {
+                          vBubbleEl.classList.add("has-video");
+                        } else {
+                          vBubbleEl.classList.remove("has-video");
+                        }
+                      }
                     }
                   })
                   .catch(function () { /* silent — next tick retries */ })
@@ -542,6 +556,29 @@
         "  pointer-events: none;",
         "}",
         "[data-dum-embed-bubble].is-live .dum-live-pill { display: inline-flex; }",
+        // ── VIDEO pill (bubble-showcase, 2026-07-06) ──────────
+        // Honest recorded-video state: mint, never the coral live
+        // treatment (doctrine: recorded video never wears LIVE).
+        // Shows only when a merchant-chosen replay/upload exists
+        // AND the shop is NOT live — .is-live wins via :not().
+        "[data-dum-embed-bubble] .dum-video-pill {",
+        "  position: absolute;",
+        "  left: 50%; bottom: -6px;",
+        "  transform: translateX(-50%);",
+        "  display: none;",
+        "  align-items: center; gap: 5px;",
+        "  padding: 4px 10px;",
+        "  border-radius: 9999px;",
+        "  background: #00A36C;",
+        "  color: #ffffff;",
+        "  font: 800 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.14em;",
+        "  text-transform: uppercase;",
+        "  box-shadow: 0 6px 14px rgba(0,163,108,0.4), 0 0 0 2px #ffffff;",
+        "  white-space: nowrap;",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble].has-video:not(.is-live) .dum-video-pill { display: inline-flex; }",
         // Viewer count pill on the bubble itself. Tucked next to
         // the LIVE pill at the bottom of the circle so visitors
         // see live momentum even when no product stack renders
@@ -1273,6 +1310,31 @@
     livePill.appendChild(liveDot);
     livePill.appendChild(liveLabel);
 
+    // VIDEO pill (bubble-showcase, 2026-07-06): mint "▶ REPLAY"/"▶ VIDEO"
+    // when the shop has a chosen recorded video and is NOT live. The CSS
+    // :not(.is-live) guard makes live always win without JS ordering.
+    var videoPill = document.createElement("span");
+    videoPill.className = "dum-video-pill";
+    videoPill.setAttribute("aria-hidden", "true");
+    var videoPillLabel = document.createElement("span");
+    videoPill.appendChild(videoPillLabel);
+    function updateVideoPill(activeVideo) {
+      var has = activeVideo && activeVideo.playback_url;
+      if (has) {
+        videoPillLabel.textContent =
+          "▶ " + (activeVideo.source === "upload" ? "Video" : "Replay");
+        bubble.classList.add("has-video");
+        if (!bubble.classList.contains("is-live")) {
+          bubble.setAttribute(
+            "aria-label",
+            "Watch " + merchantTitle + "'s latest video"
+          );
+        }
+      } else {
+        bubble.classList.remove("has-video");
+      }
+    }
+
     // Viewer count pill directly on the bubble. Sits next to the
     // LIVE pill at the bottom of the circle. Built empty/hidden;
     // updateBubbleViewers() below populates + reveals when we
@@ -1302,6 +1364,7 @@
       }
     }
     updateBubbleViewers(liveSession);
+    updateVideoPill(embedConfig && embedConfig.active_video);
 
     // "Tap to watch" caption — sits just under the bubble when
     // the merchant is live so visitors know the circle is
@@ -1321,6 +1384,7 @@
 
     bubble.appendChild(clip);
     bubble.appendChild(livePill);
+    bubble.appendChild(videoPill);
     bubble.appendChild(bubbleViewersPill);
     bubble.appendChild(tapHint);
     bubble.appendChild(close);
