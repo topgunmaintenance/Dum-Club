@@ -397,7 +397,13 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
           </div>
         )}
 
-        {/* Sticky filter bar */}
+        {/* Sticky filter bar — wrapped so it UNSTICKS when the browse feed
+            ends (visual audit 2026-07-06: the bar used to ride over the
+            pitch, the demo panel and the footer). position:sticky is
+            bounded by its parent, so this wrapper — which closes after the
+            Load more control — is the whole fix: past the grid, the bar
+            scrolls away with the feed. */}
+        <div className="relative">
         <StickyFilterBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -672,6 +678,9 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
             </button>
           </div>
         )}
+
+        {/* End of the sticky-bounded browse feed. */}
+        </div>
 
         {/* DUM Points caption — earn-only framing per CLAUDE.md §5.
             Redemption surfaces are held until Phase 2; the previous

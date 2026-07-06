@@ -191,8 +191,10 @@ export function Navbar() {
 
   return (
     <>
-      {/* ── Fixed header bar ──────────────────────────────────── */}
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-default bg-surface-card/95 backdrop-blur-md">
+      {/* ── Fixed header bar ──────────────────────────────────────
+          Solid bg (was /95 translucent): big section headlines bled
+          through the blur while scrolling — visual audit 2026-07-06. */}
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-default bg-surface-card">
         {/* Mobile bar — visible below lg breakpoint. */}
         <div className="flex h-16 items-center justify-between px-4 lg:hidden">
           <BrandMark size="mobile" />
