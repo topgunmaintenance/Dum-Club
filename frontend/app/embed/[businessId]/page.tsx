@@ -1450,6 +1450,30 @@ export default function EmbedShellPage() {
                 // default full-bleed cover.
                 fit={modal ? "contain" : "cover"}
               />
+            ) : (project as any)?.replay?.playback_url ? (
+              /* Active shop video (bubble-showcase, queue 19): offline +
+                 merchant-chosen replay/upload → play it. Native controls
+                 handle sound honestly; the tag says exactly what this is
+                 (doctrine §12: recorded video never wears LIVE/coral). */
+              <div
+                className={`relative w-full overflow-hidden rounded-2xl border border-default bg-black ${
+                  modal ? "h-full" : "aspect-video"
+                }`}
+              >
+                <video
+                  src={(project as any).replay.playback_url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  className="h-full w-full object-cover"
+                />
+                <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
+                  {(project as any).replay.source === "upload" ? "Video" : "Replay"}
+                </span>
+              </div>
             ) : (
               <div
                 // Aspect-ratio alone now sizes this — the prior

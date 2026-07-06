@@ -4019,7 +4019,7 @@ const heroUtility =
                    recorded video never wears LIVE). */
                 <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
-                  Replay · tap for sound
+                  {(proj as any).replay?.source === "upload" ? "Video" : "Replay"} · tap for sound
                 </span>
               ) : (
                 <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-surface-card/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">

@@ -33,7 +33,7 @@ System in CLAUDE.md.
 16. [x] replay-recording-infra           — `feature/replay-recording-infra` · 2026-07-06
 17. [x] replay-storefront-loop           — `feature/replay-storefront-loop` · 2026-07-06
 18. [x] showcase-upload                  — `feature/showcase-upload` · 2026-07-06
-19. [ ] bubble-showcase
+19. [x] bubble-showcase                  — `feature/bubble-showcase` · 2026-07-06
 20. [ ] replay-viewer-hour-metering
 
 ## Notes
