@@ -15,7 +15,15 @@ from pydantic import BaseModel
 from typing import Optional
 
 from db.supabase import get_client
-from services.ivs_realtime import is_ivs_enabled, create_stage, create_participant_token, delete_stage
+from services.ivs_realtime import (
+    is_ivs_enabled,
+    is_recording_enabled,
+    create_stage,
+    create_participant_token,
+    delete_stage,
+    find_latest_recording,
+    delete_recording_prefix,
+)
 from services.live_limits import (
     register_stream_start,
     clear_stream,
@@ -401,7 +409,25 @@ async def api_create_stage(
     # Create fresh stage. Use the canonical UUID prefix in the name
     # so two projects with similar slugs don't collide on stage name.
     stage_name = f"dum-club-{project_uuid[:8]}"
-    stage_data = create_stage(stage_name)
+    # Replay recording opt-in (replay-recording-infra, 2026-07-06):
+    # record the host only when the merchant flipped "loop my last
+    # show" (live_replays.enabled) AND the operator armed recording
+    # (env flag + storage config). Best-effort read — a missing table
+    # or row means no recording, exactly like before this feature.
+    record_this_show = False
+    if is_recording_enabled():
+        try:
+            replay_row = (
+                get_client().table("live_replays")
+                .select("enabled")
+                .eq("project_id", project_uuid)
+                .limit(1)
+                .execute()
+            )
+            record_this_show = bool(replay_row.data and replay_row.data[0].get("enabled"))
+        except Exception as exc:
+            print(f"[ivs] replay opt-in read failed (recording off): {exc!r}")
+    stage_data = create_stage(stage_name, record=record_this_show)
     if not stage_data:
         raise HTTPException(status_code=502, detail="Failed to create IVS stage")
 
@@ -776,8 +802,62 @@ async def api_end_stage(
     project_uuid = project["id"]
 
     stage_arn = project.get("ivs_stage_arn")
+    stage_id_for_replay = project.get("ivs_stage_id")
     if stage_arn:
         delete_stage(stage_arn)
+
+    # Replay finalizer (replay-recording-infra, 2026-07-06): after the
+    # stage ends, IVS finishes writing the host's recording to S3 over
+    # the next minute or so. Poll for the playlist on a daemon thread,
+    # then upsert live_replays and delete the PREVIOUS recording's
+    # prefix (one recording per project — the cost cap). Fire-and-
+    # forget: a failure just means "no replay this time".
+    if stage_id_for_replay and is_recording_enabled():
+        import threading
+
+        def _finalize_replay(pid: str, sid: str):
+            import time as _t
+            found = None
+            for _ in range(20):  # up to ~100s for S3 writes to settle
+                found = find_latest_recording(sid)
+                if found:
+                    break
+                _t.sleep(5)
+            if not found:
+                print(f"[ivs] replay finalize: no recording found for stage={sid}")
+                return
+            try:
+                sb = get_client()
+                prev = (
+                    sb.table("live_replays")
+                    .select("s3_prefix")
+                    .eq("project_id", pid)
+                    .limit(1)
+                    .execute()
+                )
+                prev_prefix = prev.data[0].get("s3_prefix") if prev.data else None
+                from datetime import datetime, timezone
+                sb.table("live_replays").upsert(
+                    {
+                        "project_id": pid,
+                        "playback_url": found["playback_url"],
+                        "s3_prefix": found["s3_prefix"],
+                        "recorded_at": found["recorded_at"],
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                    on_conflict="project_id",
+                ).execute()
+                print(f"[ivs] replay saved for project={pid}: {found['playback_url']}")
+                if prev_prefix and prev_prefix != found["s3_prefix"]:
+                    delete_recording_prefix(prev_prefix)
+            except Exception as exc:
+                print(f"[ivs] replay finalize failed for project={pid}: {exc!r}")
+
+        threading.Thread(
+            target=_finalize_replay,
+            args=(project_uuid, stage_id_for_replay),
+            daemon=True,
+        ).start()
 
     # Phase 0 telemetry — close the stream_sessions row before clearing
     # live state. Reads from in-memory _viewer_counts (via the helper)
@@ -810,3 +890,69 @@ async def api_end_stage(
     }).eq("id", project_uuid).execute()
 
     return {"status": "success", "is_live": False}
+
+
+# ── Replay opt-in toggle (replay-recording-infra, 2026-07-06) ────────
+# The merchant's "record my shows and loop the latest while I'm
+# offline" switch. Owner-verified. Flipping it ON before any recording
+# exists is the intended flow: the NEXT go-live records the host.
+# The storefront wiring that actually plays the loop ships in
+# replay-storefront-loop (queue item 17), not here.
+
+
+class ReplayToggleRequest(BaseModel):
+    project_id: str
+    enabled: bool
+
+
+@router.post("/replay-toggle")
+async def api_replay_toggle(
+    body: ReplayToggleRequest,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    project = _verify_owner(body.project_id, user_id)
+    project_uuid = project["id"]
+    from datetime import datetime, timezone
+    supabase = get_client()
+    supabase.table("live_replays").upsert(
+        {
+            "project_id": project_uuid,
+            "enabled": body.enabled,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        },
+        on_conflict="project_id",
+    ).execute()
+    return {
+        "status": "success",
+        "enabled": body.enabled,
+        # Surfaces operator-side readiness so the dashboard can tell the
+        # merchant "recording arms on your next show" vs "not available
+        # yet" honestly.
+        "recording_armed": is_recording_enabled(),
+    }
+
+
+@router.get("/replay-status")
+async def api_replay_status(
+    project_id: str,
+    user_id: str = Header(default="demo-user", convert_underscores=False),
+):
+    """Owner view of their replay: opt-in state + latest recording."""
+    project = _verify_owner(project_id, user_id)
+    project_uuid = project["id"]
+    supabase = get_client()
+    res = (
+        supabase.table("live_replays")
+        .select("enabled, playback_url, recorded_at, duration_seconds")
+        .eq("project_id", project_uuid)
+        .limit(1)
+        .execute()
+    )
+    row = res.data[0] if res.data else {}
+    return {
+        "enabled": bool(row.get("enabled")),
+        "playback_url": row.get("playback_url"),
+        "recorded_at": row.get("recorded_at"),
+        "duration_seconds": row.get("duration_seconds"),
+        "recording_armed": is_recording_enabled(),
+    }
