@@ -968,6 +968,47 @@ def _discover_cache_get(key: str) -> Optional[dict]:
     return val
 
 
+async def warm_discover_cache() -> None:
+    """Precompute the default /discover page into the in-process cache.
+
+    First-visitor latency fix (visual audit 2026-07-06): the default feed
+    costs ~1.2s to build (server-side market loop) and the TTL is 30s, so
+    any visitor arriving after a quiet 30s stared at skeletons. A lifespan
+    task in main.py calls this every _DISCOVER_TTL - 5s, so the common
+    cache key (limit=24, no filters) is always warm. Single-worker safe:
+    chat/live already pin uvicorn to one process, so this in-process cache
+    is authoritative. Best-effort — failures only mean a cold cache.
+    """
+    from api.routes.market import compute_market_snapshot  # lazy: circular import
+
+    all_projects = await list_public_projects()
+    page = all_projects[:24]
+    supabase = get_client()
+    for p in page:
+        pid = p.get("id")
+        if not pid:
+            p["market_summary"] = None
+            continue
+        try:
+            snap = compute_market_snapshot(supabase, pid)
+            p["market_summary"] = {
+                "price": snap["price"],
+                "market_cap": snap["market_cap"],
+                "volume_24h": snap["volume_24h"],
+            }
+        except Exception as exc:
+            print(f"[projects] warm: market compute failed for {pid}: {exc!r}")
+            p["market_summary"] = None
+    body = {
+        "projects": page,
+        "limit": 24,
+        "offset": 0,
+        "total": len(all_projects),
+        "has_more": 24 < len(all_projects),
+    }
+    _discover_cache_set("24:0::0:", body)
+
+
 def _discover_cache_set(key: str, val: dict) -> None:
     if len(_DISCOVER_CACHE) >= _DISCOVER_MAX and key not in _DISCOVER_CACHE:
         # Evict the oldest entry to bound memory.
