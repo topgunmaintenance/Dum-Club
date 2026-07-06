@@ -800,8 +800,14 @@ those are different categories that confuse the pitch.
        is a data-driven fallback (renders only when the real
        live-projects list is empty), not a manual toggle, so it
        self-removes without needing a follow-up change.
-     - Link to /merchant so the illustration converts visitors
-       into founding merchants.
+     - Link to the homepage's #demo section (the interactive
+       "Watch a shop go live" demo) so a visitor tapping an
+       example shop sees live shopping in action. Founder
+       decision 2026-07-06; supersedes the original
+       link-to-/merchant ruling. The demo section's own CTA
+       carries the conversion to /merchant, and the rail's
+       "Yours could be here" line still links /merchant
+       directly.
    This exception does not extend to Discover, the businesses
    grid, or any other surface — those stay real-data-only, no
    exceptions. Simulated activity tickers and fictional customer

@@ -15,8 +15,11 @@
  *   illustrations, not real broadcasts.
  * - Data-driven, not a manual toggle: the parent renders this only when the
  *   real live-projects list is empty, so real shows replace it automatically.
- * - Tiles link to /merchant — every tap converts curiosity into a founding
- *   merchant signup.
+ * - Tiles link to the homepage's #demo section (founder decision
+ *   2026-07-06, supersedes the original link-to-/merchant ruling): a
+ *   visitor tapping an example shop expects to SEE live shopping, so the
+ *   tap lands on the interactive "Watch a shop go live" demo. The demo
+ *   itself ends in the founding-spot CTA, so the conversion path holds.
  */
 
 import Link from "next/link";
@@ -77,7 +80,7 @@ export function DemoStoreRail() {
         {DEMO_SHOPS.map((shop) => (
           <Link
             key={shop.name}
-            href="/merchant"
+            href="/#demo"
             className={`group relative h-[230px] w-full grow-0 basis-[220px] overflow-hidden rounded-2xl bg-gradient-to-br ${shop.gradient} transition duration-150 hover:-translate-y-[3px] hover:brightness-105 max-[520px]:basis-[47%]`}
           >
             {/* Real photo, full bleed. The gradient class behind it paints
