@@ -352,18 +352,25 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
     setGeoError(null);
   }, []);
 
-  // dum.club/demo landing (2026-07-06): the redirect arrives as /#demo, but
-  // the demo section mounts client-side AFTER the browser's native anchor
-  // jump has already fired and missed — so the promoted URL landed at the
-  // top of the page. Once mounted, honor the hash ourselves. Small delay
-  // lets layout settle so the scroll target position is right.
+  // dum.club/demo landing (2026-07-06): the redirect arrives as /#demo but
+  // visitors landed at the top of the page. Two culprits verified live:
+  // the native anchor jump fires before hydration, and a smooth-scroll
+  // started from an effect gets CANCELLED by the hydration re-render
+  // (observed scrollY stuck at ~5px with the section at 1186px). So:
+  // instant jumps, twice — once early, once after layout settles, the
+  // second skipped if the first one stuck.
   useEffect(() => {
     if (!homeVariant || typeof window === "undefined") return;
     if (window.location.hash !== "#demo") return;
-    const t = window.setTimeout(() => {
-      document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 350);
-    return () => window.clearTimeout(t);
+    const jump = () => document.getElementById("demo")?.scrollIntoView({ block: "start" });
+    const t1 = window.setTimeout(jump, 250);
+    const t2 = window.setTimeout(() => {
+      if (window.scrollY < 300) jump();
+    }, 1200);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, [homeVariant]);
 
   /* ─── Render ─── */
