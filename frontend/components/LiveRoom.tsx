@@ -93,7 +93,7 @@ type LiveRoomProps = {
   onClose: () => void;
 };
 
-type Heart = { id: number; drift: number; emoji: string };
+type Heart = { id: number; drift: number; emoji: string; dur: number; right: number };
 
 export function LiveRoom({
   projectId,
@@ -157,7 +157,8 @@ export function LiveRoom({
       window.setTimeout(() => spawnHeart("🎉"), i * 90);
     }
     if (soldTimerRef.current) window.clearTimeout(soldTimerRef.current);
-    soldTimerRef.current = window.setTimeout(() => setSoldSplash(null), 2600);
+    // 3300ms ≥ the 3.2s sold-cloud animation so the card isn't yanked mid-float.
+    soldTimerRef.current = window.setTimeout(() => setSoldSplash(null), 3300);
   }
   const heartSeq = useRef(0);
   const chatWrapRef = useRef<HTMLDivElement | null>(null);
@@ -171,12 +172,16 @@ export function LiveRoom({
   const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
 
   function spawnHeart(emoji = "❤️") {
-    // Sequential id (not Math.random) keeps keys stable; drift varies the
-    // sideways travel so a rapid tap-stream fans out instead of stacking.
+    // Sequential id (not Math.random) keeps keys stable. Reverse rainfall
+    // (owner request 2026-07-06): each emoji gets a deterministic sideways
+    // drift, launch column and speed so a rapid tap-stream fans out and
+    // climbs the full video height at staggered rates instead of stacking.
     heartSeq.current += 1;
     const id = heartSeq.current;
-    const drift = ((id * 37) % 60) - 30; // deterministic spread, -30..29px
-    setHearts((h) => [...h, { id, drift, emoji }]);
+    const drift = ((id * 37) % 90) - 45; // sideways fan, -45..44px
+    const right = 12 + ((id * 53) % 88); // launch column, 12..99px from right
+    const dur = 2.2 + ((id * 13) % 10) / 10; // 2.2s..3.1s rise
+    setHearts((h) => [...h, { id, drift, emoji, dur, right }]);
   }
 
   function popHeart() {
@@ -504,19 +509,27 @@ export function LiveRoom({
           )}
         </div>
 
-        {/* Floating hearts rise out of the like button. */}
-        <div className="pointer-events-none absolute bottom-16 right-2 h-72 w-16">
-          {hearts.map((h) => (
-            <span
-              key={h.id}
-              className="float-heart absolute bottom-0 right-3 text-2xl"
-              style={{ ["--drift" as string]: `${h.drift}px` }}
-              onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
-            >
-              {h.emoji}
-            </span>
-          ))}
-        </div>
+      </div>
+
+      {/* Reverse rainfall — reactions launch at the bottom of the screen
+          and climb the full height of the video (owner request 2026-07-06).
+          Full-screen overlay so the travel isn't clipped to the rail. */}
+      <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
+        {hearts.map((h) => (
+          <span
+            key={h.id}
+            className="float-rise absolute bottom-4 text-2xl"
+            style={{
+              right: `${h.right}px`,
+              ["--drift" as string]: `${h.drift}px`,
+              ["--dur" as string]: `${h.dur}s`,
+              ["--rise" as string]: "88vh",
+            }}
+            onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
+          >
+            {h.emoji}
+          </span>
+        ))}
       </div>
 
       {/* ── Live chat (overlaid, bottom-left) ──
@@ -560,10 +573,11 @@ export function LiveRoom({
         />
       </div>
 
-      {/* ── SOLD splash — center screen, everyone sees the win ── */}
+      {/* ── SOLD cloud — floats up the screen like a cloud when anything
+          sells (owner request 2026-07-06; replaces the static splash) ── */}
       {soldSplash && (
-        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-30 flex justify-center px-6">
-          <div className="animate-bounce rounded-2xl border border-mint-fill/60 bg-black/80 px-6 py-4 text-center shadow-2xl backdrop-blur-md" style={{ animationIterationCount: 2, animationDuration: "0.5s" }}>
+        <div className="pointer-events-none absolute inset-x-0 bottom-1/4 z-30 flex justify-center overflow-visible px-6">
+          <div className="sold-cloud rounded-[2rem] border border-mint-fill/60 bg-black/80 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
             <div className="text-2xl" aria-hidden="true">🎉</div>
             <div className="mt-1 text-lg font-extrabold uppercase tracking-[0.14em] text-mint-fill">Sold!</div>
             <div className="mt-0.5 max-w-[16rem] truncate text-sm font-semibold text-white">{soldSplash}</div>
