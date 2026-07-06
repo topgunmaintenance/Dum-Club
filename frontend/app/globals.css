@@ -322,6 +322,54 @@ body::before {
   }
 }
 
+/* Reverse-rainfall reactions (owner request 2026-07-06): supersedes the
+   short float-heart hop in the live rooms. Each tapped emoji launches at
+   the bottom of the video and climbs the FULL height of the frame —
+   per-emoji --drift (sideways fan), --rise (travel distance) and --dur
+   (speed variance) make a rapid tap-stream read as rainfall in reverse
+   instead of a stacked column. Containers are overflow-hidden, so any
+   overshoot clips cleanly. Reduced-motion users get the same static
+   fade as float-heart. */
+@keyframes float-rise {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  6%   { opacity: 1; transform: translate(calc(var(--drift, 0px) * 0.2), calc(var(--rise, 80vh) / -12)) scale(1.15); }
+  70%  { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(var(--drift, 0px), calc(var(--rise, 80vh) * -1)) scale(0.85); }
+}
+.float-rise {
+  animation: float-rise var(--dur, 2.6s) ease-out forwards;
+  will-change: transform, opacity;
+}
+
+/* SOLD cloud — when an item sells, the celebration card drifts up the
+   screen like a cloud instead of sitting static: gentle lift-off, a
+   slow sway via --drift, fade-out near the top. */
+@keyframes sold-cloud {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.85); }
+  10%  { opacity: 1; transform: translate(calc(var(--drift, 24px) * 0.25), -6vh) scale(1); }
+  50%  { transform: translate(calc(var(--drift, 24px) * -0.5), -32vh) scale(1.02); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift, 24px), -64vh) scale(1.05); }
+}
+.sold-cloud {
+  animation: sold-cloud 3.2s ease-in-out forwards;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-rise {
+    animation: float-heart-fade 0.6s ease-out forwards;
+  }
+  .sold-cloud {
+    animation: sold-cloud-fade 2s ease-out forwards;
+  }
+  @keyframes sold-cloud-fade {
+    0%   { opacity: 0; }
+    15%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+}
+
 /* Hero chat demo animations */
 @keyframes hero-chat-msg {
   from {

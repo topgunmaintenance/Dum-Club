@@ -96,12 +96,36 @@ export function LiveRoomDesktop({
   // 🔥👏😂 senders under the heart, and floats carry whichever emoji
   // arrived so desktop viewers see the same swarm everyone else does.
   const reactionSenderRef = useRef<((emoji: string) => void) | null>(null);
-  const [hearts, setHearts] = useState<{ id: number; drift: number; emoji: string }[]>([]);
+  const [hearts, setHearts] = useState<
+    { id: number; drift: number; emoji: string; dur: number; right: number }[]
+  >([]);
+  // Reverse rainfall (owner request 2026-07-06): floats launch at the
+  // bottom of the video pane and climb its full height at staggered
+  // speeds/columns, same as mobile.
   const spawnFloat = (emoji: string) =>
     setHearts((list) => [
       ...list,
-      { id: Date.now() + Math.random(), drift: Math.round(Math.random() * 40 - 20), emoji },
+      {
+        id: Date.now() + Math.random(),
+        drift: Math.round(Math.random() * 90 - 45),
+        right: 16 + Math.round(Math.random() * 96),
+        dur: 2.2 + Math.round(Math.random() * 9) / 10,
+        emoji,
+      },
     ]);
+  // SOLD cloud — desktop parity with the mobile celebration: the card
+  // floats up the video pane when the item_sold socket event lands.
+  const [soldSplash, setSoldSplash] = useState<string | null>(null);
+  const soldTimerRef = useRef<number | null>(null);
+  function celebrateSale(title: string) {
+    setSoldSplash(title || "Item");
+    for (let i = 0; i < 7; i++) {
+      window.setTimeout(() => spawnFloat("🎉"), i * 90);
+    }
+    if (soldTimerRef.current) window.clearTimeout(soldTimerRef.current);
+    // 3300ms ≥ the 3.2s sold-cloud animation so the card isn't yanked mid-float.
+    soldTimerRef.current = window.setTimeout(() => setSoldSplash(null), 3300);
+  }
   const [shareCopied, setShareCopied] = useState(false);
 
   // Flash-timer countdown — identical normalization to LiveRoom/storefront
@@ -246,20 +270,40 @@ export function LiveRoomDesktop({
               <IVSStageViewer projectId={projectId} userId={userId} fit="cover" />
             </div>
 
+            {/* Reverse rainfall — reactions climb the full height of the
+                video pane (owner request 2026-07-06). Overlay spans the
+                pane; overflow-hidden clips any overshoot. */}
+            <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+              {hearts.map((h) => (
+                <span
+                  key={h.id}
+                  className="float-rise absolute bottom-3 text-2xl"
+                  style={{
+                    right: `${h.right}px`,
+                    ["--drift" as string]: `${h.drift}px`,
+                    ["--dur" as string]: `${h.dur}s`,
+                    ["--rise" as string]: "76vh",
+                  }}
+                  onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
+                >
+                  {h.emoji}
+                </span>
+              ))}
+            </div>
+
+            {/* SOLD cloud — floats up the video pane on item_sold. */}
+            {soldSplash && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-1/4 z-20 flex justify-center px-6">
+                <div className="sold-cloud rounded-[2rem] border border-mint-fill/60 bg-black/80 px-7 py-4 text-center shadow-2xl backdrop-blur-md">
+                  <div className="text-2xl" aria-hidden="true">🎉</div>
+                  <div className="mt-1 text-lg font-extrabold uppercase tracking-[0.14em] text-mint-fill">Sold!</div>
+                  <div className="mt-0.5 max-w-[16rem] truncate text-sm font-semibold text-white">{soldSplash}</div>
+                </div>
+              </div>
+            )}
+
             {/* Like + Share rail over the video (desktop parity with mobile). */}
             <div className="absolute bottom-4 right-4 z-10 flex flex-col items-center gap-3">
-              <div className="pointer-events-none absolute bottom-12 right-1 h-56 w-12">
-                {hearts.map((h) => (
-                  <span
-                    key={h.id}
-                    className="float-heart absolute bottom-0 right-2 text-2xl"
-                    style={{ ["--drift" as string]: `${h.drift}px` }}
-                    onAnimationEnd={() => setHearts((list) => list.filter((x) => x.id !== h.id))}
-                  >
-                    {h.emoji}
-                  </span>
-                ))}
-              </div>
               <button
                 type="button"
                 aria-label="Like"
@@ -377,7 +421,10 @@ export function LiveRoomDesktop({
             getToken={getToken}
             onCommentBuy={onCommentBuy}
             onViewerCountChange={onViewerCountChange}
-            onItemSold={onItemSold}
+            onItemSold={(data) => {
+              celebrateSale(data?.title || "Item");
+              onItemSold(data);
+            }}
             onItemUpdate={onItemUpdate}
             likeSenderRef={likeSenderRef}
             reactionSenderRef={reactionSenderRef}
