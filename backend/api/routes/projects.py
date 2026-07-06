@@ -1626,6 +1626,30 @@ async def get_project(project_id: str):
     except Exception:
         pass  # Never block page load for analytics
 
+    # Replay (replay-storefront-loop, queue 17): attach the shop's
+    # enabled replay so the offline storefront can loop the last live
+    # show. Best-effort — missing table/row just means no replay block.
+    try:
+        replay_res = (
+            supabase.table("live_replays")
+            .select("playback_url, recorded_at, duration_seconds, enabled")
+            .eq("project_id", resolved_id)
+            .eq("enabled", True)
+            .not_.is_("playback_url", "null")
+            .limit(1)
+            .execute()
+        )
+        if replay_res.data:
+            r = replay_res.data[0]
+            resolved["replay"] = {
+                "playback_url": r["playback_url"],
+                "recorded_at": r.get("recorded_at"),
+                "duration_seconds": r.get("duration_seconds"),
+                "source": "live_recording",
+            }
+    except Exception as exc:
+        print(f"[projects] replay attach failed (ignored): {exc!r}")
+
     return _attach_token_mode(resolved)
 
 

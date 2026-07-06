@@ -165,6 +165,11 @@ export default function MerchantPage() {
   const [installSeen, setInstallSeen] = useState(false);
   const [qrPrinted, setQrPrinted] = useState(false);
   const [stepLive, setStepLive] = useState(false);
+  // Replay loop (queue 17): the merchant's "record my shows + loop the
+  // latest while I'm offline" switch, backed by /api/ivs/replay-status.
+  const [replayEnabled, setReplayEnabled] = useState<boolean | null>(null);
+  const [replayInfo, setReplayInfo] = useState<{ playback_url: string | null; recorded_at: string | null; recording_armed: boolean } | null>(null);
+  const [replaySaving, setReplaySaving] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -427,6 +432,54 @@ export default function MerchantPage() {
       setError("Network error");
     }
     setSaving(false);
+  }
+
+  // Replay loop (queue 17): read the merchant's replay opt-in + latest
+  // recording once the first project is known.
+  useEffect(() => {
+    if (!firstProject?.id || !user?.privyId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/ivs/replay-status?project_id=${encodeURIComponent(firstProject.id)}`,
+          { headers: { user_id: user.privyId } },
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setReplayEnabled(!!data.enabled);
+        setReplayInfo({
+          playback_url: data.playback_url ?? null,
+          recorded_at: data.recorded_at ?? null,
+          recording_armed: !!data.recording_armed,
+        });
+      } catch {
+        /* leave null — card renders nothing until status loads */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [firstProject?.id, user?.privyId]);
+
+  async function toggleReplay() {
+    if (!firstProject?.id || !user?.privyId || replayEnabled === null) return;
+    const next = !replayEnabled;
+    setReplaySaving(true);
+    setReplayEnabled(next); // optimistic
+    try {
+      const res = await fetch(`${API_BASE}/api/ivs/replay-toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        body: JSON.stringify({ project_id: firstProject.id, enabled: next }),
+      });
+      if (!res.ok) setReplayEnabled(!next); // revert on failure
+    } catch {
+      setReplayEnabled(!next);
+    } finally {
+      setReplaySaving(false);
+    }
   }
 
   async function publishStorefront() {
@@ -1919,6 +1972,39 @@ export default function MerchantPage() {
             >
               Set Up My Listing →
             </Link>
+          </div>
+        )}
+
+        {/* Replay loop (queue 17) — record shows, loop the latest while
+            offline. Renders once status loads; hides entirely when the
+            operator hasn't armed recording AND nothing is recorded, so
+            merchants never see a switch that can't do anything. */}
+        {replayEnabled !== null && (replayInfo?.recording_armed || replayInfo?.playback_url) && (
+          <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Always-On Replay</h3>
+                <p className="mt-1 text-sm font-semibold text-primary">
+                  Loop my last show while I&apos;m offline
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {replayInfo?.playback_url
+                    ? `Latest recording${replayInfo.recorded_at ? ` · ${new Date(replayInfo.recorded_at).toLocaleDateString()}` : ""} plays on your storefront when you're not live.`
+                    : "Your next live show records automatically and starts looping on your storefront."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleReplay}
+                disabled={replaySaving}
+                aria-pressed={replayEnabled}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition ${replayEnabled ? "bg-mint-fill" : "bg-surface-muted border border-default"} disabled:opacity-50`}
+              >
+                <span
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${replayEnabled ? "left-[1.4rem]" : "left-0.5"}`}
+                />
+              </button>
+            </div>
           </div>
         )}
 

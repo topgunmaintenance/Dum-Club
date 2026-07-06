@@ -812,6 +812,17 @@ those are different categories that confuse the pitch.
    grid, or any other surface — those stay real-data-only, no
    exceptions. Simulated activity tickers and fictional customer
    testimonials remain banned everywhere.
+   **Replay / recorded-video rules (founder decision 2026-07-06,
+   replay-storefront-loop):** a shop may play its own recorded
+   video (a replay of a real past live show, or later a merchant-
+   uploaded showcase) on its storefront and embed while offline.
+   Recorded video is honest content, not a live simulation, so:
+     - It NEVER wears the "LIVE" badge, the coral live color/dot,
+       or any live viewer count. Labels are "REPLAY" (recorded
+       live show) or "VIDEO" (upload), in neutral/mint chrome.
+     - Replays never appear in the Live Now rail; live always
+       replaces the replay the moment the shop broadcasts.
+     - Muted autoplay, tap for sound. No fake urgency on replays.
 3. Never show Solana/blockchain on consumer pages
 4. Never show DUM Points in navbar until Phase 2
 5. Never show DUM Points purchase flow until legal review
