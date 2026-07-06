@@ -77,6 +77,26 @@ export function DemoStoreRail() {
       </p>
 
       <div className="flex flex-wrap gap-3.5">
+        {/* Demo teaser card — FIRST tile in the rail (founder decision
+            2026-07-06): a play-button action card, not a shop. No EXAMPLE
+            badge, no fake metrics — it's a button wearing a tile's size. */}
+        <a
+          href="#demo"
+          className="group relative flex h-[230px] w-full grow-0 basis-[220px] flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-surface-inverse px-4 text-center transition duration-150 hover:-translate-y-[3px] hover:brightness-110 max-[520px]:basis-[47%]"
+        >
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-fill text-mint-fill-ink shadow-lg transition group-hover:scale-105">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6" aria-hidden="true">
+              <path d="M8 5.14v13.72c0 .9.98 1.45 1.74.98l10.02-6.86a1.15 1.15 0 0 0 0-1.96L9.74 4.16A1.15 1.15 0 0 0 8 5.14z" />
+            </svg>
+          </span>
+          <span className="text-sm font-bold leading-tight text-white">
+            Watch how it works
+          </span>
+          <span className="text-xs text-white/70">
+            See a shop go live in 30 seconds
+          </span>
+        </a>
+
         {/* Plain <a>, not next/link: Link to a same-page hash updates the
             URL without scrolling (app-router quirk, verified live
             2026-07-06). Native anchors scroll correctly — same reason the

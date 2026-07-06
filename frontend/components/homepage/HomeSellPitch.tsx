@@ -14,7 +14,6 @@
  */
 
 import Link from "next/link";
-import { GoLiveDemoPhone } from "./GoLiveDemoPhone";
 
 export function HomeSellPitch() {
   return (
@@ -66,22 +65,15 @@ export function HomeSellPitch() {
             href="#demo"
             className="text-sm font-semibold text-primary underline underline-offset-4 transition hover:text-mint-text"
           >
-            See it in action ↓
+            See it in action ↑
           </a>
         </div>
       </section>
 
-      {/* ── INTERACTIVE GO-LIVE DEMO ──
-          Dark block with the phone-frame walkthrough. Every step is
-          simulated (timers, static demo data) — a marketing device to
-          prove the flow is simple, not the real onboarding. The real
-          flow lives at /merchant + the IVS Go Live components. */}
-      <section
-        id="demo"
-        className="mt-16 rounded-3xl bg-surface-inverse px-6 py-16 sm:mt-20 sm:px-10 sm:py-20"
-      >
-        <GoLiveDemoPhone />
-      </section>
+      {/* The interactive go-live demo (#demo / GoLiveDemoPhone) moved UP the
+          homepage — it renders above the businesses grid in ClubHome now
+          (founder decision 2026-07-06), so the pitch is the page's closer
+          and the demo is its second act. */}
     </>
   );
 }
