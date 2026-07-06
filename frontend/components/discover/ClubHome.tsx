@@ -370,21 +370,30 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
               </h1>
               <p className="mt-0.5 text-sm text-secondary">
                 Watch nearby businesses go live, buy direct, and earn points at
-                every shop on DUM Club.{" "}
-                <a href="#demo" className="font-semibold text-mint-text hover:underline">
-                  See how it works ↓
-                </a>
+                every shop on DUM Club.
               </p>
             </div>
             {/* Merchants, not shoppers, are the scarce input right now —
                 one prominent, unmissable path to /merchant above the fold
-                (browser audit 2026-07-02). */}
-            <Link
-              href="/merchant"
-              className="shrink-0 rounded-full bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink shadow-sm transition hover:opacity-90"
-            >
-              List your business
-            </Link>
+                (browser audit 2026-07-02). The demo button is the secondary
+                action (hero-demo-button, founder decision 2026-07-06): the
+                demo lives ~5 screens down and the old small text link was
+                invisible — a real button next to the primary CTA fixes
+                findability without competing with it. */}
+            <div className="flex shrink-0 items-center gap-2">
+              <a
+                href="#demo"
+                className="rounded-full border border-default bg-surface-card px-5 py-2.5 text-sm font-bold text-primary shadow-sm transition hover:bg-surface-muted"
+              >
+                Watch the demo
+              </a>
+              <Link
+                href="/merchant"
+                className="rounded-full bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink shadow-sm transition hover:opacity-90"
+              >
+                List your business
+              </Link>
+            </div>
           </div>
         )}
 
