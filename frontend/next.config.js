@@ -66,6 +66,12 @@ const nextConfig = {
       // profile itself. Canonical page is /investors.
       { source: "/raise", destination: "/investors", permanent: true },
       { source: "/wefunder", destination: "/investors", permanent: true },
+      // Demo short URL (founder request 2026-07-06): dum.club/demo is
+      // the promotable link for outreach texts, Instagram bio, and QR
+      // cards. Canonical location is the homepage's #demo section
+      // (the interactive "Watch a shop go live" demo). Non-permanent:
+      // the demo may get its own page once the walkthrough video ships.
+      { source: "/demo", destination: "/#demo", permanent: false },
       // Footer / external-link aliases so no link 404s. /contact lands
       // on the About page's #contact anchor; /for-business and
       // /become-a-merchant map to the canonical /business and /merchant.
