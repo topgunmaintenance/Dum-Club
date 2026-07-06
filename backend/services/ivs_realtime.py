@@ -189,6 +189,75 @@ def find_latest_recording(stage_id: str) -> Optional[dict]:
         return None
 
 
+def is_showcase_upload_enabled() -> bool:
+    """Uploads only need AWS creds + the bucket — no IVS storage
+    configuration required (nothing records; the merchant provides
+    the file)."""
+    return bool(_AWS_ACCESS_KEY and _AWS_SECRET_KEY and _RECORDING_BUCKET)
+
+
+SHOWCASE_MAX_BYTES = 500 * 1024 * 1024  # 500MB (founder decision 2026-07-06)
+SHOWCASE_CONTENT_TYPES = {
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+}
+
+
+def create_showcase_upload_url(key: str, content_type: str) -> Optional[str]:
+    """Presigned PUT for a merchant showcase upload (15-min expiry).
+
+    Size is enforced at confirm time (HEAD + delete if over cap) —
+    presigned PUTs can't hard-cap bytes, so the confirm step is the
+    authoritative gate.
+    """
+    if not is_showcase_upload_enabled():
+        return None
+    if content_type not in SHOWCASE_CONTENT_TYPES:
+        return None
+    s3 = _get_s3()
+    if not s3:
+        return None
+    try:
+        return s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": _RECORDING_BUCKET, "Key": key, "ContentType": content_type},
+            ExpiresIn=900,
+        )
+    except Exception as exc:
+        print(f"[ivs] presign upload failed for {key}: {exc!r}")
+        return None
+
+
+def head_object_size(key: str) -> Optional[int]:
+    """Content-length of an uploaded object, or None if missing."""
+    s3 = _get_s3()
+    if not s3 or not _RECORDING_BUCKET:
+        return None
+    try:
+        resp = s3.head_object(Bucket=_RECORDING_BUCKET, Key=key)
+        return int(resp.get("ContentLength", 0))
+    except Exception:
+        return None
+
+
+def delete_object(key: str) -> bool:
+    """Delete a single object (oversize uploads, replaced showcases)."""
+    s3 = _get_s3()
+    if not s3 or not _RECORDING_BUCKET or not key:
+        return False
+    try:
+        s3.delete_object(Bucket=_RECORDING_BUCKET, Key=key)
+        return True
+    except Exception as exc:
+        print(f"[ivs] delete_object failed for {key}: {exc!r}")
+        return False
+
+
+def public_url_for_key(key: str) -> str:
+    return f"{_REPLAY_PUBLIC_BASE}/{key}"
+
+
 def delete_recording_prefix(s3_prefix: str) -> bool:
     """Delete every object under a previous recording's prefix.
 
