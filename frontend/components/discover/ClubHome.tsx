@@ -515,9 +515,20 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
         {homeVariant && (
           <section
             id="demo"
-            className="mb-10 rounded-3xl bg-surface-inverse px-6 py-14 sm:px-10 sm:py-16"
+            className="mb-10 rounded-3xl bg-surface-inverse px-6 py-14 pb-10 sm:px-10 sm:py-16 sm:pb-12"
           >
             <GoLiveDemoPhone />
+            {/* Cross-link to the OTHER demo: /demo is the personalized
+                "see the live bubble on your own website" sales tool
+                (app/demo/page.tsx) — a different thing from this
+                walkthrough, and the stronger pitch for a merchant who
+                already has a site. */}
+            <p className="mt-8 text-center text-sm text-white/75">
+              Have a website already?{" "}
+              <Link href="/demo" className="font-semibold text-mint-fill underline underline-offset-4 hover:opacity-90">
+                See the live bubble on your own site →
+              </Link>
+            </p>
           </section>
         )}
 
