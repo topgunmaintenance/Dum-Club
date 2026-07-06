@@ -3884,7 +3884,15 @@ const heroUtility =
     const activeOffers = offers.filter((o) => o.is_active);
     const featured = pinnedOffer && pinnedOffer.is_active ? pinnedOffer : activeOffers[0] || null;
     const gridOffers = activeOffers.filter((o) => o.id !== featured?.id);
-    const cover = cleanLogoUrl(ownerBizProfile?.cover_image_url);
+    // Cover priority: the profile's cover photo, else the featured offer's
+    // photo, else any offer photo — a shop with real product imagery never
+    // renders the empty dark banner (visual audit 2026-07-06). All three
+    // sources are the merchant's own uploads, so nothing here is stock.
+    const cover =
+      cleanLogoUrl(ownerBizProfile?.cover_image_url) ||
+      featured?.primary_image_url ||
+      activeOffers.find((o) => o.primary_image_url)?.primary_image_url ||
+      null;
     const monogram = (projectName.trim().charAt(0) || "•").toUpperCase();
     const verified = ownerBizProfile?.verification_status === "verified";
     const aboutRaw = (proj.description || "").trim();
@@ -3971,6 +3979,11 @@ const heroUtility =
                 <svg className="pointer-events-none absolute -right-8 -top-8 h-56 w-56 text-white/[0.06]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
                   <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
                 </svg>
+              )}
+              {/* Legibility scrim over photo covers so the OFFLINE/LIVE chips
+                  and Manage button read against any image. */}
+              {cover && (
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-black/25" aria-hidden="true" />
               )}
               {proj.is_live ? (
                 <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-coral px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white shadow-dum-coral">
