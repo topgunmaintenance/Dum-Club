@@ -515,7 +515,11 @@ export function ClubHome({ homeVariant = false }: { homeVariant?: boolean } = {}
         {homeVariant && (
           <section
             id="demo"
-            className="mb-10 rounded-3xl bg-surface-inverse px-6 py-14 pb-10 sm:px-10 sm:py-16 sm:pb-12"
+            /* scroll-mt clears the fixed navbar + sticky search/pills bar
+               so anchor jumps land with the section header VISIBLE instead
+               of tucked under the chrome (founder report 2026-07-06:
+               "a bit off from center"). ~192px mobile, ~232px desktop. */
+            className="mb-10 scroll-mt-48 rounded-3xl bg-surface-inverse px-6 py-14 pb-10 sm:px-10 sm:py-16 sm:pb-12 lg:scroll-mt-[14.5rem]"
           >
             <GoLiveDemoPhone />
             {/* Cross-link to the OTHER demo: /demo is the personalized
