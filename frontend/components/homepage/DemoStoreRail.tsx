@@ -77,10 +77,14 @@ export function DemoStoreRail() {
       </p>
 
       <div className="flex flex-wrap gap-3.5">
+        {/* Plain <a>, not next/link: Link to a same-page hash updates the
+            URL without scrolling (app-router quirk, verified live
+            2026-07-06). Native anchors scroll correctly — same reason the
+            hero's Watch the demo button is an <a>. */}
         {DEMO_SHOPS.map((shop) => (
-          <Link
+          <a
             key={shop.name}
-            href="/#demo"
+            href="#demo"
             className={`group relative h-[230px] w-full grow-0 basis-[220px] overflow-hidden rounded-2xl bg-gradient-to-br ${shop.gradient} transition duration-150 hover:-translate-y-[3px] hover:brightness-105 max-[520px]:basis-[47%]`}
           >
             {/* Real photo, full bleed. The gradient class behind it paints
@@ -109,7 +113,7 @@ export function DemoStoreRail() {
                 {shop.item} · ${shop.price}
               </span>
             </span>
-          </Link>
+          </a>
         ))}
       </div>
     </section>
