@@ -97,6 +97,28 @@ export function DemoStoreRail() {
           </span>
         </a>
 
+        {/* Second action card — the personalized demo (founder decision
+            2026-07-06): /demo renders the prospect's OWN website with the
+            DUM live bubble on it. Next/link is fine here — it's a real
+            page navigation, not a same-page hash. */}
+        <Link
+          href="/demo"
+          className="group relative flex h-[230px] w-full grow-0 basis-[220px] flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl bg-surface-inverse px-4 text-center transition duration-150 hover:-translate-y-[3px] hover:brightness-110 max-[520px]:basis-[47%]"
+        >
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-fill text-mint-fill-ink shadow-lg transition group-hover:scale-105">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z" />
+            </svg>
+          </span>
+          <span className="text-sm font-bold leading-tight text-white">
+            See it on YOUR website
+          </span>
+          <span className="text-xs text-white/70">
+            Type your address, watch the bubble appear
+          </span>
+        </Link>
+
         {/* Plain <a>, not next/link: Link to a same-page hash updates the
             URL without scrolling (app-router quirk, verified live
             2026-07-06). Native anchors scroll correctly — same reason the
