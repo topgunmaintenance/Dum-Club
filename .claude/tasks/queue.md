@@ -30,7 +30,7 @@ System in CLAUDE.md.
 13. [x] homepage-live-rail               — `feature/homepage-live-rail` · 2026-06-12
 14. [x] live-started-at                  — `feature/live-started-at` · 2026-06-18 (migration 084 authored by operator)
 15. [x] hero-demo-button                 — `feature/hero-demo-button` · 2026-07-06
-16. [ ] replay-recording-infra
+16. [x] replay-recording-infra           — `feature/replay-recording-infra` · 2026-07-06
 17. [ ] replay-storefront-loop
 18. [ ] replay-viewer-hour-metering
 
