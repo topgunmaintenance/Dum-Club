@@ -1107,6 +1107,30 @@ async def api_showcase_uploaded(
     return {"status": "success", "playback_url": public_url_for_key(body.key)}
 
 
+class ReplayBeatRequest(BaseModel):
+    project_id: str
+    source: str = "replay"
+
+
+@router.post("/replay-beat")
+async def api_replay_beat(body: ReplayBeatRequest):
+    """Recorded-video watch-time beat (replay-viewer-hour-metering,
+    queue 20). The storefront/embed player POSTs one beat per ~30s of
+    playback; each beat credits a SERVER-FIXED 30 seconds to the
+    merchant's combined monthly viewer-hours plus the replay split —
+    clients say 'still watching', never how long, so the meter can't
+    be inflated beyond the beat cadence. Public (viewers aren't
+    authenticated); best-effort and always 200 so a metering hiccup
+    never breaks playback."""
+    src = "showcase" if body.source == "showcase" else "replay"
+    try:
+        from services.stream_telemetry import record_replay_beat
+        record_replay_beat(get_client(), body.project_id, source=src, seconds=30)
+    except Exception as exc:
+        print(f"[ivs] replay-beat failed (ignored): {exc!r}")
+    return {"status": "ok"}
+
+
 class ShowcaseActivateRequest(BaseModel):
     project_id: str
     source: str

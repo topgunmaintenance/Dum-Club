@@ -25,6 +25,8 @@ type Usage = {
   plan_id?: string;
   included_viewer_hours?: number;
   used_viewer_hours?: number;
+  live_viewer_hours?: number;
+  replay_viewer_hours?: number;
   remaining_included_viewer_hours?: number;
   overage_rate_usd?: number;
   hard_block_viewer_hours?: number;
@@ -111,6 +113,15 @@ export function UsageMeter({ getToken }: { getToken: () => Promise<string | null
         )}{" "}
         Up to {usage.max_concurrent_viewers?.toLocaleString()} viewers per show.
       </p>
+
+      {/* Live vs recorded split (queue 20) — shown once replays have
+          actually consumed hours so merchants understand the bill. */}
+      {(usage.replay_viewer_hours ?? 0) > 0 && (
+        <p className="mt-1 text-[11px] text-muted">
+          {(usage.live_viewer_hours ?? 0).toLocaleString()} live ·{" "}
+          {(usage.replay_viewer_hours ?? 0).toLocaleString()} recorded video
+        </p>
+      )}
     </div>
   );
 }

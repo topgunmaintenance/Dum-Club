@@ -159,6 +159,25 @@ export default function EmbedShellPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Replay metering (queue 20): one beat per 30s while the recorded
+  // video plays in the embed and the tab is visible. Server credits a
+  // fixed 30s per beat into the merchant's combined viewer-hours.
+  useEffect(() => {
+    const replay = (project as any)?.replay;
+    if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
+    const source = replay.source === "upload" ? "showcase" : "replay";
+    const t = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetch(`${API_BASE}/api/ivs/replay-beat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: (project as any).id, source }),
+      }).catch(() => {});
+    }, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(project as any)?.replay?.playback_url, (project as any)?.is_live, (project as any)?.id]);
+
   // Modal context. embed.js loads this page with ?display=modal when
   // it's inside the fixed-height (86vh) overlay rather than the inline
   // "full" wrapper that auto-grows to content. In modal context we

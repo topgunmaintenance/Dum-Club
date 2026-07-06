@@ -997,6 +997,25 @@ export default function ProjectPage() {
   // Replay loop (queue 17): sound state for the offline storefront's
   // looping recording. Starts muted (autoplay policy); tap to unmute.
   const [replayMuted, setReplayMuted] = useState(true);
+
+  // Replay metering (queue 20): one beat per 30s while the recorded
+  // video is on screen and the tab is visible. The server credits a
+  // fixed 30s per beat into the merchant's combined viewer-hours.
+  useEffect(() => {
+    const replay = (project as any)?.replay;
+    if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
+    const source = replay.source === "upload" ? "showcase" : "replay";
+    const t = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetch(`${API_BASE}/api/ivs/replay-beat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: (project as any).id, source }),
+      }).catch(() => {});
+    }, 30000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(project as any)?.replay?.playback_url, (project as any)?.is_live, (project as any)?.id]);
   const [demoClickedId, setDemoClickedId] = useState<string | null>(null);
   const [buyStep, setBuyStep] = useState<Record<string, string>>({});
   const [buyError, setBuyError] = useState<Record<string, string>>({});
