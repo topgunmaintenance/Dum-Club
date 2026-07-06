@@ -11,7 +11,7 @@ replay-storefront-loop (the replay player must exist).
 
 ## Scope
 1. Replay player emits the same viewer-hour heartbeats the live
-   player emits, tagged `source=replay` so usage rows distinguish
+   player emits, tagged by video source (`replay` or `showcase`) so usage rows distinguish
    replay hours from live hours.
 2. Metering/billing reads both sources into the same monthly
    viewer-hour total: included budget, overage rate, concurrent
