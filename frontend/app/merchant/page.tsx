@@ -1331,8 +1331,13 @@ export default function MerchantPage() {
                 hasBusinessProfile: Boolean(merchant.business_name),
                 hasProject: Boolean(firstProject),
                 offerCount: hasOffer ? 1 : 0,
-                salesCount: 0,
-                gmvUsd: 0,
+                // Real numbers from the same analytics fetch the stat tiles
+                // use. These were hardcoded 0/0, which pinned the card on
+                // "Share your shop with your first customer" forever — the
+                // lifecycle could never advance past State 2 (founder bug
+                // report 2026-07-06).
+                salesCount: analytics?.total_orders ?? 0,
+                gmvUsd: analytics?.total_revenue_usd ?? 0,
                 primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
               }}
               variant="card"
@@ -1935,6 +1940,18 @@ export default function MerchantPage() {
               <a
                 href={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrUrl)}`}
                 download="dum-club-qr.png"
+                onClick={() => {
+                  // Downloading the QR from THIS card is printing your QR —
+                  // the checklist step used to complete only via the /qr
+                  // page, so merchants who used this card stayed 4/5
+                  // forever (founder bug report 2026-07-06).
+                  try {
+                    window.localStorage.setItem("dum-qr-seen", "1");
+                  } catch {
+                    /* private mode — non-blocking */
+                  }
+                  setQrPrinted(true);
+                }}
                 className="mt-3 inline-block rounded-lg border border-default px-4 py-2 text-xs font-semibold text-primary transition hover:border-strong"
               >
                 Download QR
