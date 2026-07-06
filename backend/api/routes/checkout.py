@@ -1220,6 +1220,45 @@ async def stripe_webhook(request: Request):
         else:
             print(f"[webhook] CRITICAL: Could not find order for session={session_id}")
 
+    elif event["type"] == "checkout.session.expired":
+        # ── Abandoned checkout → lead capture (2026-07-06) ──
+        # Stripe fires this when a Checkout Session's window (24h default)
+        # lapses without payment. The session keeps whatever contact info the
+        # buyer typed before bailing, so instead of leaving a mystery
+        # pending_payment row forever: flip the order to 'expired' and store
+        # any captured email as a followable lead. NOTE: this event must be
+        # enabled on the webhook endpoint in the Stripe dashboard or it will
+        # never arrive; the handler is safe either way.
+        obj = event["data"]["object"]
+        session_id = obj["id"]
+        pi_id = obj.get("payment_intent")
+        metadata = obj.get("metadata", {})
+        print(f"[webhook] checkout.session.expired: session={session_id}")
+        order = _find_order(session_id, pi_id or "", metadata)
+        if not order:
+            print(f"[webhook] expired session {session_id}: no matching order (ignored)")
+        elif order["status"] not in ("pending_payment", "pending"):
+            # Never downgrade a paid/fulfilled order — a completed event can
+            # land before the expiry event for the same session.
+            print(f"[webhook] expired session {session_id}: order {order['id']} is '{order['status']}', leaving untouched")
+        else:
+            buyer_email = (obj.get("customer_details") or {}).get("email") or obj.get("customer_email")
+            update_fields = {"status": "expired", "updated_at": _now_iso()}
+            if buyer_email:
+                if not order.get("buyer_email"):
+                    update_fields["buyer_email"] = buyer_email
+                existing_notes = order.get("notes") or ""
+                lead_note = f"[abandoned checkout {_now_iso()}] buyer entered email before leaving: {buyer_email}"
+                update_fields["notes"] = f"{existing_notes}\n{lead_note}".strip()
+            try:
+                supabase.table("orders").update(update_fields).eq("id", order["id"]).execute()
+                if buyer_email:
+                    print(f"[webhook] ✓ order {order['id']} marked expired — lead email captured: {buyer_email}")
+                else:
+                    print(f"[webhook] ✓ order {order['id']} marked expired — no email captured")
+            except Exception as exc:
+                print(f"[webhook] ✗ expired-order update failed: {exc!r}")
+
     elif event["type"] == "payment_intent.succeeded":
         obj = event["data"]["object"]
         pi_id = obj["id"]
