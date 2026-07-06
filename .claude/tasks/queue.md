@@ -29,6 +29,10 @@ System in CLAUDE.md.
 12. [x] dashboard-and-hub-light          — `feature/dashboard-and-hub-light` · 2026-05-10
 13. [x] homepage-live-rail               — `feature/homepage-live-rail` · 2026-06-12
 14. [x] live-started-at                  — `feature/live-started-at` · 2026-06-18 (migration 084 authored by operator)
+15. [ ] hero-demo-button
+16. [ ] replay-recording-infra
+17. [ ] replay-storefront-loop
+18. [ ] replay-viewer-hour-metering
 
 ## Notes
 
