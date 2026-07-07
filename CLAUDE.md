@@ -338,7 +338,13 @@ Browse live sellers + best local deals this week
 ## 3. PRICING MODEL
 
 ### Founding 100 Sellers
-- $0 subscription during 60-day founding trial period
+- $0 subscription during 30-day founding trial period
+- Card required at signup (founder decision 2026-07-07,
+  checkout-trial): the trial starts through Stripe Checkout with a
+  payment method on file, Netflix-style, and converts automatically
+  at trial end. Cancel-during-trial is one click and free. The prior
+  no-card 60-day flow is retired; the admin per-merchant backfill is
+  the only remaining no-card trial path.
 - After trial: locks in founding-tier subscription pricing
   for life (Starter base = $39/month). The 1.5% sales fee
   and overage rules apply to all merchants including
@@ -359,7 +365,7 @@ the founding tier to the merchant for the life of the
 account.
 
 **Long form** (signup body, pricing pages, onboarding subhead):
-> "Join the first 100 merchants. Get 60 days free and lock
+> "Join the first 100 merchants. Get 30 days free and lock
 > in founding pricing for life."
 
 **Supporting line** (always pairs with the long form):
@@ -367,11 +373,11 @@ account.
 > (Whatnot takes up to 8%). Keep more of every sale."
 
 **Short form / scarcity pill / banner**:
-> "60 days free · Lock in founding pricing for life"
+> "30 days free · Lock in founding pricing for life"
 
 **CTA button labels (pick the one that fits the surface)**:
 - "Claim Your Founding Spot"
-- "Start Free for 60 Days"
+- "Start Free for 30 Days"
 - "Lock In Founding Pricing"
 
 Forbidden phrasing (sweep on sight):
@@ -384,7 +390,13 @@ Forbidden phrasing (sweep on sight):
 - "preferred founding pricing" / "preferred founding pricing
   after launch" — replaced; vague about what the merchant pays
 - "$0 today" / "$0 during the founding period" / "during the
-  founding period" — replaced by "60 days free"
+  founding period" — replaced by "30 days free"
+- "60 days free" / any 60-day trial wording — stale as of the
+  2026-07-07 checkout-trial doctrine update; the trial is 30 days
+  with a card at signup. Sweep on sight.
+- "No credit card" / "no card required" — contradicts the
+  card-upfront Checkout flow; the honest lines are "Nothing is
+  charged today" and "Cancel any time during the trial"
 - Hard "First 100 merchants get in free" / "first 100 free"
   energy outside of the canonical phrasing above
 - "X of 100 founding spots claimed" / "<N> of 100" / any live
@@ -401,7 +413,7 @@ Forbidden phrasing (sweep on sight):
 
 Scarcity / urgency is now carried by static copy ("Limited ·
 Founding 100" eyebrow, "Join the first 100 merchants" H2,
-"60 days free · Lock in founding pricing for life" pill copy)
+"30 days free · Lock in founding pricing for life" pill copy)
 — never by a live counter.
 
 ### Standard Tiers (seller 101+)
@@ -850,7 +862,7 @@ should be re-derived against the new tier mix
 launch tier distribution data is available. Until then,
 these numbers are illustrative-only.
 
-Month 1-3 (founding 100 all on 60-day trial):
+Month 1-3 (founding 100 all on 30-day trial):
 - 1% sales fee on founding GMV (~$50k): ~$500/month
 - Featured placements: ~$500/month
 - AI social (5 sellers): ~$500/month

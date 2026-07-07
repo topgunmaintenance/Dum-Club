@@ -1,5 +1,5 @@
 """
-trial_reminders — daily cron worker for 60-day trial reminder emails.
+trial_reminders — daily cron worker for 30-day trial reminder emails.
 
 Runs once per day (Railway cron, 09:00 America/New_York). Scans the
 merchants table for non-grandfathered rows whose trial_ends_at falls

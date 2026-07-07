@@ -59,11 +59,11 @@ async def reject_project(project_id: str, body: RejectBody, _admin=Depends(requi
 
 @router.post("/merchants/{merchant_id}/start-trial")
 async def start_merchant_trial(merchant_id: str, _admin=Depends(require_admin)):
-    """Start the 60-day founding trial for an EXISTING merchant
-    (trial-starter, 2026-07-06). Signup provisions trials automatically
-    since the founding-trial-billing PR; merchants created before it
-    have no clock. This is the deliberate, per-merchant backfill — same
-    create_trial_subscription path as signup, same row updates.
+    """Start the founding trial (TRIAL_DAYS, default 30) for an EXISTING
+    merchant (trial-starter, 2026-07-06). Signup sends merchants through
+    card-upfront Checkout since the checkout-trial PR; this remains the
+    deliberate, per-merchant admin backfill and the ONE path that still
+    grants a trial without a card on file (create_trial_subscription).
     Guarded: refuses if a subscription already exists."""
     supabase = get_client()
     res = (

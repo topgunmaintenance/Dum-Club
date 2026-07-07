@@ -240,7 +240,7 @@ export default function WhyDumClubPage() {
           </div>
           <p className="mx-auto mt-5 max-w-xl text-[13px] text-muted">
             From $39/month plus a 1.5% sales fee. Founding 100 merchants get
-            60 days free and lock in founding pricing for life.
+            30 days free and lock in founding pricing for life.
           </p>
         </Container>
       </Section>
@@ -416,7 +416,7 @@ export default function WhyDumClubPage() {
             Join the first 100 merchants.
           </Heading>
           <p className="mx-auto mt-4 max-w-xl text-secondary">
-            Get 60 days free and lock in founding pricing for life. Flat
+            Get 30 days free and lock in founding pricing for life. Flat
             monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot
             takes up to 8%). Keep more of every sale.
           </p>

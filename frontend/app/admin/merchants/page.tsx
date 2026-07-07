@@ -156,12 +156,12 @@ This blocks their broadcasts and ALL checkout immediately and hides their shops.
     }
   }, [authedFetch]);
 
-  // trial-starter (2026-07-06): backfill the 60-day founding trial for a
+  // trial-starter (2026-07-06): backfill the 30-day founding trial for a
   // merchant that signed up before trials existed. Same Stripe path as
   // signup; the backend refuses if a subscription already exists.
   const startTrial = useCallback(async (r: MerchantRow) => {
     if (!r.merchant_id) return;
-    if (!window.confirm(`Start the 60-day founding trial for ${r.business_name || "this merchant"}? Creates their Stripe customer + subscription with the trial clock ticking.`)) return;
+    if (!window.confirm(`Start the 30-day founding trial for ${r.business_name || "this merchant"}? Creates their Stripe customer + subscription with the trial clock ticking.`)) return;
     setActingId(r.merchant_id);
     try {
       const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/start-trial`, {
@@ -395,7 +395,7 @@ The merchant cannot relist it until you restore it. Reason:`);
                       >
                         {offersOpen ? "Hide offers" : "Offers"}
                       </button>
-                      {/* trial-starter (2026-07-06): backfill the 60-day
+                      {/* trial-starter (2026-07-06): backfill the 30-day
                           founding trial for merchants that predate the
                           trial code. Hidden once a subscription exists
                           (subscription_status flips to trialing). */}

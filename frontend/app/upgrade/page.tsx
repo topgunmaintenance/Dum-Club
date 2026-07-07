@@ -6,7 +6,7 @@ const TIERS = [
   {
     name: "Founding 100",
     price: "$0",
-    period: "for 60 days",
+    period: "for 30 days",
     afterNote: "Then locked-in founding pricing for life",
     color: "text-brand-teal",
     borderColor: "border-brand-teal",

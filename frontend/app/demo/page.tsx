@@ -362,7 +362,7 @@ export default function DemoPage() {
 
         <div className="mt-12 text-center">
           <p className="text-sm font-semibold text-secondary">
-            Join the first 100 merchants. Get 60 days free and lock in
+            Join the first 100 merchants. Get 30 days free and lock in
             founding pricing for life.
           </p>
           <p className="mt-1 text-xs text-muted">

@@ -199,7 +199,7 @@ export function FeeCalculator() {
             Claim Your Founding Spot →
           </Link>
           <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">
-            Founding merchants · 60 days free · Lock in founding pricing for life
+            Founding merchants · 30 days free · Lock in founding pricing for life
           </p>
         </div>
       </div>

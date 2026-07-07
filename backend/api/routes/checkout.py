@@ -1145,6 +1145,54 @@ async def stripe_webhook(request: Request):
         print(f"[webhook] checkout.session.completed: session={session_id}, PI={pi_id}, payment_status={payment_status}")
         print(f"[webhook] Metadata: {metadata}")
 
+        # ── Merchant trial signup (checkout-trial, 2026-07-07) ──
+        # Card-upfront trial Checkout completing. MUST be handled before
+        # the payment_status guard below: a subscription-mode session with
+        # a trial completes with payment_status='no_payment_required'
+        # (card saved, nothing charged), which the order path would skip.
+        if metadata.get("purchase_type") == "merchant_trial":
+            merchant_id = metadata.get("merchant_id")
+            sub_id = obj.get("subscription")
+            customer_id = obj.get("customer")
+            if not merchant_id or not sub_id:
+                print(f"[webhook] ✗ merchant_trial session {session_id} missing merchant_id/subscription")
+                return JSONResponse(content={"received": True}, status_code=200)
+            try:
+                update = {
+                    "stripe_customer_id": customer_id,
+                    "stripe_subscription_id": sub_id,
+                    "subscription_price_id": metadata.get("price_id") or None,
+                    "subscription_status": "trialing",
+                    "grandfathered": False,
+                }
+                update = {k: v for k, v in update.items() if v is not None}
+                # Conditional on no existing subscription (same posture as
+                # admin start-trial): a replayed webhook or a second session
+                # never overwrites a live subscription id.
+                res = (
+                    supabase.table("merchants")
+                    .update(update)
+                    .eq("id", merchant_id)
+                    .is_("stripe_subscription_id", "null")
+                    .execute()
+                )
+                if res.data:
+                    print(f"[webhook] ✓ merchant trial linked: merchant={merchant_id} sub={sub_id}")
+                    # Pull trial dates / status from Stripe onto the row so
+                    # the dashboard countdown is right immediately.
+                    from services.subscriptions import update_merchant_from_subscription
+                    update_merchant_from_subscription(sub_id)
+                    # Burn the identity's trial only now that it's granted.
+                    identity_hash = metadata.get("identity_hash") or None
+                    if identity_hash:
+                        from services.trial_identity import record_trial_identity
+                        record_trial_identity(supabase, merchant_id, identity_hash)
+                else:
+                    print(f"[webhook] merchant_trial: merchant {merchant_id} already has a subscription, leaving untouched")
+            except Exception as exc:
+                print(f"[webhook] ✗ merchant trial link failed: {exc!r}")
+            return JSONResponse(content={"received": True}, status_code=200)
+
         if payment_status != "paid":
             print(f"[webhook] Payment not confirmed yet (status={payment_status}), skipping")
             return JSONResponse(content={"received": True}, status_code=200)

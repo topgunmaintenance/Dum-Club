@@ -428,6 +428,14 @@ export default function MerchantPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        // Card-upfront trial (checkout-trial, 2026-07-07): the backend
+        // returns a Stripe Checkout link. Send the merchant straight
+        // there to put a card on file and start the 30-day free trial.
+        // Stripe redirects back to /merchant?trial=started when done.
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+          return;
+        }
         setMerchant(data.merchant);
         setShowSignup(false);
         // Backend auto-creates a storefront project on signup; reload
@@ -703,7 +711,7 @@ export default function MerchantPage() {
         <div className="mx-auto w-full max-w-md text-center">
           {/* Founding-100 scarcity pill removed — we no longer surface
               public merchant-count metrics. The H1 + description below
-              still carry the "60 days free / lock in founding pricing"
+              still carry the "30 days free / lock in founding pricing"
               copy, so the value prop is intact. */}
 
           <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
@@ -711,7 +719,7 @@ export default function MerchantPage() {
             <span className="text-mint-text">Lock in founding pricing for life.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
-            Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). No credit card.
+            Get 30 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Cancel any time during the trial.
           </p>
           <p className="mx-auto mt-2 max-w-sm text-[13px] font-semibold text-secondary">
             Plans start at $39/month after your trial. Cancel anytime.
@@ -807,7 +815,7 @@ export default function MerchantPage() {
                Continues the homepage pitch instead of dropping a form
                in a void. Founding-100 scarcity pill removed — we no
                longer surface public merchant-count metrics; the H1 +
-               paragraph below still carry "60 days free / lock in
+               paragraph below still carry "30 days free / lock in
                founding pricing for life" so the messaging is intact. */}
 
           <div className="mb-8 text-center">
@@ -820,7 +828,7 @@ export default function MerchantPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
-                ? "Get 60 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). No credit card."
+                ? "Get 30 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Cancel any time during the trial."
                 : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month plus a 1.5% sales fee per order. Loyalty rewards built in. No card today.`}
             </p>
           </div>
@@ -846,7 +854,7 @@ export default function MerchantPage() {
           <div className="mb-4 grid gap-2 rounded-2xl border border-default bg-surface-card p-4 sm:grid-cols-2 sm:p-5">
             {[
               ["💵", "One flat monthly fee + 1.5% per sale. Never more."],
-              ["🎁", "60 days free. Founding pricing locked for life."],
+              ["🎁", "30 days free. Founding pricing locked for life."],
               ["🏦", "Payouts straight to your bank. Buyers cover card fees."],
               ["🤝", "Your customers stay yours. QR, your own site, win-back."],
             ].map(([icon, line]) => (
@@ -1049,7 +1057,7 @@ export default function MerchantPage() {
               {[
                 "Just a 1.5% sales fee per order (Whatnot takes up to 8%, DoorDash takes 15-30%)",
                 "Built-in loyalty rewards bring customers back to your shop and every DUM Club business, so you keep them without paying for ads",
-                "Get 60 days free and lock in founding pricing for life when you join the first 100 merchants",
+                "Get 30 days free and lock in founding pricing for life when you join the first 100 merchants",
               ].map((line) => (
                 <li
                   key={line}
@@ -1356,7 +1364,7 @@ export default function MerchantPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
                 <div className="text-sm font-bold text-mint-text">Founding Merchant</div>
-                <div className="text-xs text-mint-text/60">60 days free · Lock in founding pricing for life · 1.5% sales fee</div>
+                <div className="text-xs text-mint-text/60">30 days free · Lock in founding pricing for life · 1.5% sales fee</div>
               </div>
             </div>
           </div>
