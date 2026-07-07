@@ -79,25 +79,47 @@ def record_replay_beat(supabase, project_id: str, source: str = "replay", second
     try:
         proj = (
             supabase.table("projects")
-            .select("owner_id")
+            .select("owner_id, account_id")
             .eq("id", project_id)
             .limit(1)
             .execute()
         )
         if not proj.data:
             return False
-        owner_uuid = proj.data[0].get("owner_id")
-        if not owner_uuid:
-            return False
-        usr = (
-            supabase.table("users")
-            .select("privy_id")
-            .eq("id", owner_uuid)
-            .limit(1)
-            .execute()
-        )
-        owner_privy = usr.data[0].get("privy_id") if usr.data else None
-        merchant_id = _resolve_merchant_id(supabase, owner_privy)
+        merchant_id = None
+        # Primary resolution: the account bridge. A founder can have several
+        # login identities (verified live 2026-07-07: the topgun-maintenance
+        # project is owned by a different users row than its merchant), and
+        # projects.account_id == merchants.account_id is the join built to
+        # survive exactly that. The owner->privy chain stays as fallback for
+        # rows that predate the account backfill.
+        account_id = proj.data[0].get("account_id")
+        if account_id:
+            try:
+                mres = (
+                    supabase.table("merchants")
+                    .select("id")
+                    .eq("account_id", account_id)
+                    .limit(1)
+                    .execute()
+                )
+                if mres.data:
+                    merchant_id = mres.data[0].get("id")
+            except Exception as exc:  # noqa: BLE001
+                print(f"[telemetry] account-bridge merchant lookup failed: {exc!r}")
+        if not merchant_id:
+            owner_uuid = proj.data[0].get("owner_id")
+            if not owner_uuid:
+                return False
+            usr = (
+                supabase.table("users")
+                .select("privy_id")
+                .eq("id", owner_uuid)
+                .limit(1)
+                .execute()
+            )
+            owner_privy = usr.data[0].get("privy_id") if usr.data else None
+            merchant_id = _resolve_merchant_id(supabase, owner_privy)
         if not merchant_id:
             return False
 
