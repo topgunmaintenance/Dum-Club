@@ -367,14 +367,34 @@ async def merchants_stats(_admin=Depends(require_admin)):
     )
     orders = (
         supabase.table("orders")
-        .select("id, amount_paid_usd, status")
+        .select("id, amount_paid_usd, status, project_id, stripe_payment_intent_id, solana_tx_signature")
         .execute()
         .data
         or []
     )
+    # Live project ids — the orders table carries pre-Phase-0B dev
+    # residue (orders whose projects were deleted long ago, many with
+    # no payment reference at all). Counting those as GMV is fake data
+    # (doctrine §12.2). Real revenue = paid/fulfilled AND the shop
+    # still exists AND an actual payment rail reference is attached
+    # (Stripe PaymentIntent or Solana signature).
+    live_project_ids: set = set()
+    try:
+        projects = (
+            supabase.table("projects").select("id").execute().data or []
+        )
+        live_project_ids = {p["id"] for p in projects if p.get("id")}
+    except Exception as exc:
+        print(f"[admin/stats] projects lookup failed: {exc!r}")
 
     paid_statuses = {"paid", "fulfilled"}
-    paid_orders = [o for o in orders if (o.get("status") or "") in paid_statuses]
+    paid_orders = [
+        o
+        for o in orders
+        if (o.get("status") or "") in paid_statuses
+        and o.get("project_id") in live_project_ids
+        and (o.get("stripe_payment_intent_id") or o.get("solana_tx_signature"))
+    ]
     gmv = sum(float(o.get("amount_paid_usd") or 0) for o in paid_orders)
 
     by_status: dict[str, int] = {}

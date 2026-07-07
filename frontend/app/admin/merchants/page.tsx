@@ -398,8 +398,11 @@ Type the business name exactly to confirm:`,
         </div>
       )}
 
+      {/* admin-stats-accuracy (2026-07-07): no forced min-width — the
+          enforcement buttons wrap instead, so the whole table fits the
+          viewport without horizontal scrolling. */}
       <div className="overflow-x-auto rounded-xl border border-default bg-surface-card">
-        <table className="w-full min-w-[960px] text-left text-xs">
+        <table className="w-full text-left text-xs">
           <thead className="bg-surface-page">
             <tr>
               <th className="px-3 py-2 font-bold uppercase tracking-[0.08em] text-secondary">
@@ -450,7 +453,7 @@ Type the business name exactly to confirm:`,
                   <td className="px-3 py-2 font-medium text-primary">
                     {r.business_name || "—"}
                   </td>
-                  <td className="px-3 py-2 text-secondary">
+                  <td className="max-w-[180px] break-all px-3 py-2 text-secondary">
                     {r.owner_email ? (
                       <a
                         href={`mailto:${r.owner_email}`}
@@ -526,7 +529,7 @@ Type the business name exactly to confirm:`,
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex max-w-[240px] flex-wrap items-center gap-1.5">
                       {r.admin_suspended && (
                         <StatusPill kind="live">Suspended</StatusPill>
                       )}
