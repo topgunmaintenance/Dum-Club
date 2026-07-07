@@ -23,13 +23,13 @@ from db.supabase import get_client
 from auth.privy import get_current_user
 from services.seed_claim import maybe_claim_seed_profiles
 from services.subscriptions import (
-    create_trial_subscription,
+    create_trial_checkout_session,
     cancel_subscription,
     create_billing_portal_session,
     ensure_stripe_customer,
 )
 from services.live_limits import check_rate_limit
-from services.trial_identity import evaluate_trial_gate, record_trial_identity
+from services.trial_identity import evaluate_trial_gate
 
 router = APIRouter()
 
@@ -518,7 +518,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
 
     # ── Trial-identity gate (audit a-d) ───────────────────────────
     # Compute the salted identity hash and check the ledger BEFORE the
-    # 60-day trial is provisioned further down. Inert unless
+    # 30-day trial checkout is offered further down. Inert unless
     # TRIAL_IDENTITY_GATE_ENABLED is on (and migration 080 applied). This
     # NEVER blocks account creation — only the free-trial GRANT is gated,
     # fail-closed. Email is the dedupe signal (hashed); look it up once
@@ -706,26 +706,26 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
     except Exception as exc:
         print(f"[merchant/signup] storefront project create raised: {exc!r}")
 
-    # ── 60-day trial provisioning ─────────────────────────────────
-    # EVERY signup — founding included — gets a Stripe Subscription with a
-    # 60-day trial and pause-on-missing-payment-method, so no card is
-    # required at signup and nobody is ever charged silently.
+    # ── 30-day card-upfront trial (checkout-trial, 2026-07-07) ────
+    # EVERY signup — founding included — gets a Stripe Checkout link that
+    # collects a payment method BEFORE the 30-day trial starts (Netflix
+    # model). Stripe creates the Subscription when Checkout completes;
+    # the webhook writes the ids back onto this merchants row. Nothing
+    # is charged during the trial, and cancel-during-trial stays free.
     #
-    # Doctrine correction (2026-07-02): this branch previously grandfathered
-    # founding merchants into "$0 forever" and skipped billing entirely,
-    # which contradicts CLAUDE.md §3 — the founding offer is "60 days free,
-    # then founding-tier pricing locked for life" (Starter base $39/mo).
-    # The founding lock is on the PRICE, not an exemption from paying.
-    # Without this, the trial clock never started for founders: no
-    # countdown banner, no conversion, no revenue.
+    # Doctrine history: the 2026-07-02 correction ended the "$0 forever"
+    # founding grandfathering — the founding lock is on the PRICE, not an
+    # exemption from paying. The 2026-07-07 doctrine update (founder
+    # decision) moved the offer from "60 days free, no card" to "30 days
+    # free, card at signup" so trials convert automatically.
     #
-    # Best-effort: a Stripe outage here doesn't fail the signup. The merchant
-    # lands in the dashboard, the trial banner shows "Setting up your trial.."
-    # state, and a follow-up dashboard load can call this code path again
-    # (gated by stripe_subscription_id IS NULL) to retry.
+    # Best-effort: a Stripe outage here doesn't fail the signup. The
+    # merchant lands in the dashboard without a trial and can restart
+    # checkout via POST /api/merchant/trial-checkout (same path covers
+    # abandoned Checkout sessions).
     #
-    # `if True:` keeps the block's indentation so this doctrine fix stays a
-    # reviewable two-line diff instead of a 60-line whitespace change.
+    # `if True:` keeps the block's indentation so flow changes stay a
+    # reviewable diff instead of a 60-line whitespace change.
     if True:
         # Email was already resolved for the trial-identity gate above.
         user_email: Optional[str] = trial_gate_email
@@ -747,49 +747,49 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
                 f"falling back to {resolved_tier}"
             )
 
-        # Trial-identity gate: only provision a fresh trial when the gate
+        # Trial-identity gate: only offer a fresh trial when the gate
         # allows it. When blocked (prior trial / unverifiable / gate error),
         # skip issuance — the account is still created, just without a new
-        # 60-day trial. Fail-closed: a gate error withholds the trial.
+        # trial. Fail-closed: a gate error withholds the trial.
+        checkout_url: Optional[str] = None
         if trial_gate["allowed"]:
-            trial = create_trial_subscription(
+            site = os.getenv("SITE_URL", "https://www.dum.club").rstrip("/")
+            trial = create_trial_checkout_session(
                 privy_id=privy_id,
                 email=user_email,
                 business_name=body.business_name,
                 tier=resolved_tier,
+                merchant_id=inserted["id"],
+                identity_hash=trial_gate.get("identity_hash"),
+                success_url=f"{site}/merchant?trial=started",
+                cancel_url=f"{site}/merchant?trial=abandoned",
             )
         else:
             print(f"[merchant/signup] trial withheld by identity gate: {trial_gate['reason']}")
             trial = {"error": f"trial_gate:{trial_gate['reason']}"}
         if not trial.get("error"):
+            checkout_url = trial.get("checkout_url")
             try:
+                # Only the customer id is known now. The subscription ids +
+                # trial dates arrive via the checkout.session.completed
+                # webhook once the merchant finishes Checkout. The identity
+                # ledger is also written there — an abandoned Checkout must
+                # not burn this identity's only trial.
                 trial_update = {
                     "stripe_customer_id": trial.get("stripe_customer_id"),
-                    "stripe_subscription_id": trial.get("stripe_subscription_id"),
-                    "subscription_price_id": trial.get("subscription_price_id"),
-                    "trial_start_at": trial.get("trial_start_at"),
-                    "trial_ends_at": trial.get("trial_ends_at"),
-                    "next_billing_at": trial.get("next_billing_at"),
-                    "subscription_status": trial.get("subscription_status") or "trialing",
                     "grandfathered": False,
                 }
-                # Drop None values so we don't overwrite real columns with NULL
-                # if Stripe gave us a partial response.
                 trial_update = {k: v for k, v in trial_update.items() if v is not None}
                 supabase.table("merchants").update(trial_update).eq(
                     "id", inserted["id"]
                 ).execute()
                 inserted.update(trial_update)
-                # Record the granted trial in the identity ledger so this
-                # identity can't claim a second trial later. No-op when the
-                # gate is disabled or there's no hash.
-                record_trial_identity(supabase, inserted["id"], trial_gate.get("identity_hash"))
             except Exception as exc:
                 print(f"[merchant/signup] trial write-through failed: {exc!r}")
         else:
             print(f"[merchant/signup] trial provisioning skipped: {trial.get('error')}")
 
-    return {"merchant": inserted, "created": True}
+    return {"merchant": inserted, "created": True, "checkout_url": checkout_url}
 
 
 # ── Founding status (public) ──
@@ -1102,7 +1102,7 @@ async def ensure_merchant_storefront(
     }
 
 
-# ── 60-day trial status (dashboard countdown) ──
+# ── 30-day trial status (dashboard countdown) ──
 
 # Plan price labels keyed off the cached subscription_price_id. Read-side
 # only — Stripe is authoritative for the actual charge amount; this map is
@@ -1366,6 +1366,70 @@ async def billing_portal(current_user: dict = Depends(get_current_user)):
             ),
         )
     return {"url": url}
+
+
+@router.post("/trial-checkout")
+async def trial_checkout(current_user: dict = Depends(get_current_user)):
+    """Restart the card-upfront trial Checkout (checkout-trial, 2026-07-07).
+
+    Covers the two ways a merchant can exist without a subscription:
+    a Stripe outage during signup, or an abandoned Checkout session.
+    Same trial-identity gate as signup — this mints a NEW 30-day trial,
+    so it must be just as protected. Guarded: 409 if a subscription
+    already exists."""
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+    sb = get_client()
+    res = (
+        sb.table("merchants")
+        .select("id, business_name, founding_merchant, plan_id, stripe_subscription_id")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="No merchant account")
+    merchant = res.data[0]
+    if merchant.get("stripe_subscription_id"):
+        raise HTTPException(status_code=409, detail="You already have a subscription")
+
+    email = None
+    try:
+        u = sb.table("users").select("email").eq("privy_id", privy_id).limit(1).execute()
+        email = u.data[0].get("email") if u.data else None
+    except Exception:
+        pass
+
+    trial_gate = evaluate_trial_gate(sb, email)
+    if not trial_gate["allowed"]:
+        raise HTTPException(
+            status_code=403,
+            detail="A free trial was already used for this account. Contact support if that seems wrong.",
+        )
+
+    tier = "starter" if merchant.get("founding_merchant") else (merchant.get("plan_id") or "growth")
+    site = os.getenv("SITE_URL", "https://www.dum.club").rstrip("/")
+    trial = create_trial_checkout_session(
+        privy_id=privy_id,
+        email=email,
+        business_name=merchant.get("business_name"),
+        tier=tier,
+        merchant_id=merchant["id"],
+        identity_hash=trial_gate.get("identity_hash"),
+        success_url=f"{site}/merchant?trial=started",
+        cancel_url=f"{site}/merchant?trial=abandoned",
+    )
+    if trial.get("error"):
+        raise HTTPException(status_code=502, detail="Could not reach Stripe. Try again in a moment.")
+    if trial.get("stripe_customer_id"):
+        try:
+            sb.table("merchants").update(
+                {"stripe_customer_id": trial["stripe_customer_id"]}
+            ).eq("id", merchant["id"]).execute()
+        except Exception as exc:
+            print(f"[merchant/trial-checkout] customer_id save failed (ignored): {exc!r}")
+    return {"url": trial.get("checkout_url")}
 
 
 @router.post("/cancel-trial")

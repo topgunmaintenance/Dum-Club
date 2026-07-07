@@ -27,7 +27,7 @@ export function HomeSellPitch() {
           Sell Live. Keep More of Every Dollar.
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-          Join the first 100 merchants. Get 60 days free and lock in founding
+          Join the first 100 merchants. Get 30 days free and lock in founding
           pricing for life.
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-relaxed text-secondary sm:text-base">

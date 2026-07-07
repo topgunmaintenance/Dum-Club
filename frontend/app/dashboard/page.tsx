@@ -1362,7 +1362,7 @@ export default function DashboardPage() {
                 <span className="text-base">🏪</span>
                 <div>
                   <div className="text-sm font-bold text-primary">Claim Your Founding Spot</div>
-                  <div className="text-[11px] text-secondary">60 days free · Lock in founding pricing for life · 100 spots</div>
+                  <div className="text-[11px] text-secondary">30 days free · Lock in founding pricing for life · 100 spots</div>
                 </div>
               </Link>
             )}
@@ -1445,7 +1445,7 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-dashed border-default bg-brand-teal-soft p-6 text-center">
                 <div className="mb-2 text-2xl">🏪</div>
                 <div className="mb-1 text-base font-bold text-primary">Start selling on DUM Club</div>
-                <p className="mb-4 text-sm text-secondary">Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. 1.5% sales fee per order (industry-low; Whatnot takes up to 8%).</p>
+                <p className="mb-4 text-sm text-secondary">Join the first 100 merchants. Get 30 days free and lock in founding pricing for life. 1.5% sales fee per order (industry-low; Whatnot takes up to 8%).</p>
                 <Link
                   href="/merchant"
                   className="inline-flex items-center rounded-xl bg-brand-teal px-6 py-2.5 text-sm font-bold text-black transition hover:bg-brand-teal-hover"

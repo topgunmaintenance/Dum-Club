@@ -73,7 +73,7 @@ function BusinessPageInner() {
 
         <div className="relative mx-auto max-w-4xl text-center">
           {/* Founding-100 scarcity pill removed (PR: hide public
-              merchant-count metrics). The "60 days free / lock in
+              merchant-count metrics). The "30 days free / lock in
               founding pricing for life" copy still appears in the
               hero paragraph below, so no message is lost — only the
               live count is suppressed. */}
@@ -86,7 +86,7 @@ function BusinessPageInner() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
-            Join the first 100 merchants. Get 60 days free and lock in founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%).
+            Join the first 100 merchants. Get 30 days free and lock in founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%).
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -165,7 +165,7 @@ function BusinessPageInner() {
               },
               {
                 q: "Is there a free tier?",
-                a: "The first 100 founding merchants get 60 days free and then lock in founding pricing for life. After that, plans start at $39 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
+                a: "The first 100 founding merchants get 30 days free and then lock in founding pricing for life. After that, plans start at $39 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
               },
             ].map((f) => (
               <details
@@ -338,7 +338,7 @@ function OverviewTab({
             Join the first 100 merchants.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-secondary">
-            Get 60 days free and lock in founding pricing for life. Founding merchant badge permanent on your profile.
+            Get 30 days free and lock in founding pricing for life. Founding merchant badge permanent on your profile.
           </p>
           {/* Live "X of 100 founding spots claimed" counter removed —
               we no longer surface live merchant-count metrics in

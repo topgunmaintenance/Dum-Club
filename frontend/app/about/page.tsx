@@ -171,8 +171,8 @@ export default function AboutPage() {
             Starting at $39/month plus a 1.5% sales fee. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
-            Join the first 100 merchants. Get 60 days free and lock in
-            founding pricing for life. No credit card required to start.
+            Join the first 100 merchants. Get 30 days free and lock in
+            founding pricing for life. Cancel any time during the trial.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link

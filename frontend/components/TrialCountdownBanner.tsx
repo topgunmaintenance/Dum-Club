@@ -1,14 +1,19 @@
 "use client";
 
 /**
- * TrialCountdownBanner — 60-day free-trial countdown on /dashboard.
+ * TrialCountdownBanner — 30-day free-trial countdown on /dashboard.
  *
  * Renders nothing for:
  *   - signed-out users (no token)
  *   - merchants without a row (no signup yet)
  *   - grandfathered founding merchants (no auto-billing)
- *   - merchants without a Stripe Subscription provisioned (legacy/error state)
  *   - cancelled subscriptions
+ *
+ * Merchants without a Stripe Subscription (abandoned Checkout, or a
+ * Stripe outage during signup) get a "start your free trial" state
+ * instead of silence: a CTA that POSTs /api/merchant/trial-checkout and
+ * sends them to the Stripe-hosted page to put a card on file
+ * (checkout-trial, 2026-07-07).
  *
  * Otherwise shows a plain-English line:
  *   "47 days left in your free trial. Your $49/month Growth plan starts on
@@ -69,6 +74,7 @@ export function TrialCountdownBanner({ getToken }: Props) {
   const [loading, setLoading] = useState(true);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [startingCheckout, setStartingCheckout] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -136,11 +142,88 @@ export function TrialCountdownBanner({ getToken }: Props) {
     setCancelling(false);
   }
 
+  async function handleStartCheckout() {
+    setStartingCheckout(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) {
+        setError("Sign in again to continue.");
+        setStartingCheckout(false);
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/merchant/trial-checkout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setError(err.detail || `Could not start checkout (${res.status}).`);
+        setStartingCheckout(false);
+        return;
+      }
+      const json = await res.json();
+      if (json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      setError("Could not start checkout. Try again in a moment.");
+    } catch {
+      setError("Network error.");
+    }
+    setStartingCheckout(false);
+  }
+
   if (loading) return null;
   if (!status) return null;
   if (!status.has_merchant) return null;
   if (status.grandfathered) return null;
-  if (!status.has_subscription) return null;
+
+  if (!status.has_subscription) {
+    // Signed up but never finished the Stripe Checkout (or Stripe was
+    // down during signup). Give them the path back in.
+    return (
+      <section
+        aria-labelledby="trial-countdown-heading"
+        className="mb-6 rounded-3xl border border-amber-500/30 bg-amber-500/[0.04] p-6 shadow-sm sm:p-8"
+      >
+        <div className="flex items-start gap-4">
+          <span
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400"
+            aria-hidden="true"
+          >
+            <Clock className="h-5 w-5" strokeWidth={2} />
+          </span>
+          <div className="flex-1">
+            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
+              Free trial
+            </div>
+            <h2
+              id="trial-countdown-heading"
+              className="mt-1 text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl"
+            >
+              Start your 30-day free trial
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-secondary">
+              Put a card on file to start your free trial. Nothing is charged
+              today, and you can cancel any time during the trial.
+            </p>
+            {error && (
+              <p className="mt-3 text-xs font-medium text-red-400">{error}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleStartCheckout}
+              disabled={startingCheckout}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-teal px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover disabled:opacity-50"
+            >
+              {startingCheckout ? "Opening Stripe..." : "Start my free trial →"}
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const isCancelled = status.subscription_status === "cancelled";
   const isSuspended = status.is_suspended === true || status.subscription_status === "suspended";

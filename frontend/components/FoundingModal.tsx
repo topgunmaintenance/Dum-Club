@@ -7,7 +7,7 @@
  * leading with the always-true fee hook (Whatnot up to 8% vs DUM Club 1.5%) and the
  * canonical founding offer, with a "Claim Your Founding Spot" CTA to /merchant.
  *
- * Doctrine: canonical founding copy only (CLAUDE.md §3) — 60 days free + lock
+ * Doctrine: canonical founding copy only (CLAUDE.md §3) — 30 days free + lock
  * in founding pricing for life; NEVER a live "X of 100" counter; "Whatnot takes
  * 8%" is the competitor's top published fee (their site says ≤8%). Dismissible (X / backdrop / Esc /
  * "Maybe later"); the localStorage flag stops it nagging on return visits.
@@ -86,7 +86,7 @@ export function FoundingModal() {
             Join the first 100 merchants.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-secondary">
-            Get 60 days free and lock in founding pricing for life. Flat monthly
+            Get 30 days free and lock in founding pricing for life. Flat monthly
             subscription + 1.5% sales fee. Industry-low. Keep more of every sale.
           </p>
 

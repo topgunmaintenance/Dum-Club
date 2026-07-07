@@ -1,5 +1,5 @@
 """
-Trial-identity gate — stops the same identity from claiming the 60-day free
+Trial-identity gate — stops the same identity from claiming the 30-day free
 trial more than once across different accounts.
 
 Stores ONLY a salted SHA-256 hash of the merchant's email in
@@ -50,7 +50,7 @@ def compute_identity_hash(email: Optional[str]) -> Optional[str]:
 
 
 def evaluate_trial_gate(supabase, email: Optional[str]) -> dict:
-    """Decide whether a fresh 60-day trial may be granted to this identity.
+    """Decide whether a fresh 30-day trial may be granted to this identity.
 
     Returns {allowed: bool, reason: str, identity_hash: Optional[str]}.
 

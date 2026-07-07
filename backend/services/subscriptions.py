@@ -12,24 +12,33 @@ Two distinct Stripe object families involved:
   - stripe.Account (acct_*)    — their own connected account for receiving
                                   customer money (handled in merchant.py)
 
-The trial architecture (from the pre-launch audit, Option A):
-  - On merchant signup, create_trial_subscription() runs:
+The trial architecture (checkout-trial, 2026-07-07 — card-upfront):
+  - On merchant signup, create_trial_checkout_session() runs:
       stripe.Customer.create(...)
-      stripe.Subscription.create(
+      stripe.checkout.Session.create(
+          mode="subscription",
           customer=...,
-          items=[{ "price": STRIPE_PRICE_ID_GROWTH }],
-          trial_period_days=60,
-          trial_settings={
-              "end_behavior": {"missing_payment_method": "pause"}
+          line_items=[{ "price": <tier price>, "quantity": 1 }],
+          payment_method_collection="always",
+          subscription_data={
+              "trial_period_days": 30,
+              "trial_settings": {
+                  "end_behavior": {"missing_payment_method": "cancel"}
+              },
           },
-          payment_behavior="default_incomplete",
       )
-  - No card required at signup. Stripe holds the timer.
-  - At day 60 minus 14, Stripe fires customer.subscription.trial_will_end —
+  - The merchant enters a card on the Stripe-hosted page BEFORE the
+    trial starts (Netflix model). Nothing is charged for 30 days.
+  - Stripe creates the Subscription when Checkout completes; the
+    checkout.session.completed webhook (purchase_type=merchant_trial)
+    links the ids back onto the merchants row.
+  - At day 30 minus 14, Stripe fires customer.subscription.trial_will_end —
     we send the D-14 reminder.
-  - At trial end, if the merchant has added a payment method, Stripe charges
-    automatically. If not, Stripe pauses the subscription and fires
-    customer.subscription.updated with status='paused'.
+  - At trial end Stripe charges the saved card automatically. The
+    missing_payment_method=cancel setting is a safety net for the rare
+    subscription whose card was detached mid-trial.
+  - create_trial_subscription() (no card, direct provisioning) remains
+    for the admin per-merchant backfill path only.
   - Grandfathered merchants (founding 100 pre-launch) skip this entirely.
 
 Failure mode: every Stripe call is wrapped in try/except so a Stripe outage
@@ -53,7 +62,7 @@ _STRIPE_PRICE_ID_GROWTH = os.getenv("STRIPE_PRICE_ID_GROWTH")
 _STRIPE_PRICE_ID_STARTER = os.getenv("STRIPE_PRICE_ID_STARTER")
 _STRIPE_PRICE_ID_PRO = os.getenv("STRIPE_PRICE_ID_PRO")
 
-TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "60"))
+TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "30"))
 
 
 class TrialResult(TypedDict, total=False):
@@ -140,6 +149,110 @@ def ensure_stripe_customer(privy_id: str, email: Optional[str], business_name: O
         return None
 
 
+class TrialCheckoutResult(TypedDict, total=False):
+    """Return shape of create_trial_checkout_session. Optional fields are
+    present only when the upstream call succeeded."""
+    checkout_url: Optional[str]
+    stripe_customer_id: Optional[str]
+    subscription_price_id: Optional[str]
+    error: Optional[str]
+
+
+def create_trial_checkout_session(
+    privy_id: str,
+    email: Optional[str],
+    business_name: Optional[str],
+    tier: str,
+    merchant_id: str,
+    identity_hash: Optional[str],
+    success_url: str,
+    cancel_url: str,
+) -> TrialCheckoutResult:
+    """Card-upfront trial signup (checkout-trial, 2026-07-07).
+
+    Creates a Stripe Customer plus a Stripe-hosted Checkout Session that
+    collects a payment method BEFORE the 30-day trial starts — the
+    Netflix model. Stripe creates the Subscription itself when the
+    merchant completes Checkout; the checkout.session.completed webhook
+    (metadata purchase_type=merchant_trial) writes the subscription ids
+    back onto the merchants row and records the trial-identity ledger.
+
+    Card entry happens on stripe.com — we never touch card data, same
+    trust posture as the billing portal and Connect onboarding.
+
+    Returns {checkout_url, stripe_customer_id} on success, {error} on any
+    Stripe failure — the caller treats that as "trial not provisioned"
+    exactly like the old direct-provisioning path.
+    """
+    if not _STRIPE_SECRET:
+        return {"error": "STRIPE_SECRET_KEY not configured"}
+
+    price_id = _resolve_price_id(tier)
+    if not price_id:
+        return {"error": f"STRIPE_PRICE_ID_{tier.upper()} not configured"}
+
+    stripe.api_key = _STRIPE_SECRET
+
+    try:
+        customer = stripe.Customer.create(
+            email=email or None,
+            name=business_name or None,
+            metadata={
+                "privy_id": privy_id,
+                "source": "dum-club-merchant-signup",
+            },
+            # Same salted idempotency as the legacy path (audit finding 7):
+            # double-clicks dedupe, a corrected config gets a fresh attempt.
+            idempotency_key=f"dum-cust-{privy_id}-{price_id}-{(email or 'noemail')[:24]}",
+        )
+    except Exception as exc:
+        print(f"[subscriptions] Customer.create failed for privy={privy_id[-6:]}: {exc!r}")
+        return {"error": f"customer_create_failed: {type(exc).__name__}: {str(exc)[:160]}"}
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            customer=customer.id,
+            line_items=[{"price": price_id, "quantity": 1}],
+            # The whole point of the checkout-trial flow: no free trial
+            # without a card on file.
+            payment_method_collection="always",
+            subscription_data={
+                "trial_period_days": TRIAL_DAYS,
+                "trial_settings": {
+                    "end_behavior": {"missing_payment_method": "cancel"},
+                },
+                "metadata": {
+                    "privy_id": privy_id,
+                    "merchant_id": merchant_id,
+                    "source": "dum-club-merchant-signup",
+                },
+            },
+            metadata={
+                "purchase_type": "merchant_trial",
+                "privy_id": privy_id,
+                "merchant_id": merchant_id,
+                "tier": tier,
+                "price_id": price_id,
+                # Ledger write happens in the webhook, once the trial is
+                # actually granted — not at session creation, where an
+                # abandoned checkout would burn the identity's only trial.
+                "identity_hash": identity_hash or "",
+            },
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+    except Exception as exc:
+        print(f"[subscriptions] Checkout Session.create failed for privy={privy_id[-6:]}: {exc!r}")
+        return {"error": f"checkout_session_create_failed: {type(exc).__name__}: {str(exc)[:160]}"}
+
+    return {
+        "checkout_url": session.url,
+        "stripe_customer_id": customer.id,
+        "subscription_price_id": price_id,
+    }
+
+
 def create_trial_subscription(
     privy_id: str,
     email: Optional[str],
@@ -147,9 +260,12 @@ def create_trial_subscription(
     tier: str = "growth",
 ) -> TrialResult:
     """
-    Create a Stripe Customer + Subscription with a 60-day trial for this
-    merchant. Designed to be called once, on /api/merchant/signup, after the
-    merchants row has been inserted.
+    Create a Stripe Customer + Subscription with a TRIAL_DAYS (default 30)
+    trial for this merchant — WITHOUT card collection. Since the
+    checkout-trial flow (2026-07-07) this is no longer the signup path;
+    it remains only for the admin per-merchant backfill
+    (POST /api/admin/merchants/{id}/start-trial), where the operator
+    deliberately grants a no-card trial.
 
     Returns a TrialResult with the Stripe ids + computed timestamps. On any
     Stripe failure, returns a TrialResult with only the error field set; the

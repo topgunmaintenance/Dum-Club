@@ -123,7 +123,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "What does 'founding merchant' actually get me?",
-    a: "60 days free, then locked-in founding pricing for life. You also get a permanent founding-merchant badge on your storefront. The first 100 merchants to sign up qualify.",
+    a: "30 days free, then locked-in founding pricing for life. You also get a permanent founding-merchant badge on your storefront. The first 100 merchants to sign up qualify.",
   },
   {
     q: "Why is there no Free tier?",
@@ -175,7 +175,7 @@ export default function PricingPage() {
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
               Live selling, loyalty, automatic customer win-back texts, and
               local flash sales. One monthly fee replaces five separate bills.
-              Get 60 days free and lock in founding pricing for life.
+              Get 30 days free and lock in founding pricing for life.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button href="/merchant" variant="primary" size="lg">

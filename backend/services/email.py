@@ -285,7 +285,7 @@ OUTREACH_TEMPLATES: dict = {
             "8% per sale; DoorDash takes 15-30%. DUM Club is industry-low, "
             "with customer loyalty rewards built in automatically.\n\n"
             "We already set up a store page for you. Want access?\n\n"
-            "We're onboarding our first 100 founding merchants. 60 days "
+            "We're onboarding our first 100 founding merchants. 30 days "
             "free, then locked-in founding pricing for life. Spots are "
             "filling fast.\n\n"
             "Check what we built for you:\n"
@@ -301,8 +301,9 @@ OUTREACH_TEMPLATES: dict = {
             "Just circling back on your DUM Club store. Two days ago I "
             "mentioned we already set one up for you, ready when you are, as a "
             "founding merchant.\n\n"
-            "No credit card today. 60 days free, then a flat subscription "
-            "plus a 1.5% sales fee per order (Whatnot takes 8%). Want a look?\n\n"
+            "30 days free, cancel any time during the trial. After that "
+            "it's a flat subscription plus a 1.5% sales fee per order "
+            "(Whatnot takes 8%). Want a look?\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
             "— Julian\n"
@@ -472,9 +473,9 @@ def send_trial_t_minus_14(merchant_email: str, business_name: str, plan_price_us
     html = _trial_reminder_html(
         headline=f"Hey {business_name or 'there'}, two weeks left in your free trial",
         body_paragraphs=[
-            f"Your 60-day free trial of DUM Club ends on <strong>{trial_end_date}</strong>.",
+            f"Your 30-day free trial of DUM Club ends on <strong>{trial_end_date}</strong>.",
             f"After that, your plan will be <strong>${plan_price_usd}/month</strong> plus a 1.5% sales fee per order (industry-low; Whatnot takes 8%).",
-            "Add a payment method any time before then to keep your shop running with no break. If you do nothing, your plan pauses automatically. No surprise charges.",
+            "Your card on file starts then, so there's nothing to set up. Not ready? Cancel any time before that date with one click and you won't be charged.",
         ],
         cta_label="Open my dashboard",
         cta_href=f"{_PLATFORM_URL}/dashboard",
@@ -508,9 +509,9 @@ def send_trial_t_minus_1(merchant_email: str, business_name: str, plan_price_usd
         headline="Your trial ends tomorrow",
         body_paragraphs=[
             f"Tomorrow ({trial_end_date}), your free trial ends.",
-            f"If a payment method is on file, you'll start your <strong>${plan_price_usd}/month</strong> plan. If not, your plan will pause and you can pick it up later.",
+            f"Your card on file will be charged and your <strong>${plan_price_usd}/month</strong> plan starts. Not ready? Cancel with one click before then and you won't be charged.",
         ],
-        cta_label="Add payment method",
+        cta_label="Manage my plan",
         cta_href=f"{_PLATFORM_URL}/dashboard",
     )
     return _send(merchant_email, subject, html)
