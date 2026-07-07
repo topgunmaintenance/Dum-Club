@@ -34,6 +34,9 @@ type MerchantRow = {
   founding_merchant: boolean | null;
   admin_suspended?: boolean;
   admin_suspended_reason?: string | null;
+  // admin-toolkit (2026-07-07): Stripe links + cancel button
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
   project_count: number;
   primary_project: {
     id: string | null;
@@ -44,6 +47,18 @@ type MerchantRow = {
     is_live: boolean | null;
   } | null;
   discoverable: boolean;
+};
+
+// admin-toolkit (2026-07-07): roll-up numbers for the header cards.
+type MerchantStats = {
+  merchants_total: number;
+  founding_used: number;
+  founding_cap: number;
+  with_subscription: number;
+  trialing: number;
+  connect_verified: number;
+  orders_paid: number;
+  gmv_usd: number;
 };
 
 function formatSignupDate(iso: string | null): string {
@@ -108,6 +123,8 @@ function MerchantsPanel() {
   const [actingId, setActingId] = useState<string | null>(null);
   const [openOffersFor, setOpenOffersFor] = useState<string | null>(null);
   const [offersByMerchant, setOffersByMerchant] = useState<Record<string, any[]>>({});
+  const [stats, setStats] = useState<MerchantStats | null>(null);
+  const [copiedLinkFor, setCopiedLinkFor] = useState<string | null>(null);
 
   const authedFetch = useCallback(async (path: string, init?: RequestInit) => {
     const token = await getToken();
@@ -230,12 +247,19 @@ The merchant cannot relist it until you restore it. Reason:`);
       const token = await getToken();
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/admin/merchants`, { headers });
+      const [res, statsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/admin/merchants`, { headers }),
+        fetch(`${API_BASE}/api/admin/merchants/stats`, { headers }),
+      ]);
       if (!res.ok) {
         throw new Error(`Could not load businesses (HTTP ${res.status}).`);
       }
       const data = await res.json();
       setRows(Array.isArray(data?.merchants) ? data.merchants : []);
+      // Stats are decoration — a failure there never blocks the table.
+      if (statsRes.ok) {
+        setStats(await statsRes.json());
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not load businesses.",
@@ -244,6 +268,84 @@ The merchant cannot relist it until you restore it. Reason:`);
       setLoading(false);
     }
   }, [getToken]);
+
+  // admin-toolkit (2026-07-07): cancel a merchant's subscription without
+  // leaving the admin page.
+  const cancelSubscription = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    if (!window.confirm(`Cancel the Stripe subscription for ${r.business_name || "this merchant"}? Immediate, no more charges — this does not delete anything else.`)) return;
+    setActingId(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/cancel-subscription`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : `HTTP ${res.status}`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Cancel failed");
+    } finally {
+      setActingId(null);
+    }
+  }, [authedFetch, load]);
+
+  // admin-toolkit (2026-07-07): mint a fresh trial Checkout link to send
+  // a merchant whose card-upfront setup stalled. Copies to clipboard.
+  const checkoutLink = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    setActingId(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/checkout-link`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.url) {
+        try {
+          await navigator.clipboard.writeText(data.url);
+          setCopiedLinkFor(r.merchant_id);
+          setTimeout(() => setCopiedLinkFor(null), 4000);
+        } catch {
+          window.prompt("Copy the checkout link:", data.url);
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Checkout link failed");
+    } finally {
+      setActingId(null);
+    }
+  }, [authedFetch]);
+
+  // admin-toolkit (2026-07-07): permanent delete with type-the-name
+  // confirmation. For junk/test signups; real enforcement is Suspend.
+  const deleteMerchant = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    const typed = window.prompt(
+      `PERMANENTLY delete ${r.business_name || "this merchant"}?
+
+This removes their shop pages, offers, orders, and stream history, and cancels any Stripe subscription. It cannot be undone. Their login stays valid so they can sign up fresh.
+
+Type the business name exactly to confirm:`,
+    );
+    if (typed == null) return;
+    setActingId(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ confirm_name: typed }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : `HTTP ${res.status}`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setActingId(null);
+    }
+  }, [authedFetch, load]);
 
   useEffect(() => {
     load();
@@ -273,6 +375,26 @@ The merchant cannot relist it until you restore it. Reason:`);
       {error && (
         <div className="mb-4 rounded-lg border border-state-live/30 bg-state-live/5 px-3 py-2 text-sm text-state-live">
           {error}
+        </div>
+      )}
+
+      {/* admin-toolkit (2026-07-07): roll-up stats. Internal-only —
+          doctrine forbids these counts on public surfaces. */}
+      {stats && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Founding spots", value: `${stats.founding_used} / ${stats.founding_cap}` },
+            { label: "Businesses", value: String(stats.merchants_total) },
+            { label: "With subscription", value: String(stats.with_subscription) },
+            { label: "Trialing", value: String(stats.trialing) },
+            { label: "Paid orders", value: String(stats.orders_paid) },
+            { label: "GMV", value: `$${stats.gmv_usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-default bg-surface-card px-4 py-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-secondary">{s.label}</div>
+              <div className="mt-1 font-mono text-lg font-bold text-primary">{s.value}</div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -329,7 +451,14 @@ The merchant cannot relist it until you restore it. Reason:`);
                     {r.business_name || "—"}
                   </td>
                   <td className="px-3 py-2 text-secondary">
-                    {r.owner_email || (
+                    {r.owner_email ? (
+                      <a
+                        href={`mailto:${r.owner_email}`}
+                        className="text-brand-teal hover:underline"
+                      >
+                        {r.owner_email}
+                      </a>
+                    ) : (
                       <span className="text-muted">no email</span>
                     )}
                   </td>
@@ -341,7 +470,34 @@ The merchant cannot relist it until you restore it. Reason:`);
                       {paymentPillLabel(r.stripe_connect_status)}
                     </StatusPill>
                   </td>
-                  <td className="px-3 py-2 text-secondary">{planLabel}</td>
+                  <td className="px-3 py-2 text-secondary">
+                    <div>{planLabel}</div>
+                    {/* admin-toolkit: jump straight to Stripe */}
+                    {(r.stripe_customer_id || r.stripe_subscription_id) && (
+                      <div className="mt-0.5 flex gap-2">
+                        {r.stripe_customer_id && (
+                          <a
+                            href={`https://dashboard.stripe.com/customers/${r.stripe_customer_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-brand-teal hover:underline"
+                          >
+                            Stripe customer ↗
+                          </a>
+                        )}
+                        {r.stripe_subscription_id && (
+                          <a
+                            href={`https://dashboard.stripe.com/subscriptions/${r.stripe_subscription_id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] text-brand-teal hover:underline"
+                          >
+                            Subscription ↗
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <StatusPill kind={r.discoverable ? "ok" : "muted"}>
                       {r.discoverable ? "Yes" : "Hidden"}
@@ -396,19 +552,50 @@ The merchant cannot relist it until you restore it. Reason:`);
                         {offersOpen ? "Hide offers" : "Offers"}
                       </button>
                       {/* trial-starter (2026-07-06): backfill the 30-day
-                          founding trial for merchants that predate the
-                          trial code. Hidden once a subscription exists
-                          (subscription_status flips to trialing). */}
-                      {r.subscription_status !== "trialing" && (
+                          founding trial (no card) for merchants that
+                          predate the trial code. admin-toolkit
+                          (2026-07-07): hidden whenever a subscription
+                          exists, alongside the new checkout-link path. */}
+                      {!r.stripe_subscription_id && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startTrial(r)}
+                            disabled={!r.merchant_id || actingId === r.merchant_id}
+                            className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-mint-text disabled:opacity-50"
+                          >
+                            Start trial
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => checkoutLink(r)}
+                            disabled={!r.merchant_id || actingId === r.merchant_id}
+                            title="Creates a card-upfront trial Checkout link and copies it, so you can send it to the merchant."
+                            className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-mint-text disabled:opacity-50"
+                          >
+                            {copiedLinkFor === r.merchant_id ? "Link copied ✓" : "Checkout link"}
+                          </button>
+                        </>
+                      )}
+                      {r.stripe_subscription_id && r.subscription_status !== "cancelled" && (
                         <button
                           type="button"
-                          onClick={() => startTrial(r)}
+                          onClick={() => cancelSubscription(r)}
                           disabled={!r.merchant_id || actingId === r.merchant_id}
-                          className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-mint-text disabled:opacity-50"
+                          className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-primary disabled:opacity-50"
                         >
-                          Start trial
+                          Cancel sub
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => deleteMerchant(r)}
+                        disabled={!r.merchant_id || actingId === r.merchant_id}
+                        title="Permanently removes this business, its shop pages, offers, orders, and stream history. Type-the-name confirmation required."
+                        className="rounded-lg border border-state-live/40 px-2.5 py-1 text-[11px] font-bold text-state-live transition hover:bg-state-live/10 disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>

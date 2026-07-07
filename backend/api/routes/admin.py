@@ -19,6 +19,13 @@ class TakedownBody(BaseModel):
     reason: str
 
 
+class DeleteMerchantBody(BaseModel):
+    # Type-the-name confirmation: must match the merchant's business_name
+    # (case-insensitive) or the delete is refused. A mis-click can never
+    # remove a real merchant.
+    confirm_name: str
+
+
 @router.get("/projects/pending")
 async def get_pending_projects(_admin=Depends(require_admin)):
     supabase = get_client()
@@ -138,6 +145,254 @@ async def start_merchant_trial(merchant_id: str, _admin=Depends(require_admin)):
             print(f"[admin/start-trial] duplicate-sub cancel failed (check Stripe): {exc!r}")
         raise HTTPException(status_code=409, detail="Trial was already started by another request")
     return {"status": "success", "merchant_id": merchant_id, **update}
+
+
+@router.post("/merchants/{merchant_id}/cancel-subscription")
+async def admin_cancel_subscription(merchant_id: str, _admin=Depends(require_admin)):
+    """Cancel a merchant's Stripe subscription from the admin page
+    (admin-toolkit, 2026-07-07) instead of digging through the Stripe
+    dashboard. Immediate cancel, same path as the merchant's own
+    cancel-trial button. The webhook keeps the row in sync, but we also
+    write subscription_status through directly so the admin table
+    reflects it on the next refresh without waiting."""
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .select("id, business_name, stripe_subscription_id")
+        .eq("id", merchant_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    sub_id = res.data[0].get("stripe_subscription_id")
+    if not sub_id:
+        raise HTTPException(status_code=409, detail="Merchant has no subscription to cancel")
+
+    from services.subscriptions import cancel_subscription
+
+    if not cancel_subscription(sub_id):
+        raise HTTPException(status_code=502, detail="Stripe cancel failed. Check the Stripe dashboard.")
+    try:
+        supabase.table("merchants").update(
+            {"subscription_status": "cancelled"}
+        ).eq("id", merchant_id).execute()
+    except Exception as exc:
+        print(f"[admin/cancel-subscription] status write-through failed (webhook will sync): {exc!r}")
+    return {"status": "cancelled", "merchant_id": merchant_id}
+
+
+@router.post("/merchants/{merchant_id}/checkout-link")
+async def admin_checkout_link(merchant_id: str, _admin=Depends(require_admin)):
+    """Mint a fresh card-upfront trial Checkout link for a merchant whose
+    trial setup stalled (admin-toolkit, 2026-07-07). Returns the URL for
+    the operator to copy and send. Same guard as the merchant-facing
+    /api/merchant/trial-checkout: refuses when a subscription exists.
+    Deliberately does NOT run the trial-identity gate — the operator is
+    making a human decision, same trust posture as start-trial."""
+    import os as _os
+
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .select("id, owner_privy_id, business_name, founding_merchant, plan_id, stripe_subscription_id")
+        .eq("id", merchant_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    merchant = res.data[0]
+    if merchant.get("stripe_subscription_id"):
+        raise HTTPException(status_code=409, detail="Merchant already has a subscription")
+
+    email = None
+    try:
+        u = (
+            supabase.table("users")
+            .select("email")
+            .eq("privy_id", merchant.get("owner_privy_id"))
+            .limit(1)
+            .execute()
+        )
+        email = u.data[0].get("email") if u.data else None
+    except Exception:
+        pass
+
+    from services.subscriptions import create_trial_checkout_session
+
+    tier = "starter" if merchant.get("founding_merchant") else (merchant.get("plan_id") or "growth")
+    site = _os.getenv("SITE_URL", "https://www.dum.club").rstrip("/")
+    trial = create_trial_checkout_session(
+        privy_id=merchant.get("owner_privy_id") or "",
+        email=email,
+        business_name=merchant.get("business_name"),
+        tier=tier,
+        merchant_id=merchant["id"],
+        identity_hash=None,
+        success_url=f"{site}/merchant?trial=started",
+        cancel_url=f"{site}/merchant?trial=abandoned",
+    )
+    if trial.get("error"):
+        raise HTTPException(status_code=502, detail=f"Checkout link failed: {trial['error']}")
+    if trial.get("stripe_customer_id"):
+        try:
+            supabase.table("merchants").update(
+                {"stripe_customer_id": trial["stripe_customer_id"]}
+            ).eq("id", merchant_id).execute()
+        except Exception as exc:
+            print(f"[admin/checkout-link] customer_id save failed (ignored): {exc!r}")
+    return {"url": trial.get("checkout_url"), "merchant_id": merchant_id}
+
+
+@router.delete("/merchants/{merchant_id}")
+async def delete_merchant(merchant_id: str, body: DeleteMerchantBody, _admin=Depends(require_admin)):
+    """Permanently delete a merchant and everything they own
+    (admin-toolkit, 2026-07-07). This is the nuclear option for junk /
+    test signups — for real merchants misbehaving, use suspend instead.
+
+    Order of operations (mirrors the FK graph; children of projects
+    cascade, but orders and a few claim columns are NO ACTION and must
+    be handled first):
+      1. type-the-name confirmation check
+      2. cancel the Stripe subscription if one exists (best-effort —
+         never leave a headless subscription billing someone)
+      3. unhook external_businesses.claimed_project_id + auctions.winner_order_id
+      4. delete orders for the merchant's projects
+      5. delete the projects (cascades offers, streams, replays, analytics, ...)
+      6. delete the merchants row (cascades usage / limits / reminder logs)
+    The users row and Privy account are kept — the person can sign up
+    fresh, which is the whole point."""
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .select("id, business_name, owner_privy_id, stripe_subscription_id")
+        .eq("id", merchant_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    merchant = res.data[0]
+
+    expected = (merchant.get("business_name") or "").strip().lower()
+    provided = (body.confirm_name or "").strip().lower()
+    if not expected or provided != expected:
+        raise HTTPException(
+            status_code=400,
+            detail="Confirmation name does not match the business name. Nothing was deleted.",
+        )
+
+    # 2. Never orphan a live Stripe subscription.
+    sub_id = merchant.get("stripe_subscription_id")
+    if sub_id:
+        from services.subscriptions import cancel_subscription
+
+        if not cancel_subscription(sub_id):
+            raise HTTPException(
+                status_code=502,
+                detail="Could not cancel the Stripe subscription. Delete aborted — nothing was removed.",
+            )
+
+    owner = merchant.get("owner_privy_id")
+    try:
+        projects = (
+            supabase.table("projects")
+            .select("id")
+            .eq("privy_id", owner)
+            .execute()
+            .data
+            or []
+        ) if owner else []
+        project_ids = [p["id"] for p in projects]
+
+        if project_ids:
+            # 3. NO ACTION references that would block the deletes below.
+            supabase.table("external_businesses").update(
+                {"claimed_project_id": None}
+            ).in_("claimed_project_id", project_ids).execute()
+
+            orders = (
+                supabase.table("orders")
+                .select("id")
+                .in_("project_id", project_ids)
+                .execute()
+                .data
+                or []
+            )
+            order_ids = [o["id"] for o in orders]
+            if order_ids:
+                supabase.table("auctions").update(
+                    {"winner_order_id": None}
+                ).in_("winner_order_id", order_ids).execute()
+                # 4. The merchant's order history goes with them.
+                supabase.table("orders").delete().in_("id", order_ids).execute()
+
+            # 5. Cascades take offers, stream sessions, replays, bookings,
+            #    analytics events, service profiles, and the rest.
+            supabase.table("projects").delete().in_("id", project_ids).execute()
+
+        # 6. The merchant row itself.
+        supabase.table("merchants").delete().eq("id", merchant_id).execute()
+    except Exception as exc:
+        print(f"[admin/delete-merchant] delete failed for {merchant_id}: {exc!r}")
+        raise HTTPException(
+            status_code=502,
+            detail="Delete hit a database error partway. Check the row states before retrying.",
+        )
+
+    print(
+        f"[admin/delete-merchant] deleted merchant={merchant_id} "
+        f"({merchant.get('business_name')!r}), projects={len(project_ids)}, owner kept"
+    )
+    return {"status": "deleted", "merchant_id": merchant_id, "projects_deleted": len(project_ids)}
+
+
+@router.get("/merchants/stats")
+async def merchants_stats(_admin=Depends(require_admin)):
+    """Roll-up numbers for the top of /admin/merchants (admin-toolkit,
+    2026-07-07). Internal-only — doctrine forbids these counts on any
+    PUBLIC surface, this endpoint is admin-gated like the rest.
+
+    Python-side aggregation, same reasoning as list_all_merchants: row
+    counts are founding-ramp scale, correctness beats cleverness."""
+    supabase = get_client()
+
+    merchants = (
+        supabase.table("merchants")
+        .select("id, founding_merchant, subscription_status, stripe_connect_status, stripe_subscription_id")
+        .execute()
+        .data
+        or []
+    )
+    orders = (
+        supabase.table("orders")
+        .select("id, amount_paid_usd, status")
+        .execute()
+        .data
+        or []
+    )
+
+    paid_statuses = {"paid", "fulfilled"}
+    paid_orders = [o for o in orders if (o.get("status") or "") in paid_statuses]
+    gmv = sum(float(o.get("amount_paid_usd") or 0) for o in paid_orders)
+
+    by_status: dict[str, int] = {}
+    for m in merchants:
+        s = m.get("subscription_status") or "none"
+        by_status[s] = by_status.get(s, 0) + 1
+
+    return {
+        "merchants_total": len(merchants),
+        "founding_used": sum(1 for m in merchants if m.get("founding_merchant")),
+        "founding_cap": 100,
+        "with_subscription": sum(1 for m in merchants if m.get("stripe_subscription_id")),
+        "trialing": sum(1 for m in merchants if m.get("subscription_status") == "trialing"),
+        "connect_verified": sum(1 for m in merchants if m.get("stripe_connect_status") == "verified"),
+        "by_subscription_status": by_status,
+        "orders_paid": len(paid_orders),
+        "gmv_usd": round(gmv, 2),
+    }
 
 
 @router.post("/merchants/{merchant_id}/suspend")
@@ -578,7 +833,8 @@ async def list_all_merchants(_admin=Depends(require_admin)):
         .select(
             "id, owner_privy_id, business_name, stripe_connect_status, "
             "subscription_tier, subscription_status, founding_merchant, "
-            "created_at, admin_suspended, admin_suspended_reason"
+            "created_at, admin_suspended, admin_suspended_reason, "
+            "stripe_customer_id, stripe_subscription_id"
         )
         .order("created_at", desc=True)
         .execute()
@@ -658,6 +914,10 @@ async def list_all_merchants(_admin=Depends(require_admin)):
                 "founding_merchant": m.get("founding_merchant"),
                 "admin_suspended": bool(m.get("admin_suspended")),
                 "admin_suspended_reason": m.get("admin_suspended_reason"),
+                # admin-toolkit (2026-07-07): direct Stripe links + the
+                # cancel-subscription button need these on the row.
+                "stripe_customer_id": m.get("stripe_customer_id"),
+                "stripe_subscription_id": m.get("stripe_subscription_id"),
                 "project_count": len(rows),
                 "primary_project": (
                     {
