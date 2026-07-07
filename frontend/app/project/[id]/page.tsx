@@ -235,6 +235,7 @@ type Candle = {
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 import { API_BASE } from "../../../lib/apiBase";
+import { attachVideoSource } from "../../../lib/hlsVideo";
 import { errorText } from "../../../lib/errorText";
 import { resolveImageUrl, cleanLogoUrl, STOREFRONT_PLACEHOLDER } from "../../../lib/imageSrc";
 import {
@@ -4009,8 +4010,10 @@ const heroUtility =
                   coral, no viewer counts. Real live replaces this whole
                   view via the live tree. */}
               {(proj as any).replay?.playback_url && (
+                /* attachVideoSource, not src=: IVS replays are HLS, which a
+                   bare <video src> only plays in Safari (audit 2026-07-07). */
                 <video
-                  src={(proj as any).replay.playback_url}
+                  ref={(el) => attachVideoSource(el, (proj as any).replay.playback_url)}
                   autoPlay
                   muted={replayMuted}
                   loop

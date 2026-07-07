@@ -6,6 +6,7 @@ import { PopInSellerHost } from "../../../components/PopInSellerHost";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { API_BASE } from "../../../lib/apiBase";
+import { attachVideoSource } from "../../../lib/hlsVideo";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { isIVSSession } from "../../../lib/liveProvider";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
@@ -162,12 +163,17 @@ export default function EmbedShellPage() {
   // Replay metering (queue 20): one beat per 30s while the recorded
   // video plays in the embed and the tab is visible. Server credits a
   // fixed 30s per beat into the merchant's combined viewer-hours.
+  // Fair-billing gate (audit 2026-07-07): this player has controls, so
+  // a paused video must NOT meter — merchants only pay for real
+  // watching. The ref is wired by the <video> below.
+  const replayVideoRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {
     const replay = (project as any)?.replay;
     if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
     const source = replay.source === "upload" ? "showcase" : "replay";
     const t = window.setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (replayVideoRef.current && replayVideoRef.current.paused) return;
       fetch(`${API_BASE}/api/ivs/replay-beat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1480,7 +1486,13 @@ export default function EmbedShellPage() {
                 }`}
               >
                 <video
-                  src={(project as any).replay.playback_url}
+                  /* attachVideoSource, not src=: IVS replays are HLS, which a
+                     bare <video src> only plays in Safari (audit 2026-07-07).
+                     The ref doubles as the pause-detector for fair metering. */
+                  ref={(el) => {
+                    replayVideoRef.current = el;
+                    attachVideoSource(el, (project as any).replay.playback_url);
+                  }}
                   autoPlay
                   muted
                   loop
