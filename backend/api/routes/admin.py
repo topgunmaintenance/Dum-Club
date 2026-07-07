@@ -57,6 +57,68 @@ async def reject_project(project_id: str, body: RejectBody, _admin=Depends(requi
 # Enforcement (mig 086) — kick out a merchant or take down one offer.
 # ─────────────────────────────────────────────────────────────────────
 
+@router.post("/merchants/{merchant_id}/start-trial")
+async def start_merchant_trial(merchant_id: str, _admin=Depends(require_admin)):
+    """Start the 60-day founding trial for an EXISTING merchant
+    (trial-starter, 2026-07-06). Signup provisions trials automatically
+    since the founding-trial-billing PR; merchants created before it
+    have no clock. This is the deliberate, per-merchant backfill — same
+    create_trial_subscription path as signup, same row updates.
+    Guarded: refuses if a subscription already exists."""
+    supabase = get_client()
+    res = (
+        supabase.table("merchants")
+        .select("id, owner_privy_id, business_name, founding_merchant, stripe_subscription_id, plan_id")
+        .eq("id", merchant_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Merchant not found")
+    merchant = res.data[0]
+    if merchant.get("stripe_subscription_id"):
+        raise HTTPException(status_code=409, detail="Merchant already has a subscription")
+
+    email = None
+    try:
+        u = (
+            supabase.table("users")
+            .select("email")
+            .eq("privy_id", merchant.get("owner_privy_id"))
+            .limit(1)
+            .execute()
+        )
+        email = u.data[0].get("email") if u.data else None
+    except Exception:
+        pass
+
+    from services.subscriptions import create_trial_subscription
+
+    tier = "starter" if merchant.get("founding_merchant") else (merchant.get("plan_id") or "growth")
+    trial = create_trial_subscription(
+        privy_id=merchant.get("owner_privy_id") or "",
+        email=email,
+        business_name=merchant.get("business_name"),
+        tier=tier,
+    )
+    if trial.get("error"):
+        raise HTTPException(status_code=502, detail=f"Trial provisioning failed: {trial['error']}")
+
+    update = {
+        "stripe_customer_id": trial.get("stripe_customer_id"),
+        "stripe_subscription_id": trial.get("stripe_subscription_id"),
+        "subscription_price_id": trial.get("subscription_price_id"),
+        "trial_start_at": trial.get("trial_start_at"),
+        "trial_ends_at": trial.get("trial_ends_at"),
+        "next_billing_at": trial.get("next_billing_at"),
+        "subscription_status": trial.get("subscription_status") or "trialing",
+        "grandfathered": False,
+    }
+    update = {k: v for k, v in update.items() if v is not None}
+    supabase.table("merchants").update(update).eq("id", merchant_id).execute()
+    return {"status": "success", "merchant_id": merchant_id, **update}
+
+
 @router.post("/merchants/{merchant_id}/suspend")
 async def suspend_merchant(merchant_id: str, body: SuspendBody, _admin=Depends(require_admin)):
     """Platform suspension: blocks Go Live + checkout (both already gate
