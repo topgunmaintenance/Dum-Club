@@ -77,10 +77,25 @@ class _FakeSupabase:
 
 def _base_tables(usage_rows=None):
     return {
-        "projects": [{"id": "proj-1", "owner_id": "user-uuid-1"}],
+        "projects": [{"id": "proj-1", "owner_id": "user-uuid-1", "account_id": None}],
         "users": [{"id": "user-uuid-1", "privy_id": "privy-1"}],
         "merchants": [{"id": "merch-1", "owner_privy_id": "privy-1"}],
         "merchant_monthly_usage": usage_rows or [],
+    }
+
+
+def _multi_login_tables():
+    """The real-world shape found live 2026-07-07: the project's owner_id
+    points at a DIFFERENT users row than the merchant's owner_privy_id
+    (founders sign in several ways), but both share account_id."""
+    return {
+        "projects": [{"id": "proj-1", "owner_id": "other-user-uuid", "account_id": "acct-1"}],
+        "users": [
+            {"id": "other-user-uuid", "privy_id": "privy-OTHER"},
+            {"id": "main-user-uuid", "privy_id": "privy-MAIN"},
+        ],
+        "merchants": [{"id": "merch-1", "owner_privy_id": "privy-MAIN", "account_id": "acct-1"}],
+        "merchant_monthly_usage": [],
     }
 
 
@@ -119,6 +134,18 @@ class ReplayMeteringTests(unittest.TestCase):
         self.assertEqual(row["replay_viewer_seconds"], 120)
         # Live share stays derivable for the meter split.
         self.assertEqual(row["viewer_seconds"] - row["replay_viewer_seconds"], 7200)
+
+    def test_multi_login_owner_resolves_via_account_bridge(self):
+        # Project owned by login identity A, merchant registered under
+        # login identity B, linked by account_id — the beat must still
+        # credit the merchant (fix/replay-beat-account-bridge).
+        sb = _FakeSupabase(_multi_login_tables())
+        ok = record_replay_beat(sb, "proj-1", source="replay", seconds=30)
+        self.assertTrue(ok)
+        rows = sb.tables["merchant_monthly_usage"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["merchant_id"], "merch-1")
+        self.assertEqual(rows[0]["viewer_seconds"], 30)
 
     def test_unknown_project_is_a_safe_noop(self):
         sb = _FakeSupabase(_base_tables())
