@@ -179,19 +179,24 @@ def create_trial_subscription(
             },
             # Audit finding 7 (2026-07-07): double-clicks / retries raced
             # past the DB guard and minted duplicate Stripe objects. The
-            # idempotency key makes Stripe return the SAME customer for
-            # 24h of identical retries instead of a twin.
-            idempotency_key=f"dum-cust-{privy_id}",
+            # key is salted with price + email so a CORRECTED config gets
+            # a fresh attempt (fix/trial-retry 2026-07-07: the unsalted
+            # key replayed a customer the failure path had DELETED,
+            # bricking retries for 24h) while true double-clicks — same
+            # params within seconds — still dedupe.
+            idempotency_key=f"dum-cust-{privy_id}-{price_id}-{(email or 'noemail')[:24]}",
         )
     except Exception as exc:
         print(f"[subscriptions] Customer.create failed for privy={privy_id[-6:]}: {exc!r}")
-        return {"error": f"customer_create_failed: {type(exc).__name__}"}
+        return {"error": f"customer_create_failed: {type(exc).__name__}: {str(exc)[:160]}"}
 
     try:
         subscription = stripe.Subscription.create(
             customer=customer.id,
             items=[{"price": price_id}],
-            idempotency_key=f"dum-trial-{privy_id}",
+            # Salted like the customer key — a fixed price ID must get a
+            # fresh attempt, not a 24h replay of the old failure.
+            idempotency_key=f"dum-trial-{privy_id}-{price_id}",
             trial_period_days=TRIAL_DAYS,
             trial_settings={
                 "end_behavior": {"missing_payment_method": "pause"},
@@ -208,13 +213,16 @@ def create_trial_subscription(
         )
     except Exception as exc:
         print(f"[subscriptions] Subscription.create failed for privy={privy_id[-6:]}: {exc!r}")
-        # Best-effort cleanup of the orphan Customer so we don't leak rows in
-        # Stripe. Failure here is non-fatal — Stripe support can clean up.
-        try:
-            stripe.Customer.delete(customer.id)
-        except Exception:
-            pass
-        return {"error": f"subscription_create_failed: {type(exc).__name__}"}
+        # DO NOT delete the customer (fix/trial-retry 2026-07-07). The old
+        # delete-on-failure cleanup, combined with idempotent customer
+        # creation, replayed a DELETED customer id on retry and bricked
+        # trial provisioning for 24h. An idle customer row costs nothing,
+        # is reused by the salted idempotency key on the next attempt,
+        # and is visible in Stripe if manual cleanup is ever wanted.
+        # Surface Stripe's actual message so the admin banner says WHY
+        # (e.g. "No such price", "not a recurring price") instead of the
+        # bare exception class.
+        return {"error": f"subscription_create_failed: {type(exc).__name__}: {str(exc)[:160]}"}
 
     trial_start = datetime.fromtimestamp(subscription.trial_start, tz=timezone.utc) if subscription.get("trial_start") else datetime.now(timezone.utc)
     trial_end = datetime.fromtimestamp(subscription.trial_end, tz=timezone.utc) if subscription.get("trial_end") else None
