@@ -38,6 +38,8 @@ from services.live_limits import (
     add_viewer,
     remove_viewer,
     record_heartbeat,
+    client_ip_from_request,
+    enforce_rate_limit,
 )
 
 router = APIRouter()
@@ -1113,19 +1115,55 @@ class ReplayBeatRequest(BaseModel):
 
 
 @router.post("/replay-beat")
-async def api_replay_beat(body: ReplayBeatRequest):
+async def api_replay_beat(body: ReplayBeatRequest, request: Request):
     """Recorded-video watch-time beat (replay-viewer-hour-metering,
     queue 20). The storefront/embed player POSTs one beat per ~30s of
     playback; each beat credits a SERVER-FIXED 30 seconds to the
-    merchant's combined monthly viewer-hours plus the replay split —
-    clients say 'still watching', never how long, so the meter can't
-    be inflated beyond the beat cadence. Public (viewers aren't
-    authenticated); best-effort and always 200 so a metering hiccup
-    never breaks playback."""
+    merchant's combined monthly viewer-hours plus the replay split.
+
+    Abuse hardening (security review 2026-07-07): this endpoint is
+    public (viewers aren't authenticated), and inflated viewer_seconds
+    can push a merchant past the monthly hard-block — i.e. a griefer
+    could silence a shop. Three gates, all silent (always 200, so a
+    metering refusal never breaks playback):
+      1. Per-IP rate limit: 3 beats/min — a real viewer emits at most
+         2/min (storefront + embed), so spam from one source is capped
+         at 1.5 viewer-minutes per wall-clock minute.
+      2. The project must actually have an active recorded video —
+         beats for shops with nothing to play are dropped.
+      3. The shop must be OFFLINE — while live, the replay never plays
+         (live always wins), so live-time beats are dropped.
+    Clients say 'still watching', never how long; the 30s credit stays
+    server-fixed."""
     src = "showcase" if body.source == "showcase" else "replay"
     try:
+        try:
+            enforce_rate_limit(client_ip_from_request(request), "replay-beat", 3)
+        except HTTPException:
+            return {"status": "ok"}  # silently dropped — spam or over-eager client
+        supabase = get_client()
+        proj = (
+            supabase.table("projects")
+            .select("id, is_live")
+            .eq("id", body.project_id)
+            .limit(1)
+            .execute()
+        )
+        if not proj.data or proj.data[0].get("is_live"):
+            return {"status": "ok"}  # unknown project or live show — nothing to meter
+        active = (
+            supabase.table("live_replays")
+            .select("id")
+            .eq("project_id", proj.data[0]["id"])
+            .eq("is_active", True)
+            .not_.is_("playback_url", "null")
+            .limit(1)
+            .execute()
+        )
+        if not active.data:
+            return {"status": "ok"}  # no active video — nothing could be playing
         from services.stream_telemetry import record_replay_beat
-        record_replay_beat(get_client(), body.project_id, source=src, seconds=30)
+        record_replay_beat(supabase, body.project_id, source=src, seconds=30)
     except Exception as exc:
         print(f"[ivs] replay-beat failed (ignored): {exc!r}")
     return {"status": "ok"}
