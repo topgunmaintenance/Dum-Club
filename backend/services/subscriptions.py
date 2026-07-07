@@ -131,6 +131,8 @@ def ensure_stripe_customer(privy_id: str, email: Optional[str], business_name: O
             email=email or None,
             name=business_name or None,
             metadata={"privy_id": privy_id, "source": "dum-club-billing-portal-backfill"},
+            # Same double-click protection as signup (audit finding 7).
+            idempotency_key=f"dum-portal-cust-{privy_id}",
         )
         return customer.id
     except Exception as exc:
@@ -175,6 +177,11 @@ def create_trial_subscription(
                 "privy_id": privy_id,
                 "source": "dum-club-merchant-signup",
             },
+            # Audit finding 7 (2026-07-07): double-clicks / retries raced
+            # past the DB guard and minted duplicate Stripe objects. The
+            # idempotency key makes Stripe return the SAME customer for
+            # 24h of identical retries instead of a twin.
+            idempotency_key=f"dum-cust-{privy_id}",
         )
     except Exception as exc:
         print(f"[subscriptions] Customer.create failed for privy={privy_id[-6:]}: {exc!r}")
@@ -184,6 +191,7 @@ def create_trial_subscription(
         subscription = stripe.Subscription.create(
             customer=customer.id,
             items=[{"price": price_id}],
+            idempotency_key=f"dum-trial-{privy_id}",
             trial_period_days=TRIAL_DAYS,
             trial_settings={
                 "end_behavior": {"missing_payment_method": "pause"},

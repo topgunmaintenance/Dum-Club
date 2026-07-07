@@ -841,6 +841,12 @@ async def api_end_stage(
                     sb.table("live_replays")
                     .select("s3_prefix")
                     .eq("project_id", pid)
+                    # Audit finding 3 (2026-07-07): without the source
+                    # filter, limit(1) could return the merchant's UPLOAD
+                    # row — and the cleanup below would delete their
+                    # showcase video from S3 while its playback_url kept
+                    # pointing at it. Only ever clean up old RECORDINGS.
+                    .eq("source", "live_recording")
                     .limit(1)
                     .execute()
                 )
@@ -1137,8 +1143,32 @@ async def api_replay_beat(body: ReplayBeatRequest, request: Request):
     server-fixed."""
     src = "showcase" if body.source == "showcase" else "replay"
     try:
+        # Identifier hardening (audit finding 1, 2026-07-07): the shared
+        # client_ip_from_request takes the FIRST x-forwarded-for entry,
+        # which the CLIENT controls (proxies append, so the attacker's
+        # prepended value wins) — spoofed headers made the per-IP limit
+        # worthless. Trust order here: rightmost XFF entry (appended by
+        # our own edge), then the socket peer. Never the client's side
+        # of the header.
         try:
-            enforce_rate_limit(client_ip_from_request(request), "replay-beat", 3)
+            xff = (request.headers.get("x-forwarded-for") or "").split(",")
+            beat_ip = (
+                (xff[-1].strip() if xff and xff[-1].strip() else "")
+                or (request.client.host if request.client else "")
+                or "unknown"
+            )
+        except Exception:
+            beat_ip = "unknown"
+        try:
+            enforce_rate_limit(beat_ip, "replay-beat", 3)
+            # Per-project ceiling (finding 1b): even with unique IPs (bot
+            # fleet), one project can't accrue more than 120 beats/min —
+            # a generous Phase-0/1 audience bound (~60 concurrent viewers
+            # across surfaces) that caps griefing at a knowable worst
+            # case instead of "unbounded". Single-uvicorn-worker keeps
+            # this in-memory limiter authoritative (realtime decision
+            # 2026-07-05).
+            enforce_rate_limit(f"proj:{body.project_id}", "replay-beat-project", 120)
         except HTTPException:
             return {"status": "ok"}  # silently dropped — spam or over-eager client
         supabase = get_client()

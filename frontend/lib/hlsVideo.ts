@@ -33,6 +33,19 @@ export function attachVideoSource(el: HTMLVideoElement | null, src: string | nul
   if (el.dataset.dumSrc === src) return; // already wired for this URL
   el.dataset.dumSrc = src;
 
+  // Audit finding 5 (2026-07-07): destroy any previous Hls pipeline
+  // before re-attaching, or a URL swap leaves the old instance polling
+  // segments against the same element forever.
+  const prev = (el as any).__dumHls;
+  if (prev) {
+    try {
+      prev.destroy();
+    } catch {
+      /* already dead */
+    }
+    (el as any).__dumHls = null;
+  }
+
   const isHls = src.split("?")[0].endsWith(".m3u8");
   const nativeHls = el.canPlayType("application/vnd.apple.mpegurl") !== "";
   if (!isHls || nativeHls) {
@@ -41,15 +54,27 @@ export function attachVideoSource(el: HTMLVideoElement | null, src: string | nul
   }
   loadHlsJs()
     .then((Hls) => {
+      // Stale-src guard (finding 5): if the URL changed while the CDN
+      // script loaded, let the newer attach win — don't wire the old one.
+      if (el.dataset.dumSrc !== src) return;
       if (!Hls || !Hls.isSupported()) {
         el.src = src; // last resort — some browsers may still cope
         return;
       }
       const hls = new Hls({ enableWorker: false });
+      (el as any).__dumHls = hls;
       hls.loadSource(src);
       hls.attachMedia(el);
     })
     .catch(() => {
-      el.src = src;
+      if (el.dataset.dumSrc === src) el.src = src;
     });
+}
+
+/** True when the element is genuinely presenting video a human could be
+ *  watching — used by the metering beats so nobody is billed for a
+ *  paused, errored, or never-started player (audit finding 4). */
+export function isActuallyPlaying(el: HTMLVideoElement | null): boolean {
+  if (!el) return false;
+  return !el.paused && !el.ended && !el.error && el.readyState >= 2;
 }

@@ -6,7 +6,7 @@ import { PopInSellerHost } from "../../../components/PopInSellerHost";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { API_BASE } from "../../../lib/apiBase";
-import { attachVideoSource } from "../../../lib/hlsVideo";
+import { attachVideoSource, isActuallyPlaying } from "../../../lib/hlsVideo";
 import { useAuth } from "../../../lib/auth/AuthContext";
 import { isIVSSession } from "../../../lib/liveProvider";
 import { LiveChatIVS } from "../../../components/LiveChatIVS";
@@ -173,7 +173,7 @@ export default function EmbedShellPage() {
     const source = replay.source === "upload" ? "showcase" : "replay";
     const t = window.setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-      if (replayVideoRef.current && replayVideoRef.current.paused) return;
+      if (!isActuallyPlaying(replayVideoRef.current)) return;
       fetch(`${API_BASE}/api/ivs/replay-beat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

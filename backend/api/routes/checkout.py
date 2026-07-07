@@ -1251,7 +1251,13 @@ async def stripe_webhook(request: Request):
                 lead_note = f"[abandoned checkout {_now_iso()}] buyer entered email before leaving: {buyer_email}"
                 update_fields["notes"] = f"{existing_notes}\n{lead_note}".strip()
             try:
-                supabase.table("orders").update(update_fields).eq("id", order["id"]).execute()
+                # Conditional on the status we READ (audit finding 9):
+                # makes the paid-downgrade race mechanically impossible
+                # instead of merely unlikely — if the order changed
+                # between our read and this write, we touch nothing.
+                supabase.table("orders").update(update_fields).eq(
+                    "id", order["id"]
+                ).eq("status", order["status"]).execute()
                 if buyer_email:
                     print(f"[webhook] ✓ order {order['id']} marked expired — lead email captured: {buyer_email}")
                 else:

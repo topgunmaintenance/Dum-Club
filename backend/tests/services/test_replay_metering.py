@@ -74,6 +74,33 @@ class _FakeSupabase:
     def table(self, name):
         return _FakeQuery(self, name)
 
+    def rpc(self, fn, params):
+        # Mirrors migration 090's increment_monthly_usage so the tests
+        # exercise the ATOMIC path (audit finding 2), not the fallback.
+        assert fn == "increment_monthly_usage", fn
+        db = self
+
+        class _Exec:
+            def execute(self_inner):
+                rows = db.tables["merchant_monthly_usage"]
+                for r in rows:
+                    if r.get("merchant_id") == params["p_merchant_id"] and r.get("yyyymm") == params["p_yyyymm"]:
+                        r["stream_count"] = int(r.get("stream_count") or 0) + params["p_stream_inc"]
+                        r["viewer_seconds"] = int(r.get("viewer_seconds") or 0) + params["p_viewer_seconds"]
+                        r["replay_viewer_seconds"] = int(r.get("replay_viewer_seconds") or 0) + params["p_replay_seconds"]
+                        return type("R", (), {"data": [r]})()
+                new = {
+                    "merchant_id": params["p_merchant_id"],
+                    "yyyymm": params["p_yyyymm"],
+                    "stream_count": params["p_stream_inc"],
+                    "viewer_seconds": params["p_viewer_seconds"],
+                    "replay_viewer_seconds": params["p_replay_seconds"],
+                }
+                rows.append(new)
+                return type("R", (), {"data": [new]})()
+
+        return _Exec()
+
 
 def _base_tables(usage_rows=None):
     return {

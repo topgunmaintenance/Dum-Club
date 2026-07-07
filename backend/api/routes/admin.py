@@ -115,7 +115,28 @@ async def start_merchant_trial(merchant_id: str, _admin=Depends(require_admin)):
         "grandfathered": False,
     }
     update = {k: v for k, v in update.items() if v is not None}
-    supabase.table("merchants").update(update).eq("id", merchant_id).execute()
+    # Conditional write (audit finding 7): only claim the merchant row if
+    # nobody else did between our read and now. Zero rows updated means a
+    # concurrent click won the race — cancel the subscription WE minted so
+    # no untracked twin lives on in Stripe. (The idempotency keys in
+    # create_trial_subscription make even that cancel rarely necessary.)
+    res = (
+        supabase.table("merchants")
+        .update(update)
+        .eq("id", merchant_id)
+        .is_("stripe_subscription_id", "null")
+        .execute()
+    )
+    if not res.data:
+        try:
+            from services.subscriptions import cancel_subscription
+            sub_id = trial.get("stripe_subscription_id")
+            if sub_id:
+                cancel_subscription(sub_id)
+                print(f"[admin/start-trial] lost the race for {merchant_id}; cancelled duplicate sub {sub_id}")
+        except Exception as exc:
+            print(f"[admin/start-trial] duplicate-sub cancel failed (check Stripe): {exc!r}")
+        raise HTTPException(status_code=409, detail="Trial was already started by another request")
     return {"status": "success", "merchant_id": merchant_id, **update}
 
 
