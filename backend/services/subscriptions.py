@@ -96,6 +96,48 @@ def _iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
 
+def create_billing_portal_session(customer_id: str, return_url: str) -> Optional[str]:
+    """Stripe-hosted Customer Portal session (billing-portal, 2026-07-06).
+
+    THE card-entry path for DUM Club: merchants add/update their payment
+    method on stripe.com, never on our pages — same trust posture as
+    Connect onboarding. Requires the portal to be activated once in the
+    Stripe dashboard (Settings → Billing → Customer portal); until then
+    Session.create raises and we return None so the caller can explain.
+    """
+    if not _STRIPE_SECRET or not customer_id:
+        return None
+    stripe.api_key = _STRIPE_SECRET
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+        return session.url
+    except Exception as exc:
+        print(f"[subscriptions] portal session failed for {customer_id[-6:]}: {exc!r}")
+        return None
+
+
+def ensure_stripe_customer(privy_id: str, email: Optional[str], business_name: Optional[str]) -> Optional[str]:
+    """Create a bare Stripe Customer for a merchant that predates the
+    trial code (no stripe_customer_id yet), so the billing portal has
+    someone to open for. Returns the customer id or None."""
+    if not _STRIPE_SECRET:
+        return None
+    stripe.api_key = _STRIPE_SECRET
+    try:
+        customer = stripe.Customer.create(
+            email=email or None,
+            name=business_name or None,
+            metadata={"privy_id": privy_id, "source": "dum-club-billing-portal-backfill"},
+        )
+        return customer.id
+    except Exception as exc:
+        print(f"[subscriptions] ensure_customer failed for privy={privy_id[-6:]}: {exc!r}")
+        return None
+
+
 def create_trial_subscription(
     privy_id: str,
     email: Optional[str],

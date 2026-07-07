@@ -156,6 +156,29 @@ This blocks their broadcasts and ALL checkout immediately and hides their shops.
     }
   }, [authedFetch]);
 
+  // trial-starter (2026-07-06): backfill the 60-day founding trial for a
+  // merchant that signed up before trials existed. Same Stripe path as
+  // signup; the backend refuses if a subscription already exists.
+  const startTrial = useCallback(async (r: MerchantRow) => {
+    if (!r.merchant_id) return;
+    if (!window.confirm(`Start the 60-day founding trial for ${r.business_name || "this merchant"}? Creates their Stripe customer + subscription with the trial clock ticking.`)) return;
+    setActingId(r.merchant_id);
+    try {
+      const res = await authedFetch(`/api/admin/merchants/${r.merchant_id}/start-trial`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        throw new Error(typeof d?.detail === "string" ? d.detail : `HTTP ${res.status}`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Trial start failed");
+    } finally {
+      setActingId(null);
+    }
+  }, [authedFetch]);
+
   const toggleOffers = useCallback(async (r: MerchantRow) => {
     if (!r.merchant_id) return;
     if (openOffersFor === r.merchant_id) {
@@ -372,6 +395,20 @@ The merchant cannot relist it until you restore it. Reason:`);
                       >
                         {offersOpen ? "Hide offers" : "Offers"}
                       </button>
+                      {/* trial-starter (2026-07-06): backfill the 60-day
+                          founding trial for merchants that predate the
+                          trial code. Hidden once a subscription exists
+                          (subscription_status flips to trialing). */}
+                      {r.subscription_status !== "trialing" && (
+                        <button
+                          type="button"
+                          onClick={() => startTrial(r)}
+                          disabled={!r.merchant_id || actingId === r.merchant_id}
+                          className="rounded-lg border border-default px-2.5 py-1 text-[11px] font-bold text-secondary transition hover:border-strong hover:text-mint-text disabled:opacity-50"
+                        >
+                          Start trial
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -177,6 +177,9 @@ export default function MerchantPage() {
   const [showcaseUploading, setShowcaseUploading] = useState(false);
   const [showcaseError, setShowcaseError] = useState<string | null>(null);
   const showcaseFileRef = useRef<HTMLInputElement | null>(null);
+  // billing-portal (2026-07-06): Manage Billing button state.
+  const [billingPortalLoading, setBillingPortalLoading] = useState(false);
+  const [billingPortalError, setBillingPortalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -488,6 +491,29 @@ export default function MerchantPage() {
       setReplayEnabled(!next);
     } finally {
       setReplaySaving(false);
+    }
+  }
+
+  async function openBillingPortal() {
+    setBillingPortalError(null);
+    setBillingPortalLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Sign in again to manage billing.");
+      const res = await fetch(`${API_BASE}/api/merchant/billing-portal`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) {
+        throw new Error(
+          typeof data?.detail === "string" ? data.detail : "Billing portal is unavailable right now."
+        );
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      setBillingPortalError(e?.message || "Could not open billing.");
+      setBillingPortalLoading(false);
     }
   }
 
@@ -2215,7 +2241,21 @@ export default function MerchantPage() {
           >
             Manage My Business
           </Link>
+          {/* billing-portal (2026-07-06): THE card-entry path. Opens the
+              merchant's Stripe-hosted billing page — add/update payment
+              method, see invoices. Cards never touch DUM Club pages. */}
+          <button
+            type="button"
+            onClick={openBillingPortal}
+            disabled={billingPortalLoading}
+            className="flex-1 rounded-xl border border-default bg-surface-muted px-4 py-3 text-center text-sm text-secondary transition hover:border-default hover:text-primary disabled:opacity-50"
+          >
+            {billingPortalLoading ? "Opening…" : "Manage Billing"}
+          </button>
         </div>
+        {billingPortalError && (
+          <p className="mt-2 text-xs font-medium text-state-live">{billingPortalError}</p>
+        )}
       </div>
     </div>
   );

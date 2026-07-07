@@ -25,6 +25,8 @@ from services.seed_claim import maybe_claim_seed_profiles
 from services.subscriptions import (
     create_trial_subscription,
     cancel_subscription,
+    create_billing_portal_session,
+    ensure_stripe_customer,
 )
 from services.live_limits import check_rate_limit
 from services.trial_identity import evaluate_trial_gate, record_trial_identity
@@ -1313,6 +1315,57 @@ async def merchant_usage(current_user: dict = Depends(get_current_user)):
         "max_concurrent_viewers": limits.max_concurrent_viewers,
         "max_concurrent_streams": limits.max_concurrent_streams,
     }
+
+
+@router.post("/billing-portal")
+async def billing_portal(current_user: dict = Depends(get_current_user)):
+    """Open the merchant's Stripe-hosted billing page (billing-portal,
+    2026-07-06). THE card-entry path: add/update payment method, view
+    invoices, all on stripe.com — we never touch card data. Merchants
+    that predate the trial code get a bare Stripe Customer created on
+    first use so the button works for everyone."""
+    privy_id = current_user.get("sub")
+    if not privy_id:
+        raise HTTPException(status_code=401, detail="Invalid auth")
+    sb = get_client()
+    res = (
+        sb.table("merchants")
+        .select("id, business_name, stripe_customer_id")
+        .eq("owner_privy_id", privy_id)
+        .limit(1)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="No merchant account")
+    merchant = res.data[0]
+    customer_id = merchant.get("stripe_customer_id")
+    if not customer_id:
+        email = None
+        try:
+            u = sb.table("users").select("email").eq("privy_id", privy_id).limit(1).execute()
+            email = u.data[0].get("email") if u.data else None
+        except Exception:
+            pass
+        customer_id = ensure_stripe_customer(privy_id, email, merchant.get("business_name"))
+        if not customer_id:
+            raise HTTPException(status_code=502, detail="Could not reach Stripe. Try again in a moment.")
+        try:
+            sb.table("merchants").update({"stripe_customer_id": customer_id}).eq(
+                "id", merchant["id"]
+            ).execute()
+        except Exception as exc:
+            print(f"[merchant/billing-portal] customer_id save failed (ignored): {exc!r}")
+    return_url = os.getenv("SITE_URL", "https://www.dum.club").rstrip("/") + "/merchant"
+    url = create_billing_portal_session(customer_id, return_url)
+    if not url:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Billing portal is not available yet. Operator: activate the "
+                "Customer portal in Stripe (Settings -> Billing -> Customer portal)."
+            ),
+        )
+    return {"url": url}
 
 
 @router.post("/cancel-trial")
