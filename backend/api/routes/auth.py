@@ -50,17 +50,24 @@ async def sync_user(body: SyncRequest, current_user: dict = Depends(get_current_
         wallets = [w.model_dump() for w in body.linked_wallets]
 
         if existing.data:
+            # Never erase a known email with an empty one (fix 2026-07-07):
+            # Privy reports email=None for identities without a linked email
+            # address, and this update used to blindly write that null over
+            # an address we already knew — which is how the founder's own
+            # account showed "no email" in admin and would have produced an
+            # email-less Stripe customer. Only update email when the session
+            # actually carries one.
+            sync_fields = {
+                "embedded_wallet": body.embedded_wallet,
+                "linked_wallets": wallets,
+                "google_linked": body.google_linked,
+                "wallet_address": wallet_address,
+            }
+            if body.email:
+                sync_fields["email"] = body.email
             updated = (
                 supabase.table("users")
-                .update(
-                    {
-                        "email": body.email,
-                        "embedded_wallet": body.embedded_wallet,
-                        "linked_wallets": wallets,
-                        "google_linked": body.google_linked,
-                        "wallet_address": wallet_address,
-                    }
-                )
+                .update(sync_fields)
                 .eq("privy_id", body.privy_id)
                 .execute()
             )

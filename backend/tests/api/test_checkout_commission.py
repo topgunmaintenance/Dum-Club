@@ -270,24 +270,26 @@ class StripeCheckoutCommissionTests(unittest.TestCase):
         inserts = [c for c in fake_sb.calls if c["table"] == "orders" and c["action"] == "insert"]
         return result, fake_stripe, inserts[0]["payload"] if inserts else None
 
-    def test_override_two_pct_on_100_dollars(self):
-        """Override = 0.0200, amount = $100 -> Stripe gets 200 cents,
-        order stamps rate=0.02 + cents=200."""
+    def test_override_two_pct_clamps_to_doctrine_cap(self):
+        """Override = 0.0200 CLAMPS to the 1.5% doctrine cap (CLAUDE.md
+        §12 rule 1; audit finding 6, 2026-07-07). A billing-config write
+        must never bill a seller above 1.5% — $100 charges 150 cents,
+        not 200."""
         _result, fake_stripe, order_payload = self._call(
             override_rate=Decimal("0.0200"),
             plan_rate=Decimal("0.0000"),
         )
-        # Stripe session.create kwargs
+        # Stripe session.create kwargs — capped at 1.5%
         self.assertEqual(len(fake_stripe.checkout.Session.create_calls), 1)
         create_kwargs = fake_stripe.checkout.Session.create_calls[0]
         pid_data = create_kwargs["payment_intent_data"]
-        self.assertEqual(pid_data["application_fee_amount"], 200)
-        # Order audit columns
-        self.assertEqual(order_payload["application_fee_amount_cents"], 200)
-        self.assertEqual(float(order_payload["resolved_commission_rate"]), 0.02)
+        self.assertEqual(pid_data["application_fee_amount"], 150)
+        # Order audit columns stamp the CLAMPED rate
+        self.assertEqual(order_payload["application_fee_amount_cents"], 150)
+        self.assertEqual(float(order_payload["resolved_commission_rate"]), 0.015)
         # And platform_fee_usd lines up with cents/100
-        self.assertEqual(order_payload["platform_fee_usd"], 2.0)
-        self.assertEqual(order_payload["seller_receives_usd"], 98.0)
+        self.assertEqual(order_payload["platform_fee_usd"], 1.5)
+        self.assertEqual(order_payload["seller_receives_usd"], 98.5)
 
     def test_rate_zero_omits_application_fee_but_stamps_zero(self):
         """Rate = 0.0000 -> payment_intent_data must NOT carry
@@ -541,7 +543,8 @@ class SolPathCommissionAuditTests(unittest.TestCase):
         return token
 
     def test_sol_stamps_audit_rate_keeps_settlement_unchanged(self):
-        """Override = 0.0300, usd = $50 -> audit cents = 150, but
+        """Override = 0.0300 CLAMPS to the 1.5% doctrine cap (audit
+        finding 6, 2026-07-07) -> usd = $50 stamps audit cents = 75;
         platform_fee_usd stays 0 and seller_receives_usd stays $50."""
         quote = self._make_quote(usd_amount=50.00)
         fake_sb = FakeSupabase(self._build_resolver(override_rate=Decimal("0.0300")))
@@ -569,9 +572,9 @@ class SolPathCommissionAuditTests(unittest.TestCase):
         # Settlement columns UNCHANGED
         self.assertEqual(payload["platform_fee_usd"], 0)
         self.assertEqual(payload["seller_receives_usd"], 50.00)
-        # Audit columns STAMPED
-        self.assertAlmostEqual(float(payload["resolved_commission_rate"]), 0.03)
-        self.assertEqual(payload["application_fee_amount_cents"], 150)
+        # Audit columns STAMPED with the CLAMPED rate (doctrine cap 1.5%)
+        self.assertAlmostEqual(float(payload["resolved_commission_rate"]), 0.015)
+        self.assertEqual(payload["application_fee_amount_cents"], 75)
 
     def test_sol_audit_null_when_resolver_fails(self):
         """If the resolver can't find a rate on the SOL path, the sale

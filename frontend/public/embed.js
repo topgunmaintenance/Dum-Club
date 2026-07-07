@@ -315,6 +315,14 @@
                       if (vBubbleEl) {
                         if (next.active_video && next.active_video.playback_url) {
                           vBubbleEl.classList.add("has-video");
+                          // Keep the pill's TEXT in sync too (audit
+                          // finding 8): a video activated after page
+                          // load used to show an empty mint pill.
+                          var vPillText = vBubbleEl.querySelector(".dum-video-pill span");
+                          if (vPillText) {
+                            vPillText.textContent =
+                              "▶ " + (next.active_video.source === "upload" ? "Video" : "Replay");
+                          }
                         } else {
                           vBubbleEl.classList.remove("has-video");
                         }

@@ -235,7 +235,7 @@ type Candle = {
 type ChartRange = "1H" | "1D" | "1W" | "1M" | "ALL";
 
 import { API_BASE } from "../../../lib/apiBase";
-import { attachVideoSource } from "../../../lib/hlsVideo";
+import { attachVideoSource, isActuallyPlaying } from "../../../lib/hlsVideo";
 import { errorText } from "../../../lib/errorText";
 import { resolveImageUrl, cleanLogoUrl, STOREFRONT_PLACEHOLDER } from "../../../lib/imageSrc";
 import {
@@ -1002,12 +1002,17 @@ export default function ProjectPage() {
   // Replay metering (queue 20): one beat per 30s while the recorded
   // video is on screen and the tab is visible. The server credits a
   // fixed 30s per beat into the merchant's combined viewer-hours.
+  // Fair-billing gate (audit finding 4, 2026-07-07): a blocked
+  // autoplay, 404ing manifest, or errored player must NOT bill the
+  // merchant — beats only fire while the video is genuinely playing.
+  const replayVideoElRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {
     const replay = (project as any)?.replay;
     if (!replay?.playback_url || (project as any)?.is_live || !(project as any)?.id) return;
     const source = replay.source === "upload" ? "showcase" : "replay";
     const t = window.setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (!isActuallyPlaying(replayVideoElRef.current)) return;
       fetch(`${API_BASE}/api/ivs/replay-beat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -4013,7 +4018,10 @@ const heroUtility =
                 /* attachVideoSource, not src=: IVS replays are HLS, which a
                    bare <video src> only plays in Safari (audit 2026-07-07). */
                 <video
-                  ref={(el) => attachVideoSource(el, (proj as any).replay.playback_url)}
+                  ref={(el) => {
+                    replayVideoElRef.current = el;
+                    attachVideoSource(el, (proj as any).replay.playback_url);
+                  }}
                   autoPlay
                   muted={replayMuted}
                   loop

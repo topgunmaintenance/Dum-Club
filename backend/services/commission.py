@@ -88,7 +88,7 @@ def resolve_commission_rate(seller_user_id: str, *, supabase: Any) -> Decimal:
     #    falling through to the plan default.
     override = row.get("commission_rate_override")
     if override is not None:
-        return Decimal(str(override))
+        return _clamp_to_doctrine_cap(Decimal(str(override)), seller_user_id, "override")
 
     # 2. Plan default via the bridge column added in migration 051.
     plan_id = row.get("plan_id")
@@ -123,4 +123,24 @@ def resolve_commission_rate(seller_user_id: str, *, supabase: Any) -> Decimal:
     #    serialize NUMERIC(5,4) as a JSON number (float) or string
     #    depending on client version, and either round-trips through
     #    str cleanly.
-    return Decimal(str(plan_rate))
+    return _clamp_to_doctrine_cap(Decimal(str(plan_rate)), seller_user_id, "plan")
+
+
+# CLAUDE.md §12 rule 1: the 1.5% sales-fee cap is DOCTRINE — exceeding it
+# requires a doctrine update, not a billing-config change. Before this
+# clamp (audit finding 6, 2026-07-07) a single DB write to
+# commission_rate_override or plan_limits.commission_rate could bill a
+# seller above the cap. Rates above 1.5% now clamp DOWN with a loud log;
+# rates at or below (including deliberate 0% comps) pass through.
+DOCTRINE_COMMISSION_CAP = Decimal("0.015")
+
+
+def _clamp_to_doctrine_cap(rate: Decimal, seller_user_id: str, source: str) -> Decimal:
+    if rate > DOCTRINE_COMMISSION_CAP:
+        print(
+            f"[commission] DOCTRINE CAP HIT: {source} rate {rate} for "
+            f"seller={seller_user_id[-6:]} exceeds 1.5% — clamped. "
+            "Raising the cap requires a CLAUDE.md doctrine change."
+        )
+        return DOCTRINE_COMMISSION_CAP
+    return rate
