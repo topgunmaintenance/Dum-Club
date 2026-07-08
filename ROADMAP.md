@@ -1,6 +1,10 @@
 # ROADMAP — DUM Club v5.0
 # Living status doc. Updated on ship, not continuously.
 # Doctrine lives in CLAUDE.md; this file is the execution view.
+# Rewritten 2026-07-08 from a full code + database audit — this file
+# now describes the system AS BUILT, not as aspired. If a claim here
+# drifts from the code, re-audit and fix this file (CLAUDE.md is
+# doctrine; this file is reality).
 
 ---
 
@@ -8,239 +12,154 @@
 
 | | |
 |---|---|
-| **Phase** | 0B |
-| **Complete** | ~90% |
-| **Blocked on** | 1 real paid Stripe transaction (external — Julian's outreach) |
-| **Next unlock** | Phase 0B → Phase 1 (100 founding seller recruitment sprint) |
+| **Phase** | 1 (Phase 0A + 0B done) |
+| **Complete** | ~2% of the Phase 1 goal (2–3 of 100 founding sellers connected) |
+| **Blocked on** | Recruitment (human) + flipping live-selling out of dormant mode |
+| **Next unlock** | Phase 1 → Phase 2 (needs 10+ verified sellers AND $1,000+ real GMV AND points-purchase legal review) |
 
-### Active diagnostics
-- _None._ The "Untitled Project" fallback on `/project/topgun-maintenance` is resolved in production; `loadProject()` is reaching Railway and the seeded row is hydrating. Visual QA spec `frontend/tests/visual/project-page.spec.ts` now hard-fails if the placeholder reappears.
+### Production snapshot (queried 2026-07-08)
 
-### Known issues — non-blocking
-- _None known._ The previously listed `_resolve_owner_uuid` AttributeError and `apiBase.ts` localhost-in-prod silent fallback have both been resolved: the upsert chain no longer calls `.select()` (postgrest-py 0.16 dropped that method on the upsert builder), and `apiBase.ts` now throws at module load when `NEXT_PUBLIC_API_URL` is missing in a production build.
+- **Merchants:** 6 total, 3 with Stripe connected. Only ~2 are real founding sellers: Topgun Maintenance (slot 1, `verified`) and Dark Cloud (slot 7, `verified`, onboarded today via the fixed Connect flow). Slot 2 is a duplicate Topgun (inactive).
+- **Projects/storefronts:** 63 total, 44 public, but only **4 verified** and **2 have ever gone live**.
+- **Offers:** 62 · **Paid orders:** 4 · **Live GMV:** $13.00 · **Plan tiers seeded:** 5.
+- ⚠️ **Data hygiene:** 44 public projects vs 4 verified means many test/placeholder storefronts are publicly visible. Clean this before serious Phase 1 recruiting (see External blockers).
+
+---
+
+## As-built system inventory
+*Ground truth from a full frontend + backend + schema audit on 2026-07-08. This section exists so any agent (or session) can orient without re-reading the whole repo. Cite it, but re-verify before you rely on it for a code change.*
+
+### Buyer surfaces (all real, real-data-driven)
+- `/` — Club discovery home (`components/discover/ClubHome.tsx`): search, category pills, Live Now rail (self-hides when nothing live), `DemoStoreRail` bridge (homepage-only, EXAMPLE tiles, self-hides when a real shop goes live), interactive go-live demo, businesses grid, seller pitch below.
+- `/discover` — same feed, feed-only. Hosts the real-sales-only `LiveActivityTicker`.
+- `/project/[id]` — storefront + live room (largest file, ~9.5k lines): offers, Stripe checkout, reviews, replay card, pop-in bubble, owner-inline studio, latent auction + token subsystems (gated).
+- `/clubs` — a signed-in viewer's followed shops. `/orders` — buyer order history. `/hub` — DUM Points hub (direct URL only, not in nav). `/technology` — the only consumer page naming Solana (footer link).
+- Embeds: `/embed/[businessId]` (full overlay on merchant's own site), `/embed/bubble/[businessId]` (live bubble), `/ai/embed/[slug]` (AI sales chat).
+
+### Merchant surfaces (all real, wired)
+- `/merchant` — signup + 30-day card-upfront trial (redirects to Stripe Checkout when backend returns `checkout_url`), then a 5-step launch checklist.
+- `/dashboard` (+ `/dashboard/post` composer, `/dashboard/ai-agent` config) — command center; metrics read real analytics with `|| 0` fallbacks (no fake numbers).
+- `/business`, `/why-dum-club`, `/pricing`, `/upgrade`, `/demo`, `/qr`, `/install`, `/project/[id]/manage`.
+- Admin: `/admin/{merchants,operations,outreach,proofs,system}` (gated).
+
+### Live selling
+- Built end to end: `IVSStageHost.tsx` (WebRTC broadcast), `IVSStageViewer.tsx`, `LiveChatIVS.tsx`, "Go Live" entry points (navbar CTA, `FloatingGoLive`, `/dashboard/post`).
+- **Dormant in production** — host/viewer render gated behind `NEXT_PUBLIC_ENABLE_IVS_REALTIME` (frontend) and `ENABLE_IVS_REALTIME_BACKEND` (backend), both default **false**. Recording gated behind `ENABLE_IVS_RECORDING`.
+- Auctions: full subsystem, wired (live bid WebSocket, anti-snipe). Replay/showcase: `ReplayCard` renders recorded video with REPLAY/VIDEO labels (never LIVE). No dedicated flash-sale countdown component (only auction + trial countdowns).
+
+### Backend feature matrix
+| Feature | State |
+|---|---|
+| Stripe Connect (Express OAuth, callback, status) | **Implemented** — fixed 2026-07-08 (PR #586); proven live (Dark Cloud) |
+| Stripe Checkout + platform `application_fee` (sales fee) | **Implemented** — direct charge into merchant account |
+| Subscription trial + billing (30-day card-upfront, billing portal) | **Implemented** |
+| Founding cap + slot + `/founding-status` | **Implemented** — public response returns ONLY `{founding_program_open}` (doctrine-compliant) |
+| AWS IVS live streaming | **Built but DORMANT** (env flag off) |
+| Auctions | **Implemented** |
+| Replay recording + viewer-hour metering | **Built but env-gated**; overage invoicing is **manual only** (no cron) |
+| AI retention / win-back texts (doctrine: Growth+) | **ABSENT** — marketing only, no code |
+| AI social media posting (doctrine: Pro) | **ABSENT** — marketing only, no code |
+| DUM Points (earn/spend/purchase/Solana claim) | **Implemented**; purchase + claim endpoints are **ungated at the API** (hidden only in the nav) |
+| Outreach email templates + admin outreach | **Implemented** (admin-gated) |
+| Whatnot seller scraper | **ABSENT** |
+| LLM for AI chat | Local **Ollama** on the Railway host |
+
+### Feature flags currently OFF in production
+`ENABLE_IVS_REALTIME_BACKEND` / `NEXT_PUBLIC_ENABLE_IVS_REALTIME` (live selling), `ENABLE_IVS_RECORDING` (replay capture), `NEXT_PUBLIC_ENABLE_SOL_CHECKOUT` (pay-with-Solana button), `ENABLE_AI_FEATURES` (AI surfaces). Live selling for Phase 1 depends on flipping the IVS flags.
+
+---
+
+## Doctrine vs reality — reconcile these
+*Audited 2026-07-08. Most items were fixed the same day and verified in a cloud
+build (py_compile + human-copy guard passed). Remaining items are backlogged.*
+
+**Resolved 2026-07-08:**
+
+1. ✅ **Sales fee.** The live DB was already at 1.5% on every tier (applied out of band ~2026-06-11; the 2026-06-16 order shows a $0.15 fee on $10.00). The audit's "1%" was a stale read of migration 082's file header, now corrected to "APPLIED." Doctrine and production agree. (§13 projections still say "1%" — self-flagged illustrative, low priority.)
+2. ✅ **DUM Points pill hidden.** `DumPill` render removed from `SiteChrome.tsx` (component kept for Phase 2).
+3. ✅ **Points/Solana endpoints gated server-side.** `dum_points.py` `/purchase`, `/claim`, `/swap`, `/swap-demo` and the `checkout.py` webhook fulfillment branch now fail closed behind `ENABLE_POINTS_PURCHASE` / `ENABLE_SOLANA_CLAIM` (default off).
+5. ✅ **AI features honesty.** AI retention win-back (Growth+) and AI social posting (Pro) marked "coming soon" across pricing/upgrade/about/business/why-dum-club + compare table + calculator, and in CLAUDE.md §3/§4. Build still pending.
+6. ✅ **Stripe Connect copy.** `/technology` now says "Express" (was "Standard").
+8. ✅ **Access-control gap.** `/dashboard/review` now wrapped in `AdminRoute`.
+
+**Still open (backlogged):**
+
+4. **30-day trial doctrine vs 60-day trial schema.** Legacy `043` scaffolding (60-day, no-card, largely unapplied) contradicts the 30-day card-upfront doctrine. Sweep when next touching trial code.
+7. **Square residue.** `merchants` still has dormant `square_*` columns despite Stripe-only doctrine. Drop in a future migration.
+9. **Legacy v1 token/AI-builder bleed-through (internal).** `/dashboard/review` still POSTs `starting_price`/`market_cap`; `generate_app.py`/`refine_project.py`/`launch.py` routes still mounted. Not consumer-visible; clean up later.
 
 ---
 
 ## Phase ladder
 
-Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · ⚠️ broken/diagnosing · 🔒 locked
+Status key: ✅ shipped · 🔄 in progress · ⏸️ blocked on external · 🔒 locked
 
 ---
 
-### Phase 0A — Done ✅
+### Phase 0A — Strip v1 AI-builder framing — Done ✅
+Consumer pages no longer pitch "type an idea → AI builds a business" (signup is manual field entry; `ENABLE_AI_FEATURES=false`). Solana confined to `/technology` + backend reconciliation columns. Fake data clean (no `CREATOR_STORIES`/`ACTIVITY_MESSAGES`; `LiveActivityTicker` is real-sales-only; `DemoStoreRail` is the sanctioned homepage bridge). Main-street pivot copy adopted everywhere; no stale `$29`/`60 days free` copy remains.
+**Caveat:** the `DumPill` beta surface partially undercuts "points hidden" (see reconciliation #2).
 
-**Goal:** Strip v1 AI-builder framing. Hide DUM Points / Solana from consumer pages. Reposition homepage.
+### Phase 0B — First real paid Stripe transaction — Done ✅ (2026-07-08)
+4 live (`cs_live`) paid orders against Topgun since 2026-05-06 (all `source: live`), plus new-merchant Connect proven the same day (Dark Cloud onboarded to `verified` and reached live checkout; Connect 500 fixed in PR #586). Counted complete on Julian's call 2026-07-08. Note the paid orders are founder self-tests ($13 total); the first genuine external-customer sale is still a nice-to-have milestone, not a gate.
 
-**Unlock conditions:** none — starting point.
+### Phase 1 — 100 founding sellers — Active 🔄 (~2%)
+**Target (founder decision 2026-07-08):** recruit BOTH local main-street businesses AND live resellers.
 
-**Tasks:**
-- ✅ Demo storefronts hidden from Discover
-- ✅ Ticker shows real data only
-- ✅ Solana language moved to `/technology` page only
-- ✅ DUM Points hidden from navbar
-- ✅ `/hub` cleaned up — no Solana language in default view
-- ✅ Buy Points panel hidden
-- ✅ Fictional moat section removed (Mario's Cafe)
-- ✅ Homepage repositioned to local services
+**Already shipped (was Phase 1 scope, landed during 0B):** homepage/Club feed, IVS live-selling UI (dormant behind flags), auctions, replay, outreach email templates carrying the flat-fee + "1.5% (Whatnot 8%)" pitch. Founding-100 scarcity counter correctly retired (public endpoint returns a boolean only).
 
-**Done when:** Consumer-facing pages contain no v1 AI-builder language and no consumer-facing Solana surface. **Shipped.**
+**Remaining work (queued in `.claude/tasks/queue.md`):**
+- [ ] `merchant-data-cleanup` — dedupe the two Topgun rows, deactivate junk/test founding signups, purge/hide the ~40 unverified public storefronts, fix slot numbering. Julian approves exact rows; NO hard deletes.
+- [ ] `enable-live-selling` — flip `ENABLE_IVS_REALTIME_BACKEND` + `NEXT_PUBLIC_ENABLE_IVS_REALTIME` and verify a real broadcast end to end (host → viewer → chat). Live selling is the core Phase 1 pitch and is currently dark.
+- [ ] `outreach-main-street-pass` — refresh `backend/services/email.py` copy to the main-street pivot voice.
+- [ ] `whatnot-lead-scraper` — `backend/agents/whatnot_scraper.py`, live-reseller leads → CSV.
+- [ ] `local-business-lead-gen` — main-street business leads (Google Places) → separate CSV.
+- [ ] Recruitment execution — Julian sends signup + storefront links to the lead lists (external).
 
----
+**Done when:** 100 rows in `merchants` with a connected Stripe account (`stripe_connect_status IN ('connected','verified')`) AND `founding_slot_number BETWEEN 1 AND 100`. (Real connected merchants show `verified`, not `connected` — the gate counts both.)
 
-### Phase 0B — Active 🔄
+### Phase 2 — DUM Points return, retention proven — Locked 🔒 (partly pre-built)
+Substrate exists: `users.dum_balance`, append-only `dum_transactions`, cross-merchant attribution, and the `DumPill` beta UI. Missing: a points-purchase table/flow (legal-gated), wired cross-business spend ("coming soon"), and the two absent AI features (retention win-back, social posting) that doctrine ties to this era.
+**Unlock:** 10+ verified sellers live AND $1,000+ real GMV AND legal review of the points-purchase flow. (Currently 4 verified, $13 GMV.)
 
-**Goal:** One real paid Stripe transaction through the Topgun Maintenance storefront.
+### Phase 3 — Optional Solana layer — Locked 🔒 (columns-only)
+Only reconciliation columns on `orders` (034) + `users.wallet_address`; a dormant `SolanaCheckoutButton` and per-project token subsystem exist behind flags/`SIM_` data (render to nobody). No consumer Solana surface today.
+**Unlock:** Phase 2 proven with data AND legal sign-off on the Solana claim flow. Claim stays opt-in only.
 
-**Unlock conditions:**
-- ✅ Phase 0A done
-
-**Core tasks (from CLAUDE.md §6):**
-- ✅ Remove DUM Points from navbar (mobile + desktop) — `b2e70ab`
-- ✅ Bump `FOUNDING_CAP` to 100 everywhere — `b2e70ab`
-- ✅ Build Topgun Maintenance LLC storefront (migration 031) — `fab6ade`
-- ✅ Storefront routable at `/project/topgun-maintenance` (slug lookup backend) — `fab6ade`
-- ⚠️ Storefront rendering correctly with seeded data — **active diagnostic, see blockers**
-- ✅ Discover shows verified founding merchants (backend verified-OR fallback) — `a5ef9ec`
-- ✅ Homepage comparison: Whatnot / Commonsold / Google Maps — `9336946`
-- ⏸️ **Get 1 real paid Stripe transaction** — Julian's task, external outreach
-
-**Beyond original 0B scope — shipped in this window:**
-- ✅ `/business` landing page rebuilt (full seller recruitment) — `06d956e`
-- ✅ Square removed from merchant page (Stripe-only per Rule 11) — `a14304b`
-- ✅ Homepage hero redesigned (seller focus, no v1 textarea) — `f62c114`
-- ✅ Fee savings calculator on homepage — `3def3f1`
-- ✅ Universal search: 3-section results (Live / Business / Items for Sale) — `31f7255`
-- ✅ `/api/offers/search` endpoint (Items section queries real `offers` table) — `57d2b02`
-- ✅ Homepage service-finder search bar + 8 quick pills — `f9d0987` / `1120634`
-- ✅ Brightness pass (design contrast lift) — `98db0e1`
-- ✅ Shared category taxonomy in `lib/categories.ts` (Vercel build unblock) — `d1fc390`
-- ✅ FounderNote: Julian headshot + flat-fee copy — `a1a1509`
-- ✅ `loadOffers` / `loadMemories` use project UUID not URL param (slug safe) — `2674dcc`
-
-**Done when:** One Stripe checkout in production mode completes against Topgun's storefront. A single `orders` row with `status='paid'` and `amount > 0` unlocks Phase 1.
-
----
-
-### Phase 1 — Locked 🔒
-
-**Goal:** 100 founding sellers recruited.
-
-**Unlock conditions:**
-- 🔒 Phase 0B done (one real Stripe transaction)
-
-**Tasks:**
-- 🔒 Whatnot seller scraping agent (`backend/agents/whatnot_scraper.py`)
-- 🔒 Update 4 outreach email templates — Whatnot flat-fee pitch
-- 🔒 Homepage redesign — Whatnot visual energy:
-  - Live Now grid (AWS IVS)
-  - Best Deals This Week section
-  - Founding 100 banner with real slot counter
-  - Category browse row
-  - Google reviews display per business
-- 🔒 Activate AWS IVS live selling for merchants
-- 🔒 "Go Live" button on merchant dashboard
-
-**Done when:** 100 rows in `merchants` table with `stripe_connect_status='connected'` AND `founding_slot_number BETWEEN 1 AND 100`.
-
----
-
-### Phase 2 — Locked 🔒
-
-**Goal:** DUM Points return, retention proven.
-
-**Unlock conditions:**
-- 🔒 10+ real verified sellers live on platform
-- 🔒 At least $1,000 in real GMV processed through Stripe
-- 🔒 Legal review of points purchase flow complete
-
-**Tasks:**
-- 🔒 Restore DUM Points to navbar
-- 🔒 Cross-merchant loyalty active (earn at detailer, spend at pizza shop)
-- 🔒 AI retention agent automating point reminders
-- 🔒 Customer retention program replaces direct mail pitch
-- 🔒 Points dashboard for sellers showing retention data
-
-**Done when:** DUM Points visible in navbar AND customer return-rate via points is measurable per-seller via dashboard.
-
----
-
-### Phase 3 — Locked 🔒
-
-**Goal:** Optional Solana layer.
-
-**Unlock conditions:**
-- 🔒 Phase 2 proven (points driving repeat purchases — data required)
-- 🔒 Legal sign-off on Solana claim flow
-
-**Tasks:**
-- 🔒 Optional Solana claim behind "Advanced" toggle
-- 🔒 Never mandatory, never on consumer-facing pages
-
-**Done when:** Solana claim ships as an opt-in toggle only. No consumer-facing Solana surface area anywhere except `/technology`.
-
----
-
-### Phase 4 — Locked 🔒
-
-**Goal:** Scale and monetize.
-
-**Unlock conditions:**
-- 🔒 Phase 3 done
-
-**Tasks:**
-- 🔒 Flat fee tiers fully active for all new sellers (founding period closed)
-- 🔒 B2B white-label points product launched
-- 🔒 AI social media service productized
-- 🔒 City-by-city replication begins
-- 🔒 Enterprise loyalty contracts
-
-**Done when:** Year-1 revenue projection from CLAUDE.md §13 hit (~$70k/month total stream).
+### Phase 4 — Scale and monetize — Locked 🔒 (thin)
+Tier + overage-billing scaffolding exists (`plan_limits`, `merchant_overage_invoices`, no-double-bill netting), but overage invoicing has no scheduler, and white-label / AI-social / enterprise are doctrine concepts with no dedicated schema yet.
+**Unlock:** Phase 3 done AND the §13 revenue targets (themselves flagged stale/illustrative).
 
 ---
 
 ## External blockers
-
-Things that aren't Claude-solvable and need a human decision or action.
+*Not Claude-solvable — need a human decision or action.*
 
 | Status | Blocker | Owner | Blocks |
 |---|---|---|---|
-| ✅ | ~~Run `bash scripts/fetch-topgun-photos.sh` to mirror Topgun photos locally~~ — superseded by migration 033, which points image URLs at the public originals on topgunmaintenance.com. The mirror script stays as a contingency. | — | _resolved_ |
-| ✅ | ~~Rebind Topgun `business_profiles.owner_privy_id` from `seed:topgun-maintenance` to Julian's real Privy DID~~ — now automatic via `backend/services/seed_claim.py`. First sign-in with `julian@topgunmaintenance.com` triggers the rebind on both `business_profiles` and `projects`. Audit row written to `seed_claim_audit`. | — | _resolved_ |
-| ⏸️ | **Send `/project/topgun-maintenance` link to 20 real contacts** | Julian | Phase 0B → Phase 1 |
+| ⏸️ | **Recruit 100 founding sellers** — send signup + storefront links to lead lists (both channels) | Julian | Phase 1 → Phase 2 |
+| ⏸️ | **Decide: apply migration 082 (charge 1.5%) or keep 1% + update doctrine** | Julian | reconciliation #1 |
+| ⏸️ | **Decide DumPill fate** (hide until Phase 2, or bless the beta) | Julian | reconciliation #2 |
+| ⏸️ | Clear the stale `.git/index.lock` on the Mac + fast-forward local `main` (agent sandbox can't `rm`) | Julian | clean local git |
 | 🔒 | Legal review of DUM Points purchase flow | Legal | Phase 2 |
 | 🔒 | Legal sign-off on Solana claim flow | Legal | Phase 3 |
-| 🔒 | 10+ verified sellers live | Outreach | Phase 2 |
-| 🔒 | $1,000+ real GMV through Stripe | Organic | Phase 2 |
 
 ---
 
 ## Recently shipped
-
-Last 15 commits on `main`, newest first. Regenerate via `git log main --oneline -15`.
-
-```
-c1e1d0d  Merge #468: live room — host chat under camera, real share + likes, Discover preview
-5a9abdd  feat(live): real preview frame on the Discover "Live now" card
-dfe0955  feat(live): real shared likes over the chat socket
-a045793  fix(live): mount the host chat directly under the owner's camera
-ccdccff  feat(live): real share targets in the live room (Facebook / X / WhatsApp)
-ce60dc4  Merge #467: storefront header cleanup + city/region location chip
-318012a  feat(storefront): return city/region so the header location chip can render
-57104dd  fix(storefront): clean buyer header + light "Powered by DUM Club" footer
-ab99e7e  Merge #466: live-room overlay chat empty-state fix
-4881551  fix(live): hide chat empty-state in the overlay room (overlapped the video)
-52a2a75  Merge #465: live-first Club home — Live-now rail, offer-forward cards
-0306c38  fix(points): mark DUM Points as beta — cross-business spend not live yet
-fa4f576  fix(home): pills-clean — collapse filters, compact search, slim location
-f18f22d  Merge #447: Follow / "Your Clubs" network layer (3a + 3b)
-4f1c251  feat(live-reminders): ping followers on every go-live, not just the first
-```
-
-### Shipped this window — buyer "Club" experience + live room (PRs #461–#468)
-
-The Discover/storefront surfaces were reworked into the Whatnot-style
-"Club" buyer experience (Option B, on the local-business model), and the
-live room got four real-feature fixes off Julian's screenshots:
-
-- **Club home** — `/` and `/discover` now render the shared `ClubHome`
-  (Live-now rail, offer-forward cards, pills-clean header). Marketing
-  homepage preserved at `/welcome`. DUM Points marked beta.
-- **Public storefront cleanup (#467)** — buyer-facing header (cover /
-  avatar / category / location chip / Verified / Follow), removed the
-  "From $X" placeholder, light "Powered by DUM Club" footer. Confirmed
-  the Orders ledger + owner tools are owner-gated (no public leak).
-  Added `business_profiles.city` / `region` (applied by hand) so the
-  header location chip can render; Topgun set to Morristown, NJ.
-- **Live room (#468)** — host chat now sits under the host's own camera;
-  real share menu (Facebook / X / WhatsApp / Copy); real shared likes
-  over the chat socket (per-show server total, not a local animation);
-  and a real preview frame on the Discover "Live now" card (host uploads
-  a ~320px snapshot every ~10s to `offers/live-thumbs/<id>.jpg`, no
-  migration). The snapshot path touches `IVSStageHost` — verify on a
-  real broadcast.
-
-**Still open (separate backlog, not blocking 0B):** migration 079 (geo
-columns for the "Near me" distance filter) is drafted, not applied;
-per-feed live viewer counts wait on migration 077 (`live_viewer_count`).
-
-### Older shipped (kept for diff context)
+Newest first. Regenerate via `git log main --oneline -15`.
 
 ```
-98db0e1  style: brightness pass — lift the dark theme, add emerald glow
-d1fc390  fix(build): move category taxonomy out of app/page.tsx — unblock Vercel
-1120634  fix: kill homepage void + universal quick-search pills
-57d2b02  feat: /api/offers/search endpoint + wire Items for Sale to real offers
-31f7255  feat: universal search — 3-section results, filter bar, category grid
-f9d0987  feat: homepage service-finder search bar + quick pills
-3def3f1  feat: FeeCalculator component — interactive savings slider
-f62c114  feat: homepage hero redesign — seller recruitment focus (v5.0)
-06d956e  feat: rebuild /business as seller recruitment landing page
-a14304b  fix: remove Square connect from merchant page — Stripe only per v5.0
-9336946  fix: comparison table — Whatnot/Commonsold/Google Maps per CLAUDE.md v5.0
-a5ef9ec  fix(discover): surface verified founding merchants regardless of status
-8f334f1  fix: tighten hero spacing + reduced-motion fallback for entrance anims
-a1a1509  fix: FounderNote — Julian headshot, Topgun LLC copy, flat-fee pitch
-2674dcc  fix: loadOffers + loadMemories use project UUID, not URL param (slug safe)
+affbe5d  #586 fix(stripe): Connect OAuth + status checks 500ed on every request (Phase 0B unblock)
+5841e7c  #584 fix(project): owners no longer see the public view flash before their console
+a27d121  #583 fix(perf): stop WalletConnect registry prefetch on every page load
+4b13d1f  #582 fix(copy): /upgrade tier grid joins the main-street pivot
+71cc2a1  #581 feat(pages): consolidate /pricing + /business — numbers page and story page
+253d2e4  #579 feat(copy): main-street pivot — every business gets 30 days free
+9a2db26  #578 feat(dashboard): page views and unique visitors side by side
+a8eaff8  #577 fix(admin): stats count only real revenue
+3d9140a  #576 feat(admin): merchant toolkit — delete, cancel sub, checkout link, stats
+b5c9cbc  #575 feat(billing): 30-day card-upfront trial via Stripe Checkout
 ```
 
 ---
@@ -249,10 +168,10 @@ a1a1509  fix: FounderNote — Julian headshot, Topgun LLC copy, flat-fee pitch
 
 | File | Horizon | Purpose |
 |---|---|---|
-| `ROADMAP.md` (this) | months | Phase ladder, unlock conditions, external blockers, changelog |
+| `ROADMAP.md` (this) | months | Phase ladder, as-built inventory, doctrine-vs-reality, blockers |
 | `CURRENT_SPRINT.md` | week | Active sprint tasks inside the current phase |
 | `NEXT_TASK.md` | hours | Atomic next action to take right now |
-| `BACKLOG.md` | undated | Ideas that haven't been prioritized yet |
+| `BACKLOG.md` | undated | Unprioritized ideas |
 | `CLAUDE.md` | permanent | Doctrine, positioning, absolute rules |
 
-Rule of thumb: if `ROADMAP.md` and `CLAUDE.md §6` disagree, `CLAUDE.md` is doctrine and this file is stale — fix `ROADMAP.md`. If `ROADMAP.md` and `CURRENT_SPRINT.md` disagree, the sprint is tactical truth for this week and the roadmap is the strategic frame around it.
+Rule of thumb: if `ROADMAP.md` and `CLAUDE.md` disagree on gates/goals, CLAUDE.md is doctrine and this file is stale — fix this file. If this file's *as-built inventory* disagrees with the code, the code wins — re-audit and fix this file.

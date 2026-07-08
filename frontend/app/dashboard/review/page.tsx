@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import AdminRoute from "../../../components/AdminRoute";
 
 type ReviewProject = {
   id: string;
@@ -17,7 +18,7 @@ type ReviewProject = {
 
 import { API_BASE } from "../../../lib/apiBase";
 
-export default function ReviewDashboardPage() {
+function ReviewDashboardPage() {
   const [projects, setProjects] = useState<ReviewProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
@@ -167,5 +168,13 @@ export default function ReviewDashboardPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ReviewPage() {
+  return (
+    <AdminRoute>
+      <ReviewDashboardPage />
+    </AdminRoute>
   );
 }

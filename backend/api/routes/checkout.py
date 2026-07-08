@@ -1199,6 +1199,13 @@ async def stripe_webhook(request: Request):
 
         # ── DUM Points purchase (not an offer order) ──
         if metadata.get("purchase_type") == "dum_points":
+            # Feature gate: points purchase is hidden pending legal review.
+            # Fail closed — if a purchase session somehow reaches this
+            # webhook while the flow is disabled, do NOT fulfill (no credit,
+            # no on-chain mint). Return normally so the webhook doesn't crash.
+            if os.getenv("ENABLE_POINTS_PURCHASE", "false").lower() != "true":
+                print("[webhook] ⚠ DUM Points purchase disabled — skipping fulfillment")
+                return JSONResponse(content={"received": True}, status_code=200)
             privy_id = metadata.get("privy_id")
             points_amount = int(metadata.get("points_amount", "0"))
             if privy_id and points_amount > 0:

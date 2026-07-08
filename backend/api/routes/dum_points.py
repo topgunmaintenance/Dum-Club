@@ -71,6 +71,16 @@ _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "").strip()
 _STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 _stripe = None
 
+# ── Feature gates (fail-closed, pending legal review) ──────────────
+# Doctrine (CLAUDE.md §5 "Points purchase flow HIDDEN" / "Solana claim
+# HIDDEN", §12 rules 4-5): the DUM Points purchase flow and the Solana
+# claim flow must stay hidden until legal review. They were only hidden
+# in the frontend nav, so they were still callable with auth alone.
+# Gate them server-side too. Same env pattern as
+# ENABLE_IVS_REALTIME_BACKEND; both default DISABLED and fail closed.
+_POINTS_PURCHASE_ENABLED = os.getenv("ENABLE_POINTS_PURCHASE", "false").lower() == "true"
+_SOLANA_CLAIM_ENABLED = os.getenv("ENABLE_SOLANA_CLAIM", "false").lower() == "true"
+
 def _get_stripe():
     global _stripe
     if _stripe is None:
@@ -282,6 +292,10 @@ async def purchase_points(
     req: DumPurchaseRequest,
     current_user: dict = Depends(get_current_user),
 ):
+    # Feature gate: points purchase is hidden pending legal review.
+    if not _POINTS_PURCHASE_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -370,6 +384,10 @@ async def swap_sol_to_dum(
     current_user: dict = Depends(get_current_user),
 ):
     """Swap SOL for DUM Points. Verifies on-chain transaction then awards points."""
+    # Feature gate: Solana swap is hidden pending legal sign-off.
+    if not _SOLANA_CLAIM_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -589,6 +607,10 @@ async def demo_swap_sol_to_dum(
     hangs on mobile browsers without showing approval UI. This endpoint
     bypasses on-chain verification while preserving all other safeguards.
     """
+    # Feature gate: Solana swap is hidden pending legal sign-off.
+    if not _SOLANA_CLAIM_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -666,6 +688,10 @@ async def claim_dum_tokens(
     Mints tokens from treasury to user's wallet.
     Returns the Solana transaction signature.
     """
+    # Feature gate: Solana claim is hidden pending legal sign-off.
+    if not _SOLANA_CLAIM_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+
     privy_id = current_user.get("sub")
     if not privy_id:
         raise HTTPException(status_code=401, detail="Authentication required")

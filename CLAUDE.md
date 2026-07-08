@@ -461,7 +461,7 @@ for the seed values — that table is the source of truth.
 - 1.5% sales fee on all paid orders
 - Everything in Starter
 - Featured placement in category browse
-- Automatic customer win-back texts (replaces direct mail)
+- Automatic customer win-back texts (coming soon; will replace direct mail)
 - Google review display on storefront
 - Best Deals This Week eligibility
 
@@ -471,7 +471,7 @@ for the seed values — that table is the source of truth.
 - $0.10/viewer-hour overage above the included 1,500
 - 1.5% sales fee on all paid orders
 - Everything in Growth
-- AI social media management
+- AI social media management (coming soon)
   (Instagram/TikTok/Facebook automated posting)
 - Homepage featured slot
 - Cross-business deal promotions
@@ -536,12 +536,12 @@ Predictable, recurring, scales with seller count
 - Homepage banner: $199/month
 - Sold to merchants already on the platform
 
-**Stream 3: AI Social Media Service (included in Pro)**
+**Stream 3: AI Social Media Service (Pro tier — coming soon, not yet built)**
 Replace $500-$2,000/month agency bills with $299/month
 Pro tier. AI creates, schedules, and posts to Instagram/
 TikTok/Facebook based on seller's active deals and inventory.
 
-**Stream 4: AI Retention Program (included in Growth+)**
+**Stream 4: AI Retention Program (Growth+ — coming soon, not yet built)**
 Replace $500-$1,000/month direct mail campaigns
 DUM Points bring customers back automatically
 Customers can find nearby deals across the merchant network

@@ -32,7 +32,7 @@ const TIERS = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "Automatic customer win-back texts (auto point reminders)",
+      "Automatic customer win-back texts (coming soon)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
     ],
@@ -49,7 +49,7 @@ const TIERS = [
     highlight: false,
     features: [
       "Everything in Growth",
-      "AI social media management",
+      "AI social media management (coming soon)",
       "Homepage featured slot",
       "Cross-business deal promotions",
       "Full analytics dashboard",

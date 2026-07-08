@@ -103,7 +103,7 @@ const COMPARE_ROWS: CompareRow[] = [
     ig: "You buy ads to reach the same person twice.",
     doordash: "You don't. They reach customers; you don't.",
     whatnot: "You don't. They surface other sellers on the same screen.",
-    dum: "DUM Points + automatic win-back texts. Customers return on their own.",
+    dum: "DUM Points now, with automatic win-back texts coming soon. Customers return on their own.",
   },
 ];
 
@@ -197,7 +197,7 @@ const OWNERSHIP_PROMISES = [
   {
     title: "Weekly customer return loop",
     body:
-      "Customers earn DUM Points on every purchase, redeemable at any DUM Club seller. Automatic win-back texts pull them back without you lifting a finger.",
+      "Customers earn DUM Points on every purchase, redeemable at any DUM Club seller. Automatic win-back texts, coming soon, will pull them back without you lifting a finger.",
   },
   {
     title: "Simple mobile setup",

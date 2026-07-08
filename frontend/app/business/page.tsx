@@ -168,7 +168,7 @@ function BusinessPageInner() {
               {[
                 { n: "01", title: "Just 1.5% per sale", desc: "Marketplaces take up to 8% per sale and delivery apps take 15 to 30%. DUM Club starts at $39/month plus a 1.5% sales fee. The lowest per-sale rate in live commerce." },
                 { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We never hold your money." },
-                { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
+                { n: "03", title: "Customers come back automatically", desc: "DUM Points turn one-time buyers into repeat customers, with automatic customer win-back texts coming soon. Replaces the loyalty + SMS tools you're already paying for." },
               ].map((step) => (
                 <div
                   key={step.n}

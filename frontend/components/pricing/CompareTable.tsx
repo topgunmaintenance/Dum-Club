@@ -99,7 +99,7 @@ export function CompareTable() {
                 { f: "Local discovery", w: "No", c: "No", g: "Pay to rank", d: "Free + deals" },
                 { f: "Loyalty built in", w: "None", c: "Basic", g: "None", d: "Every tier" },
                 { f: "Bring customers back", w: "None", c: "None", g: "None", d: "Built in" },
-                { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier" },
+                { f: "AI social media", w: "None", c: "None", g: "None", d: "Pro tier (soon)" },
                 { f: "White-label loyalty", w: "None", c: "None", g: "None", d: "$499/mo+" },
               ].map((row, i) => (
                 <tr key={i} className="border-b border-default">
