@@ -83,6 +83,8 @@ export function SolanaAdvanced({
   }
 
   function friendlyError(msg: string): string {
+    if (msg.includes("Not found") || msg.includes("404"))
+      return "Token claim is coming soon. It is not available yet.";
     if (msg.includes("wait") && msg.includes("seconds")) return msg;
     if (msg.includes("wallet"))
       return "Wallet not connected. Please wait for your wallet to set up or refresh the page.";
