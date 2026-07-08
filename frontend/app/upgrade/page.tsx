@@ -4,25 +4,6 @@ import Link from "next/link";
 
 const TIERS = [
   {
-    name: "Founding 100",
-    price: "$0",
-    period: "for 30 days",
-    afterNote: "Then locked-in founding pricing for life",
-    color: "text-brand-teal",
-    borderColor: "border-brand-teal",
-    highlight: true,
-    features: [
-      "Storefront on DUM Club marketplace",
-      "DUM Points built in automatically",
-      "Basic sales analytics",
-      "Stripe direct payouts. Keep 98.5% (1.5% sales fee)",
-      "Listed on Discover page",
-      "Founding seller badge (permanent)",
-    ],
-    cta: "Claim Your Spot",
-    href: "/merchant",
-  },
-  {
     name: "Starter",
     price: "$39",
     period: "/month",
@@ -103,7 +84,7 @@ export default function PricingPage() {
             <span className="text-brand-teal">1.5% sales fee. That&apos;s it.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
-            Flat monthly subscription plus a 1.5% sales fee per order. Keep more of every dollar. No listing fees, no surprise charges. Ever.
+            Flat monthly subscription plus a 1.5% sales fee per order. Keep more of every dollar. No listing fees, no surprise charges. Ever. Every business gets 30 days free.
           </p>
         </div>
 
@@ -115,7 +96,7 @@ export default function PricingPage() {
         </div>
 
         {/* Tier cards */}
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {TIERS.map((tier) => (
             <div
               key={tier.name}
@@ -123,13 +104,6 @@ export default function PricingPage() {
                 tier.highlight ? "" : ""
               }`}
             >
-              {tier.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="whitespace-nowrap rounded-full bg-brand-teal px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-black">
-                    Limited · 100 spots
-                  </span>
-                </div>
-              )}
               <div className={`text-[10px] font-bold uppercase tracking-[0.3em] ${tier.color}`}>
                 {tier.name}
               </div>
