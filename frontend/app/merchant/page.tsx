@@ -1417,9 +1417,17 @@ export default function MerchantPage() {
             );
           }
 
-          // Published but NOT yet Stripe-verified: live as a page but
-          // hidden from Discover until Stripe finishes. Tell them plainly
-          // and give them the re-check action.
+          // Published but Stripe was never connected (no stripe_connect_id,
+          // status 'not_connected'): nothing is under review yet, so the
+          // "Stripe needs to finish checking your account" copy below would
+          // be false and Check status has nothing to check. The Next Step
+          // card right below already carries the one Connect Stripe CTA
+          // (say each thing once), so skip this card entirely.
+          if (isPubliclyLive && !stripeVerified && !stepStripe) return null;
+
+          // Published and Stripe connected, but NOT yet verified (Stripe is
+          // reviewing): live as a page but hidden from Discover until Stripe
+          // finishes. Tell them plainly and give them the re-check action.
           if (isPubliclyLive && !stripeVerified) {
             return (
               <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-5 py-4">
@@ -1493,26 +1501,56 @@ export default function MerchantPage() {
           const hasCategory = Boolean((merchant.business_type || "").trim());
           const profileComplete = hasDescription && hasCategory;
           return (
-            <MerchantNextStep
-              inputs={{
-                isAuthenticated: true,
-                hasMerchant: true,
-                stripeStatus: merchant.stripe_connect_status ?? null,
-                hasBusinessProfile: Boolean(merchant.business_name),
-                hasProject: Boolean(firstProject),
-                offerCount: hasOffer ? 1 : 0,
-                // Real numbers from the same analytics fetch the stat tiles
-                // use. These were hardcoded 0/0, which pinned the card on
-                // "Share your shop with your first customer" forever — the
-                // lifecycle could never advance past State 2 (founder bug
-                // report 2026-07-06).
-                salesCount: analytics?.total_orders ?? 0,
-                gmvUsd: analytics?.total_revenue_usd ?? 0,
-                primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
+            // Hub dedupe (2026-07-08): this card is the ONE Connect Stripe
+            // button on the page while Stripe is not connected. The shared
+            // component is purely presentational and its connect_stripe CTA
+            // is a plain link to /merchant — which routes correctly from
+            // /dashboard but is a dead self-link here. Intercept that one
+            // click and launch the real Stripe OAuth flow instead, so the
+            // canonical CTA actually works. Only active pre-connect; every
+            // other state's links pass through untouched.
+            <div
+              onClickCapture={(event) => {
+                if (stepStripe) return;
+                const anchor = (event.target as HTMLElement).closest?.("a");
+                if (!anchor || anchor.getAttribute("href") !== "/merchant") return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (!connecting) connectStripe();
               }}
-              variant="card"
-              shareDisabledReason={profileComplete ? undefined : "Complete your profile first"}
-            />
+            >
+              <MerchantNextStep
+                inputs={{
+                  isAuthenticated: true,
+                  hasMerchant: true,
+                  stripeStatus: merchant.stripe_connect_status ?? null,
+                  hasBusinessProfile: Boolean(merchant.business_name),
+                  hasProject: Boolean(firstProject),
+                  offerCount: hasOffer ? 1 : 0,
+                  // Real numbers from the same analytics fetch the stat tiles
+                  // use. These were hardcoded 0/0, which pinned the card on
+                  // "Share your shop with your first customer" forever — the
+                  // lifecycle could never advance past State 2 (founder bug
+                  // report 2026-07-06).
+                  salesCount: analytics?.total_orders ?? 0,
+                  gmvUsd: analytics?.total_revenue_usd ?? 0,
+                  primaryProjectSlug: firstProject?.slug || firstProject?.id || null,
+                }}
+                variant="card"
+                shareDisabledReason={profileComplete ? undefined : "Complete your profile first"}
+              />
+              {/* Feedback for the intercepted Connect Stripe click. Lives
+                  here because the button it belongs to is in the card
+                  above. -mt-6 pulls it back under the card's mb-8. */}
+              {!stepStripe && connecting && (
+                <p className="-mt-6 text-xs text-secondary">Opening Stripe...</p>
+              )}
+              {!stepStripe && !connecting && connectError && (
+                <p role="alert" className="-mt-6 text-xs font-medium text-state-live">
+                  {connectError}
+                </p>
+              )}
+            </div>
           );
         })()}
 
@@ -1630,18 +1668,12 @@ export default function MerchantPage() {
                           This is safe payout setup. Stripe is the same payment service Whatnot, Shopify, and Uber Eats use to pay their sellers. DUM Club never sees or stores your bank info. Stripe handles every sale and pays you directly.
                         </div>
                       </div>
-                      <button
-                        onClick={connectStripe}
-                        disabled={connecting}
-                        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-mint-fill px-6 text-sm font-bold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                      >
-                        {connecting ? "Opening Stripe..." : "Connect Stripe →"}
-                      </button>
-                      {connectError && (
-                        <p role="alert" className="mt-2 text-xs font-medium text-rose-300">
-                          {connectError}
-                        </p>
-                      )}
+                      {/* No second button here (hub dedupe, 2026-07-08):
+                          the Next Step card above is the one Connect
+                          Stripe CTA on this page. Say each thing once. */}
+                      <div className="mt-3 text-xs text-muted">
+                        Use the Connect Stripe button above when you&apos;re ready.
+                      </div>
                     </>
                   )}
                 </div>
