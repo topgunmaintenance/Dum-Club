@@ -676,9 +676,10 @@ async def stripe_prefill(current_user: dict = Depends(get_current_user)):
     stripe.api_key = secret
 
     try:
-        account = await asyncio.run_in_executor(
-            None, stripe.Account.retrieve, connect_id
-        )
+        # asyncio.run_in_executor does not exist as a module function
+        # (it's a loop method) — the old call raised AttributeError on
+        # every request (fix/stripe-connect-500, 2026-07-08).
+        account = await asyncio.to_thread(stripe.Account.retrieve, connect_id)
     except Exception as exc:
         # Fail-closed: never surface a raw error; the form just stays blank.
         print(f"[business] stripe-prefill Account.retrieve failed for {connect_id}: {type(exc).__name__}")
