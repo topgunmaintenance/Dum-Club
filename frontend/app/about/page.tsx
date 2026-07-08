@@ -171,8 +171,8 @@ export default function AboutPage() {
             Starting at $39/month plus a 1.5% sales fee. Always.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-secondary">
-            Join the first 100 merchants. Get 30 days free and lock in
-            founding pricing for life. Cancel any time during the trial.
+            Every business gets 30 days free. Your customers see you, ask
+            questions, and buy on the spot. Cancel any time during the trial.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -185,7 +185,7 @@ export default function AboutPage() {
               href="/merchant"
               className="inline-flex h-11 items-center justify-center rounded-xl border border-default bg-surface-card px-5 text-sm font-semibold text-brand-navy transition hover:border-strong"
             >
-              Claim Your Founding Spot
+              Start Free for 30 Days
             </Link>
           </div>
         </section>

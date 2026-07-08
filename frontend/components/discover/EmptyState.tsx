@@ -20,7 +20,7 @@ export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive,
     return (
       <div className="rounded-2xl border border-default bg-surface-card p-10 text-center">
         <h2 className="text-xl font-extrabold tracking-tight text-brand-navy sm:text-2xl">
-          We&apos;re onboarding the founding 100 merchants.
+          We&apos;re onboarding our first local businesses.
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-secondary">
           Be the first in your category.
@@ -30,7 +30,7 @@ export function EmptyState({ variant, errorMessage, onClearFilters, onClearLive,
             href="/merchant"
             className="inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
           >
-            Claim a founding spot →
+            Put your shop on air →
           </a>
           <a
             href="/about#contact"

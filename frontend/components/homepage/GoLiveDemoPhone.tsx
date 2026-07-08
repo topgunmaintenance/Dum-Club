@@ -345,7 +345,7 @@ export function GoLiveDemoPhone() {
         <p className="mt-1.5 text-[12px] text-white/40">
           Interactive demo with sample data.{" "}
           <Link href="/merchant" className="font-semibold text-white/70 underline underline-offset-2 hover:text-white">
-            Ready for real? Claim your founding spot →
+            Ready for real? Start free for 30 days →
           </Link>
         </p>
       </div>

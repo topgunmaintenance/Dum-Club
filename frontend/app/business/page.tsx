@@ -72,21 +72,19 @@ function BusinessPageInner() {
         </div>
 
         <div className="relative mx-auto max-w-4xl text-center">
-          {/* Founding-100 scarcity pill removed (PR: hide public
-              merchant-count metrics). The "30 days free / lock in
-              founding pricing for life" copy still appears in the
-              hero paragraph below, so no message is lost — only the
-              live count is suppressed. */}
+          {/* Scarcity pill removed (PR: hide public merchant-count
+              metrics). The trial pitch lives in the hero paragraph
+              below, so no message is lost. */}
 
           <h1 className="text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            Keep Everything{" "}
+            Your shop. Your show.{" "}
             <span className="text-brand-teal">
-              You Earn.
+              Your town watching.
             </span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary sm:text-lg">
-            Join the first 100 merchants. Get 30 days free and lock in founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%).
+            Live selling for local business, right on your own website. Every business gets 30 days free. Your customers see you, ask questions, and buy on the spot. Flat monthly subscription + 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Keep more of every sale.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -94,7 +92,7 @@ function BusinessPageInner() {
               href="/merchant"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
             >
-              Claim Your Founding Spot →
+              Put Your Shop On Air →
             </Link>
             <Link
               href="/discover"
@@ -165,7 +163,7 @@ function BusinessPageInner() {
               },
               {
                 q: "Is there a free tier?",
-                a: "The first 100 founding merchants get 30 days free and then lock in founding pricing for life. After that, plans start at $39 a month, flat. We charge for the platform so we never have to take a cut of your sales.",
+                a: "Every business gets 30 days free. After the trial, plans start at $39 a month, flat, plus the 1.5% sales fee. The first 100 merchants also keep founding pricing for life, a quiet thank-you for joining early.",
               },
             ].map((f) => (
               <details
@@ -213,7 +211,7 @@ function BusinessPageInner() {
 
       <div className="border-t border-default px-4 py-10 text-center">
         <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted">
-          Stripe-powered payments · 1.5% sales fee · Founding 100 · DUM Club v5.0
+          Stripe-powered payments · 1.5% sales fee · Live selling for local business · DUM Club v5.0
         </p>
       </div>
     </main>
@@ -288,7 +286,7 @@ function OverviewTab({
           </p>
           <div className="mt-12 grid gap-3 sm:grid-cols-3">
             {[
-              { n: "01", title: "Just 1.5% per sale", desc: "Marketplaces take up to 8% per sale and delivery apps take 15 to 30%. DUM Club starts at $39/month plus a 1.5% sales fee. The lowest per-sale rate in live commerce. Founding merchant pricing for the first 100." },
+              { n: "01", title: "Just 1.5% per sale", desc: "Marketplaces take up to 8% per sale and delivery apps take 15 to 30%. DUM Club starts at $39/month plus a 1.5% sales fee. The lowest per-sale rate in live commerce." },
               { n: "02", title: "Stripe pays you direct", desc: "Connect Stripe once. Every sale hits your bank. We never hold your money." },
               { n: "03", title: "Customers come back automatically", desc: "DUM Points and our automatic customer win-back texts turn one-time buyers into repeat customers. Replaces the loyalty + SMS tools you're already paying for." },
             ].map((step) => (
@@ -330,27 +328,24 @@ function OverviewTab({
         </div>
       </section>
 
-      {/* Founding 100 */}
+      {/* Trial CTA */}
       <section>
         <div className="rounded-3xl border border-default bg-gradient-to-br from-brand-teal-soft to-surface-card p-10 text-center">
-          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">Limited · Founding 100</div>
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-brand-teal">Live selling for local business</div>
           <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-primary sm:text-4xl">
-            Join the first 100 merchants.
+            Every business gets 30 days free.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-secondary">
-            Get 30 days free and lock in founding pricing for life. Founding merchant badge permanent on your profile.
+            Live selling right on your own website. Your customers see you, ask questions, and buy on the spot.
           </p>
-          {/* Live "X of 100 founding spots claimed" counter removed —
-              we no longer surface live merchant-count metrics in
-              public surfaces. The card's heading + description and
-              the "Limited · Founding 100" eyebrow still communicate
-              scarcity without revealing the running total. */}
+          {/* Live merchant-count counter stays removed. We do not
+              surface live merchant-count metrics on public surfaces. */}
           <div className="mt-8">
             <Link
               href="/merchant"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover"
             >
-              {programOpen ? "Claim a Founding Spot →" : "Join the Waitlist →"}
+              {programOpen ? "Put Your Shop On Air →" : "Join the Waitlist →"}
             </Link>
           </div>
         </div>
@@ -502,7 +497,7 @@ function CalculatorTab() {
 
           <div className="mt-8 text-center">
             <Link href="/merchant" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
-              Start selling. Founding merchants join free →
+              Start Free for 30 Days →
             </Link>
           </div>
         </div>
@@ -699,7 +694,7 @@ function CompareTab() {
 
         <div className="mt-10 text-center">
           <Link href="/merchant" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-teal px-8 py-4 text-sm font-bold text-black transition hover:bg-brand-teal-hover">
-            Claim Your Founding Spot →
+            Put Your Shop On Air →
           </Link>
         </div>
       </section>

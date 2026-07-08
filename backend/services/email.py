@@ -285,9 +285,9 @@ OUTREACH_TEMPLATES: dict = {
             "8% per sale; DoorDash takes 15-30%. DUM Club is industry-low, "
             "with customer loyalty rewards built in automatically.\n\n"
             "We already set up a store page for you. Want access?\n\n"
-            "We're onboarding our first 100 founding merchants. 30 days "
-            "free, then locked-in founding pricing for life. Spots are "
-            "filling fast.\n\n"
+            "Every business gets 30 days free. Sell live from your own "
+            "website. Your customers see you, ask questions, and buy on "
+            "the spot.\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
             "— Julian\n"
@@ -299,8 +299,8 @@ OUTREACH_TEMPLATES: dict = {
         "body": (
             "Hi {business_name},\n\n"
             "Just circling back on your DUM Club store. Two days ago I "
-            "mentioned we already set one up for you, ready when you are, as a "
-            "founding merchant.\n\n"
+            "mentioned we already set one up for you, ready when you "
+            "are.\n\n"
             "30 days free, cancel any time during the trial. After that "
             "it's a flat subscription plus a 1.5% sales fee per order "
             "(Whatnot takes 8%). Want a look?\n\n"
@@ -311,13 +311,14 @@ OUTREACH_TEMPLATES: dict = {
         ),
     },
     "followup_day5": {
-        "subject": "Still saving your founding spot",
+        "subject": "Your store is still waiting",
         "body": (
             "Hi {business_name},\n\n"
-            "Your founding-merchant spot is still open. Once the 100 "
-            "founding slots are filled, the plan shifts to the standard "
-            "tier, but founding members keep founding pricing for life.\n\n"
-            "Takes 60 seconds to claim.\n\n"
+            "Your DUM Club store is still sitting there ready. People "
+            "shop local because of the person behind the counter. Live "
+            "selling puts you back in front of them, right on your own "
+            "site.\n\n"
+            "Takes 60 seconds to have a look.\n\n"
             "Check what we built for you:\n"
             "{cta_url}\n\n"
             "— Julian\n"
@@ -328,9 +329,9 @@ OUTREACH_TEMPLATES: dict = {
         "subject": "Last ping on your DUM Club store",
         "body": (
             "Hi {business_name},\n\n"
-            "Last note from me on this. Your founding spot is still "
-            "available but I don't want to keep pinging if this isn't a "
-            "fit. No offence taken either way.\n\n"
+            "Last note from me on this. Your store is still there if "
+            "you want it, but I don't want to keep pinging if this "
+            "isn't a fit. No offence taken either way.\n\n"
             "If you'd like to see the store we built for you:\n"
             "{cta_url}\n\n"
             "Otherwise I'll leave you alone.\n\n"

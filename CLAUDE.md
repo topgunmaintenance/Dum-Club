@@ -354,31 +354,41 @@ Browse live sellers + best local deals this week
 - FOUNDING_CAP = 100 (constant in backend/api/routes/merchant.py)
 - After slot 100: standard tiers apply to everyone new
 
-### Canonical wording for founding-pricing copy
+### Canonical wording for merchant-offer copy
 This wording is mandatory across all merchant-facing
-surfaces. Founder doctrine update May 2026: founding offer
-language now explicitly commits to lifelong founding-tier
-pricing for the first 100 merchants. The prior "preferred
-founding pricing after launch" wording was vague about what
-the merchant actually pays after the trial; the new line ties
-the founding tier to the merchant for the life of the
-account.
+surfaces. Founder doctrine update 2026-07-07 (main-street
+pivot): the lead message moved from founding-100 scarcity to
+"every business gets 30 days free, sell live from your own
+site" with main-street humanity. The founding-100 mechanics
+(cap, badge, lifetime price lock) still exist in code and
+still apply to the first 100 merchants, but they are a QUIET
+PERK mentioned after signup, never lead marketing. AI is
+backstage help in our story; the merchant on camera is the
+star. Never position DUM Club as fighting its own AI
+features.
+
+**H1 / headline**:
+> "Your shop. Your show. Your town watching."
 
 **Long form** (signup body, pricing pages, onboarding subhead):
-> "Join the first 100 merchants. Get 30 days free and lock
-> in founding pricing for life."
+> "Live selling for local business, right on your own
+> website. Every business gets 30 days free. Your customers
+> see you, ask questions, and buy on the spot."
+
+**Why line** (used where the pitch needs a reason to believe):
+> "People shop local because of the person behind the
+> counter. Now they can do it from anywhere."
 
 **Supporting line** (always pairs with the long form):
 > "Flat monthly subscription + 1.5% sales fee. Industry-low
 > (Whatnot takes up to 8%). Keep more of every sale."
 
-**Short form / scarcity pill / banner**:
-> "30 days free · Lock in founding pricing for life"
+**Short form / pill / banner**:
+> "30 days free · Live selling for local business"
 
 **CTA button labels (pick the one that fits the surface)**:
-- "Claim Your Founding Spot"
+- "Put Your Shop On Air"
 - "Start Free for 30 Days"
-- "Lock In Founding Pricing"
 
 Forbidden phrasing (sweep on sight):
 - "free forever" / "$0 forever" — implies the platform is
@@ -397,8 +407,14 @@ Forbidden phrasing (sweep on sight):
 - "No credit card" / "no card required" — contradicts the
   card-upfront Checkout flow; the honest lines are "Nothing is
   charged today" and "Cancel any time during the trial"
+- "Join the first 100 merchants" / "Claim Your Founding Spot" /
+  "Lock In Founding Pricing" / "Limited · Founding 100" — retired
+  as LEAD copy by the 2026-07-07 main-street pivot. The founding
+  program itself lives on as a quiet perk; a small post-signup or
+  below-the-fold mention of the founding badge/price lock is fine,
+  scarcity-first headlines are not.
 - Hard "First 100 merchants get in free" / "first 100 free"
-  energy outside of the canonical phrasing above
+  energy anywhere
 - "X of 100 founding spots claimed" / "<N> of 100" / any live
   merchant-count display — we do NOT surface live traction
   metrics to public visitors or competitors during the
@@ -411,10 +427,11 @@ Forbidden phrasing (sweep on sight):
 - DUM Points framed as investments / tradable assets / yield-
   bearing instruments
 
-Scarcity / urgency is now carried by static copy ("Limited ·
-Founding 100" eyebrow, "Join the first 100 merchants" H2,
-"30 days free · Lock in founding pricing for life" pill copy)
-— never by a live counter.
+Scarcity / urgency is retired as a lead device (main-street
+pivot 2026-07-07). The offer carries the message: 30 days
+free, live selling from your own site. No countdowns, no
+live counters, no "spots filling fast" energy anywhere on
+public surfaces.
 
 ### Standard Tiers (seller 101+)
 

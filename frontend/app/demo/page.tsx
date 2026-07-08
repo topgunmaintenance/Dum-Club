@@ -362,8 +362,8 @@ export default function DemoPage() {
 
         <div className="mt-12 text-center">
           <p className="text-sm font-semibold text-secondary">
-            Join the first 100 merchants. Get 30 days free and lock in
-            founding pricing for life.
+            Live selling for local business, right on your own website.
+            Every business gets 30 days free.
           </p>
           <p className="mt-1 text-xs text-muted">
             Flat monthly subscription + 1.5% sales fee. Industry-low
@@ -373,7 +373,7 @@ export default function DemoPage() {
             href="/merchant"
             className="mt-5 inline-block rounded-xl bg-mint-fill px-8 py-3.5 text-sm font-black text-mint-fill-ink transition hover:brightness-95"
           >
-            Claim Your Founding Spot
+            Put Your Shop On Air
           </Link>
         </div>
       </div>
