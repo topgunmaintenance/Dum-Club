@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "For Business. Pricing, Calculators & Comparisons | DUM Club",
+  title: "For Business. Sell Live From Your Own Site | DUM Club",
   description:
-    "See why sellers leave Whatnot for DUM Club. Starting at $39/month plus a 1.5% sales fee, automatic customer win-back texts, and loyalty built in. Compare fees, calculate savings, pick your tier.",
+    "Live selling for local business, right on your own website. Every business gets 30 days free. Your customers see you, ask questions, and buy on the spot.",
 };
 
 export default function BusinessLayout({ children }: { children: React.ReactNode }) {

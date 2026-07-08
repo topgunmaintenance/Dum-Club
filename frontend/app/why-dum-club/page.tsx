@@ -428,7 +428,7 @@ export default function WhyDumClubPage() {
               Put your shop on air
             </Link>
             <Link
-              href="/business?tab=calculator"
+              href="/pricing#calculator"
               className="inline-flex h-12 items-center justify-center rounded-xl border border-default px-7 text-sm font-bold text-primary transition hover:border-strong"
             >
               Run the fee calculator
