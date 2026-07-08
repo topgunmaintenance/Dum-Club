@@ -1,9 +1,10 @@
 -- 082_commission_1point5.sql
 -- Raise the platform sales fee from 1% to 1.5% on every plan tier.
 --
--- ⚠️  NOT YET APPLIED TO PRODUCTION. This file ships in the PR for review;
---     the operator applies it to the prod DB (snzodohibhxenqwdklxs) out of
---     band. Until then the live charged rate stays at migration 054's 0.0100.
+-- ✅ APPLIED TO PRODUCTION. Verified live 2026-07-08: every plan_limits row
+--     was already at 0.0150 (applied out of band ~2026-06-11, confirmed by the
+--     2026-06-16 order carrying a $0.15 fee on $10.00). Re-running is a no-op
+--     (idempotent). The live charged rate is 1.5% on every tier.
 --
 -- DOCTRINE: the owner has explicitly authorized raising the cap from 1% to
 -- 1.5% (CLAUDE.md §12 Rule 1 updated in this same PR). Supersedes 053's
