@@ -1577,9 +1577,10 @@ async def stripe_connect_status(current_user: dict = Depends(get_current_user)):
     stripe.api_key = _STRIPE_SECRET
 
     try:
-        account = await asyncio.run_in_executor(
-            None, stripe.Account.retrieve, connect_id
-        )
+        # asyncio.run_in_executor does not exist as a module function
+        # (it's a loop method) — the old call raised AttributeError on
+        # every request (fix/stripe-connect-500, 2026-07-08).
+        account = await asyncio.to_thread(stripe.Account.retrieve, connect_id)
     except Exception as exc:
         print(f"[merchant] stripe-connect/status Account.retrieve failed for {connect_id}: {exc!r}")
         raise HTTPException(status_code=502, detail="stripe_account_retrieve_failed")
@@ -1729,8 +1730,11 @@ async def stripe_connect_callback(
     )
 
     try:
-        resp = await asyncio.run_in_executor(
-            None,
+        # asyncio.run_in_executor does not exist as a module function
+        # (it's a loop method) — the old call raised AttributeError on
+        # every OAuth exchange, 500ing the callback before Stripe was
+        # ever contacted (fix/stripe-connect-500, 2026-07-08).
+        resp = await asyncio.to_thread(
             lambda: stripe.OAuth.token(grant_type="authorization_code", code=code),
         )
     except stripe.oauth_error.OAuthError as e:
