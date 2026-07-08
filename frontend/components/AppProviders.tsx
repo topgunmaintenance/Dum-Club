@@ -67,6 +67,22 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             createOnLogin: "users-without-wallets",
           },
         },
+        // Kill the WalletConnect (Ethereum) connector entirely. Privy
+        // 2.4.0 creates a wallet_connect_v2 connector on every page
+        // load by default (externalWallets.walletConnect.enabled
+        // defaults to true), and that connector's initialize() builds
+        // a WalletConnectModal, which prefetches the WC explorer
+        // registry (~10 requests to explorer-api.walletconnect.com
+        // w3m/v1/getDesktopListings + getWalletImage) on every public
+        // page view. We never offer external Ethereum wallets — login
+        // is email/Google and the only wallet is the embedded Solana
+        // one — so nothing uses this connector. Disabling it removes
+        // the prefetch without touching login or embedded wallets.
+        externalWallets: {
+          walletConnect: {
+            enabled: false,
+          },
+        },
         // No externalWallets.solana.connectors here, deliberately.
         // Wiring toSolanaWalletConnectors() makes Privy's wallet-proxy
         // iframe pre-fetch the WalletConnect explorer registry
