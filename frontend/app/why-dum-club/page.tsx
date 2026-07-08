@@ -229,7 +229,7 @@ export default function WhyDumClubPage() {
               href="/merchant"
               className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-7 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
             >
-              Claim your founding spot
+              Put your shop on air
             </Link>
             <Link
               href="/pricing"
@@ -239,8 +239,8 @@ export default function WhyDumClubPage() {
             </Link>
           </div>
           <p className="mx-auto mt-5 max-w-xl text-[13px] text-muted">
-            From $39/month plus a 1.5% sales fee. Founding 100 merchants get
-            30 days free and lock in founding pricing for life.
+            From $39/month plus a 1.5% sales fee. Every business gets 30 days
+            free. Cancel any time during the trial.
           </p>
         </Container>
       </Section>
@@ -413,19 +413,19 @@ export default function WhyDumClubPage() {
         <Container size="md" className="text-center">
           <Eyebrow tone="brand">Ready when you are</Eyebrow>
           <Heading level="h2" as="h2" className="mt-3">
-            Join the first 100 merchants.
+            Your shop. Your show. Your town watching.
           </Heading>
           <p className="mx-auto mt-4 max-w-xl text-secondary">
-            Get 30 days free and lock in founding pricing for life. Flat
-            monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot
-            takes up to 8%). Keep more of every sale.
+            Every business gets 30 days free. Flat monthly subscription
+            plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%).
+            Keep more of every sale.
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/merchant"
               className="inline-flex h-12 items-center justify-center rounded-xl bg-brand-teal px-7 text-sm font-bold text-brand-navy transition hover:bg-brand-teal-hover hover:text-white"
             >
-              Claim your founding spot
+              Put your shop on air
             </Link>
             <Link
               href="/business?tab=calculator"

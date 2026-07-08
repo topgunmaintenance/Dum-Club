@@ -709,17 +709,16 @@ export default function MerchantPage() {
     return (
       <div className="min-h-screen bg-surface-card px-4 pb-20 pt-28">
         <div className="mx-auto w-full max-w-md text-center">
-          {/* Founding-100 scarcity pill removed — we no longer surface
-              public merchant-count metrics. The H1 + description below
-              still carry the "30 days free / lock in founding pricing"
-              copy, so the value prop is intact. */}
+          {/* Scarcity pill removed — we no longer surface public
+              merchant-count metrics. The H1 + description below carry
+              the trial pitch, so the value prop is intact. */}
 
           <h1 className="text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
-            Join the first 100 merchants.{" "}
-            <span className="text-mint-text">Lock in founding pricing for life.</span>
+            Your shop. Your show.{" "}
+            <span className="text-mint-text">Your town watching.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-base font-medium text-primary">
-            Get 30 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Cancel any time during the trial.
+            Live selling for local business, right on your own website. Every business gets 30 days free. Your customers see you, ask questions, and buy on the spot. Cancel any time during the trial.
           </p>
           <p className="mx-auto mt-2 max-w-sm text-[13px] font-semibold text-secondary">
             Plans start at $39/month after your trial. Cancel anytime.
@@ -729,7 +728,7 @@ export default function MerchantPage() {
             onClick={() => login()}
             className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-mint-fill px-8 text-[13px] font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90"
           >
-            Claim Your Founding Spot →
+            Put Your Shop On Air →
           </button>
 
           <p className="mt-2 text-[11px] text-secondary">
@@ -813,23 +812,21 @@ export default function MerchantPage() {
 
           {/* ── HERO ──
                Continues the homepage pitch instead of dropping a form
-               in a void. Founding-100 scarcity pill removed — we no
-               longer surface public merchant-count metrics; the H1 +
-               paragraph below still carry "30 days free / lock in
-               founding pricing for life" so the messaging is intact. */}
+               in a void. Scarcity pill removed — we no longer surface
+               public merchant-count metrics; the H1 + paragraph below
+               carry the trial pitch so the messaging is intact. */}
 
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight text-primary sm:text-5xl">
-              Join the first{" "}
+              Your shop. Your show.{" "}
               <span className="text-mint-text" style={{ textShadow: "0 0 30px rgba(0,255,163,0.3)" }}>
-                100 merchants.
-              </span>{" "}
-              Lock in founding pricing for life.
+                Your town watching.
+              </span>
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-medium leading-relaxed text-primary">
               {programOpen
-                ? "Get 30 days free, then keep founding pricing for life. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Cancel any time during the trial."
-                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month plus a 1.5% sales fee per order. Loyalty rewards built in. No card today.`}
+                ? "Live selling for local business, right on your own website. Every business gets 30 days free. Flat monthly subscription plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Cancel any time during the trial."
+                : `Standard plan $${STANDARD_PLAN_PRICE_USD}/month plus a 1.5% sales fee per order. Loyalty rewards built in. Nothing is charged today.`}
             </p>
           </div>
 
@@ -854,7 +851,7 @@ export default function MerchantPage() {
           <div className="mb-4 grid gap-2 rounded-2xl border border-default bg-surface-card p-4 sm:grid-cols-2 sm:p-5">
             {[
               ["💵", "One flat monthly fee + 1.5% per sale. Never more."],
-              ["🎁", "30 days free. Founding pricing locked for life."],
+              ["🎁", "30 days free for every business. Cancel any time during the trial."],
               ["🏦", "Payouts straight to your bank. Buyers cover card fees."],
               ["🤝", "Your customers stay yours. QR, your own site, win-back."],
             ].map(([icon, line]) => (
@@ -867,10 +864,10 @@ export default function MerchantPage() {
 
           <div className="mb-6 rounded-2xl border border-default bg-mint-card p-6 sm:p-8">
             <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-mint-text">
-              {programOpen ? "Claim your founding spot" : "Start a merchant account"}
+              {programOpen ? "Put your shop on air" : "Start a merchant account"}
             </div>
             <h2 className="mb-5 text-2xl font-extrabold text-primary">
-              {programOpen ? "60 seconds. No card." : `$${STANDARD_PLAN_PRICE_USD}/mo. Cancel anytime.`}
+              {programOpen ? "60 seconds to sign up." : `$${STANDARD_PLAN_PRICE_USD}/mo. Cancel anytime.`}
             </h2>
 
             {error && <p className="mb-4 text-sm text-state-live">{error}</p>}
@@ -984,9 +981,9 @@ export default function MerchantPage() {
                 className="w-full rounded-xl bg-mint-fill py-4 text-sm font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
-                  ? "Claiming your spot..."
+                  ? "Setting up your shop..."
                   : programOpen
-                  ? "Claim Your Founding Spot →"
+                  ? "Put Your Shop On Air →"
                   : "Create Merchant Account →"}
               </button>
               <p className="text-center text-[11px] text-secondary">
@@ -1057,7 +1054,7 @@ export default function MerchantPage() {
               {[
                 "Just a 1.5% sales fee per order (Whatnot takes up to 8%, DoorDash takes 15-30%)",
                 "Built-in loyalty rewards bring customers back to your shop and every DUM Club business, so you keep them without paying for ads",
-                "Get 30 days free and lock in founding pricing for life when you join the first 100 merchants",
+                "Every business gets 30 days free, and you can cancel any time during the trial",
               ].map((line) => (
                 <li
                   key={line}
@@ -1364,7 +1361,7 @@ export default function MerchantPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-black">F</span>
               <div>
                 <div className="text-sm font-bold text-mint-text">Founding Merchant</div>
-                <div className="text-xs text-mint-text/60">30 days free · Lock in founding pricing for life · 1.5% sales fee</div>
+                <div className="text-xs text-mint-text/60">30 days free · Founding pricing for life · 1.5% sales fee</div>
               </div>
             </div>
           </div>

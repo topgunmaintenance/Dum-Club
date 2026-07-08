@@ -4,8 +4,8 @@
  * HomeSellPitch — the merchant pitch block that closes the homepage.
  *
  * Renders below the Club home marketplace feed on / only (ClubHome's
- * homeVariant prop): the "Sell Live" headline, the canonical Founding-100
- * offer copy (CLAUDE.md §3), the prove-it's-simple stat row, and the
+ * homeVariant prop): the "Your shop. Your show." headline, the canonical
+ * trial offer copy (CLAUDE.md §3), the prove-it's-simple stat row, and the
  * interactive go-live phone demo inside a dark section.
  *
  * This replaces the old /welcome marketing page (removed 2026-07-01) —
@@ -21,14 +21,15 @@ export function HomeSellPitch() {
       {/* ── SELL-LIVE PITCH ── */}
       <section className="mt-16 px-4 text-center sm:mt-20">
         <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted">
-          Limited · Founding 100
+          Live selling for local business
         </p>
         <h2 className="mx-auto mt-3 max-w-3xl text-[clamp(32px,6vw,52px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-primary">
-          Sell Live. Keep More of Every Dollar.
+          Your shop. Your show. Your town watching.
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-          Join the first 100 merchants. Get 30 days free and lock in founding
-          pricing for life.
+          Live selling for local business, right on your own website. Every
+          business gets 30 days free. Your customers see you, ask questions,
+          and buy on the spot.
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-relaxed text-secondary sm:text-base">
           Flat monthly subscription + 1.5% sales fee. Industry-low (Whatnot
@@ -59,7 +60,7 @@ export function HomeSellPitch() {
             href="/merchant"
             className="inline-flex items-center gap-2 rounded-xl bg-mint-fill px-6 py-3 text-sm font-bold uppercase tracking-[0.08em] text-mint-fill-ink shadow-dum-card transition hover:brightness-105"
           >
-            Claim Your Founding Spot
+            Put Your Shop On Air
           </Link>
           <a
             href="#demo"

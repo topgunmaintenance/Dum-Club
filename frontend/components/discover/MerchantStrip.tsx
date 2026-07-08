@@ -14,13 +14,13 @@ export function MerchantStrip() {
         Own a local business?
       </p>
       <p className="mt-2 text-sm font-medium text-secondary sm:text-base">
-        Flat $39/mo plus 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Lock in founding pricing for life.
+        Flat $39/mo plus 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Every business gets 30 days free.
       </p>
       <Link
         href="/merchant"
         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-mint-fill px-6 py-3 text-sm font-bold uppercase tracking-[0.08em] text-mint-fill-ink shadow-dum-card transition hover:brightness-105"
       >
-        Claim Your Founding Spot
+        Put Your Shop On Air
       </Link>
     </section>
   );

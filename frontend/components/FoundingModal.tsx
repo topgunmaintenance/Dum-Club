@@ -2,13 +2,15 @@
 
 /**
  * FoundingModal — first-visit merchant-recruitment "pop".
+ * (Name kept for history; copy now pitches the 30-day trial, not the
+ * founding-100 scarcity offer.)
  *
  * Shows once per visitor on the homepage ("/") only, after a short delay,
- * leading with the always-true fee hook (Whatnot up to 8% vs DUM Club 1.5%) and the
- * canonical founding offer, with a "Claim Your Founding Spot" CTA to /merchant.
+ * leading with the always-true fee hook (Whatnot up to 8% vs DUM Club 1.5%)
+ * and the trial pitch, with a "Put Your Shop On Air" CTA to /merchant.
  *
- * Doctrine: canonical founding copy only (CLAUDE.md §3) — 30 days free + lock
- * in founding pricing for life; NEVER a live "X of 100" counter; "Whatnot takes
+ * Doctrine: canonical trial copy only (CLAUDE.md §3) — 30 days free for
+ * every business; NEVER a live "X of 100" counter; "Whatnot takes
  * 8%" is the competitor's top published fee (their site says ≤8%). Dismissible (X / backdrop / Esc /
  * "Maybe later"); the localStorage flag stops it nagging on return visits.
  * Self-gates so the giant homepage file needs no edit — mounted once in the
@@ -56,7 +58,7 @@ export function FoundingModal() {
       className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Founding merchant offer"
+      aria-label="Merchant trial offer"
     >
       <button
         type="button"
@@ -79,14 +81,14 @@ export function FoundingModal() {
 
         <div className="p-6 sm:p-7">
           <span className="inline-block rounded-full bg-brand-teal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-brand-navy">
-            Limited · Founding 100
+            30 days free · Live selling for local business
           </span>
 
           <h2 className="mt-3 text-xl font-bold leading-snug text-primary sm:text-2xl">
-            Join the first 100 merchants.
+            Your shop. Your show. Your town watching.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-secondary">
-            Get 30 days free and lock in founding pricing for life. Flat monthly
+            Every business gets 30 days free. Flat monthly
             subscription + 1.5% sales fee. Industry-low. Keep more of every sale.
           </p>
 
@@ -108,7 +110,7 @@ export function FoundingModal() {
             onClick={dismiss}
             className="mt-5 block w-full rounded-xl bg-brand-teal py-3 text-center text-sm font-bold text-black transition hover:bg-brand-teal-hover hover:text-white"
           >
-            Claim Your Founding Spot
+            Put Your Shop On Air
           </Link>
           <button
             type="button"
