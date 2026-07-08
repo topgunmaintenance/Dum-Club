@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
-import { DumPill } from "./DumPill";
 import { LiveActivityTicker } from "./LiveActivityTicker";
 import { SiteFooter } from "./SiteFooter";
 import { BottomTabNav } from "./BottomTabNav";
@@ -128,7 +127,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           storefront, embed, and admin/dashboard surfaces; renders a spacer so
           content + footer clear it. Desktop keeps the top navbar. */}
       <BottomTabNav />
-      <DumPill />
       {/* Deploy indicator — low-visibility, bottom-right. Hidden in
           production. Gated on `mounted` so SSR + first client paint
           stay identical and React hydration doesn't disagree about
