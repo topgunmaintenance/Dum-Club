@@ -80,7 +80,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in Starter",
       "Featured placement in category browse",
-      "Automatic customer win-back texts (point reminders)",
+      "Automatic customer win-back texts (coming soon)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
       "700 viewer-hours included, then $0.12 per viewer-hour",
@@ -97,7 +97,7 @@ const TIERS: Tier[] = [
     tagline: "Replace your social agency too.",
     features: [
       "Everything in Growth",
-      "AI social media management (IG / TikTok / FB)",
+      "AI social media posting to IG / TikTok / FB (coming soon)",
       "Homepage featured slot",
       "Cross-business deal promotions",
       "Full analytics dashboard",
@@ -117,7 +117,7 @@ const TIERS: Tier[] = [
       "DUM Points under your brand name",
       "Custom rewards rules + earning rates",
       "API access for your own platform",
-      "Dedicated automatic customer win-back texts",
+      "Dedicated automatic customer win-back texts (coming soon)",
       "For mid-size businesses building loyalty",
       "Custom viewer-hour budget, $0.10 per viewer-hour over it",
       "1.5% sales fee on every order",
@@ -149,8 +149,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Yes. Stripe is the only payment processor on DUM Club, the same one Whatnot, Square, and Shopify use. Connecting takes about 60 seconds via Stripe Connect, and payouts land in your bank on Stripe's standard schedule.",
   },
   {
-    q: "What's included in the automatic customer win-back texts?",
-    a: "Automated point-expiry reminders, deal pushes when customers haven't visited in a while, and a way for customers to find nearby deals across the network (a detailer's customer might get a pizza-shop coupon). Replaces what most businesses pay $500 to $1,000 a month for via direct mail.",
+    q: "What will the automatic customer win-back texts include?",
+    a: "This feature is coming soon. It will send automated point-expiry reminders, deal pushes when customers haven't visited in a while, and a way for customers to find nearby deals across the network (a detailer's customer might get a pizza-shop coupon). It replaces what most businesses pay $500 to $1,000 a month for via direct mail.",
   },
   {
     q: "How is this different from Shopify or Square?",
@@ -184,9 +184,9 @@ export default function PricingPage() {
               Keep more of every dollar.
             </Heading>
             <p className="mx-auto mt-6 max-w-2xl text-base text-secondary sm:text-lg">
-              Live selling, loyalty, automatic customer win-back texts, and
-              local flash sales. One monthly fee replaces five separate bills.
-              Every business gets 30 days free.
+              Live selling, loyalty, and local flash sales, with automatic
+              customer win-back texts coming soon. One monthly fee replaces a
+              stack of separate bills. Every business gets 30 days free.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button href="/merchant" variant="primary" size="lg">

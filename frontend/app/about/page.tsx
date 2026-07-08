@@ -139,8 +139,8 @@ export default function AboutPage() {
                 body: "Customers earn points at every DUM Club merchant and redeem at any other. Built-in switching cost for your customers.",
               },
               {
-                label: "Automatic customer win-back texts (Growth+)",
-                body: "Automated point-expiry reminders, plus customers can find nearby deals across the network. Replaces $500 to $1,000 a month in direct-mail spend.",
+                label: "Automatic customer win-back texts (Growth+, coming soon)",
+                body: "Automated point-expiry reminders, plus customers can find nearby deals across the network. Will replace $500 to $1,000 a month in direct-mail spend.",
               },
               {
                 label: "Local flash sales",

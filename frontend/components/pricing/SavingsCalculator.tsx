@@ -134,7 +134,7 @@ export function SavingsCalculator() {
             Stop losing customers. <span className="text-brand-teal">Automate repeat business.</span>
           </h2>
           <p className="mb-8 max-w-xl text-sm text-secondary">
-            DUM Points bring customers back automatically. Our automatic customer win-back texts send reminders, deal pushes, and expiry alerts.
+            DUM Points bring customers back automatically. Automatic customer win-back texts are coming soon: reminders, deal pushes, and expiry alerts.
           </p>
 
           <div className="grid gap-8 sm:grid-cols-2">
