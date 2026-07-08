@@ -118,7 +118,7 @@ export default function TechnologyPage() {
               {
                 label: "Payments",
                 title: "Stripe + Stripe Connect",
-                body: "Card payments via Stripe Checkout. Merchants onboard via Stripe Connect Standard so payouts go directly to their bank, not through DUM Club.",
+                body: "Card payments via Stripe Checkout. Merchants onboard via Stripe Connect Express so payouts go directly to their bank, not through DUM Club.",
               },
               {
                 label: "Auth",
