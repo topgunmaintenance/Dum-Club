@@ -930,6 +930,15 @@ export default function ProjectPage() {
   // (orders, market etc) that the visitor never sees.
   const showOwnerInlineUi = isOwner && !viewAsCustomer;
 
+  // owner-view-flash fix (2026-07-07): latch flips true the first time
+  // Privy auth finishes resolving and never flips back. The skeleton
+  // gate down in the render path only honors `authLoading` while this
+  // is still false, so a mid-session token re-sync (which briefly sets
+  // authLoading again) can never unmount an already-rendered tree.
+  // That matters because IVSStageHost must not remount mid-broadcast.
+  const authResolvedOnceRef = useRef(false);
+  if (!authLoading) authResolvedOnceRef.current = true;
+
   // Whatnot-style focused seller studio: while the owner is actually
   // broadcasting via IVS, the live+offers grid below adds a desktop shop
   // rail (pin any active offer) and moves chat into its own column,
@@ -3877,6 +3886,53 @@ const heroUtility =
       : tokenMeta.supply
       ? formatNumber(Number(tokenMeta.supply), 0)
       : "—";
+
+  // ── Auth-resolution gate (owner-view-flash fix, 2026-07-07) ─────
+  // `isOwner` defaults to false while Privy auth is still resolving, so
+  // a hard load of the owner's own page used to flash the public
+  // visitor view (generic avatar header, "isn't live right now" notify
+  // panel) for a beat before snapping into the owner console. This gate
+  // bridges ONLY the unresolved window with a neutral skeleton; it sits
+  // before the first return so no subtree (IVSStageHost included) ever
+  // mounts and then gets yanked. Two conditions, both auth-resolution
+  // state, deliberately NOT `authenticated`:
+  //   - authLoading: Privy not ready / login sync in flight. The moment
+  //     auth resolves this goes false, so a logged-out visitor gets the
+  //     public view immediately, never a lingering skeleton.
+  //   - ownerStatePending: auth resolved to a user whose ids match this
+  //     project's owner, but the isOwner state (set in a post-paint
+  //     effect) hasn't caught up yet. Bridges that one frame. Always
+  //     false for visitors and for the resolved owner, so it's
+  //     transient by construction.
+  const ownerStatePending =
+    !isOwner &&
+    !!project &&
+    Boolean(
+      (authUser?.privyId && project.privy_id && authUser.privyId === project.privy_id) ||
+        (authUser?.walletAddress && project.wallet_address && authUser.walletAddress === project.wallet_address)
+    );
+  if ((authLoading && !authResolvedOnceRef.current) || ownerStatePending) {
+    return (
+      <div className="min-h-screen bg-surface-page text-primary" aria-busy="true">
+        <span className="sr-only">Loading</span>
+        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6" aria-hidden="true">
+          <div className="h-4 w-40 animate-pulse rounded bg-surface-muted" />
+          <div className="mt-3 overflow-hidden rounded-3xl border border-default bg-surface-card shadow-dum-card">
+            <div className="h-36 w-full animate-pulse bg-surface-muted sm:h-52" />
+            <div className="px-5 pb-6 sm:px-8">
+              <div className="-mt-10 h-20 w-20 animate-pulse rounded-2xl border-4 border-surface-card bg-surface-muted sm:h-24 sm:w-24" />
+              <div className="mt-4 h-7 w-64 animate-pulse rounded-lg bg-surface-muted" />
+              <div className="mt-3 h-4 w-44 animate-pulse rounded bg-surface-muted" />
+            </div>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="h-40 animate-pulse rounded-3xl border border-default bg-surface-card" />
+            <div className="h-40 animate-pulse rounded-3xl border border-default bg-surface-card" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Clean offline buyer storefront ──────────────────────────────
   // Focused, mock-matching render for the most common case: a visitor on
