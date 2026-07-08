@@ -1030,7 +1030,17 @@ export default function DashboardPage() {
               <div className="rounded-2xl border border-default bg-surface-card p-5">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Page Views</div>
                 <div className="mt-1 font-mono text-2xl font-bold text-brand-navy">{(analytics.total_views || 0).toLocaleString()}</div>
-                <div className="mt-1 text-[11px] text-muted">across all projects</div>
+                <div className="mt-1 text-[11px] text-muted">every page load, incl. repeat visits</div>
+              </div>
+              {/* dashboard-visitor-truth (2026-07-07): raw loads AND real
+                  people, side by side, so a merchant always knows exactly
+                  what each number means. Unique visitors come from the
+                  privacy-first events table (deduped per anonymous
+                  visitor); page views are the raw lifetime hit counter. */}
+              <div className="rounded-2xl border border-default bg-surface-card p-5">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Unique Visitors</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-brand-navy">{(analytics.drive_your_market?.unique_visitors || 0).toLocaleString()}</div>
+                <div className="mt-1 text-[11px] text-muted">real people, counted once</div>
               </div>
               <div className="rounded-2xl border border-default bg-surface-card p-5">
                 <div className="text-[10px] uppercase tracking-[0.28em] text-secondary">Sales</div>

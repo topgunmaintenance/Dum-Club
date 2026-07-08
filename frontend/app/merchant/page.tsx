@@ -2071,7 +2071,14 @@ export default function MerchantPage() {
             <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
               <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Page Views</div>
               <div className="mt-2 font-mono text-2xl font-bold text-primary">{analytics?.total_views ?? 0}</div>
-              <div className="text-xs text-muted">total</div>
+              <div className="text-xs text-muted">every page load, incl. repeat visits</div>
+            </div>
+            {/* dashboard-visitor-truth (2026-07-07): pair the raw hit
+                counter with deduped real people, same as /dashboard. */}
+            <div className="rounded-2xl border border-default bg-surface-card p-5 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">Unique Visitors</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-primary">{analytics?.drive_your_market?.unique_visitors ?? 0}</div>
+              <div className="text-xs text-muted">real people, counted once</div>
             </div>
           </div>
         ) : (
