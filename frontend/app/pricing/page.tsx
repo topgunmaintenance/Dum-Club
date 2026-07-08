@@ -4,8 +4,9 @@
  * Replaced the 33-line useEffect redirect to /business?tab=pricing.
  * The redirect produced a 200ms flash, gave Google nothing to index,
  * and forced every "See Pricing" click to load two routes. This is
- * a real page now: tier grid, Enterprise row, Whatnot comparison,
- * FAQ, and a Talk-to-Julian rail.
+ * the single numbers page now: tier grid, Enterprise row, savings
+ * calculator (client island), fee comparison table, FAQ, and a
+ * Talk-to-Julian rail. /business carries the story and links here.
  *
  * Tier numbers are verbatim per CLAUDE.md §3 (single source of
  * truth). Doctrine compliance:
@@ -27,15 +28,17 @@ import {
   Heading,
   Section,
 } from "../../components/ui";
+import { SavingsCalculator } from "../../components/pricing/SavingsCalculator";
+import { CompareTable } from "../../components/pricing/CompareTable";
 
 export const metadata: Metadata = {
-  title: "Pricing | DUM Club",
+  title: "Pricing, Calculator & Comparisons | DUM Club",
   description:
-    "Starting at $39/month plus a 1.5% sales fee. Industry-low (Whatnot takes up to 8%). Every business gets 30 days free.",
+    "Tiers from $39/month plus a 1.5% sales fee. Run the savings calculator and see the fee comparisons. Every business gets 30 days free.",
   openGraph: {
-    title: "Pricing | DUM Club",
+    title: "Pricing, Calculator & Comparisons | DUM Club",
     description:
-      "One flat monthly subscription covers live selling, loyalty, automatic customer win-back texts, and local flash sales. Plus a 1.5% sales fee per order. Industry-low.",
+      "Tiers from $39/month plus a 1.5% sales fee. Run the savings calculator and see the fee comparisons. Every business gets 30 days free.",
     type: "website",
   },
 };
@@ -63,6 +66,8 @@ const TIERS: Tier[] = [
       "Basic sales analytics",
       "Stripe direct payouts",
       "Listed on Discover",
+      "250 viewer-hours of live/replay watching included, then $0.13 per viewer-hour",
+      "1.5% sales fee on every order",
     ],
     ctaLabel: "Start with Starter",
     ctaHref: "/merchant?tier=starter",
@@ -78,6 +83,8 @@ const TIERS: Tier[] = [
       "Automatic customer win-back texts (point reminders)",
       "Google review display on storefront",
       "Best Deals This Week eligibility",
+      "700 viewer-hours included, then $0.12 per viewer-hour",
+      "1.5% sales fee on every order",
     ],
     ctaLabel: "Start with Growth",
     ctaHref: "/merchant?tier=growth",
@@ -95,6 +102,8 @@ const TIERS: Tier[] = [
       "Cross-business deal promotions",
       "Full analytics dashboard",
       "Priority placement in search",
+      "1,500 viewer-hours included, then $0.10 per viewer-hour",
+      "1.5% sales fee on every order",
     ],
     ctaLabel: "Start with Pro",
     ctaHref: "/merchant?tier=pro",
@@ -110,6 +119,8 @@ const TIERS: Tier[] = [
       "API access for your own platform",
       "Dedicated automatic customer win-back texts",
       "For mid-size businesses building loyalty",
+      "Custom viewer-hour budget, $0.10 per viewer-hour over it",
+      "1.5% sales fee on every order",
     ],
     ctaLabel: "Talk to sales",
     ctaHref: "mailto:julian@dum.club?subject=DUM%20Club%20Business%20tier",
@@ -315,6 +326,10 @@ export default function PricingPage() {
                       franchise networks, and grocery groups that want their own
                       loyalty network without building it.
                     </p>
+                    <p className="mt-2 text-[13px] leading-relaxed text-white/70">
+                      Custom viewer-hour budget, $0.08 per viewer-hour over it.
+                      1.5% sales fee on every order.
+                    </p>
                   </div>
                   <a
                     href="mailto:julian@dum.club?subject=DUM%20Club%20Enterprise"
@@ -330,91 +345,17 @@ export default function PricingPage() {
         </Container>
       </Section>
 
-      {/* ── Whatnot vs DUM comparison ─────────────────────────── */}
+      {/* ── Savings calculator (client island) ─────────────────── */}
       <Section spacing="default" bg="muted">
         <Container size="lg">
-          <div className="mb-8 text-center">
-            <Eyebrow tone="navy">The math</Eyebrow>
-            <Heading level="h1" as="h2" className="mt-3">
-              At <span className="text-brand-teal">$10k/month in sales</span>,
-              who keeps more?
-            </Heading>
-            <p className="mx-auto mt-3 max-w-xl text-secondary">
-              Same buyer, same checkout, same Stripe processing. The only
-              difference is who takes a cut.
-            </p>
-          </div>
+          <SavingsCalculator />
+        </Container>
+      </Section>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card variant="surface" padding="lg">
-              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-secondary">
-                Whatnot
-              </div>
-              <div className="mb-4 font-mono text-4xl font-extrabold text-state-live">
-                $1,090<span className="text-base text-secondary"> /month in fees</span>
-              </div>
-              <ul className="space-y-2 text-[13px] text-primary">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-state-live" aria-hidden />
-                  <span>Commission at their 8% top rate on $10,000 = $800</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-state-live" aria-hidden />
-                  <span>2.9% + $0.30 processing = ~$290</span>
-                </li>
-              </ul>
-              <p className="mt-4 text-[12px] text-secondary">
-                Compounds: $100k/month = $10,900/month in fees.
-              </p>
-            </Card>
-
-            <Card variant="surface" padding="lg" className="border-brand-teal ring-1 ring-brand-teal">
-              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-                DUM Club · Growth tier
-              </div>
-              <div className="mb-4 font-mono text-4xl font-extrabold text-brand-navy">
-                $99<span className="text-base text-secondary"> /month flat</span>
-              </div>
-              <ul className="space-y-2 text-[13px] text-primary">
-                <li className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />
-                  <span>1.5% sales fee on $10,000 = $150 (Whatnot would take $800)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal" strokeWidth={2.5} aria-hidden />
-                  <span>Stripe processing paid by the buyer at checkout</span>
-                </li>
-              </ul>
-              <p className="mt-4 text-[12px] text-secondary">
-                $100k/month = same $99. The fee never scales with sales.
-              </p>
-            </Card>
-          </div>
-
-          <p className="mt-8 text-center text-[13px] text-secondary">
-            <span className="font-semibold text-brand-navy">$841/month</span>{" "}
-            saved vs Whatnot at $10k/month ($1,090 in Whatnot fees vs $249
-            all-in on DUM Club), before the loyalty, retention, and AI social
-            tooling Growth includes.
-          </p>
-
-          {/* Per-sale fee vs the field — sourced positioning (#5). */}
-          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-default bg-surface-card p-6">
-            <div className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-brand-teal">
-              Lowest per-sale fee, period
-            </div>
-            <ul className="space-y-1.5 text-[13px] text-primary">
-              <li className="flex items-center justify-between gap-3"><span>Whatnot</span><span className="font-mono text-secondary">up to 8% + 2.9% + $0.30 / sale</span></li>
-              <li className="flex items-center justify-between gap-3"><span>eBay Live</span><span className="font-mono text-secondary">10-15% / sale</span></li>
-              <li className="flex items-center justify-between gap-3"><span>TikTok Shop Live</span><span className="font-mono text-secondary">6% + processing</span></li>
-              <li className="flex items-center justify-between gap-3"><span>Facebook Live</span><span className="font-mono text-secondary">~5% + processing</span></li>
-              <li className="flex items-center justify-between gap-3"><span>Shopify + livestream app</span><span className="font-mono text-secondary">$39+/mo + 2.9% + $0.30 + app fees</span></li>
-              <li className="flex items-center justify-between gap-3 border-t border-default pt-2 font-semibold text-brand-navy"><span>DUM Club</span><span className="font-mono text-brand-teal">$39+/mo + 1.5% / sale</span></li>
-            </ul>
-            <p className="mt-4 text-center text-[12px] text-secondary">
-              Lowest per-sale fee on the list, on your own website, and you keep the customer.
-            </p>
-          </div>
+      {/* ── Fee comparisons ─────────────────────────────────────── */}
+      <Section spacing="default" bg="page">
+        <Container size="lg">
+          <CompareTable />
         </Container>
       </Section>
 
