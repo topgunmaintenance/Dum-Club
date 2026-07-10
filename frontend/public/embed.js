@@ -494,16 +494,20 @@
         "  display: block;",
         "}",
         // Live IVS preview iframe — clipped by .dum-clip's circle.
-        // pointer-events: none so a click anywhere on the bubble
-        // bubbles up to the host-page wrapper's click handler and
-        // opens the overlay (vs. eating clicks inside the iframe).
+        // pointer-events: auto (iOS audio fix, 2026-07-10): the sound
+        // toggle now lives INSIDE this iframe so the unmute tap is a
+        // same-frame gesture — iOS/WebKit ignores an unmute driven by a
+        // cross-frame postMessage. Because the iframe now consumes its
+        // own taps, it forwards ordinary (non-sound) taps to the host
+        // via postMessage { type: "bubble-request-open" } so the overlay
+        // still opens. (Drag now starts from the ring, not the video.)
         "[data-dum-embed-bubble] .dum-clip iframe {",
         "  position: absolute; inset: 0;",
         "  width: 100%; height: 100%;",
         "  border: 0;",
         "  display: block;",
         "  background: #060606;",
-        "  pointer-events: none;",
+        "  pointer-events: auto;",
         "}",
         // When live, the .dum-clip backdrop becomes black so a
         // brief stream-loading flash doesn't show the brand-teal
@@ -1177,6 +1181,11 @@
     window.addEventListener("message", function (ev) {
       var d = ev && ev.data;
       if (d && d.type === "dum-embed-close") closeOverlay();
+      // iOS audio fix (2026-07-10): the bubble iframe is now interactive
+      // so its in-frame speaker button can unmute WebRTC audio within its
+      // own document. Its ordinary taps no longer bubble to the host, so
+      // the iframe asks us to open the overlay explicitly.
+      else if (d && d.type === "bubble-request-open") openOverlay();
     });
 
     function closeOverlay() {
@@ -1261,33 +1270,13 @@
       );
       clip.appendChild(bubbleLiveIframe);
 
-      // Sound toggle: muted preview by default (autoplay rules);
-      // one tap here unmutes IN PLACE - no overlay needed. The tap
-      // supplies the user gesture, the postMessage flips the
-      // preview's <video>. stopPropagation keeps the tap from also
-      // opening the overlay.
-      var soundBtn = document.createElement("button");
-      soundBtn.type = "button";
-      soundBtn.className = "dum-sound";
-      soundBtn.setAttribute("aria-label", "Turn sound on");
-      soundBtn.textContent = "\uD83D\uDD07"; // muted speaker
-      soundBtn.addEventListener("click", function (ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        var turningOn = soundBtn.getAttribute("data-on") !== "1";
-        soundBtn.setAttribute("data-on", turningOn ? "1" : "0");
-        soundBtn.textContent = turningOn ? "\uD83D\uDD0A" : "\uD83D\uDD07";
-        soundBtn.setAttribute("aria-label", turningOn ? "Mute" : "Turn sound on");
-        try {
-          if (bubbleLiveIframe && bubbleLiveIframe.contentWindow) {
-            bubbleLiveIframe.contentWindow.postMessage(
-              { type: turningOn ? "bubble-unmute" : "bubble-mute" },
-              "*"
-            );
-          }
-        } catch (e) { /* messaging hiccup - bubble stays muted */ }
-      });
-      bubble.appendChild(soundBtn);
+      // Sound toggle moved INSIDE the iframe (iOS audio fix,
+      // 2026-07-10). WebKit will not unmute WebRTC audio from a
+      // cross-frame postMessage gesture, so the speaker button now
+      // lives in the /embed/bubble document and unmutes within its own
+      // frame. The bubble page keeps its bubble-unmute/bubble-mute
+      // postMessage listener for back-compat with any cached copy of
+      // this script that still ships the old host-page button.
     } else if (avatarUrl) {
       var img = document.createElement("img");
       img.src = avatarUrl;
