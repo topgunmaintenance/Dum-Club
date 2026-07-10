@@ -46,6 +46,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { API_BASE } from "../../../../lib/apiBase";
+import { setActiveAudio } from "../../../../lib/audioBus";
 
 const IVSStageViewer = dynamic(
   () =>
@@ -120,6 +121,24 @@ export default function BubblePreviewPage() {
     return readCachedBubbleConfig(id);
   });
   const [paused, setPaused] = useState<boolean>(false);
+
+  // The live project id, tracked in a ref so the once-registered
+  // postMessage handler (deps []) can read the CURRENT value when a
+  // cached (old) host-page speaker button asks to unmute. The audio bus
+  // keys on this id — it must match the projectId IVSStageViewer mounts.
+  const liveProjectIdRef = useRef<string | null>(null);
+
+  // Ordinary taps inside the bubble no longer bubble up to the host page
+  // (the iframe is now interactive), so ask the host to open the full
+  // overlay explicitly. embed.js listens for this and calls openOverlay().
+  const requestOpenOverlay = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.parent.postMessage({ type: "bubble-request-open" }, "*");
+    } catch {
+      // opaque / cross-origin parent — nothing we can do, non-fatal
+    }
+  };
 
   // Anonymous viewer id — same shape as the full embed page so the
   // backend's per-viewer rate limiting + viewer-count buckets stay
@@ -357,6 +376,16 @@ export default function BubblePreviewPage() {
     };
   }, [config?.id]);
 
+  // Keep the live project id current for the postMessage handler, and
+  // release the audio bus when the bubble unmounts / goes offline so a
+  // torn-down stream doesn't leave the bus pointing at nothing.
+  useEffect(() => {
+    liveProjectIdRef.current = config?.id ?? null;
+    return () => {
+      if (liveProjectIdRef.current) setActiveAudio(null);
+    };
+  }, [config?.id]);
+
   // Listen for pause / resume so the full overlay can claim the
   // single viewer slot per visitor.
   useEffect(() => {
@@ -367,18 +396,19 @@ export default function BubblePreviewPage() {
       if (data.type === "bubble-pause") setPaused(true);
       else if (data.type === "bubble-resume") setPaused(false);
       else if (data.type === "bubble-unmute" || data.type === "bubble-mute") {
-        // Host-page sound toggle (owner request 2026-07-04): the tap
-        // on the bubble's speaker button is the user gesture, and the
-        // iframe's allow="autoplay" delegates playback permission, so
-        // flipping muted here is allowed by every major browser.
+        // BACK-COMPAT ONLY: an OLD cached copy of embed.js still ships a
+        // host-page speaker button that posts these messages. Current
+        // embed.js has no such button — sound is controlled by the
+        // viewer's own in-iframe speaker (iOS-safe synchronous play). We
+        // still honor the message so a stale host script keeps working on
+        // non-iOS: drive the audio bus so the viewer unmutes the real
+        // <audio> track (the <video> is muted and carries video only).
         const unmute = data.type === "bubble-unmute";
-        document.querySelectorAll<HTMLVideoElement>("video").forEach((v) => {
-          v.muted = !unmute;
-          if (unmute) {
-            v.volume = 1;
-            v.play().catch(() => { /* still paused - fine */ });
-          }
-        });
+        if (unmute) {
+          if (liveProjectIdRef.current) setActiveAudio(liveProjectIdRef.current);
+        } else {
+          setActiveAudio(null);
+        }
       }
     }
     window.addEventListener("message", onMessage);
@@ -434,8 +464,10 @@ export default function BubblePreviewPage() {
           inset: 0,
           background: "#060606",
           overflow: "hidden",
+          cursor: "pointer",
         }}
         aria-label={`${merchantTitle} live preview`}
+        onClick={requestOpenOverlay}
       >
         {ivsActive && !paused ? (
           // The IVSStageViewer renders its own 16:9 video element
@@ -578,17 +610,38 @@ function BubbleIVSWrapper({
           background: #000 !important;
           display: block !important;
         }
-        /* Hide IVSStageViewer's internal overlays inside the
-           bubble: status ("Connecting…"), error ("Retry"), ended,
-           and the "🔊 Tap to hear audio" autoplay-recovery
-           button. The bubble is silent by design; these widgets
-           live in the full overlay only. */
-        .dum-bubble-ivs-host > div > div,
-        .dum-bubble-ivs-host > div > button {
+        /* Hide IVSStageViewer's internal status overlays inside the
+           bubble: "Connecting…", "Retry", and "ended" — inside a 140px
+           circle they read as floating chat. Only the <div> overlays are
+           hidden; the viewer's own compact speaker <button> is KEPT
+           visible (iOS audio fix, 2026-07-10) so the unmute tap fires a
+           synchronous play() inside this iframe's own gesture — the only
+           thing WebKit accepts for unmuted WebRTC audio. */
+        .dum-bubble-ivs-host > div > div {
           display: none !important;
         }
+        /* Reposition the viewer's compact speaker button into the VISIBLE
+           part of the circular bubble. Its default is top-right (right-2
+           top-2) — a rectangular-tile placement whose corner falls OUTSIDE
+           the host's circular clip, so it would be half-hidden and a tap on
+           its clipped half would hit the host page (opening the overlay).
+           Bottom-centre sits on the vertical diameter, always inside the
+           inscribed circle at any bubble size. */
+        .dum-bubble-ivs-host > div > button {
+          top: auto !important;
+          right: auto !important;
+          bottom: 12% !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+        }
       `}</style>
-      <IVSStageViewer projectId={projectId} userId={userId} />
+      {/* preview mode gives IVSStageViewer its compact top-right speaker
+          toggle (a single <button> in both states), whose claimAudio
+          calls a.play() synchronously within the tap — the iOS-safe path.
+          The non-preview controls are a large pill / volume slider that
+          don't fit a 140px bubble and whose owner-state is a <div> the
+          hide rule above would swallow. */}
+      <IVSStageViewer projectId={projectId} userId={userId} preview />
     </div>
   );
 }
