@@ -275,21 +275,29 @@ def _unsubscribe_url(contact: str) -> str:
 # Each template is a dict with subject + plain body text. HTML is
 # rendered by _render_outreach_html below.
 OUTREACH_TEMPLATES: dict = {
+    # Voice contract (outreach-main-street-pass, 2026-07-15): founder
+    # talking to a shop owner. Leads with the person-behind-the-counter
+    # story, never fees-first. Doctrine-canonical numbers only: 30 days
+    # free, flat subscription + 1.5% sales fee, Whatnot "up to 8%"
+    # (never a bare "8%"), delivery apps 15-30%. No scarcity, no
+    # founding-100 lead, no countdowns (pivot 2026-07-07).
     "initial": {
         "subject": "We already built your store",
         "body": (
             "Hi {business_name},\n\n"
-            "How much are you losing in fees every month?\n\n"
-            "We built DUM Club, a platform where you pay a flat monthly "
-            "subscription plus just a 1.5% sales fee per order. Whatnot takes "
-            "8% per sale; DoorDash takes 15-30%. DUM Club is industry-low, "
-            "with customer loyalty rewards built in automatically.\n\n"
-            "We already set up a store page for you. Want access?\n\n"
-            "Every business gets 30 days free. Sell live from your own "
-            "website. Your customers see you, ask questions, and buy on "
-            "the spot.\n\n"
-            "Check what we built for you:\n"
+            "People shop local because of the person behind the counter. "
+            "DUM Club puts you back in front of them: live selling for "
+            "local business, right on your own website. Your customers "
+            "see you, ask questions, and buy on the spot.\n\n"
+            "We went ahead and set up a store page for {business_name} "
+            "so you can see the real thing instead of a pitch:\n"
             "{cta_url}\n\n"
+            "Every business gets 30 days free. After the trial it's a "
+            "flat monthly subscription plus a 1.5% sales fee per order. "
+            "Whatnot takes up to 8% per sale; delivery apps take 15-30%. "
+            "Customer loyalty rewards are built in automatically.\n\n"
+            "Have a look. If it's not for you, one click at the bottom "
+            "stops these emails.\n\n"
             "— Julian\n"
             "DUM Club"
         ),
@@ -298,43 +306,42 @@ OUTREACH_TEMPLATES: dict = {
         "subject": "Quick follow-up on your DUM Club store",
         "body": (
             "Hi {business_name},\n\n"
-            "Just circling back on your DUM Club store. Two days ago I "
-            "mentioned we already set one up for you, ready when you "
-            "are.\n\n"
-            "30 days free, cancel any time during the trial. After that "
-            "it's a flat subscription plus a 1.5% sales fee per order "
-            "(Whatnot takes 8%). Want a look?\n\n"
-            "Check what we built for you:\n"
+            "Just circling back. Two days ago I sent over the store page "
+            "we set up for {business_name}. It's ready when you are:\n"
             "{cta_url}\n\n"
+            "The short version: 30 days free, cancel any time during the "
+            "trial. After that, a flat monthly subscription plus a 1.5% "
+            "sales fee per order. Whatnot takes up to 8%. Keep more of "
+            "every sale.\n\n"
             "— Julian\n"
             "DUM Club"
         ),
     },
     "followup_day5": {
-        "subject": "Your store is still waiting",
+        "subject": "Sell live from your own counter",
         "body": (
             "Hi {business_name},\n\n"
-            "Your DUM Club store is still sitting there ready. People "
-            "shop local because of the person behind the counter. Live "
-            "selling puts you back in front of them, right on your own "
-            "site.\n\n"
-            "Takes 60 seconds to have a look.\n\n"
-            "Check what we built for you:\n"
+            "One thing most shop owners don't know yet: you can go live "
+            "from your counter for twenty minutes and it shows up right "
+            "on your own website. Regulars watch, ask questions, and buy "
+            "on the spot. No new app for them to download, no marketplace "
+            "between you and your customers.\n\n"
+            "Your store page is still ready. Takes 60 seconds to look:\n"
             "{cta_url}\n\n"
             "— Julian\n"
             "DUM Club"
         ),
     },
     "followup_day10": {
-        "subject": "Last ping on your DUM Club store",
+        "subject": "Last note from me",
         "body": (
             "Hi {business_name},\n\n"
-            "Last note from me on this. Your store is still there if "
-            "you want it, but I don't want to keep pinging if this "
-            "isn't a fit. No offence taken either way.\n\n"
-            "If you'd like to see the store we built for you:\n"
+            "Last note from me on this. The store page we set up for "
+            "{business_name} is still there if you want it, but I don't "
+            "want to keep pinging you if this isn't a fit. No offense "
+            "taken either way.\n\n"
             "{cta_url}\n\n"
-            "Otherwise I'll leave you alone.\n\n"
+            "Otherwise I'll leave you alone. Good luck with the shop.\n\n"
             "— Julian\n"
             "DUM Club"
         ),
@@ -356,16 +363,22 @@ def _render_outreach_html(body_text: str, contact: str) -> str:
     with the mandatory unsubscribe link at the bottom."""
     unsub_url = _unsubscribe_url(contact)
     body_html = body_text.replace("\n\n", "</p><p style=\"margin:12px 0;\">").replace("\n", "<br/>")
+    # Light shell (outreach-main-street-pass, 2026-07-15): doctrine
+    # ships LIGHT, and a plain personal-looking note both matches the
+    # founder voice and lands in inboxes better than a dark branded
+    # card. White surface, primary-ink text, mint-text wordmark —
+    # tokens mirror frontend/app/globals.css. The CAN-SPAM unsubscribe
+    # footer is mandatory — DO NOT remove.
     return f"""
-    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0a0a0a;color:#e4e4e7;border-radius:12px;">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#4ade80;margin-bottom:16px;">DUM Club</div>
-      <div style="color:#e4e4e7;font-size:14px;line-height:1.6;">
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#ffffff;color:#0B1220;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.2em;color:#00A36C;margin-bottom:16px;">DUM Club</div>
+      <div style="color:#0B1220;font-size:14px;line-height:1.6;">
         <p style="margin:12px 0;">{body_html}</p>
       </div>
-      <hr style="border:none;border-top:1px solid #27272a;margin:28px 0 16px;" />
-      <p style="color:#52525b;font-size:11px;line-height:1.5;margin:0;">
+      <hr style="border:none;border-top:1px solid #EEF1F5;margin:28px 0 16px;" />
+      <p style="color:#6B7280;font-size:11px;line-height:1.5;margin:0;">
         You're receiving this because DUM Club reached out about bringing your business onto the platform.
-        Don't want these? <a href="{unsub_url}" style="color:#71717a;text-decoration:underline;">Unsubscribe</a>.
+        Don't want these? <a href="{unsub_url}" style="color:#6B7280;text-decoration:underline;">Unsubscribe</a>.
       </p>
     </div>
     """

@@ -41,6 +41,7 @@ System in CLAUDE.md.
 24. [x] embed-viewer-count-sync          — `feature/embed-viewer-count-sync` · 2026-07-15
 25. [x] embed-live-transition            — `feature/embed-live-transition` · 2026-07-15
 26. [x] embed-live-mobile-layout         — `feature/embed-live-mobile-layout` · 2026-07-15
+27. [x] outreach-main-street-pass        — `feature/outreach-main-street-pass` · 2026-07-15
 
 ## Notes
 
