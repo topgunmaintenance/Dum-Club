@@ -224,6 +224,42 @@
     // reserved for real broadcasts; verifier finding 2026-07-15).
     return "Next show " + label;
   }
+
+  // ── Shared viewer-count painter (embed-viewer-count-sync,
+  // 2026-07-15). One rendering rule for EVERY watching chip: the
+  // on-bubble pill, the urgency-banner chip, and the viewer-only
+  // panel pill all carry [data-dum-embed-viewers-label] on their
+  // text span and are repainted together from the latest session
+  // reading. Before this, the banner chip kept its build-time
+  // count while the bubble pill refreshed from the iframe's
+  // postMessage — two different numbers on screen at once
+  // (verified live 2026-07-15: "7 watching" banner vs "4 watching"
+  // bubble). Honesty rule unchanged: hidden entirely at 0/unknown,
+  // never invented or padded.
+  function paintViewerCount(session) {
+    var count =
+      session &&
+      typeof session.viewer_count === "number" &&
+      session.viewer_count > 0
+        ? session.viewer_count
+        : 0;
+    var txt = count === 1 ? "1 watching" : count + " watching";
+    var labels = document.querySelectorAll("[data-dum-embed-viewers-label]");
+    for (var i = 0; i < labels.length; i++) {
+      labels[i].textContent = txt;
+      var chip = labels[i].parentNode;
+      if (!chip) continue;
+      if (chip.classList && chip.classList.contains("dum-bubble-viewers")) {
+        // The bubble pill's visibility is CSS-driven (.is-visible,
+        // shown only while .is-live) — toggle the class, don't
+        // fight the stylesheet with inline display.
+        if (count > 0) chip.classList.add("is-visible");
+        else chip.classList.remove("is-visible");
+      } else if (chip.style) {
+        chip.style.display = count > 0 ? "" : "none";
+      }
+    }
+  }
   // Full /embed-config response. is_live, ivs_stage_arn, and
   // pinned_offer all live at the TOP LEVEL of that payload — they
   // are NOT inside popin_config. Storing only popinConfig (the
@@ -377,6 +413,17 @@
                           vBubbleEl.classList.add("has-schedule");
                         } else {
                           vBubbleEl.classList.remove("has-schedule");
+                        }
+                        // Watching chips (embed-viewer-count-sync):
+                        // repaint every chip from this poll's
+                        // session reading so the banner chip can't
+                        // drift from the bubble pill between
+                        // bubble-offers messages. Only when the
+                        // payload actually carries a session — a
+                        // degraded/fallback response must not blank
+                        // a fresher iframe-sourced count.
+                        if (next.live_session) {
+                          paintViewerCount(next.live_session);
                         }
                       }
                     }
@@ -1477,22 +1524,13 @@
     var bubbleViewersDot = document.createElement("span");
     bubbleViewersDot.className = "dum-bubble-viewers-dot";
     var bubbleViewersLabel = document.createElement("span");
+    bubbleViewersLabel.setAttribute("data-dum-embed-viewers-label", "");
     bubbleViewersPill.appendChild(bubbleViewersDot);
     bubbleViewersPill.appendChild(bubbleViewersLabel);
+    // Delegates to the shared painter so this pill can never
+    // disagree with the panel chips (embed-viewer-count-sync).
     function updateBubbleViewers(session) {
-      var count =
-        session &&
-        typeof session.viewer_count === "number" &&
-        session.viewer_count > 0
-          ? session.viewer_count
-          : 0;
-      if (count > 0) {
-        bubbleViewersLabel.textContent =
-          count === 1 ? "1 watching" : count + " watching";
-        bubbleViewersPill.classList.add("is-visible");
-      } else {
-        bubbleViewersPill.classList.remove("is-visible");
-      }
+      paintViewerCount(session);
     }
     updateBubbleViewers(liveSession);
     updateVideoPill(embedConfig && embedConfig.active_video);
@@ -1751,6 +1789,7 @@
           var vDot = document.createElement("span");
           vDot.className = "dum-viewers-dot";
           var vLabel = document.createElement("span");
+          vLabel.setAttribute("data-dum-embed-viewers-label", "");
           vLabel.textContent =
             viewersCount === 1 ? "1 watching" : viewersCount + " watching";
           vChip.appendChild(vDot);
@@ -1771,6 +1810,7 @@
         var vOnlyDot = document.createElement("span");
         vOnlyDot.className = "dum-cd-dot";
         var vOnlyLabel = document.createElement("span");
+        vOnlyLabel.setAttribute("data-dum-embed-viewers-label", "");
         var vc = sessionData.viewer_count;
         vOnlyLabel.textContent = vc === 1 ? "1 watching" : vc + " watching";
         vOnly.appendChild(vOnlyDot);
