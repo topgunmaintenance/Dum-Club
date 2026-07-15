@@ -58,22 +58,22 @@ followers — big ones won't move). Their pain: up to 8% + processing on
 every sale.
 
 **The pitch (memorize the numbers):**
-> Flat $39/month + 1.5% per sale. Whatnot takes up to 8%. First 100
-> merchants get 60 days free and lock founding pricing for life.
+> Flat $39/month + 1.5% per sale. Whatnot takes up to 8%. Every
+> business gets 30 days free, cancel any time during the trial.
 > You sell live on your own page, keep your customers, and your
 > buyers earn points they can spend at any shop on the network.
 
 **DM script (cold, social):**
 > Hey — I run Topgun Maintenance in Morristown and built DUM Club,
 > a live-selling site for local businesses. Watched your last drop;
-> you'd be great on it. First 100 shops get 60 days free, then a
+> you'd be great on it. Every business gets 30 days free, then a
 > flat monthly fee + 1.5% per sale instead of the up to 8% apps take.
 > Want the link?
 
 **In-person one-liner:**
 > You know how DoorDash takes 30% and Whatnot takes up to 8%? I built
 > the version where you pay a flat monthly fee, 1.5% a sale, and
-> keep your own customers. First 100 shops get 60 days free.
+> keep your own customers. Every business gets 30 days free.
 
 ---
 
@@ -104,7 +104,7 @@ The play: show up one Sunday with your phone and QR cards. Walk the
 stalls near close (12:30, when it's slow). The pitch is one sentence:
 
 > "I built a site where you can sell live on camera between markets.
-> First 100 shops get 60 days free, then a flat monthly fee + 1.5%
+> Every business gets 30 days free, then a flat monthly fee + 1.5%
 > per sale. Here, watch —" [open dum.club on your phone, show the
 > demo playing itself]
 
@@ -140,9 +140,13 @@ and never say "flat 8%." Pitch these two things only:
 > customers back to you, not to an app's algorithm.
 
 **If they say "but Whatnot is free to join":**
-> True, and so are we for the first 100 shops (60 days free, founding
-> pricing locked for life). The difference shows up when you sell:
-> their cut grows with every sale, ours stays flat.
+> True, and every business gets 30 days free with us too. The
+> difference shows up when you sell: their cut grows with every
+> sale, ours stays flat.
+
+(Note to self, not part of the script: early shops also keep their
+subscription price for life. A quiet perk to mention AFTER they're
+in, never as the pitch.)
 
 **If they say "Whatnot has way more buyers":**
 > Also true, for collectibles. Whatnot is cards, sneakers, coins.
