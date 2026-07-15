@@ -39,6 +39,7 @@ System in CLAUDE.md.
 22. [x] embed-bubble-drag                — `feature/embed-bubble-drag` · 2026-07-15
 23. [x] embed-schedule-banner            — `feature/embed-schedule-banner` · 2026-07-15
 24. [x] embed-viewer-count-sync          — `feature/embed-viewer-count-sync` · 2026-07-15
+25. [x] embed-live-transition            — `feature/embed-live-transition` · 2026-07-15
 
 ## Notes
 

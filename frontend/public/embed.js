@@ -376,6 +376,19 @@
                             ? "Watch live now"
                             : "Open live storefront";
                           bubbleEl.setAttribute("aria-label", newLabel);
+                          // Live-interior transition (embed-live-
+                          // transition, 2026-07-15): mount the video
+                          // iframe + drag zones the moment the shop
+                          // goes live, tear down when it ends — the
+                          // chrome classes above only style the ring
+                          // and pills. Before this, a visitor who
+                          // loaded the page while the shop was
+                          // offline kept a dead circle until reload.
+                          if (nextIsLive && bubbleEl.__dumEnsureLive) {
+                            bubbleEl.__dumEnsureLive();
+                          } else if (!nextIsLive && bubbleEl.__dumTeardownLive) {
+                            bubbleEl.__dumTeardownLive();
+                          }
                         }
                       }
                       // VIDEO pill state (bubble-showcase): tracked every
@@ -1412,7 +1425,15 @@
     //   2. Avatar / poster URL configured → <img> with a hard
     //      error fallback to initials.
     //   3. Otherwise → initials monogram on the brand gradient.
-    if (isLive) {
+    // Live interior mount/teardown (embed-live-transition,
+    // 2026-07-15). Before this, the iframe + drag zones mounted
+    // ONCE at boot `if (isLive)` — a visitor already on the page
+    // when the shop went live kept a dead circle until a full
+    // reload (iPhone Safari's bfcache made that state near-
+    // permanent). The poll now calls these on is_live transitions.
+    var bubbleDragZone = null;
+    function ensureLiveInterior() {
+      if (bubbleLiveIframe) return; // already mounted
       bubbleLiveIframe = document.createElement("iframe");
       bubbleLiveIframe.src =
         origin + "/embed/bubble/" + encodeURIComponent(businessId);
@@ -1437,19 +1458,19 @@
       clip.appendChild(bubbleLiveIframe);
 
       // Drag zones (embed-bubble-drag, 2026-07-15) — see the CSS
-      // block for the geometry rationale. Live branch only: the
+      // block for the geometry rationale. Live interior only: the
       // avatar/initials bubble has no iframe, so the bubble element
       // itself already receives every pointer event there.
-      var dragZone = document.createElement("span");
-      dragZone.className = "dum-drag-zone";
-      dragZone.setAttribute("aria-hidden", "true");
+      bubbleDragZone = document.createElement("span");
+      bubbleDragZone.className = "dum-drag-zone";
+      bubbleDragZone.setAttribute("aria-hidden", "true");
       var dragZoneNames = ["dum-drag-top", "dum-drag-bl", "dum-drag-br"];
       for (var dz = 0; dz < dragZoneNames.length; dz++) {
         var zoneEl = document.createElement("span");
         zoneEl.className = dragZoneNames[dz];
-        dragZone.appendChild(zoneEl);
+        bubbleDragZone.appendChild(zoneEl);
       }
-      clip.appendChild(dragZone);
+      clip.appendChild(bubbleDragZone);
 
       // Sound toggle moved INSIDE the iframe (iOS audio fix,
       // 2026-07-10). WebKit will not unmute WebRTC audio from a
@@ -1458,7 +1479,22 @@
       // frame. The bubble page keeps its bubble-unmute/bubble-mute
       // postMessage listener for back-compat with any cached copy of
       // this script that still ships the old host-page button.
-    } else if (avatarUrl) {
+    }
+    function teardownLiveInterior() {
+      if (bubbleLiveIframe && bubbleLiveIframe.parentNode) {
+        bubbleLiveIframe.parentNode.removeChild(bubbleLiveIframe);
+      }
+      bubbleLiveIframe = null;
+      if (bubbleDragZone && bubbleDragZone.parentNode) {
+        bubbleDragZone.parentNode.removeChild(bubbleDragZone);
+      }
+      bubbleDragZone = null;
+    }
+
+    // Offline interior (avatar/initials) always renders as the base
+    // layer; the live iframe simply covers it while mounted, so
+    // teardown reveals it again with no rebuild.
+    if (avatarUrl) {
       var img = document.createElement("img");
       img.src = avatarUrl;
       img.alt = "";
@@ -1468,7 +1504,12 @@
         var ini = document.createElement("span");
         ini.className = "dum-initials";
         ini.textContent = initials;
-        clip.appendChild(ini);
+        // insertBefore, NOT appendChild: the error event is async,
+        // so a live iframe may already be mounted — appending would
+        // paint the initials ABOVE the video and steal the taps
+        // meant for the in-iframe speaker button (verifier finding,
+        // 2026-07-15). The base layer always stays at the bottom.
+        clip.insertBefore(ini, clip.firstChild);
       });
       clip.appendChild(img);
     } else {
@@ -1477,6 +1518,14 @@
       initialsEl.textContent = initials;
       clip.appendChild(initialsEl);
     }
+
+    // Boot: live-at-load mounts exactly as before this refactor.
+    if (isLive) ensureLiveInterior();
+
+    // Expose mount/teardown to the module-scope poll, which finds
+    // the bubble via querySelector and lives outside this closure.
+    bubble.__dumEnsureLive = ensureLiveInterior;
+    bubble.__dumTeardownLive = teardownLiveInterior;
 
     var livePill = document.createElement("span");
     livePill.className = "dum-live-pill";
@@ -2168,7 +2217,12 @@
         // already only mounted under is-live, but the host page
         // may have flipped to offline in between. Skip silently
         // if the bubble was already dismissed.
-        if (!isLive) return;
+        // Reads the CURRENT class, not the boot-time isLive var:
+        // since embed-live-transition the iframe can mount mid-
+        // session, and the frozen var would silently drop the
+        // product stack for every transition visitor (verifier
+        // finding, 2026-07-15).
+        if (!bubble.classList.contains("is-live")) return;
         if (!bubble.parentNode) return;
         // Prefer the host-page's own liveSession (from its
         // embed-config fetch). Fall back to the iframe's reading
