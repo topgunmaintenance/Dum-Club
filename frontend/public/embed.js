@@ -500,7 +500,8 @@
         // cross-frame postMessage. Because the iframe now consumes its
         // own taps, it forwards ordinary (non-sound) taps to the host
         // via postMessage { type: "bubble-request-open" } so the overlay
-        // still opens. (Drag now starts from the ring, not the video.)
+        // still opens. (Drag starts from the ring OR the .dum-drag-zone
+        // spans layered above the video — see the block below.)
         "[data-dum-embed-bubble] .dum-clip iframe {",
         "  position: absolute; inset: 0;",
         "  width: 100%; height: 100%;",
@@ -508,6 +509,36 @@
         "  display: block;",
         "  background: #060606;",
         "  pointer-events: auto;",
+        "}",
+        // Drag zones (embed-bubble-drag, 2026-07-15). Since #589 the
+        // live iframe is pointer-events: auto (in-frame unmute), which
+        // left only the thin ring as a drag surface — on touch the
+        // bubble was effectively stuck. These transparent host-side
+        // zones sit ABOVE the video and own pointer events, EXCEPT a
+        // bottom-centre notch that keeps the in-iframe speaker button
+        // (bottom: 12%, centred) directly tappable. A tap on a zone
+        // bubbles to the host click handler and opens the overlay —
+        // the same outcome as the iframe's bubble-request-open
+        // forwarding — and a drag >= 6px moves the bubble through the
+        // existing dragState machinery.
+        "[data-dum-embed-bubble] .dum-drag-zone {",
+        "  position: absolute; inset: 0;",
+        "  z-index: 2;",         // above the video, below the dismiss ×
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone span {",
+        "  position: absolute;",
+        "  pointer-events: auto;",
+        "  touch-action: none;", // same iOS scroll-cancel guard as the bubble
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-top {",
+        "  left: 0; right: 0; top: 0; height: 68%;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-bl {",
+        "  left: 0; bottom: 0; width: 26%; height: 32%;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-br {",
+        "  right: 0; bottom: 0; width: 26%; height: 32%;",
         "}",
         // When live, the .dum-clip backdrop becomes black so a
         // brief stream-loading flash doesn't show the brand-teal
@@ -906,6 +937,16 @@
         "  [data-dum-embed-bubble-close] {",
         "    width: 30px; height: 30px; opacity: 1;",
         "  }",
+        // Drag-zone geometry at the 120px mobile size. The in-iframe
+        // speaker button is a fixed 32px tall at bottom: 12%, so its
+        // TOP edge sits at 61.3% of a 120px bubble (vs 69.8% at the
+        // 176px desktop size). The desktop 68% top zone would cover
+        // the button's top 8px here — shrink it to 52% so the button
+        // keeps ~11px of clearance. The corner patches stay 32% tall:
+        // at 26% width they end 13px clear of the centred button.
+        "  [data-dum-embed-bubble] .dum-drag-zone .dum-drag-top {",
+        "    height: 52%;",
+        "  }",
         "  [data-dum-embed-product-chip] {",
         "    bottom: 124px;",        // bubble bottom 16 + bubble 96 + gap 12
         "    right: 16px;",
@@ -1269,6 +1310,21 @@
         "allow-scripts allow-same-origin"
       );
       clip.appendChild(bubbleLiveIframe);
+
+      // Drag zones (embed-bubble-drag, 2026-07-15) — see the CSS
+      // block for the geometry rationale. Live branch only: the
+      // avatar/initials bubble has no iframe, so the bubble element
+      // itself already receives every pointer event there.
+      var dragZone = document.createElement("span");
+      dragZone.className = "dum-drag-zone";
+      dragZone.setAttribute("aria-hidden", "true");
+      var dragZoneNames = ["dum-drag-top", "dum-drag-bl", "dum-drag-br"];
+      for (var dz = 0; dz < dragZoneNames.length; dz++) {
+        var zoneEl = document.createElement("span");
+        zoneEl.className = dragZoneNames[dz];
+        dragZone.appendChild(zoneEl);
+      }
+      clip.appendChild(dragZone);
 
       // Sound toggle moved INSIDE the iframe (iOS audio fix,
       // 2026-07-10). WebKit will not unmute WebRTC audio from a

@@ -36,6 +36,9 @@ System in CLAUDE.md.
 19. [x] bubble-showcase                  — `feature/bubble-showcase` · 2026-07-06
 20. [x] replay-viewer-hour-metering      — `feature/replay-viewer-hour-metering` · 2026-07-06
 21. [x] billing-portal-and-trial-starter — `feature/billing-portal` · 2026-07-06
+22. [x] embed-bubble-drag                — `feature/embed-bubble-drag` · 2026-07-15
+23. [ ] embed-schedule-banner
+24. [ ] embed-viewer-count-sync
 
 ## Notes
 
