@@ -187,6 +187,43 @@
   // greeting without a second API round-trip.
   var rendered = false;
   var popinConfig = null; // populated from /embed-config when available
+
+  // ── Next-show label (embed-schedule-banner, 2026-07-15) ──────
+  // Shared by the bubble's schedule pill and the live-state poll.
+  // Rules, mirroring ScheduledLiveBanner on the storefront:
+  //   - past + not recurring → null (never "LIVE YESTERDAY")
+  //   - past + recurring_weekly → advance in 7-day steps client-
+  //     side so the pill never goes dark waiting on the hourly
+  //     rollforward cron
+  //   - rendered in the VISITOR'S timezone via toLocaleString
+  function nextShowLabel(iso, recurring) {
+    if (!iso) return null;
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return null;
+    var now = new Date();
+    if (t.getTime() <= now.getTime()) {
+      if (!recurring) return null;
+      var WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+      var missed =
+        Math.floor((now.getTime() - t.getTime()) / WEEK_MS) + 1;
+      t = new Date(t.getTime() + missed * WEEK_MS);
+    }
+    var withinWeek =
+      t.getTime() - now.getTime() < 6 * 24 * 60 * 60 * 1000;
+    var opts = withinWeek
+      ? { weekday: "short", hour: "numeric", minute: "2-digit" }
+      : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+    var label;
+    try {
+      label = t.toLocaleString(undefined, opts);
+    } catch (e) {
+      label = t.toDateString();
+    }
+    // "Next show", never "Live ..." — an offline surface must not
+    // lead with the word LIVE (doctrine: that word plus coral is
+    // reserved for real broadcasts; verifier finding 2026-07-15).
+    return "Next show " + label;
+  }
   // Full /embed-config response. is_live, ivs_stage_arn, and
   // pinned_offer all live at the TOP LEVEL of that payload — they
   // are NOT inside popin_config. Storing only popinConfig (the
@@ -325,6 +362,21 @@
                           }
                         } else {
                           vBubbleEl.classList.remove("has-video");
+                        }
+                        // Next-show pill (embed-schedule-banner):
+                        // tracked every poll so a schedule set or
+                        // cleared in the dashboard mid-visit updates
+                        // without a reload. CSS keeps live dominant.
+                        var sLabel = nextShowLabel(
+                          next.scheduled_live_at,
+                          next.recurring_weekly === true
+                        );
+                        var sPillText = vBubbleEl.querySelector(".dum-schedule-pill span");
+                        if (sLabel && sPillText) {
+                          sPillText.textContent = sLabel;
+                          vBubbleEl.classList.add("has-schedule");
+                        } else {
+                          vBubbleEl.classList.remove("has-schedule");
                         }
                       }
                     }
@@ -500,7 +552,8 @@
         // cross-frame postMessage. Because the iframe now consumes its
         // own taps, it forwards ordinary (non-sound) taps to the host
         // via postMessage { type: "bubble-request-open" } so the overlay
-        // still opens. (Drag now starts from the ring, not the video.)
+        // still opens. (Drag starts from the ring OR the .dum-drag-zone
+        // spans layered above the video — see the block below.)
         "[data-dum-embed-bubble] .dum-clip iframe {",
         "  position: absolute; inset: 0;",
         "  width: 100%; height: 100%;",
@@ -508,6 +561,36 @@
         "  display: block;",
         "  background: #060606;",
         "  pointer-events: auto;",
+        "}",
+        // Drag zones (embed-bubble-drag, 2026-07-15). Since #589 the
+        // live iframe is pointer-events: auto (in-frame unmute), which
+        // left only the thin ring as a drag surface — on touch the
+        // bubble was effectively stuck. These transparent host-side
+        // zones sit ABOVE the video and own pointer events, EXCEPT a
+        // bottom-centre notch that keeps the in-iframe speaker button
+        // (bottom: 12%, centred) directly tappable. A tap on a zone
+        // bubbles to the host click handler and opens the overlay —
+        // the same outcome as the iframe's bubble-request-open
+        // forwarding — and a drag >= 6px moves the bubble through the
+        // existing dragState machinery.
+        "[data-dum-embed-bubble] .dum-drag-zone {",
+        "  position: absolute; inset: 0;",
+        "  z-index: 2;",         // above the video, below the dismiss ×
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone span {",
+        "  position: absolute;",
+        "  pointer-events: auto;",
+        "  touch-action: none;", // same iOS scroll-cancel guard as the bubble
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-top {",
+        "  left: 0; right: 0; top: 0; height: 68%;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-bl {",
+        "  left: 0; bottom: 0; width: 26%; height: 32%;",
+        "}",
+        "[data-dum-embed-bubble] .dum-drag-zone .dum-drag-br {",
+        "  right: 0; bottom: 0; width: 26%; height: 32%;",
         "}",
         // When live, the .dum-clip backdrop becomes black so a
         // brief stream-loading flash doesn't show the brand-teal
@@ -591,6 +674,32 @@
         "  pointer-events: none;",
         "}",
         "[data-dum-embed-bubble].has-video:not(.is-live) .dum-video-pill { display: inline-flex; }",
+        // ── Next-show pill (embed-schedule-banner, 2026-07-15) ──
+        // A calm calendar note: "LIVE THU 7:00 PM". White chip with
+        // mint text — deliberately NOT the coral live treatment and
+        // NOT a countdown (doctrine: no fake urgency; coral is for
+        // real broadcasts only). Sits at the TOP of the circle so it
+        // can coexist with the video pill at the bottom (replay
+        // playing + next show announced is a valid combined state).
+        // Hidden while live — the LIVE pill carries that state.
+        "[data-dum-embed-bubble] .dum-schedule-pill {",
+        "  position: absolute;",
+        "  left: 50%; top: -6px;",
+        "  transform: translateX(-50%);",
+        "  display: none;",
+        "  align-items: center; gap: 5px;",
+        "  padding: 4px 10px;",
+        "  border-radius: 9999px;",
+        "  background: #ffffff;",
+        "  color: #00A36C;",
+        "  font: 800 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;",
+        "  letter-spacing: 0.14em;",
+        "  text-transform: uppercase;",
+        "  box-shadow: 0 6px 14px rgba(11,18,32,0.18), 0 0 0 1px rgba(0,163,108,0.35);",
+        "  white-space: nowrap;",
+        "  pointer-events: none;",
+        "}",
+        "[data-dum-embed-bubble].has-schedule:not(.is-live) .dum-schedule-pill { display: inline-flex; }",
         // Viewer count pill on the bubble itself. Tucked next to
         // the LIVE pill at the bottom of the circle so visitors
         // see live momentum even when no product stack renders
@@ -905,6 +1014,16 @@
         "  }",
         "  [data-dum-embed-bubble-close] {",
         "    width: 30px; height: 30px; opacity: 1;",
+        "  }",
+        // Drag-zone geometry at the 120px mobile size. The in-iframe
+        // speaker button is a fixed 32px tall at bottom: 12%, so its
+        // TOP edge sits at 61.3% of a 120px bubble (vs 69.8% at the
+        // 176px desktop size). The desktop 68% top zone would cover
+        // the button's top 8px here — shrink it to 52% so the button
+        // keeps ~11px of clearance. The corner patches stay 32% tall:
+        // at 26% width they end 13px clear of the centred button.
+        "  [data-dum-embed-bubble] .dum-drag-zone .dum-drag-top {",
+        "    height: 52%;",
         "  }",
         "  [data-dum-embed-product-chip] {",
         "    bottom: 124px;",        // bubble bottom 16 + bubble 96 + gap 12
@@ -1270,6 +1389,21 @@
       );
       clip.appendChild(bubbleLiveIframe);
 
+      // Drag zones (embed-bubble-drag, 2026-07-15) — see the CSS
+      // block for the geometry rationale. Live branch only: the
+      // avatar/initials bubble has no iframe, so the bubble element
+      // itself already receives every pointer event there.
+      var dragZone = document.createElement("span");
+      dragZone.className = "dum-drag-zone";
+      dragZone.setAttribute("aria-hidden", "true");
+      var dragZoneNames = ["dum-drag-top", "dum-drag-bl", "dum-drag-br"];
+      for (var dz = 0; dz < dragZoneNames.length; dz++) {
+        var zoneEl = document.createElement("span");
+        zoneEl.className = dragZoneNames[dz];
+        dragZone.appendChild(zoneEl);
+      }
+      clip.appendChild(dragZone);
+
       // Sound toggle moved INSIDE the iframe (iOS audio fix,
       // 2026-07-10). WebKit will not unmute WebRTC audio from a
       // cross-frame postMessage gesture, so the speaker button now
@@ -1363,6 +1497,29 @@
     updateBubbleViewers(liveSession);
     updateVideoPill(embedConfig && embedConfig.active_video);
 
+    // ── Next-show pill (embed-schedule-banner, 2026-07-15) ──────
+    // Renders the merchant's scheduled_live_at (embed-config v1.9)
+    // as "LIVE THU 7:00 PM" in the visitor's own timezone. Label
+    // logic lives in nextShowLabel() at module scope — the poll
+    // handler reuses it.
+    var schedulePill = document.createElement("span");
+    schedulePill.className = "dum-schedule-pill";
+    schedulePill.setAttribute("aria-hidden", "true");
+    var schedulePillLabel = document.createElement("span");
+    schedulePill.appendChild(schedulePillLabel);
+    function updateSchedulePill(cfg) {
+      var label = cfg
+        ? nextShowLabel(cfg.scheduled_live_at, cfg.recurring_weekly === true)
+        : null;
+      if (label) {
+        schedulePillLabel.textContent = label;
+        bubble.classList.add("has-schedule");
+      } else {
+        bubble.classList.remove("has-schedule");
+      }
+    }
+    updateSchedulePill(embedConfig);
+
     // "Tap to watch" caption — sits just under the bubble when
     // the merchant is live so visitors know the circle is
     // interactive (some users miss that the bubble is clickable
@@ -1382,6 +1539,7 @@
     bubble.appendChild(clip);
     bubble.appendChild(livePill);
     bubble.appendChild(videoPill);
+    bubble.appendChild(schedulePill);
     bubble.appendChild(bubbleViewersPill);
     bubble.appendChild(tapHint);
     bubble.appendChild(close);
