@@ -568,6 +568,35 @@ export default function EmbedShellPage() {
     project.privy_id === authUser.privyId;
   const manageHref = `/project/${project?.slug || businessId}/manage`;
   const liveLabel = project?.is_live ? "live" : "offline";
+  // Next scheduled show (embed-schedule-banner, 2026-07-15). Same
+  // rules as ScheduledLiveBanner on the storefront, plus the weekly
+  // roll-forward the hourly cron would apply anyway: a recurring
+  // show whose timestamp just passed still announces next week's
+  // slot instead of going dark. Rendered in the visitor's timezone.
+  const nextShowLabel = (() => {
+    const iso = (project as any)?.scheduled_live_at as string | undefined;
+    if (!iso) return null;
+    let t = new Date(iso);
+    if (isNaN(t.getTime())) return null;
+    const now = new Date();
+    if (t <= now) {
+      if (!(project as any)?.recurring_weekly) return null;
+      const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+      const missed = Math.floor((now.getTime() - t.getTime()) / WEEK_MS) + 1;
+      t = new Date(t.getTime() + missed * WEEK_MS);
+    }
+    const withinWeek = t.getTime() - now.getTime() < 6 * 24 * 60 * 60 * 1000;
+    try {
+      return t.toLocaleString(
+        undefined,
+        withinWeek
+          ? { weekday: "long", hour: "numeric", minute: "2-digit" }
+          : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }
+      );
+    } catch {
+      return t.toDateString();
+    }
+  })();
   const ivsActive = !!project && isIVSSession(project) && !!project.ivs_stage_arn;
   // True when the hero <IVSStageViewer> is actually mounted and
   // subscribing. The Pop-In Live mode reuses this section exactly —
@@ -1504,6 +1533,14 @@ export default function EmbedShellPage() {
                   <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
                   {(project as any).replay.source === "upload" ? "Video" : "Replay"}
                 </span>
+                {/* Next-show note next to the replay: the shop is
+                    offline but announced. Same quiet chrome as the
+                    REPLAY tag; never coral (doctrine §12). */}
+                {nextShowLabel && (
+                  <span className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                    Next show {nextShowLabel}
+                  </span>
+                )}
               </div>
             ) : (
               <div
@@ -1519,7 +1556,18 @@ export default function EmbedShellPage() {
                   modal ? "h-full" : "aspect-video"
                 }`}
               >
-                {loading ? "Loading video…" : "Stream offline"}
+                {loading ? (
+                  "Loading video…"
+                ) : nextShowLabel ? (
+                  /* Calm calendar note, not a countdown (doctrine §12:
+                     no fake urgency; coral stays reserved for live). */
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-mint-fill" />
+                    Going live {nextShowLabel}
+                  </span>
+                ) : (
+                  "Stream offline"
+                )}
               </div>
             )}
 

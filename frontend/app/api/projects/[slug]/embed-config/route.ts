@@ -175,7 +175,7 @@ export async function GET(
         // The bubble falls back to the slug + a derived initial
         // when title is null/empty, so this select staying string-
         // shaped is correctness-preserving for older rows.
-        "id, slug, title, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, pinned_until, popin_config",
+        "id, slug, title, embed_display_mode, is_live, live_provider, ivs_stage_arn, pinned_offer_id, pinned_until, popin_config, scheduled_live_at, recurring_weekly",
       )
       .eq("is_deleted", false)
       .limit(1);
@@ -359,8 +359,15 @@ export async function GET(
       {
         // Schema fingerprint — bumped whenever the response
         // shape changes. v1.7 added pinned_offer, active_offers,
-        // live_session, viewer_count.
-        schema_version: "v1.7",
+        // live_session, viewer_count. v1.9 added scheduled_live_at
+        // + recurring_weekly (embed-schedule-banner; matches the
+        // FastAPI route's version so the fingerprint stays useful).
+        schema_version: "v1.9",
+        // Next scheduled show (migration 064/066 columns). Raw
+        // values — embed.js hides past timestamps client-side and
+        // rolls recurring shows forward itself.
+        scheduled_live_at: (row as any).scheduled_live_at ?? null,
+        recurring_weekly: Boolean((row as any).recurring_weekly),
         // Identifiers
         projectSlug: row.slug ?? slug,
         businessSlug: row.slug ?? slug,

@@ -1708,10 +1708,12 @@ async def get_embed_config(project_id: str, response: Response):
         except Exception:
             pass
         return {
-            "schema_version": "v1.8",
+            "schema_version": "v1.9",
             "id": None,
             "slug": project_id,
             "active_video": None,
+            "scheduled_live_at": None,
+            "recurring_weekly": False,
             "embed_display_mode": "automatic",
             "is_live": False,
             "live_provider": None,
@@ -1749,7 +1751,8 @@ async def get_embed_config(project_id: str, response: Response):
             supabase.table("projects")
             .select(
                 "id, slug, embed_display_mode, is_live, live_provider, "
-                "ivs_stage_arn, pinned_offer_id, pinned_until, popin_config"
+                "ivs_stage_arn, pinned_offer_id, pinned_until, popin_config, "
+                "scheduled_live_at, recurring_weekly"
             )
             .eq("id", resolved_uuid)
             .eq("is_deleted", False)
@@ -1967,10 +1970,17 @@ async def get_embed_config(project_id: str, response: Response):
         # schema_version` from the merchant side confirms which
         # backend code is actually serving the request — catches
         # stale Railway deploys without having to walk every key.
-        "schema_version": "v1.8",
+        "schema_version": "v1.9",
         "id": row["id"],
         "slug": row.get("slug"),
         "active_video": active_video_payload,
+        # Next scheduled show (embed-schedule-banner, migration 064/066
+        # columns). Raw values — the embed hides past timestamps client-
+        # side (same rule as ScheduledLiveBanner) and, for recurring
+        # shows, computes the next weekly occurrence itself so a chip
+        # never goes dark waiting on the hourly rollforward cron.
+        "scheduled_live_at": row.get("scheduled_live_at"),
+        "recurring_weekly": bool(row.get("recurring_weekly") or False),
         "embed_display_mode": row.get("embed_display_mode") or "automatic",
         # Effective is_live after heartbeat-staleness check —
         # not the raw DB value. Stale broadcasts auto-clear above.
