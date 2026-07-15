@@ -1237,12 +1237,12 @@ export default function EmbedShellPage() {
             </button>
           </div>
 
-          {/* Overlay chat, bottom-left, clear of the buy stack */}
-          <div className="absolute bottom-[13rem] left-2 z-20 w-[min(76vw,calc(100vw-4rem))] max-w-sm">
-            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-state-live" />
-              Live chat · everyone sees this
-            </div>
+          {/* Overlay chat, bottom-left, clear of the buy dock.
+              No label (embed-live-mobile-layout, 2026-07-15,
+              founder decision): messages float over the video
+              Whatnot-style and speak for themselves — the old
+              "Live chat · everyone sees this" pill was chrome. */}
+          <div className="absolute bottom-[9.5rem] left-2 z-20 w-[min(76vw,calc(100vw-4rem))] max-w-sm">
             <LiveChatIVS
               projectId={project.id}
               userId={authUser?.privyId || ""}
@@ -1337,9 +1337,16 @@ export default function EmbedShellPage() {
           {/* Bottom dock — offer card + BUY, mirroring the dum.club room */}
           <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))]">
             <div className="mx-auto max-w-md">
+              {/* Compact single-row dock (embed-live-mobile-layout,
+                  2026-07-15): title + price + timer on the left, the
+                  buy CTA inline on the right — Whatnot-style, half
+                  the height of the old stacked card + full-width
+                  button, which pushed the chat 13rem up the video.
+                  Guest checkout: Buy goes straight to Stripe, no
+                  sign-in gate (founder decision). */}
               {pinnedOffer ? (
                 <>
-                  <div className="mb-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 shadow-lg backdrop-blur-md">
+                  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 p-2.5 shadow-lg backdrop-blur-md">
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold">{pinnedOffer.title}</div>
                       <div className="flex items-center gap-2">
@@ -1353,25 +1360,25 @@ export default function EmbedShellPage() {
                         )}
                       </div>
                     </div>
+                    {pinSecondsLeft === 0 ? (
+                      <span className="shrink-0 rounded-xl bg-white/15 px-3.5 py-3 text-xs font-bold text-white/70">
+                        Sale ended
+                      </span>
+                    ) : soldOut ? (
+                      <span className="shrink-0 rounded-xl bg-white/15 px-3.5 py-3 text-xs font-bold text-white/70">
+                        Sold out
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleBuy}
+                        disabled={buying}
+                        className="shrink-0 rounded-xl bg-mint-fill px-4 py-3 text-sm font-extrabold text-mint-fill-ink transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                      >
+                        {buying ? "Opening…" : `Buy · $${Number(pinnedOffer.price_usd || 0).toFixed(2)}`}
+                      </button>
+                    )}
                   </div>
-                  {pinSecondsLeft === 0 ? (
-                    <span className="block w-full rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
-                      Sale ended · watch for the next drop
-                    </span>
-                  ) : soldOut ? (
-                    <span className="block w-full rounded-2xl bg-white/15 py-3.5 text-center text-sm font-bold text-white/70">
-                      Sold out
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleBuy}
-                      disabled={buying}
-                      className="w-full rounded-2xl bg-mint-fill py-3.5 text-center text-sm font-extrabold uppercase tracking-[0.08em] text-mint-fill-ink transition hover:opacity-90 disabled:opacity-50"
-                    >
-                      {buying ? "Opening…" : `Buy now · $${Number(pinnedOffer.price_usd || 0).toFixed(2)}`}
-                    </button>
-                  )}
                   {buyError && (
                     <p className="mt-2 text-center text-[11px] font-semibold text-state-live">{buyError}</p>
                   )}
@@ -1384,7 +1391,7 @@ export default function EmbedShellPage() {
               <button
                 type="button"
                 onClick={() => setShowAllOffers(true)}
-                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/15"
+                className="mx-auto mt-1.5 flex items-center justify-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white/80 transition hover:text-white"
               >
                 See all offers · {offers.length}
                 <span aria-hidden>→</span>
