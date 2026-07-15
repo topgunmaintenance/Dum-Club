@@ -492,23 +492,33 @@ export function LiveChatIVS({ projectId, userId, userName, isHost, onItemUpdate,
           input so nothing breaks. */}
       {!userId && onRequestSignIn ? (
         <div style={{ borderTop: overlay ? "none" : "1px solid #27272a", padding: 8 }}>
+          {/* Whatnot-style contextual sign-in (embed-live-mobile-layout,
+              2026-07-15): a signed-out viewer sees the SAME quiet
+              "Say something…" pill a signed-in viewer types into.
+              Tapping it opens the Privy modal; after login this
+              re-renders to the working input with no reload. Replaces
+              the old full-width green "Sign in to chat" button, which
+              read as a wall and ate prime video real estate. Styling
+              mirrors the real input exactly (radius/border/background)
+              so the swap after sign-in is visually seamless. */}
           <button
             type="button"
             onClick={onRequestSignIn}
+            aria-label="Say something. Sign in to chat"
             style={{
               width: "100%",
               minHeight: 44,
-              borderRadius: 8,
-              background: "#10b981",
-              padding: "12px 18px",
+              borderRadius: overlay ? 9999 : 8,
+              border: overlay ? "1px solid rgba(255,255,255,0.25)" : "1px solid #27272a",
+              background: overlay ? "rgba(0,0,0,0.45)" : "#18181b",
+              padding: "10px 14px",
               fontSize: 14,
-              fontWeight: 700,
-              color: "#000",
-              border: "none",
+              color: "rgba(255,255,255,0.75)",
+              textAlign: "left",
               cursor: "pointer",
             }}
           >
-            Sign in to chat
+            Say something...
           </button>
         </div>
       ) : (
