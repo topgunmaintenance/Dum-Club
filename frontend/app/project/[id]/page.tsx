@@ -885,7 +885,7 @@ export default function ProjectPage() {
         const res = await fetch(`${API_BASE}/api/dum/spend`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...(dumToken ? { Authorization: `Bearer ${dumToken}` } : {}) },
-          body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "game_unlock", project_id: id }),
+          body: JSON.stringify({ privy_id: privyId, amount: 10, reason: "game_unlock", project_id: project?.id ?? id }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -1130,7 +1130,7 @@ export default function ProjectPage() {
       await fetch(`${API_BASE}/api/ivs/end-stage`, {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
-        body: JSON.stringify({ project_id: id }),
+        body: JSON.stringify({ project_id: project?.id ?? id }),
       });
       setProject((prev) => prev ? { ...prev, is_live: false, live_provider: null, ivs_stage_arn: null } : prev);
     } catch {
@@ -1497,7 +1497,7 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt, project_id: id, stream: false }),
+        body: JSON.stringify({ message: prompt, project_id: project?.id ?? id, stream: false }),
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -1585,7 +1585,7 @@ export default function ProjectPage() {
           })
         : await createOffer({
             token: cleanToken,
-            body: { ...body, project_id: String(id) },
+            body: { ...body, project_id: String(project?.id ?? id) },
           });
       // Award DUM Points for creating an offer
       try {
@@ -1850,7 +1850,7 @@ export default function ProjectPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          project_id: id,
+          project_id: project?.id ?? id,
           // Same self-reported display the chat already shows for this user.
           display_name: authUser?.email ? authUser.email.split("@")[0] : undefined,
           keyword: _text.slice(0, 32),
@@ -2261,7 +2261,7 @@ export default function ProjectPage() {
         const res = await fetch(`${API_BASE}/api/reviews/`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ project_id: id, rating, comment }),
+          body: JSON.stringify({ project_id: project?.id ?? id, rating, comment }),
         });
         if (res.ok) {
           // Refresh backend reviews
@@ -2291,7 +2291,7 @@ export default function ProjectPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          project_id: id,
+          project_id: project?.id ?? id,
           content_text: memoryText.trim(),
           content_type: "text",
         }),
@@ -2330,7 +2330,7 @@ export default function ProjectPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          project_id: id,
+          project_id: project?.id ?? id,
           message: currentQuestion,
           session_id: sessionId,
         }),
@@ -2525,7 +2525,7 @@ export default function ProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: action.prompt(project, storeItems, targetItem),
-          project_id: id,
+          project_id: project?.id ?? id,
           stream: false,
         }),
       });
@@ -2909,7 +2909,7 @@ export default function ProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", user_id: authUser?.privyId || "" },
         body: JSON.stringify({
-          project_id: id,
+          project_id: project?.id ?? id,
           offer_id: auctionOfferSelect,
           starting_price: Number(auctionStartPrice),
           duration_seconds: auctionDuration,
@@ -3030,7 +3030,7 @@ export default function ProjectPage() {
       const res = await fetch(`${API_BASE}/api/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt, project_id: id, stream: false }),
+        body: JSON.stringify({ message: prompt, project_id: project?.id ?? id, stream: false }),
       });
       if (!res.ok) throw new Error("Score request failed");
       const data = await res.json();
