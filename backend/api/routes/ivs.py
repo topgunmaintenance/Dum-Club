@@ -242,6 +242,18 @@ async def api_create_stage(
     # keep dashboard access so they can update their card, but cannot
     # start new broadcasts. Plain-English 402 detail mirrors the banner
     # copy so the frontend can surface it verbatim.
+    #
+    # Identity correction (payment-gate fix, 2026-07-31): the parallel
+    # check above keys off the raw user_id header, but _verify_owner
+    # also authorizes via the owner_id UUID branch — in that case
+    # merchants.owner_privy_id lookup on the UUID finds no row and the
+    # gate silently passes. Re-check against the project's canonical
+    # privy DID whenever it differs, mirroring projects.py go_live.
+    owner_privy_for_gate = project.get("privy_id") or user_id
+    if not suspended and owner_privy_for_gate != user_id:
+        suspended = await asyncio.to_thread(
+            is_merchant_suspended, owner_privy_for_gate
+        )
     if suspended:
         raise HTTPException(
             status_code=402,

@@ -2555,6 +2555,26 @@ async def go_live(
             },
         )
 
+    # Payment gate (payment-gate fix, 2026-07-31) — same 402 as
+    # /api/ivs/create-stage. This manual-embed/Mux go-live path is a
+    # second broadcast-start endpoint; without this check a merchant
+    # whose subscription is paused/canceled (or who never completed the
+    # trial checkout) could bypass the IVS gate with a direct POST here
+    # and flip is_live=True — LIVE badges, live rail, follower emails —
+    # while owing nothing. stripe_connect_status above is payout
+    # onboarding and says nothing about the merchant's own billing.
+    from api.routes.merchant import is_merchant_suspended
+
+    if await asyncio.to_thread(is_merchant_suspended, owner_privy):
+        print(
+            f"[projects] Refusing go_live: project={project_id} "
+            f"merchant={owner_privy} is payment-blocked"
+        )
+        raise HTTPException(
+            status_code=402,
+            detail="Your shop is paused. Update your payment method to go live.",
+        )
+
     # Phase 1 cap enforcement — same check as /api/ivs/create-stage.
     # Refuse the go-live if the merchant is at max_concurrent_streams,
     # or if the resolver fails closed on an unset cap (Business / Enterprise

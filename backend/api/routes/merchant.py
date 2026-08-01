@@ -1181,7 +1181,21 @@ async def get_trial_status(current_user: dict = Depends(get_current_user)):
     # the dashboard banner says "Your shop is paused. Update your payment
     # method to keep selling." The status value here is for the frontend
     # to gate Go Live + new orders; copy is decided in the React layer.
-    is_suspended = status == "suspended"
+    #
+    # payment-gate fix (2026-07-31): is_suspended now mirrors the SAME
+    # logic as is_merchant_suspended() below, so the React gate
+    # (IVSStageHost hides Go Live on is_suspended) agrees with the
+    # authoritative 402 in /api/ivs/create-stage. Previously this flag
+    # only matched 'suspended', so a Stripe-paused merchant (trial ended,
+    # no card) saw a working Go Live button that the backend ALSO failed
+    # to reject.
+    grandfathered = bool(row.get("grandfathered"))
+    has_subscription = bool(row.get("stripe_subscription_id"))
+    status_norm = (status or "").strip().lower()
+    payment_required = (not grandfathered) and (
+        status_norm not in _ALLOWED_SUBSCRIPTION_STATUSES or not has_subscription
+    )
+    is_suspended = (status == "suspended") or payment_required
     is_past_due = status == "past_due"
 
     return {
@@ -1199,21 +1213,57 @@ async def get_trial_status(current_user: dict = Depends(get_current_user)):
         "grace_days_remaining": _days_until(grace_ends_at) if grace_ends_at else None,
         "is_past_due": is_past_due,
         "is_suspended": is_suspended,
+        # True whenever billing is the reason the merchant is blocked
+        # (paused / canceled / suspended / no subscription at all).
+        # Lets the frontend distinguish "add or fix your payment method"
+        # from an admin_suspended enforcement action, and pick the right
+        # CTA (billing portal vs. start-trial checkout via
+        # has_subscription).
+        "payment_required": payment_required,
     }
+
+
+# Subscription states that GRANT streaming + selling rights when a
+# Stripe subscription exists (payment-gate fix, 2026-07-31; inverted
+# from a deny-list to an allow-list after adversarial review):
+#   'active'   — paying.
+#   'trialing' — card-upfront 30-day trial in progress.
+#   'past_due' — payment failed but inside the 3-day grace window; the
+#                trial_reminders daily sweep flips this to 'suspended'
+#                when grace elapses without an invoice.paid recovery.
+# EVERYTHING else blocks. The webhook handler stores Stripe's RAW
+# status verbatim, and the original production bug was exactly a
+# vocabulary miss: the gate matched only the internal 'suspended'
+# label, so Stripe's 'paused' (trial ended, no payment method) sailed
+# through and a paused merchant went live on 2026-07-31. A deny-list
+# stays one Stripe-settings change away from repeating that failure
+# ('unpaid', 'incomplete_expired', NULL, future statuses...); the
+# allow-list fails CLOSED on anything unrecognized.
+_ALLOWED_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing", "past_due"})
 
 
 def is_merchant_suspended(privy_id: Optional[str]) -> bool:
     """Helper used by Go Live + new-order endpoints to gate access when
-    the merchant's plan is suspended after a failed-payment grace period.
+    the merchant has no working billing relationship.
 
-    Returns True only when:
-      - a merchants row exists for this privy_id, AND
-      - subscription_status == 'suspended'
+    Returns True when a merchants row exists for this privy_id AND any
+    of the following holds:
+      - admin_suspended is set (mig 086 platform enforcement — trumps
+        everything, including grandfathering), OR
+      - subscription_status is NOT in _ALLOWED_SUBSCRIPTION_STATUSES
+        (allow-list: active / trialing / past_due; anything else —
+        paused, canceled, unpaid, incomplete_expired, NULL, unknown
+        future Stripe vocabulary — fails CLOSED), OR
+      - the row has NO stripe_subscription_id at all (merchant never
+        completed the card-upfront trial checkout — without this check a
+        signup that abandons checkout keeps the insert-time default
+        subscription_status='active' forever and streams for free).
 
-    Grandfathered merchants are never suspended (they have no
-    Stripe Subscription and never enter the grace flow). Missing-merchant
-    callers return False so anonymous flows + non-merchant users are not
-    blocked. Never raises.
+    Grandfathered merchants are exempt from the billing checks (they
+    have no Stripe Subscription by design and never enter the grace
+    flow) but NOT from admin_suspended. Missing-merchant callers return
+    False so anonymous flows + non-merchant users are not blocked.
+    Never raises.
     """
     if not privy_id:
         return False
@@ -1221,7 +1271,10 @@ def is_merchant_suspended(privy_id: Optional[str]) -> bool:
         sb = get_client()
         res = (
             sb.table("merchants")
-            .select("subscription_status, grandfathered, admin_suspended")
+            .select(
+                "subscription_status, grandfathered, admin_suspended, "
+                "stripe_subscription_id"
+            )
             .eq("owner_privy_id", privy_id)
             .limit(1)
             .execute()
@@ -1236,7 +1289,15 @@ def is_merchant_suspended(privy_id: Optional[str]) -> bool:
             return True
         if row.get("grandfathered"):
             return False
-        return row.get("subscription_status") == "suspended"
+        status = (row.get("subscription_status") or "").strip().lower()
+        if status not in _ALLOWED_SUBSCRIPTION_STATUSES:
+            return True
+        # No subscription object at all → no payment relationship. The
+        # 'active' default written at merchant-row insert (before the
+        # trial checkout runs) must not grant streaming rights.
+        if not row.get("stripe_subscription_id"):
+            return True
+        return False
     except Exception as exc:
         # Fail open. A DB blip during suspension check should not lock
         # merchants out of their own dashboard.
