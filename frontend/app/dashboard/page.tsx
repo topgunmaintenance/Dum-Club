@@ -1581,7 +1581,14 @@ export default function DashboardPage() {
                 // page and would confuse a real customer. Use the
                 // slug when available (cleaner URL) and fall back to
                 // the project id.
-                const storefrontPath = `/project/${project.slug || project.id}`;
+                // Clean vanity URL (2026-08-01). The bare slug now
+                // resolves via the afterFiles rewrite in next.config.js
+                // (dum.club/<slug> -> storefront), so the copied link
+                // matches the clean URL shown below the copy button and
+                // is what a merchant actually wants to share. Falls back
+                // to the project id (also resolves via the same rewrite)
+                // for projects that don't have a slug yet.
+                const storefrontPath = `/${project.slug || project.id}`;
                 const storefrontUrl = typeof window !== "undefined"
                   ? `${window.location.origin}${storefrontPath}`
                   : storefrontPath;
