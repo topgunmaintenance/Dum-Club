@@ -836,7 +836,39 @@ async def api_end_stage(
     if stage_id_for_replay and is_recording_enabled():
         import threading
 
-        def _finalize_replay(pid: str, sid: str):
+        # Replay length (replay-duration fix, 2026-08-01). find_latest_recording
+        # returns playback_url/s3_prefix/recorded_at but NOT a duration, so
+        # live_replays.duration_seconds stayed NULL forever even once recording
+        # was armed — the storefront replay player had no length to show. The
+        # show's own length is the right value and the most robust source (no
+        # HLS playlist parsing): the still-open stream_sessions row was opened
+        # at go-live and the show just ended, so now - start_at is the runtime.
+        # Computed here (not in the thread) because on_stream_end below closes
+        # the session a moment later. Best-effort: any failure leaves it NULL,
+        # exactly like before — never blocks the finalize.
+        replay_duration_seconds = None
+        try:
+            from datetime import datetime as _dt_dur, timezone as _tz_dur
+            _sess = (
+                get_client().table("stream_sessions")
+                .select("start_at")
+                .eq("project_id", project_uuid)
+                .is_("end_at", "null")
+                .order("start_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if _sess.data and _sess.data[0].get("start_at"):
+                _start = _dt_dur.fromisoformat(
+                    str(_sess.data[0]["start_at"]).replace("Z", "+00:00")
+                )
+                replay_duration_seconds = max(
+                    0, int((_dt_dur.now(_tz_dur.utc) - _start).total_seconds())
+                )
+        except Exception as exc:
+            print(f"[ivs] replay duration calc failed for project={project_uuid}: {exc!r}")
+
+        def _finalize_replay(pid: str, sid: str, duration_seconds):
             import time as _t
             found = None
             for _ in range(20):  # up to ~100s for S3 writes to settle
@@ -871,6 +903,7 @@ async def api_end_stage(
                         "playback_url": found["playback_url"],
                         "s3_prefix": found["s3_prefix"],
                         "recorded_at": found["recorded_at"],
+                        "duration_seconds": duration_seconds,
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                     },
                     on_conflict="project_id,source",
@@ -883,7 +916,7 @@ async def api_end_stage(
 
         threading.Thread(
             target=_finalize_replay,
-            args=(project_uuid, stage_id_for_replay),
+            args=(project_uuid, stage_id_for_replay, replay_duration_seconds),
             daemon=True,
         ).start()
 

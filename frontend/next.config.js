@@ -41,6 +41,35 @@ const nextConfig = {
       },
     ];
   },
+  // Clean vanity storefront URL (2026-08-01). A bare single-segment
+  // path (dum.club/<slug>) that matched no real page or /public file
+  // is treated as a merchant slug and INTERNALLY rewritten to the
+  // canonical storefront route /project/<slug>. This is a rewrite, not
+  // a redirect, so the clean URL stays in the address bar — a merchant
+  // can put dum.club/topgun-maintenance on a business card and it
+  // loads their shop.
+  //
+  // Why afterFiles: these rewrites run AFTER filesystem routes and
+  // /public files, so every named top-level route (/dashboard,
+  // /discover, /merchant, /pricing, /about, ...) is matched first and
+  // is NEVER shadowed. Only paths that would otherwise 404 reach this
+  // rule. `/:slug` matches exactly one path segment (no slashes), so
+  // /project/<x>, /api/<x>, /_next/<x>, and every other multi-segment
+  // route are untouched. An unknown slug falls through to the same
+  // storefront not-found rendering that /project/<unknown> already
+  // shows today — behavior is consistent, not newly broken.
+  //
+  // NOTE: unlike redirects() below (which run BEFORE filesystem routes
+  // and once shadowed /demo — see the /watch-demo note), afterFiles
+  // rewrites cannot shadow a real page, which is exactly why the
+  // catch-all is safe here.
+  async rewrites() {
+    return {
+      afterFiles: [
+        { source: "/:slug", destination: "/project/:slug" },
+      ],
+    };
+  },
   // Permanent redirects for renamed routes. Old links and any external
   // marketing copy still pointing at /explore or /ai-chat resolve to
   // the canonical pages (/discover, /chat) without a 404.
