@@ -99,6 +99,39 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     checkSuspension();
     return () => { cancelled = true; };
   }, [getToken]);
+  // One-tap "pay to go live" (2026-08-01). When the plan is paused, the
+  // host screen used to just link to /dashboard and leave the merchant to
+  // hunt for how to pay. This opens the merchant's Stripe billing page
+  // directly (same /api/merchant/billing-portal route the Setup page
+  // uses) so a paused merchant can add a card and get back to going live
+  // in one tap. Redirects the tab to Stripe on success; shows an inline
+  // message if the portal isn't reachable.
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  async function openBillingToGoLive() {
+    setPortalError(null);
+    setPortalLoading(true);
+    try {
+      const token = getToken ? await getToken() : null;
+      if (!token) throw new Error("Sign in again to add your payment method.");
+      const res = await fetch(`${API_BASE}/api/merchant/billing-portal`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) {
+        throw new Error(
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Payment page is unavailable right now. Open your dashboard to add a card.",
+        );
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      setPortalError(e?.message || "Could not open the payment page.");
+      setPortalLoading(false);
+    }
+  }
   const previewRef = useRef<HTMLVideoElement>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   // Heartbeat poll handle. While the stage is live, the host
@@ -357,6 +390,18 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         body: JSON.stringify({ project_id: projectId }),
       });
       if (!res.ok) {
+        // Payment gate (2026-08-01): a 402 means the plan is paused / has
+        // no working payment method. The mount-time trial-status pre-check
+        // normally catches this and shows the "Add payment to go live"
+        // screen before the camera even starts, but it fails open on a
+        // network blip - so if we get here, flip to that same clear screen
+        // (with the one-tap pay button) instead of a raw red error banner.
+        if (res.status === 402) {
+          setIsSuspended(true);
+          setStatus("idle");
+          endingRef.current = true;
+          return;
+        }
         // Backend uses structured FastAPI HTTPException detail for cap /
         // suspension / limits errors, e.g.
         //   detail = {code: "merchant_limits_unresolved", message: "...", reason: "..."}
@@ -578,16 +623,26 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
           <div className="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300">
             !
           </div>
-          <div className="text-sm font-bold text-zinc-200">Your shop is paused</div>
+          <div className="text-sm font-bold text-zinc-200">Your subscription is paused</div>
           <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-            Going live is off until you update your payment method. Open your dashboard to fix it.
+            Add a payment method to start your subscription and go live. It takes about a minute.
           </p>
-          <a
-            href="/dashboard"
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
+          <button
+            type="button"
+            onClick={openBillingToGoLive}
+            disabled={portalLoading}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-mint-fill px-5 py-2.5 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 disabled:opacity-60"
           >
-            Open Dashboard →
-          </a>
+            {portalLoading ? "Opening secure payment…" : "Add payment to go live →"}
+          </button>
+          {portalError && (
+            <p className="mx-auto mt-3 max-w-md text-xs text-amber-300">
+              {portalError}{" "}
+              <a href="/dashboard" className="underline">
+                Open dashboard
+              </a>
+            </p>
+          )}
         </div>
       )}
       {status === "idle" && !isSuspended && !hasPinnedOffer && (
