@@ -246,7 +246,7 @@ export default function InstallPage() {
   // non-technical owner who doesn't have a web person OR doesn't
   // want to copy/paste code themselves.
   const installForMeBody = encodeURIComponent(
-    `Hi Julian,\n\nI'd like help adding DUM Club to my website. Here's my install code:\n\n${snippet}\n\nMy storefront link: ${origin}/project/${slug}\n\nThanks!`,
+    `Hi Julian,\n\nI'd like help adding DUM Club to my website. Here's my install code:\n\n${snippet}\n\nMy storefront link: ${origin}/${slug}\n\nThanks!`,
   );
 
   return (

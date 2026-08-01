@@ -82,7 +82,9 @@ export default function QrPage() {
       typeof window !== "undefined" && window.location.origin.includes("localhost")
         ? window.location.origin
         : "https://www.dum.club";
-    return `${origin}/project/${slug}`;
+    // Clean vanity URL (2026-08-01): the QR encodes dum.club/<slug>, not
+    // /project/<slug>, so a scanned code lands straight on the clean URL.
+    return `${origin}/${slug}`;
   }, [project]);
 
   const qrSrc = projectUrl

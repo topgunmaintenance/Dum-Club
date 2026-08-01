@@ -678,7 +678,9 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        const url = `${window.location.origin}/project/${primaryRef}`;
+                        // Clean vanity URL (2026-08-01): share the bare
+                        // slug (primaryRef prefers slug), not /project/<x>.
+                        const url = `${window.location.origin}/${primaryRef}`;
                         navigator.clipboard.writeText(url).catch(() => {});
                         showNotice("success", "Link copied. Share it with your audience.");
                       }}
@@ -1471,7 +1473,9 @@ export default function DashboardPage() {
                     onClick={() => {
                       const live = projects.find((p) => p.status === "live");
                       if (live) {
-                        const url = `${window.location.origin}/project/${live.id}`;
+                        // Clean vanity URL (2026-08-01): prefer the slug so
+                        // the copied storefront link is dum.club/<slug>.
+                        const url = `${window.location.origin}/${live.slug || live.id}`;
                         navigator.clipboard.writeText(url).catch(() => {});
                         showNotice("success", "Link copied. Share it with your audience.");
                       }
