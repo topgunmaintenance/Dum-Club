@@ -718,6 +718,37 @@ export default function ProjectPage() {
     }
   }, [project?.slug]);
 
+  // Canonicalize the address bar to the clean vanity slug (2026-08-01).
+  // The storefront resolves by UUID or slug and can be reached via
+  // /project/<uuid> (old dashboard links, bookmarks, shared UUID links)
+  // or the pretty /<slug> rewrite. Once the project loads and we know
+  // its slug, snap the URL to /<slug> so every visitor sees and can copy
+  // the clean link no matter how they arrived. history.replaceState only
+  // changes the bar - no reload, no refetch, no Next navigation - so
+  // params.id and all in-page state stay intact. Query string + hash are
+  // preserved (e.g. ?checkout=success, ?live=1). No-ops when there's no
+  // slug, when we're already on the clean path, or when the path isn't a
+  // /project/* URL (other surfaces never render this page).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const slug = project?.slug;
+    if (!slug) return;
+    const cleanPath = `/${slug}`;
+    const { pathname, search, hash } = window.location;
+    if (pathname === cleanPath) return;
+    if (!pathname.startsWith("/project/")) return;
+    try {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${cleanPath}${search}${hash}`,
+      );
+    } catch {
+      // replaceState can throw in rare sandboxed contexts. Non-fatal:
+      // the UUID URL still works, it just stays in the bar.
+    }
+  }, [project?.slug]);
+
   function confirmInstall() {
     if (typeof window === "undefined" || !project?.slug) return;
     try {
