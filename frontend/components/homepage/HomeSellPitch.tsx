@@ -26,15 +26,43 @@ export function HomeSellPitch() {
         <h2 className="mx-auto mt-3 max-w-3xl text-[clamp(32px,6vw,52px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-primary">
           Your shop. Your show. Your town watching.
         </h2>
+        {/* Slogan (2026-08-03): "Always be selling" is the brand line. It
+            rides under the canonical headline so the pitch has a repeatable
+            hook without displacing the mandated copy. */}
+        <p className="mx-auto mt-4 text-[clamp(18px,3.2vw,28px)] font-extrabold tracking-[-0.01em] text-mint-text">
+          Always be selling.
+        </p>
         <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
-          Live selling for local business, right on your own website. Every
-          business gets 30 days free. Your customers see you, ask questions,
-          and buy on the spot.
+          Your live e-counter, always open. Live selling for local business,
+          right on your own website. Every business gets 30 days free. Your
+          customers see you, ask questions, and buy on the spot.
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-relaxed text-secondary sm:text-base">
           Flat monthly subscription + 1.5% sales fee. Industry-low (Whatnot
           takes up to 8%). Keep more of every sale.
         </p>
+
+        {/* The e-counter in four moves (2026-08-03). Captures the founder's
+            pitch: go live from any device, sell on your own site, push it to
+            social, and let the deals run. */}
+        <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { t: "Go live", d: "From your phone or laptop" },
+            { t: "Sell on your site", d: "Right on your own website" },
+            { t: "Share it out", d: "Post to Facebook and Instagram" },
+            { t: "Deals on loop", d: "All day, all week" },
+          ].map((f) => (
+            <div
+              key={f.t}
+              className="rounded-2xl border border-default bg-surface-card p-4 text-center shadow-dum-card"
+            >
+              <div className="text-sm font-bold text-primary">{f.t}</div>
+              <div className="mt-1 text-[13px] leading-snug text-secondary">
+                {f.d}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Stat row — the prove-it's-simple numbers, mirrored in the demo. */}
         <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-6 border-t border-default pt-8">
