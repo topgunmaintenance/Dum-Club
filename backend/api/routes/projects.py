@@ -824,25 +824,60 @@ async def list_public_projects():
     # ~50-row post-3-pass list. Fail-CLOSED: if the lookup errors we
     # can't confirm Stripe status, so we surface nothing rather than
     # risk listing a storefront that can't take payment.
+    #
+    # Billing gate (2026-08-03): in the SAME lookup we also drop merchants
+    # whose subscription has lapsed. A shop that finished its 30-day trial
+    # and didn't pay (or was admin-suspended) can't take payment anyway —
+    # the checkout + go-live gates already 402 it — so leaving it on
+    # /discover just shows customers a dead storefront. Mirror the exact
+    # allow-list logic of merchant.is_merchant_suspended so Discover and the
+    # sell-side gates agree: keep an owner only when they are Stripe-verified
+    # AND have a working billing relationship (not admin-suspended;
+    # grandfathered is exempt from billing; otherwise subscription_status in
+    # the allow-list AND a real stripe_subscription_id on file). Fail-CLOSED
+    # on lookup error — surface nothing rather than list a shop that can't
+    # sell.
+    from api.routes.merchant import _ALLOWED_SUBSCRIPTION_STATUSES
+
     owner_privy_ids = list({p.get("privy_id") for p in projects if p.get("privy_id")})
-    verified_owners: set[str] = set()
+    sellable_owners: set[str] = set()
     if owner_privy_ids:
         try:
             merch_rows = (
                 supabase.table("merchants")
-                .select("owner_privy_id, stripe_connect_status")
+                .select(
+                    "owner_privy_id, stripe_connect_status, subscription_status, "
+                    "grandfathered, admin_suspended, stripe_subscription_id"
+                )
                 .in_("owner_privy_id", owner_privy_ids)
-                .eq("stripe_connect_status", "verified")
                 .execute()
             )
-            verified_owners = {
-                r["owner_privy_id"] for r in (merch_rows.data or [])
-                if r.get("owner_privy_id")
-            }
+            for r in (merch_rows.data or []):
+                oid = r.get("owner_privy_id")
+                if not oid:
+                    continue
+                # Must be able to take payment at all.
+                if r.get("stripe_connect_status") != "verified":
+                    continue
+                # Platform enforcement trumps everything, incl. grandfathering.
+                if r.get("admin_suspended"):
+                    continue
+                # Grandfathered founders have no Stripe Subscription by design.
+                if r.get("grandfathered"):
+                    sellable_owners.add(oid)
+                    continue
+                status = (r.get("subscription_status") or "").strip().lower()
+                if status not in _ALLOWED_SUBSCRIPTION_STATUSES:
+                    continue
+                # 'active' default is written before the trial checkout runs;
+                # no subscription object == no real billing relationship.
+                if not r.get("stripe_subscription_id"):
+                    continue
+                sellable_owners.add(oid)
         except Exception as exc:
-            print(f"[projects] stripe-verified discovery gate lookup failed: {exc!r}")
-            verified_owners = set()
-    projects = [p for p in projects if p.get("privy_id") in verified_owners]
+            print(f"[projects] discovery billing/stripe gate lookup failed: {exc!r}")
+            sellable_owners = set()
+    projects = [p for p in projects if p.get("privy_id") in sellable_owners]
 
     # Sort: pinned first (sort_order non-null, ascending, 0 = top),
     # then by created_at desc. Pinned verified founding merchants
@@ -1650,6 +1685,20 @@ async def get_project(project_id: str):
             }
     except Exception as exc:
         print(f"[projects] replay attach failed (ignored): {exc!r}")
+
+    # Billing state (2026-08-03): tell the storefront whether this shop's
+    # subscription has lapsed so it can render a "currently unavailable"
+    # state instead of a Buy button that would 402. Same allow-list as the
+    # /discover gate and the checkout/go-live gates. Best-effort, never
+    # blocks the page: on any error the flag is simply absent (falsy).
+    try:
+        from api.routes.merchant import is_merchant_suspended
+
+        resolved["seller_suspended"] = bool(
+            is_merchant_suspended(resolved.get("privy_id"))
+        )
+    except Exception as exc:
+        print(f"[projects] seller_suspended flag failed (ignored): {exc!r}")
 
     return _attach_token_mode(resolved)
 

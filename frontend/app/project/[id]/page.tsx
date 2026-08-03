@@ -4135,6 +4135,23 @@ const heroUtility =
             </div>
           )}
 
+          {/* Lapsed-subscription notice (2026-08-03). A shop whose trial
+              ended without payment is hidden from /discover and can't take
+              orders (checkout + go-live are gated server-side). If a
+              customer still reaches it by direct link, tell them plainly
+              instead of leaving a Buy button that would fail. Owners never
+              see this — their dashboard drives the pay-to-continue flow. */}
+          {(proj as any).seller_suspended && !isOwner && (
+            <div className="mt-3 rounded-2xl border border-default bg-surface-muted px-5 py-4 text-center">
+              <div className="text-sm font-bold text-primary">
+                This shop is taking a break
+              </div>
+              <div className="mt-1 text-xs text-secondary">
+                It is not open for orders right now. Check back soon.
+              </div>
+            </div>
+          )}
+
           {/* ── Header card: cover + avatar + identity + actions ──
                Cover has two states driven by shop live status (handoff
                Storefront spec). LIVE → coral "LIVE · N watching" pill +
