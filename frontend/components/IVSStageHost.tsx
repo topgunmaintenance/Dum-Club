@@ -78,6 +78,16 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
   // backend /api/ivs/create-stage already rejects suspended hosts with
   // 402, but the UI should not lead them to a button that errors out.
   const [isSuspended, setIsSuspended] = useState(false);
+  // Whether a Stripe subscription exists at all. Drives which payment
+  // destination the "add payment to go live" button opens. A merchant
+  // who abandoned (or failed) signup Checkout has NO subscription and
+  // must be sent to trial-checkout, which mints a fresh 30-day trial;
+  // the billing portal only manages an EXISTING subscription and cannot
+  // start one, so sending a no-subscription merchant there was a dead
+  // end (they could never get unblocked to go live). Defaults true so a
+  // trial-status fetch failure never routes a real subscriber into the
+  // start-a-trial flow.
+  const [hasSubscription, setHasSubscription] = useState(true);
   useEffect(() => {
     if (!getToken) return;
     let cancelled = false;
@@ -90,7 +100,10 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         });
         if (!res.ok) return;
         const json = await res.json();
-        if (!cancelled) setIsSuspended(Boolean(json?.is_suspended));
+        if (!cancelled) {
+          setIsSuspended(Boolean(json?.is_suspended));
+          setHasSubscription(Boolean(json?.has_subscription));
+        }
       } catch {
         // Fail open — never lock a host out of Go Live because of a
         // network blip checking trial status.
@@ -114,10 +127,25 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
     try {
       const token = getToken ? await getToken() : null;
       if (!token) throw new Error("Sign in again to add your payment method.");
-      const res = await fetch(`${API_BASE}/api/merchant/billing-portal`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Route to the destination that can actually unblock this merchant.
+      // No subscription yet (abandoned/failed signup Checkout) -> start a
+      // new trial via trial-checkout. Subscription exists (paused card,
+      // past-due) -> the billing portal to update the payment method.
+      const startTrial = !hasSubscription;
+      const openPath = (path: string) =>
+        fetch(`${API_BASE}${path}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      let res = await openPath(
+        startTrial ? "/api/merchant/trial-checkout" : "/api/merchant/billing-portal",
+      );
+      // Stale-state guard: if we asked to start a trial but the server
+      // says one already exists (409), fall back to the billing portal so
+      // the merchant still lands somewhere useful instead of an error.
+      if (startTrial && !res.ok && res.status === 409) {
+        res = await openPath("/api/merchant/billing-portal");
+      }
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) {
         throw new Error(
@@ -398,6 +426,15 @@ export function IVSStageHost({ projectId, userId, autoStart, onLive, onEnd, onEr
         // (with the one-tap pay button) instead of a raw red error banner.
         if (res.status === 402) {
           setIsSuspended(true);
+          // A 402 here means the mount-time trial-status pre-check failed
+          // open, so hasSubscription may still be its optimistic default.
+          // Assume no subscription on this path: the common cause of a
+          // fresh merchant hitting create-stage while blocked is an
+          // abandoned signup Checkout (no subscription), which must go to
+          // trial-checkout. If a subscription actually exists (paused
+          // card), trial-checkout 409s and the button falls back to the
+          // billing portal, so this is safe either way.
+          setHasSubscription(false);
           setStatus("idle");
           endingRef.current = true;
           return;
