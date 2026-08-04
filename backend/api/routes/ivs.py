@@ -463,7 +463,8 @@ async def api_create_stage(
     # before the first /heartbeat poll persists last_heartbeat_at.
     from datetime import datetime, timezone
     supabase = get_client()
-    supabase.table("projects").update({
+
+    go_live_update = {
         "ivs_stage_arn": fresh_arn,
         "ivs_stage_id": fresh_id,
         "live_provider": "ivs_realtime",
@@ -473,7 +474,54 @@ async def api_create_stage(
         # go-live; not cleared on end (the next go-live overwrites it).
         "live_started_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", project_uuid).execute()
+    }
+
+    # Auto-pin an offer on go-live so the embed always has a one-tap buy.
+    # The embed's Buy button renders ONLY when projects.pinned_offer_id is
+    # set (frontend/app/embed/[businessId]/page.tsx derives pinnedOffer
+    # solely from it). A merchant who added offers but never pinned one
+    # would broadcast with no way to buy inside the embed. If nothing is
+    # pinned yet, pin the most-recently-created active offer. Never override
+    # an explicit pin, and never let a pin lookup failure block the
+    # broadcast — going live matters more than the convenience pin.
+    try:
+        pin_res = (
+            supabase.table("projects")
+            .select("pinned_offer_id")
+            .eq("id", project_uuid)
+            .limit(1)
+            .execute()
+        )
+        already_pinned = (
+            pin_res.data[0].get("pinned_offer_id") if pin_res.data else None
+        )
+        active_offers = (
+            supabase.table("offers")
+            .select("id")
+            .eq("project_id", project_uuid)
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        active_ids = [o["id"] for o in (active_offers.data or [])]
+        # Re-pin when nothing is pinned OR the current pin points to an offer
+        # that is no longer active (deactivated / deleted / sold-and-hidden) —
+        # a stale pin renders no Buy button either. Respect a pin that still
+        # points to a live offer: never override the merchant's explicit
+        # choice. most-recently-created active offer wins.
+        if active_ids and already_pinned not in active_ids:
+            go_live_update["pinned_offer_id"] = active_ids[0]
+            # No-timer pin: pinned_until stays null so the Buy button shows
+            # with no countdown, and any stale deadline is cleared.
+            go_live_update["pinned_until"] = None
+            print(
+                f"[ivs] auto-pinned offer {active_ids[0]} "
+                f"on go-live for project={project_uuid}"
+            )
+    except Exception as exc:
+        print(f"[ivs] auto-pin skipped (going live unpinned): {exc!r}")
+
+    supabase.table("projects").update(go_live_update).eq("id", project_uuid).execute()
     print(f"[ivs] DB updated with fresh ARN for project={project_uuid}")
 
     # Notify "remind me when live" subscribers that the show has started.
