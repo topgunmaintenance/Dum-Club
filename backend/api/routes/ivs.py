@@ -10,10 +10,11 @@ Endpoints:
 import asyncio
 import time as _time
 
-from fastapi import APIRouter, HTTPException, Header, Request, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 
+from auth.privy import get_current_user
 from db.supabase import get_client
 from services.ivs_realtime import (
     is_ivs_enabled,
@@ -80,6 +81,25 @@ def _verify_owner(project_id: str, user_id: str) -> dict:
     if not owner_match:
         raise HTTPException(status_code=403, detail="Not project owner")
     return project
+
+
+def _did_from_claims(claims: dict) -> str:
+    """Extract the caller's Privy DID from VERIFIED token claims.
+
+    Auth hardening (2026-09-01): the showcase/replay mutation endpoints
+    used to identify the caller by a bare `user_id` request header — a
+    value anyone can set, and one that was discoverable from public
+    project payloads (projects responses include privy_id). That let an
+    unauthenticated caller upload or swap the video playing on any
+    storefront. These endpoints now take identity ONLY from a verified
+    Privy Bearer token (auth.privy.get_current_user), the same
+    verification the checkout/offers/merchant routes already use. The
+    legacy header is ignored for identity on these routes.
+    """
+    did = (claims or {}).get("sub")
+    if not did:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    return did
 
 
 def _require_ivs():
@@ -1017,9 +1037,9 @@ class ReplayToggleRequest(BaseModel):
 @router.post("/replay-toggle")
 async def api_replay_toggle(
     body: ReplayToggleRequest,
-    user_id: str = Header(default="demo-user", convert_underscores=False),
+    claims: dict = Depends(get_current_user),
 ):
-    project = _verify_owner(body.project_id, user_id)
+    project = _verify_owner(body.project_id, _did_from_claims(claims))
     project_uuid = project["id"]
     from datetime import datetime, timezone
     supabase = get_client()
@@ -1123,9 +1143,9 @@ class ShowcaseUploadUrlRequest(BaseModel):
 @router.post("/showcase-upload-url")
 async def api_showcase_upload_url(
     body: ShowcaseUploadUrlRequest,
-    user_id: str = Header(default="demo-user", convert_underscores=False),
+    claims: dict = Depends(get_current_user),
 ):
-    project = _verify_owner(body.project_id, user_id)
+    project = _verify_owner(body.project_id, _did_from_claims(claims))
     project_uuid = project["id"]
     if not is_showcase_upload_enabled():
         raise HTTPException(status_code=503, detail="Showcase uploads are not available yet")
@@ -1148,9 +1168,9 @@ class ShowcaseUploadedRequest(BaseModel):
 @router.post("/showcase-uploaded")
 async def api_showcase_uploaded(
     body: ShowcaseUploadedRequest,
-    user_id: str = Header(default="demo-user", convert_underscores=False),
+    claims: dict = Depends(get_current_user),
 ):
-    project = _verify_owner(body.project_id, user_id)
+    project = _verify_owner(body.project_id, _did_from_claims(claims))
     project_uuid = project["id"]
     # The key must be one we would have presigned for THIS project.
     if not body.key.startswith(f"uploads/{project_uuid}/"):
@@ -1300,12 +1320,12 @@ class ShowcaseActivateRequest(BaseModel):
 @router.post("/showcase-activate")
 async def api_showcase_activate(
     body: ShowcaseActivateRequest,
-    user_id: str = Header(default="demo-user", convert_underscores=False),
+    claims: dict = Depends(get_current_user),
 ):
     """The merchant's 'this one plays on my shop' picker."""
     if body.source not in ("live_recording", "upload"):
         raise HTTPException(status_code=400, detail="Unknown video source")
-    project = _verify_owner(body.project_id, user_id)
+    project = _verify_owner(body.project_id, _did_from_claims(claims))
     project_uuid = project["id"]
     supabase = get_client()
     supabase.table("live_replays").update({"is_active": False}).eq(

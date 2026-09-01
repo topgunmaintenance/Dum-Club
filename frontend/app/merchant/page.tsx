@@ -489,9 +489,17 @@ export default function MerchantPage() {
     setReplaySaving(true);
     setReplayEnabled(next); // optimistic
     try {
+      // Auth hardening (2026-09-01): replay/showcase mutations require a
+      // verified Bearer token server-side; the bare user_id header no
+      // longer identifies the caller.
+      const token = await getToken();
+      if (!token) throw new Error("no-token");
       const res = await fetch(`${API_BASE}/api/ivs/replay-toggle`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ project_id: firstProject.id, enabled: next }),
       });
       if (!res.ok) setReplayEnabled(!next); // revert on failure
@@ -553,9 +561,16 @@ export default function MerchantPage() {
     const contentType = file.type || "video/mp4";
     setShowcaseUploading(true);
     try {
+      // Auth hardening (2026-09-01): identity comes from the verified
+      // Bearer token, not the spoofable user_id header.
+      const token = await getToken();
+      if (!token) throw new Error("Sign in again to upload your video.");
       const urlRes = await fetch(`${API_BASE}/api/ivs/showcase-upload-url`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ project_id: firstProject.id, content_type: contentType }),
       });
       if (!urlRes.ok) {
@@ -569,9 +584,14 @@ export default function MerchantPage() {
         body: file,
       });
       if (!putRes.ok) throw new Error("Upload failed partway. Check your connection and retry.");
+      const confirmToken = await getToken();
+      if (!confirmToken) throw new Error("Sign in again to save your video.");
       const confirmRes = await fetch(`${API_BASE}/api/ivs/showcase-uploaded`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${confirmToken}`,
+        },
         body: JSON.stringify({ project_id: firstProject.id, key }),
       });
       if (!confirmRes.ok) {
@@ -592,9 +612,14 @@ export default function MerchantPage() {
     // Optimistic flip
     setShowcaseVideos((v) => v.map((x) => ({ ...x, is_active: x.source === source })));
     try {
+      const token = await getToken();
+      if (!token) throw new Error("no-token");
       await fetch(`${API_BASE}/api/ivs/showcase-activate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", user_id: user.privyId },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ project_id: firstProject.id, source }),
       });
     } catch {
