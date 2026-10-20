@@ -64,82 +64,77 @@ function PrimaryButton({
   );
 }
 
-/** Phone mockup of an example pizzeria site with the live card in the corner. */
+/**
+ * Phone mockup of a REAL merchant site: topgunmaintenance.com, founding
+ * merchant #1, which has the DUM embed installed today. The bubble is
+ * drawn in its offline REPLAY state (black pill, no viewer count)
+ * because Topgun is not broadcasting while a visitor reads this page;
+ * CLAUDE.md section 12 forbids a LIVE tag on a real shop that is not
+ * live. Photo is the merchant's own (topgunmaintenance.com/images).
+ */
 function SiteWithBubble() {
   return (
     <div
-      className="relative h-[560px] w-[340px] overflow-hidden rounded-[28px] bg-white text-[12px] shadow-[0_30px_70px_rgba(11,18,32,0.22),0_0_0_1px_rgba(11,18,32,0.08)] sm:w-[360px]"
-      aria-label="Example: a pizzeria website with the DUM live card in the corner"
+      className="relative h-[560px] w-[340px] overflow-hidden rounded-[28px] bg-[#0f1a2b] text-[12px] shadow-[0_30px_70px_rgba(11,18,32,0.35),0_0_0_1px_rgba(255,255,255,0.08)] sm:w-[360px]"
+      aria-label="topgunmaintenance.com, a real merchant site, with the DUM live card in the corner"
       role="img"
     >
-      <div className="flex h-12 items-center justify-between border-b border-[#ebe6dd] px-4">
-        <div className="text-[14px] font-extrabold text-[#1a1a1a]">Marco&apos;s Pizzeria</div>
-        <div className="flex gap-2.5 text-[10px] font-semibold text-[#5b6478]">
-          <span>Menu</span>
-          <span>Hours</span>
-          <span>Call</span>
+      <div className="flex h-12 items-center justify-between bg-[#ff6a2b] px-4 text-[11px] font-bold text-[#1a1a1a]">
+        <span>AOG? Call or text (201) 452-1986</span>
+        <span className="text-[10px] font-semibold">Message Us</span>
+      </div>
+      <div className="flex flex-col gap-2 px-5 pt-7 text-center">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#3fd0ff]">
+          Strictly mobile A&amp;P/IA mechanic
+        </div>
+        <div className="text-[30px] font-black leading-[1] tracking-wide text-white">TOPGUN</div>
+        <div className="text-[30px] font-black leading-[1] tracking-wide text-[#ff6a2b]">MAINTENANCE</div>
+        <div className="mx-auto max-w-[260px] pt-1 text-[11px] leading-snug text-white/70">
+          An FAA A&amp;P/IA comes to your hangar with the tools, does the work by the book, and gets you back in the air.
         </div>
       </div>
-      <div className="flex flex-col gap-2 px-4 pt-[18px]">
-        <div className="text-[9px] font-extrabold tracking-[0.16em] text-[#8a6a32]">
-          FAMILY OWNED SINCE 1987
-        </div>
-        <div className="text-[20px] font-extrabold leading-[1.15] text-[#1a1a1a]">
-          Brick oven pizza, made the slow way
-        </div>
-        <div className="text-[11px] leading-normal text-[#5b6478]">
-          Fresh dough every morning. Order at the counter or call ahead for pickup.
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 px-4 pt-3.5">
-        {MENU.map((m) => (
-          <div
-            key={m.name}
-            className="flex items-center gap-2.5 rounded-xl border border-[#ebe6dd] bg-[#fbf8f3] p-2.5"
-          >
-            <img
-              src={m.img}
-              alt=""
-              width={44}
-              height={44}
-              className="h-11 w-11 shrink-0 rounded-lg object-cover"
-            />
-            <div className="flex flex-col gap-0.5">
-              <div className="font-bold text-[#1a1a1a]">{m.name}</div>
-              <div className="font-bold text-[#8a6a32]">{m.price}</div>
-            </div>
+      <div className="mt-5 flex flex-col gap-2.5 px-5">
+        {[
+          ["WHAT WE DO", "Professional Aircraft Maintenance & Inspections"],
+          ["WHERE WE GO", "Your Hangar or Tie Down in NJ, NY, PA"],
+          ["WHEN YOU NEED US", "AOG & Emergency Response Available"],
+        ].map(([k, v]) => (
+          <div key={k} className="rounded-md border-t-2 border-[#3fd0ff] bg-[#182642] px-4 py-3 text-center">
+            <div className="text-[8px] font-semibold uppercase tracking-[0.22em] text-[#3fd0ff]">{k}</div>
+            <div className="mt-1 text-[11px] font-semibold text-white">{v}</div>
           </div>
         ))}
       </div>
 
       {/* The DUM live card, bottom right of the merchant's own page. */}
       <div className="absolute bottom-4 right-4 flex w-[132px] flex-col gap-1.5">
-        <div className="flex items-center gap-1.5 rounded-[10px] bg-white px-2 py-1.5 shadow-[0_10px_24px_rgba(11,18,32,0.18),0_0_0_1px_rgba(11,18,32,0.06)]">
+        <div className="flex items-center gap-1.5 rounded-[10px] bg-white px-2 py-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.35)]">
           <img
-            src="/images/home/pie.jpg"
+            src="/images/home/topgun-jacking.jpg"
             alt=""
             width={24}
             height={24}
             className="h-6 w-6 shrink-0 rounded-md object-cover"
           />
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="text-[7px] font-extrabold tracking-[0.14em] text-dum-red">
-              TODAY&apos;S SPECIAL
-            </div>
-            <div className="truncate text-[10px] font-semibold text-[#1a1a1a]">Grandma pie</div>
+            <div className="text-[7px] font-extrabold tracking-[0.14em] text-dum-red">FEATURED</div>
+            <div className="truncate text-[10px] font-semibold text-[#1a1a1a]">Annual Inspection</div>
           </div>
-          <div className="font-mono text-[10px] font-bold text-dum-red-700">$23</div>
+          <div className="font-mono text-[10px] font-bold text-dum-red-700">$850</div>
         </div>
-        <div className="relative h-[208px] w-[132px] overflow-hidden rounded-2xl bg-[#16213a] shadow-[0_16px_36px_rgba(11,18,32,0.30)]">
+        <div className="relative h-[208px] w-[132px] overflow-hidden rounded-2xl bg-[#16213a] shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
           <img
-            src="/images/home/chef.jpg"
+            src="/images/home/topgun-pilot.jpg"
             alt=""
             width={132}
             height={208}
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute left-2 top-2">
-            <LivePill small />
+          <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#1a1a1a] px-[7px] py-[3px] text-[8px] font-extrabold uppercase tracking-[0.14em] text-white">
+            <svg aria-hidden="true" width="7" height="7" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Replay
           </div>
           <div
             className="absolute right-[7px] top-[7px] flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-[12px] font-bold text-[#1a1a1a]"
@@ -147,12 +142,9 @@ function SiteWithBubble() {
           >
             ×
           </div>
-          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-b from-transparent to-[rgba(11,18,32,0.82)] px-2 pb-2 pt-[30px]">
-            <div className="text-[10px] font-bold text-white">Marco&apos;s Pizzeria</div>
-            <div className="flex items-center gap-1 text-[9px] font-semibold text-white/85">
-              <span className="h-1 w-1 rounded-full bg-dum-red" aria-hidden="true" />
-              12 watching
-            </div>
+          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-gradient-to-b from-transparent to-[rgba(11,18,32,0.85)] px-2 pb-2 pt-[30px]">
+            <div className="text-[10px] font-bold text-white">Topgun Maintenance</div>
+            <div className="text-[9px] font-semibold text-white/85">Watch the last show</div>
           </div>
         </div>
       </div>
@@ -197,8 +189,11 @@ export function LiveOnYourSiteHome() {
               <span>Keep your own site and your own customers</span>
             </p>
           </div>
-          <div className="flex min-w-0 flex-[1_1_360px] justify-center">
+          <div className="flex min-w-0 flex-[1_1_360px] flex-col items-center gap-3">
             <SiteWithBubble />
+            <p className="text-center text-xs font-semibold text-dum-red-ink-soft">
+              Real site: topgunmaintenance.com, DUM Club founding merchant. The card is live on it today.
+            </p>
           </div>
         </div>
       </section>
@@ -362,69 +357,52 @@ export function LiveOnYourSiteHome() {
         </div>
       </section>
 
-      {/* ── No website yet ─────────────────────────────────────── */}
+      {/* ── Real merchant ──────────────────────────────────────── */}
       <section className="border-y border-dum-red-border bg-dum-red-bg">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-10 px-4 py-[72px]">
           <div className="flex min-w-0 flex-[999_1_420px] flex-col gap-3.5">
-            <p className="text-xs font-extrabold tracking-[0.18em] text-dum-red">NO WEBSITE YET?</p>
+            <p className="text-xs font-extrabold tracking-[0.18em] text-dum-red">A REAL SHOP, LIVE ON ITS OWN SITE</p>
             <h2 className="text-[clamp(28px,4vw,34px)] font-black leading-[1.1] tracking-[-0.01em] text-[#0b1220]">
-              We&apos;ve got you.
+              Built by a mechanic who needed it first.
             </h2>
             <p className="max-w-[560px] text-[17px] leading-relaxed text-[#3b4556]">
-              Every shop gets its own page at dum.club/your-shop with your live show, your
-              specials and checkout built in. Use it as your website, your link in bio, or
-              the QR code on your counter.
+              Topgun Maintenance is a one man mobile aircraft shop in New Jersey. Its
+              website is topgunmaintenance.com. The DUM card sits in the corner of that
+              site right now. When Julian goes live from his phone, pilots watching his
+              site see the show and can book an inspection on the spot.
             </p>
             <p className="max-w-[560px] text-[17px] leading-relaxed text-[#3b4556]">
-              Want a real website too? We can build you a simple one and put the live bubble
-              on it. Ask us.
+              Your shop works the same way. You log in here. The show plays on your site.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="/merchant"
+              <a
+                href="https://www.topgunmaintenance.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-full bg-dum-red px-[22px] py-3.5 text-[15px] font-extrabold text-white transition hover:brightness-95"
               >
-                Get my DUM page
-              </Link>
+                See it on topgunmaintenance.com
+              </a>
               <Link
-                href="/business"
+                href="/merchant"
                 className="inline-flex items-center justify-center rounded-full border border-[#c9d1dc] bg-white px-[22px] py-3.5 text-[15px] font-bold text-[#1a1a1a] transition hover:border-dum-red"
               >
-                Ask about a website
+                Put it on my site
               </Link>
             </div>
           </div>
           <div className="flex min-w-0 flex-[1_1_320px] justify-center">
-            <div className="flex w-[320px] flex-col gap-3 rounded-[20px] bg-white p-[18px] shadow-[0_20px_50px_rgba(11,18,32,0.14),0_0_0_1px_rgba(11,18,32,0.06)]">
-              <div className="font-mono text-[11px] font-bold text-[#5b6478]">
-                dum.club/marcos-pizzeria
-              </div>
-              <div className="relative h-40 overflow-hidden rounded-xl bg-[#16213a]">
-                <img
-                  src="/images/home/oven.jpg"
-                  alt=""
-                  width={284}
-                  height={160}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#1a1a1a] px-2 py-[3px] text-[9px] font-extrabold tracking-[0.14em] text-white">
-                  REPLAY
-                </span>
-              </div>
-              <div className="text-base font-extrabold text-[#0b1220]">Marco&apos;s Pizzeria</div>
-              <div className="flex items-center gap-2.5 rounded-xl bg-dum-red-bg p-2.5">
-                <img
-                  src="/images/home/pie.jpg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0 rounded-lg object-cover"
-                />
-                <div className="flex-1 text-[13px] font-bold">Grandma pie</div>
-                <div className="text-[13px] font-bold text-dum-red-700">$23</div>
-                <span className="rounded-full bg-dum-red px-3 py-[7px] text-[11px] font-extrabold text-white">
-                  Buy
-                </span>
+            <div className="relative h-[220px] w-[340px] overflow-hidden rounded-[20px] bg-[#16213a] shadow-[0_20px_50px_rgba(11,18,32,0.25)]">
+              <img
+                src="/images/home/topgun-jacking.jpg"
+                alt="Topgun Maintenance working on an aircraft at night"
+                width={340}
+                height={220}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-[rgba(11,18,32,0.85)] px-4 pb-3 pt-10 text-white">
+                <div className="text-sm font-extrabold">Topgun Maintenance LLC</div>
+                <div className="text-xs text-white/85">Founding merchant · Morristown, NJ</div>
               </div>
             </div>
           </div>
