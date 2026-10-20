@@ -1,12 +1,12 @@
 /**
- * / (root) IS the Club home — the buyer discovery + live experience (the same
- * ClubHome rendered at /discover): category pills, Live now, Starting soon, the
- * businesses grid — followed by the merchant pitch + interactive go-live demo
- * (homeVariant). The old standalone marketing page at /welcome was removed
- * 2026-07-01; /welcome now 308-redirects here (see next.config.js).
+ * / (root) is the merchant-facing homepage: "go live on your own website"
+ * (founder direction 2026-10-19). The buyer discovery feed (category
+ * pills, Live now, the businesses grid) lives on /discover, which still
+ * renders ClubHome. The interactive go-live demo (#demo) stays on the
+ * homepage inside LiveOnYourSiteHome.
  */
-import { ClubHome } from "../components/discover/ClubHome";
+import { LiveOnYourSiteHome } from "../components/homepage/LiveOnYourSiteHome";
 
 export default function Home() {
-  return <ClubHome homeVariant />;
+  return <LiveOnYourSiteHome />;
 }

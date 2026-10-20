@@ -367,8 +367,16 @@ backstage help in our story; the merchant on camera is the
 star. Never position DUM Club as fighting its own AI
 features.
 
-**H1 / headline**:
+**H1 / headline** (founder direction 2026-10-19, "go live on your own
+website" pivot: the merchant's own site is the lead surface; the
+dum.club shop page is the fallback for businesses with no website):
+> "Go live on your own website."
+
+**Town line** (the former H1, still mandatory on the page, now the
+Discover band / community line, never dropped):
 > "Your shop. Your show. Your town watching."
+
+**Slogan** (set 2026-08-03): "Always be selling."
 
 **Long form** (signup body, pricing pages, onboarding subhead):
 > "Live selling for local business, right on your own

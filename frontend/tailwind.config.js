@@ -41,6 +41,12 @@ module.exports = {
           "live-accent": "var(--dum-live-accent)",
           "video-1": "var(--dum-video-1)",
           "video-2": "var(--dum-video-2)",
+          // Red marketing palette (founder direction 2026-10-19).
+          red: "var(--dum-red)",
+          "red-700": "var(--dum-red-700)",
+          "red-bg": "var(--dum-red-bg)",
+          "red-border": "var(--dum-red-border)",
+          "red-ink-soft": "var(--dum-red-ink-soft)",
         },
         // Coral — Go Live + LIVE. coral = action/badge fill, coral-bg =
         // the pale "LIVE NOW" pill background. (Tailwind has no built-in
