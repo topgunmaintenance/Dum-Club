@@ -376,7 +376,7 @@ dum.club shop page is the fallback for businesses with no website):
 Discover band / community line, never dropped):
 > "Your shop. Your show. Your town watching."
 
-**Slogan** (set 2026-08-03): "Always be selling."
+**Slogan** (founder change 2026-10-20, was "Always be selling."): "Always be live!"
 
 **Long form** (signup body, pricing pages, onboarding subhead):
 > "Live selling for local business, right on your own

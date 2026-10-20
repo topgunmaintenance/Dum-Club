@@ -159,7 +159,7 @@ export function LiveOnYourSiteHome() {
       <section className="bg-dum-red">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-12 px-4 pb-14 pt-16">
           <div className="flex min-w-0 flex-[999_1_480px] flex-col gap-[22px]">
-            <p className="text-xs font-extrabold tracking-[0.18em] text-white">ALWAYS BE SELLING</p>
+            <p className="text-xs font-extrabold tracking-[0.18em] text-white">ALWAYS BE LIVE!</p>
             <h1 className="text-[clamp(40px,6vw,58px)] font-black leading-[1.05] tracking-[-0.02em] text-white">
               Go live on your own website.
             </h1>
