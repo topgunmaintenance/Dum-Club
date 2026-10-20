@@ -194,7 +194,7 @@ export function Navbar() {
       {/* ── Fixed header bar ──────────────────────────────────────
           Solid bg (was /95 translucent): big section headlines bled
           through the blur while scrolling — visual audit 2026-07-06. */}
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-default bg-surface-card">
+      <nav className="fixed inset-x-0 top-0 z-50 bg-dum-red text-white">
         {/* Mobile bar — visible below lg breakpoint. */}
         <div className="flex h-16 items-center justify-between px-4 lg:hidden">
           <BrandMark size="mobile" />
@@ -206,7 +206,7 @@ export function Navbar() {
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             aria-haspopup="dialog"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-default text-secondary transition-colors hover:text-primary hover:border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)]"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/40 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dum-red)]"
           >
             {menuOpen ? (
               <X className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
@@ -228,17 +228,17 @@ export function Navbar() {
                   href={l.href}
                   className={[
                     "relative px-3 py-2 text-sm font-medium transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] rounded-md",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dum-red)] rounded-md",
                     active
-                      ? "text-primary font-semibold"
-                      : "text-secondary hover:text-primary",
+                      ? "text-white font-bold"
+                      : "text-white/85 hover:text-white",
                   ].join(" ")}
                   aria-current={active ? "page" : undefined}
                 >
                   {l.label}
                   {active && (
                     <span
-                      className="absolute inset-x-3 -bottom-1 h-0.5 rounded-full bg-mint-text"
+                      className="absolute inset-x-3 -bottom-1 h-0.5 rounded-full bg-white"
                       aria-hidden="true"
                     />
                   )}
@@ -271,7 +271,7 @@ export function Navbar() {
                 {loading ? (
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-10 w-24 animate-pulse rounded-full bg-surface-muted"
+                    className="inline-flex h-10 w-24 animate-pulse rounded-full bg-white/20"
                   />
                 ) : user ? (
                   <UserMenu
@@ -433,12 +433,12 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-page)] rounded-md"
+      className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dum-red)] rounded-md"
       aria-label="DUM Club. Drive Your Market"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo/dum-club-D-mark.png"
+        src="/logo/dum-club-D-white.png"
         alt=""
         className={isMobile ? "h-7 w-auto" : "h-8 w-auto"}
         aria-hidden="true"
@@ -454,12 +454,12 @@ function BrandMark({ size }: { size: "mobile" | "desktop" }) {
             isMobile ? "text-[18px]" : "text-[20px]",
           ].join(" ")}
         >
-          <span className="text-primary">DUM </span>
-          <span className="text-mint-text">CLUB</span>
+          <span className="text-white">DUM </span>
+          <span className="text-white">CLUB</span>
         </span>
         <span
           className={[
-            "font-medium uppercase text-mint-text animate-[fadeIn_400ms_ease-out]",
+            "font-medium uppercase text-white/85 animate-[fadeIn_400ms_ease-out]",
             // Tighter on mobile so the lockup tucks under the
             // 18px wordmark without poking into the hamburger
             // / user menu on small viewports.
