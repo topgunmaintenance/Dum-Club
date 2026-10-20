@@ -31,6 +31,7 @@ interface ProjectSummary {
   slug?: string | null;
   title?: string | null;
   name?: string | null;
+  website_url?: string | null;
 }
 
 const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
@@ -65,6 +66,16 @@ const PLATFORMS: { key: string; label: string; steps: string[] }[] = [
     ],
   },
   {
+    key: "godaddy",
+    label: "GoDaddy",
+    steps: [
+      "Open your site in the GoDaddy Website Builder and click Edit Site.",
+      "Click Add Section, search for HTML, and pick the HTML section.",
+      "Paste the code into the box. Set Forced height to the smallest value.",
+      "Click Done, then Publish.",
+    ],
+  },
+  {
     key: "wordpress",
     label: "WordPress",
     steps: [
@@ -81,7 +92,23 @@ export default function InstallPage() {
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
-  const [testState, setTestState] = useState<"idle" | "ok" | "missing">("idle");
+  const [testState, setTestState] = useState<"idle" | "checking" | "ok" | "missing" | "unreachable">("idle");
+  // The merchant's own site, prefilled from projects.website_url
+  // (collected at signup since the 2026-10-19 pivot). Editable here
+  // in case they typed it wrong.
+  const [siteUrl, setSiteUrl] = useState("");
+  const [welcome, setWelcome] = useState(false);
+  useEffect(() => {
+    try {
+      setWelcome(new URLSearchParams(window.location.search).get("welcome") === "1");
+    } catch {
+      // ignore
+    }
+  }, []);
+  useEffect(() => {
+    if (project?.website_url && !siteUrl) setSiteUrl(project.website_url);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.website_url]);
   const [activePlatform, setActivePlatform] = useState<string>("wix");
 
   // Mark "Add DUM Live to your website" complete on the dashboard
@@ -168,16 +195,24 @@ export default function InstallPage() {
   );
 
   function handleTest() {
-    if (!slug) return;
-    setTestState("idle");
-    fetch(
-      `${API_BASE}/api/projects/${encodeURIComponent(slug)}/embed-config`,
-    )
-      .then((r) => {
-        if (r.ok) setTestState("ok");
+    if (!slug || !siteUrl.trim()) return;
+    setTestState("checking");
+    fetch(`${API_BASE}/api/projects/${encodeURIComponent(slug)}/install-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: siteUrl.trim() }),
+    })
+      .then(async (r) => {
+        if (!r.ok) {
+          setTestState("unreachable");
+          return;
+        }
+        const data = (await r.json()) as { found?: boolean; reachable?: boolean };
+        if (data.found) setTestState("ok");
+        else if (data.reachable === false) setTestState("unreachable");
         else setTestState("missing");
       })
-      .catch(() => setTestState("missing"));
+      .catch(() => setTestState("unreachable"));
   }
 
   // Show loading skeleton while auth resolves OR our own
@@ -251,12 +286,20 @@ export default function InstallPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
+      {welcome && (
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-dum-red">
+          You are in. One last step.
+        </p>
+      )}
       <h1 className="mb-3 text-3xl font-bold text-primary">
-        Add to your website (optional)
+        {siteUrl
+          ? `Put your live show on ${siteUrl.replace(/^https?:\/\//, "")}`
+          : "Put your live show on your website"}
       </h1>
       <p className="mb-8 text-secondary">
-        Show your live shop on your own website too. Pick the option that fits
-        you best. No website? Skip this. Customers can still find you on DUM Club.
+        One line of code goes on your site. After that, every time you go live
+        on DUM Club, the show plays in the corner of your own website and
+        customers buy right there. Pick the way that fits you.
       </p>
 
       {/* Three-option chooser — first thing the merchant sees. Each card
@@ -392,29 +435,49 @@ export default function InstallPage() {
           Step 3 · Test the install
         </div>
         <p className="mb-4 text-sm text-secondary">
-          We'll check that your shop is reachable. Once the code is on
-          your site, refresh your site and look for the bubble in the corner.
+          Once the code is on your site and published, we will look at your
+          page and tell you if we see it.
         </p>
-        <button
-          type="button"
-          onClick={handleTest}
-          className="inline-flex items-center gap-2 rounded-xl border border-brand-teal/40 bg-brand-teal-soft px-4 py-2.5 text-sm font-bold text-brand-navy transition hover:border-brand-teal"
-        >
-          Test my install
-        </button>
+        <label className="mb-1.5 block text-xs font-medium text-secondary" htmlFor="install-site-url">
+          Your website
+        </label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            id="install-site-url"
+            value={siteUrl}
+            onChange={(e) => { setSiteUrl(e.target.value); setTestState("idle"); }}
+            placeholder="yourshop.com"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="min-w-0 flex-1 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm text-primary placeholder:text-muted outline-none transition focus:border-dum-red focus:ring-2 focus:ring-dum-red/30"
+          />
+          <button
+            type="button"
+            onClick={handleTest}
+            disabled={!siteUrl.trim() || testState === "checking"}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-dum-red px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {testState === "checking" ? "Checking..." : "Check my site"}
+          </button>
+        </div>
         {testState === "ok" && (
-          <p className="mt-3 text-sm text-brand-teal">
-            ✓ Your shop is live and ready. Add the code to your site and
-            refresh to see the bubble.
+          <p className="mt-3 text-sm font-semibold text-dum-red-700">
+            It is on your site. You are ready. Next time you go live, your
+            customers will see it in the corner.
           </p>
         )}
         {testState === "missing" && (
-          <p className="mt-3 text-sm text-amber-400">
-            We couldn't reach your shop. Double-check your shop link is{" "}
-            <code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-xs">
-              {slug}
-            </code>{" "}
-            and try again.
+          <p className="mt-3 text-sm text-amber-600">
+            We reached your site but did not see the code yet. Make sure you
+            published after pasting, then check again. If you are stuck, use
+            Install it for me above.
+          </p>
+        )}
+        {testState === "unreachable" && (
+          <p className="mt-3 text-sm text-amber-600">
+            We could not open that address. Check the spelling, like
+            yourshop.com, and try again.
           </p>
         )}
       </section>

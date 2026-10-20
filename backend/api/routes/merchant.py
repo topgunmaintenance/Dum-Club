@@ -245,6 +245,9 @@ class MerchantSignup(BaseModel):
     location_city: Optional[str] = None
     location_state: Optional[str] = None
     location_postal_code: Optional[str] = None
+    # Merchant's own website (migration 091). Optional: a shop with no
+    # site skips it and uses its dum.club page. Normalised server-side.
+    website_url: Optional[str] = None
     # Tier selected on /pricing or /upgrade. Optional; defaults to "growth"
     # when absent or unrecognised. Validated against the allowed set at
     # signup time (any value outside {starter, growth, pro} falls back to
@@ -287,9 +290,26 @@ def _token_symbol_from_slug(slug: str) -> str:
     return base[:10] if len(base) >= 2 else (base + "X" * (2 - len(base)))
 
 
+def _normalise_website_url(raw: Optional[str]) -> Optional[str]:
+    """'topgunmaintenance.com' -> 'https://topgunmaintenance.com'. Returns
+    None for blank or junk input so a bad paste never blocks signup."""
+    v = (raw or "").strip()
+    if not v:
+        return None
+    if not v.lower().startswith(("http://", "https://")):
+        v = "https://" + v
+    v = v.rstrip("/")
+    # Must look like host.tld with no spaces; anything else is dropped.
+    host = v.split("://", 1)[1].split("/", 1)[0]
+    if " " in v or "." not in host or len(v) > 255:
+        return None
+    return v
+
+
 def _create_storefront_project(
     supabase, *, privy_id: str, business_name: str, business_profile_id: Optional[str],
     is_founding: bool = False, description: Optional[str] = None,
+    website_url: Optional[str] = None,
 ) -> Optional[dict]:
     """Insert a `projects` row tied to this merchant so the rest of the
     dashboard ("Add your first offer", install snippet, Go Live) has
@@ -385,6 +405,7 @@ def _create_storefront_project(
         "name": title,
         "title": title,
         "description": (description or "").strip(),
+        "website_url": website_url,
         "category": "service",
         "template_type": "local_service",
         "status": "draft",
@@ -699,6 +720,7 @@ async def merchant_signup(body: MerchantSignup, current_user: dict = Depends(get
             business_profile_id=bp_id,
             is_founding=bool(inserted.get("founding_merchant")),
             description=body.description,
+            website_url=_normalise_website_url(body.website_url),
         )
         if project_row:
             inserted["_storefront_project_id"] = project_row.get("id")

@@ -1704,6 +1704,79 @@ async def get_project(project_id: str):
 
 
 # -----------------------------
+# Install check (did the bubble land on the merchant's site?)
+# -----------------------------
+
+class InstallCheckBody(BaseModel):
+    url: str = Field(..., max_length=255)
+
+
+@router.post("/{project_id}/install-check")
+async def install_check(project_id: str, body: InstallCheckBody):
+    """Fetch the merchant's own page and look for the DUM embed line
+    carrying this project's id. Honest install detection for /install
+    ("Check my site"): before this the test button only pinged
+    embed-config, which says nothing about the merchant's site.
+
+    Public (no auth): it reads a public web page and returns a bool.
+    Guarded against SSRF: https/http only, no private hosts, 8s cap,
+    512 KB cap, no redirects to non-http schemes.
+    """
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    raw = (body.url or "").strip()
+    if not raw.lower().startswith(("http://", "https://")):
+        raw = "https://" + raw
+    parsed = urlparse(raw)
+    host = (parsed.hostname or "").lower()
+    if not host or "." not in host or host in ("localhost",):
+        raise HTTPException(status_code=400, detail="Enter your website address, like yourshop.com")
+    try:
+        for info in socket.getaddrinfo(host, None):
+            ip = ipaddress.ip_address(info[4][0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise HTTPException(status_code=400, detail="That address is not reachable from here")
+    except socket.gaierror:
+        return {"found": False, "reachable": False, "url": raw}
+
+    import httpx
+    html = ""
+    final_url = raw
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True, timeout=8.0,
+            headers={"User-Agent": "DUMClub-InstallCheck/1.0 (+https://www.dum.club)"},
+        ) as client:
+            async with client.stream("GET", raw) as r:
+                final_url = str(r.url)
+                if not final_url.lower().startswith(("http://", "https://")):
+                    return {"found": False, "reachable": False, "url": raw}
+                chunks = []
+                size = 0
+                async for chunk in r.aiter_bytes():
+                    chunks.append(chunk)
+                    size += len(chunk)
+                    if size > 512 * 1024:
+                        break
+                html = b"".join(chunks).decode("utf-8", errors="ignore")
+    except Exception:
+        return {"found": False, "reachable": False, "url": raw}
+
+    has_script = "dum.club/embed.js" in html
+    pid = project_id.lower()
+    has_id = bool(re.search(r"data-business(?:-id)?\s*=\s*[\"']" + re.escape(pid) + r"[\"']", html, re.I))
+    return {
+        "found": has_script and has_id,
+        "script_present": has_script,
+        "id_matches": has_id,
+        "reachable": True,
+        "url": final_url,
+    }
+
+
+# -----------------------------
 # Public embed-config (CORS-open)
 # -----------------------------
 

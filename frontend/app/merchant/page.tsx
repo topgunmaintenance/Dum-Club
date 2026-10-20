@@ -78,6 +78,12 @@ export default function MerchantPage() {
   // registered business. Required - two taps max, no typing.
   const [entityType, setEntityType] = useState<"" | "individual" | "registered_business">("");
   const [bizDescription, setBizDescription] = useState("");
+  // The merchant's own website. Required since the 2026-10-19 "go live
+  // on your own website" pivot: dum.club is where you log in and go
+  // live, the show plays on your site. Stored on projects.website_url
+  // (migration 091) and used by /install right after the trial starts.
+  const [website, setWebsite] = useState("");
+  const websiteOk = /^(https?:\/\/)?[^\s/]+\.[^\s/]{2,}(\/.*)?$/i.test(website.trim());
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
@@ -180,6 +186,18 @@ export default function MerchantPage() {
   // billing-portal (2026-07-06): Manage Billing button state.
   const [billingPortalLoading, setBillingPortalLoading] = useState(false);
   const [billingPortalError, setBillingPortalError] = useState<string | null>(null);
+
+  // Trial just started (Stripe Checkout success_url = /merchant?trial=started).
+  // "Go live on your own website" pivot: the very next thing a new
+  // merchant does is put the live bubble on their site, so hand them
+  // straight to /install instead of the generic dashboard.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("trial") === "started") {
+      window.location.replace("/install?welcome=1");
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -417,6 +435,7 @@ export default function MerchantPage() {
           business_type: bizType.trim() || null,
           entity_type: entityType || null,
           description: bizDescription.trim(),
+          website_url: website.trim() || null,
           location_city: city.trim() || null,
           location_state: state.trim() || null,
           location_postal_code: zip.trim() || null,
@@ -960,6 +979,23 @@ export default function MerchantPage() {
                 </p>
               </div>
               <div>
+                <label className="mb-1.5 block text-xs font-medium text-secondary">Your website</label>
+                <input
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="e.g. topgunmaintenance.com"
+                  inputMode="url"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className="w-full rounded-xl border border-default bg-surface-card px-4 py-3 text-base text-primary placeholder:text-muted outline-none transition focus:border-mint-fill focus:ring-2 focus:ring-mint-fill/30"
+                />
+                <p className={`mt-1.5 text-xs ${website.trim() && !websiteOk ? "text-state-live" : "text-muted"}`}>
+                  {website.trim() && !websiteOk
+                    ? "That does not look like a web address. Try yourshop.com."
+                    : "Your live show plays right on this site. Next step shows you how to add it."}
+                </p>
+              </div>
+              <div>
                 <label className="mb-1.5 block text-xs font-medium text-secondary">Category</label>
                 <select
                   value={bizType}
@@ -1002,7 +1038,7 @@ export default function MerchantPage() {
               </div>
               <button
                 onClick={handleSignup}
-                disabled={saving || !entityType || !bizName.trim() || !bizType || bizDescription.trim().length < 20}
+                disabled={saving || !entityType || !bizName.trim() || !bizType || bizDescription.trim().length < 20 || !websiteOk}
                 className="w-full rounded-xl bg-mint-fill py-4 text-sm font-bold uppercase tracking-[0.12em] text-mint-fill-ink transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
