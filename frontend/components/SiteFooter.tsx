@@ -21,16 +21,16 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
   // carry crypto-flavoured legalese.
   const showFullLegal = pathname === "/technology" || pathname === "/investors";
   return (
-    <footer className="border-t border-default bg-surface-muted px-4 py-16">
+    <footer className="border-t border-dum-red-border bg-white px-4 py-16">
       <div className="mx-auto max-w-5xl">
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl font-black tracking-tight text-primary">
-                DUM<span className="text-mint-text">CLUB</span>
+                DUM<span className="text-dum-red">CLUB</span>
               </span>
             </div>
-            <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-mint-text">
+            <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-dum-red">
               Drive Ur Market
             </p>
             <p className="max-w-xs text-sm leading-relaxed text-secondary">
@@ -38,10 +38,10 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
             </p>
             <div className="mt-6 flex items-center gap-3">
               <span className="relative flex h-2 w-2">
-                <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-mint-fill opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-fill" />
+                <span className="live-dot absolute inline-flex h-full w-full rounded-full bg-dum-red opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-dum-red" />
               </span>
-              <span className="font-mono text-[10px] text-mint-text">
+              <span className="font-mono text-[10px] text-dum-red">
                 EARLY ACCESS · MORRISTOWN, NJ
               </span>
             </div>
@@ -49,7 +49,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               href="https://instagram.com/julez_future"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-block text-sm text-secondary transition hover:text-mint-text"
+              className="mt-4 inline-block text-sm text-secondary transition hover:text-dum-red"
             >
               Instagram @julez_future
             </a>
@@ -67,7 +67,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-mint-text"
+                    className="text-sm text-secondary transition hover:text-dum-red"
                   >
                     {link.label}
                   </Link>
@@ -91,7 +91,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-mint-text"
+                    className="text-sm text-secondary transition hover:text-dum-red"
                   >
                     {link.label}
                   </a>
@@ -112,7 +112,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-secondary transition hover:text-mint-text"
+                    className="text-sm text-secondary transition hover:text-dum-red"
                   >
                     {link.label}
                   </Link>
@@ -122,7 +122,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
           </div>
         </div>
 
-        <div className="mt-16 border-t border-default pt-8">
+        <div className="mt-16 border-t border-dum-red-border pt-8">
           {showFullLegal ? (
             <p className="mb-4 text-[11px] leading-relaxed text-muted">
               DUM Club operates in early access. Content on this platform is for
@@ -131,7 +131,7 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
               participating merchants. They are not an investment, with no secondary market and no
               expectation of price appreciation. For technical details on how the platform
               is built, see the{" "}
-              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-mint-text hover:underline">
+              <Link href="/technology" className="text-secondary underline-offset-4 hover:text-dum-red hover:underline">
                 Technology page
               </Link>
               .
@@ -144,19 +144,19 @@ export function SiteFooter({ pathname }: { pathname?: string | null }) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo/dum-club-D-mark.png" alt="DUM Club" className="h-5 w-auto" />
+              <img src="/logo/dum-club-D-red.png" alt="DUM Club" className="h-5 w-auto" />
               <span className="text-[12px] font-bold tracking-tight">
-                <span className="text-primary">DUM </span><span className="text-mint-text">CLUB</span>
+                <span className="text-primary">DUM </span><span className="text-dum-red">CLUB</span>
               </span>
               <span className="text-[10px] text-muted">© 2026 · All rights reserved</span>
             </div>
             <div className="flex gap-6">
               <div className="flex gap-6">
-                <Link href="/help" className="text-[10px] text-muted transition hover:text-mint-text">Buyer Help</Link>
-              <Link href="/terms" className="text-[10px] text-muted transition hover:text-mint-text">
+                <Link href="/help" className="text-[10px] text-muted transition hover:text-dum-red">Buyer Help</Link>
+              <Link href="/terms" className="text-[10px] text-muted transition hover:text-dum-red">
                   Terms of Use
                 </Link>
-                <Link href="/privacy" className="text-[10px] text-muted transition hover:text-mint-text">
+                <Link href="/privacy" className="text-[10px] text-muted transition hover:text-dum-red">
                   Privacy Policy
                 </Link>
               </div>
