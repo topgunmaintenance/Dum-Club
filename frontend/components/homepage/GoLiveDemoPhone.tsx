@@ -301,7 +301,7 @@ export function GoLiveDemoPhone() {
                 aria-pressed={active}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   active
-                    ? "bg-mint-fill text-mint-fill-ink"
+                    ? "bg-dum-red text-white"
                     : "border border-white/15 bg-white/[0.08] text-white/70 hover:brightness-125"
                 }`}
               >
@@ -316,7 +316,7 @@ export function GoLiveDemoPhone() {
             <span
               key={label}
               className={`rounded-full transition-all ${
-                i === step ? "h-[7px] w-[22px] bg-mint-fill" : "h-[7px] w-[7px] bg-white/25"
+                i === step ? "h-[7px] w-[22px] bg-dum-red" : "h-[7px] w-[7px] bg-white/25"
               }`}
             />
           ))}
@@ -333,8 +333,8 @@ export function GoLiveDemoPhone() {
           {autoPlaying ? (
             <>
               <span className="relative flex h-2 w-2" aria-hidden="true">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint-fill opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-fill" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-dum-red opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-dum-red" />
               </span>
               Demo playing. Tap the phone to try it yourself.
             </>
@@ -391,7 +391,7 @@ function PhoneHeader({
 function StepSignUp({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex h-full flex-col px-6 pt-10">
-      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border-2 border-mint-text text-lg font-bold text-mint-text">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border-2 border-dum-red text-lg font-bold text-dum-red-700">
         D
       </div>
       <h3 className="mt-5 text-center text-lg font-bold text-primary">Welcome to DUM Club</h3>
@@ -413,12 +413,12 @@ function StepSignUp({ onNext }: { onNext: () => void }) {
       <button
         type="button"
         onClick={onNext}
-        className="mt-5 w-full rounded-xl bg-mint-fill py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
+        className="mt-5 w-full rounded-xl bg-dum-red py-3 text-sm font-bold text-white transition hover:opacity-90"
       >
         Continue
       </button>
       <p className="mt-4 text-center text-[12px] text-secondary">
-        Already have an account? <span className="font-semibold text-mint-text">Log in</span>
+        Already have an account? <span className="font-semibold text-dum-red-700">Log in</span>
       </p>
     </div>
   );
@@ -451,7 +451,7 @@ function StepVerify({
               <div key={label} className="flex items-center gap-2.5 text-sm text-secondary">
                 <span
                   className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
-                    verified ? "bg-mint-fill text-mint-fill-ink" : "border border-default text-transparent"
+                    verified ? "bg-dum-red text-white" : "border border-default text-transparent"
                   }`}
                 >
                   ✓
@@ -465,7 +465,7 @@ function StepVerify({
           type="button"
           onClick={onVerify}
           disabled={verifying}
-          className="mt-5 w-full rounded-xl bg-mint-fill py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90 disabled:opacity-60"
+          className="mt-5 w-full rounded-xl bg-dum-red py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {verifying ? "Verified · redirecting…" : "Verify with Stripe"}
         </button>
@@ -505,7 +505,7 @@ function StepSnap({
         {snapping ? (
           <div className="mt-3 rounded-xl border border-default bg-surface-card px-4 py-2.5 text-sm">
             <span className="font-bold text-primary">{business.itemName}</span>
-            <span className="ml-2 font-mono text-mint-text">${business.price}</span>
+            <span className="ml-2 font-mono text-dum-red-700">${business.price}</span>
           </div>
         ) : (
           <button
@@ -515,7 +515,7 @@ function StepSnap({
             className="mx-auto mt-5 flex h-16 w-16 items-center justify-center rounded-full border-4 border-default bg-surface-card transition hover:border-strong"
             aria-label="Take photo"
           >
-            <span className="h-11 w-11 rounded-full bg-mint-fill" />
+            <span className="h-11 w-11 rounded-full bg-dum-red" />
           </button>
         )}
       </div>
@@ -545,10 +545,10 @@ function StepChoose({
         <button
           type="button"
           onClick={() => onChoose("live")}
-          className="w-full rounded-2xl border-2 border-mint-text bg-mint-card p-4 text-left"
+          className="w-full rounded-2xl border-2 border-dum-red bg-dum-red-bg p-4 text-left"
         >
-          <div className="text-sm font-bold text-mint-text">Go Live Now</div>
-          <div className="mt-1 text-[12px] text-mint-text/80">Sell it in real time, on camera</div>
+          <div className="text-sm font-bold text-dum-red-700">Go Live Now</div>
+          <div className="mt-1 text-[12px] text-dum-red-700/80">Sell it in real time, on camera</div>
         </button>
       </div>
     </div>
@@ -564,7 +564,7 @@ function StepResultPost({
 }) {
   return (
     <div className="flex h-full flex-col px-6 pt-6">
-      <span className="inline-flex w-fit items-center rounded-full bg-mint-card px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-mint-text">
+      <span className="inline-flex w-fit items-center rounded-full bg-dum-red-bg px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-dum-red-700">
         Listed · Live on storefront
       </span>
       <h3 className="mt-4 text-lg font-bold text-primary">You&apos;re live, well, listed!</h3>
@@ -574,7 +574,7 @@ function StepResultPost({
           style={{ backgroundImage: `url(${unsplashUrl(business.photoId)})` }}
         />
         <div className="mt-3 text-sm font-bold text-primary">{business.itemName}</div>
-        <div className="font-mono text-sm text-mint-text">${business.price}</div>
+        <div className="font-mono text-sm text-dum-red-700">${business.price}</div>
         <div className="mt-1 text-[12px] text-secondary">{business.shopName}</div>
       </div>
       <button
@@ -622,18 +622,18 @@ function StepResultLive({
 
       <div className="mt-3 mx-4 rounded-xl bg-black/40 px-3 py-2.5">
         <div className="text-sm font-bold">{business.itemName}</div>
-        <div className="font-mono text-sm text-dum-live-accent">
+        <div className="font-mono text-sm text-white">
           ${business.price} / {business.unit}
         </div>
       </div>
 
       <div className="mt-3 flex-1 space-y-2 px-4">
         <div className="rounded-xl bg-black/35 px-3 py-2 text-[12.5px]">
-          <span className="font-bold text-dum-live-accent">{business.chatSenderName}</span>{" "}
+          <span className="font-bold text-white">{business.chatSenderName}</span>{" "}
           <span className="text-white/90">{business.chatMessage}</span>
         </div>
         {soldCount > 0 && (
-          <div className="rounded-xl bg-mint-fill/20 px-3 py-2 text-[12.5px] font-semibold text-dum-live-accent">
+          <div className="rounded-xl bg-white/15 px-3 py-2 text-[12.5px] font-semibold text-white">
             🎉 Someone just bought {business.itemName}!
           </div>
         )}
@@ -643,7 +643,7 @@ function StepResultLive({
         <button
           type="button"
           onClick={onMarkSold}
-          className="w-full rounded-xl bg-mint-fill py-3 text-sm font-bold text-mint-fill-ink transition hover:opacity-90"
+          className="w-full rounded-xl bg-dum-red py-3 text-sm font-bold text-white transition hover:opacity-90"
         >
           Mark as SOLD · ${business.price}
           {soldCount > 0 && <span className="ml-1 opacity-70">({soldCount} sold)</span>}

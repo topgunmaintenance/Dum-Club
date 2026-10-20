@@ -26,11 +26,11 @@ export function HomeSellPitch() {
         <h2 className="mx-auto mt-3 max-w-3xl text-[clamp(32px,6vw,52px)] font-extrabold leading-[1.08] tracking-[-0.02em] text-primary">
           Your shop. Your show. Your town watching.
         </h2>
-        {/* Slogan (2026-08-03): "Always be selling" is the brand line. It
+        {/* Slogan (2026-08-03): "Always be live!" is the brand line (founder change 2026-10-20). It
             rides under the canonical headline so the pitch has a repeatable
             hook without displacing the mandated copy. */}
         <p className="mx-auto mt-4 text-[clamp(18px,3.2vw,28px)] font-extrabold tracking-[-0.01em] text-mint-text">
-          Always be selling.
+          Always be live!
         </p>
         <p className="mx-auto mt-5 max-w-2xl text-base font-medium leading-relaxed text-secondary sm:text-lg">
           Your live e-counter, always open. Live selling for local business,
