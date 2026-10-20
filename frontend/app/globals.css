@@ -82,6 +82,15 @@
   --dum-on-emerald: #04130D;    /* near-black ink that sits on an emerald fill */
   --dum-mint: #E9F9F1;          /* mint card / status-bar background */
   --dum-mint-border: #C7EEDD;   /* mint card border */
+  /* Brand: red (founder direction 2026-10-19, "go live on your own
+     website" homepage). Eye-catching fast-food red for marketing
+     surfaces. Pairs with white text on fills; red-700 is red used as
+     TEXT / prices on white. Live status keeps --dum-live below. */
+  --dum-red: #DA291C;
+  --dum-red-700: #B9221A;
+  --dum-red-bg: #FFF4F2;        /* pale red section tint */
+  --dum-red-border: #F3DCD9;    /* hairline on the pale tint */
+  --dum-red-ink-soft: #FFE9E6;  /* body text on a red fill */
   /* Brand: coral — Go Live + LIVE / urgency */
   --dum-live: #FB2C58;
   --dum-live-bg: #FEE9EE;       /* "LIVE NOW" pill background */
